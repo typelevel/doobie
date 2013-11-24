@@ -2,34 +2,25 @@ package doobie
 package world
 
 import doobie.JdbcType
-import java.sql.{PreparedStatement => PS}
+import java.sql.PreparedStatement
 import scalaz._
 import Scalaz._
 
-object StatementWorld extends IndexedWorld {
-
-  type R = PS
-
-  def W = implicitly[Monoid[W]]
+object StatementWorld extends IndexedWorld[PreparedStatement] {
 
   implicit class RunnableAction[A](a: Action[A]) {
-    def unsafeRun(r: PS) = 
+    def unsafeRun(r: PreparedStatement) = 
       run(State(r, Vector(), 1), a)
   }
 
-  class In[A, J] private (f: PS => (Index, A) => Unit)(implicit J: JdbcType[J]) {
+  /** Typeclass for types that can be IN parameters. */
+  class In[A, J] private (f: PreparedStatement => (Int, A) => Unit)(implicit J: JdbcType[J]) {
 
     def set(a: A): Action[Unit] = 
-      for {
-        n <- get
-        a <- next(f(_)(_, a)) :++> f"SET $n%d, ${J.name}%s => $a%s"
-      } yield a
+      get >>= (n => next(f(_)(_, a)) :++> f"SET $n%d, ${J.name}%s => $a%s")
 
     def setNull: Action[Unit] = 
-      for {
-        n <- get
-        a <- next(_.setNull(_, J.toInt)) :++> f"SET $n%d, ${J.name}%s => NULL"
-      } yield a
+      get >>= (n => next(_.setNull(_, J.toInt)) :++> f"SET $n%d, ${J.name}%s => NULL")
 
     def contramap[B](g: B => A): In[B, J] =
       new In[B, J](ps => (n, a) => f(ps)(n, g(a)))
@@ -38,7 +29,9 @@ object StatementWorld extends IndexedWorld {
 
   object In {
 
-    def apply[A, J: JdbcType](f: PS => (Index, A) => Unit): In[A, J] = new In[A, J](f)
+    /** Construct an `In` by providing a JDBC type and the appropriate setter. */
+    def apply[A, J: JdbcType](f: PreparedStatement => (Int, A) => Unit): In[A, J] = 
+      new In[A, J](f)
 
     implicit def contravariant[J]: Contravariant[({type λ[α] = In[α, J]})#λ] =
       new Contravariant[({type λ[α] = In[α, J]})#λ] {

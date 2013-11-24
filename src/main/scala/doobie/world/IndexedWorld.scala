@@ -1,13 +1,9 @@
 package doobie
 package world
 
-import scalaz.effect.IO
+import doobie.util.RWSFWorld
 
-trait IndexedWorld extends ReaderWriterStateFailWorld {
-
-  protected type Index = Int // positive
-
-  type S = Index
+trait IndexedWorld[R0] extends RWSFWorld[R0, Log, Int] {
 
   protected def next[A](f: (R, S) => A): Action[A] =
     for {
@@ -15,7 +11,6 @@ trait IndexedWorld extends ReaderWriterStateFailWorld {
       r <- ask
       _ <- mod(_ + 1)
     } yield f(r, s)
-    // action { case (n, s) => ((n + 1, s), f(s, n)) }
 
 }
 

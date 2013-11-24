@@ -4,19 +4,14 @@ package world
 import java.sql._
 import scalaz._
 import Scalaz._
+import doobie.util.RWSFWorld
 
-object ConnectionWorld extends ReaderWriterStateFailWorld {
-
-  type R = Connection
-  type S = Unit
-
-  def effect[A](f: R => A): Action[A] =
-    ask.map(f)
+object ConnectionWorld extends RWSFWorld[Connection, Log, Unit] {
 
   def statement[A](sql: String, a: StatementWorld.Action[A]): Action[A] = {
 
     def acquire: Action[PreparedStatement] = 
-      effect(_.prepareStatement(sql)) :++>> (ps => s"PREPARE $ps")
+      asks(_.prepareStatement(sql)) :++>> (ps => s"PREPARE $ps")
 
     def use(ps: PreparedStatement): Action[A] = 
       success(a.unsafeRun(ps)) >>= { // TODO: factor out nested world call
@@ -31,10 +26,10 @@ object ConnectionWorld extends ReaderWriterStateFailWorld {
   }
 
   def rollback: Action[Unit] =
-    effect(_.rollback) :++> "ROLLBACK"
+    asks(_.rollback) :++> "ROLLBACK"
 
   def commit: Action[Unit] =
-    effect(_.commit) :++> "COMMIT"
+    asks(_.commit) :++> "COMMIT"
 
   implicit class RunnableAction[A](a: Action[A]) {
     def unsafeRun(c: Connection) = 

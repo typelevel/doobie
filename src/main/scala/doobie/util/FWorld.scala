@@ -1,5 +1,5 @@
 package doobie
-package world
+package util
 
 import scala.annotation.tailrec
 import scalaz._
@@ -9,7 +9,7 @@ import scalaz.effect._
 import language.higherKinds
 
 /* Stateful effect world for computations that can fail. */
-trait FailWorld {
+trait FWorld {
 
   type State
 
@@ -71,58 +71,11 @@ trait FailWorld {
 
   // Raw combinators; these expose the state, which will have more structure in subclasses 
   // that might wish to define their own get, mod, etc. So we namespace them.
-  object raw {
+  protected object raw {
     def gets[T](f: State => T): Action[T] = get.map(f)
     def get: Action[State] = action(s => (s, s.right))
     def mod(f: State => State): Action[Unit] = action(s => (f(s), ().right))
     def put(s: State): Action[Unit] = mod(_ => s)
-  }
-
-}
-
-
-trait ReaderWriterStateFailWorld extends FailWorld {
-
-  // Our state is a structure with reader, writer, and state
-  type R
-  type W = Vector[String]
-  type S
-
-  // Thus
-  case class State(r: R, w: W, s: S)
-
-  ////// COMBINATORS
-
-  // Reader
-  def ask: Action[R] = raw.gets(_.r)
-
-  // Writer
-  def tell(w: W): Action[Unit] = raw.mod(x => x.copy(w = x.w |+| w))
-
-  // State
-  def get: Action[S] = raw.gets(_.s)
-  def gets[T](f: S => T): Action[T] = get.map(f)
-  def mod(f: S => S): Action[Unit] = raw.mod(x => x.copy(s = f(x.s)))
-  def put(s: S): Action[Unit] = mod(_ => s)
-
-  ////// SYNTAX
-
-  // If our writer is a monad, we can write elements of its parameter. For some reason I can't move
-  // the type constraint up here so it's on each method, sorry.
-  implicit class WriterOps[A](a: Action[A]) {
-
-    /** Log after running `a`. */
-    def :++>[M[_],L](l: => L)(implicit ev: M[L] =:= W, M: Monad[M]): Action[A] =
-      a.flatMap(x => tell(M.point(l)).map(_ => x))
-
-    /** Log after running `a`, using its result. */
-    def :++>>[M[_],L](f: A => L)(implicit ev: M[L] =:= W, M: Monad[M]): Action[A] =
-      a.flatMap(x => tell(M.point(f(x))).map(_ => x))
-
-    /** Log before running `a`. */
-    def :<++[M[_],L](l: => L)(implicit ev: M[L] =:= W, M: Monad[M]): Action[A] =
-      tell(M.point(l)).flatMap(_ => a)
-  
   }
 
 }

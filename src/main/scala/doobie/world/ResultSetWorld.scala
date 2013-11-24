@@ -6,18 +6,14 @@ import java.sql.ResultSet
 import scalaz._
 import Scalaz._
 
-object ResultSetWorld extends IndexedWorld {
-
-  type R = ResultSet
-
-  def W = implicitly[Monoid[W]]
+object ResultSetWorld extends IndexedWorld[ResultSet] {
 
   implicit class RunnableAction[A](a: Action[A]) {
     def unsafeRun(rs: ResultSet) = 
       run(State(rs, Vector(), 1), a)
   }
 
-  sealed class Out[A, J] private (f: ResultSet => Index => A)(implicit J: JdbcType[J]) { 
+  sealed class Out[A, J] private (f: ResultSet => Int => A)(implicit J: JdbcType[J]) { 
 
     def get: Action[A] = 
       next(f(_)(_))
@@ -29,7 +25,7 @@ object ResultSetWorld extends IndexedWorld {
 
   object Out {
 
-    def apply[A, J: JdbcType](f: ResultSet => Index => A): Out[A, J] = new Out[A, J](f)
+    def apply[A, J: JdbcType](f: ResultSet => Int => A): Out[A, J] = new Out[A, J](f)
 
     implicit def functor[J]: Functor[({type λ[α] = Out[α, J]})#λ] =
       new Functor[({type λ[α] = Out[α, J]})#λ] {
