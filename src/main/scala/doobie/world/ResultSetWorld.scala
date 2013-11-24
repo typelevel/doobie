@@ -2,10 +2,20 @@ package doobie
 package world
 
 import doobie.JdbcType
-import scalaz.Functor
 import java.sql.ResultSet
+import scalaz._
+import Scalaz._
 
-object ResultSetWorld extends IndexedWorld[ResultSet] {
+object ResultSetWorld extends IndexedWorld {
+
+  type R = ResultSet
+
+  def W = implicitly[Monoid[W]]
+
+  implicit class RunnableAction[A](a: Action[A]) {
+    def unsafeRun(rs: ResultSet) = 
+      run(State(rs, Vector(), 1), a)
+  }
 
   sealed class Out[A, J] private (f: ResultSet => Index => A)(implicit J: JdbcType[J]) { 
 

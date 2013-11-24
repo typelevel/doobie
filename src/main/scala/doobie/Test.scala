@@ -23,8 +23,8 @@ object Test {
   def putStrLn(s: String): Task[Unit] =
     Task.delay(println(s))
 
-  def main(args: Array[String]) =
-    tmain.run
+  // def main(args: Array[String]) =
+  //   tmain.run
 
 }
 

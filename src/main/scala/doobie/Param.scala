@@ -43,7 +43,7 @@ object Param {
       def emptyProduct: Param[HNil] =
         new Param[HNil] {
           def set: HNil => Action[Unit] = 
-            _ => Action(())
+            _ => success(())
         }
 
       def project[F, G](instance: => Param[G], to: F => G, from: G => F): Param[F] =

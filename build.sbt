@@ -22,10 +22,11 @@ resolvers ++= Seq(
 
 // Main
 libraryDependencies ++= Seq(
-  "org.scalaz"     %% "scalaz-core"   % "7.0.4",
-  "org.scalaz"     %% "scalaz-effect" % "7.0.4",
+  "org.scalaz"        %% "scalaz-core"   % "7.0.4",
+  "org.scalaz"        %% "scalaz-effect" % "7.0.4",
   "org.scalaz.stream" %% "scalaz-stream" % "0.2-SNAPSHOT",
-  "com.chuusai" % "shapeless" % "2.0.0-M1" cross CrossVersion.full
+  "com.chuusai"       %  "shapeless"     % "2.0.0-M1" cross CrossVersion.full,
+  "com.h2database"    %  "h2"            % "1.3.170"
 )
 
 // Test
@@ -55,7 +56,7 @@ scalacOptions ++= Seq(
 	"-Yno-adapted-args",
 	"-Ywarn-value-discard", 
 	"-Ywarn-numeric-widen",
-	"-Ywarn-dead-code", // confused by ???, sadly
+	// "-Ywarn-dead-code", // confused by ???, sadly
 	"-Xlint",
 	"-Xfatal-warnings",
   "-unchecked"
