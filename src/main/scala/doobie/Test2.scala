@@ -23,8 +23,9 @@ object Test2 extends SafeApp {
 
   override def runc: IO[Unit] =
     for {
+      _ <- putStrLn("hi")
       a <- db.run(action)
-      _ <- a._1.w.traverse(putStrLn)
+      _ <- a._1.traverse(putStrLn)
       _ <- putStrLn(a._2.toString)
     } yield ()
 

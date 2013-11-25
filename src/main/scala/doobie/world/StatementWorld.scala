@@ -6,12 +6,9 @@ import java.sql.PreparedStatement
 import scalaz._
 import Scalaz._
 
-object StatementWorld extends IndexedWorld[PreparedStatement] {
+object StatementWorld extends IndexedWorld {
 
-  implicit class RunnableAction[A](a: Action[A]) {
-    def unsafeRun(r: PreparedStatement) = 
-      run(State(r, Vector(), 1), a)
-  }
+  protected type R = PreparedStatement
 
   /** Typeclass for types that can be IN parameters. */
   class In[A, J] private (f: PreparedStatement => (Int, A) => Unit)(implicit J: JdbcType[J]) {

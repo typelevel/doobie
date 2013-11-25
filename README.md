@@ -2,3 +2,5 @@
 
 This is a small, pure-functional database access library for Scala.
 
+Nothing to see yet.
+

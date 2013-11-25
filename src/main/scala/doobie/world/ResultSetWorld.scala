@@ -6,12 +6,9 @@ import java.sql.ResultSet
 import scalaz._
 import Scalaz._
 
-object ResultSetWorld extends IndexedWorld[ResultSet] {
+object ResultSetWorld extends IndexedWorld {
 
-  implicit class RunnableAction[A](a: Action[A]) {
-    def unsafeRun(rs: ResultSet) = 
-      run(State(rs, Vector(), 1), a)
-  }
+  protected type R = ResultSet
 
   sealed class Out[A, J] private (f: ResultSet => Int => A)(implicit J: JdbcType[J]) { 
 

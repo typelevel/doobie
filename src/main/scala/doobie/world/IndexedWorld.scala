@@ -1,11 +1,16 @@
 package doobie
 package world
 
-import doobie.util.RWSFWorld
+import scalaz._
 
-trait IndexedWorld[R0] extends RWSFWorld[R0, Log, Int] {
+trait IndexedWorld extends DWorld {
 
-  protected def next[A](f: (R, S) => A): Action[A] =
+  protected type S = Int
+
+  protected[world] def runi[A](r: R, a: Action[A]): (W, S, Throwable \/ A) =
+    runrws(r, 1, a)
+
+  protected def next[A](f: (R, Int) => A): Action[A] =
     for {
       s <- get
       r <- ask
@@ -13,4 +18,5 @@ trait IndexedWorld[R0] extends RWSFWorld[R0, Log, Int] {
     } yield f(r, s)
 
 }
+
 

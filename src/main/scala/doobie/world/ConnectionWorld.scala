@@ -6,24 +6,16 @@ import scalaz._
 import Scalaz._
 import doobie.util.RWSFWorld
 
-object ConnectionWorld extends RWSFWorld[Connection, Log, Unit] {
+object ConnectionWorld extends DWorld {
 
-  def statement[A](sql: String, a: StatementWorld.Action[A]): Action[A] = {
+  protected type R = Connection
+  protected type S = Unit
 
-    def acquire: Action[PreparedStatement] = 
-      asks(_.prepareStatement(sql)) :++>> (ps => s"PREPARE $ps")
-
-    def use(ps: PreparedStatement): Action[A] = 
-      success(a.unsafeRun(ps)) >>= { // TODO: factor out nested world call
-        case (s, e) => tell(s.w) >> e.fold(fail(_), success(_))
-      }
-
-    def dispose(ps: PreparedStatement): Action[Unit] = 
-      success(ps.close) :++> s"DISPOSE $ps"
-
-    resource(acquire)(use)(dispose)
-
-  }
+  def statement[A](sql: String, a: StatementWorld.Action[A]): Action[A] = 
+    fops.resource[PreparedStatement, A](
+      asks(_.prepareStatement(sql)) :++>> (ps => s"PREPARE $ps"),
+      ps => gosub(StatementWorld.runi(ps, a)),
+      ps => success(ps.close) :++> s"DISPOSE $ps")
 
   def rollback: Action[Unit] =
     asks(_.rollback) :++> "ROLLBACK"
@@ -31,9 +23,9 @@ object ConnectionWorld extends RWSFWorld[Connection, Log, Unit] {
   def commit: Action[Unit] =
     asks(_.commit) :++> "COMMIT"
 
-  implicit class RunnableAction[A](a: Action[A]) {
-    def unsafeRun(c: Connection) = 
-      run(State(c, Vector(), ()), a)
-  }
+  def runc[A](c: Connection, a: Action[A]): (W, Throwable \/ A) =
+    runrws(c, (), a) match {
+      case (w, _, e) => (w, e)
+    }
 
 }
