@@ -13,8 +13,11 @@ object default extends default
 
 trait default {
 
-  implicit val dint     = int.integer
-  implicit val dstring  = string.varchar
+  implicit val diint     = int.integer.in
+  implicit val doint     = int.integer.out
+
+  implicit val distring  = string.varchar.in
+  implicit val dostring  = string.varchar.out
 
   // TODO: what is the most reasonable default, or is there one?
   implicit val dboolean = boolean.asZeroOrOne[JdbcType.INTEGER]

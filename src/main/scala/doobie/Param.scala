@@ -2,11 +2,10 @@ package doobie
 
 import scalaz._
 import Scalaz._
-import world.StatementWorld
-import world.StatementWorld._
+import world.statement
+import world.statement._
 import java.sql._
 import scala.language.experimental.macros
-
 import shapeless._
 
 trait Param[A] {
@@ -27,9 +26,8 @@ object Param {
       def set = _.fold(A.in.setNull)(A.in.set) // nice!
     }
 
-  // Use shapeless to derive instances for product types
-
-  implicit def deriveParam[A] = macro TypeClass.derive_impl[Param, A]
+  implicit def deriveParam[A] = 
+    macro TypeClass.derive_impl[Param, A]
 
   implicit val productParam: ProductTypeClass[Param] =
     new ProductTypeClass[Param] {

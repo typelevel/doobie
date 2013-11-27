@@ -1,17 +1,20 @@
 package doobie
 package world
 
+import doobie.util._
 import doobie.JdbcType
 import java.sql.PreparedStatement
 import scalaz._
 import Scalaz._
 
-object StatementWorld extends IndexedWorld {
+object statement extends IndexedWorld {
 
   protected type R = PreparedStatement
 
-  /** Typeclass for types that can be IN parameters. */
-  class In[A, J] private (f: PreparedStatement => (Int, A) => Unit)(implicit J: JdbcType[J]) {
+  // A typeclass associating a Scala type A with a JDBC type J. Given this association we can define
+  // actions in this world for setting the next parameter (or setting NULL). So rather than calling
+  // set, setNull, etc., directly we use an instance of In to fix A and J.
+  class In[A, J] private (val f: PreparedStatement => (Int, A) => Unit)(implicit val J: JdbcType[J]) {
 
     def set(a: A): Action[Unit] = 
       get >>= (n => next(f(_)(_, a)) :++> f"SET $n%d, ${J.name}%s => $a%s")
@@ -26,7 +29,7 @@ object StatementWorld extends IndexedWorld {
 
   object In {
 
-    /** Construct an `In` by providing a JDBC type and the appropriate setter. */
+    // For example, In[Int, DECIMAL](_.setInt)
     def apply[A, J: JdbcType](f: PreparedStatement => (Int, A) => Unit): In[A, J] = 
       new In[A, J](f)
 
@@ -37,6 +40,12 @@ object StatementWorld extends IndexedWorld {
       }
 
   }
+
+  def execute: Action[Unit] =
+    asks(_.execute).void
+
+  def executeUpdate: Action[Int] =
+    asks(_.executeUpdate)
 
 }
 

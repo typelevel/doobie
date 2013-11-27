@@ -2,12 +2,13 @@ package doobie
 
 import scalaz.Functor
 import scalaz.Contravariant
-import world.ConnectionWorld._
+import doobie.world.connection._
+import doobie.param._
 
-case class Statement[I: Param, O: Param](s: String) {
+case class Statement[I: InParam, O: OutParam](s: String) {
 
   def apply(i:I) =
-    statement(s, Param[I].set(i))
+    statement(s, InParam[I].set(i))
 
 }
 

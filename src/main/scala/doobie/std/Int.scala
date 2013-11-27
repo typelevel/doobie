@@ -1,8 +1,8 @@
 package doobie
 package std
 
-import doobie.world.StatementWorld._
-import doobie.world.ResultSetWorld._
+import doobie.world.statement._
+import doobie.world.resultset._
 import doobie._
 
 object int {

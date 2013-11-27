@@ -29,16 +29,16 @@ trait FWorld {
     }
 
   // Thus. 
-  type Action[A] = Free[Op, A]
+  type Action[+A] = Free[Op, A]
   Monad[Action] // proof
 
   ////// INTERPRETER
 
   // Each time we turn the crank we trap exceptions, both in resume (if map throws, for instance)
   // and in the implementation of each Op. This allows us to preserve and return the last known
-  // good state along with the failure.
+  // good state along with the failure. No tailrec with fold so we must use pattern matching here.
   @tailrec protected final def runf[A](s: State, a: Action[A]): (State, Throwable \/ A) = 
-    \/.fromTryCatch(a.resume) match { // N.B. no tailrec with folds, so patterns it is
+    \/.fromTryCatch(a.resume) match {
       case \/-(-\/(Op(f))) =>
         \/.fromTryCatch(f(s)) match {
           case \/-((s, \/-(a))) => runf(s, a)
@@ -57,7 +57,7 @@ trait FWorld {
 
   // Unit operations are public
   def success[A](a: => A): Action[A] = action(s => (s, a.right))
-  def fail[A](t: => Throwable): Action[A] = action(s => (s, t.left))
+  def fail(t: => Throwable): Action[Nothing] = action(s => (s, t.left))
 
   // Low-level combinators; these expose the state, which will have more structure in subclasses 
   // that might wish to define their own get, mod, etc. So we just namespace them.

@@ -31,6 +31,12 @@ abstract class RWSFWorld extends FWorld {
     (s0.w, s0.s, e)
   }
 
+  // Abbreviated execution for unit state :-\
+  def runrw[A](r: R, a: Action[A])(implicit ev: S =:= Unit): (W, Throwable \/ A) = {
+    val (w, s, e) = runrws(r, ().asInstanceOf[S] /* careful */, a)
+    (w, e)
+  }
+
   ////// COMBINATORS (all protected; implementors may not want to expose any of them)
 
   // Reader
@@ -48,8 +54,8 @@ abstract class RWSFWorld extends FWorld {
 
   // Lift the result from another world that shares the same type of writer, discarding the final
   // state. This is designed to be used with nested calls to `runrws`.
-  protected def gosub[A](run: => (W, _, Throwable \/ A)): Action[A] =
-    success(run) >>= { case (w, _, e) => tell(w) >> e.fold(fail(_), success(_)) }
+  protected def gosub[A](run: => (W, Throwable \/ A)): Action[A] =
+    success(run) >>= { case (w, e) => tell(w) >> e.fold(fail(_), success(_)) }
 
   ////// SYNTAX
 

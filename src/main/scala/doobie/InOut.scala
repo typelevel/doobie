@@ -1,8 +1,8 @@
 package doobie
 
-import doobie.world.StatementWorld.{ In,  Action => SAction }
-import doobie.world.ResultSetWorld.{ Out, Action => RAction }
-// import scalaz.InvariantFunctor
+import doobie.world.statement.{ In,  Action => SAction }
+import doobie.world.resultset.{ Out, Action => RAction }
+// import scalaz.InvariantFunctor // oops, scalaz 7.1
 
 case class InOut[A, J: JdbcType](in: In[A, J], out: Out[A, J]) {
 
@@ -22,6 +22,7 @@ case class InOut[A, J: JdbcType](in: In[A, J], out: Out[A, J]) {
 
 object InOut {
 
+  // Given matching In/Out pairs we can make an InOut
   implicit def inout[A, J: JdbcType](implicit i: In[A,J], o: Out[A,J]): InOut[A,J] =
     InOut(i, o)
 

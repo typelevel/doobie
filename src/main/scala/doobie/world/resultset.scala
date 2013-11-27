@@ -1,12 +1,13 @@
 package doobie
 package world
 
+import doobie.util._
 import doobie.JdbcType
 import java.sql.ResultSet
 import scalaz._
 import Scalaz._
 
-object ResultSetWorld extends IndexedWorld {
+object resultset extends IndexedWorld {
 
   protected type R = ResultSet
 
