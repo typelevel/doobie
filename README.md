@@ -2,6 +2,8 @@
 
 This is a small, pure-functional JDBC layer for Scala.
 
+NOTHING TO SEE HERE ... WORK IN PROGRESS. GO AWAY.
+
 ### Design Notes
 
 We wrap JDBC in a series of nested monadic interpreters, called **worlds** because that's what I feel like calling them. Each can make calls into the next. You can think of them as dreams within dreams if you're weird like that. 
