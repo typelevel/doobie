@@ -20,21 +20,33 @@ object database extends DWorld.Stateless {
 
   protected type R = ConnectInfo[_]
 
-  protected def loadDriver: Action[Unit] =
+  ////// ACTIONS
+
+  private def loadDriver: Action[Unit] =
     asks(i => Class.forName(i.driverClassName)).void :++> "LOAD DRIVER"
 
-  protected def connection: Action[Connection] = 
+  private def connection: Action[Connection] = 
     loadDriver >> asks(i => DriverManager.getConnection(i.url, i.user, i.pass))
 
-  // Turns a connection action into a database transaction
-  def lift[A](a: conn.Action[A]): Action[A] =
+  ////// COMBINATORS
+
+  def connect[A](k: Connection => (W, Throwable \/ A)): Action[A] =
     fops.resource[Connection, A](
       connection :++>> (c => s"OPEN $c"),
-      c => gosub(conn.runrw(c, a)),
+      c => gosub(k(c)),
       c => success(c.close) :++> s"CLOSE $c")
 
-  def run[A](ci: ConnectInfo[_], a: Action[A]): (Log, Throwable \/ A) =
-    runrw(ci, a)
+  // LIFTING INTO IO
+
+  def lift[A](ci: ConnectInfo[_], a: Action[A]): IO[(Log, Throwable \/ A)] =
+    IO(runrw(ci, a))
+
+  // SYNTAX
+
+  implicit class DatabaseOps[A](a: Action[A]) {
+    def lift(ci: ConnectInfo[_]): IO[(Log, Throwable \/ A)] =
+      database.lift(ci, a)
+  }
 
 }
 

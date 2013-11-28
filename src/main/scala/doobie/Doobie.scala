@@ -1,3 +1,0 @@
-package doobie
-
-object Doobie

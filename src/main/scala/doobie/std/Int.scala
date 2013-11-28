@@ -1,14 +1,16 @@
 package doobie
 package std
 
-import doobie.world.statement._
-import doobie.world.resultset._
 import doobie._
 
 object int {
 
-  def apply[J: JdbcType]: InOut[Int, J] =
-    InOut(In(_.setInt), Out(_.getInt))
+  def apply[J](implicit J: JdbcType[J]): Primitive[Int] =
+    new Primitive[Int] {
+      def set = _.setInt
+      def get = _.getInt
+      def jdbcType = J
+    }
 
   val bigint   = apply[JdbcType.BIGINT]
   val bit      = apply[JdbcType.BIT]
@@ -19,4 +21,3 @@ object int {
   val tinyint  = apply[JdbcType.TINYINT]
 
 }
-

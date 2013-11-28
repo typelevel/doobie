@@ -9,8 +9,12 @@ object string extends string
 
 trait string {
 
-  def apply[J: JdbcType]: InOut[String, J] =
-    InOut(In(_.setString), Out(_.getString))
+  def apply[J](implicit J: JdbcType[J]): Primitive[String] =
+    new Primitive[String] {
+      def set = _.setString
+      def get = _.getString
+      def jdbcType = J
+    }
 
   val char         = apply[JdbcType.CHAR]
   val longnvarchar = apply[JdbcType.LONGNVARCHAR]
