@@ -7,7 +7,7 @@ trait Primitive[A] { outer =>
 
   def set: PreparedStatement => (Int, A) => Unit
   def get: ResultSet => Int => A
-  def jdbcType: JdbcType[_]
+  def jdbcType: JdbcType
 
   // Exponential functor
   def xmap[B](f: A => B, g: B => A): Primitive[B] =

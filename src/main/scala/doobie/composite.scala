@@ -8,7 +8,7 @@ import java.sql._
 import scala.language.experimental.macros
 import shapeless._
 
-// typeclass for composite values that span columns
+// typeclass for values that [potentially] span columns
 trait Composite[A] { outer =>
 
   def set: A => Action[Unit]

@@ -23,16 +23,16 @@ object Test2 extends SafeApp {
     st.execute.lift("CREATE TABLE IF NOT EXISTS TEST(ID INT, NAME VARCHAR NOT NULL, FOO VARCHAR)")
 
   val insert =
-    st.execute.lift("INSERT INTO TEST VALUES (1, 'Steve', 'bar')")
+    st.executeUpdate.lift("INSERT INTO TEST VALUES (1, 'Steve', 'bar')")
 
   def action: conn.Action[String] =
     for {
       _ <- create
-      _ <- insert
+      n <- insert
       _ <- count((1, "hi", None))
       // _ <- bad(42)
       _ <- conn.commit
-    } yield "woo!"
+    } yield "woo! " + n
 
   def session: db.Action[String] =
     for {
