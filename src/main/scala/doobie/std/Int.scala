@@ -5,12 +5,8 @@ import doobie._
 
 object int {
 
-  def apply(implicit j: JdbcType): Primitive[Int] =
-    new Primitive[Int] {
-      def set = _.setInt
-      def get = _.getInt
-      def jdbcType = j
-    }
+  def apply(j: JdbcType): Primitive[Int] =
+    Primitive[Int](j, _.setInt, _.getInt)
 
   val bigint   = apply(JdbcType.BIGINT)
   val bit      = apply(JdbcType.BIT)
@@ -19,5 +15,7 @@ object int {
   val numeric  = apply(JdbcType.NUMERIC)
   val smallint = apply(JdbcType.SMALLINT)
   val tinyint  = apply(JdbcType.TINYINT)
+
+  val default = decimal
 
 }

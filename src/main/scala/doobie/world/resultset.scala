@@ -7,7 +7,7 @@ import java.sql.ResultSet
 import scalaz._
 import Scalaz._
 
-object resultset extends IndexedWorld {
+object resultset extends DWorld.Indexed {
 
   protected type R = ResultSet
 

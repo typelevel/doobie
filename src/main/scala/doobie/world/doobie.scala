@@ -18,4 +18,11 @@ object DWorld {
     type S = Unit
   }
 
+  trait Indexed extends DWorld {
+    protected type S = Int
+    protected[world] def runi[A](r: R, a: Action[A]): (W, Throwable \/ A) =
+      runrws(r, 1, a) match { case (w, _ , e) => (w, e) }
+  }
+
 }
+

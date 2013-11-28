@@ -19,3 +19,17 @@ trait Primitive[A] { outer =>
 
 }
 
+// Smart ctor for now, maybe it should just be a case class
+object Primitive {
+
+  def apply[A](
+    j: JdbcType, 
+    fset: PreparedStatement => (Int, A) => Unit,
+    fget: ResultSet => Int => A): Primitive[A] =
+  new Primitive[A] {
+    def set = fset
+    def get = fget
+    def jdbcType = j
+  }
+
+}

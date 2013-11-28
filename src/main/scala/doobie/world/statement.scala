@@ -7,7 +7,7 @@ import java.sql.PreparedStatement
 import scalaz._
 import Scalaz._
 
-object statement extends IndexedWorld {
+object statement extends DWorld.Indexed {
 
   protected type R = PreparedStatement
 

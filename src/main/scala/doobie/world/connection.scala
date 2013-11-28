@@ -18,11 +18,11 @@ object connection extends DWorld.Stateless {
   def commit: Action[Unit] =
     asks(_.commit) :++> "COMMIT"
 
-  def prepare[A](sql: String, f: PreparedStatement => (W, (Throwable \/ A))): Action[A] =
+  def prepare[A](sql: String, f: PreparedStatement => (W, Throwable \/ A)): Action[A] =
     fops.resource[PreparedStatement, A](
       asks(_.prepareStatement(sql)) :++>> (ps => s"PREPARE $ps"),
       ps => gosub(f(ps)),
-      ps => success(ps.close) :++> s"DISPOSE $ps")
+      ps => success(ps.close) :++> s"CLOSE $ps")
 
   implicit class ConnectionActionOps[A](a: Action[A]) {
     def lift: database.Action[A] =

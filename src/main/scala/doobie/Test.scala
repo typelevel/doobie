@@ -8,6 +8,8 @@ import scalaz.stream.Process._
 
 object Test {
 
+  // A stream example, for later
+
   val converter: Task[Vector[String]] =
     io.linesR("/usr/local/dict/words")
       .filter(_.length > 10) 
