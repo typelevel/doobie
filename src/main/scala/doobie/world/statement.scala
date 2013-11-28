@@ -14,10 +14,10 @@ object statement extends IndexedWorld {
   ////// PRIMITIVE OPS
 
   def setN[A](n: Int, a:A)(implicit A: Primitive[A]): Action[Unit] =
-    asks(A.set(_)(n, a))
+    asks(A.set(_)(n, a)) :++> s"SET $n $a"
 
   def setNullN[A](n: Int)(implicit A: Primitive[A]): Action[Unit] =
-    asks(_.setNull(n, A.jdbcType.toInt))
+    asks(_.setNull(n, A.jdbcType.toInt)) :++> s"SET $n NULL"
 
   ////// INDEXED OPS
 
@@ -33,10 +33,10 @@ object statement extends IndexedWorld {
   ////// EXECUTION
 
   def execute: Action[Unit] =
-    asks(_.execute).void
+    asks(_.execute).void :++> "EXECUTE"
 
   def executeUpdate: Action[Int] =
-    asks(_.executeUpdate)
+    asks(_.executeUpdate) :++> "EXECUTE UPDATE"
 
   ////// LIFTING INTO CONNECTION WORLD
 
