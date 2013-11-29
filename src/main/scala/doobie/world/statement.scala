@@ -3,7 +3,7 @@ package world
 
 import doobie.util._
 import doobie.JdbcType
-import java.sql.PreparedStatement
+import java.sql.{PreparedStatement, ResultSet}
 import scalaz._
 import Scalaz._
 
@@ -21,9 +21,6 @@ object statement extends DWorld.Indexed {
 
   ////// INDEXED OPS
 
-  def advance: Action[Unit] =
-    mod(_ + 1)
-
   def set[A: Primitive](a: A): Action[Unit] =
     get >>= (n => setN(n, a))
 
@@ -37,6 +34,12 @@ object statement extends DWorld.Indexed {
 
   def executeUpdate: Action[Int] =
     asks(_.executeUpdate) :++> "EXECUTE UPDATE"
+
+  def executeQuery[A](f: ResultSet => (W, Throwable \/ A)): Action[A] =
+    fops.resource[ResultSet, A](
+      asks(_.executeQuery) :++>> (rs => s"OPEN $rs"),
+      rs => gosub(f(rs)),
+      rs => success(rs.close) :++> s"CLOSE $rs")
 
   ////// LIFTING INTO CONNECTION WORLD
 

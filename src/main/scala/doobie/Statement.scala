@@ -8,20 +8,9 @@ import doobie.world.connection._
 import scalaz._
 import Scalaz._
 
-case class Statement[I: Composite, O: Composite](s: String) {
+case class Statement[I, O: Composite](s: String)(implicit I : Composite[I]) {
 
   def apply(i:I) =
-    (Composite[I].set(i) >> statement.execute).lift(s)
+    (I.set(i) >> resultset.list[O].lift).lift(s)
 
 }
-
-object Statement {
-
-  implicit def functor[I]: Functor[({type l[a] = Statement[I,a]})#l] = 
-    ???
-
-  implicit def contravariant[O]: Contravariant[({type l[a] = Statement[a,O]})#l] = 
-    ???
-
-}
-

@@ -2,36 +2,65 @@ package doobie
 package world
 
 import doobie.util._
-import doobie.JdbcType
+import doobie._
 import java.sql.ResultSet
 import scalaz._
 import Scalaz._
+import scalaz.stream._
+import scalaz.concurrent._
 
 object resultset extends DWorld.Indexed {
 
   protected type R = ResultSet
 
-  // sealed class Out[A, J] private (f: ResultSet => Int => A)(implicit J: JdbcType[J]) { 
+  ////// PRIMITIVE OPS
 
-  //   def get: Action[A] = 
-  //     next(f(_)(_))
+  def readN[A](n: Int)(implicit A: Primitive[A]): Action[A] =
+    asks(A.get(_)(n)) :++>> (a => s"GET $n ${A.jdbcType.name} => $a")
 
-  //   def map[B](g: A => B): Out[B, J] =
-  //     new Out[B, J](rs => n => g(f(rs)(n)))
+  def wasNull: Action[Boolean] =
+    asks(_.wasNull) :++>> (a => s"WAS NULL => $a")
 
-  // }
+  def next: Action[Boolean] =
+    asks(_.next) :++>> (a => s"NEXT => $a")
 
-  // object Out {
+  ////// INDEXED OPS
 
-  //   def apply[A, J: JdbcType](f: ResultSet => Int => A): Out[A, J] = new Out[A, J](f)
+  def read[A: Primitive]: Action[A] =
+    get >>= (n => readN[A](n))
 
-  //   implicit def functor[J]: Functor[({type λ[α] = Out[α, J]})#λ] =
-  //     new Functor[({type λ[α] = Out[α, J]})#λ] {
-  //       def map[A, B](r: Out[A, J])(f: A => B): Out[B, J] =
-  //         r.map(f)
+  ////// STREAM OPS
+
+  // Placeholder for stream-based reader
+  def list[O](implicit O: Composite[O]): Action[List[O]] =
+    next >>= { 
+      case false => success(Nil)
+      case true  => reset >> O.get >>= (h => list.map(h :: _))
+    }
+
+  // def stream[O](implicit O : Composite[O]): Action[Vector[O]] =
+  //   asks { rs =>
+  //     val p = Process.eval { 
+  //       if (rs.next) {
+  //         Task.delay(runi(rs, O.get))
+
+  //         } else 
+  //         throw Process.End
   //     }
+  //     p.runLog.map(_.toVector).run
+  //   }
 
-  // }
+  ////// LIFTING
+
+  def lift[A](a: Action[A]): statement.Action[A] =
+    statement.executeQuery(runi(_, a))
+
+  ////// SYNTAX
+
+  implicit class ResultSetActionOps[A](a: Action[A]) {
+    def lift: statement.Action[A] =
+      resultset.lift(a)
+  }
 
 }
 
