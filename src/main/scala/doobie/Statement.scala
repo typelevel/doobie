@@ -8,9 +8,11 @@ import doobie.world.connection._
 import scalaz._
 import Scalaz._
 
-case class Statement[I, O: Composite](s: String)(implicit I : Composite[I]) {
-
-  def apply(i:I) =
-    (I.set(i) >> resultset.list[O].lift).lift(s)
-
+case class Query[I, O: Composite](s: String)(implicit I : Composite[I]) {
+  def apply(i:I) = (I.set(i) >> resultset.list[O].lift).lift(s)
 }
+
+case class Query0[O: Composite](s: String) {
+  def apply = resultset.list[O].lift.lift(s)
+}
+
