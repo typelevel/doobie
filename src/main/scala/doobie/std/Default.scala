@@ -7,7 +7,8 @@ object default extends default
 
 trait default {
 
-  implicit val bigdecimal   = doobie.std.bigdecimal.default
+  implicit val bigdecimal = doobie.std.bigdecimal.default
+  implicit val boolean    = doobie.std.boolean.default
 
   implicit val int     = doobie.std.int.default
   implicit val string  = doobie.std.string.default

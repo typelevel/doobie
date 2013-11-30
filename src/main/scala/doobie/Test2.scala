@@ -7,6 +7,7 @@ import scalaz.effect.IO._
 import scalaz._
 import Scalaz._
 import scala.language.implicitConversions
+import java.io.File
 
 import doobie.world.{ database => db, connection => conn, statement => st }
 
@@ -27,43 +28,22 @@ trait ExperimentalSytax {
 }
 
 object Test2 extends SafeApp with ExperimentalSytax with std.default {
-
-  val ci = db.ConnectInfo[org.h2.Driver]("jdbc:h2:/tmp/foo/bar", "sa", "")
-
-  implicit val booleanMapping = boolean.as[String]("Y", "N")
-
-  val count: Statement[Int, Int] = 
-    "SELECT COUNT(*) FROM TEST WHERE ID = ?"
-
-  val bad: Statement[Int, Int] =
-    "BOGUS"
-
-  val defns = 
-      ddl("CREATE TABLE IF NOT EXISTS TEST(ID INT, NAME VARCHAR NOT NULL, FOO VARCHAR)") >>
-      ddl("CREATE TABLE IF NOT EXISTS ADA(ID INT, NAME VARCHAR NOT NULL)")
-
-  val insert = {
-    // Boolean mapping, just for this definition
-    update[(Int, String, Boolean)]("INSERT INTO TEST VALUES (?, ?, ?)")
-  }
-
-  val select: Statement[String, (Int, String, Option[Boolean])] =
-    "SELECT ID, NAME, FOO FROM TEST WHERE NAME = ?"
-
   import conn._
 
-  def action: conn.Action[String] =
+  // An in-memory database
+  val ci = db.ConnectInfo[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+
+  // Count countries that speak a given language
+  val speakerQuery: Statement[(String, Int), String] =
+    "SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?"
+
+  def action: Action[String] =
     for {
-      _ <- defns
-      _ <- commit
-      n <- List((1, "Steve", true), (2, "Bob", false)).traverse(insert).map(_.sum)
-      _ <- rollback // forget that insert
-      c <- count(1).map(_.head)
-      x <- select("Bob")
-      _ <- x.traverse(r => conn.success(println(r)))
-      // _ <- bad(42)
-      _ <- commit
-    } yield "woo! " + n + " count was " + c
+      _ <- success(println("Loading database..."))
+      _ <- ddl("RUNSCRIPT FROM 'world.sql'")
+      s <- speakerQuery(("English", 50))
+      _ <- s.traverse(x => success(println(x)))
+    } yield "woo!"
 
   override def runc: IO[Unit] =
     for {

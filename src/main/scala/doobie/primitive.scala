@@ -2,7 +2,7 @@ package doobie
 
 import java.sql._
 
-// typeclass for primitive "column" types
+// typeclass for values that map to a single column
 trait Primitive[A] { outer =>
 
   def set: PreparedStatement => (Int, A) => Unit

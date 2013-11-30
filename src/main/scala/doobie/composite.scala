@@ -10,7 +10,7 @@ import world._
 import world.statement._
 import world.resultset._
 
-// typeclass for values that [potentially] span columns
+// typeclass for values that can span columns
 trait Composite[A] { outer =>
 
   def set: A => statement.Action[Unit]

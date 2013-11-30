@@ -4,7 +4,6 @@ import java.sql.Types
 import scalaz._
 import Scalaz._
 
-/** Typeclass for JDBC types. `J` is a phantom. */
 case class JdbcType(toInt: Int, name: String)
 
 object JdbcType {
