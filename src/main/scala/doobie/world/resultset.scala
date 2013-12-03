@@ -43,7 +43,7 @@ object resultset extends DWorld.Indexed {
 
   ////// RESULT PROCESSING
 
-  def result[O: Composite]: Result[O,O] =
+  def stream[O: Composite]: Result[O,O] =
     new Result(process1.id)
 
   // Result stream, with chainable tansformations and terminal folds.
@@ -55,7 +55,7 @@ object resultset extends DWorld.Indexed {
 
     // TODO: we're discarding the log here. figure out how to preserve
     private def process(rs: ResultSet): Process[Task, I] =
-      repeatEval(delay(if (rs.next) unsafeRun(rs) else throw End))
+      repeatEval(delay(if (rs.next) unsafeRun(rs) else throw End)) 
 
     // Read a row. This isn't quite what we want. See above.
     private def unsafeRun(rs: ResultSet): I =
@@ -100,7 +100,7 @@ object resultset extends DWorld.Indexed {
     ////// Effect
 
     // def traverse_(f: O => IO[Unit]): Action[Unit] =
-      
+
 
     ////// Fold
 

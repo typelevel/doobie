@@ -12,6 +12,7 @@ import java.io.File
 import doobie.world._
 import doobie.world.connection.{ Action => DBIO, success => dbio, _ }
 import doobie.world.database.ConnectInfo
+import doobie.world.resultset.stream
 
 
 object Test2 extends SafeApp with ExperimentalSytax with std.default {
@@ -24,31 +25,32 @@ object Test2 extends SafeApp with ExperimentalSytax with std.default {
   case class CountryCode(code: String)
   case class City(id: Id[City], name: String, code: CountryCode, population: Int)
 
+  def loadDatabase: DBIO[Unit] =
+    "RUNSCRIPT FROM 'world.sql'".asUnitStatement 
+
   // All cities larger than given population
-  // TODO: I want to declare this as Int => DBIO[List[City]]
-  def citiesLargerThan(i: Int): DBIO[List[City]] =
+  def largestCities(count: Int): DBIO[Vector[City]] =
     """SELECT id, name, countrycode, population 
        FROM city 
-       WHERE population > ?
        ORDER BY population DESC
-    """.asParameterizeQuery(i).returning[City]
+    """.asQuery0.streaming[City].apply(_.take(count).foldVector)
 
   // Find countries that speak a given language
   def speakerQuery(s: String, p: Int): DBIO[List[CountryCode]] =
     """SELECT COUNTRYCODE 
        FROM COUNTRYLANGUAGE 
        WHERE LANGUAGE = ? AND PERCENTAGE > ?
-    """.asParameterizeQuery((s, p)).returning[CountryCode]
+    """.asQuery((s, p)).streaming[CountryCode].apply(_.foldMap(List(_)))
 
   // DBIO[A] describes a computation that interacts with the database and computes
   // a value of type A. 
   def action: DBIO[String] =
     for {
       _ <- dbio(println("Loading database...")) // how about a real MonadIO?
-      _ <- "RUNSCRIPT FROM 'world.sql'".asUnitStatement // DB-specific stuff, no problem
+      _ <- loadDatabase
       s <- speakerQuery("French", 30)
       _ <- s.traverse(x => dbio(println(x)))
-      c <- citiesLargerThan(9000000)
+      c <- largestCities(10)
       _ <- c.traverse(x => dbio(println(x)))
     } yield "woo!"
 
@@ -72,12 +74,18 @@ trait ExperimentalSytax {
     def asUnitStatement: DBIO[Unit] =
       statement.execute.lift(s)
 
-    def asQuery[I: Composite, O: Composite]: Query[I,O] =
-      Query(s)
+    def asQuery[I : Composite](i: I) = new {
+      def streaming[O: Composite] = new {
+        def apply[A](f: resultset.Result[O,O] => resultset.Action[A]): DBIO[A] =
+          (Composite[I].set(i) >> f(stream[O]).lift).lift(s)
+      }
+    }
 
-    def asParameterizeQuery[I: Composite](i: I) = new {
-      def returning[O: Composite] =
-        Query[I,O](s).apply(i)
+    def asQuery0 = new {
+      def streaming[O: Composite] = new {
+        def apply[A](f: resultset.Result[O,O] => resultset.Action[A]): DBIO[A] =
+          f(stream[O]).lift.lift(s)
+      }
     }
 
   }
