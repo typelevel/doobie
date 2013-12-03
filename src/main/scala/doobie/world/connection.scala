@@ -3,6 +3,7 @@ package world
 
 import java.sql._
 import scalaz._
+import scalaz.effect.IO
 import Scalaz._
 import doobie.util._
 
@@ -25,8 +26,8 @@ object connection extends DWorld.Stateless {
       ps => success(ps.close) :++> s"CLOSE $ps")
 
   implicit class ConnectionActionOps[A](a: Action[A]) {
-    def lift: database.Action[A] =
-      database.connect(runrw(_, a))
+    def lift(ci: database.ConnectInfo[_]): IO[(W, Throwable \/ A)] =
+      database.connect(runrw(_, a)).lift(ci)
   }
 
 }

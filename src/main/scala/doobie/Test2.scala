@@ -6,78 +6,81 @@ import scalaz.effect._
 import scalaz.effect.IO._
 import scalaz._
 import Scalaz._
-import scala.language.implicitConversions
+import scala.language._
 import java.io.File
 
-import doobie.world.{ database => db, connection => conn, statement => st, resultset => rs }
-  import conn._
+import doobie.world._
+import doobie.world.connection.{ Action => DBIO, success => dbio, _ }
+import doobie.world.database.ConnectInfo
 
-trait ExperimentalSytax {
-
-  // a ddl takes nothing and returns nothing
-  def ddl(sql: String): conn.Action[Unit] =
-    st.execute.lift(sql)
-
-  // an update takes args and returns an int
-  def update[A: Composite](sql: String): A => conn.Action[Int] =
-    a => (Composite[A].set(a) >> st.executeUpdate).lift(sql)
-
-
-  implicit class strSyntax(s: String) {
-    def asQuery[I: Composite, O: Composite]: Query[I,O] =
-      Query(s)
-  }
-
-  def query[I: Composite, O: Composite](sql: String): I => Action[List[O]] =
-    ???
-
-  def query0[O: Composite](sql: String): Action[List[O]]  = 
-    rs.list[O].lift.lift(sql)
-
-
-}
 
 object Test2 extends SafeApp with ExperimentalSytax with std.default {
 
   // An in-memory database
-  val ci = db.ConnectInfo[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  val ci = ConnectInfo[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
   // Some model types
   case class Id[A](toInt: Int)
   case class CountryCode(code: String)
-  case class City(id: Id[City], name: String, code: CountryCode, district: String, population: Int)
+  case class City(id: Id[City], name: String, code: CountryCode, population: Int)
 
   // All cities larger than given population
-  val citiesLargerThan: Query[Int, City] =
-    """SELECT id, name, countrycode, district, population 
+  // TODO: I want to declare this as Int => DBIO[List[City]]
+  def citiesLargerThan(i: Int): DBIO[List[City]] =
+    """SELECT id, name, countrycode, population 
        FROM city 
        WHERE population > ?
        ORDER BY population DESC
-    """.asQuery
+    """.asParameterizeQuery(i).returning[City]
 
   // Find countries that speak a given language
-  val speakerQuery: Query[(String, Int), CountryCode] =
+  def speakerQuery(s: String, p: Int): DBIO[List[CountryCode]] =
     """SELECT COUNTRYCODE 
        FROM COUNTRYLANGUAGE 
        WHERE LANGUAGE = ? AND PERCENTAGE > ?
-    """.asQuery
+    """.asParameterizeQuery((s, p)).returning[CountryCode]
 
-  def action: Action[String] =
+  // DBIO[A] describes a computation that interacts with the database and computes
+  // a value of type A. 
+  def action: DBIO[String] =
     for {
-      _ <- success(println("Loading database..."))
-      _ <- ddl("RUNSCRIPT FROM 'world.sql'")
-      s <- speakerQuery(("French", 30))
-      _ <- s.traverse(x => success(println(x)))
+      _ <- dbio(println("Loading database...")) // how about a real MonadIO?
+      _ <- "RUNSCRIPT FROM 'world.sql'".asUnitStatement // DB-specific stuff, no problem
+      s <- speakerQuery("French", 30)
+      _ <- s.traverse(x => dbio(println(x)))
       c <- citiesLargerThan(9000000)
-      _ <- c.traverse(x => success(println(x)))
+      _ <- c.traverse(x => dbio(println(x)))
     } yield "woo!"
 
+  // Apply connection info to a DBIO[A] to get an IO[(Log, Throwable \/ A)]
   override def runc: IO[Unit] =
     for {
-      p <- action.lift.lift(ci)
-      // _ <- p._1.traverse(putStrLn)
-      _ <- putStrLn(p._2.toString)
+      p <- action.lift(ci)
+      _ <- p._1.zipWithIndex.takeRight(10).traverse(x => putStrLn(x.toString)) // last 10 log entries
+      _ <- putStrLn(p._2.toString) // the answer
     } yield ()
+
+}
+
+//////////
+
+
+trait ExperimentalSytax {
+
+  implicit class strSyntax(s: String) {
+
+    def asUnitStatement: DBIO[Unit] =
+      statement.execute.lift(s)
+
+    def asQuery[I: Composite, O: Composite]: Query[I,O] =
+      Query(s)
+
+    def asParameterizeQuery[I: Composite](i: I) = new {
+      def returning[O: Composite] =
+        Query[I,O](s).apply(i)
+    }
+
+  }
 
 }
 
