@@ -25,22 +25,23 @@ object Test2 extends SafeApp with ExperimentalSytax with std.default {
   case class CountryCode(code: String)
   case class City(id: Id[City], name: String, code: CountryCode, population: Int)
 
+  // Parameterless, unit statement
   def loadDatabase: DBIO[Unit] =
     "RUNSCRIPT FROM 'world.sql'".asUnitStatement 
 
-  // All cities larger than given population
+  // The `count` largest cities.
   def largestCities(count: Int): DBIO[Vector[City]] =
     """SELECT id, name, countrycode, population 
        FROM city 
        ORDER BY population DESC
-    """.asQuery0.streaming[City].apply(_.take(count).foldVector)
+    """.q0(stream[City].take(count).foldVector)
 
   // Find countries that speak a given language
   def speakerQuery(s: String, p: Int): DBIO[List[CountryCode]] =
     """SELECT COUNTRYCODE 
        FROM COUNTRYLANGUAGE 
        WHERE LANGUAGE = ? AND PERCENTAGE > ?
-    """.asQuery((s, p)).streaming[CountryCode].apply(_.foldMap(List(_)))
+    """.q((s, p), stream[CountryCode].foldVector).map(_.toList)
 
   // DBIO[A] describes a computation that interacts with the database and computes
   // a value of type A. 
@@ -74,19 +75,11 @@ trait ExperimentalSytax {
     def asUnitStatement: DBIO[Unit] =
       statement.execute.lift(s)
 
-    def asQuery[I : Composite](i: I) = new {
-      def streaming[O: Composite] = new {
-        def apply[A](f: resultset.Result[O,O] => resultset.Action[A]): DBIO[A] =
-          (Composite[I].set(i) >> f(stream[O]).lift).lift(s)
-      }
-    }
+    def q[I : Composite, A](i: I, a: resultset.Action[A]): DBIO[A] =
+      (Composite[I].set(i) >> a.lift).lift(s)
 
-    def asQuery0 = new {
-      def streaming[O: Composite] = new {
-        def apply[A](f: resultset.Result[O,O] => resultset.Action[A]): DBIO[A] =
-          f(stream[O]).lift.lift(s)
-      }
-    }
+    def q0[A](a: resultset.Action[A]): DBIO[A] =
+      a.lift.lift(s)
 
   }
 
