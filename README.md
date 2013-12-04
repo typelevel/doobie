@@ -6,12 +6,12 @@ This is a small, pure-functional JDBC layer for Scala.
 
 ### Principles
 
- - Functional and typesafe, duh.
- - Monadic API. No crazy DSL.
- - Write your own damn SQL. 
- - Automatic resource handling.
- - Structured, machine-interpretable, failure-proof logging.
- - Streaming API for result sets.
+ - Functional and typesafe.
+ - Monadic API (no crazy DSL).
+ - Write your own damn SQL.
+ - Must be impossible to leak any managed resource.
+ - Logging must be structured, machine-interpretable, and failure-proof.
+ - Resultsets are streams.
 
 ### Design Notes
 
