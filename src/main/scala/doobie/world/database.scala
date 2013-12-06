@@ -10,6 +10,9 @@ import doobie.util._
 import doobie.world.{connection => conn}
 
 object database extends DWorld.Stateless {
+  import rwsfops._
+
+  protected type R = ConnectInfo[A] forSome { type A } // we don't care
 
   // We parameterize the connect info with the driver and require a manifest. This is distasteful
   // but at least it lets us verify at compile-time that the driver class is available (although at 
@@ -18,34 +21,28 @@ object database extends DWorld.Stateless {
     def driverClassName: String = mf.runtimeClass.getName
   }
 
-  protected type R = ConnectInfo[_]
-
-  ////// ACTIONS
-
+  /** Ensure the driver is loaded. */
   private def loadDriver: Action[Unit] =
     asks(i => Class.forName(i.driverClassName)).void :++> "LOAD DRIVER"
 
+  /** Open a connecton. */
   private def connection: Action[Connection] = 
-    loadDriver >> asks(i => DriverManager.getConnection(i.url, i.user, i.pass))
+    loadDriver >> asks(i => DriverManager.getConnection(i.url, i.user, i.pass)) :++>> (c => s"OPEN $c")
 
-  ////// COMBINATORS
+  /** Close a connection. */
+  private def close(c: Connection): Action[Unit] =
+    unit(c.close) :++> s"CLOSE $c"
 
-  def connect[A](k: Connection => (W, Throwable \/ A)): Action[A] =
-    fops.resource[Connection, A](
-      connection :++>> (c => s"OPEN $c"),
-      c => gosub(k(c)),
-      c => success(c.close) :++> s"CLOSE $c")
-
-  // LIFTING INTO IO
-
-  def lift[A](ci: ConnectInfo[_], a: Action[A]): IO[(Log, Throwable \/ A)] =
-    IO(runrw(ci, a))
-
-  // SYNTAX
+  /** Pass a new connection to the given continuation. */
+  private[world] def connect[A](k: Connection => (W, Throwable \/ A)): Action[A] =
+    fops.resource[Connection, A](connection, c => gosub(k(c)), close)
 
   implicit class DatabaseOps[A](a: Action[A]) {
+
+    /** Given connection information, lift this action into IO. */
     def lift(ci: ConnectInfo[_]): IO[(Log, Throwable \/ A)] =
-      database.lift(ci, a)
+      IO(runrw(ci, a))
+
   }
 
 }

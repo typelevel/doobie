@@ -59,6 +59,10 @@ trait FWorld {
   def success[A](a: => A): Action[A] = action(s => (s, a.right))
   def fail(t: => Throwable): Action[Nothing] = action(s => (s, t.left))
 
+  // Alias for success
+  def unit[A](a: => A): Action[A] = success(a)
+
+
   // Low-level combinators; these expose the state, which will have more structure in subclasses 
   // that might wish to define their own get, mod, etc. So we just namespace them.
   protected object fops {

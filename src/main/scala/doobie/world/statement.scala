@@ -8,48 +8,52 @@ import scalaz._
 import Scalaz._
 
 object statement extends DWorld.Indexed {
+  import rwsfops._
 
   protected type R = PreparedStatement
 
-  ////// PRIMITIVE OPS
-
+  /** Set primitive parameter `a` at index `n`. */
   def setN[A](n: Int, a:A)(implicit A: Primitive[A]): Action[Unit] =
     asks(A.set(_)(n, a)) :++> s"SET $n $a"
 
+  /** Set parameter at index `n` to NULL. */
   def setNullN[A](n: Int)(implicit A: Primitive[A]): Action[Unit] =
     asks(_.setNull(n, A.jdbcType.toInt)) :++> s"SET $n NULL"
 
-  ////// INDEXED OPS
-
+  /** Set primitive parameter `a` at the current index. */
   def set[A: Primitive](a: A): Action[Unit] =
     get >>= (n => setN(n, a))
 
+  /** Set primitive parameter at the current index to NULL. */
   def setNull[A: Primitive]: Action[Unit] =
     get >>= (n => setNullN(n))
 
-  ////// EXECUTION
-
+  /** Execute the statement. */
   def execute: Action[Unit] =
     asks(_.execute).void :++> "EXECUTE"
 
+  /** Execute the statement as an update, returning the number of affected rows. */
   def executeUpdate: Action[Int] =
     asks(_.executeUpdate) :++> "EXECUTE UPDATE"
 
-  def executeQuery[A](f: ResultSet => (W, Throwable \/ A)): Action[A] =
-    fops.resource[ResultSet, A](
-      asks(_.executeQuery) :++>> (rs => s"OPEN $rs"),
-      rs => gosub(f(rs)),
-      rs => success(rs.close) :++> s"CLOSE $rs")
+  /** Execute a query and return the resultset. */
+  private def executeQuery: Action[ResultSet] =
+    asks(_.executeQuery) :++>> (rs => s"OPEN $rs")
 
-  ////// LIFTING INTO CONNECTION WORLD
+  /** Close a resultset. */
+  private def close(rs: ResultSet): Action[Unit] =
+    success(rs.close) :++> s"CLOSE $rs"
 
-  def lift[A](sql: String, a: Action[A]): connection.Action[A] =
-    connection.prepare(sql, runi(_, a))
+  /** Execute the statement and pass the resultset to the given continuation. */
+  private[world] def executeQuery[A](f: ResultSet => (W, Throwable \/ A)): Action[A] =
+    fops.resource[ResultSet, A](executeQuery, rs => gosub(f(rs)), close)
 
-  // syntax
   implicit class StatementOps[A](a: Action[A]) {
+
+    /** Lift this action with the associated SQL string into connection world. */
     def lift(sql: String): connection.Action[A] =
-      statement.lift(sql, a)
+      connection.prepare(sql, runi(_, a))
+  
   }
 
 }

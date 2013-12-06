@@ -10,41 +10,37 @@ import scalaz.stream._
 import scalaz.concurrent._
 
 object resultset extends DWorld.Indexed {
+  import rwsfops._
 
   protected type R = ResultSet
 
-  ////// PRIMITIVE OPS
-
+  /** Read primitive type `A` at index `n`. */
   def readN[A](n: Int)(implicit A: Primitive[A]): Action[A] =
     asks(A.get(_)(n)) :++>> (a => s"GET $n ${A.jdbcType.name} => $a")
 
+  /** True if the last read was a SQL NULL value. */
   def wasNull: Action[Boolean] =
     asks(_.wasNull) :++>> (a => s"WAS NULL => $a")
 
+  /** Advance to the next row, returning `false` if none. */
   def next: Action[Boolean] =
     asks(_.next) :++>> (a => s"NEXT => $a")
 
-  ////// INDEXED OPS
-
+  /** Read primitive type `A` at the current index. */
   def read[A: Primitive]: Action[A] =
     get >>= (n => readN[A](n))
 
-  ////// LIFTING
-
-  def lift[A](a: Action[A]): statement.Action[A] =
-    statement.executeQuery(runi(_, a))
-
-  ////// SYNTAX
-
-  implicit class ResultSetActionOps[A](a: Action[A]) {
-    def lift: statement.Action[A] =
-      resultset.lift(a)
-  }
-
-  ////// RESULT PROCESSING
-
+  /** Returns a stream processor for handling results. */
   def stream[O: Composite]: Result[O,O] =
     new Result(process1.id)
+
+  implicit class ResultSetActionOps[A](a: Action[A]) {
+
+    /** Lift this action into statement world. */
+    def lift: statement.Action[A] =
+      statement.executeQuery(runi(_, a))
+
+  }
 
   // Result stream, with chainable tansformations and terminal folds.
   class Result[I, O](p0: Process1[I,O])(implicit I : Composite[I]) {
@@ -105,7 +101,7 @@ object resultset extends DWorld.Indexed {
     ////// Fold
 
     def exists(f: O => Boolean): Action[Boolean] =
-      forall(o => !f(o)).map(!_)
+      forall(o => !f(o)).map(!_) // N.B. this is on the stream tip
 
     def forall(f: O => Boolean): Action[Boolean] =
       pipe(process1.forall(f)).unsafeHead
@@ -125,12 +121,13 @@ object resultset extends DWorld.Indexed {
     def lastOption: Action[Option[O]] =
       pipe(process1.last).headOption
 
-    ////// CONVENIENCE METHODS
+    ////// CONVENIENCE FOLDS
 
-    def foldVector: Action[Vector[O]] =
+    def toVector: Action[Vector[O]] =
       foldMap(Vector(_))
 
-    def toList = foldVector.map(_.toList)
+    def toList: Action[List[O]] =
+      toVector.map(_.toList)
 
   }
 
