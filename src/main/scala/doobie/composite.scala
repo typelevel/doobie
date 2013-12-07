@@ -55,8 +55,8 @@ object Composite {
 
       def emptyProduct: Composite[HNil] =
         new Composite[HNil] {
-          def set = _ => statement.success(())
-          def get = resultset.success(HNil)
+          def set = _ => statement.unit(())
+          def get = resultset.unit(HNil)
         }
 
       def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =

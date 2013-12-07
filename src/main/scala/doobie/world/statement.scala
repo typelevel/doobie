@@ -28,6 +28,10 @@ object statement extends DWorld.Indexed {
   def setNull[A: Primitive]: Action[Unit] =
     get >>= (n => setNullN(n))
 
+  /** Set a composite parameter `a` at the current index. */
+  def setC[C](a: C)(implicit C: Composite[C]): Action[Unit] =
+    C.set(a)
+
   /** Execute the statement. */
   def execute: Action[Unit] =
     asks(_.execute).void :++> "EXECUTE"
@@ -42,7 +46,7 @@ object statement extends DWorld.Indexed {
 
   /** Close a resultset. */
   private def close(rs: ResultSet): Action[Unit] =
-    success(rs.close) :++> s"CLOSE $rs"
+    unit(rs.close) :++> s"CLOSE $rs"
 
   /** Execute the statement and pass the resultset to the given continuation. */
   private[world] def executeQuery[A](f: ResultSet => (W, Throwable \/ A)): Action[A] =

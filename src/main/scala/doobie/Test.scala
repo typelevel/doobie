@@ -9,13 +9,16 @@ import Scalaz._
 import scala.language._
 import java.io.File
 
+// TODO: clean this up; ignore imports for now
 import doobie.world._
-import doobie.world.connection.{ Action => DBIO, success => dbio, _ }
+import doobie.world.connection.{ Action => DBIO, unit => dbio, _ }
 import doobie.world.database.ConnectInfo
 import doobie.world.resultset.stream
 
 object Test extends SafeApp with ExperimentalSytax {
-  import doobie.std.default._
+
+  // This import needs to be here. Why? Fix it
+  import doobie.std.default._ 
 
   // An in-memory database
   val ci = ConnectInfo[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
@@ -27,7 +30,9 @@ object Test extends SafeApp with ExperimentalSytax {
 
   // Parameterless, unit statement
   def loadDatabase: DBIO[Unit] =
-    "RUNSCRIPT FROM 'world.sql'".asUnitStatement 
+    """RUNSCRIPT FROM 'world.sql' 
+       CHARSET 'UTF-8'
+    """.asUnitStatement 
 
   // The `count` largest cities.
   def largestCities(count: Int): DBIO[Vector[City]] =
@@ -75,8 +80,8 @@ trait ExperimentalSytax {
     def asUnitStatement: DBIO[Unit] =
       statement.execute.lift(s)
 
-    def q[I : Composite, A](i: I, a: resultset.Action[A]): DBIO[A] =
-      (Composite[I].set(i) >> a.lift).lift(s)
+    def q[I: Composite, A](i: I, a: resultset.Action[A]): DBIO[A] =
+      (statement.setC(i) >> a.lift).lift(s)
 
     def q0[A](a: resultset.Action[A]): DBIO[A] =
       a.lift.lift(s)

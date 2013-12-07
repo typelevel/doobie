@@ -56,12 +56,8 @@ trait FWorld {
     Suspend(Op(f(_).map(_.rightMap(Return(_)))))
 
   // Unit operations are public
-  def success[A](a: => A): Action[A] = action(s => (s, a.right))
+  def unit[A](a: => A): Action[A] = action(s => (s, a.right))
   def fail(t: => Throwable): Action[Nothing] = action(s => (s, t.left))
-
-  // Alias for success
-  def unit[A](a: => A): Action[A] = success(a)
-
 
   // Low-level combinators; these expose the state, which will have more structure in subclasses 
   // that might wish to define their own get, mod, etc. So we just namespace them.
@@ -77,7 +73,7 @@ trait FWorld {
       acquire >>= { r =>
         action { s0 =>
           val (s1, e) = runf(s0, use(r)) 
-          runf(s1, dispose(r) >> e.fold(fail(_), success(_)))
+          runf(s1, dispose(r) >> e.fold(fail(_), unit(_)))
         }
       }
 

@@ -31,7 +31,7 @@ abstract class RWSFWorld extends FWorld {
     (s0.w, s0.s, e)
   }
 
-  ////// COMBINATORS (namespaced and protected; implementors may not want to expose any of them)
+  ////// ACTIONS (namespaced and protected; implementors may not want to expose any of them)
 
   protected object rwsfops {
 
@@ -51,9 +51,7 @@ abstract class RWSFWorld extends FWorld {
     // Lift an arbitrary computation of the same shape and Writer type as our computations. This is
     // designed to allow lifting from other worlds.
     def gosub[A](run: => (W, Throwable \/ A)): Action[A] =
-      success(run) >>= { 
-        case (w, e) => tell(w) >> e.fold(fail(_), success(_)) 
-      }
+      unit(run) >>= { case (w, e) => tell(w) >> e.fold(fail(_), unit(_)) }
 
   }
 
