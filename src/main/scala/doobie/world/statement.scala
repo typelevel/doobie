@@ -7,7 +7,7 @@ import java.sql.{PreparedStatement, ResultSet}
 import scalaz._
 import Scalaz._
 
-object statement extends DWorld.Indexed {
+object statement extends RWSFWorld with EventLogging with IndexedState {
   import rwsfops._
 
   protected type R = PreparedStatement
@@ -55,8 +55,8 @@ object statement extends DWorld.Indexed {
   implicit class StatementOps[A](a: Action[A]) {
 
     /** Lift this action with the associated SQL string into connection world. */
-    def lift(sql: String): connection.Action[A] =
-      connection.prepare(sql, runi(_, a))
+    def run(sql: String): connection.Action[A] =
+      connection.prepare(sql, runrw(_, a))
   
   }
 

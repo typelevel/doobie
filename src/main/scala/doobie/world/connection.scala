@@ -9,7 +9,7 @@ import doobie.util._
 
 import doobie.world.{ statement => stmt }
 
-object connection extends DWorld.Stateless {
+object connection extends RWSFWorld with EventLogging with UnitState {
   import rwsfops._
 
   protected type R = Connection
@@ -37,26 +37,10 @@ object connection extends DWorld.Stateless {
   implicit class ConnectionActionOps[A](a: Action[A]) {
 
     /** Lift this action into database world. */
-    def lift: database.Action[A] =
+    def run: database.Action[A] =
       database.connect(runrw(_, a))
   
   }
-
-  implicit val actionMonadIO: MonadIO[Action] =
-    new MonadIO[Action] {
-      // Members declared in scalaz.Applicative
-      def point[A](a: => A): Action[A] = 
-        unit(a)
-      
-      // Members declared in scalaz.Bind
-      def bind[A, B](fa: Action[A])(f: A => Action[B]): Action[B] = 
-        fa.flatMap(f)
-      
-      // Members declared in scalaz.effect.LiftIO
-      def liftIO[A](ioa: scalaz.effect.IO[A]): Action[A] = 
-        unit(ioa.unsafePerformIO) // eek
-
-    }
 
 }
 

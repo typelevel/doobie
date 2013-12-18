@@ -9,7 +9,7 @@ import Scalaz._
 import scalaz.stream._
 import scalaz.concurrent._
 
-object resultset extends DWorld.Indexed {
+object resultset extends RWSFWorld with EventLogging with IndexedState {
   import rwsfops._
 
   protected type R = ResultSet
@@ -41,8 +41,8 @@ object resultset extends DWorld.Indexed {
   implicit class ResultSetActionOps[A](a: Action[A]) {
 
     /** Lift this action into statement world. */
-    def lift: statement.Action[A] =
-      statement.executeQuery(runi(_, a))
+    def run: statement.Action[A] =
+      statement.executeQuery(runrw(_, a))
 
   }
 
@@ -59,7 +59,7 @@ object resultset extends DWorld.Indexed {
 
     // Read a row. This isn't quite what we want. See above.
     private def unsafeRun(rs: ResultSet): I =
-      runi(rs, readC[I])._2.fold(throw _, identity)
+      runrw(rs, readC[I])._2.fold(throw _, identity)
 
 
     // Ultimately the stream is always folded up into a single value, so here's how
@@ -85,7 +85,7 @@ object resultset extends DWorld.Indexed {
     private def process2(rs: ResultSet): Process[Task, (W, Throwable \/ I)] = {
       var w = Monoid[W].zero // State accumulation is a cheat
       repeatEval(delay {
-        if (rs.next) runi(rs, readC[I]).leftMap { w0 => w = w |+| w0; w }
+        if (rs.next) runrw(rs, readC[I]).leftMap { w0 => w = w |+| w0; w }
         else throw End
       }) |> process1.takeThrough(_._2.isRight) // Halt if we encounter a failure
     }

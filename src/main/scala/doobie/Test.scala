@@ -59,18 +59,18 @@ object Test extends SafeApp with ExperimentalSytax {
   // We can compose many DBIO computations
   def action: DBIO[String] =
     for {
-      _ <- putStrLn("Loading database...").liftIO[DBIO]
+      _ <- dbio(println("Loading database..."))
       _ <- loadDatabase(new File("world.sql"))
       s <- speakerQuery("French", 30)
-      _ <- s.map(_.toString).traverse(putStrLn).liftIO[DBIO]
+      _ <- s.traverse(s => dbio(println(s)))
       c <- largestCities(10)
-      _ <- c.map(_.toString).traverse(putStrLn).liftIO[DBIO] :++> "done!"
+      _ <- c.traverse(s => dbio(println(s))) :++> "done!"
     } yield "woo!"
 
   // Apply connection info to a DBIO[A] to get an IO[(Log, Throwable \/ A)]
   override def runc: IO[Unit] =
     for {
-      p <- action.lift.lift(ci)
+      p <- action.run.run(ci)
       _ <- p._1.zipWithIndex.map(_.swap).takeRight(10).traverse(x => putStrLn(x.toString)) // last 10 log entries
       _ <- putStrLn(p._2.toString) // the answer
     } yield ()
@@ -82,14 +82,17 @@ object Test extends SafeApp with ExperimentalSytax {
 
 trait ExperimentalSytax {
 
-  // Let's try interpolation syntax
+  // Let's try interpolation syntax. This only works for primitives
   implicit class SqlInterpolator(val sc: StringContext) {
 
+    def sql: String = 
+      sc.parts.mkString("?")
+
     def source[I: Composite](i:I): SourceMaker =
-      SourceMaker(sc.parts.mkString("?"), statement.setC(i))
+      SourceMaker(sql, statement.setC(i))
 
     def q(): SourceMaker =
-      SourceMaker(sc.parts.mkString("?"), statement.unit(()))
+      SourceMaker(sql, statement.unit(()))
 
     def q[A: Primitive](a: A): SourceMaker =
       source(a)
@@ -111,7 +114,7 @@ trait ExperimentalSytax {
       }
 
     def asUnit: DBIO[Unit] =
-      (prep0 >> statement.execute).lift(sql0)
+      (prep0 >> statement.execute).run(sql0)
 
   }
 
@@ -138,7 +141,7 @@ trait Source[O] { outer =>
 
   // terminating combinator; this lifts us to DBIO
   def foldMap[B: Monoid](f: O => B): DBIO[B] =
-    (prep >> stream[I].pipe(p1).foldMap(f).lift).lift(sql)
+    (prep >> stream[I].pipe(p1).foldMap(f).run).run(sql)
 
 }
 
