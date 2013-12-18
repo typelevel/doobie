@@ -24,6 +24,12 @@ object DWorld {
       (w, e)
     }
 
+    // type Ans[A] = (W, Throwable \/ A)
+    // object Ans {
+    //   implicit val applicative: Applicative[Ans] =
+    //     Monad[({type l[a] = (W, a)})#l].compose[({type l[a] = Throwable \/ a})#l]
+    // }
+
   }
 
   // World with a 1-based index as state

@@ -3,6 +3,7 @@ package doobie
 import java.sql._
 
 // typeclass for values that map to a single column
+@annotation.implicitNotFound("${A} is has no Primitive SQL mapping")
 trait Primitive[A] { outer =>
 
   def set: PreparedStatement => (Int, A) => Unit

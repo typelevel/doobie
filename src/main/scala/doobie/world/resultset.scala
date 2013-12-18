@@ -30,9 +30,13 @@ object resultset extends DWorld.Indexed {
   def read[A: Primitive]: Action[A] =
     get >>= (n => readN[A](n))
 
+  /** Read composite type `A` at the current index. */
+  def readC[A](implicit A : Composite[A]): Action[A] =
+    A.get
+
   /** Returns a stream processor for handling results. */
   def stream[O: Composite]: Result[O,O] =
-    new Result(process1.id)
+    Result.id
 
   implicit class ResultSetActionOps[A](a: Action[A]) {
 
@@ -43,7 +47,7 @@ object resultset extends DWorld.Indexed {
   }
 
   // Result stream, with chainable tansformations and terminal folds.
-  class Result[I, O](p0: Process1[I,O])(implicit I : Composite[I]) {
+  class Result[I: Composite, O](p0: Process1[I,O]) {
     import Process.{repeatEval, End}
     import Task.delay
 
@@ -55,17 +59,37 @@ object resultset extends DWorld.Indexed {
 
     // Read a row. This isn't quite what we want. See above.
     private def unsafeRun(rs: ResultSet): I =
-      runi(rs, I.get)._2.fold(throw _, identity)
+      runi(rs, readC[I])._2.fold(throw _, identity)
+
 
     // Ultimately the stream is always folded up into a single value, so here's how
     // we get it out. Callers must ensure the stream isn't empty.
     protected def unsafeHead: Action[O] = 
       asks(process(_).pipe(p0)).map(_.runLast.run.get)
 
-    // Let's keep this protected for now so we don't leak implementation details.
-    // Might want to revisit?
-    protected def pipe[O2](transform: Process1[O, O2]): Result[I, O2] = 
+    // the fundamental op?
+    def pipe[O2](transform: Process1[O, O2]): Result[I, O2] = 
       new Result(p0 pipe transform)
+
+
+    ////// SECOND ATTEMPT
+
+    // Perhaps change this to (W, Option[Throwable]) \/ I and stop at the first 
+    // writer emit that's a throwable. This would allow us to translate back 
+    // to (W, Throwable \/ A) and would permit pipeO 
+
+    // ... but we really don't want to accumulate per-row log information; we want a rollup with
+    // timing and counts/stats per row, and the full writer state for any failed row. So within
+    // this stuff we probably want a different state strategy.
+
+    private def process2(rs: ResultSet): Process[Task, (W, Throwable \/ I)] = {
+      var w = Monoid[W].zero // State accumulation is a cheat
+      repeatEval(delay {
+        if (rs.next) runi(rs, readC[I]).leftMap { w0 => w = w |+| w0; w }
+        else throw End
+      }) |> process1.takeThrough(_._2.isRight) // Halt if we encounter a failure
+    }
+
 
     ////// Transform
 
@@ -131,7 +155,12 @@ object resultset extends DWorld.Indexed {
 
   }
 
-  object Result extends ResultInstances 
+  object Result extends ResultInstances {
+
+    def id[A: Composite]: Result[A,A] =
+      new Result(process1.id)
+
+  }
 
   trait ResultInstances {
 

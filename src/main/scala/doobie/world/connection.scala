@@ -3,7 +3,7 @@ package world
 
 import java.sql._
 import scalaz._
-import scalaz.effect.IO
+import scalaz.effect._
 import Scalaz._
 import doobie.util._
 
@@ -41,6 +41,22 @@ object connection extends DWorld.Stateless {
       database.connect(runrw(_, a))
   
   }
+
+  implicit val actionMonadIO: MonadIO[Action] =
+    new MonadIO[Action] {
+      // Members declared in scalaz.Applicative
+      def point[A](a: => A): Action[A] = 
+        unit(a)
+      
+      // Members declared in scalaz.Bind
+      def bind[A, B](fa: Action[A])(f: A => Action[B]): Action[B] = 
+        fa.flatMap(f)
+      
+      // Members declared in scalaz.effect.LiftIO
+      def liftIO[A](ioa: scalaz.effect.IO[A]): Action[A] = 
+        unit(ioa.unsafePerformIO) // eek
+
+    }
 
 }
 
