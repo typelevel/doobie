@@ -64,14 +64,16 @@ object Test extends SafeApp with ExperimentalSytax {
       s <- speakerQuery("French", 30)
       _ <- s.traverse(s => dbio(println(s)))
       c <- largestCities(10)
-      _ <- c.traverse(s => dbio(println(s))) :++> "done!"
+      _ <- c.traverse(s => dbio(println(s)))
     } yield "woo!"
 
   // Apply connection info to a DBIO[A] to get an IO[(Log, Throwable \/ A)]
   override def runc: IO[Unit] =
     for {
       p <- action.run.run(ci)
-      _ <- p._1.zipWithIndex.map(_.swap).takeRight(10).traverse(x => putStrLn(x.toString)) // last 10 log entries
+      _ <- putStrLn("")
+      _ <- explain.database.showLog(p._1)
+      _ <- putStrLn("")
       _ <- putStrLn(p._2.toString) // the answer
     } yield ()
 

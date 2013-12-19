@@ -14,6 +14,14 @@ object database extends RWSFWorld with EventLogging with UnitState {
 
   protected type R = ConnectInfo[A] forSome { type A } // we don't care
 
+  sealed trait Event
+  object Event {
+    case class LoadDriver(className: String) extends Event
+    case object OpenConnection extends Event
+    case object CloseConnection extends Event
+    case class ConnectionLog(log: conn.Log) extends Event
+  }
+
   // We parameterize the connect info with the driver and require a manifest. This is distasteful
   // but at least it lets us verify at compile-time that the driver class is available (although at 
   // runtime we must load it by name).
@@ -37,8 +45,8 @@ object database extends RWSFWorld with EventLogging with UnitState {
     unit(c.close) :++> Event.CloseConnection
 
   /** Pass a new connection to the given continuation. */
-  private[world] def connect[A](k: Connection => (W, Throwable \/ A)): Action[A] =
-    fops.resource[Connection, A](connection, c => gosub(k(c).leftMap(l => Vector(Event.ConnectionLog(l)))), close)
+  private[world] def connect[A](k: Connection => (conn.Log, Throwable \/ A)): Action[A] =
+    fops.resource[Connection, A](connection, c => gosub[conn.Log, A](k(c), w => Vector(Event.ConnectionLog(w))), close)
 
   implicit class DatabaseOps[A](a: Action[A]) {
 

@@ -13,6 +13,7 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
   import rwsfops._
 
   protected type R = ResultSet
+  type Event = String
 
   /** Read primitive type `A` at index `n`. */
   def readN[A](n: Int)(implicit A: Primitive[A]): Action[A] =

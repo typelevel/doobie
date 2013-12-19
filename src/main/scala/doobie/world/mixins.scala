@@ -9,7 +9,10 @@ import doobie.util.RWSFWorld
 trait EventLogging { this: RWSFWorld =>
   import rwsfops._
 
-  protected type W = Vector[Event]
+  type Event
+  type Log = Vector[Event]
+
+  protected type W = Log
   protected lazy val W: Monoid[W] = implicitly
 
   implicit class WriterOps[A](a: Action[A]) {

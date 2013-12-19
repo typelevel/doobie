@@ -50,8 +50,8 @@ abstract class RWSFWorld extends FWorld {
 
     // Lift an arbitrary computation of the same shape and Writer type as our computations. This is
     // designed to allow lifting from other worlds.
-    def gosub[A](run: => (W, Throwable \/ A)): Action[A] =
-      unit(run) >>= { case (w, e) => tell(w) >> e.fold(fail(_), unit(_)) }
+    def gosub[W0, A](run: => (W0, Throwable \/ A), log: W0 => W): Action[A] =
+      unit(run) >>= { case (w, e) => tell(log(w)) >> e.fold(fail(_), unit(_)) }
 
   }
 

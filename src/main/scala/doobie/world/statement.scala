@@ -11,6 +11,7 @@ object statement extends RWSFWorld with EventLogging with IndexedState {
   import rwsfops._
 
   protected type R = PreparedStatement
+  type Event = String
 
   /** Set primitive parameter `a` at index `n`. */
   def setN[A](n: Int, a:A)(implicit A: Primitive[A]): Action[Unit] =
@@ -49,8 +50,8 @@ object statement extends RWSFWorld with EventLogging with IndexedState {
     unit(rs.close) :++> s"CLOSE $rs"
 
   /** Execute the statement and pass the resultset to the given continuation. */
-  private[world] def executeQuery[A](f: ResultSet => (W, Throwable \/ A)): Action[A] =
-    fops.resource[ResultSet, A](executeQuery, rs => gosub(f(rs)), close)
+  private[world] def executeQuery[A](f: ResultSet => (resultset.Log, Throwable \/ A)): Action[A] =
+    fops.resource[ResultSet, A](executeQuery, rs => gosub[resultset.Log,A](f(rs), identity), close)
 
   implicit class StatementOps[A](a: Action[A]) {
 
