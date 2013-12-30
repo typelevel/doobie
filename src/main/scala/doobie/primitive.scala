@@ -18,6 +18,9 @@ trait Primitive[A] { outer =>
       def jdbcType = outer.jdbcType
     }
 
+  override def toString =
+    s"Primitive($jdbcType)"
+
 }
 
 // Smart ctor for now, maybe it should just be a case class

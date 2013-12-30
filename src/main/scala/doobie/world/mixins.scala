@@ -6,7 +6,7 @@ import Scalaz._
 
 import doobie.util.RWSFWorld
 
-trait EventLogging { this: RWSFWorld =>
+trait EventLogging extends RWSFWorld {
   import rwsfops._
 
   type Event
@@ -14,6 +14,11 @@ trait EventLogging { this: RWSFWorld =>
 
   protected type W = Log
   protected lazy val W: Monoid[W] = implicitly
+
+  protected def failState(s:State, t: Throwable): State =
+    s.copy(w = s.w |+| Vector(failEvent(t)))
+
+  protected def failEvent(t: Throwable): Event 
 
   implicit class WriterOps[A](a: Action[A]) {
 

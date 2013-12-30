@@ -20,7 +20,14 @@ object database extends RWSFWorld with EventLogging with UnitState {
     case object OpenConnection extends Event
     case object CloseConnection extends Event
     case class ConnectionLog(log: conn.Log) extends Event
+    case class Fail(t: Throwable) extends Event {
+      override def toString =
+        s"$productPrefix(${t.getClass.getName})"
+    }
   }
+
+  protected def failEvent(t: Throwable): Event =
+    Event.Fail(t)
 
   // We parameterize the connect info with the driver and require a manifest. This is distasteful
   // but at least it lets us verify at compile-time that the driver class is available (although at 

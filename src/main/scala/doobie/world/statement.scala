@@ -11,15 +11,31 @@ object statement extends RWSFWorld with EventLogging with IndexedState {
   import rwsfops._
 
   protected type R = PreparedStatement
-  type Event = String
+  sealed trait Event
+  object Event {
+    case class Set[A](index: Int, value: A, prim: Primitive[A]) extends Event
+    case class SetNull[A](index: Int, prim: Primitive[A]) extends Event
+    case object Execute extends Event
+    case object ExecuteUpdate extends Event
+    case object OpenResultSet extends Event
+    case object CloseResultSet extends Event
+    case class ResultSetLog(log: resultset.Log) extends Event
+    case class Fail(t: Throwable) extends Event {
+      override def toString =
+        s"$productPrefix(${t.getClass.getName})"
+    }
+  }
+
+  protected def failEvent(t: Throwable): Event =
+    Event.Fail(t)
 
   /** Set primitive parameter `a` at index `n`. */
   def setN[A](n: Int, a:A)(implicit A: Primitive[A]): Action[Unit] =
-    asks(A.set(_)(n, a)) :++> s"SET $n $a"
+    asks(A.set(_)(n, a)) :++> Event.Set(n, a, A)
 
   /** Set parameter at index `n` to NULL. */
   def setNullN[A](n: Int)(implicit A: Primitive[A]): Action[Unit] =
-    asks(_.setNull(n, A.jdbcType.toInt)) :++> s"SET $n NULL"
+    asks(_.setNull(n, A.jdbcType.toInt)) :++> Event.SetNull(n, A)
 
   /** Set primitive parameter `a` at the current index. */
   def set[A: Primitive](a: A): Action[Unit] =
@@ -35,23 +51,23 @@ object statement extends RWSFWorld with EventLogging with IndexedState {
 
   /** Execute the statement. */
   def execute: Action[Unit] =
-    asks(_.execute).void :++> "EXECUTE"
+    asks(_.execute).void :++> Event.Execute
 
   /** Execute the statement as an update, returning the number of affected rows. */
   def executeUpdate: Action[Int] =
-    asks(_.executeUpdate) :++> "EXECUTE UPDATE"
+    asks(_.executeUpdate) :++> Event.ExecuteUpdate
 
   /** Execute a query and return the resultset. */
   private def executeQuery: Action[ResultSet] =
-    asks(_.executeQuery) :++>> (rs => s"OPEN $rs")
+    asks(_.executeQuery) :++> Event.OpenResultSet // > (rs => s"OPEN $rs")
 
   /** Close a resultset. */
   private def close(rs: ResultSet): Action[Unit] =
-    unit(rs.close) :++> s"CLOSE $rs"
+    unit(rs.close) :++> Event.CloseResultSet
 
   /** Execute the statement and pass the resultset to the given continuation. */
   private[world] def executeQuery[A](f: ResultSet => (resultset.Log, Throwable \/ A)): Action[A] =
-    fops.resource[ResultSet, A](executeQuery, rs => gosub[resultset.Log,A](f(rs), identity), close)
+    fops.resource[ResultSet, A](executeQuery, rs => gosub[resultset.Log,A](f(rs), l => Vector(Event.ResultSetLog(l))), close)
 
   implicit class StatementOps[A](a: Action[A]) {
 

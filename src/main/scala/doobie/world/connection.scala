@@ -26,7 +26,14 @@ object connection extends RWSFWorld with EventLogging with UnitState {
     case object Rollback extends Event
     case object Commit extends Event
     case class StatementLog(log: stmt.Log) extends Event
+    case class Fail(t: Throwable) extends Event {
+      override def toString =
+        s"$productPrefix(${t.getClass.getName})"
+    }
   }
+
+  protected def failEvent(t: Throwable): Event =
+    Event.Fail(t)
 
   /** Roll back the current transaction. */
   def rollback: Action[Unit] =

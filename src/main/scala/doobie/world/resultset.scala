@@ -3,7 +3,7 @@ package world
 
 import doobie.util._
 import doobie._
-import java.sql.ResultSet
+import java.sql.{ ResultSet, SQLException }
 import scalaz._
 import Scalaz._
 import scalaz.stream._
@@ -15,9 +15,20 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
   protected type R = ResultSet
   type Event = String
 
+  protected def failEvent(t: Throwable): Event =
+    "ERROR: " + t.toString
+
   /** Read primitive type `A` at index `n`. */
   def readN[A](n: Int)(implicit A: Primitive[A]): Action[A] =
-    asks(A.get(_)(n)) :++>> (a => s"GET $n ${A.jdbcType.name} => $a")
+    ask >>= { (rs: ResultSet) => 
+      try {
+        val a = A.get(rs)(n) // force
+        unit(a) :++>> (a => s"GETN $n ${A.jdbcType.name} => $a")
+      } catch {
+        case sqle: SQLException => 
+          tell(Vector(s"GETN $n ${A.jdbcType.name} => *** FAILED")) >> fail(sqle)
+      }
+    }
 
   /** True if the last read was a SQL NULL value. */
   def wasNull: Action[Boolean] =
@@ -33,7 +44,7 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
 
   /** Read composite type `A` at the current index. */
   def readC[A](implicit A : Composite[A]): Action[A] =
-    A.get
+    A.get :++>> (a => s"READC => $a")
 
   /** Returns a stream processor for handling results. */
   def stream[O: Composite]: Result[O,O] =
@@ -52,45 +63,34 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
     import Process.{repeatEval, End}
     import Task.delay
 
-    ////// IMPLEMENTATION DETAILS
+    // TODO: straighten this out, it's kind of a mess
+    protected def unsafeHead: Action[O] = ask >>= { rs =>
 
-    // TODO: we're discarding the log here. figure out how to preserve
-    private def process(rs: ResultSet): Process[Task, I] =
-      repeatEval(delay(if (rs.next) unsafeRun(rs) else throw End)) 
+      var log: W = Monoid[W].zero
+      def f(w: W): Unit = log = log |+| w
 
-    // Read a row. This isn't quite what we want. See above.
-    private def unsafeRun(rs: ResultSet): I =
-      runrw(rs, readC[I])._2.fold(throw _, identity)
+      def process(rs: ResultSet)(f: W => Unit): Process[Task, I] =
+        repeatEval(delay { 
+          runrw(rs, next) match {
+            case (w, -\/(t)) => f(w); throw t
+            case (w, \/-(b)) => f(w); if (b) unsafeRun(rs)(f) else throw End 
+          }
+        }) 
 
+      def unsafeRun(rs: ResultSet)(f: W => Unit): I = {
+        val (w, e) = runrw(rs, readC[I])
+        f(w) 
+        e.fold(throw _, identity)
+      }
 
-    // Ultimately the stream is always folded up into a single value, so here's how
-    // we get it out. Callers must ensure the stream isn't empty.
-    protected def unsafeHead: Action[O] = 
-      asks(process(_).pipe(p0)).map(_.runLast.run.get)
+      val (w, e) = runrw(rs, asks(process(_)(f).pipe(p0)).map(_.runLast.run.get))
+      val w0 = if (log.lastOption === w.headOption) log else log |+| w
+      gosub((w0, e), identity[W])
+    }
 
     // the fundamental op?
     def pipe[O2](transform: Process1[O, O2]): Result[I, O2] = 
       new Result(p0 pipe transform)
-
-
-    ////// SECOND ATTEMPT
-
-    // Perhaps change this to (W, Option[Throwable]) \/ I and stop at the first 
-    // writer emit that's a throwable. This would allow us to translate back 
-    // to (W, Throwable \/ A) and would permit pipeO 
-
-    // ... but we really don't want to accumulate per-row log information; we want a rollup with
-    // timing and counts/stats per row, and the full writer state for any failed row. So within
-    // this stuff we probably want a different state strategy.
-
-    private def process2(rs: ResultSet): Process[Task, (W, Throwable \/ I)] = {
-      var w = Monoid[W].zero // State accumulation is a cheat
-      repeatEval(delay {
-        if (rs.next) runrw(rs, readC[I]).leftMap { w0 => w = w |+| w0; w }
-        else throw End
-      }) |> process1.takeThrough(_._2.isRight) // Halt if we encounter a failure
-    }
-
 
     ////// Transform
 

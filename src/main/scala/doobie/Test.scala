@@ -43,7 +43,7 @@ object Test extends SafeApp with ExperimentalSytax {
   // The `count` largest cities.
   def largestCities(count: Int): DBIO[Vector[City]] =
    q"""
-      SELECT id, name, countrycode, population 
+      SELECT id, name, countrycode, name -- population 
       FROM city 
       ORDER BY population DESC
     """.stream[City].pipe(process1.take(count)).foldMap(Vector(_))

@@ -66,14 +66,16 @@ trait FWorld {
         \/.fromTryCatch(f(s)) match {
           case \/-((s, \/-(a))) => runll(s, a)
           case \/-((s, -\/(t))) => (s, t.left)
-          case -\/(t) => (s, t.left)
+          case -\/(t) => (failState(s, t), t.left)
         }
       case \/-(\/-(a)) => (s, a.right)
-      case -\/(t)      => (s, t.left)
+      case -\/(t)      => (failState(s, t), t.left)
     }
 
   protected def runf[A](s: State, a: Action[A]): (State, Throwable \/ A) = 
     runll(s, a.a)
+
+  protected def failState(s:State, t: Throwable): State
 
   ////// ACTIONS
 

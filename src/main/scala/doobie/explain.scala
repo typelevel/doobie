@@ -51,6 +51,25 @@ object explain {
 
     def showEvent(e: Event): IO[Unit] =
       e match {
+        case Event.ResultSetLog(log) => resultset.showLog(log)
+        case e => putStrLn(e.toString)
+      }
+
+  }
+
+
+  object resultset {
+
+    import world.resultset.{Log, Event}
+
+    def putStrLn(s: String): IO[Unit] =
+      IO.putStrLn("      " + s)
+
+    def showLog(log: Log): IO[Unit] =
+      log.traverse_(showEvent)
+
+    def showEvent(e: Event): IO[Unit] =
+      e match {
         case e => putStrLn(e.toString)
       }
 
