@@ -18,6 +18,14 @@ trait Primitive[A] { outer =>
       def jdbcType = outer.jdbcType
     }
 
+  def as(s: String): Primitive[A] =
+    new Primitive[A] {
+      def set = outer.set
+      def get = outer.get
+      def jdbcType = outer.jdbcType
+      override def toString = s"Primitive($s w/underlying $jdbcType)"
+    }
+
   override def toString =
     s"Primitive($jdbcType)"
 

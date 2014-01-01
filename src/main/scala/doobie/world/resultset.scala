@@ -13,30 +13,37 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
   import rwsfops._
 
   protected type R = ResultSet
-  type Event = String
+
+  sealed trait Event
+  case class Error(t: Throwable) extends Event
+  case class Get[A](n: Int, p: Primitive[A], a: Option[A]) extends Event
+  case class WasNull(b: Boolean) extends Event
+  case object Next extends Event
+  case object Done extends Event
+  case class Read[A:Composite](c: Composite[A], a: A) extends Event
 
   protected def failEvent(t: Throwable): Event =
-    "ERROR: " + t.toString
+    Error(t)
 
   /** Read primitive type `A` at index `n`. */
   def readN[A](n: Int)(implicit A: Primitive[A]): Action[A] =
     ask >>= { (rs: ResultSet) => 
       try {
         val a = A.get(rs)(n) // force
-        unit(a) :++>> (a => s"GETN $n ${A.jdbcType.name} => $a")
+        unit(a) :++>> (a => Get[A](n, A, Some(a)))
       } catch {
         case sqle: SQLException => 
-          tell(Vector(s"GETN $n ${A.jdbcType.name} => *** FAILED")) >> fail(sqle)
+          tell(Vector(Get[A](n, A, None))) >> fail(sqle)
       }
     }
 
   /** True if the last read was a SQL NULL value. */
   def wasNull: Action[Boolean] =
-    asks(_.wasNull) :++>> (a => s"WAS NULL => $a")
+    asks(_.wasNull) :++>> (WasNull(_))
 
   /** Advance to the next row, returning `false` if none. */
   def next: Action[Boolean] =
-    asks(_.next) :++>> (a => s"NEXT => $a")
+    asks(_.next) :++>> (a => if (a) Next else Done)
 
   /** Read primitive type `A` at the current index. */
   def read[A: Primitive]: Action[A] =
@@ -44,7 +51,7 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
 
   /** Read composite type `A` at the current index. */
   def readC[A](implicit A : Composite[A]): Action[A] =
-    A.get :++>> (a => s"READC => $a")
+    A.get :++>> (a => Read(A, a))
 
   /** Returns a stream processor for handling results. */
   def stream[O: Composite]: Result[O,O] =
@@ -84,7 +91,7 @@ object resultset extends RWSFWorld with EventLogging with IndexedState {
       }
 
       val (w, e) = runrw(rs, asks(process(_)(f).pipe(p0)).map(_.runLast.run.get))
-      val w0 = if (log.lastOption === w.headOption) log else log |+| w
+      val w0 = if (log.lastOption eq /** FIX THIS */ w.headOption) log else log |+| w
       gosub((w0, e), identity[W])
     }
 

@@ -31,7 +31,7 @@ object Test extends SafeApp with ExperimentalSytax {
 
   // Primitive mapping for files (just an example)
   implicit val pfile: Primitive[File] = 
-    implicitly[Primitive[String]].xmap(new File(_), _.getAbsolutePath)
+    implicitly[Primitive[String]].xmap[File](new File(_), _.getAbsolutePath) as "java.io.File"
 
   // DDL statement using a file as a parameter
   def loadDatabase(f: File): DBIO[Unit] =
@@ -43,7 +43,7 @@ object Test extends SafeApp with ExperimentalSytax {
   // The `count` largest cities.
   def largestCities(count: Int): DBIO[Vector[City]] =
    q"""
-      SELECT id, name, countrycode, name -- population 
+      SELECT id, name, countrycode, name --population 
       FROM city 
       ORDER BY population DESC
     """.stream[City].pipe(process1.take(count)).foldMap(Vector(_))
