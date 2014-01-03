@@ -1,5 +1,7 @@
 package doobie
-package dbc
+package hi
+
+import dbc._
 
 import scalaz._
 import Scalaz._
@@ -36,32 +38,25 @@ object Test extends SafeApp {
 
   def loadDatabase(f: File): Connection[Unit] =
     prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'") {
-      for { // this is a ResultSet[Unit]
-        _ <- setString(1, f.getName)
+      for { 
+        _ <- set(1, f.getName)
         _ <- execute
         _ <- getConnection(putStrLn("a nested action!").liftIO[Connection])
       } yield()
     }
 
   def speakerQuery(s: String, p: Int): Connection[List[CountryCode]] =
-    prepareStatement("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?") {
+    prepareStatement("""
+      SELECT COUNTRYCODE 
+      FROM COUNTRYLANGUAGE 
+      WHERE LANGUAGE = ? AND PERCENTAGE > ? 
+      ORDER BY COUNTRYCODE
+      """) {
       for {
-        _ <- setString(1, s)
-        _ <- setInt(2, p)
-        l <- executeQuery(unroll(getString(1).map(CountryCode(_))))
+        _ <- set(1, (s, p))
+        l <- executeQuery(list(get[CountryCode](1)))
       } yield l
     }
 
-  def unroll[A](a: ResultSet[A]): ResultSet[List[A]] = {
-    def unroll0(as: List[A]): ResultSet[List[A]] =
-      checkTrampoline.liftIO[ResultSet] >> next >>= {
-        case false => as.point[ResultSet]
-        case true  => a >>= { a => unroll0(a :: as) }
-      }
-    unroll0(Nil).map(_.reverse)
-  }
-
-  def checkTrampoline: IO[Unit] =
-    IO(println("Stack depth is " + (new Exception).getStackTrace.length))
 }
 
