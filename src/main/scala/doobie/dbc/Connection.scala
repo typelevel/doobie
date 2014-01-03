@@ -4,14 +4,19 @@ package dbc
 import scala.collection.JavaConverters._
 import scalaz.effect.IO
 import scalaz.syntax.monad._
+import scalaz.syntax.id._
 import java.sql
+import java.sql.{ Blob, Clob, NClob, SQLXML, Struct }
 
+/** Module of actions in the context of a `java.sql.Connection`. */
 object connection extends util.TWorld[java.sql.Connection] {
 
   type Connection[+A] = Action[A]
 
   private[dbc] def run[A](a: Connection[A], s: sql.Connection): IO[A] = 
     eval(a, s).map(_._2)
+
+  ////// ACTIONS, IN ALPHABETIC ORDER
 
   def clearWarnings: Connection[Unit] = 
     effect(_.clearWarnings)
@@ -22,23 +27,53 @@ object connection extends util.TWorld[java.sql.Connection] {
   def commit: Connection[Unit] = 
     effect(_.commit)
 
-  def createStatement[A](k: Statement[A]): Connection[A] = 
-    for {
-      s <- effect(_.createStatement)
-      a <- statement.run(k, s).ensuring(IO(s.close)).liftIO[Connection]
-    } yield a
+  def createArrayOf(typeName: String, elements: Seq[AnyRef]): Connection[sql.Array] =
+    effect(_.createArrayOf(typeName, elements.toArray))
 
-  def createStatement[A](rst: ResultSetType, rsc: ResultSetConcurrency)(k: Statement[A]): Connection[A] = 
-    for {
-      s <- effect(_.createStatement(rst.toInt, rsc.toInt))
-      a <- statement.run(k, s).ensuring(IO(s.close)).liftIO[Connection]
-    } yield a
+  def createBlob: Connection[Blob] = 
+    effect(_.createBlob)
+
+  def createClob: Connection[Clob] = 
+    effect(_.createClob)
+
+  def createNClob: Connection[NClob] =
+    effect(_.createNClob)
+
+  def createSQLXML: Connection[SQLXML] =
+    effect(_.createSQLXML)
+
+  // Helper for createStatement* methods below
+  private def createStatement0[A](f: sql.Connection => sql.Statement)(k: Statement[A]) = {
+    import dbc.{ statement => cs }
+    effect(f).flatMap(s => cs.run(k, s).ensuring(IO(cs.run(cs.close, s))).liftIO[Connection])
+  }
+
+  def createStatement[A]: Statement[A] => Connection[A] = 
+    createStatement0(_.createStatement)
+
+  def createStatement[A](rst: ResultSetType, rsc: ResultSetConcurrency): Statement[A] => Connection[A] = 
+    createStatement0(_.createStatement(rst.toInt, rsc.toInt))
+
+  def createStatement[A](rst: ResultSetType, rsc: ResultSetConcurrency, rsh: Holdability): Statement[A] => Connection[A] = 
+    createStatement0(_.createStatement(rst.toInt, rsc.toInt, rsh.toInt))
+
+  def createStruct(typeName: String, attributes: Array[AnyRef]): Connection[Struct] =
+    effect(_.createStruct(typeName, attributes))
 
   def getAutoCommit: Connection[Boolean] = 
     effect(_.getAutoCommit)
 
   def getCatalog: Connection[String] = 
     effect(_.getCatalog)
+
+  def getClientInfo: Connection[Map[String, String]] =
+    effect(_.getClientInfo.asScala.toMap)
+
+  def getClientInfo(name: String): Connection[String] =
+    effect(_.getClientInfo(name))
+
+  def getHoldability: Connection[Holdability] =
+    effect(_.getHoldability).map(Holdability.unsafeFromInt)
 
   def getMetaData[A](k: DatabaseMetaData[A]): Connection[A] =
     for {
@@ -61,41 +96,50 @@ object connection extends util.TWorld[java.sql.Connection] {
   def isReadOnly: Connection[Boolean] = 
     effect(_.isReadOnly)
 
+  def isValid(timeout: Int): Connection[Boolean] =
+    effect(_.isValid(timeout))
+
   def nativeSQL(sql: String): Connection[String] =
     effect(_.nativeSQL(sql))
 
-  def prepareCall[A](sql: String)(k: CallableStatement[A]): Connection[A] =
-    for {
-      s <- effect(_.prepareCall(sql))
-      a <- callablestatement.run(k, s).ensuring(IO(s.close)).liftIO[Connection]
-    } yield a
+  // Helper for prepareCall* methods below
+  private def prepareCall0[A](f: sql.Connection => sql.CallableStatement)(k: CallableStatement[A]) = {
+    import dbc.{ callablestatement => cs }
+    effect(f).flatMap(s => cs.run(k, s).ensuring(IO(cs.run(cs.close, s))).liftIO[Connection])
+  }
 
-  def prepareCall[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency)(k: CallableStatement[A]): Connection[A] =
-    for {
-      s <- effect(_.prepareCall(sql, rst.toInt, rsc.toInt))
-      a <- callablestatement.run(k, s).ensuring(IO(s.close)).liftIO[Connection]
-    } yield a
+  def prepareCall[A](sql: String): CallableStatement[A] => Connection[A] =
+    prepareCall0(_.prepareCall(sql))
+
+  def prepareCall[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency): CallableStatement[A] => Connection[A] =
+    prepareCall0(_.prepareCall(sql, rst.toInt, rsc.toInt))
+
+  def prepareCall[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency, rsh: Holdability): CallableStatement[A] => Connection[A] =
+    prepareCall0(_.prepareCall(sql, rst.toInt, rsc.toInt, rsh.toInt))
+
+  // Helper for prepareStatement* methods below
+  private def prepareStatement0[A](f: sql.Connection => sql.PreparedStatement)(k: PreparedStatement[A]) = {
+    import dbc.{ preparedstatement => ps }
+    effect(f).flatMap(s => ps.run(k, s).ensuring(IO(ps.run(ps.close, s))).liftIO[Connection])
+  }
 
   // def prepareStatement(sql: String, autoGeneratedKeys: Int): Connection[PreparedStatement] =
   //   ???
 
-  // def prepareStatement(sql: String, columnIndexes: Array[Int]): Connection[PreparedStatement] =
-  //   ???
+  // def prepareStatement[A](sql: String, columnIndexes: Seq[Int])(k: PreparedStatement[A]): Connection[A] =
+  //    ???
 
-  def prepareStatement[A](sql: String)(k: PreparedStatement[A]): Connection[A] =
-    for {
-      s <- effect(_.prepareStatement(sql))
-      a <- preparedstatement.run(k, s).ensuring(IO(s.close)).liftIO[Connection]
-    } yield a
+  def prepareStatement[A](sql: String): PreparedStatement[A] => Connection[A] =
+    prepareStatement0(_.prepareStatement(sql))
 
-  def prepareStatement[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency)(k: PreparedStatement[A]): Connection[A] =
-    for {
-      s <- effect(_.prepareStatement(sql, rst.toInt, rsc.toInt))
-      a <- preparedstatement.run(k, s).ensuring(IO(s.close)).liftIO[Connection]
-    } yield a
+  def prepareStatement[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency): PreparedStatement[A] => Connection[A] =
+    prepareStatement0(_.prepareStatement(sql, rst.toInt, rsc.toInt))
 
-  // def prepareStatement(sql: String, columnNames: Array[String]): Connection[PreparedStatement] =
-  //   ???
+  def prepareStatement[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency, rsh: Holdability): PreparedStatement[A] => Connection[A] =
+    prepareStatement0(_.prepareStatement(sql, rst.toInt, rsc.toInt, rsh.toInt))
+
+  // def prepareStatement[A](sql: String, columnNames: Seq[String])(k: PreparedStatement[A]): Connection[A] =
+  //    ???
 
   def releaseSavepoint(savepoint: Savepoint): Connection[Unit] =
     effect(_.releaseSavepoint(savepoint))
@@ -111,6 +155,15 @@ object connection extends util.TWorld[java.sql.Connection] {
 
   def setCatalog(catalog: String): Connection[Unit] =
     effect(_.setCatalog(catalog))
+
+  def setClientInfo(properties: Map[String, String]): Connection[Unit] =
+    effect(_.setClientInfo(new java.util.Properties <| (_.putAll(properties.asJava))))
+
+  def setClientInfo(name: String, value: String): Connection[Unit] =
+    effect(_.setClientInfo(name, value))
+
+  def setHoldability(holdability: Holdability): Connection[Unit] = 
+    effect(_.setHoldability(holdability.toInt))
 
   def setReadOnly(readOnly: Boolean): Connection[Unit] =
     effect(_.setReadOnly(readOnly))
