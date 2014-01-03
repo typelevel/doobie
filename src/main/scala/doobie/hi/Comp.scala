@@ -15,7 +15,6 @@ trait Comp[A] { outer =>
 
   def length: Int // column span
 
-  // Exponential functor
   def xmap[B](f: A => B, g: B => A): Comp[B] =
     new Comp[B] {
       def set = (i, b) => outer.set(i, g(b))

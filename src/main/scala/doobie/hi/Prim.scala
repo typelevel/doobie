@@ -3,7 +3,7 @@ package hi
 
 import dbc.{ preparedstatement => ps, resultset => rs, _ }
 
-abstract class Prim[A](val jdbcType: JdbcType) {
+abstract class Prim[A](val jdbcType: JdbcType) { outer =>
 
   def set: (Int, A) => PreparedStatement[Unit]
 
@@ -11,6 +11,12 @@ abstract class Prim[A](val jdbcType: JdbcType) {
 
   def setNull: Int => PreparedStatement[Unit] = i =>
     ps.setNull(i, jdbcType.toInt)
+
+  def xmap[B](f: A => B, g: B => A): Prim[B] =
+    new Prim[B](outer.jdbcType) {
+      def set = (i, b) => outer.set(i, g(b))
+      def get = i => outer.get(i).map(f)
+    }
 
 }
 
