@@ -36,4 +36,7 @@ object Prim {
   implicit val pStr: Prim[String] =
     prim[String](JdbcType.VARCHAR, ps.setString(_, _), rs.getString(_))
 
+  implicit val pDouble: Prim[Double] =
+    prim[Double](JdbcType.REAL, ps.setDouble(_, _), rs.getDouble(_))
+
 }

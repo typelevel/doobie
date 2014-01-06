@@ -4,16 +4,16 @@ package dbc
 import scalaz.effect.IO
 import java.sql
 
-object preparedstatement extends util.TWorld[sql.PreparedStatement] with PreparedStatementOps[sql.PreparedStatement] {
+object preparedstatement extends DWorld[sql.PreparedStatement] with PreparedStatementOps[sql.PreparedStatement] {
 
   type PreparedStatement[+A] = Action[A]
 
-  private[dbc] def run[A](a: PreparedStatement[A], s: sql.PreparedStatement): IO[A] = 
-    eval(a, s).map(_._2)
+  private[dbc] def run[A](a: PreparedStatement[A], l: Log[LogElement], s: sql.PreparedStatement): IO[A] = 
+    eval(a, l, s).map(_._2)
   
 }
 
-trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { this: util.TWorld[A] =>
+trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { this: DWorld[A] =>
 
   import sql.Time
   import sql.Timestamp
@@ -27,6 +27,8 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
   import java.io.{ InputStream, Reader }
   import java.util.Calendar
 
+  ////// OPERATIONS, IN ALPHABETIC ORDER
+
   def addBatch: Action[Unit] =
     effect(_.addBatch)
 
@@ -34,12 +36,13 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     effect(_.clearParameters)
 
   def execute: Action[Boolean] =
-    effect(_.execute)
+    effect("execute", _.execute)
 
   def executeQuery[A](k: ResultSet[A]): Action[A] =
     for {
-      r <- effect(_.executeQuery)
-      a <- resultset.run(k, r).liftIO[Action]
+      l <- log
+      r <- effect("executeQuery", _.executeQuery)
+      a <- push("executing resultset action", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])
     } yield a
 
   def executeUpdate: Action[Int] =
@@ -88,13 +91,13 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     effect(_.setDate(index, x, cal))
 
   def setDouble(index: Int, x: Double): Action[Unit] =
-    effect(_.setDouble(index, x))
+    effect(s"setDouble($index, $x)", _.setDouble(index, x))
 
   def setFloat(index: Int, x: Float): Action[Unit] =
     effect(_.setFloat(index, x))
 
   def setInt(index: Int, x: Int): Action[Unit] =
-    effect(_.setInt(index, x))
+    effect(s"setInt($index, $x)", _.setInt(index, x))
 
   def setLong(index: Int, x: Long): Action[Unit] =
     effect(_.setLong(index, x))
@@ -121,7 +124,7 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     effect(_.setShort(index, x))
 
   def setString(index: Int, x: String): Action[Unit] =
-    effect(_.setString(index, x))
+    effect(s"setString($index, $x)", _.setString(index, x))
 
   def setTime(index: Int, x: Time): Action[Unit] =
     effect(_.setTime(index, x))

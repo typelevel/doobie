@@ -6,10 +6,10 @@ import java.sql
 
 final class Database private (url: String, user: String, pass: String) {
 
-  def run[A](k: Connection[A]): IO[A] =
+  def run[A](k: Connection[A], l: Log[LogElement]): IO[A] =
     for {
-      c <- IO(sql.DriverManager.getConnection(url, user, pass))
-      a <- connection.run(k, c).ensuring(IO(c.close))
+      c <- l.log(s"getConnection($url, $user, ***)", IO(sql.DriverManager.getConnection(url, user, pass)))
+      a <- l.log("executing connection action", connection.run(k, l, c).ensuring(connection.run(connection.close, l, c)))
     } yield a
 
 }

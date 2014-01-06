@@ -22,8 +22,10 @@ object Test extends SafeApp {
   override def runc: IO[Unit] =
     for {
       d <- database // IO[Database]
-      a <- d.run(examples) // Connection[A] => IO[A]
+      l <- Log.consoleLog("dbc.examples")
+      a <- d.run(examples, l).except(t => IO(t.toString))
       _ <- putStrLn(a)
+      _ <- l.dump
     } yield ()
 
   def examples: Connection[String] =
@@ -48,7 +50,7 @@ object Test extends SafeApp {
       for {
         _ <- setString(1, s)
         _ <- setInt(2, p)
-        l <- executeQuery(unroll(getString(1).map(CountryCode(_))))
+        l <- executeQuery(unroll(getString(-1).map(CountryCode(_))))
       } yield l
     }
 
@@ -62,6 +64,7 @@ object Test extends SafeApp {
   }
 
   def checkTrampoline: IO[Unit] =
-    IO(println("Stack depth is " + (new Exception).getStackTrace.length))
+    IO.ioUnit
+    // IO(println("Stack depth is " + (new Exception).getStackTrace.length))
 }
 

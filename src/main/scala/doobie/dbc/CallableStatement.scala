@@ -9,12 +9,12 @@ import java.util.Calendar
 import java.net.URL
 import scala.collection.JavaConverters._
 
-object callablestatement extends util.TWorld[sql.CallableStatement] with PreparedStatementOps[sql.CallableStatement] {
+object callablestatement extends DWorld[sql.CallableStatement] with PreparedStatementOps[sql.CallableStatement] {
 
   type CallableStatement[+A] = Action[A]
 
-  private[dbc] def run[A](a: CallableStatement[A], s: sql.CallableStatement): IO[A] = 
-    eval(a, s).map(_._2)
+  private[dbc] def run[A](a: CallableStatement[A], l: Log[LogElement], s: sql.CallableStatement): IO[A] = 
+    eval(a, l, s).map(_._2)
   
   ////// ACTIONS, IN ALPHABETIC ORDER
 

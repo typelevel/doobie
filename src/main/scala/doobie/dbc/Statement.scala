@@ -4,16 +4,16 @@ package dbc
 import scalaz.effect.IO
 import java.sql
 
-object statement extends util.TWorld[sql.Statement] with StatementOps[sql.Statement] {
+object statement extends DWorld[sql.Statement] with StatementOps[sql.Statement] {
 
   type Statement[+A] = Action[A]
 
-  private[dbc] def run[A](a: Action[A], s: sql.Statement): IO[A] = 
-    eval(a, s).map(_._2)
+  private[dbc] def run[A](a: Action[A], l: Log[LogElement], s: sql.Statement): IO[A] = 
+    eval(a, l, s).map(_._2)
 
 }
 
-trait StatementOps[A <: sql.Statement] { this: util.TWorld[A] => 
+trait StatementOps[A <: sql.Statement] { this: DWorld[A] => 
   
   def addBatch(sql: String): Action[Unit] =
     effect(_.addBatch(sql))
@@ -28,7 +28,7 @@ trait StatementOps[A <: sql.Statement] { this: util.TWorld[A] =>
     effect(_.clearWarnings)
 
   def close: Action[Unit] =
-    effect(_.close)
+    effect("ps.close", _.close)
 
   def execute(sql: String): Action[Boolean] =
     effect(_.execute(sql))
@@ -47,8 +47,9 @@ trait StatementOps[A <: sql.Statement] { this: util.TWorld[A] =>
 
   def executeQuery[A](sql: String)(k: ResultSet[A]): Action[A] =
     for {
+      l <- log
       r <- effect(_.executeQuery(sql))
-      a <- resultset.run(k, r).ensuring(IO(r.close)).liftIO[Action]
+      a <- resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action]
     } yield a
 
   def executeUpdate(sql: String): Action[Int] =
@@ -65,8 +66,9 @@ trait StatementOps[A <: sql.Statement] { this: util.TWorld[A] =>
 
   def getConnection[A](k: Connection[A]): Action[A] =
     for {
+      l <- log
       c <- effect(_.getConnection)
-      a <- connection.run(k, c).liftIO[Action]
+      a <- connection.run(k, l, c).liftIO[Action]
     } yield a
 
   def getFetchDirection: Action[FetchDirection] =
@@ -77,8 +79,9 @@ trait StatementOps[A <: sql.Statement] { this: util.TWorld[A] =>
 
   def getGeneratedKeys(k: ResultSet[A]): Action[A] =
     for {
+      l <- log
       r <- effect(_.getGeneratedKeys)
-      a <- resultset.run(k, r).ensuring(IO(r.close)).liftIO[Action]
+      a <- resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action]
     } yield a
 
   def getMaxFieldSize: Action[Int] =
@@ -98,8 +101,9 @@ trait StatementOps[A <: sql.Statement] { this: util.TWorld[A] =>
 
   def getResultSet(k: ResultSet[A]): Action[A] =
     for {
+      l <- log
       r <- effect(_.getResultSet)
-      a <- resultset.run(k, r).ensuring(IO(r.close)).liftIO[Action]
+      a <- resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action]
     } yield a
 
   def getResultSetConcurrency: Action[ResultSetConcurrency] =

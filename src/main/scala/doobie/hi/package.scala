@@ -7,10 +7,10 @@ import scalaz.effect.IO
 package object hi {
 
   def set[A](index: Int, a: A)(implicit A: Comp[A]): PreparedStatement[Unit] =
-    A.set(index, a)
+    preparedstatement.push(s"set[«erased»]($index, $a)", A.set(index, a))
 
   def get[A](index: Int)(implicit A: Comp[A]): ResultSet[A] =
-    A.get(index)
+    resultset.push(s"get[«erased»]($index)", A.get(index))
 
   def list[A: Comp]: ResultSet[List[A]] = {
     def list0(as: List[A]): ResultSet[List[A]] =
