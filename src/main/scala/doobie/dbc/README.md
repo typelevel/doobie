@@ -1,6 +1,6 @@
 ## dbc
 
-The `dbc` package provides a functional, resource-safe interface to the complete JDBC 4.0 API, with the goal that any JDBC program should be expressable directly. As such this is quite low-level; most users will not use this API directly.
+The `dbc` package provides a functional, resource-safe interface to the complete JDBC 4.0 API, with the goal that any JDBC program should be expressable. As such this is quite low-level; most users will not use this API directly.
 
 We provide a tower of effect worlds, each equivalent to `ReaderT[IO,S,A]` but providing no direct access to the state and no public `run` method. Allocated resources such as `Statement` objects are not returned directly, but are instead passed to a continuation in an effect world with the appopriate state type and closed when the continuation exits. So instead of calling methods on a `ResultSet` object you perform a computation in a `ResultSet[A]` context. Ultimately each computation interacting with the database runs in `Connection[A]` which is executable via a `Database` object.
 

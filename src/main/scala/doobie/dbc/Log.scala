@@ -7,6 +7,22 @@ import scalaz.syntax.effect.monadCatchIO._
 import scalaz._
 import Scalaz._
 
+/*
+
+  IDEAS -
+
+    should be Log[E: Json] {
+      def log[M[+_]: MonadCatchIO, A: Json](e: => E, ma: M[A]): M[A]
+    }
+
+  for two reasons:
+    (1) we can serializer
+    (2) it prevents us from hanging onto anything voliatile like a connection because you can't 
+        define Json for it.
+
+ */
+
+
 /** Effectful logger producing a value of type `L`. */
 trait Log[E] {
   def log[M[+_]: MonadCatchIO, A](e: => E, ma: M[A]): M[A]
@@ -36,7 +52,7 @@ object Log {
       def error[A](t: Long, s: String, e: Throwable): IO[A] =
         for {
           d <- IO(System.nanoTime - t)
-          _ <- out(s"${Console.RED}[er]${Console.RESET} $s", e.getMessage, d)
+          _ <- out(s"${Console.RED}[ex]${Console.RESET} $s", e.getMessage, d)
         } yield (throw e)
 
       def log[M[+_]: MonadCatchIO, A](s: => String, ma: M[A]): M[A] =

@@ -132,7 +132,7 @@ object connection extends DWorld[java.sql.Connection] {
     for {
       l <- log
       s <- effect(s, f)
-      a <- push("executing preparedstatement action", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])
+      a <- push("process preparedstatement", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])
     } yield a
   }
 

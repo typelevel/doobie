@@ -42,7 +42,7 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     for {
       l <- log
       r <- effect("executeQuery", _.executeQuery)
-      a <- push("executing resultset action", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])
+      a <- push("process resultset", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])
     } yield a
 
   def executeUpdate: Action[Int] =
