@@ -22,7 +22,7 @@ object Test extends SafeApp {
 
   override def runc: IO[Unit] =
     for {
-      l <- util.TreeLogger.newLogger("nyQL log for hi.examples")
+      l <- util.TreeLogger.newLogger(LogElement("nyQL log for hi.examples"))
       d <- Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
       a <- d.run(examples, l).except(IO(_))
       _ <- putStrLn("The answer was: " + a)

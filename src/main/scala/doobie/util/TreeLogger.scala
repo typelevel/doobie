@@ -27,18 +27,7 @@ final class TreeLogger[L] private (z: IORef[TreeLoc[TreeLogger.Node[L]]]) {
     } yield a
 
   def dump(implicit ev: Show[L]): IO[Unit] = 
-    tree >>= { t => IO {
-      val rows = t.draw.zipWithIndex.filter(_._2 % 2 == 0).map(_._1)
-      val pipe = rows.map(_.lastIndexOf("|")).max
-      val done = rows.map { s =>
-        val (l, r) = s.splitAt(s.lastIndexOf('|'))
-        l.isEmpty ? s | l.padTo(pipe, ' ') + r
-      }
-      println()
-      done.foreach(s => println("  " + s))
-      println()
-    }
-  }
+    tree >>= drawTree[L]
 
   ////// HELPERS
 
@@ -58,6 +47,19 @@ object TreeLogger {
 
   def newLogger[L](rootLabel: L): IO[TreeLogger[L]] = 
     IO.newIORef(Tree[Node[L]](Node.Root(rootLabel)).loc).map(new TreeLogger(_))
+
+  def drawTree[L: Show](t: Tree[Node[L]]): IO[Unit] =
+    IO {
+      val rows = t.draw.zipWithIndex.filter(_._2 % 2 == 0).map(_._1)
+      val pipe = rows.map(_.lastIndexOf("|")).max
+      val done = rows.map { s =>
+        val (l, r) = s.splitAt(s.lastIndexOf('|'))
+        l.isEmpty ? s | l.padTo(pipe, ' ') + r
+      }
+      println()
+      done.foreach(s => println("  " + s))
+      println()
+    }
 
   sealed abstract class Node[L]
   object Node {  
@@ -84,9 +86,18 @@ object TreeLogger {
     private def tagged[A](c: HCursor, tag: String, decoder: DecodeJson[A]): DecodeResult[A] =
       (c --\ tag).hcursor.fold(DecodeResult.fail[A]("Invalid tagged type", c.history))(decoder.decode)
 
-    implicit def showNode[L: Show]: Show[Node[L]] =
-      Show.showA
+    implicit def showNode[L: Show]: Show[Node[L]] = {
+      Show.shows { 
+        case Root(l) => s"${Console.BOLD}log dump for ${l.shows}${Console.RESET}"
+        case Pending(l, s) => s"Pending: ${l.shows}"
+        case Entry(l, \/-(a), n) => f"$ok ${l.shows.take(30)}%-30s| ${a.take(30)}%-30s  ${n / 1000000.0}%9.3f ms"
+        case Entry(l, -\/(t), n) => f"$er ${l.shows.take(30)}%-30s| ${t.message.take(30)}%-30s  ${n / 1000000.0}%9.3f ms"
+      }
+    }
  
+    val ok = s"${Console.GREEN}[ok]${Console.RESET}"
+    val er = s"${Console.RED}[er]${Console.RESET}"
+
   }
 
 }

@@ -18,7 +18,6 @@ package object dbc {
   type PreparedStatement[+A] = preparedstatement.PreparedStatement[A]
   type ResultSet[+A] = resultset.ResultSet[A]
 
-  type LogElement = String // for now
   type Log[L] = util.TreeLogger[L]
 
   implicit def arrayShow[A](implicit A: Show[A]): Show[Array[A]] =

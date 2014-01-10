@@ -19,10 +19,13 @@ trait DWorld[S] extends util.TWorld[(Log[LogElement], S)] {
   protected def effect[A](f: S => A): Action[A] =
     x.effect(s => f(s._2))
 
-  protected def effect[A: Show](e: => LogElement, f: S => A): Action[A] =
-    log.flatMap(_.log(e, effect(f)))
+  protected def effect[A: Show](e: => String, f: S => A): Action[A] =
+    log.flatMap(_.log(LogElement(e), effect(f)))
 
-  def push[A: Show](e: => LogElement, a: Action[A]): Action[A] =
-    log.flatMap(_.log(e, a))
+  protected def effectA[A](e: => String, g: A => String, f: S => A): Action[A] =
+    log.flatMap(_.logA(LogElement(e), g, effect(f)))
+
+  def push[A: Show](e: => String, a: Action[A]): Action[A] =
+    log.flatMap(_.log(LogElement(e), a))
 
 }

@@ -9,8 +9,8 @@ final class Database private (url: String, user: String, pass: String) {
 
   def run[A](k: Connection[A], l: Log[LogElement]): IO[A] =
     for {
-      c <- l.log(s"getConnection($url, $user, ***)", IO(sql.DriverManager.getConnection(url, user, pass)))(implicitly, Show.showA)
-      a <- l.log("database session", connection.run(k, l, c).ensuring(connection.run(connection.close, l, c)))(implicitly, Show.showA)
+      c <- l.log(LogElement(s"getConnection($url, $user, ***)"), IO(sql.DriverManager.getConnection(url, user, pass)))(implicitly, Show.showA)
+      a <- l.log(LogElement("database session"), connection.run(k, l, c).ensuring(connection.run(connection.close, l, c)))(implicitly, Show.showA)
     } yield a
 
 }
