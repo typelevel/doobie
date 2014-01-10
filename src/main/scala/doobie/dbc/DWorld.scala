@@ -1,6 +1,7 @@
 package doobie
 package dbc
 
+import scalaz.Show
 import scalaz.effect.IO
 
 trait DWorld[S] extends util.TWorld[(Log[LogElement], S)] {
@@ -18,10 +19,10 @@ trait DWorld[S] extends util.TWorld[(Log[LogElement], S)] {
   protected def effect[A](f: S => A): Action[A] =
     x.effect(s => f(s._2))
 
-  protected def effect[A](e: => LogElement, f: S => A): Action[A] =
+  protected def effect[A: Show](e: => LogElement, f: S => A): Action[A] =
     log.flatMap(_.log(e, effect(f)))
 
-  def push[A](e: => LogElement, a: Action[A]): Action[A] =
+  def push[A: Show](e: => LogElement, a: Action[A]): Action[A] =
     log.flatMap(_.log(e, a))
 
 }

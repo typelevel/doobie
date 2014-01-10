@@ -6,7 +6,6 @@ import scalaz._
 import scalaz.Scalaz._
 import scalaz.Free._
 import scalaz.effect._
-import language.higherKinds
 
 /** 
  * Fail world; this is `State` implemented in `Free` with state-preserving exception handling. The 

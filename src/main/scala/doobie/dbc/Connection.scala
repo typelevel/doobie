@@ -3,8 +3,8 @@ package dbc
 
 import scala.collection.JavaConverters._
 import scalaz.effect.IO
-import scalaz.syntax.monad._
-import scalaz.syntax.id._
+import scalaz._
+import Scalaz._
 import java.sql
 import java.sql.{ Blob, Clob, NClob, SQLXML, Struct }
 
@@ -131,8 +131,8 @@ object connection extends DWorld[java.sql.Connection] {
     import dbc.{ preparedstatement => ps }
     for {
       l <- log
-      s <- effect(s, f)
-      a <- push("process preparedstatement", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])
+      s <- effect(s, f)(Show.showA)
+      a <- push("process preparedstatement", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])(Show.showA)
     } yield a
   }
 

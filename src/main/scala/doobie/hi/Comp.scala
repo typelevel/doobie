@@ -1,7 +1,6 @@
 package doobie
 package hi
 
-import scala.language.experimental.macros
 import scalaz._
 import Scalaz._
 import shapeless._

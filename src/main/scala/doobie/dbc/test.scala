@@ -22,7 +22,7 @@ object Test extends SafeApp {
   override def runc: IO[Unit] =
     for {
       d <- database // IO[Database]
-      l <- Log.consoleLog("dbc.examples")
+      l <- util.TreeLogger.newLogger("dbc.examples")
       a <- d.run(examples, l).except(t => IO(t.toString))
       _ <- putStrLn(a)
       _ <- l.dump

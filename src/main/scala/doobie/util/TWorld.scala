@@ -1,7 +1,6 @@
 package doobie
 package util
 
-import language.higherKinds
 import scalaz._
 import scalaz.syntax.id._
 import scalaz.Id._

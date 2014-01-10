@@ -6,7 +6,6 @@ import scalaz.effect._
 import scalaz.effect.IO._
 import scalaz._
 import Scalaz._
-import scala.language._
 import java.io.File
 import scalaz.stream._
 

@@ -1,6 +1,8 @@
 package doobie
 package dbc
 
+import scalaz._
+import Scalaz._
 import scalaz.effect.IO
 import java.sql
 

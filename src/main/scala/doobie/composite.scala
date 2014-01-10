@@ -3,7 +3,6 @@ package doobie
 import scalaz._
 import Scalaz._
 import java.sql._
-import scala.language.experimental.macros
 import shapeless._
 
 import world._

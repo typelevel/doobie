@@ -1,6 +1,8 @@
 package doobie
 package dbc
 
+import scalaz._
+import Scalaz._
 import scalaz.effect.IO
 import java.sql
 
@@ -41,8 +43,8 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
   def executeQuery[A](k: ResultSet[A]): Action[A] =
     for {
       l <- log
-      r <- effect("executeQuery", _.executeQuery)
-      a <- push("process resultset", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])
+      r <- effect("executeQuery", _.executeQuery)(Show.showA)
+      a <- push("process resultset", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])(Show.showA)
     } yield a
 
   def executeUpdate: Action[Int] =

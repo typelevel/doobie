@@ -2,9 +2,9 @@ package doobie
 package dbc
 
 import scalaz._
+import Scalaz._
 import scala.collection.JavaConverters._
 import scalaz.effect.IO
-import scalaz.syntax.monad._
 import java.sql
 import sql.{ Date, Blob, Clob, Time, Timestamp, Ref, ResultSetMetaData }
 import java.io.{ InputStream, Reader }

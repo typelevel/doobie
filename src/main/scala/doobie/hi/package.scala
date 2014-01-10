@@ -1,16 +1,17 @@
 package doobie
 
 import dbc._
-import scalaz.syntax.monad._
+import scalaz._
+import Scalaz._
 import scalaz.effect.IO
 
 package object hi {
 
   def set[A](index: Int, a: A)(implicit A: Comp[A]): PreparedStatement[Unit] =
-    preparedstatement.push(s"structured set at index $index: $a", A.set(index, a))
+    preparedstatement.push(s"structured set at index $index: $a", A.set(index, a))(Show.showA)
 
   def get[A](index: Int)(implicit A: Comp[A]): ResultSet[A] =
-    resultset.push(s"structured get at index $index", A.get(index))
+    resultset.push(s"structured get at index $index", A.get(index))(Show.showA)
 
   def list[A: Comp]: ResultSet[List[A]] = {
     def list0(as: List[A]): ResultSet[List[A]] =

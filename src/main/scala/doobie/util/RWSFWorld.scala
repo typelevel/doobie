@@ -6,7 +6,6 @@ import scalaz._
 import scalaz.Scalaz._
 import scalaz.Free._
 import scalaz.effect._
-import language.higherKinds
 
 /** 
  * A fail world encoding a reader `R` for configuration/context, a monoidal writer `W` for 

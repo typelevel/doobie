@@ -60,7 +60,12 @@ scalacOptions ++= Seq(
 	// "-Ywarn-dead-code", // confused by ???, sadly
 	"-Xlint",
 	"-Xfatal-warnings",
-  "-unchecked"
+  "-unchecked",
+  "-encoding", "UTF-8",
+  "-language:higherKinds",
+  "-language:implicitConversions",
+  "-language:existentials",
+  "-language:experimental.macros"
 )
 
 initialCommands :=
@@ -69,6 +74,9 @@ initialCommands :=
      import scalaz.concurrent._
      import scalaz.stream._
      import doobie._
-     import doobie.std.default._"""
+     import doobie.std.default._
+     import doobie.util.TreeInstances._
+     import argonaut._
+     import Argonaut._"""
 
 

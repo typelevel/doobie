@@ -16,9 +16,13 @@ object Test extends SafeApp {
     if (code == "NCL") sys.error("Bogus country: NCL")
   }
 
+  object Country {
+    implicit def show: Show[Country] = Show.showA
+  }
+
   override def runc: IO[Unit] =
     for {
-      l <- Log.consoleLog("nyQL log for hi.examples")
+      l <- util.TreeLogger.newLogger("nyQL log for hi.examples")
       d <- Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
       a <- d.run(examples, l).except(IO(_))
       _ <- putStrLn("The answer was: " + a)
