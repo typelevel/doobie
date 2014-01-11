@@ -38,13 +38,13 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     effect(_.clearParameters)
 
   def execute: Action[Boolean] =
-    effect("execute", _.execute)
+    primitive("execute", _.execute)
 
   def executeQuery[A](k: ResultSet[A]): Action[A] =
     for {
       l <- log
-      r <- effect("executeQuery", _.executeQuery)(Show.showA)
-      a <- push("process resultset", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])(Show.showA)
+      r <- primitive("executeQuery", _.executeQuery)
+      a <- push("process resultset", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])
     } yield a
 
   def executeUpdate: Action[Int] =
@@ -93,13 +93,13 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     effect(_.setDate(index, x, cal))
 
   def setDouble(index: Int, x: Double): Action[Unit] =
-    effect(s"setDouble($index, $x)", _.setDouble(index, x))
+    primitive(s"setDouble($index, $x)", _.setDouble(index, x))
 
   def setFloat(index: Int, x: Float): Action[Unit] =
     effect(_.setFloat(index, x))
 
   def setInt(index: Int, x: Int): Action[Unit] =
-    effect(s"setInt($index, $x)", _.setInt(index, x))
+    primitive(s"setInt($index, $x)", _.setInt(index, x))
 
   def setLong(index: Int, x: Long): Action[Unit] =
     effect(_.setLong(index, x))
@@ -126,7 +126,7 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     effect(_.setShort(index, x))
 
   def setString(index: Int, x: String): Action[Unit] =
-    effect(s"setString($index, $x)", _.setString(index, x))
+    primitive(s"setString($index, $x)", _.setString(index, x))
 
   def setTime(index: Int, x: Time): Action[Unit] =
     effect(_.setTime(index, x))

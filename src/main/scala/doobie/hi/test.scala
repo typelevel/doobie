@@ -22,7 +22,7 @@ object Test extends SafeApp {
 
   override def runc: IO[Unit] =
     for {
-      l <- util.TreeLogger.newLogger(LogElement("nyQL log for hi.examples"))
+      l <- util.TreeLogger.newLogger(LogElement("hi.examples"))
       d <- Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
       a <- d.run(examples, l).except(IO(_))
       _ <- putStrLn("The answer was: " + a)
@@ -33,22 +33,25 @@ object Test extends SafeApp {
     for {
       _ <- loadDatabase(new File("world.sql"))
       l <- countriesWithSpeakers("French", 30)
+      _ <- l.traverseU(putLn(_)).liftIO[Connection]
     } yield l.length
 
   def loadDatabase(f: File): Connection[Boolean] =
-    connection.push(s"populate database from ${f.getAbsolutePath}",
-    sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".execute)
+    connection.push(
+      s"populate database from ${f.getAbsolutePath}",
+      sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".execute)
 
   def countriesWithSpeakers(s: String, p: Double): Connection[List[Country]] =
-    connection.push(s"find countries where more than $p% of population speak $s",
-    sql"""
-      SELECT C.CODE, C.NAME, C.POPULATION
-      FROM COUNTRYLANGUAGE L
-      JOIN COUNTRY C 
-      ON L.COUNTRYCODE = C.CODE
-      WHERE LANGUAGE = $s AND PERCENTAGE > $p
-      ORDER BY COUNTRYCODE
-      """.executeQuery(list[Country]))
+    connection.push(
+      s"find countries where more than $p% of population speak $s",
+      sql"""
+        SELECT C.CODE, C.NAME, C.POPULATION
+        FROM COUNTRYLANGUAGE L
+        JOIN COUNTRY C 
+        ON L.COUNTRYCODE = C.CODE
+        WHERE LANGUAGE = $s AND PERCENTAGE > $p
+        ORDER BY COUNTRYCODE
+        """.executeQuery(list[Country]))
 
 }
 

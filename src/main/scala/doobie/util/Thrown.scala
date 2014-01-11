@@ -39,7 +39,7 @@ trait ThrownInstances {
       ("class"   := t.className) ->: 
       ("message" := t.message)   ->: 
       ("stack"   := t.stack)     ->:
-      ("cause"   := t.cause)      ->:
+      ("cause"   := t.cause)     ->:
       jEmptyObject
     }
 

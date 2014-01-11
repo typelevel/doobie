@@ -19,35 +19,35 @@ object connection extends DWorld[java.sql.Connection] {
   ////// ACTIONS, IN ALPHABETIC ORDER
 
   def clearWarnings: Connection[Unit] = 
-    effect(_.clearWarnings)
+    primitive(s"clearWarnings", _.clearWarnings)
 
   def close: Connection[Unit] =
-    effect("conn.close", _.close)
+    primitive(s"close", _.close)
 
   def commit: Connection[Unit] = 
-    effect(_.commit)
+    primitive(s"commit", _.commit)
 
   def createArrayOf(typeName: String, elements: Seq[AnyRef]): Connection[sql.Array] =
-    effect(_.createArrayOf(typeName, elements.toArray))
+    primitive(s"createArrayOf($typeName, $elements)", _.createArrayOf(typeName, elements.toArray))
 
   def createBlob: Connection[Blob] = 
-    effect(_.createBlob)
+    primitive(s"createBlob", _.createBlob)
 
   def createClob: Connection[Clob] = 
-    effect(_.createClob)
+    primitive(s"createClob", _.createClob)
 
   def createNClob: Connection[NClob] =
-    effect(_.createNClob)
+    primitive(s"createNClob", _.createNClob)
 
   def createSQLXML: Connection[SQLXML] =
-    effect(_.createSQLXML)
+    primitive(s"createSQLXML", _.createSQLXML)
 
   // Helper for createStatement* methods below
   private def createStatement0[A](f: sql.Connection => sql.Statement)(k: Statement[A]) = {
     import dbc.{ statement => cs }
     for {
       l <- log
-      s <- effect(f)
+      s <- primitive(s"createStatement", f)
       a <- cs.run(k, l, s).ensuring(cs.run(cs.close, l, s)).liftIO[Connection]
     } yield a
   }
@@ -62,57 +62,57 @@ object connection extends DWorld[java.sql.Connection] {
     createStatement0(_.createStatement(rst.toInt, rsc.toInt, rsh.toInt))
 
   def createStruct(typeName: String, attributes: Array[AnyRef]): Connection[Struct] =
-    effect(_.createStruct(typeName, attributes))
+    primitive(s"createStruct($typeName, $attributes)", _.createStruct(typeName, attributes))
 
   def getAutoCommit: Connection[Boolean] = 
-    effect(_.getAutoCommit)
+    primitive(s"getAutoCommit", _.getAutoCommit)
 
   def getCatalog: Connection[String] = 
-    effect(_.getCatalog)
+    primitive(s"getCatalog", _.getCatalog)
 
   def getClientInfo: Connection[Map[String, String]] =
-    effect(_.getClientInfo.asScala.toMap)
+    primitive(s"getClientInfo", _.getClientInfo.asScala.toMap)
 
   def getClientInfo(name: String): Connection[String] =
-    effect(_.getClientInfo(name))
+    primitive(s"getClientInfo($name)", _.getClientInfo(name))
 
   def getHoldability: Connection[Holdability] =
-    effect(_.getHoldability).map(Holdability.unsafeFromInt)
+    primitive(s"getHoldability", _.getHoldability).map(Holdability.unsafeFromInt)
 
   def getMetaData[A](k: DatabaseMetaData[A]): Connection[A] =
     for {
       l <- log
-      s <- effect(_.getMetaData)
+      s <- primitive(s"getMetaData", _.getMetaData)
       a <- databasemetadata.run(k, l, s).liftIO[Connection]
     } yield a
 
   def getTransactionIsolation: Connection[IsolationLevel] = 
-    effect(_.getTransactionIsolation).map(IsolationLevel.unsafeFromInt)
+    primitive(s"getTransactionIsolation", _.getTransactionIsolation).map(IsolationLevel.unsafeFromInt)
 
   def getTypeMap: Connection[Map[String, Class[_]]] = 
-    effect(_.getTypeMap.asScala.toMap)
+    primitive(s"getTypeMap", _.getTypeMap.asScala.toMap)
 
   def getWarnings: Connection[sql.SQLWarning] = 
-    effect(_.getWarnings)
+    primitive(s"getWarnings", _.getWarnings)
 
   def isClosed: Connection[Boolean] =
-    effect(_.isClosed)
+    primitive(s"isClosed", _.isClosed)
 
   def isReadOnly: Connection[Boolean] = 
-    effect(_.isReadOnly)
+    primitive(s"isReadOnly", _.isReadOnly)
 
   def isValid(timeout: Int): Connection[Boolean] =
-    effect(_.isValid(timeout))
+    primitive(s"isValid($timeout)", _.isValid(timeout))
 
   def nativeSQL(sql: String): Connection[String] =
-    effect(_.nativeSQL(sql))
+    primitive(s"nativeSQL", _.nativeSQL(sql))
 
   // Helper for prepareCall* methods below
   private def prepareCall0[A](f: sql.Connection => sql.CallableStatement)(k: CallableStatement[A]) = {
     import dbc.{ callablestatement => cs }
     for {
       l <- log
-      s <- effect(f)
+      s <- primitive(s"prepareCall", f)
       a <- cs.run(k, l, s).ensuring(cs.run(cs.close, l, s)).liftIO[Connection]
     } yield a
   }
@@ -131,8 +131,8 @@ object connection extends DWorld[java.sql.Connection] {
     import dbc.{ preparedstatement => ps }
     for {
       l <- log
-      s <- effect(s, f)(Show.showA)
-      a <- push("process preparedstatement", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])(Show.showA)
+      s <- primitive(s, f)
+      a <- push("process preparedstatement", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])
     } yield a
   }
 
@@ -156,43 +156,43 @@ object connection extends DWorld[java.sql.Connection] {
   //    ???
 
   def releaseSavepoint(savepoint: Savepoint): Connection[Unit] =
-    effect(_.releaseSavepoint(savepoint))
+    primitive(s"releaseSavepoint($savepoint)", _.releaseSavepoint(savepoint))
 
   def rollback: Connection[Unit] = 
-    effect(_.rollback)
+    primitive(s"rollback", _.rollback)
 
   def rollback(savepoint: Savepoint): Connection[Unit] =
-    effect(_.rollback(savepoint))
+    primitive(s"rollback($savepoint)", _.rollback(savepoint))
 
   def setAutoCommit(autoCommit: Boolean): Connection[Unit] =
-    effect(_.setAutoCommit(autoCommit))
+    primitive(s"setAutoCommit($autoCommit)", _.setAutoCommit(autoCommit))
 
   def setCatalog(catalog: String): Connection[Unit] =
-    effect(_.setCatalog(catalog))
+    primitive(s"setCatalog($catalog)", _.setCatalog(catalog))
 
   def setClientInfo(properties: Map[String, String]): Connection[Unit] =
-    effect(_.setClientInfo(new java.util.Properties <| (_.putAll(properties.asJava))))
+    primitive(s"setClientInfo($properties)", _.setClientInfo(new java.util.Properties <| (_.putAll(properties.asJava))))
 
   def setClientInfo(name: String, value: String): Connection[Unit] =
-    effect(_.setClientInfo(name, value))
+    primitive(s"setClientInfo($name, $value)", _.setClientInfo(name, value))
 
   def setHoldability(holdability: Holdability): Connection[Unit] = 
-    effect(_.setHoldability(holdability.toInt))
+    primitive(s"setHoldability($holdability)", _.setHoldability(holdability.toInt))
 
   def setReadOnly(readOnly: Boolean): Connection[Unit] =
-    effect(_.setReadOnly(readOnly))
+    primitive(s"setReadOnly($readOnly)", _.setReadOnly(readOnly))
 
   def setSavepoint: Connection[Savepoint] =
-    effect(_.setSavepoint)
+    primitive(s"setSavepoint", _.setSavepoint)
 
   def setSavepoint(name: String): Connection[Savepoint] =
-    effect(_.setSavepoint(name))
+    primitive(s"setSavepoint($name)", _.setSavepoint(name))
 
   def setTransactionIsolation(level: IsolationLevel): Connection[Unit] =
-    effect(_.setTransactionIsolation(level.toInt))
+    primitive(s"setTransactionIsolation($level)", _.setTransactionIsolation(level.toInt))
 
   def setTypeMap(map: Map[String, Class[_]]): Connection[Unit] =
-    effect(_.setTypeMap(map.asJava))
+    primitive(s"setTypeMap($map)", _.setTypeMap(map.asJava))
 
 }
 

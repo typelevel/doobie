@@ -15,15 +15,12 @@ final class TreeLogger[L] private (z: IORef[TreeLoc[TreeLogger.Node[L]]]) {
   def tree: IO[Tree[Node[L]]] =
     z.read.map(_.tree)
 
-  def log[M[+_]: MonadCatchIO, A](s: => L, ma: M[A])(implicit A: Show[A]): M[A] =
-    logA(s, A.shows _, ma)
-
-  def logA[M[+_]: MonadCatchIO, A](s: => L, f: A => String, ma: M[A]): M[A] =
+  def log[M[+_]: MonadCatchIO, A](s: => L, ma: M[A]): M[A] =
     for {
       p <- nanoTime.map(Pending(s, _)).liftIO[M]
       _ <- z.mod(_.insertDownLast(Tree(p))).liftIO[M]
-      a <- ma.except(t => commit[A](p, f, t.left).liftIO[M])
-      _ <- commit(p, f, a.right).liftIO[M]
+      a <- ma.except(t => commit(p, t.left).liftIO[M])
+      _ <- commit(p, a.right).liftIO[M]
     } yield a
 
   def dump(implicit ev: Show[L]): IO[Unit] = 
@@ -34,12 +31,11 @@ final class TreeLogger[L] private (z: IORef[TreeLoc[TreeLogger.Node[L]]]) {
   private def nanoTime: IO[Long] =
     IO(System.nanoTime)
 
-  private def commit[A](p: Pending[L], f: A => String, result: Throwable \/ A): IO[A] =
+  private def commit[A](p: Pending[L], result: Throwable \/ A): IO[A] =
     for {
-      e <- nanoTime.map(_ - p.start).map(Entry(p.label, result.bimap(Thrown.fromThrowable, f), _))
+      e <- nanoTime.map(_ - p.start).map(Entry(p.label, result.bimap(Thrown.fromThrowable, _.toString), _))
       _ <- z.mod(_.setLabel(e).parent.get)
     } yield result.fold(throw _, identity)
-
 
 }
 
@@ -88,7 +84,7 @@ object TreeLogger {
 
     implicit def showNode[L: Show]: Show[Node[L]] = {
       Show.shows { 
-        case Root(l) => s"${Console.BOLD}log dump for ${l.shows}${Console.RESET}"
+        case Root(l) => s"${Console.BOLD}${l.shows}${Console.RESET}"
         case Pending(l, s) => s"Pending: ${l.shows}"
         case Entry(l, \/-(a), n) => f"$ok ${l.shows.take(30)}%-30s| ${a.take(30)}%-30s  ${n / 1000000.0}%9.3f ms"
         case Entry(l, -\/(t), n) => f"$er ${l.shows.take(30)}%-30s| ${t.message.take(30)}%-30s  ${n / 1000000.0}%9.3f ms"

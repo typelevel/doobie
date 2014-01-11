@@ -21,7 +21,7 @@ object Test extends SafeApp {
   
   override def runc: IO[Unit] =
     for {
-      d <- database // IO[Database]
+      d <- database 
       l <- util.TreeLogger.newLogger(dbc.LogElement("dbc.examples"))
       a <- d.run(examples, l).except(t => IO(t.toString))
       _ <- putStrLn(a)
@@ -30,7 +30,7 @@ object Test extends SafeApp {
 
   def examples: Connection[String] =
     for {
-      _ <- putStrLn("Loading database...").liftIO[Connection] // All effect worlds have MonadIO
+      _ <- putStrLn("Loading database...").liftIO[Connection] 
       _ <- loadDatabase(new File("world.sql"))
       s <- speakerQuery("French", 0)
       _ <- s.traverseU(a => putStrLn(a.toString)).liftIO[Connection]
@@ -38,10 +38,10 @@ object Test extends SafeApp {
 
   def loadDatabase(f: File): Connection[Unit] =
     prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'") {
-      for { // this is a ResultSet[Unit]
+      for { 
         _ <- setString(1, f.getName)
         _ <- execute
-        _ <- getConnection(putStrLn("a nested action!").liftIO[Connection])
+        _ <- getConnection(putStrLn("a nested Connection action could go here").liftIO[Connection])
       } yield()
     }
 
@@ -56,15 +56,11 @@ object Test extends SafeApp {
 
   def unroll[A](a: ResultSet[A]): ResultSet[List[A]] = {
     def unroll0(as: List[A]): ResultSet[List[A]] =
-      checkTrampoline.liftIO[ResultSet] >> next >>= {
+      next >>= {
         case false => as.point[ResultSet]
         case true  => a >>= { a => unroll0(a :: as) }
       }
     unroll0(Nil).map(_.reverse)
   }
-
-  def checkTrampoline: IO[Unit] =
-    IO.ioUnit
-    // IO(println("Stack depth is " + (new Exception).getStackTrace.length))
 }
 
