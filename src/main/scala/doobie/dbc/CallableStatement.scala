@@ -19,337 +19,337 @@ object callablestatement extends DWorld[sql.CallableStatement] with PreparedStat
   ////// ACTIONS, IN ALPHABETIC ORDER
 
   def getArray(index: Int): CallableStatement[sql.Array] =
-    effect(_.getArray(index))
+    primitive(s"getArray($index)", _.getArray(index))
 
   def getArray(name: String): CallableStatement[sql.Array] =
-    effect(_.getArray(name))
+    primitive(s"getArray($name)", _.getArray(name))
 
   def getBigDecimal(index: Int): CallableStatement[BigDecimal] =
-    effect(_.getBigDecimal(index))
+    primitive(s"getBigDecimal($index)", _.getBigDecimal(index))
 
   @deprecated("Deprecated in JDBC", "0.1")
   def getBigDecimal(index: Int, scale: Int): CallableStatement[BigDecimal] =
-    effect(_.getBigDecimal(index, scale))
+    primitive(s"getBigDecimal($index, $scale)", _.getBigDecimal(index, scale))
 
   def getBigDecimal(name: String): CallableStatement[BigDecimal] =
-    effect(_.getBigDecimal(name))
+    primitive(s"getBigDecimal($name)", _.getBigDecimal(name))
 
   def getBlob(index: Int): CallableStatement[Blob] =
-    effect(_.getBlob(index))
+    primitive(s"getBlob($index)", _.getBlob(index))
 
   def getBlob(name: String): CallableStatement[Blob] =
-    effect(_.getBlob(name))
+    primitive(s"getBlob($name)", _.getBlob(name))
 
   def getBoolean(index: Int): CallableStatement[Boolean] =
-    effect(_.getBoolean(index))
+    primitive(s"getBoolean($index)", _.getBoolean(index))
 
   def getBoolean(name: String): CallableStatement[Boolean] =
-    effect(_.getBoolean(name))
+    primitive(s"getBoolean($name)", _.getBoolean(name))
 
   def getByte(index: Int): CallableStatement[Byte] =
-    effect(_.getByte(index))
+    primitive(s"getByte($index)", _.getByte(index))
 
   def getByte(name: String): CallableStatement[Byte] =
-    effect(_.getByte(name))
+    primitive(s"getByte($name)", _.getByte(name))
 
   def getBytes(index: Int): CallableStatement[Array[Byte]] =
-    effect(_.getBytes(index))
+    primitive(s"getBytes($index)", _.getBytes(index))
 
   def getBytes(name: String): CallableStatement[Array[Byte]] =
-    effect(_.getBytes(name))
+    primitive(s"getBytes($name)", _.getBytes(name))
 
   def getCharacterStream(index: Int): CallableStatement[Reader] =
-    effect(_.getCharacterStream(index))
+    primitive(s"getCharacterStream($index)", _.getCharacterStream(index))
 
   def getCharacterStream(name: String): CallableStatement[Reader] =
-    effect(_.getCharacterStream(name))
+    primitive(s"getCharacterStream($name)", _.getCharacterStream(name))
 
   def getClob(index: Int): CallableStatement[Clob] =
-    effect(_.getClob(index))
+    primitive(s"getClob($index)", _.getClob(index))
 
   def getClob(name: String): CallableStatement[Clob] =
-    effect(_.getClob(name))
+    primitive(s"getClob($name)", _.getClob(name))
 
   def getDate(index: Int): CallableStatement[Date] =
-    effect(_.getDate(index))
+    primitive(s"getDate($index)", _.getDate(index))
 
   def getDate(index: Int, cal: Calendar): CallableStatement[Date] =
-    effect(_.getDate(index, cal))
+    primitive(s"getDate($index, $cal)", _.getDate(index, cal))
 
   def getDate(name: String): CallableStatement[Date] =
-    effect(_.getDate(name))
+    primitive(s"getDate($name)", _.getDate(name))
 
   def getDate(name: String, cal: Calendar): CallableStatement[Date] =
-    effect(_.getDate(name, cal))
+    primitive(s"getDate($name, $cal)", _.getDate(name, cal))
 
   def getDouble(index: Int): CallableStatement[Double] =
-    effect(_.getDouble(index))
+    primitive(s"getDouble($index)", _.getDouble(index))
 
   def getDouble(name: String): CallableStatement[Double] =
-    effect(_.getDouble(name))
+    primitive(s"getDouble($name)", _.getDouble(name))
 
   def getFloat(index: Int): CallableStatement[Float] =
-    effect(_.getFloat(index))
+    primitive(s"getFloat($index)", _.getFloat(index))
 
   def getFloat(name: String): CallableStatement[Float] =
-    effect(_.getFloat(name))
+    primitive(s"getFloat($name)", _.getFloat(name))
 
   def getInt(index: Int): CallableStatement[Int] =
-    effect(_.getInt(index))
+    primitive(s"getInt($index)", _.getInt(index))
 
   def getInt(name: String): CallableStatement[Int] =
-    effect(_.getInt(name))
+    primitive(s"getInt($name)", _.getInt(name))
 
   def getLong(index: Int): CallableStatement[Long] =
-    effect(_.getLong(index))
+    primitive(s"getLong($index)", _.getLong(index))
 
   def getLong(name: String): CallableStatement[Long] =
-    effect(_.getLong(name))
+    primitive(s"getLong($name)", _.getLong(name))
 
   def getNCharacterStream(index: Int): CallableStatement[Reader] =
-    effect(_.getNCharacterStream(index))
+    primitive(s"getNCharacterStream($index)", _.getNCharacterStream(index))
 
   def getNCharacterStream(name: String): CallableStatement[Reader] =
-    effect(_.getNCharacterStream(name))
+    primitive(s"getNCharacterStream($name)", _.getNCharacterStream(name))
 
   def getNClob(index: Int): CallableStatement[NClob] =
-    effect(_.getNClob(index))
+    primitive(s"getNClob($index)", _.getNClob(index))
 
   def getNClob(name: String): CallableStatement[NClob] =
-    effect(_.getNClob(name))
+    primitive(s"getNClob($name)", _.getNClob(name))
 
   def getNString(index: Int): CallableStatement[String] =
-    effect(_.getNString(index))
+    primitive(s"getNString($index)", _.getNString(index))
 
   def getNString(name: String): CallableStatement[String] =
-    effect(_.getNString(name))
+    primitive(s"getNString($name)", _.getNString(name))
 
   def getObject(index: Int): CallableStatement[Object] =
-    effect(_.getObject(index))
+    primitive(s"getObject($index)", _.getObject(index))
 
   def getObject(index: Int, map: Map[String,Class[_]]): CallableStatement[Object] =
-    effect(_.getObject(index, map.asJava))
+    primitive(s"getObject($index, $map)", _.getObject(index, map.asJava))
 
   def getObject(name: String): CallableStatement[Object] =
-    effect(_.getObject(name))
+    primitive(s"getObject($name)", _.getObject(name))
 
   def getObject(name: String, map: Map[String,Class[_]]): CallableStatement[Object] =
-    effect(_.getObject(name, map.asJava))
+    primitive(s"getObject($name, $map)", _.getObject(name, map.asJava))
 
   def getRef(index: Int): CallableStatement[Ref] =
-    effect(_.getRef(index))
+    primitive(s"getRef($index)", _.getRef(index))
 
   def getRef(name: String): CallableStatement[Ref] =
-    effect(_.getRef(name))
+    primitive(s"getRef($name)", _.getRef(name))
 
   def getRowId(index: Int): CallableStatement[RowId] =
-    effect(_.getRowId(index))
+    primitive(s"getRowId($index)", _.getRowId(index))
 
   def getRowId(name: String): CallableStatement[RowId] =
-    effect(_.getRowId(name))
+    primitive(s"getRowId($name)", _.getRowId(name))
 
   def getShort(index: Int): CallableStatement[Short] =
-    effect(_.getShort(index))
+    primitive(s"getShort($index)", _.getShort(index))
 
   def getShort(name: String): CallableStatement[Short] =
-    effect(_.getShort(name))
+    primitive(s"getShort($name)", _.getShort(name))
 
   def getSQLXML(index: Int): CallableStatement[SQLXML] =
-    effect(_.getSQLXML(index))
+    primitive(s"getSQLXML($index)", _.getSQLXML(index))
 
   def getSQLXML(name: String): CallableStatement[SQLXML] =
-    effect(_.getSQLXML(name))
+    primitive(s"getSQLXML($name)", _.getSQLXML(name))
 
   def getString(index: Int): CallableStatement[String] =
-    effect(_.getString(index))
+    primitive(s"getString($index)", _.getString(index))
 
   def getString(name: String): CallableStatement[String] =
-    effect(_.getString(name))
+    primitive(s"getString($name)", _.getString(name))
 
   def getTime(index: Int): CallableStatement[Time] =
-    effect(_.getTime(index))
+    primitive(s"getTime($index)", _.getTime(index))
 
   def getTime(index: Int, cal: Calendar): CallableStatement[Time] =
-    effect(_.getTime(index, cal))
+    primitive(s"getTime($index, $cal)", _.getTime(index, cal))
 
   def getTime(name: String): CallableStatement[Time] =
-    effect(_.getTime(name))
+    primitive(s"getTime($name)", _.getTime(name))
 
   def getTime(name: String, cal: Calendar): CallableStatement[Time] =
-    effect(_.getTime(name, cal))
+    primitive(s"getTime($name, $cal)", _.getTime(name, cal))
 
   def getTimestamp(index: Int): CallableStatement[Timestamp] =
-    effect(_.getTimestamp(index))
+    primitive(s"getTimestamp($index)", _.getTimestamp(index))
 
   def getTimestamp(index: Int, cal: Calendar): CallableStatement[Timestamp] =
-    effect(_.getTimestamp(index, cal))
+    primitive(s"getTimestamp($index, $cal)", _.getTimestamp(index, cal))
 
   def getTimestamp(name: String): CallableStatement[Timestamp] =
-    effect(_.getTimestamp(name))
+    primitive(s"getTimestamp($name)", _.getTimestamp(name))
 
   def getTimestamp(name: String, cal: Calendar): CallableStatement[Timestamp] =
-    effect(_.getTimestamp(name, cal))
+    primitive(s"getTimestamp($name, $cal)", _.getTimestamp(name, cal))
 
   def getURL(index: Int): CallableStatement[URL] =
-    effect(_.getURL(index))
+    primitive(s"getURL($index)", _.getURL(index))
 
   def getURL(name: String): CallableStatement[URL] =
-    effect(_.getURL(name))
+    primitive(s"getURL($name)", _.getURL(name))
 
   def registerOutParameter(index: Int, sqlType: Int): CallableStatement[Unit] =
-    effect(_.registerOutParameter(index, sqlType))
+    primitive(s"registerOutParameter($index, $sqlType)", _.registerOutParameter(index, sqlType))
 
   def registerOutParameter(index: Int, sqlType: Int, scale: Int): CallableStatement[Unit] =
-    effect(_.registerOutParameter(index, sqlType, scale))
+    primitive(s"registerOutParameter($index, $sqlType, $scale)", _.registerOutParameter(index, sqlType, scale))
 
   def registerOutParameter(index: Int, sqlType: Int, typeName: String): CallableStatement[Unit] =
-    effect(_.registerOutParameter(index, sqlType, typeName))
+    primitive(s"registerOutParameter($index, $sqlType, $typeName)", _.registerOutParameter(index, sqlType, typeName))
 
   def registerOutParameter(name: String, sqlType: Int): CallableStatement[Unit] =
-    effect(_.registerOutParameter(name, sqlType))
+    primitive(s"registerOutParameter($name, $sqlType)", _.registerOutParameter(name, sqlType))
 
   def registerOutParameter(name: String, sqlType: Int, scale: Int): CallableStatement[Unit] =
-    effect(_.registerOutParameter(name, sqlType, scale))
+    primitive(s"registerOutParameter($name, $sqlType, $scale)", _.registerOutParameter(name, sqlType, scale))
 
   def registerOutParameter(name: String, sqlType: Int, typeName: String): CallableStatement[Unit] =
-    effect(_.registerOutParameter(name, sqlType, typeName))
+    primitive(s"registerOutParameter($name, $sqlType, $typeName)", _.registerOutParameter(name, sqlType, typeName))
 
   def setAsciiStream(name: String, x: InputStream): CallableStatement[Unit] =
-    effect(_.setAsciiStream(name, x))
+    primitive(s"setAsciiStream($name, $x)", _.setAsciiStream(name, x))
 
   def setAsciiStream(name: String, x: InputStream, length: Int): CallableStatement[Unit] =
-    effect(_.setAsciiStream(name, x, length))
+    primitive(s"setAsciiStream($name, $x, $length)", _.setAsciiStream(name, x, length))
 
   def setAsciiStream(name: String, x: InputStream, length: Long): CallableStatement[Unit] =
-    effect(_.setAsciiStream(name, x, length))
+    primitive(s"setAsciiStream($name, $x, $length)", _.setAsciiStream(name, x, length))
 
   def setBigDecimal(name: String, x: BigDecimal): CallableStatement[Unit] =
-    effect(_.setBigDecimal(name, x.bigDecimal))
+    primitive(s"setBigDecimal($name, $x)", _.setBigDecimal(name, x.bigDecimal))
 
   def setBinaryStream(name: String, x: InputStream): CallableStatement[Unit] =
-    effect(_.setBinaryStream(name, x))
+    primitive(s"setBinaryStream($name, $x)", _.setBinaryStream(name, x))
 
   def setBinaryStream(name: String, x: InputStream, length: Int): CallableStatement[Unit] =
-    effect(_.setBinaryStream(name, x, length))
+    primitive(s"setBinaryStream($name, $x, $length)", _.setBinaryStream(name, x, length))
 
   def setBinaryStream(name: String, x: InputStream, length: Long): CallableStatement[Unit] =
-    effect(_.setBinaryStream(name, x, length))
+    primitive(s"setBinaryStream($name, $x, $length)", _.setBinaryStream(name, x, length))
 
   def setBlob(name: String, x: Blob): CallableStatement[Unit] =
-    effect(_.setBlob(name, x))
+    primitive(s"setBlob($name, $x)", _.setBlob(name, x))
 
   def setBlob(name: String, inputStream: InputStream): CallableStatement[Unit] =
-    effect(_.setBlob(name, inputStream))
+    primitive(s"setBlob($name, $inputStream)", _.setBlob(name, inputStream))
 
   def setBlob(name: String, inputStream: InputStream, length: Long): CallableStatement[Unit] =
-    effect(_.setBlob(name, inputStream, length))
+    primitive(s"setBlob($name, $inputStream, $length)", _.setBlob(name, inputStream, length))
 
   def setBoolean(name: String, x: Boolean): CallableStatement[Unit] =
-    effect(_.setBoolean(name, x))
+    primitive(s"setBoolean($name, $x)", _.setBoolean(name, x))
 
   def setByte(name: String, x: Byte): CallableStatement[Unit] =
-    effect(_.setByte(name, x))
+    primitive(s"setByte($name, $x)", _.setByte(name, x))
 
   def setBytes(name: String, x: Array[Byte]): CallableStatement[Unit] =
-    effect(_.setBytes(name, x))
+    primitive(s"setBytes($name, $x)", _.setBytes(name, x))
 
   def setCharacterStream(name: String, reader: Reader): CallableStatement[Unit] =
-    effect(_.setCharacterStream(name, reader))
+    primitive(s"setCharacterStream($name, $reader)", _.setCharacterStream(name, reader))
 
   def setCharacterStream(name: String, reader: Reader, length: Int): CallableStatement[Unit] =
-    effect(_.setCharacterStream(name, reader, length))
+    primitive(s"setCharacterStream($name, $reader, $length)", _.setCharacterStream(name, reader, length))
 
   def setCharacterStream(name: String, reader: Reader, length: Long): CallableStatement[Unit] =
-    effect(_.setCharacterStream(name, reader, length))
+    primitive(s"setCharacterStream($name, $reader, $length)", _.setCharacterStream(name, reader, length))
 
   def setClob(name: String, x: Clob): CallableStatement[Unit] =
-    effect(_.setClob(name, x))
+    primitive(s"setClob($name, $x)", _.setClob(name, x))
 
   def setClob(name: String, reader: Reader): CallableStatement[Unit] =
-    effect(_.setClob(name, reader))
+    primitive(s"setClob($name, $reader)", _.setClob(name, reader))
 
   def setClob(name: String, reader: Reader, length: Long): CallableStatement[Unit] =
-    effect(_.setClob(name, reader, length))
+    primitive(s"setClob($name, $reader, $length)", _.setClob(name, reader, length))
 
   def setDate(name: String, x: Date): CallableStatement[Unit] =
-    effect(_.setDate(name, x))
+    primitive(s"setDate($name, $x)", _.setDate(name, x))
 
   def setDate(name: String, x: Date, cal: Calendar): CallableStatement[Unit] =
-    effect(_.setDate(name, x, cal))
+    primitive(s"setDate($name, $x, $cal)", _.setDate(name, x, cal))
 
   def setDouble(name: String, x: Double): CallableStatement[Unit] =
-    effect(_.setDouble(name, x))
+    primitive(s"setDouble($name, $x)", _.setDouble(name, x))
 
   def setFloat(name: String, x: Float): CallableStatement[Unit] =
-    effect(_.setFloat(name, x))
+    primitive(s"setFloat($name, $x)", _.setFloat(name, x))
 
   def setInt(name: String, x: Int): CallableStatement[Unit] =
-    effect(_.setInt(name, x))
+    primitive(s"setInt($name, $x)", _.setInt(name, x))
 
   def setLong(name: String, x: Long): CallableStatement[Unit] =
-    effect(_.setLong(name, x))
+    primitive(s"setLong($name, $x)", _.setLong(name, x))
 
   def setNCharacterStream(name: String, value: Reader): CallableStatement[Unit] =
-    effect(_.setNCharacterStream(name, value))
+    primitive(s"setNCharacterStream($name, $value)", _.setNCharacterStream(name, value))
 
   def setNCharacterStream(name: String, value: Reader, length: Long): CallableStatement[Unit] =
-    effect(_.setNCharacterStream(name, value, length))
+    primitive(s"setNCharacterStream($name, $value, $length)", _.setNCharacterStream(name, value, length))
 
   def setNClob(name: String, value: NClob): CallableStatement[Unit] =
-    effect(_.setNClob(name, value))
+    primitive(s"setNClob($name, $value)", _.setNClob(name, value))
 
   def setNClob(name: String, reader: Reader): CallableStatement[Unit] =
-    effect(_.setNClob(name, reader))
+    primitive(s"setNClob($name, $reader)", _.setNClob(name, reader))
 
   def setNClob(name: String, reader: Reader, length: Long): CallableStatement[Unit] =
-    effect(_.setNClob(name, reader, length))
+    primitive(s"setNClob($name, $reader, $length)", _.setNClob(name, reader, length))
 
   def setNString(name: String, value: String): CallableStatement[Unit] =
-    effect(_.setNString(name, value))
+    primitive(s"setNString($name, $value)", _.setNString(name, value))
 
   def setNull(name: String, sqlType: Int): CallableStatement[Unit] =
-    effect(_.setNull(name, sqlType))
+    primitive(s"setNull($name, $sqlType)", _.setNull(name, sqlType))
 
   def setNull(name: String, sqlType: Int, typeName: String): CallableStatement[Unit] =
-    effect(_.setNull(name, sqlType, typeName))
+    primitive(s"setNull($name, $sqlType, $typeName)", _.setNull(name, sqlType, typeName))
 
   def setObject(name: String, x: Object): CallableStatement[Unit] =
-    effect(_.setObject(name, x))
+    primitive(s"setObject($name, $x)", _.setObject(name, x))
 
   def setObject(name: String, x: Object, targetSqlType: Int): CallableStatement[Unit] =
-    effect(_.setObject(name, x, targetSqlType))
+    primitive(s"setObject($name, $x, $targetSqlType)", _.setObject(name, x, targetSqlType))
 
   def setObject(name: String, x: Object, targetSqlType: Int, scale: Int): CallableStatement[Unit] =
-    effect(_.setObject(name, x, targetSqlType, scale))
+    primitive(s"setObject($name, $x, $targetSqlType, $scale)", _.setObject(name, x, targetSqlType, scale))
 
   def setRowId(name: String, x: RowId): CallableStatement[Unit] =
-    effect(_.setRowId(name, x))
+    primitive(s"setRowId($name, $x)", _.setRowId(name, x))
 
   def setShort(name: String, x: Short): CallableStatement[Unit] =
-    effect(_.setShort(name, x))
+    primitive(s"setShort($name, $x)", _.setShort(name, x))
 
   def setSQLXML(name: String, xmlObject: SQLXML): CallableStatement[Unit] =
-    effect(_.setSQLXML(name, xmlObject))
+    primitive(s"setSQLXML($name, $xmlObject)", _.setSQLXML(name, xmlObject))
 
   def setString(name: String, x: String): CallableStatement[Unit] =
-    effect(_.setString(name, x))
+    primitive(s"setString($name, $x)", _.setString(name, x))
 
   def setTime(name: String, x: Time): CallableStatement[Unit] =
-    effect(_.setTime(name, x))
+    primitive(s"setTime($name, $x)", _.setTime(name, x))
 
   def setTime(name: String, x: Time, cal: Calendar): CallableStatement[Unit] =
-    effect(_.setTime(name, x, cal))
+    primitive(s"setTime($name, $x, $cal)", _.setTime(name, x, cal))
 
   def setTimestamp(name: String, x: Timestamp): CallableStatement[Unit] =
-    effect(_.setTimestamp(name, x))
+    primitive(s"setTimestamp($name, $x)", _.setTimestamp(name, x))
 
   def setTimestamp(name: String, x: Timestamp, cal: Calendar): CallableStatement[Unit] =
-    effect(_.setTimestamp(name, x, cal))
+    primitive(s"setTimestamp($name, $x, $cal)", _.setTimestamp(name, x, cal))
 
   def setURL(name: String, x: URL): CallableStatement[Unit] =
-    effect(_.setURL(name, x))
+    primitive(s"setURL($name, $x)", _.setURL(name, x))
 
   def wasNull: CallableStatement[Boolean] =
-    effect(_.wasNull)
+    primitive(s"wasNull", _.wasNull)
 
 }
