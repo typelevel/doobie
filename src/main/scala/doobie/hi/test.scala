@@ -13,7 +13,7 @@ import java.io.File
 object Test extends SafeApp {
   
   case class Country(code: String, name: String, population: Int) {
-    if (code == "NCL") sys.error("Bogus country: NCL")
+    // if (code == "NCL") sys.error("Bogus country: NCL")
   }
 
   object Country {
@@ -51,7 +51,6 @@ object Test extends SafeApp {
         ON L.COUNTRYCODE = C.CODE
         WHERE LANGUAGE = $s AND PERCENTAGE > $p
         ORDER BY COUNTRYCODE
-        """.executeQuery(list[Country]))
+        """.executeQuery(drop(2) >> take[Country](4)))
 
 }
-

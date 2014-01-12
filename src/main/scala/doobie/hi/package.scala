@@ -13,20 +13,69 @@ package object hi {
   def get[A](index: Int)(implicit A: Comp[A]): ResultSet[A] =
     resultset.push(s"structured get at index $index", A.get(index))
 
-  def list[A: Comp]: ResultSet[List[A]] = {
-    def list0(as: List[A]): ResultSet[List[A]] =
+  /** Consume remaining rows by folding left to right. */
+  def foldLeft[A: Comp, B](z: B)(f: (B, A) => B): ResultSet[B] = {
+    def foldLeft0(b: B): ResultSet[B] =
       resultset.next >>= {
-        case false => as.point[ResultSet]
-        case true  => get[A](1) >>= { a => list0(a :: as) }
+        case false => b.point[ResultSet]
+        case true  => get[A](1) >>= (a => foldLeft0(f(b, a)))
       }
-    list0(Nil).map(_.reverse)
+    resultset.push(s"foldLeft($z, $f)", foldLeft0(z))
   }
 
-  def sink[A: Comp](effect: A => IO[Unit]): ResultSet[Unit] =
-    resultset.next >>= {
+  /** Consume remaining rows by monoidal fold. */
+  def foldMap[A: Comp, B](f: A => B)(implicit B: Monoid[B]): ResultSet[B] =
+    resultset.push(s"foldMap($f)", foldLeft[A, B](B.zero)(_ |+| f(_)))
+
+  /** Consume remaining rows by monoidal sum. */
+  def fold[A: Comp: Monoid]: ResultSet[A] =
+    resultset.push(s"fold", foldMap[A, A](identity))
+
+  /** Discard the next `n` rows. */
+  def drop(n: Int): ResultSet[Unit] = 
+    resultset.push(s"drop($n)", resultset.relative(n).void)
+
+  /** Consume and return up to `n` remaining rows. */
+  def take[A: Comp](n: Int): ResultSet[List[A]] = {
+    def take0(n: Int, as: List[A]): ResultSet[List[A]] =
+      if (n == 0) as.point[ResultSet] 
+      else (resultset.next >>= {
+        case true  => get[A](1) >>= { a => take0(n - 1, a :: as) }
+        case false => as.point[ResultSet]
+      })
+    resultset.push(s"take($n)", take0(n, Nil).map(_.reverse))
+  }
+
+  /** Consume and return all remaining rows. */
+  def list[A: Comp]: ResultSet[List[A]] = 
+    resultset.push("list", foldLeft[A, List[A]](Nil)((as, a) => a :: as).map(_.reverse))
+
+  /** Consume all remaining rows by mapping to `A` and passing to effectful action `effect`. */
+  def sink[A: Comp](effect: A => IO[Unit]): ResultSet[Unit] = {
+    def sink0: ResultSet[Unit] = resultset.next >>= {
+      case true  => (get[A](1) >>= { a => effect(a).liftIO[ResultSet] }) >> sink0
       case false => ().point[ResultSet]
-      case true  => (get[A](1) >>= { a => effect(a).liftIO[ResultSet] }) >> sink(effect)
     }
+    resultset.push(s"sink($effect)", sink0)
+  }
+
+  /** Consume and return the next value, if any. */
+  def headOption[A: Comp]: ResultSet[Option[A]] =
+    resultset.push("headOption", 
+      resultset.next >>= {
+        case true  => get[A](1).map(Some(_))
+        case false => None.point[ResultSet]
+      })
+
+  /** Consume and return the next value, if any. */
+  def unsafeHead[A: Comp]: ResultSet[A] =
+    resultset.push("unsafeHead", 
+      resultset.next >>= {
+        case true  => get[A](1)
+        case false => sys.error("head of empty stream")
+      })
+
+
 
  import connection.prepareStatement
 
