@@ -9,7 +9,9 @@ import java.util.Calendar
 import java.net.URL
 import scala.collection.JavaConverters._
 
-object callablestatement extends DWorld[sql.CallableStatement] with PreparedStatementOps[sql.CallableStatement] {
+object callablestatement extends CallableStatementPrimitives
+
+trait CallableStatementPrimitives extends DWorld[sql.CallableStatement] with PreparedStatementOps[sql.CallableStatement] {
 
   type CallableStatement[+A] = Action[A]
 

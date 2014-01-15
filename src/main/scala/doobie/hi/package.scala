@@ -13,6 +13,8 @@ package object hi {
   def get[A](index: Int)(implicit A: Comp[A]): ResultSet[A] =
     resultset.push(s"structured get at index $index", A.get(index))
 
+  // can't do non-consumimh filter or collect; is this a problem?
+
   /** Consume remaining rows by folding left to right. */
   def foldLeft[A: Comp, B](z: B)(f: (B, A) => B): ResultSet[B] = {
     def foldLeft0(b: B): ResultSet[B] =
@@ -51,13 +53,8 @@ package object hi {
     resultset.push("list", foldLeft[A, List[A]](Nil)((as, a) => a :: as).map(_.reverse))
 
   /** Consume all remaining rows by mapping to `A` and passing to effectful action `effect`. */
-  def sink[A: Comp](effect: A => IO[Unit]): ResultSet[Unit] = {
-    def sink0: ResultSet[Unit] = resultset.next >>= {
-      case true  => (get[A](1) >>= { a => effect(a).liftIO[ResultSet] }) >> sink0
-      case false => ().point[ResultSet]
-    }
-    resultset.push(s"sink($effect)", sink0)
-  }
+  def sink[A: Comp](effect: A => IO[Unit]): ResultSet[Unit] = 
+    resultset.push(s"sink($effect)", foldMap(effect).flatMap(_.liftIO[ResultSet]))
 
   /** Consume and return the next value, if any. */
   def headOption[A: Comp]: ResultSet[Option[A]] =

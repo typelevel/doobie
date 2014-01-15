@@ -20,9 +20,28 @@ trait DWorld[S] extends util.TWorld[(Log[LogElement], S)] {
     tworldfixedio.effect(s => f(s._2))
 
   protected def primitive[A](e: => String, f: S => A): Action[A] =
-    log.flatMap(_.log(LogElement(e), tworldfixedio.effect(s => f(s._2))))
+    log.flatMap(_.log(LogElement("jdbc:" + e), tworldfixedio.effect(s => f(s._2))))
 
   def push[A](e: => String, a: Action[A]): Action[A] =
     log.flatMap(_.log(LogElement(e), a))
+
+}
+
+
+// Can we simplify?
+
+trait Context[S] {
+  import scalaz._
+  import scalaz.effect._
+  import Scalaz._
+
+  import Kleisli._
+  import kleisliEffect._
+
+  type Action[+A] = Kleisli[IO, (Log[LogElement], S), A]
+
+
+  Monad[Action]
+  MonadIO[Action]
 
 }
