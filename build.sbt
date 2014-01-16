@@ -45,7 +45,7 @@ libraryDependencies ++= Seq(
 
 // resolvers += Resolver.sonatypeRepo("releases")
 
-// addCompilerPlugin("org.brianmckenna" % "wartremover" % "0.4" cross CrossVersion.full)
+// addCompilerPlugin("org.brianmckenna" % "wartremover" % "0.5" cross CrossVersion.full)
 
 // scalacOptions in (Compile, compile) += "-P:wartremover:traverser:org.brianmckenna.wartremover.warts.Unsafe"
 
@@ -68,15 +68,15 @@ scalacOptions ++= Seq(
   "-language:experimental.macros"
 )
 
-initialCommands :=
-  """import scalaz._
-     import Scalaz._
-     import scalaz.concurrent._
-     import scalaz.stream._
-     import doobie._
-     import doobie.std.default._
-     import doobie.util.TreeInstances._
-     import argonaut._
-     import Argonaut._"""
+// initialCommands :=
+//   """import scalaz._
+//      import Scalaz._
+//      import scalaz.concurrent._
+//      import scalaz.stream._
+//      import doobie._
+//      import doobie.std.default._
+//      import doobie.util.TreeInstances._
+//      import argonaut._
+//      import Argonaut._"""
 
 

@@ -20,5 +20,8 @@ package object dbc {
 
   type Log[L] = util.TreeLogger[L]
 
+  implicit def show: Show[LogElement] =
+    Show.shows(_.s)
+
 }
 
