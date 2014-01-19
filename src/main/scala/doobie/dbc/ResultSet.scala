@@ -5,6 +5,8 @@ import scalaz._
 import Scalaz._
 import scala.collection.JavaConverters._
 import scalaz.effect.IO
+import scalaz.effect.kleisliEffect._
+import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 import sql.{ Date, Blob, Clob, Time, Timestamp, Ref, ResultSetMetaData }
 import java.io.{ InputStream, Reader }
@@ -14,9 +16,6 @@ import java.util.{ Calendar }
 object resultset extends DWorld[java.sql.ResultSet] {
 
   type ResultSet[+A] = Action[A]
-
-  private[dbc] def run[A](a: ResultSet[A], l: Log[LogElement], s: sql.ResultSet): IO[A] = 
-    eval(a, l, s).map(_._2)
 
   ////// ACTIONS, IN ALPHABETIC ORDER
 
@@ -193,7 +192,7 @@ object resultset extends DWorld[java.sql.ResultSet] {
     for {
       l <- log
       s <- primitive(s"getStatement", _.getStatement)
-      a <- statement.run(k, l, s).liftIO[ResultSet]
+      a <- k.run((l, s)).liftIO[ResultSet]
     } yield a
     
   def getString(index: Int): ResultSet[String] =

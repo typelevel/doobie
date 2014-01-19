@@ -3,6 +3,8 @@ package dbc
 
 import scala.collection.JavaConverters._
 import scalaz.effect.IO
+import scalaz.effect.kleisliEffect._
+import scalaz.syntax.effect.monadCatchIO._
 import scalaz._
 import Scalaz._
 import java.sql
@@ -12,9 +14,6 @@ import java.sql.{ Blob, Clob, NClob, SQLXML, Struct }
 object connection extends DWorld[java.sql.Connection] {
 
   type Connection[+A] = Action[A]
-
-  private[dbc] def run[A](a: Connection[A], l: Log[LogElement], s: sql.Connection): IO[A] = 
-    eval(a, l, s).map(_._2)
 
   ////// ACTIONS, IN ALPHABETIC ORDER
 
@@ -48,7 +47,7 @@ object connection extends DWorld[java.sql.Connection] {
     for {
       l <- log
       s <- primitive(s"createStatement", f)
-      a <- cs.run(k, l, s).ensuring(cs.run(cs.close, l, s)).liftIO[Connection]
+      a <- (k ensuring cs.close).run((l,s)).liftIO[Connection]
     } yield a
   }
 
@@ -83,7 +82,7 @@ object connection extends DWorld[java.sql.Connection] {
     for {
       l <- log
       s <- primitive(s"getMetaData", _.getMetaData)
-      a <- databasemetadata.run(k, l, s).liftIO[Connection]
+      a <- k.run((l, s)).liftIO[Connection]
     } yield a
 
   def getTransactionIsolation: Connection[IsolationLevel] = 
@@ -113,7 +112,7 @@ object connection extends DWorld[java.sql.Connection] {
     for {
       l <- log
       s <- primitive(s"prepareCall", f)
-      a <- cs.run(k, l, s).ensuring(cs.run(cs.close, l, s)).liftIO[Connection]
+      a <- (k ensuring cs.close).run((l, s)).liftIO[Connection]
     } yield a
   }
 
@@ -132,7 +131,7 @@ object connection extends DWorld[java.sql.Connection] {
     for {
       l <- log
       s <- primitive(s, f)
-      a <- push("process preparedstatement", ps.run(k, l, s).ensuring(ps.run(ps.close, l, s)).liftIO[Connection])
+      a <- push("process preparedstatement", (k ensuring ps.close).run((l, s)).liftIO[Connection])
     } yield a
   }
 

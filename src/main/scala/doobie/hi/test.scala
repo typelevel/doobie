@@ -6,6 +6,8 @@ import dbc._
 import scalaz._
 import Scalaz._
 import scalaz.effect._
+import scalaz.effect.kleisliEffect._
+import scalaz.syntax.effect.monadCatchIO._
 import scalaz.effect.IO._
 import java.io.File
 

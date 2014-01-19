@@ -15,9 +15,6 @@ trait CallableStatementPrimitives extends DWorld[sql.CallableStatement] with Pre
 
   type CallableStatement[+A] = Action[A]
 
-  private[dbc] def run[A](a: CallableStatement[A], l: Log[LogElement], s: sql.CallableStatement): IO[A] = 
-    eval(a, l, s).map(_._2)
-  
   ////// ACTIONS, IN ALPHABETIC ORDER
 
   def getArray(index: Int): CallableStatement[sql.Array] =

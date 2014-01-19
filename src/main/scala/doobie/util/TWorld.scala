@@ -9,7 +9,7 @@ import scalaz.effect.MonadCatchIO
 
 trait TWorld[State] {
 
-  // Basically StateT with S sliced off
+  // StateT with S sliced off
   case class ActionT[F[+_], +A](private[TWorld] run: State => F[(State, A)]) {
     def map[C](f: A => C)(implicit F: Functor[F]): ActionT[F, C] =
       new ActionT(s => F.map(run(s))(p => (p._1, f(p._2))))
@@ -17,7 +17,9 @@ trait TWorld[State] {
       new ActionT(s => M.bind(run(s))(p => f(p._2).run(p._1)))
   }
 
-  object ActionT extends X {
+  object ActionT extends ActionTInstances
+
+  trait ActionTInstances extends ActionTInstances0 { this: ActionT.type =>
     implicit def monadActionT[M[+_]](implicit M: Monad[M]) =
       new Monad[({ type λ[+α] = ActionT[M, α] })#λ] {
         def point[A](a: => A): ActionT[M, A] = new ActionT(s => M.point((s, a)))
@@ -26,7 +28,7 @@ trait TWorld[State] {
       }
   }
 
-  trait X { this: ActionT.type =>
+  trait ActionTInstances0 { this: ActionT.type =>
     implicit object MonadIOActionT extends MonadCatchIO[({ type λ[+α] = ActionT[IO, α] })#λ] {
       def point[A](a: => A): ActionT[IO, A] = monadActionT[IO].point(a)
       def bind[A, B](fa: ActionT[IO, A])(f: A => ActionT[IO, B]): ActionT[IO, B] = fa.flatMap(f)
@@ -43,14 +45,7 @@ trait TWorld[State] {
     def effect[A](f: State => A): Action[A] = action(s => (s, f(s)))
     def unit[A](a: => A): Action[A] = action(s => (s, a))
     final def eval[A](a: ActionT[F, A], s: State) = a.run(s)
-
   }
-
-  // // This is what we're really after
-  // protected val io = new Lifted[IO]
-  // protected type Action[+A] = io.Action[A]
-  // protected final def effect[A](f: State => A): Action[A] = io.effect(f)
-  // protected final def eval[A](a: Action[A], s: State) = io.eval(a, s)
 
 }
 

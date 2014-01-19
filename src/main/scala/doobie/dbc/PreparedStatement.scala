@@ -4,15 +4,14 @@ package dbc
 import scalaz._
 import Scalaz._
 import scalaz.effect.IO
+import scalaz.effect.kleisliEffect._
+import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 
 object preparedstatement extends DWorld[sql.PreparedStatement] with PreparedStatementOps[sql.PreparedStatement] {
 
   type PreparedStatement[+A] = Action[A]
 
-  private[dbc] def run[A](a: PreparedStatement[A], l: Log[LogElement], s: sql.PreparedStatement): IO[A] = 
-    eval(a, l, s).map(_._2)
-  
 }
 
 trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { this: DWorld[A] =>
@@ -44,7 +43,7 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     for {
       l <- log
       r <- primitive("executeQuery", _.executeQuery)
-      a <- push("process resultset", resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action])
+      a <- push("process resultset", (k ensuring resultset.close).run((l, r)).liftIO[Action])
     } yield a
 
   def executeUpdate: Action[Int] =

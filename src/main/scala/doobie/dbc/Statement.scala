@@ -4,14 +4,13 @@ package dbc
 import scalaz._
 import Scalaz._
 import scalaz.effect.IO
+import scalaz.effect.kleisliEffect._
+import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 
 object statement extends DWorld[sql.Statement] with StatementOps[sql.Statement] {
 
   type Statement[+A] = Action[A]
-
-  private[dbc] def run[A](a: Action[A], l: Log[LogElement], s: sql.Statement): IO[A] = 
-    eval(a, l, s).map(_._2)
 
 }
 
@@ -51,7 +50,7 @@ trait StatementOps[A <: sql.Statement] { this: DWorld[A] =>
     for {
       l <- log
       r <- primitive(s"executeQuery", _.executeQuery(sql))
-      a <- resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action]
+      a <- (k ensuring resultset.close).run((l, r)).liftIO[Action]
     } yield a
 
   def executeUpdate(sql: String): Action[Int] =
@@ -70,7 +69,7 @@ trait StatementOps[A <: sql.Statement] { this: DWorld[A] =>
     for {
       l <- log
       c <- primitive(s"", _.getConnection)
-      a <- connection.run(k, l, c).liftIO[Action]
+      a <- k.run((l, c)).liftIO[Action]
     } yield a
 
   def getFetchDirection: Action[FetchDirection] =
@@ -83,7 +82,7 @@ trait StatementOps[A <: sql.Statement] { this: DWorld[A] =>
     for {
       l <- log
       r <- primitive(s"getGeneratedKeys", _.getGeneratedKeys)
-      a <- resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action]
+      a <- (k ensuring resultset.close).run((l, r)).liftIO[Action]
     } yield a
 
   def getMaxFieldSize: Action[Int] =
@@ -105,7 +104,7 @@ trait StatementOps[A <: sql.Statement] { this: DWorld[A] =>
     for {
       l <- log
       r <- primitive(s"getResultSet", _.getResultSet)
-      a <- resultset.run(k, l, r).ensuring(resultset.run(resultset.close, l, r)).liftIO[Action]
+      a <- (k ensuring resultset.close).run((l, r)).liftIO[Action]
     } yield a
 
   def getResultSetConcurrency: Action[ResultSetConcurrency] =
