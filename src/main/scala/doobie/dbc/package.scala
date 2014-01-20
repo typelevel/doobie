@@ -9,19 +9,21 @@ import scalaz.effect.kleisliEffect._
 
 package object dbc {
 
-  type Savepoint = java.sql.Savepoint
+  object callablestatement extends CallableStatementFunctions
+  object connection        extends ConnectionFunctions
+  object databasemetadata  extends DatabaseMetaDataFunctions
+  object preparedstatement extends PreparedStatementFunctions
+  object resultset         extends ResultSetFunctions
+  object statement         extends StatementFunctions
 
-  type Connection[+A] = connection.Connection[A]  
-  type Statement[+A] = statement.Statement[A]
-  type DatabaseMetaData[+A] = databasemetadata.DatabaseMetaData[A]
-  type CallableStatement[+A] = callablestatement.CallableStatement[A]
-  type PreparedStatement[+A] = preparedstatement.PreparedStatement[A]
-  type ResultSet[+A] = resultset.ResultSet[A]
+  type Connection[+A]        = connection.Action[A]  
+  type Statement[+A]         = statement.Action[A]
+  type DatabaseMetaData[+A]  = databasemetadata.Action[A]
+  type CallableStatement[+A] = callablestatement.Action[A]
+  type PreparedStatement[+A] = preparedstatement.Action[A]
+  type ResultSet[+A]         = resultset.Action[A]
 
   type Log[L] = util.TreeLogger[L]
-
-  implicit def show: Show[LogElement] =
-    Show.shows(_.s)
 
 }
 

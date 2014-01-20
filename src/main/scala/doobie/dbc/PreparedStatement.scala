@@ -8,13 +8,9 @@ import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 
-object preparedstatement extends DWorld[sql.PreparedStatement] with PreparedStatementOps[sql.PreparedStatement] {
+trait PreparedStatementFunctions extends PreparedStatementOps[sql.PreparedStatement]
 
-  type PreparedStatement[+A] = Action[A]
-
-}
-
-trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { this: DWorld[A] =>
+trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { 
 
   import sql.Time
   import sql.Timestamp
@@ -40,11 +36,7 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     primitive("execute", _.execute)
 
   def executeQuery[A](k: ResultSet[A]): Action[A] =
-    for {
-      l <- log
-      r <- primitive("executeQuery", _.executeQuery)
-      a <- push("process resultset", (k ensuring resultset.close).run((l, r)).liftIO[Action])
-    } yield a
+    gosub(primitive("executeQuery", _.executeQuery), k, resultset.close)
 
   def executeUpdate: Action[Int] =
     effect(_.executeUpdate)
