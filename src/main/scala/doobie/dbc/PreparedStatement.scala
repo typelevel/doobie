@@ -7,30 +7,20 @@ import scalaz.effect.IO
 import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
+import java.sql.{ Time, Timestamp, Ref, Blob, Date, Clob }
+import java.net.URL
+import java.io.{ InputStream, Reader }
+import java.util.Calendar
 
 trait PreparedStatementFunctions extends PreparedStatementOps[sql.PreparedStatement]
 
 trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { 
 
-  import sql.Time
-  import sql.Timestamp
-  import sql.Ref
-  import sql.Blob
-  import sql.Date
-  import sql.Clob
-  import sql.ResultSetMetaData
-  import sql.ParameterMetaData
-  import java.net.URL
-  import java.io.{ InputStream, Reader }
-  import java.util.Calendar
-
-  ////// OPERATIONS, IN ALPHABETIC ORDER
-
   def addBatch: Action[Unit] =
-    effect(_.addBatch)
+    primitive(s"addBatch", _.addBatch)
 
   def clearParameters: Action[Unit] =
-    effect(_.clearParameters)
+    primitive(s"clearParameters", _.clearParameters)
 
   def execute: Action[Boolean] =
     primitive("execute", _.execute)
@@ -39,99 +29,99 @@ trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] {
     gosub(primitive("executeQuery", _.executeQuery), k, resultset.close)
 
   def executeUpdate: Action[Int] =
-    effect(_.executeUpdate)
+    primitive(s"executeUpdate", _.executeUpdate)
 
-  def getMetaData: Action[ResultSetMetaData] =
-    ???
+  def getMetaData[A](k: ResultSetMetaData[A]): Action[A] =
+    gosub0(primitive("getMetaData", _.getMetaData), k)
 
-  def getParameterMetaData: Action[ParameterMetaData] =
-    ???
+  def getParameterMetaData[A](k: ParameterMetaData[A]): Action[A] =
+    gosub0(primitive("getParameterMetaData", _.getParameterMetaData), k)
 
   def setArray(index: Int, x: sql.Array): Action[Unit] =
-    effect(_.setArray(index, x))
+    primitive(s"setArray($index, $x)", _.setArray(index, x))
 
   def setAsciiStream(index: Int, x: InputStream, length: Int): Action[Unit] =
-    effect(_.setAsciiStream(index, x, length))
+    primitive(s"setAsciiStream($index, $x, $length)", _.setAsciiStream(index, x, length))
 
   def setBigDecimal(index: Int, x: BigDecimal): Action[Unit] =
-    effect(_.setBigDecimal(index, x.bigDecimal))
+    primitive(s"setBigDecimal($index, $x)", _.setBigDecimal(index, x.bigDecimal))
 
   def setBinaryStream(index: Int, x: InputStream, length: Int): Action[Unit] =
-    effect(_.setBinaryStream(index, x, length))
+    primitive(s"setBinaryStream($index, $x, $length)", _.setBinaryStream(index, x, length))
 
   def setBlob(index: Int, x: Blob): Action[Unit] =
-    effect(_.setBlob(index, x))
+    primitive(s"setBlob($index, $x)", _.setBlob(index, x))
 
   def setBoolean(index: Int, x: Boolean): Action[Unit] =
-    effect(_.setBoolean(index, x))
+    primitive(s"setBoolean($index, $x)", _.setBoolean(index, x))
 
   def setByte(index: Int, x: Byte): Action[Unit] =
-    effect(_.setByte(index, x))
+    primitive(s"setByte($index, $x)", _.setByte(index, x))
 
   def setBytes(index: Int, x: Array[Byte]): Action[Unit] =
-    effect(_.setBytes(index, x))
+    primitive(s"setBytes($index, $x)", _.setBytes(index, x))
 
   def setCharacterStream(index: Int, reader: Reader, length: Int): Action[Unit] =
-    effect(_.setCharacterStream(index, reader, length))
+    primitive(s"setCharacterStream($index, $reader, $length)", _.setCharacterStream(index, reader, length))
 
   def setClob(index: Int, x: Clob): Action[Unit] =
-    effect(_.setClob(index, x))
+    primitive(s"setClob($index, $x)", _.setClob(index, x))
 
   def setDate(index: Int, x: Date): Action[Unit] =
-    effect(_.setDate(index, x))
+    primitive(s"setDate($index, $x)", _.setDate(index, x))
 
   def setDate(index: Int, x: Date, cal: Calendar): Action[Unit] =
-    effect(_.setDate(index, x, cal))
+    primitive(s"setDate($index, $x, $cal)", _.setDate(index, x, cal))
 
   def setDouble(index: Int, x: Double): Action[Unit] =
     primitive(s"setDouble($index, $x)", _.setDouble(index, x))
 
   def setFloat(index: Int, x: Float): Action[Unit] =
-    effect(_.setFloat(index, x))
+    primitive(s"setFloat($index, $x)", _.setFloat(index, x))
 
   def setInt(index: Int, x: Int): Action[Unit] =
     primitive(s"setInt($index, $x)", _.setInt(index, x))
 
   def setLong(index: Int, x: Long): Action[Unit] =
-    effect(_.setLong(index, x))
+    primitive(s"setLong($index, $x)", _.setLong(index, x))
 
   def setNull(index: Int, sqlType: Int): Action[Unit] =
-    effect(_.setNull(index, sqlType))
+    primitive(s"setNull($index, $sqlType)", _.setNull(index, sqlType))
 
   def setNull(index: Int, sqlType: Int, typeName: String): Action[Unit] =
-    effect(_.setNull(index, sqlType, typeName))
+    primitive(s"setNull($index, $sqlType, $typeName)", _.setNull(index, sqlType, typeName))
 
   def setObject(index: Int, x: Object): Action[Unit] =
-    effect(_.setObject(index, x))
+    primitive(s"setObject($index, $x)", _.setObject(index, x))
 
   def setObject(index: Int, x: Object, targetSqlType: Int): Action[Unit] =
-    effect(_.setObject(index, x, targetSqlType))
+    primitive(s"setObject($index, $x, $targetSqlType)", _.setObject(index, x, targetSqlType))
 
   def setObject(index: Int, x: Object, targetSqlType: Int, scale: Int): Action[Unit] =
-    effect(_.setObject(index, x, targetSqlType, scale))
+    primitive(s"setObject($index, $x, $targetSqlType, $scale)", _.setObject(index, x, targetSqlType, scale))
 
   def setRef(index: Int, x: Ref): Action[Unit] =
-    effect(_.setRef(index, x))
+    primitive(s"setRef($index, $x)", _.setRef(index, x))
 
   def setShort(index: Int, x: Short): Action[Unit] =
-    effect(_.setShort(index, x))
+    primitive(s"setShort($index, $x)", _.setShort(index, x))
 
   def setString(index: Int, x: String): Action[Unit] =
     primitive(s"setString($index, $x)", _.setString(index, x))
 
   def setTime(index: Int, x: Time): Action[Unit] =
-    effect(_.setTime(index, x))
+    primitive(s"setTime($index, $x)", _.setTime(index, x))
 
   def setTime(index: Int, x: Time, cal: Calendar): Action[Unit] =
-    effect(_.setTime(index, x, cal))
+    primitive(s"setTime($index, $x, $cal)", _.setTime(index, x, cal))
 
   def setTimestamp(index: Int, x: Timestamp): Action[Unit] =
-    effect(_.setTimestamp(index, x))
+    primitive(s"setTimestamp($index, $x)", _.setTimestamp(index, x))
 
   def setTimestamp(index: Int, x: Timestamp, cal: Calendar): Action[Unit] =
-    effect(_.setTimestamp(index, x, cal))
+    primitive(s"setTimestamp($index, $x, $cal)", _.setTimestamp(index, x, cal))
 
   def setURL(index: Int, x: URL): Action[Unit] =
-    effect(_.setURL(index, x))
+    primitive(s"setURL($index, $x)", _.setURL(index, x))
 
 }

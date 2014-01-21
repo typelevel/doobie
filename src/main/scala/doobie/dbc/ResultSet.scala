@@ -8,7 +8,7 @@ import scalaz.effect.IO
 import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
-import sql.{ Date, Blob, Clob, Time, Timestamp, Ref, ResultSetMetaData }
+import sql.{ Date, Blob, Clob, Time, Timestamp, Ref }
 import java.io.{ InputStream, Reader }
 import java.net.URL
 import java.util.{ Calendar }
@@ -154,8 +154,8 @@ trait ResultSetFunctions extends DWorld[java.sql.ResultSet] {
   def getLong(colName: String): Action[Long] =
     primitive(s"getLong($colName)", _.getLong(colName))
 
-  def getMetaData: Action[ResultSetMetaData] =
-    ???
+  def getMetaData[A](k: ResultSetMetaData[A]): Action[A] =
+    gosub0(primitive("getMetaData", _.getMetaData), k)
 
   def getObject(index: Int): Action[Object] =
     primitive(s"getObject($index)", _.getObject(index))

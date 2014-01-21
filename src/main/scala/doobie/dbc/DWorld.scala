@@ -13,27 +13,25 @@ import Scalaz._
 trait DWorld[S] {
 
   type Action0[S0, +A] = Kleisli[IO, (Log[LogElement], S0), A]
+  type Action[+A] = Action0[S,A]
 
-  type Action[+A] = Action0[S,A] // Kleisli[IO, (Log[LogElement], S), A]
-
+  // Retrieve the log
   protected def log: Action[Log[LogElement]] =
     ask[IO, (Log[LogElement], S)].map(_._1)
 
-  protected def effect[A](f: S => A): Action[A] =
-    ask[IO, (Log[LogElement], S)].map(p => f(p._2))
-
+  // Retrieve the payload and perform an [unsafe] operation
   protected def primitive[A](e: => String, f: S => A): Action[A] =
-    push("jdbc:" + e, effect(f))
+    push("jdbc:" + e, ask[IO, (Log[LogElement], S)].map(p => f(p._2)))
 
   def push[A](e: => String, a: Action[A]): Action[A] =
     log.flatMap(_.log(LogElement(e), a))
 
   // Call a subroutine in another monad, with a cleanup action.
-  // It's a bit lame because of the type lamdbda
+  // It's a bit lame because of the type lambda
   protected def gosub[S,A](state: Action[S], action: Action0[S,A], cleanup: Action0[S, Unit]): Action[A] =
     for {
       p <- log tuple state
-      a = ensuring[({type l[a] = Action0[S,a]})#l, A, Unit](action, cleanup).run(p).liftIO[Action]
+      a = ensuring[({type λ[α] = Action0[S,α]})#λ, A, Unit](action, cleanup).run(p).liftIO[Action]
       a <- push("gosub/cleanup", a)
     } yield a
 
