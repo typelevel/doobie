@@ -9,6 +9,7 @@ import java.util.Calendar
 import java.net.URL
 import scala.collection.JavaConverters._
 
+// ok
 trait CallableStatementFunctions extends PreparedStatementOps[sql.CallableStatement] {
 
   def getArray(index: Int): Action[sql.Array] =
@@ -189,23 +190,23 @@ trait CallableStatementFunctions extends PreparedStatementOps[sql.CallableStatem
   def getURL(name: String): Action[URL] =
     primitive(s"getURL($name)", _.getURL(name))
 
-  def registerOutParameter(index: Int, sqlType: Int): Action[Unit] =
-    primitive(s"registerOutParameter($index, $sqlType)", _.registerOutParameter(index, sqlType))
+  def registerOutParameter(index: Int, sqlType: JdbcType): Action[Unit] =
+    primitive(s"registerOutParameter($index, $sqlType)", _.registerOutParameter(index, sqlType.toInt))
 
-  def registerOutParameter(index: Int, sqlType: Int, scale: Int): Action[Unit] =
-    primitive(s"registerOutParameter($index, $sqlType, $scale)", _.registerOutParameter(index, sqlType, scale))
+  def registerOutParameter(index: Int, sqlType: JdbcType, scale: Int): Action[Unit] =
+    primitive(s"registerOutParameter($index, $sqlType, $scale)", _.registerOutParameter(index, sqlType.toInt, scale))
 
-  def registerOutParameter(index: Int, sqlType: Int, typeName: String): Action[Unit] =
-    primitive(s"registerOutParameter($index, $sqlType, $typeName)", _.registerOutParameter(index, sqlType, typeName))
+  def registerOutParameter(index: Int, sqlType: JdbcType, typeName: String): Action[Unit] =
+    primitive(s"registerOutParameter($index, $sqlType, $typeName)", _.registerOutParameter(index, sqlType.toInt, typeName))
 
-  def registerOutParameter(name: String, sqlType: Int): Action[Unit] =
-    primitive(s"registerOutParameter($name, $sqlType)", _.registerOutParameter(name, sqlType))
+  def registerOutParameter(name: String, sqlType: JdbcType): Action[Unit] =
+    primitive(s"registerOutParameter($name, $sqlType)", _.registerOutParameter(name, sqlType.toInt))
 
-  def registerOutParameter(name: String, sqlType: Int, scale: Int): Action[Unit] =
-    primitive(s"registerOutParameter($name, $sqlType, $scale)", _.registerOutParameter(name, sqlType, scale))
+  def registerOutParameter(name: String, sqlType: JdbcType, scale: Int): Action[Unit] =
+    primitive(s"registerOutParameter($name, $sqlType, $scale)", _.registerOutParameter(name, sqlType.toInt, scale))
 
-  def registerOutParameter(name: String, sqlType: Int, typeName: String): Action[Unit] =
-    primitive(s"registerOutParameter($name, $sqlType, $typeName)", _.registerOutParameter(name, sqlType, typeName))
+  def registerOutParameter(name: String, sqlType: JdbcType, typeName: String): Action[Unit] =
+    primitive(s"registerOutParameter($name, $sqlType, $typeName)", _.registerOutParameter(name, sqlType.toInt, typeName))
 
   def setAsciiStream(name: String, x: InputStream): Action[Unit] =
     primitive(s"setAsciiStream($name, $x)", _.setAsciiStream(name, x))
@@ -300,20 +301,20 @@ trait CallableStatementFunctions extends PreparedStatementOps[sql.CallableStatem
   def setNString(name: String, value: String): Action[Unit] =
     primitive(s"setNString($name, $value)", _.setNString(name, value))
 
-  def setNull(name: String, sqlType: Int): Action[Unit] =
-    primitive(s"setNull($name, $sqlType)", _.setNull(name, sqlType))
+  def setNull(name: String, sqlType: JdbcType): Action[Unit] =
+    primitive(s"setNull($name, $sqlType)", _.setNull(name, sqlType.toInt))
 
-  def setNull(name: String, sqlType: Int, typeName: String): Action[Unit] =
-    primitive(s"setNull($name, $sqlType, $typeName)", _.setNull(name, sqlType, typeName))
+  def setNull(name: String, sqlType: JdbcType, typeName: String): Action[Unit] =
+    primitive(s"setNull($name, $sqlType, $typeName)", _.setNull(name, sqlType.toInt, typeName))
 
   def setObject(name: String, x: Object): Action[Unit] =
     primitive(s"setObject($name, $x)", _.setObject(name, x))
 
-  def setObject(name: String, x: Object, targetSqlType: Int): Action[Unit] =
-    primitive(s"setObject($name, $x, $targetSqlType)", _.setObject(name, x, targetSqlType))
+  def setObject(name: String, x: Object, targetSqlType: JdbcType): Action[Unit] =
+    primitive(s"setObject($name, $x, $targetSqlType)", _.setObject(name, x, targetSqlType.toInt))
 
-  def setObject(name: String, x: Object, targetSqlType: Int, scale: Int): Action[Unit] =
-    primitive(s"setObject($name, $x, $targetSqlType, $scale)", _.setObject(name, x, targetSqlType, scale))
+  def setObject(name: String, x: Object, targetSqlType: JdbcType, scale: Int): Action[Unit] =
+    primitive(s"setObject($name, $x, $targetSqlType, $scale)", _.setObject(name, x, targetSqlType.toInt, scale))
 
   def setRowId(name: String, x: RowId): Action[Unit] =
     primitive(s"setRowId($name, $x)", _.setRowId(name, x))
