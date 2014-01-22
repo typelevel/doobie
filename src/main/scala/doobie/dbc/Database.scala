@@ -7,6 +7,7 @@ import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 
+// review api
 final class Database private (url: String, user: String, pass: String) {
 
   def run[A: Show](k: Connection[A], l: Log[LogElement]): IO[A] =

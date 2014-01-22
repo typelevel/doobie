@@ -10,6 +10,7 @@ import Scalaz._
 import java.sql
 import java.sql.{ Savepoint, Blob, Clob, NClob, SQLXML, Struct }
 
+// ok
 trait ConnectionFunctions extends DWorld[java.sql.Connection] {
 
   def clearWarnings: Action[Unit] = 
@@ -70,8 +71,8 @@ trait ConnectionFunctions extends DWorld[java.sql.Connection] {
   def getMetaData[A](k: DatabaseMetaData[A]): Action[A] =
     gosub0(primitive(s"getMetaData", _.getMetaData), k)
 
-  def getTransactionIsolation: Action[IsolationLevel] = 
-    primitive(s"getTransactionIsolation", _.getTransactionIsolation).map(IsolationLevel.unsafeFromInt)
+  def getTransactionIsolation: Action[TransactionIsolation] = 
+    primitive(s"getTransactionIsolation", _.getTransactionIsolation).map(TransactionIsolation.unsafeFromInt)
 
   def getTypeMap: Action[Map[String, Class[_]]] = 
     primitive(s"getTypeMap", _.getTypeMap.asScala.toMap)
@@ -160,7 +161,7 @@ trait ConnectionFunctions extends DWorld[java.sql.Connection] {
   def setSavepoint(name: String): Action[Savepoint] =
     primitive(s"setSavepoint($name)", _.setSavepoint(name))
 
-  def setTransactionIsolation(level: IsolationLevel): Action[Unit] =
+  def setTransactionIsolation(level: TransactionIsolation): Action[Unit] =
     primitive(s"setTransactionIsolation($level)", _.setTransactionIsolation(level.toInt))
 
   def setTypeMap(map: Map[String, Class[_]]): Action[Unit] =

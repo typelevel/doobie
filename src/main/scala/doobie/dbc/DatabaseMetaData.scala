@@ -32,6 +32,7 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def getAttributes[A](catalog: String, schemaPattern: String, typeNamePattern: String, attributeNamePattern: String)(k: ResultSet[A]): DatabaseMetaData[A] =
     gosub(primitive(s"getAttributes($catalog, $schemaPattern, $typeNamePattern, $attributeNamePattern)", _.getAttributes(catalog, schemaPattern, typeNamePattern, attributeNamePattern)), k, resultset.close)
 
+  // TODO: scope
   def getBestRowIdentifier[A](catalog: String, schema: String, table: String, scope: Int, nullable: Boolean)(k: ResultSet[A]): DatabaseMetaData[A] =
     gosub(primitive(s"getBestRowIdentifier($catalog, $schema, $table, $scope, $nullable)", _.getBestRowIdentifier(catalog, schema, table, scope, nullable)), k, resultset.close)
 
@@ -188,8 +189,8 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def getProcedureTerm: DatabaseMetaData[String] =
     primitive(s"getProcedureTerm", _.getProcedureTerm)
 
-  def getResultSetHoldability: DatabaseMetaData[Int] =
-    primitive(s"getResultSetHoldability", _.getResultSetHoldability)
+  def getResultSetHoldability: DatabaseMetaData[Holdability] =
+    primitive(s"getResultSetHoldability", _.getResultSetHoldability).map(Holdability.unsafeFromInt)
 
   def getRowIdLifetime: DatabaseMetaData[RowIdLifetime] =
     primitive(s"getRowIdLifetime", _.getRowIdLifetime)
@@ -239,8 +240,8 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def getTypeInfo[A](k: ResultSet[A]): DatabaseMetaData[A] =
     gosub(primitive(s"getTypeInfo", _.getTypeInfo), k, resultset.close)
 
-  def getUDTs[A](catalog: String, schemaPattern: String, typeNamePattern: String, types: Seq[Int])(k: ResultSet[A]): DatabaseMetaData[A] =
-    gosub(primitive(s"getUDTs($catalog, $schemaPattern, $typeNamePattern, $types)", _.getUDTs(catalog, schemaPattern, typeNamePattern, types.toArray)), k, resultset.close)
+  def getUDTs[A](catalog: String, schemaPattern: String, typeNamePattern: String, types: Seq[JdbcType])(k: ResultSet[A]): DatabaseMetaData[A] =
+    gosub(primitive(s"getUDTs($catalog, $schemaPattern, $typeNamePattern, $types)", _.getUDTs(catalog, schemaPattern, typeNamePattern, types.map(_.toInt).toArray)), k, resultset.close)
 
   def getURL: DatabaseMetaData[String] =
     primitive(s"getURL", _.getURL)
@@ -251,6 +252,7 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def getVersionColumns[A](catalog: String, schema: String, table: String)(k: ResultSet[A]): DatabaseMetaData[A] =
     gosub(primitive(s"getVersionColumns($catalog, $schema, $table)", _.getVersionColumns(catalog, schema, table)), k, resultset.close)
 
+  // todo: enum
   def insertsAreDetected(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"insertsAreDetected($kind)", _.insertsAreDetected(kind))
 
@@ -278,21 +280,27 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def nullsAreSortedLow: DatabaseMetaData[Boolean] =
     primitive(s"nullsAreSortedLow", _.nullsAreSortedLow)
 
+  // todo: enum
   def othersDeletesAreVisible(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"othersDeletesAreVisible($kind)", _.othersDeletesAreVisible(kind))
 
+  // todo: enum
   def othersInsertsAreVisible(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"othersInsertsAreVisible($kind)", _.othersInsertsAreVisible(kind))
 
+  // todo: enum
   def othersUpdatesAreVisible(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"othersUpdatesAreVisible($kind)", _.othersUpdatesAreVisible(kind))
 
+  // todo: enum
   def ownDeletesAreVisible(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"ownDeletesAreVisible($kind)", _.ownDeletesAreVisible(kind))
 
+  // todo: enum
   def ownInsertsAreVisible(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"ownInsertsAreVisible($kind)", _.ownInsertsAreVisible(kind))
 
+  // todo: enum
   def ownUpdatesAreVisible(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"ownUpdatesAreVisible($kind)", _.ownUpdatesAreVisible(kind))
 
@@ -449,14 +457,15 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def supportsPositionedUpdate: DatabaseMetaData[Boolean] =
     primitive(s"supportsPositionedUpdate", _.supportsPositionedUpdate)
 
+  // todo: enum
   def supportsResultSetConcurrency(kind: Int, concurrency: Int): DatabaseMetaData[Boolean] =
     primitive(s"supportsResultSetConcurrency($kind, $concurrency)", _.supportsResultSetConcurrency(kind, concurrency))
 
   def supportsResultSetHoldability(holdability: Holdability): DatabaseMetaData[Boolean] =
     primitive(s"supportsResultSetHoldability($holdability)", _.supportsResultSetHoldability(holdability.toInt))
 
-  def supportsResultSetType(kind: Int): DatabaseMetaData[Boolean] =
-    primitive(s"supportsResultSetType($kind)", _.supportsResultSetType(kind))
+  def supportsResultSetType(kind: ResultSetType): DatabaseMetaData[Boolean] =
+    primitive(s"supportsResultSetType($kind)", _.supportsResultSetType(kind.toInt))
 
   def supportsSavepoInts: DatabaseMetaData[Boolean] =
     primitive(s"supportsSavepoInts", _.supportsSavepoints)
@@ -503,8 +512,8 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def supportsTableCorrelationNames: DatabaseMetaData[Boolean] =
     primitive(s"supportsTableCorrelationNames", _.supportsTableCorrelationNames)
 
-  def supportsTransactionIsolationLevel(level: Int): DatabaseMetaData[Boolean] =
-    primitive(s"supportsTransactionIsolationLevel(level)", _.supportsTransactionIsolationLevel(level))
+  def supportsTransactionIsolationLevel(level: TransactionIsolation): DatabaseMetaData[Boolean] =
+    primitive(s"supportsTransactionIsolationLevel(level)", _.supportsTransactionIsolationLevel(level.toInt))
 
   def supportsTransactions: DatabaseMetaData[Boolean] =
     primitive(s"supportsTransactions", _.supportsTransactions)
@@ -515,6 +524,7 @@ trait DatabaseMetaDataFunctions extends DWorld[sql.DatabaseMetaData] {
   def supportsUnionAll: DatabaseMetaData[Boolean] =
     primitive(s"supportsUnionAll", _.supportsUnionAll)
 
+  // todo: enum
   def updatesAreDetected(kind: Int): DatabaseMetaData[Boolean] =
     primitive(s"updatesAreDetected($kind)", _.updatesAreDetected(kind))
 

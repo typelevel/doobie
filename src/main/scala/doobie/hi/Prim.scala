@@ -36,12 +36,12 @@ object Prim {
     }
 
   implicit val pInt: Prim[Int] =
-    prim[Int](JdbcType.INTEGER, ps.setInt(_, _), rs.getInt(_))
+    prim[Int](JdbcType.Integer, ps.setInt(_, _), rs.getInt(_))
 
   implicit val pStr: Prim[String] =
-    prim[String](JdbcType.VARCHAR, ps.setString(_, _), rs.getString(_))
+    prim[String](JdbcType.VarChar, ps.setString(_, _), rs.getString(_))
 
   implicit val pDouble: Prim[Double] =
-    prim[Double](JdbcType.REAL, ps.setDouble(_, _), rs.getDouble(_))
+    prim[Double](JdbcType.Real, ps.setDouble(_, _), rs.getDouble(_))
 
 }

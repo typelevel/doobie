@@ -1,20 +1,19 @@
 package doobie.dbc
 
+import java.sql.ResultSet._
+
 sealed abstract class ResultSetType(val toInt: Int)
 object ResultSetType {
 
-  case object ForwardOnly       extends ResultSetType(1003)
-  case object ScrollInsensitive extends ResultSetType(1004)
-  case object ScrollSensitive   extends ResultSetType(1005)
-
-  val Default = ForwardOnly
+  case object TypeForwardOnly       extends ResultSetType(TYPE_FORWARD_ONLY)
+  case object TypeScrollInsensitive extends ResultSetType(TYPE_SCROLL_INSENSITIVE)
+  case object TypeScrollSensitive   extends ResultSetType(TYPE_SCROLL_SENSITIVE)
 
   def fromInt(n: Int): Option[ResultSetType] =
-    n match {
-      case 1003 => Some(ForwardOnly)
-      case 1004 => Some(ScrollInsensitive)
-      case 1005 => Some(ScrollSensitive)
-      case _    => None
+    Some(n) collect {
+      case TypeForwardOnly.toInt       => TypeForwardOnly
+      case TypeScrollInsensitive.toInt => TypeScrollInsensitive
+      case TypeScrollSensitive.toInt   => TypeScrollSensitive
     }
 
   def unsafeFromInt(n: Int): ResultSetType =

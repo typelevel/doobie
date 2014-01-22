@@ -1,18 +1,17 @@
 package doobie.dbc
 
+import java.sql.ResultSet._
+
 sealed abstract class ResultSetConcurrency(val toInt: Int)
 object ResultSetConcurrency {
 
-  case object ReadOnly  extends ResultSetConcurrency(1007)
-  case object Updatable extends ResultSetConcurrency(1008)
-
-  val Default = ReadOnly
+  case object ConcurReadOnly  extends ResultSetConcurrency(CONCUR_READ_ONLY)
+  case object ConcurUpdatable extends ResultSetConcurrency(CONCUR_UPDATABLE)
 
   def fromInt(n:Int): Option[ResultSetConcurrency] =
-    n match {
-      case 1007 => Some(ReadOnly)
-      case 1008 => Some(Updatable)
-      case _    => None
+    Some(n) collect {
+      case ConcurReadOnly.toInt  => ConcurReadOnly
+      case ConcurUpdatable.toInt => ConcurUpdatable
     }
 
   def unsafeFromInt(n: Int): ResultSetConcurrency =
