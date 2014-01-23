@@ -1,4 +1,4 @@
-package doobie.dbc
+package doobie.dbc.enum
 
 import java.sql.ResultSet._
 

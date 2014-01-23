@@ -1,6 +1,6 @@
 package doobie
-package dbc
 
+import dbc._
 import scalaz.Show
 import scalaz.effect.IO
 import scalaz.effect.kleisliEffect._

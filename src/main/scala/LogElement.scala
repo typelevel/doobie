@@ -1,5 +1,4 @@
 package doobie
-package dbc
 
 import scalaz.Show
 

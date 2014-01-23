@@ -1,6 +1,7 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scalaz._
 import Scalaz._
 import scalaz.effect.IO
@@ -8,9 +9,7 @@ import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 
-trait StatementFunctions extends StatementOps[sql.Statement]
-
-trait StatementOps[A <: sql.Statement] extends DWorld[A] {
+trait StatementOps[A <: sql.Statement] extends PrimitiveOps[A] {
   
   def addBatch(sql: String): Action[Unit] =
     primitive(s"addBatch($sql)", _.addBatch(sql))

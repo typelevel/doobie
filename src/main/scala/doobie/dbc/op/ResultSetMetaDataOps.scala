@@ -1,11 +1,12 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scalaz.effect.IO
 import java.sql
 
 // TODO: enum usage
-trait ResultSetMetaDataFunctions extends DWorld[sql.ResultSetMetaData] {
+trait ResultSetMetaDataOps extends PrimitiveOps[sql.ResultSetMetaData] {
 
   def getCatalogName(column: Int): ResultSetMetaData[String] =
     primitive(s"getCatalogName($column)", _.getCatalogName(column))

@@ -1,6 +1,7 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scalaz._
 import Scalaz._
 import scala.collection.JavaConverters._
@@ -13,7 +14,7 @@ import java.io.{ InputStream, Reader }
 import java.net.URL
 import java.util.{ Calendar }
 
-trait ResultSetFunctions extends DWorld[java.sql.ResultSet] {
+trait ResultSetOps extends PrimitiveOps[java.sql.ResultSet] {
 
   def absolute(row: Int): Action[Boolean] =
     primitive(s"absolute($row)", _.absolute(row))

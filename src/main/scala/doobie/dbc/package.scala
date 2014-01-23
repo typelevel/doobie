@@ -1,5 +1,6 @@
 package doobie
 
+import java.sql
 import scalaz._
 import scalaz.syntax.monad._
 import scalaz.syntax.effect.monadCatchIO._
@@ -9,14 +10,14 @@ import scalaz.effect.kleisliEffect._
 
 package object dbc {
 
-  object callablestatement extends CallableStatementFunctions
-  object connection        extends ConnectionFunctions
-  object databasemetadata  extends DatabaseMetaDataFunctions
-  object parametermetadata extends ParameterMetaDataFunctions
-  object preparedstatement extends PreparedStatementFunctions
-  object resultset         extends ResultSetFunctions
-  object resultsetmetadata extends ResultSetMetaDataFunctions
-  object statement         extends StatementFunctions
+  object callablestatement extends op.CallableStatementOps
+  object connection extends op.ConnectionOps
+  object databasemetadata extends op.DatabaseMetaDataOps
+  object parametermetadata extends op.ParameterMetaDataOps
+  object preparedstatement extends op.PreparedStatementOps[sql.PreparedStatement]
+  object resultset extends op.ResultSetOps
+  object resultsetmetadata extends op.ResultSetMetaDataOps
+  object statement extends op.StatementOps[sql.Statement]
 
   type Connection[+A]        = connection.Action[A]  
   type Statement[+A]         = statement.Action[A]
@@ -28,6 +29,7 @@ package object dbc {
   type ResultSetMetaData[+A] = resultsetmetadata.Action[A]
 
   type Log[L] = util.TreeLogger[L]
+  type Action0[S0, +A] = Kleisli[IO, (Log[LogElement], S0), A]
 
 }
 

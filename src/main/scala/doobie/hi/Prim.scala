@@ -2,6 +2,7 @@ package doobie
 package hi
 
 import dbc.{ preparedstatement => ps, resultset => rs, _ }
+import dbc.enum._
 
 abstract class Prim[A](val jdbcType: JdbcType) { outer =>
 

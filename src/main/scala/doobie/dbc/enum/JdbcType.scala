@@ -1,8 +1,6 @@
-package doobie
+package doobie.dbc.enum
 
 import java.sql.Types._
-import scalaz._
-import Scalaz._
 
 sealed abstract class JdbcType(val toInt: Int)
 object JdbcType {
@@ -46,42 +44,42 @@ object JdbcType {
 
   def fromInt(n:Int): Option[JdbcType] =
     Some(n) collect {
-      case Array.toInt          => Array         
-      case Bigint.toInt         => Bigint        
-      case Binary.toInt         => Binary        
-      case Bit.toInt            => Bit           
-      case Blob.toInt           => Blob          
-      case Boolean.toInt        => Boolean       
-      case Char.toInt           => Char          
-      case Clob.toInt           => Clob          
-      case Datalink.toInt       => Datalink      
-      case Date.toInt           => Date          
-      case Decimal.toInt        => Decimal       
-      case Distinct.toInt       => Distinct      
-      case Double.toInt         => Double        
-      case Float.toInt          => Float         
-      case Integer.toInt        => Integer       
-      case JavaObject.toInt     => JavaObject    
-      case LongnVarChar.toInt   => LongnVarChar  
-      case LongVarBinary.toInt  => LongVarBinary 
-      case LongVarChar.toInt    => LongVarChar   
-      case NChar.toInt          => NChar         
-      case NClob.toInt          => NClob         
-      case Null.toInt           => Null          
-      case Numeric.toInt        => Numeric       
-      case NVarChar.toInt       => NVarChar      
-      case Other.toInt          => Other         
-      case Real.toInt           => Real          
-      case Ref.toInt            => Ref           
-      case RowId.toInt          => RowId         
-      case SmallInt.toInt       => SmallInt      
-      case SqlXml.toInt         => SqlXml        
-      case Struct.toInt         => Struct        
-      case Time.toInt           => Time          
-      case Timestamp.toInt      => Timestamp     
-      case TinyInt.toInt        => TinyInt       
-      case VarBinary.toInt      => VarBinary     
-      case VarChar.toInt        => VarChar       
+      case Array.toInt         => Array         
+      case Bigint.toInt        => Bigint        
+      case Binary.toInt        => Binary        
+      case Bit.toInt           => Bit           
+      case Blob.toInt          => Blob          
+      case Boolean.toInt       => Boolean       
+      case Char.toInt          => Char          
+      case Clob.toInt          => Clob          
+      case Datalink.toInt      => Datalink      
+      case Date.toInt          => Date          
+      case Decimal.toInt       => Decimal       
+      case Distinct.toInt      => Distinct      
+      case Double.toInt        => Double        
+      case Float.toInt         => Float         
+      case Integer.toInt       => Integer       
+      case JavaObject.toInt    => JavaObject    
+      case LongnVarChar.toInt  => LongnVarChar  
+      case LongVarBinary.toInt => LongVarBinary 
+      case LongVarChar.toInt   => LongVarChar   
+      case NChar.toInt         => NChar         
+      case NClob.toInt         => NClob         
+      case Null.toInt          => Null          
+      case Numeric.toInt       => Numeric       
+      case NVarChar.toInt      => NVarChar      
+      case Other.toInt         => Other         
+      case Real.toInt          => Real          
+      case Ref.toInt           => Ref           
+      case RowId.toInt         => RowId         
+      case SmallInt.toInt      => SmallInt      
+      case SqlXml.toInt        => SqlXml        
+      case Struct.toInt        => Struct        
+      case Time.toInt          => Time          
+      case Timestamp.toInt     => Timestamp     
+      case TinyInt.toInt       => TinyInt       
+      case VarBinary.toInt     => VarBinary     
+      case VarChar.toInt       => VarChar       
     }
 
   def unsafeFromInt(n:Int): JdbcType =

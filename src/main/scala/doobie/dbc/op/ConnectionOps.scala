@@ -1,6 +1,7 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scala.collection.JavaConverters._
 import scalaz.effect._
 import scalaz.effect.kleisliEffect._
@@ -11,7 +12,7 @@ import java.sql
 import java.sql.{ Savepoint, Blob, Clob, NClob, SQLXML, Struct }
 
 // ok
-trait ConnectionFunctions extends DWorld[java.sql.Connection] {
+trait ConnectionOps extends PrimitiveOps[java.sql.Connection] {
 
   def clearWarnings: Action[Unit] = 
     primitive(s"clearWarnings", _.clearWarnings)

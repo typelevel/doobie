@@ -1,4 +1,5 @@
-package doobie.dbc
+package doobie.dbc.enum
+
 import java.sql.ResultSet._
 
 sealed abstract class FetchDirection(val toInt: Int)

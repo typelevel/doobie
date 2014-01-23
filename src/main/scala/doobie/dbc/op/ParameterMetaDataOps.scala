@@ -1,11 +1,12 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scalaz.effect.IO
 import java.sql
 
 // TODO: enum usage
-trait ParameterMetaDataFunctions extends DWorld[sql.ParameterMetaData] {
+trait ParameterMetaDataOps extends PrimitiveOps[sql.ParameterMetaData] {
 
   def getParameterClassName(param: Int): ParameterMetaData[String] =
     primitive(s"getParameterClassName($param)", _.getParameterClassName(param))

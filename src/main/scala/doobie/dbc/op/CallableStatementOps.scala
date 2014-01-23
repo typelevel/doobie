@@ -1,6 +1,7 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scalaz.effect.IO
 import java.sql
 import java.sql.{ Blob, Clob, NClob, Date, Time, Timestamp, Ref, RowId, SQLXML }
@@ -10,7 +11,7 @@ import java.net.URL
 import scala.collection.JavaConverters._
 
 // ok
-trait CallableStatementFunctions extends PreparedStatementOps[sql.CallableStatement] {
+trait CallableStatementOps extends PreparedStatementOps[sql.CallableStatement] {
 
   def getArray(index: Int): Action[sql.Array] =
     primitive(s"getArray($index)", _.getArray(index))

@@ -1,6 +1,7 @@
-package doobie
-package dbc
+package doobie.dbc
+package op
 
+import enum._
 import scalaz._
 import Scalaz._
 import scalaz.effect.IO
@@ -11,8 +12,6 @@ import java.sql.{ Time, Timestamp, Ref, Blob, Date, Clob }
 import java.net.URL
 import java.io.{ InputStream, Reader }
 import java.util.Calendar
-
-trait PreparedStatementFunctions extends PreparedStatementOps[sql.PreparedStatement]
 
 trait PreparedStatementOps[A <: sql.PreparedStatement] extends StatementOps[A] { 
 
