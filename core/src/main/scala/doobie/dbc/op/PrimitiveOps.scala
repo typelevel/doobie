@@ -36,14 +36,14 @@ trait PrimitiveOps[S] {
    * @param f the primitive action
    */
   def primitive[A](label: => String, f: S => A): Action[A] =
-    push(label, ask[IO, (Log[LogElement], S)].map(p => f(p._2)))
+    push(label)(ask[IO, (Log[LogElement], S)].map(p => f(p._2)))
 
   /** 
    * Push the given action down in the log stack, labeled as specified.
    * @param label log label for the new `Action`.
    * @param a the `Action` being pushed.
    */
-  def push[A](label: => String, a: Action[A]): Action[A] =
+  def push[A](label: => String)(a: Action[A]): Action[A] =
     log.flatMap(_.log(LogElement(label), a))
 
   /** 
@@ -58,7 +58,7 @@ trait PrimitiveOps[S] {
     for {
       p <- log tuple state
       a = ensuring[({type λ[α] = Action0[T,α]})#λ, A, Unit](action, cleanup).run(p).liftIO[Action]
-      a <- push("gosub/cleanup", a)
+      a <- push("gosub/cleanup")(a)
     } yield a
 
   /** 
@@ -67,6 +67,6 @@ trait PrimitiveOps[S] {
    * @param action an `Action0` with carrier type `T` producing our final answer
    */
   def gosub0[T,A](state: Action[T], action: Action0[T,A]): Action[A] =
-    log tuple state >>= (p => push("gosub", action.run(p).liftIO[Action]))
+    log tuple state >>= (p => push("gosub")(action.run(p).liftIO[Action]))
 
 }

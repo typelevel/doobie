@@ -41,13 +41,12 @@ object HiUsage extends SafeApp {
     } yield l.length
 
   def loadDatabase(f: File): Connection[Boolean] =
-    connection.push(
-      s"populate database from ${f.getAbsolutePath}",
-      sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".execute)
+    connection.push(s"populate database from ${f.getAbsolutePath}") {
+      sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".execute
+    }
 
   def countriesWithSpeakers(s: String, p: Double): Connection[List[Country]] =
-    connection.push(
-      s"find countries where more than $p% of population speak $s",
+    connection.push(s"find countries where more than $p% of population speak $s") {
       sql"""
         SELECT C.CODE, C.NAME, C.POPULATION
         FROM COUNTRYLANGUAGE L
@@ -55,6 +54,7 @@ object HiUsage extends SafeApp {
         ON L.COUNTRYCODE = C.CODE
         WHERE LANGUAGE = $s AND PERCENTAGE > $p
         ORDER BY COUNTRYCODE
-        """.executeQuery(drop(2) >> list[Country]))
+        """.executeQuery(drop(2) >> list[Country])
+    }
 
 }
