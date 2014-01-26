@@ -6,6 +6,7 @@ import Scalaz._
 import scalaz.effect.IO
 import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
+import scalaz.stream._
 
 /** Pure functional high-level JDBC layer. */
 package object hi {
@@ -77,11 +78,12 @@ package object hi {
       }
     }
 
-
-
- import connection.prepareStatement
+  /** Construct a process that consumes values. `run` or `runLog` to get a ResultSet[X]. */
+  def process[A: Comp]: Process[ResultSet, A] =
+    Process.repeatEval(headOption[A]).takeWhile(_.isDefined).map(_.get)
 
   implicit class SqlInterpolator(val sc: StringContext) {
+    import connection.prepareStatement
 
     class Source[A: Comp](a: A) {
 

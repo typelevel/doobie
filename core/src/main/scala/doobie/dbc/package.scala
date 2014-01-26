@@ -7,6 +7,7 @@ import scalaz.syntax.effect.monadCatchIO._
 import scalaz.effect._
 import scalaz.effect.IO._
 import scalaz.effect.kleisliEffect._
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Pure functional low-level JDBC layer. */
 package object dbc {
@@ -31,6 +32,14 @@ package object dbc {
 
   type Log[L] = util.TreeLogger[L]
   type Action0[S0, +A] = Kleisli[IO, (Log[LogElement], S0), A]
+
+  implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
+    new Catchable[({ type l[a] = Action0[S, a] })#l] {
+      def attempt[A](fa: Action0[S,A]) = fa.map(a => \/.fromTryCatch(a))
+      def fail[A](t: Throwable) = Kleisli(_ => IO(throw t))
+    }
+
+  catchableAction0[sql.Connection] : Catchable[Connection]
 
 }
 
