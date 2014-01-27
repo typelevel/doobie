@@ -36,7 +36,7 @@ Drawbacks:
 
  - It is possible to access the passed state, which is an unsafe thing to do because it's usually a lifetime-managed JDBC object that we would prefer to keep under wraps. 
 
- However: 
+However: 
 
   - Doobie provides primitive actions for the entire JDBC API, so there should be no reason for the typical user to go digging for the underlying state.
   - You are unlikely to do so by accident, and if you do it on purpose we assume you know what you're doing.
