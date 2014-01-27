@@ -54,7 +54,7 @@ object HiUsage extends SafeApp {
         ON L.COUNTRYCODE = C.CODE
         WHERE LANGUAGE = $s AND PERCENTAGE > $p
         ORDER BY COUNTRYCODE
-        """.executeQuery(drop(2) >> list[Country])
+        """.executeQuery(process[Country].drop(2).runLog.map(_.toList))
     }
 
 }

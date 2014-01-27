@@ -92,6 +92,7 @@ object FirstExampleDAO {
 
   // TODO: what i'd really like  to see ^^ is
   // def coffeesLessThan0(price: Double): Processs[Connection, (String, String)] = ...
+  // which i think we should be able to
 
   def insertSupplier(s: Supplier): Connection[Int] =
     connection.push(s"insertSupplier($s))") {

@@ -3,6 +3,7 @@ package doobie
 import java.sql
 import scalaz._
 import scalaz.syntax.monad._
+import scalaz.syntax.id._
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz.effect._
 import scalaz.effect.IO._
@@ -35,7 +36,13 @@ package object dbc {
 
   implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
     new Catchable[({ type l[a] = Action0[S, a] })#l] {
-      def attempt[A](fa: Action0[S,A]) = fa.map(a => \/.fromTryCatch(a))
+      def attempt[A](fa: Action0[S,A]): Action0[S, Throwable \/ A] = Kleisli { s =>
+        try {
+          fa.run(s).catchLeft
+        } catch {
+          case t: Throwable => IO(t.left)
+        }
+      }
       def fail[A](t: Throwable) = Kleisli(_ => IO(throw t))
     }
 
