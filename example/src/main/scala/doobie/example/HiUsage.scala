@@ -2,8 +2,9 @@ package doobie.example
 
 
 import doobie._
-import doobie.dbc._
 import doobie.hi._
+
+import resultset._
 
 import scalaz._
 import Scalaz._

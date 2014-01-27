@@ -2,11 +2,12 @@ package doobie.example
 
 import scalaz._, Scalaz._, effect._, IO._
 import scalaz.stream._
-import doobie._, dbc._, hi._
+import doobie._, hi._
 
 import kleisliEffect._
 import connection._
 import preparedstatement._
+import resultset._
 
 // Example lifted from slick
 object FirstExample extends SafeApp {
