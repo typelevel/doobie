@@ -5,8 +5,8 @@ import scalaz.stream._
 import doobie._, hi._
 
 import kleisliEffect._
-import connection._
-import preparedstatement._
+import connection.prepareStatement
+import preparedstatement.executeQuery
 import resultset._
 
 // Example lifted from slick
@@ -88,7 +88,7 @@ object FirstExampleDAO {
       """.executeQuery(k)
     }
 
-  def coffeesLessThan0[A](price: Double)(k: Process[ResultSet, (String, String)] => ResultSet[A]): Connection[A] =
+  def coffeesLessThan0[A](price: Double)(k: (String, String) >-> A): Connection[A] =
     coffeesLessThan(price)(k(process[(String, String)]))
 
   // TODO: what i'd really like  to see ^^ is

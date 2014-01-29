@@ -34,7 +34,7 @@ package object hi  {
     dbc.catchableAction0[S]
 
 
-
+  type >->[A,B] = Process[ResultSet, A] => ResultSet[B]
 
 
   implicit class SqlInterpolator(val sc: StringContext) {
@@ -67,8 +67,8 @@ package object hi  {
     def sql() = new Source0
     def sql[A: Prim](a: A) = new Source(a)
     def sql[A: Prim, B: Prim](a: A, b: B) = new Source((a,b))
-    def sql[A: Prim, B: Prim, C: Prim](a: A, b: B, c: C, d: D, e: E) = new Source((a,b,c))
-    def sql[A: Prim, B: Prim, C: Prim, D: Prim](a: A, b: B, c: C, d: D, e: E) = new Source((a,b,c,d))
+    def sql[A: Prim, B: Prim, C: Prim](a: A, b: B, c: C) = new Source((a,b,c))
+    def sql[A: Prim, B: Prim, C: Prim, D: Prim](a: A, b: B, c: C, d: D) = new Source((a,b,c,d))
     def sql[A: Prim, B: Prim, C: Prim, D: Prim, E: Prim](a: A, b: B, c: C, d: D, e: E) = new Source((a,b,c,d,e))
     def sql[A: Prim, B: Prim, C: Prim, D: Prim, E: Prim, F: Prim](a: A, b: B, c: C, d: D, e: E, f: F) = new Source((a,b,c,d,e, f))
 
