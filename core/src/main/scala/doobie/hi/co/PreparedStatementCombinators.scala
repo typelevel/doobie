@@ -18,11 +18,11 @@ trait PreparedStatementCombinators[A <: sql.PreparedStatement] extends PreparedS
   
   ////// CONVENIENCE COMBINATORS
 
- /** Consume and return all rows as a Vector. */
+  /** Consume and return all rows as a Vector. */
   def vector[A: Comp]: Action[Vector[A]] =
     push("vector")(executeQuery(resultset.vector[A]))
 
- /** Consume and return all rows as a List. */
+  /** Consume and return all rows as a List. */
   def list[A: Comp]: Action[List[A]] = 
     push("list")(executeQuery(resultset.list[A]))
 
@@ -31,3 +31,4 @@ trait PreparedStatementCombinators[A <: sql.PreparedStatement] extends PreparedS
     push("list")(executeQuery(resultset.sink[A](effect)))
 
 }
+

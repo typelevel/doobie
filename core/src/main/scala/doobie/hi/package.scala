@@ -4,18 +4,17 @@ import java.sql
 import scalaz._
 import Scalaz._
 import scalaz.effect.{IO, MonadIO}
-import scalaz.effect.kleisliEffect._
+import scalaz.effect.KleisliEffectInstances
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz.stream._
 
 /** Pure functional high-level JDBC layer. */
-package object hi  {
+package object hi extends KleisliEffectInstances {
 
+  // Modules
   object preparedstatement extends  co.PreparedStatementCombinators[sql.PreparedStatement]
   object resultset extends co.ResultSetCombinators
-
-  // for now
-  val connection = dbc.connection
+  object connection extends co.ConnectionCombinators
 
   type Connection[+A]        = connection.Action[A]  
   // type Statement[+A]         = statement.Action[A]

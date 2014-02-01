@@ -4,7 +4,6 @@ import scalaz._, Scalaz._, effect._, IO._
 import scalaz.stream._
 import doobie._, hi._
 
-import kleisliEffect._
 import connection.prepareStatement
 import preparedstatement.executeQuery
 import resultset._
