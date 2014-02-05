@@ -9,7 +9,7 @@ import scalaz.syntax.effect.monadCatchIO._
 import scalaz.stream._
 
 /** Pure functional high-level JDBC layer. */
-package object hi extends KleisliEffectInstances {
+package object hi extends KleisliEffectInstances with ToCatchSqlOps {
 
   // Modules
   object preparedstatement extends  co.PreparedStatementCombinators[sql.PreparedStatement]

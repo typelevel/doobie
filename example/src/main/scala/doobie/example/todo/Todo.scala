@@ -14,7 +14,14 @@ object Todo extends SafeApp {
   ////// ENTRY POINT
 
   override def runc: IO[Unit] =
-    greet >> (database >>= Repl.run) >> ungreet
+    for {
+      _ <- greet
+      d <- database
+      l <- util.TreeLogger.newLogger(LogElement("initializing database"))
+      _ <- d.run(DAO.init, l)
+      _ <- Repl.run(d)
+      _ <- ungreet
+    } yield ()
 
   def greet: IO[Unit] =
     putStrLn(s"""

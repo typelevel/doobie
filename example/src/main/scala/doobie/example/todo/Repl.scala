@@ -2,9 +2,11 @@ package doobie.example.todo
 
 import doobie._
 import doobie.hi._
+import java.sql.SQLException
 
 import scalaz._, Scalaz._
 import scalaz.effect._, stateTEffect._, IO._
+import syntax.effect.monadCatchIO._
 
 object Repl {
 
@@ -43,6 +45,7 @@ object Repl {
   def interp0(s: String): Repl[Boolean] =
     s.split("\\s+").toList match {
       case List("topics") => topics
+      case List("mktopic", name) => mktopic(name)
       case List("quit")   => quit
       case List("help")   => help
       case List("")       => true.point[Repl]
@@ -51,34 +54,72 @@ object Repl {
 
   ////// COMBINATORS
 
-  def dbCommand[A](cmd: String)(a: Connection[A]): Repl[A] =
-    for {
-      l <- util.TreeLogger.newLogger(LogElement(cmd)).liftIO[Repl]
-      a <- db >>= (_.run(a, l).liftIO[Repl])
-    } yield a
+  type Command = Repl[Boolean]
+
+  def dbCommand(cmd: String)(a: Connection[Boolean]): Command =
+    db >>= { d =>
+
+      // todo: catchSomeLeft[Exception], set or unset last exception, always set last log
+
+      val action: IO[Boolean] =
+        for {
+          l <- util.TreeLogger.newLogger(LogElement(cmd))
+          a <- d.run(a, l).except { 
+                case e: SQLException =>  
+                  // SQLState codes here:
+                  for {
+                    _ <- IO.putStrLn(s"SQLState: ${e.getSQLState}")
+                    _ <- IO.putStrLn(s"${Console.RED}${e.getMessage}${Console.RESET}")
+                } yield true
+                case t: Throwable => throw t
+              }
+        } yield a
+
+      action.liftIO[Repl]
+
+    }
 
   ////// COMMANDS
 
-  def wat: Repl[Boolean] =
+  def wat: Command =
     putStrLn("wat? try 'help' for help").liftIO[Repl] >| true
 
-  def help: Repl[Boolean] =
+  def help: Command =
     putStrLn("""
     |  help          print this summary
     |  topics        list all topics
     |  quit          exit the app (also ^D)
     """.trim.stripMargin).liftIO[Repl] >| true
 
-  def quit: Repl[Boolean] =
+  def quit: Command =
     false.point[Repl]
 
-  def kick: Repl[Boolean] =
+  def kick: Command =
     putStrLn("^D").liftIO[Repl] >> quit
 
-  def topics: Repl[Boolean] =
+  def topics: Command =
     dbCommand("topics") {
       DAO.topics(t => IO.putStrLn(t.toString)) >| true
+    } 
+
+  def mktopic(name: String): Command =
+    dbCommand(s"mktopic($name)") {
+
+      val action: Connection[Boolean] =
+        for { 
+          t <- DAO.insertTopic(name) >> DAO.lastIdentity >>= DAO.selectTopic
+          _ <- IO.putStrLn(t.toString).liftIO[Connection]
+        } yield true
+
+      // ftp://ftp.software.ibm.com/ps/products/db2/info/vr6/htm/db2m0/db2state.htm#HDRSTTMSG
+      action.catchSqlState("23505") {
+        IO.putStrLn("[error] A topic of this name already exists.").liftIO[Connection] >| true
+      }
+
     }
 
 }
+
+
+
 

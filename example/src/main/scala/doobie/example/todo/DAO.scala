@@ -6,15 +6,53 @@ import Scalaz._
 
 import doobie._
 import doobie.hi._
+import doobie.hi.resultset._
 
 import Model._
 
+// These methods map 1:1 with SQL statements
 object DAO {
 
-  val fixture: List[Topic] = 
-    List(Topic(1, "foo"), Topic(2, "bar"), Topic(3, "baz"))
+  def topics(effect: Topic => IO[Unit]): Connection[Unit] =
+    connection.push("topics(<effect>)") {
+      sql"""
+        SELECT topic_id, name FROM topic
+        ORDER BY name ASC
+      """.executeQuery(sink[Topic](effect))
+    }
 
-  def topics(sink: Topic => IO[Unit]): Connection[Unit] =
-    fixture.traverse_(sink).liftIO[Connection]
+  def insertTopic(name: String): Connection[Int] =
+    connection.push(s"insertTopic($name)") {
+      sql"""
+        INSERT INTO topic (name)
+        VALUES ($name)
+      """.executeUpdate
+    }
+
+  def selectTopic(id: Int): Connection[Topic] =
+    connection.push(s"selectTopic($id)") {
+      sql"""
+        SELECT topic_id, name
+        FROM topic
+        WHERE topic_id = $id
+      """.executeQuery(getUnique[Topic])
+    }
+
+  def lastIdentity: Connection[Int] =
+    connection.push("lastIdentity") {
+      sql"""
+        SELECT IDENTITY()
+      """.executeQuery(getUnique[Int])
+    }
+
+  def init: Connection[Boolean] = 
+    connection.push("init") {
+      sql"""
+        CREATE TABLE topic (
+          topic_id IDENTITY,
+          name     VARCHAR NOT NULL UNIQUE
+        );
+      """.execute
+    }
 
 }

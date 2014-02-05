@@ -29,7 +29,20 @@ trait ResultSetCombinators extends op.ResultSetOps {
         case false => None.point[Action]
       }
     }
- 
+
+  // TODO: this isn't very good
+  def getUnique[A: Comp]: Action[A] =
+    for {
+      a <- getNext[A]
+      b <- next
+    } yield {
+      (a, b) match {
+        case (Some(a), false) => a
+        case (Some(a), true)  => sys.error("Row is not unique")
+        case (None, _)        => sys.error("No rows returned")
+      }
+    }
+
   ////// PRIMITIVE STREAMING
 
   /** 
