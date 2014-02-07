@@ -1,4 +1,5 @@
-package doobie.dbc.enum
+package doobie
+package dbc.enum
 
 import java.sql.ResultSet._
 
@@ -17,7 +18,7 @@ object FetchDirection {
     }
 
   def unsafeFromInt(n: Int): FetchDirection =
-    fromInt(n).getOrElse(sys.error(s"FetchDirection: no such ordinal: $n"))
+    fromInt(n).getOrElse(throw InvalidOrdinal[FetchDirection](n))
 
 }
 

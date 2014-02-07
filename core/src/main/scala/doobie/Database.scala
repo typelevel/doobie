@@ -15,7 +15,7 @@ final class Database private (url: String, user: String, pass: String) {
     for {
       c <- l.log(LogElement(s"getConnection($url, $user, ***)"), IO(sql.DriverManager.getConnection(url, user, pass)))
       _ <- connection.setAutoCommit(false).run((l,c)) // hmmm
-      a <- l.log(LogElement("gosub/cleanup"), ((k <* connection.commit) ensuring connection.close).run((l, c)))
+      a <- l.log(LogElement("try/finally"), (k ensuring (connection.rollback >> connection.close)).run((l, c)))
     } yield a
 
 }

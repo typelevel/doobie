@@ -38,6 +38,15 @@ object DAO {
       """.executeQuery(getUnique[Topic])
     }
 
+  def selectTopicByName(name: String): Connection[Option[Topic]] =
+    connection.push(s"findTopicByName($name)") {
+      sql"""
+        SELECT topic_id, name
+        FROM topic
+        WHERE name = $name
+      """.executeQuery(getNext[Topic])
+    }
+
   def lastIdentity: Connection[Int] =
     connection.push("lastIdentity") {
       sql"""

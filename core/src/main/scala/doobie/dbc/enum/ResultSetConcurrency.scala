@@ -1,4 +1,5 @@
-package doobie.dbc.enum
+package doobie
+package dbc.enum
 
 import java.sql.ResultSet._
 
@@ -15,6 +16,6 @@ object ResultSetConcurrency {
     }
 
   def unsafeFromInt(n: Int): ResultSetConcurrency =
-    fromInt(n).getOrElse(sys.error(s"ResultSetConcurrency: no such ordinal: $n"))
+    fromInt(n).getOrElse(throw InvalidOrdinal[ResultSetConcurrency](n))
 
 }

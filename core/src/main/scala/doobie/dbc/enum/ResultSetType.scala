@@ -1,4 +1,5 @@
-package doobie.dbc.enum
+package doobie
+package dbc.enum
 
 import java.sql.ResultSet._
 
@@ -17,6 +18,6 @@ object ResultSetType {
     }
 
   def unsafeFromInt(n: Int): ResultSetType =
-    fromInt(n).getOrElse(sys.error(s"ResultSetType: no such ordinal: $n"))
+    fromInt(n).getOrElse(throw InvalidOrdinal[ResultSetType](n))
 
 }

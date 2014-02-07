@@ -1,4 +1,5 @@
-package doobie.dbc.enum
+package doobie
+package dbc.enum
 
 import java.sql.Types._
 
@@ -83,7 +84,7 @@ object JdbcType {
     }
 
   def unsafeFromInt(n:Int): JdbcType =
-    fromInt(n).getOrElse(sys.error(s"JdbcType: no such ordinal: $n"))
+    fromInt(n).getOrElse(throw InvalidOrdinal[JdbcType](n))
 
 }
 

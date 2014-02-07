@@ -1,4 +1,5 @@
-package doobie.dbc.enum
+package doobie
+package dbc.enum
 
 import java.sql.Connection._
 
@@ -21,6 +22,6 @@ object TransactionIsolation {
     }
 
   def unsafeFromInt(n: Int): TransactionIsolation =
-    fromInt(n).getOrElse(sys.error(s"TransactionIsolation: no such ordinal: $n"))
+    fromInt(n).getOrElse(throw InvalidOrdinal[TransactionIsolation](n))
 
 }

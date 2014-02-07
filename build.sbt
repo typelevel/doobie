@@ -31,3 +31,4 @@ lazy val core = project.in(file("core"))
 lazy val test = project.in(file("test")).dependsOn(core)
 
 lazy val example = project.in(file("example")).dependsOn(core)
+

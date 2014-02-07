@@ -58,7 +58,7 @@ trait PrimitiveOps[S] {
     for {
       p <- log tuple state
       a = ensuring[({type λ[α] = Action0[T,α]})#λ, A, Unit](action, cleanup).run(p).liftIO[Action]
-      a <- push("gosub/cleanup")(a)
+      a <- push("try/finally")(a)
     } yield a
 
   /** 

@@ -1,4 +1,5 @@
-package doobie.dbc.enum
+package doobie
+package dbc.enum
 
 import java.sql.ResultSet._
 
@@ -15,7 +16,7 @@ object Holdability {
     }
 
   def unsafeFromInt(n:Int): Holdability =
-    fromInt(n).getOrElse(sys.error(s"Holdability: no such ordinal: $n"))
+    fromInt(n).getOrElse(throw InvalidOrdinal[Holdability](n))
 
 }
 

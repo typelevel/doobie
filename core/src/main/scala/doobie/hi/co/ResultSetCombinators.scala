@@ -18,8 +18,8 @@ trait ResultSetCombinators extends op.ResultSetOps {
     resultset.push(s"structured get at index $index")(A.get(index))
 
   /** Get a structured value at the beginning of the current row (index 1). */
-  def get1[A](implicit A: Comp[A]): Action[A] =
-    resultset.push(s"get1")(A.get(1))
+  def get1[A: Comp]: Action[A] =
+    get(1)
 
   /** Consume and return the next row as a value of type `A`, if any. */
   def getNext[A: Comp]: Action[Option[A]] =
@@ -30,17 +30,15 @@ trait ResultSetCombinators extends op.ResultSetOps {
       }
     }
 
-  // TODO: this isn't very good
+  /** 
+   * Consume and the one and only remaining row, failing with [[UnexpectedCursorPosition]] if there 
+   * is not exactly one row remaining.
+   */
   def getUnique[A: Comp]: Action[A] =
-    for {
-      a <- getNext[A]
-      b <- next
-    } yield {
-      (a, b) match {
-        case (Some(a), false) => a
-        case (Some(a), true)  => sys.error("Row is not unique")
-        case (None, _)        => sys.error("No rows returned")
-      }
+    (getNext[A] |@| next) {
+      case (Some(a), false) => a
+      case (Some(a), true)  => throw UnexpectedContinuation
+      case (None, _)        => throw UnexpectedEnd
     }
 
   ////// PRIMITIVE STREAMING
@@ -57,7 +55,7 @@ trait ResultSetCombinators extends op.ResultSetOps {
   def mkSink[M[+_]: MonadIO, A](f: A => IO[Unit]): Sink[M, A] =
     Process.repeatEval(((a: A) => f(a).liftIO[M]).point[M])
 
-  ////// PRE-ARRANGED STREAMS
+  ////// CONVENIENCE STREAMS
 
   /** Consume and return all remaining rows as a Vector. */
   def vector[A: Comp]: Action[Vector[A]] = 
@@ -70,6 +68,6 @@ trait ResultSetCombinators extends op.ResultSetOps {
   /** Consume all remaining by passing to effectful action `effect`. */
   def sink[A: Comp](effect: A => IO[Unit]): Action[Unit] = 
     resultset.push(s"sink($effect)")(process[A].to(mkSink[Action, A](effect)).run)
- 
+
 }
 

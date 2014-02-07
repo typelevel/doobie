@@ -11,6 +11,7 @@ import scalaz.syntax.effect.monadCatchIO._
 
 object CatchSql extends CatchSqlFunctions
 
+/** Some SQLException-specific stuff for MonadCatchIO */
 trait CatchSqlFunctions {
 
   def catchSql[M[_]: MonadCatchIO, A](sqlState: String)(ma: M[A])(recover: SQLException => M[A]): M[A] =

@@ -34,6 +34,7 @@ package object dbc {
   type Log[L] = util.TreeLogger[L]
   type Action0[S0, +A] = Kleisli[IO, (Log[LogElement], S0), A]
 
+  // N.B. you get this for free in scalaz 7.1
   implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
     new Catchable[({ type l[a] = Action0[S, a] })#l] {
       def attempt[A](fa: Action0[S,A]): Action0[S, Throwable \/ A] = Kleisli { s =>
