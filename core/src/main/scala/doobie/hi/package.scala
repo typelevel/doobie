@@ -33,6 +33,19 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
     dbc.catchableAction0[S]
 
 
+  implicit class ProcessOps[F[+_]: Monad: Catchable, A](fa: Process[F,A]) {
+
+    def toVector: F[Vector[A]] =
+      fa.runLog.map(_.toVector)
+
+    def toList: F[List[A]] =
+      fa.runLog.map(_.toList)
+
+  }
+
+
+
+
   type >->[A,B] = Process[ResultSet, A] => ResultSet[B]
 
 
