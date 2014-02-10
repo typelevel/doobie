@@ -46,15 +46,13 @@ object HiUsage extends SafeApp {
     }
 
   def countriesWithSpeakers(s: String, p: Double): Connection[List[Country]] =
-    connection.push(s"find countries where more than $p% of population speak $s") {
-      sql"""
-        SELECT C.CODE, C.NAME, C.POPULATION
-        FROM COUNTRYLANGUAGE L
-        JOIN COUNTRY C 
-        ON L.COUNTRYCODE = C.CODE
-        WHERE LANGUAGE = $s AND PERCENTAGE > $p
-        ORDER BY COUNTRYCODE
-        """.executeQuery(process[Country].drop(2).runLog.map(_.toList))
-    }
+    sql"""
+      SELECT C.CODE, C.NAME, C.POPULATION
+      FROM COUNTRYLANGUAGE L
+      JOIN COUNTRY C 
+      ON L.COUNTRYCODE = C.CODE
+      WHERE LANGUAGE = $s AND PERCENTAGE > $p
+      ORDER BY COUNTRYCODE
+      """.process[Country].drop(2).runLog.map(_.toList)
 
 }

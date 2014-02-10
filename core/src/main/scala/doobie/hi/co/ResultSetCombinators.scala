@@ -9,7 +9,7 @@ import scalaz.effect.{IO, MonadIO}
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz.stream._
 
-trait ResultSetCombinators extends op.ResultSetOps {
+trait ResultSetCombinators extends op.ResultSetOps with ProcessPrimitives[java.sql.ResultSet] {
 
   ////// INITIAL COMBINATORS
 
@@ -46,14 +46,10 @@ trait ResultSetCombinators extends op.ResultSetOps {
   /** 
    * A process that consumes values by repeated calls to `getNext`. The various `run` methods on
    * `Process` will return a `ResultSet[_]` value. For example, `process[Widget].take(3).runLog`
-   * will return an IndexedSeq[Widget] with at most 3 elements.
+   * will produce an Action[IndexedSeq[Widget]] with at most 3 elements.
    */
   def process[A: Comp]: Process[Action, A] = 
     Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
-
-  /** Construct a `Sink` from an IO action, useful for Process.to */
-  def mkSink[M[+_]: MonadIO, A](f: A => IO[Unit]): Sink[M, A] =
-    Process.repeatEval(((a: A) => f(a).liftIO[M]).point[M])
 
   ////// CONVENIENCE STREAMS
 
@@ -67,7 +63,7 @@ trait ResultSetCombinators extends op.ResultSetOps {
 
   /** Consume all remaining by passing to effectful action `effect`. */
   def sink[A: Comp](effect: A => IO[Unit]): Action[Unit] = 
-    resultset.push(s"sink($effect)")(process[A].to(mkSink[Action, A](effect)).run)
+    resultset.push(s"sink($effect)")(process[A].to(mkSink(effect)).run)
 
 }
 

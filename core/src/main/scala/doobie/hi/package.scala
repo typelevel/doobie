@@ -53,6 +53,9 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
       def executeUpdate: Connection[Int] =
         go(preparedstatement.executeUpdate)
 
+      def process[X: Comp]: Process[Connection, X] =
+        connection.process[A, X](sc.parts.mkString("?"), a)
+
     }
 
 

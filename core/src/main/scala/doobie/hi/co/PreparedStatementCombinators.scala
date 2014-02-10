@@ -3,18 +3,28 @@ package hi
 package co
 
 import java.sql
-import dbc.op.PreparedStatementOps
 import scalaz._
 import Scalaz._
-import scalaz.effect.{IO, MonadIO}
-import scalaz.effect.kleisliEffect._
-import scalaz.syntax.effect.monadCatchIO._
+import scalaz.effect.IO
 import scalaz.stream._
 
-trait PreparedStatementCombinators[A <: sql.PreparedStatement] extends PreparedStatementOps[A] {
+trait PreparedStatementCombinators[A <: sql.PreparedStatement] 
+  extends dbc.op.PreparedStatementOps[A] 
+  with ProcessPrimitives[A] {
 
   def set[A](index: Int, a: A)(implicit A: Comp[A]): Action[Unit] =
     push(s"structured set at index $index: $a")(A.set(index, a))
+
+  def set1[A: Comp](a: A): Action[Unit] =
+    set(1, a)
+
+  ////// PROCESS LIFTING
+
+  def process[A: Comp]: Process[Action, A] = 
+    resource[sql.ResultSet, A](
+      primitive("acqiure/executeQuery", _.executeQuery))(rs =>
+      gosub0(rs.point[Action], resultset.close))(rs =>
+      gosub0(rs.point[Action], resultset.getNext[A]))
   
   ////// CONVENIENCE COMBINATORS
 
