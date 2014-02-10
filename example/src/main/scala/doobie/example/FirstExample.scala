@@ -13,7 +13,7 @@ object FirstExample extends SafeApp {
   import FirstAppModel._
   import FirstExampleDAO._
 
-  def examples: Connection[String] =
+  def examples: DBIO[String] =
     for {
 
       // Create our database
@@ -33,22 +33,22 @@ object FirstExample extends SafeApp {
             Coffee("French_Roast_Decaf", 49, 9.99, 0, 0)
           ).traverseU(insertCoffee).map(_.sum)
 
-      _ <- putStrLn(s"Inserted $s coffees").liftIO[Connection]
+      _ <- putStrLn(s"Inserted $s coffees").liftIO[DBIO]
 
-      // Select and print them out
-      _ <- allCoffees(sink[Coffee](c => putStrLn(c.toString)))
+      // Select and stream them to stdout
+      _ <- allCoffees.sink(c => IO.putStrLn(c.toString))
 
       // Coffee names and supplier names for all coffees costing less than $9.00
-      _ <- coffeesLessThan(9.0)(sink[(String, String)](c => putStrLn(c.toString)))
+      // streamed directly to stdout
+      _ <- coffeesLessThan(9.0).sink(putLn)
 
       // Read into a list this time
-      l <- coffeesLessThan(9.0)(list[(String, String)])
-      _ <- putStrLn(l.toString).liftIO[Connection]
+      l <- coffeesLessThan(9.0).toList
+      _ <- putStrLn(l.toString).liftIO[DBIO]
 
-      // Read into a vector this time (typesafe! look, no type params!)
-      // Can we get the lifting right and say coffeesLessThan0(9.0).take(1) ... runLog ??
-      v <- coffeesLessThan0(9.0)(_.take(1).map(p => (p._1 + "*" + p._2)).runLog)
-      _ <- putStrLn(v.toString).liftIO[Connection]
+      // Read into a vector this time 
+      v <- coffeesLessThan(9.0).take(2).map(p => (p._1 + "*" + p._2)).toVector
+      _ <- putStrLn(v.toString).liftIO[DBIO]
 
     } yield "All done!"
 
@@ -78,51 +78,33 @@ object FirstAppModel {
 object FirstExampleDAO {
   import FirstAppModel._
 
-  def coffeesLessThan[A](price: Double)(k: ResultSet[A]): Connection[A] =
-    connection.push(s"coffeesLessThan($price)") {
-      sql"""
+  def coffeesLessThan[A](price: Double): Process[DBIO, (String, String)] =
+    sql"""
       SELECT cof_name, sup_name
       FROM coffees JOIN suppliers ON coffees.sup_id = suppliers.sup_id
       WHERE price < $price
-      """.executeQuery(k)
-    }
+    """.process[(String, String)]
 
-  def coffeesLessThan0[A](price: Double)(k: (String, String) >-> A): Connection[A] =
-    coffeesLessThan(price)(k(process[(String, String)]))
-
-  // TODO: what i'd really like  to see ^^ is
-  // def coffeesLessThan0(price: Double): Processs[Connection, (String, String)] = ...
-  // which i think we should be able to
-
-  def insertSupplier(s: Supplier): Connection[Int] =
-    connection.push(s"insertSupplier($s))") {
-      sql"""
+  def insertSupplier(s: Supplier): DBIO[Int] =
+    sql"""
       INSERT INTO suppliers 
       VALUES (${s.id}, ${s.name}, ${s.street}, ${s.city}, ${s.state}, ${s.zip})
-      """.executeUpdate
-    }
+    """.executeUpdate
 
-  def insertCoffee(c: Coffee): Connection[Int] =
-    connection.push(s"insertCoffee($c))") {
-      sql"""
+  def insertCoffee(c: Coffee): DBIO[Int] =
+    sql"""
       INSERT INTO coffees 
       VALUES (${c.name}, ${c.supId}, ${c.price}, ${c.sales}, ${c.total})
-      """.executeUpdate
-    }
+    """.executeUpdate
 
-  // An issue here is that we haven't asserted the row type anywhere, so the caller just kind of
-  // needs to know. The issue is that ResultSet[A] is too general a type.
-  def allCoffees[A](k: ResultSet[A]): Connection[A] =
-    connection.push(s"allCoffees") {
-      sql"""
+  def allCoffees[A]: Process[DBIO, Coffee] =
+    sql"""
       SELECT cof_name, sup_id, price, sales, total 
       FROM coffees
-      """.executeQuery(k)
-    }
+    """.process[Coffee]
 
-  def create: Connection[Boolean] = 
-    connection.push("create") {
-      sql"""
+  def create: DBIO[Boolean] = 
+    sql"""
 
       CREATE TABLE suppliers (
         sup_id   INT     NOT NULL PRIMARY KEY,
@@ -144,7 +126,6 @@ object FirstExampleDAO {
       ALTER TABLE coffees
       ADD CONSTRAINT coffees_suppliers_fk FOREIGN KEY (sup_id) REFERENCES suppliers(sup_id);
 
-      """.execute
-    }
+    """.execute
 
 } 

@@ -66,7 +66,7 @@ trait PrimitiveOps[S] {
    * @param state an action to produce a new initial state of type `T`
    * @param action an `Action0` with carrier type `T` producing our final answer
    */
-  def gosub0[T,A](state: Action[T], action: Action0[T,A]): Action[A] =
-    log tuple state >>= (p => push("gosub")(action.run(p).liftIO[Action]))
+  def gosub0[T,A](state: Action[T], action: Action0[T,A], label: String = "gosub"): Action[A] =
+    log tuple state >>= (p => push(label)(action.run(p).liftIO[Action]))
 
 }

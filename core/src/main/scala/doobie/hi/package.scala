@@ -25,6 +25,8 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
   type ResultSet[+A]         = resultset.Action[A]
   // type ResultSetMetaData[+A] = resultsetmetadata.Action[A]
 
+  type DBIO[+A] = Connection[A]
+
 
   type Log[L] = dbc.Log[L]
   type Action0[S0, +A] = dbc.Action0[S0, A]
@@ -40,6 +42,9 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
 
     def toList: F[List[A]] =
       fa.runLog.map(_.toList)
+
+    def sink(f: A => IO[Unit])(implicit ev: MonadIO[F]): F[Unit] =     
+      fa.to(Process.repeatEval(((a: A) => f(a).liftIO[F]).point[F])).run
 
   }
 
@@ -76,6 +81,9 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
 
       override def go[B](b: PreparedStatement[B]): Connection[B] =
         prepareStatement(sc.parts.mkString("?"))(b)
+
+      override def process[X: Comp]: Process[Connection, X] =
+        connection.process0[X](sc.parts.mkString("?"))
 
     }
 

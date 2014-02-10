@@ -22,7 +22,7 @@ trait PreparedStatementCombinators[A <: sql.PreparedStatement]
 
   def process[A: Comp]: Process[Action, A] = 
     resource[sql.ResultSet, A](
-      primitive("acqiure/executeQuery", _.executeQuery))(rs =>
+      primitive("acqiure", _.executeQuery))(rs =>
       gosub0(rs.point[Action], resultset.close))(rs =>
       gosub0(rs.point[Action], resultset.getNext[A]))
   
