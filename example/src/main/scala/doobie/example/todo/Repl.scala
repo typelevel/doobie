@@ -13,20 +13,20 @@ object Repl {
 
   ////// ENTRY POINT
 
-  def run(db: Database): IO[Unit] =
-    loop.eval(ReplState.initial(db))
+  def run(ta: Transactor): IO[Unit] =
+    loop.eval(ReplState.initial(ta))
 
   ////// REPL STATE
 
   case class ReplState(
-    db:    Database, 
+    ta:    Transactor, 
     topic: Option[Topic], 
     log:   Option[Tree[util.TreeLogger.Node[LogElement]]], 
     ex:    Option[Exception])
 
   object ReplState {
-    def initial(d: Database): ReplState =
-      ReplState(d, None, None, None)
+    def initial(ta: Transactor): ReplState =
+      ReplState(ta, None, None, None)
   }
 
   type Repl[+A] = StateT[IO, ReplState, A]
@@ -116,12 +116,12 @@ object Repl {
 
   def dbCommand[A](cmd: String)(a: Connection[A]): Repl[Exception \/ A] =
     for {
-      d <- gets(_.db)
-      l <- util.TreeLogger.newLogger(LogElement(cmd)).liftIO[Repl]
-      e <- d.run(a, l).catchSomeLeft(justExceptions).liftIO[Repl]
+      d <- gets(_.ta)
+      e <- a.run(d).catchSomeLeft(justExceptions).liftIO[Repl]
       _ <- e.fold(e => err("An error occurred. Use `last` for details."), _ => IO.ioUnit).liftIO[Repl]
       _ <- mod(_.copy(ex = e.swap.toOption)) 
-      _ <- l.tree.liftIO[Repl] >>= (t => mod(_.copy(log = Some(t))))
+      // TODO: 
+      // _ <- l.tree.liftIO[Repl] >>= (t => mod(_.copy(log = Some(t))))
     } yield e
 
   // N.B. this will be unnecessary in 7.1

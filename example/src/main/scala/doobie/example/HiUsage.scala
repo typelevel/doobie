@@ -4,55 +4,56 @@ package doobie.example
 import doobie._
 import doobie.hi._
 
-import resultset._
-
 import scalaz._
 import Scalaz._
 import scalaz.effect._
-import scalaz.syntax.effect.monadCatchIO._
 import scalaz.effect.IO._
+import scalaz.stream.Process
 import java.io.File
 
 // JDBC program using the high-level API
 object HiUsage extends SafeApp {
-  
+
+  // A simple model object with a Show instance  
   case class Country(code: String, name: String, population: Int) {
-    if (code == "NCL") sys.error("Bogus country: NCL")
+    require(code != "CHE", "example random failure")
   }
-
   object Country {
-    implicit def show: Show[Country] = Show.showA
+    implicit def show: Show[Country] = 
+      Show.showA
   }
 
-  override def runc: IO[Unit] =
-    for {
-      l <- util.TreeLogger.newLogger(LogElement("hi.examples"))
-      d <- Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-      a <- d.run(examples, l).except(IO(_))
-      _ <- putStrLn("The answer was: " + a)
-      _ <- l.dump
-    } yield ()
+  // treat File as a primitive column type (contrived)
+  implicit def primFile: Prim[File] =
+    Prim[String].xmap(new File(_), _.getName)
 
-  def examples: Connection[Int] =
+  // Transactor, which handles the log and connections
+  val ta = DriverManagerTransactor[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+
+  // Entry point
+  override def runc: IO[Unit] =
+    examples.run(ta).except(t => putStrLn("failed: " + t))
+
+  // Some examples to run together in a single transaction
+  def examples: DBIO[Unit] =
     for {
       _ <- loadDatabase(new File("world.sql"))
-      l <- countriesWithSpeakers("French", 30)
-      _ <- l.traverseU(putLn(_)).liftIO[Connection]
-    } yield l.length
+      _ <- countriesWithSpeakers("French").take(10).sink(putLn)
+    } yield ()
 
-  def loadDatabase(f: File): Connection[Boolean] =
-    connection.push(s"populate database from ${f.getAbsolutePath}") {
-      sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".execute
-    }
+  def loadDatabase(f: File): DBIO[Boolean] =
+    sql"""
+      RUNSCRIPT FROM $f CHARSET 'UTF-8'
+    """.execute
 
-  def countriesWithSpeakers(s: String, p: Double): Connection[List[Country]] =
+  def countriesWithSpeakers(s: String): Process[DBIO, Country] =
     sql"""
       SELECT C.CODE, C.NAME, C.POPULATION
       FROM COUNTRYLANGUAGE L
       JOIN COUNTRY C 
       ON L.COUNTRYCODE = C.CODE
-      WHERE LANGUAGE = $s AND PERCENTAGE > $p
-      ORDER BY COUNTRYCODE
-      """.process[Country].drop(2).toList
+      WHERE LANGUAGE = $s
+      ORDER BY PERCENTAGE DESC
+      """.process[Country]
 
 }

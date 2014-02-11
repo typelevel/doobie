@@ -22,16 +22,12 @@ object DbcUsage extends SafeApp {
   
   case class CountryCode(code: String)
 
-  val database: IO[Database] =
-    Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  val ta = DriverManagerTransactor[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   
   override def runc: IO[Unit] =
     for {
-      d <- database 
-      l <- util.TreeLogger.newLogger(LogElement("dbc.examples"))
-      a <- d.run(examples, l).except(t => IO(t.toString))
+      a <- ta.exec(examples).except(t => IO(t.toString))
       _ <- putStrLn(a)
-      _ <- l.dump
     } yield ()
 
   def examples: Connection[String] =

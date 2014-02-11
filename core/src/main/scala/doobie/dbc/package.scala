@@ -31,8 +31,7 @@ package object dbc {
   type ResultSet[+A]         = resultset.Action[A]
   type ResultSetMetaData[+A] = resultsetmetadata.Action[A]
 
-  type Log[L] = util.TreeLogger[L]
-  type Action0[S0, +A] = Kleisli[IO, (Log[LogElement], S0), A]
+  type Action0[S0, +A] = Kleisli[IO, (Log, S0), A]
 
   // N.B. you get this for free in scalaz 7.1
   implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =

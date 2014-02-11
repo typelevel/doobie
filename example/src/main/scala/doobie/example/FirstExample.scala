@@ -52,16 +52,12 @@ object FirstExample extends SafeApp {
 
     } yield "All done!"
 
-  val database: IO[Database] =
-    Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  val ta = DriverManagerTransactor[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
   override def runc: IO[Unit] =
     for {
-      d <- database 
-      l <- util.TreeLogger.newLogger(LogElement("FirstExample"))
-      a <- d.run(examples, l).except(t => IO(t.toString))
+      a <- examples.run(ta).except(t => IO(t.toString))
       _ <- putStrLn(a.toString)
-      _ <- l.dump
     } yield ()
 
 }

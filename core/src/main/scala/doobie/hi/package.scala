@@ -27,12 +27,17 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
 
   type DBIO[+A] = Connection[A]
 
-
-  type Log[L] = dbc.Log[L]
   type Action0[S0, +A] = dbc.Action0[S0, A]
 
   implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
     dbc.catchableAction0[S]
+
+
+  implicit class DBIOSyntax[A](a: DBIO[A]) {
+    def run(t: Transactor): IO[A] =
+      t.exec(a)
+  }
+
 
 
   implicit class ProcessOps[F[+_]: Monad: Catchable, A](fa: Process[F,A]) {
@@ -47,11 +52,6 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
       fa.to(Process.repeatEval(((a: A) => f(a).liftIO[F]).point[F])).run
 
   }
-
-
-
-
-  type >->[A,B] = Process[ResultSet, A] => ResultSet[B]
 
 
   implicit class SqlInterpolator(val sc: StringContext) {
@@ -71,19 +71,18 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
       def executeUpdate: Connection[Int] =
         go(preparedstatement.executeUpdate)
 
-      def process[X: Comp]: Process[Connection, X] =
-        connection.process[A, X](sc.parts.mkString("?"), a)
+      def process[O: Comp]: Process[Connection, O] =
+        connection.process[O](sc.parts.mkString("?"), preparedstatement.set1(a))
 
     }
-
 
     class Source0 extends Source[Int](1) { // TODO: fix this
 
       override def go[B](b: PreparedStatement[B]): Connection[B] =
         prepareStatement(sc.parts.mkString("?"))(b)
 
-      override def process[X: Comp]: Process[Connection, X] =
-        connection.process0[X](sc.parts.mkString("?"))
+      override def process[O: Comp]: Process[Connection, O] =
+        connection.process[O](sc.parts.mkString("?"),().point[preparedstatement.Action])
 
     }
 

@@ -24,8 +24,8 @@ trait PrimitiveOps[S] {
   type Action[+A] = Action0[S,A]
 
   /** Retrieve the log. */
-  def log: Action[Log[LogElement]] =
-    ask[IO, (Log[LogElement], S)].map(_._1)
+  def log: Action[Log] =
+    ask[IO, (Log, S)].map(_._1)
 
   /** 
    * Retrieve the payload and perform a primitive operation. This is the mechanism by which all 
@@ -36,7 +36,7 @@ trait PrimitiveOps[S] {
    * @param f the primitive action
    */
   def primitive[A](label: => String, f: S => A): Action[A] =
-    push(label)(ask[IO, (Log[LogElement], S)].map(p => f(p._2)))
+    push(label)(ask[IO, (Log, S)].map(p => f(p._2)))
 
   /** 
    * Push the given action down in the log stack, labeled as specified.

@@ -8,18 +8,15 @@ import scalaz.effect._, stateTEffect._, IO._
 
 object Todo extends SafeApp {
 
-  val database: IO[Database] =
-    Database[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  val ta = DriverManagerTransactor[org.h2.Driver]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
   ////// ENTRY POINT
 
   override def runc: IO[Unit] =
     for {
       _ <- greet
-      d <- database
-      l <- util.TreeLogger.newLogger(LogElement("initializing database"))
-      _ <- d.run(DAO.init, l)
-      _ <- Repl.run(d)
+      _ <- DAO.init.run(ta)
+      _ <- Repl.run(ta)
       _ <- ungreet
     } yield ()
 
