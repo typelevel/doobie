@@ -4,7 +4,7 @@ organization := "org.tpolecat"
 
 version in ThisBuild := "0.1"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 

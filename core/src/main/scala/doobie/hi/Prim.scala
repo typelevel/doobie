@@ -36,13 +36,8 @@ object Prim {
       val get = g
     }
 
-  implicit val pInt: Prim[Int] =
-    prim[Int](JdbcType.Integer, ps.setInt(_, _), rs.getInt(_))
-
-  implicit val pStr: Prim[String] =
-    prim[String](JdbcType.VarChar, ps.setString(_, _), rs.getString(_))
-
-  implicit val pDouble: Prim[Double] =
-    prim[Double](JdbcType.Real, ps.setDouble(_, _), rs.getDouble(_))
+  implicit val pInt = prim[Int](JdbcType.Integer, ps.setInt, rs.getInt) 
+  implicit val pStr = prim[String](JdbcType.VarChar, ps.setString, rs.getString)
+  implicit val pDouble = prim[Double](JdbcType.Real, ps.setDouble, rs.getDouble)
 
 }

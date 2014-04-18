@@ -12,7 +12,7 @@ import java.io.File
 object HiUsage extends SafeApp {
 
   // A simple model with nested case classes
-  case class Code(code: String) { require(code != "NCL", "arbitrary failure") }
+  case class Code(code: String) // { require(code != "NCL", "arbitrary failure") }
   case class Country(code: Code, name: String, population: Int)
 
   // Connection information

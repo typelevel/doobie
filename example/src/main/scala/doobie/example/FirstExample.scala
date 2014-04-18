@@ -46,7 +46,7 @@ object FirstExample extends SafeApp {
       l <- coffeesLessThan(9.0).toList
       _ <- putStrLn(l.toString).liftIO[DBIO]
 
-      // Read into a vector this time 
+      // Read into a vector this time, with some stream processing
       v <- coffeesLessThan(9.0).take(2).map(p => (p._1 + "*" + p._2)).toVector
       _ <- putStrLn(v.toString).liftIO[DBIO]
 

@@ -17,14 +17,18 @@ trait ConnectionCombinators
 
   def process[A: Comp](sql: String, configure: preparedstatement.Action[Unit]): Process[Action, A] = {
 
+    val prepAndExec = 
+      configure >> preparedstatement.primitive("executeQuery", _.executeQuery)
+      
     def acquire: Action[java.sql.ResultSet] = 
       push("acquire") {
         for {
           ps <- primitive("prepareStatement", _.prepareStatement(sql))
-          _  <- gosub0(ps.point[Action], configure)
-          rs <- gosub0(ps.point[Action], preparedstatement.primitive("executeQuery", _.executeQuery))
+          rs <- gosub0(ps.point[Action], prepAndExec)
         } yield rs
       }
+
+    // TODO: close PS
 
     resource[java.sql.ResultSet, A](
       acquire)(rs =>
