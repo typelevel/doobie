@@ -5,7 +5,7 @@ import doobie.hi._
 import java.sql.SQLException
 
 import scalaz._, Scalaz._
-import scalaz.effect._, stateTEffect._, IO._
+import scalaz.effect._, IO._
 import syntax.effect.monadCatchIO._
 
 object Repl {
@@ -29,7 +29,7 @@ object Repl {
       ReplState(ta, None, None, None)
   }
 
-  type Repl[+A] = StateT[IO, ReplState, A]
+  type Repl[A] = StateT[IO, ReplState, A]
 
   def gets[A](f: ReplState => A): Repl[A] =
     get[ReplState].map(f).lift[IO]
@@ -117,7 +117,7 @@ object Repl {
   def dbCommand[A](cmd: String)(a: Connection[A]): Repl[Exception \/ A] =
     for {
       d <- gets(_.ta)
-      e <- a.run(d).catchSomeLeft(justExceptions).liftIO[Repl]
+      e <- d.exec(a).catchSomeLeft(justExceptions).liftIO[Repl]
       _ <- e.fold(e => err("An error occurred. Use `last` for details."), _ => IO.ioUnit).liftIO[Repl]
       _ <- mod(_.copy(ex = e.swap.toOption)) 
       // TODO: 

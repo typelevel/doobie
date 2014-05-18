@@ -4,7 +4,6 @@ import dbc._
 import scalaz._
 import Scalaz._
 import scalaz.effect.IO
-import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
 

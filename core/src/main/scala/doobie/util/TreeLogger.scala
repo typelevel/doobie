@@ -15,7 +15,7 @@ final class TreeLogger[L] private (z: IORef[TreeLoc[TreeLogger.Node[L]]]) {
   def tree: IO[Tree[Node[L]]] =
     z.read.map(_.tree)
 
-  def log[M[+_]: MonadCatchIO, A](s: => L, ma: M[A]): M[A] =
+  def log[M[_]: MonadCatchIO, A](s: => L, ma: M[A]): M[A] =
     for {
       p <- nanoTime.map(Pending(s, _)).liftIO[M]
       _ <- z.mod(_.insertDownLast(Tree(p))).liftIO[M]
@@ -75,9 +75,9 @@ object TreeLogger {
   
     implicit def decodeNode[L: DecodeJson]: DecodeJson[Node[L]] =
       DecodeJson(c =>
-        tagged(c, "root", jdecode1L(Root.apply[L])("label"))|||
-        tagged(c, "pending", jdecode2L(Pending.apply[L])("label", "start")) |||
-        tagged(c, "entry", jdecode3L(Entry.apply[L])("label", "result", "ns")))
+        tagged(c, "root",    jdecode1L((a: L) => Root(a) : Node[L])("label"))|||
+        tagged(c, "pending", jdecode2L((a: L, b: Long) => Pending(a, b) : Node[L])("label", "start")) |||
+        tagged(c, "entry",   jdecode3L((a: L, b: Thrown \/ String, c: Long) => Entry(a,b,c) : Node[L])("label", "result", "ns")))
 
     private def tagged[A](c: HCursor, tag: String, decoder: DecodeJson[A]): DecodeResult[A] =
       (c --\ tag).hcursor.fold(DecodeResult.fail[A]("Invalid tagged type", c.history))(decoder.decode)

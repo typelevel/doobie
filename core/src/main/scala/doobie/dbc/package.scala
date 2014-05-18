@@ -22,31 +22,31 @@ package object dbc {
   object resultsetmetadata extends op.ResultSetMetaDataOps
   object statement extends op.StatementOps[sql.Statement]
 
-  type Connection[+A]        = connection.Action[A]  
-  type Statement[+A]         = statement.Action[A]
-  type DatabaseMetaData[+A]  = databasemetadata.Action[A]
-  type CallableStatement[+A] = callablestatement.Action[A]
-  type ParameterMetaData[+A] = parametermetadata.Action[A]
-  type PreparedStatement[+A] = preparedstatement.Action[A]
-  type ResultSet[+A]         = resultset.Action[A]
-  type ResultSetMetaData[+A] = resultsetmetadata.Action[A]
+  type Connection[A]        = connection.Action[A]  
+  type Statement[A]         = statement.Action[A]
+  type DatabaseMetaData[A]  = databasemetadata.Action[A]
+  type CallableStatement[A] = callablestatement.Action[A]
+  type ParameterMetaData[A] = parametermetadata.Action[A]
+  type PreparedStatement[A] = preparedstatement.Action[A]
+  type ResultSet[A]         = resultset.Action[A]
+  type ResultSetMetaData[A] = resultsetmetadata.Action[A]
 
-  type Action0[S0, +A] = Kleisli[IO, (Log, S0), A]
+  type Action0[S0, A] = Kleisli[IO, (Log, S0), A]
 
-  // N.B. you get this for free in scalaz 7.1
-  implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
-    new Catchable[({ type l[a] = Action0[S, a] })#l] {
-      def attempt[A](fa: Action0[S,A]): Action0[S, Throwable \/ A] = Kleisli { s =>
-        try {
-          fa.run(s).catchLeft
-        } catch {
-          case t: Throwable => IO(t.left)
-        }
-      }
-      def fail[A](t: Throwable) = Kleisli(_ => IO(throw t))
-    }
+  // // N.B. you get this for free in scalaz 7.1
+  // implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
+  //   new Catchable[({ type l[a] = Action0[S, a] })#l] {
+  //     def attempt[A](fa: Action0[S,A]): Action0[S, Throwable \/ A] = Kleisli { s =>
+  //       try {
+  //         fa.run(s).catchLeft
+  //       } catch {
+  //         case t: Throwable => IO(t.left)
+  //       }
+  //     }
+  //     def fail[A](t: Throwable) = Kleisli(_ => IO(throw t))
+  //   }
 
-  catchableAction0[sql.Connection] : Catchable[Connection]
+  // catchableAction0[sql.Connection] : Catchable[Connection]
 
 }
 

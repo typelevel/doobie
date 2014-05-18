@@ -9,7 +9,6 @@ import Scalaz._
 import scalaz.effect._
 import scalaz.effect.IO
 import scalaz.effect.IO._
-import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 
 // JDBC program using the low-level API

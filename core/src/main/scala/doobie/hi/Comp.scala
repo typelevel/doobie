@@ -55,7 +55,7 @@ object Comp extends ProductTypeClassCompanion[Comp] {
       def emptyProduct: Comp[HNil] =
         new Comp[HNil] {
           def set = (_, _) => ().point[PreparedStatement]
-          def get = _ => HNil.point[ResultSet]
+          def get = _ => (HNil : HNil).point[ResultSet]
           def length = 0
         }
 

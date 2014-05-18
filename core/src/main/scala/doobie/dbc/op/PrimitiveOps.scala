@@ -6,7 +6,6 @@ import scalaz._
 import scalaz.Kleisli.ask
 import scalaz.effect.IO
 import scalaz.effect.MonadCatchIO.ensuring
-import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import Scalaz._
 
@@ -21,7 +20,7 @@ import Scalaz._
 trait PrimitiveOps[S] {
 
   // Local alias slicing off our carrier type `S`
-  type Action[+A] = Action0[S,A]
+  type Action[A] = Action0[S,A]
 
   /** Retrieve the log. */
   def log: Action[Log] =

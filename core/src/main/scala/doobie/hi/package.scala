@@ -4,33 +4,33 @@ import java.sql
 import scalaz._
 import Scalaz._
 import scalaz.effect.{IO, MonadIO}
-import scalaz.effect.KleisliEffectInstances
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz.stream._
+import Process._
 
 /** Pure functional high-level JDBC layer. */
-package object hi extends KleisliEffectInstances with ToCatchSqlOps {
+package object hi extends ToCatchSqlOps {
 
   // Modules
-  object preparedstatement extends  co.PreparedStatementCombinators[sql.PreparedStatement]
+  object preparedstatement extends  co.PreparedStatementCombinators //[sql.PreparedStatement]
   object resultset extends co.ResultSetCombinators
   object connection extends co.ConnectionCombinators
 
-  type Connection[+A]        = connection.Action[A]  
-  // type Statement[+A]         = statement.Action[A]
-  // type DatabaseMetaData[+A]  = databasemetadata.Action[A]
-  // type CallableStatement[+A] = callablestatement.Action[A]
-  // type ParameterMetaData[+A] = parametermetadata.Action[A]
-  type PreparedStatement[+A] = preparedstatement.Action[A]
-  type ResultSet[+A]         = resultset.Action[A]
-  // type ResultSetMetaData[+A] = resultsetmetadata.Action[A]
+  type Connection[A]        = connection.Action[A]  
+  // type Statement[A]         = statement.Action[A]
+  // type DatabaseMetaData[A]  = databasemetadata.Action[A]
+  // type CallableStatement[A] = callablestatement.Action[A]
+  // type ParameterMetaData[A] = parametermetadata.Action[A]
+  type PreparedStatement[A] = preparedstatement.Action[A]
+  type ResultSet[A]         = resultset.Action[A]
+  // type ResultSetMetaData[A] = resultsetmetadata.Action[A]
 
-  type DBIO[+A] = Connection[A]
+  type DBIO[A] = Connection[A]
 
-  type Action0[S0, +A] = dbc.Action0[S0, A]
+  type Action0[S0, A] = dbc.Action0[S0, A]
 
-  implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
-    dbc.catchableAction0[S]
+  // implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
+  //   dbc.catchableAction0[S]
 
 
   implicit class DBIOSyntax[A](a: DBIO[A]) {
@@ -40,7 +40,7 @@ package object hi extends KleisliEffectInstances with ToCatchSqlOps {
 
 
 
-  implicit class ProcessOps[F[+_]: Monad: Catchable, A](fa: Process[F,A]) {
+  implicit class ProcessOps[F[_]: Monad: Catchable, A](fa: Process[F,A]) {
 
     def toVector: F[Vector[A]] =
       fa.runLog.map(_.toVector)

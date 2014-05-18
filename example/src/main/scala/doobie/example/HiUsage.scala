@@ -21,7 +21,7 @@ object HiUsage extends SafeApp {
 
   // Entry point
   override def runc: IO[Unit] =
-    examples.run(ta).except(t => putStrLn("failed: " + t))
+    ta.exec(examples).except(t => putStrLn("failed: " + t))
 
   // Some examples to run on the same connection
   def examples: DBIO[Unit] =

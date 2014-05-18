@@ -15,7 +15,7 @@ object Todo extends SafeApp {
   override def runc: IO[Unit] =
     for {
       _ <- greet
-      _ <- DAO.init.run(ta)
+      _ <- ta.exec(DAO.init)
       _ <- Repl.run(ta)
       _ <- ungreet
     } yield ()

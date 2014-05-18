@@ -8,6 +8,7 @@ import Scalaz._
 import scalaz.effect.{IO, MonadIO}
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz.stream._
+import Process._
 
 trait ResultSetCombinators extends op.ResultSetOps with ProcessPrimitives[java.sql.ResultSet] {
 
@@ -26,7 +27,7 @@ trait ResultSetCombinators extends op.ResultSetOps with ProcessPrimitives[java.s
     resultset.push("getNext") {
       resultset.next >>= {
         case true  => get1[A].map(Some(_))
-        case false => None.point[Action]
+        case false => none.point[Action]
       }
     }
 

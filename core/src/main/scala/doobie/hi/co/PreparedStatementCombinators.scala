@@ -8,9 +8,9 @@ import Scalaz._
 import scalaz.effect.IO
 import scalaz.stream._
 
-trait PreparedStatementCombinators[A <: sql.PreparedStatement] 
-  extends dbc.op.PreparedStatementOps[A] 
-  with ProcessPrimitives[A] {
+trait PreparedStatementCombinators //[A <: sql.PreparedStatement] 
+  extends dbc.op.PreparedStatementOps[sql.PreparedStatement] 
+  with ProcessPrimitives[sql.PreparedStatement] {
 
   def set[A](index: Int, a: A)(implicit A: Comp[A]): Action[Unit] =
     push(s"structured set at index $index: $a")(A.set(index, a))

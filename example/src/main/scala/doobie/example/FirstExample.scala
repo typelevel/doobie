@@ -56,7 +56,7 @@ object FirstExample extends SafeApp {
 
   override def runc: IO[Unit] =
     for {
-      a <- examples.run(ta).except(t => IO(t.toString))
+      a <- ta.exec(examples).except(t => IO(t.toString))
       _ <- putStrLn(a.toString)
     } yield ()
 
