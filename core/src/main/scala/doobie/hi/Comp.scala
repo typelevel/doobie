@@ -24,7 +24,7 @@ trait Comp[A] { outer =>
 
 }
 
-object Comp {
+object Comp extends ProductTypeClassCompanion[Comp] {
 
   def apply[A](implicit A: Comp[A]): Comp[A] = A
 
@@ -41,9 +41,6 @@ object Comp {
       def get = i => A.get(i) >>= (a => resultset.wasNull.map(n => (!n).option(a)))
       def length = 1
     }
-
-  implicit def deriveComp[A] = 
-    macro TypeClass.derive_impl[Comp, A]
 
   implicit val productComp: ProductTypeClass[Comp] =
     new ProductTypeClass[Comp] {
@@ -71,5 +68,9 @@ object Comp {
 
     }
 
+  implicit def deriveComp[T](implicit ev: ProductTypeClass[Comp]): Comp[T] =
+    macro GenericMacros.deriveProductInstance[Comp, T]
+
 }
+
 
