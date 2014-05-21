@@ -2,6 +2,7 @@ package doobie
 package dbc
 package op
 
+import Predef.{ any2Ensuring => _ } // FFS
 import scalaz._
 import scalaz.Kleisli.ask
 import scalaz.effect.IO
@@ -53,15 +54,11 @@ trait PrimitiveOps[S] {
    * @param action an `Action0` with carrier type `T` producing our final answer
    * @param cleanup a finalizer in `Action0` that is executed whether `action` succeeds or not.
    */
-  def gosub[T,A](state: Action[T], action: Action0[T,A], cleanup: Action0[T, Unit]): Action[A] =
-    for {
-      p <- log tuple state
-      a = ensuring[({type λ[α] = Action0[T,α]})#λ, A, Unit](action, cleanup).run(p).liftIO[Action]
-      a <- push("try/finally")(a)
-    } yield a
+  def gosub[T,A](state: Action[T], action: Action0[T,A], cleanup: Action0[T, Unit]): Action[A] = 
+    gosub0(state, action ensuring cleanup, "try/finally")
 
   /** 
-   * Equivalent to `gosub`, but without no finalizer. 
+   * Equivalent to `gosub`, but without a finalizer. 
    * @param state an action to produce a new initial state of type `T`
    * @param action an `Action0` with carrier type `T` producing our final answer
    */
