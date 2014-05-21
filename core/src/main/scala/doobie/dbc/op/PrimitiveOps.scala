@@ -20,6 +20,9 @@ import Scalaz._
  */
 trait PrimitiveOps[S] {
 
+  // Our main monad
+  type Action0[S,A] = Kleisli[IO, (Log, S), A]  
+
   // Local alias slicing off our carrier type `S`
   type Action[A] = Action0[S,A]
 

@@ -9,7 +9,7 @@ import scalaz.stream._
 import Process._
 
 /** Pure functional high-level JDBC layer. */
-package object hi extends ToCatchSqlOps {
+package object hi extends doobie.util.ToMonadCatchSqlOps {
 
   // Modules
   object preparedstatement extends  co.PreparedStatementCombinators //[sql.PreparedStatement]
@@ -27,7 +27,7 @@ package object hi extends ToCatchSqlOps {
 
   type DBIO[A] = Connection[A]
 
-  type Action0[S0, A] = dbc.Action0[S0, A]
+  // type Action0[S0, A] = dbc.Action0[S0, A]
 
   // implicit def catchableAction0[S]: Catchable[({ type l[a] = Action0[S, a] })#l] =
   //   dbc.catchableAction0[S]

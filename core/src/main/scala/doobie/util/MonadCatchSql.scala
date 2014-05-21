@@ -1,18 +1,16 @@
-package doobie
-
+package doobie.util
 
 import java.sql.SQLException
-
 import scalaz._
 import scalaz.syntax.Ops
 import Scalaz._
 import scalaz.effect.MonadCatchIO
 import scalaz.syntax.effect.monadCatchIO._
 
-object CatchSql extends CatchSqlFunctions
+object MonadCatchSql extends MonadCatchSqlFunctions
 
 /** Some SQLException-specific stuff for MonadCatchIO */
-trait CatchSqlFunctions {
+trait MonadCatchSqlFunctions {
 
   def catchSql[M[_]: MonadCatchIO, A](sqlState: String)(ma: M[A])(recover: SQLException => M[A]): M[A] =
     ma except { 
@@ -31,28 +29,28 @@ trait CatchSqlFunctions {
 
 }
 
-trait CatchSqlOps[M[_], A] extends Ops[M[A]] {
+trait MonadCatchSqlOps[M[_], A] extends Ops[M[A]] {
 
   implicit def M: MonadCatchIO[M]
 
   def catchSql(sqlState: String)(recover: SQLException => M[A]): M[A] =
-    CatchSql.catchSql(sqlState)(self)(recover)
+    MonadCatchSql.catchSql(sqlState)(self)(recover)
 
   def catchSqlState(sqlState: String)(recover: M[A]): M[A] =
-    CatchSql.catchSqlState(sqlState)(self)(recover)
+    MonadCatchSql.catchSqlState(sqlState)(self)(recover)
 
   def catchSqlStateLeft[B](sqlState: String)(recover: M[B]): M[B \/ A] =
-    CatchSql.catchSqlStateLeft(sqlState)(self)(recover)
+    MonadCatchSql.catchSqlStateLeft(sqlState)(self)(recover)
 
   def catchSqlStateOption(sqlState: String): M[Option[A]] =
-    CatchSql.catchSqlStateOption(sqlState)(self)
+    MonadCatchSql.catchSqlStateOption(sqlState)(self)
 
 }
 
-trait ToCatchSqlOps {
+trait ToMonadCatchSqlOps {
 
-  implicit def toCatchSqlOps[M[_], A](ma: M[A])(implicit M0: MonadCatchIO[M]): CatchSqlOps[M, A] =
-    new CatchSqlOps[M, A] {
+  implicit def toMonadCatchSqlOps[M[_], A](ma: M[A])(implicit M0: MonadCatchIO[M]): MonadCatchSqlOps[M, A] =
+    new MonadCatchSqlOps[M, A] {
       val self = ma
       val M = M0
     }
