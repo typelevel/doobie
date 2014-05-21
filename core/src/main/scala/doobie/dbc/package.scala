@@ -14,13 +14,13 @@ import scala.annotation.unchecked.uncheckedVariance
 package object dbc {
 
   object callablestatement extends op.CallableStatementOps
-  object connection extends op.ConnectionOps
-  object databasemetadata extends op.DatabaseMetaDataOps
+  object connection        extends op.ConnectionOps
+  object databasemetadata  extends op.DatabaseMetaDataOps
   object parametermetadata extends op.ParameterMetaDataOps
   object preparedstatement extends op.PreparedStatementOps[sql.PreparedStatement]
-  object resultset extends op.ResultSetOps
+  object resultset         extends op.ResultSetOps
   object resultsetmetadata extends op.ResultSetMetaDataOps
-  object statement extends op.StatementOps[sql.Statement]
+  object statement         extends op.StatementOps[sql.Statement]
 
   type Connection[A]        = connection.Action[A]  
   type Statement[A]         = statement.Action[A]
