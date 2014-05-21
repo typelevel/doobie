@@ -7,6 +7,7 @@ import scalaz._
 import Scalaz._
 import scalaz.effect.IO
 import scalaz.effect.IO._
+import Predef.refArrayOps
 
 /** Exteralizable representation of a `Throwable`. */
 final case class Thrown(

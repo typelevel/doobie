@@ -2,6 +2,7 @@ package doobie.dbc
 package op
 
 import enum._
+import scala.collection.immutable.Map
 import scalaz.effect.IO
 import java.sql
 import java.sql.{ Blob, Clob, NClob, Date, Time, Timestamp, Ref, RowId, SQLXML }

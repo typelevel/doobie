@@ -13,3 +13,6 @@ libraryDependencies ++= Seq(
   "com.chuusai"       %  "shapeless_2.10.4" % "2.0.0"
 )
 
+scalacOptions ++= Seq(
+  "-Yno-predef"
+)

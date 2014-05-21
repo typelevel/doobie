@@ -8,6 +8,7 @@ import scalaz.effect.IO
 import scalaz.effect.kleisliEffect._
 import scalaz.syntax.effect.monadCatchIO._
 import java.sql
+import Predef.intArrayOps
 
 trait StatementOps[A <: sql.Statement] extends PrimitiveOps[A] {
   

@@ -1,6 +1,7 @@
 package doobie
 package util
 
+import scala.Predef._ // yolo
 import scalaz.effect.{ IO, MonadCatchIO, IORef }
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz._

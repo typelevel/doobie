@@ -9,21 +9,20 @@ scalaVersion in ThisBuild := "2.10.4"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 scalacOptions in ThisBuild ++= Seq(
-  "-feature", 
-  "-deprecation", 
-  "-Ywarn-all", // doesn't actually turn them all on :-\
-  "-Yno-adapted-args",
-  "-Ywarn-value-discard", 
-  "-Ywarn-numeric-widen",
-  // "-Ywarn-dead-code", // confused by ???, sadly
-  "-Xlint",
-  "-Xfatal-warnings",
-  "-unchecked",
-  "-encoding", "UTF-8",
+  "-deprecation",           
+  "-encoding", "UTF-8", // 2 args
+  "-feature",                
+  "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
-  "-language:existentials",
-  "-language:experimental.macros"
+  "-language:experimental.macros",
+  "-unchecked",
+  "-Xfatal-warnings",       
+  "-Xlint",
+  "-Yno-adapted-args",       
+  "-Ywarn-dead-code",       
+  "-Ywarn-numeric-widen",   
+  "-Ywarn-value-discard"     
 )
 
 lazy val core = project.in(file("core"))

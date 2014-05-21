@@ -2,6 +2,7 @@ package doobie.dbc
 package op
 
 import enum._
+import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
 import scalaz.effect._
 import scalaz.effect.kleisliEffect._

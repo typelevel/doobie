@@ -1,6 +1,7 @@
 package doobie
 
 import dbc._
+import scala.reflect.Manifest
 import scalaz._
 import Scalaz._
 import scalaz.effect.IO

@@ -14,7 +14,7 @@ import Scalaz._
 /** 
  * Base combinators for constructing primitive actions in `Kleisli[IO, (Log, S), _]`. 
  *
- * This trait does little beyond providing a type alias and some basic cobinators to simplify the 
+ * This trait does little beyond providing a type alias and some basic combinators to simplify the 
  * implementation of each set of operations. Note that there are no path-dependent types here; it's
  * all simple aliasing.
  */

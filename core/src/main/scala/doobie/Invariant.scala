@@ -1,5 +1,6 @@
 package doobie
 
+import scala.reflect.Manifest
 import scalaz._
 import Scalaz._
 
