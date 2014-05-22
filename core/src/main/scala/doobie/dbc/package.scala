@@ -1,14 +1,6 @@
 package doobie
 
 import java.sql
-import scalaz._
-import scalaz.syntax.monad._
-import scalaz.syntax.id._
-import scalaz.syntax.effect.monadCatchIO._
-import scalaz.effect._
-import scalaz.effect.IO._
-import scalaz.effect.kleisliEffect._
-import scala.annotation.unchecked.uncheckedVariance
 
 /** Pure functional low-level JDBC layer. */
 package object dbc {

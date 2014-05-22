@@ -2,10 +2,14 @@ package doobie
 package util
 
 import scala.Predef._ // yolo
+
+import scalaz.{ Tree, TreeLoc, Show, \/, -\/, \/- }
 import scalaz.effect.{ IO, MonadCatchIO, IORef }
 import scalaz.syntax.effect.monadCatchIO._
-import scalaz._
-import Scalaz._
+import scalaz.syntax.either._
+import scalaz.syntax.monad._
+import scalaz.syntax.show._
+import scalaz.syntax.std.boolean._
 
 import argonaut._
 import Argonaut._

@@ -1,8 +1,7 @@
 package doobie
 package util
 
-import scalaz._
-import Scalaz._
+import scalaz.Tree
 
 import argonaut._
 import Argonaut._

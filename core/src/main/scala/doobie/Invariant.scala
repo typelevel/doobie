@@ -1,8 +1,6 @@
 package doobie
 
 import scala.reflect.Manifest
-import scalaz._
-import Scalaz._
 
 /** 
  * The type of exceptions representing unmet expectations. These typically indicate a problem with

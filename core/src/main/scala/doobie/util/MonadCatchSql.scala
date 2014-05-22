@@ -1,11 +1,17 @@
 package doobie.util
 
 import java.sql.SQLException
-import scalaz._
-import scalaz.syntax.Ops
-import Scalaz._
+
+import scalaz.\/
 import scalaz.effect.MonadCatchIO
+import scalaz.std.option._
+import scalaz.std.string._
 import scalaz.syntax.effect.monadCatchIO._
+import scalaz.syntax.either._
+import scalaz.syntax.equal._
+import scalaz.syntax.monad._
+import scalaz.syntax.Ops
+import scalaz.syntax.std.option._
 
 object MonadCatchSql extends MonadCatchSqlFunctions
 

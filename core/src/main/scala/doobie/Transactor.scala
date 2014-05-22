@@ -1,11 +1,11 @@
 package doobie
 
-import dbc._
+import dbc.Connection
+import dbc.connection.{ setAutoCommit, rollback, close }
 import scala.reflect.Manifest
-import scalaz._
-import Scalaz._
 import scalaz.effect.IO
 import scalaz.syntax.effect.monadCatchIO._
+import scalaz.syntax.monad._
 import java.sql
 
 trait Logger {
@@ -30,8 +30,6 @@ class DriverManagerTransactor(
   driverClass: String, 
   url: String, user: String, pass: String, 
   logger: Logger = ConsoleLogger) extends Transactor {
-
-  import connection._
 
   def exec[A](action: Connection[A]): IO[A] =
     logger.exec { l => 
