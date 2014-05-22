@@ -10,23 +10,26 @@ import dbc._
 trait Comp[A] { outer =>
 
   def set: (Int, A) => PreparedStatement[Unit]
+
   def get: Int => ResultSet[A]
 
   def length: Int // column span
 
-  // exponential functor, in 7.1 but not 7.0
-  def xmap[B](f: A => B, g: B => A): Comp[B] =
-    new Comp[B] {
-      def set = (i, b) => outer.set(i, g(b))
-      def get = i => outer.get(i).map(f)
-      def length = outer.length
-    }
-
 }
 
-object Comp extends ProductTypeClassCompanion[Comp] {
+object Comp {
 
   def apply[A](implicit A: Comp[A]): Comp[A] = A
+
+  implicit def invariantFunctor: InvariantFunctor[Comp] =
+    new InvariantFunctor[Comp] {
+      def xmap[A, B](fa:Comp[A], f: A => B, g: B => A): Comp[B] =
+        new Comp[B] {
+          def set = (i, b) => fa.set(i, g(b))
+          def get = i => fa.get(i).map(f)
+          def length = fa.length
+        }
+    }
 
   implicit def prim[A](implicit A: Prim[A]): Comp[A] =
     new Comp[A] {
@@ -35,11 +38,23 @@ object Comp extends ProductTypeClassCompanion[Comp] {
       def length = 1
     }
 
+  implicit val trans: (Prim ~> Comp) =
+    new (Prim ~> Comp) {
+      def apply[A](fa: Prim[A]): Comp[A] =
+        prim(fa)
+    }
+
   implicit def inOpt[A](implicit A: Prim[A]): Comp[Option[A]] =
     new Comp[Option[A]] {
       def set = (i, a) => a.fold(A.setNull(i))(a => A.set(i, a))
       def get = i => A.get(i) >>= (a => resultset.wasNull.map(n => (!n).option(a)))
       def length = 1
+    }
+
+  implicit val transOpt: (Prim ~> ({ type l[a] = Comp[Option[a]] })#l) =
+    new (Prim ~> ({ type l[a] = Comp[Option[a]] })#l) {
+      def apply[A](fa: Prim[A]): Comp[Option[A]] =
+        inOpt(fa)
     }
 
   implicit val productComp: ProductTypeClass[Comp] =
