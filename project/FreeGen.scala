@@ -1,0 +1,367 @@
+import sbt._, Keys._
+import java.lang.reflect._
+import scala.reflect.ClassTag
+import Predef._
+
+object FreeGen {
+
+  lazy val freeGenClasses = settingKey[List[Class[_]]]("classes for which free algebras should be generated")
+  lazy val freeGenDir = settingKey[File]("directory where free algebras go")
+
+  lazy val freeGenSettings = Seq(
+    freeGenClasses := Nil,
+    sourceGenerators in Compile += Def.task {
+      new FreeGen(freeGenClasses.value, state.value.log).gen(freeGenDir.value)
+    }.taskValue
+  )
+
+}
+
+class FreeGen(managed: List[Class[_]], log: Logger) {
+
+  // These Java classes will have non-Java names in our generated code
+  val ClassBoolean  = classOf[Boolean]
+  val ClassByte     = classOf[Byte]
+  val ClassShort    = classOf[Short]
+  val ClassInt      = classOf[Int]
+  val ClassLong     = classOf[Long]
+  val ClassFloat    = classOf[Float]
+  val ClassDouble   = classOf[Double]
+  val ClassVoid     = Void.TYPE
+
+  val renames: Map[Class[_], String] =
+    Map(classOf[java.sql.Array] -> "SqlArray")
+
+  def tparams(t: Type): List[String] =
+    t match {
+      case t: GenericArrayType  => tparams(t.getGenericComponentType)
+      case t: ParameterizedType => t.getActualTypeArguments.toList.flatMap(tparams)
+      case t: TypeVariable[_]   => List(t.toString)
+      case _                    => Nil
+    }
+
+  def toScalaType(t: Type): String = 
+    t match {
+      case t: GenericArrayType  => s"Array[${toScalaType(t.getGenericComponentType)}]"
+      case t: ParameterizedType => s"${toScalaType(t.getRawType)}${t.getActualTypeArguments.map(toScalaType).mkString("[", ", ", "]")}"
+      case t: WildcardType      => "_" // not quite right but ok
+      case t: TypeVariable[_]   => t.toString 
+      case ClassVoid            => "Unit"
+      case ClassBoolean         => "Boolean"
+      case ClassByte            => "Byte"
+      case ClassShort           => "Short"
+      case ClassInt             => "Int"
+      case ClassLong            => "Long"
+      case ClassFloat           => "Float"
+      case ClassDouble          => "Double"
+      case x: Class[_] if x.isArray => s"Array[${toScalaType(x.getComponentType)}]"
+      case x: Class[_]          => renames.getOrElse(x, x.getSimpleName)
+    }
+
+
+  // Each constructor for our algebra maps to an underlying method, and an index is provided to
+  // disambiguate in cases of overloading.
+  case class Ctor(method: Method, index: Int) {
+
+    // The method name, unchanged
+    def mname: String =
+      method.getName
+
+    // The case class constructor name, capitalized and with an index when needed
+    def cname: String = {
+      val s = mname(0).toUpper +: mname.drop(1)
+      (if (index == 0) s else s"$s$index") 
+    }
+
+    // Constructor parameter type names
+    def cparams: List[String] = 
+      method.getGenericParameterTypes.toList.map(toScalaType)
+
+    def ctparams: String = {
+      val ss = (method.getGenericParameterTypes.toList.flatMap(tparams) ++ tparams(method.getGenericReturnType)).toSet
+      if (ss.isEmpty) "" else ss.mkString("[", ", ", "]")
+    }
+    
+    // Constructor arguments, a .. z zipped with the right type
+    def cargs: List[String] =
+      "abcdefghijklmnopqrstuvwxyz".toList.zip(cparams).map {
+        case (n, t) => s"$n: $t"
+      }
+
+    // Return type name
+    def ret: String =
+      toScalaType(method.getGenericReturnType)
+      
+
+    // Case class/object declaration
+    def ctor(sname:String): String =
+      "case " + (cparams match {
+        case Nil => s"object $cname" 
+        case ps  => s"class  $cname$ctparams(${cargs.mkString(", ")})"
+      }) + s" extends ${sname}Op[$ret]"
+
+    // Argument list: a, b, c, ... up to the proper arity
+    def args: String =
+      "abcdefghijklmnopqrstuvwxyz".toList.take(cparams.length).mkString(", ")
+
+    // Pattern to match the constructor
+    def pat: String =
+      cparams match {
+        case Nil => s"object $cname" 
+        case ps  => s"class  $cname(${cargs.mkString(", ")})"
+      }
+
+    // Case clause mapping this constructor to the corresponding primitive action
+    def prim(sname:String): String =
+      (if (cargs.isEmpty) 
+        s"case $cname => primitive(_.$mname)"
+      else
+        s"case $cname($args) => primitive(_.$mname($args))")
+
+    // Smart constructor
+    def lifted(sname: String): String =
+      if (cargs.isEmpty) {
+        s"""|/** 
+            |   * Fill in doc for $mname.
+            |   * @group Constructors (Primitives)
+            |   */
+            |  val $mname: ${sname}IO[$ret] =
+            |    F.liftFC(${cname})
+         """.trim.stripMargin
+      } else {
+        s"""|/** 
+            |   * Fill in doc for $mname.
+            |   * @group Constructors (Primitives)
+            |   */
+            |  def $mname$ctparams(${cargs.mkString(", ")}): ${sname}IO[$ret] =
+            |    F.liftFC(${cname}($args))
+         """.trim.stripMargin
+      }
+
+  }
+  
+  def liftingCtors(sname: String): List[String] =
+    managed.toList.map(toScalaType).sorted.filterNot(_ == sname).map { c => 
+      s"case class Lift${c}IO[A](s: ${c}, action: ${c}IO[A]) extends ${sname}Op[A]"
+    }
+
+  def liftingSmartCtors(sname: String): List[String] =
+    managed.toList.map(toScalaType).sorted.filterNot(_ == sname).map(liftingSmartCtor(_, sname))
+
+
+  def liftingSmartCtor(cname: String, sname: String): String = 
+   s"""|/**
+       |   * Lift a `${cname}IO` into `${sname}IO`.
+       |   * @group Constructors (Lifting)
+       |   */
+       |  def lift${cname}[A](s: ${cname}, k: ${cname}IO[A]): ${sname}IO[A] =
+       |    F.liftFC(Lift${cname}IO(s, k))
+    """.trim.stripMargin
+
+  def liftingCases(sname: String): List[String] =
+    managed.toList.map(toScalaType).sorted.filterNot(_ == sname).map { c => 
+      s"case Lift${c}IO(s, k) => Kleisli(_ => k.liftK[M].run(s))"
+    }
+
+
+
+  // This class, plus any superclasses and interfaces, "all the way up"
+  def closure(c: Class[_]): List[Class[_]] =
+    (c :: (Option(c.getSuperclass).toList ++ c.getInterfaces.toList).flatMap(closure)).distinct
+
+  // All method for this class and any superclasses/interfaces
+  def methods(c: Class[_]): List[Method] =
+    closure(c).flatMap(_.getMethods.toList).distinct
+
+  // Ctor values for all methods in of A plus superclasses, interfaces, etc.
+  def ctors[A](implicit ev: ClassTag[A]): List[Ctor] =
+    methods(ev.runtimeClass).groupBy(_.getName).toList.flatMap { case (n, ms) =>
+      ms.toList.zipWithIndex.map {
+        case (m, i) => Ctor(m, i)
+      }
+    }.sortBy(_.cname)
+
+  // All types referenced by all methods on A, superclasses, interfaces, etc.
+  def imports[A](implicit ev: ClassTag[A]): List[String] = 
+    (s"import ${ev.runtimeClass.getName}" :: ctors.map(_.method).flatMap { m =>
+      m.getReturnType :: managed.toList.filterNot(_ == ev.runtimeClass) ::: m.getParameterTypes.toList
+    }.filterNot(t => t.isPrimitive || t.isArray).map { c =>
+      val sn = c.getSimpleName
+      val an = renames.getOrElse(c, sn)
+      if (sn == an) s"import ${c.getName}"
+      else          s"import ${c.getPackage.getName}.{ $sn => $an }"
+    }).distinct.sorted
+
+
+
+
+  // The algebra module for A
+  def module[A](implicit ev: ClassTag[A]): String = {
+    val sname = toScalaType(ev.runtimeClass)
+   s"""
+    |package doobie.free
+    |
+    |import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \\/ }
+    |import scalaz.concurrent.Task
+    |
+    |${imports[A].mkString("\n")}
+    |
+    |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.${c}IO").mkString("\n")}
+    |
+    |/**
+    | * Algebra and free monad for primitive operations over a `${ev.runtimeClass.getName}`. This is
+    | * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
+    | * for library developers. End users will prefer a safer, higher-level API such as that provided 
+    | * in the `doobie.hi` package.
+    | *
+    | * `${sname}IO` is a free monad that must be run via an interpreter, most commonly via
+    | * natural transformation of its underlying algebra `${sname}Op` to another monad via
+    | * `Free.runFC`. 
+    | *
+    | * The library provides a natural transformation to `Kleisli[M, ${sname}, A]` for any
+    | * exception-trapping (`Catchable`) and effect-capturing (`LiftM`) monad `M`. Such evidence is 
+    | * provided for `Task`, `IO`, and stdlib `Future`; and `liftK[M]` is provided as syntax.
+    | *
+    | * {{{
+    | * // An action to run
+    | * val a: ${sname}IO[Foo] = ...
+    | * 
+    | * // A JDBC object 
+    | * val s: ${sname} = ...
+    | * 
+    | * // Unfolding into a Task
+    | * val ta: Task[A] = a.liftK[Task].run(s)
+    | * }}}
+    | *
+    | * @group Modules
+    | */
+    |object ${sname.toLowerCase} {
+    |  
+    |  /** 
+    |   * Sum type of primitive operations over a `${ev.runtimeClass.getName}`.
+    |   * @group Algebra 
+    |   */
+    |  sealed trait ${sname}Op[A]
+    |
+    |  /** 
+    |   * Module of constructors for `${sname}Op`. These are rarely useful outside of the implementation;
+    |   * prefer the smart constructors provided by the `${sname.toLowerCase}` module.
+    |   * @group Algebra 
+    |   */
+    |  object ${sname}Op {
+    |    
+    |    // Lifting
+    |    ${liftingCtors(sname).mkString("\n    ")}
+    |
+    |    // Combinators
+    |    case class Attempt[A](action: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A]
+    |    case class Pure[A](a: () => A) extends ${sname}Op[A]
+    |
+    |    // Primitive Operations
+    |    ${ctors[A].map(_.ctor(sname)).mkString("\n    ")}
+    |
+    |  }
+    |  import ${sname}Op._ // We use these immediately
+    |
+    |  /**
+    |   * Free monad over a free functor of [[${sname}Op]]; abstractly, a computation that consumes 
+    |   * a `${ev.runtimeClass.getName}` and produces a value of type `A`. 
+    |   * @group Algebra 
+    |   */
+    |  type ${sname}IO[A] = F.FreeC[${sname}Op, A]
+    |
+    |  /**
+    |   * Monad instance for [[${sname}IO]] (can't be inferred).
+    |   * @group Typeclass Instances 
+    |   */
+    |  implicit val Monad${sname}IO: Monad[${sname}IO] = 
+    |    F.freeMonad[({type λ[α] = Coyoneda[${sname}Op, α]})#λ]
+    |
+    |  /**
+    |   * Catchable instance for [[${sname}IO]].
+    |   * @group Typeclass Instances
+    |   */
+    |  implicit val Catchable${sname}IO: Catchable[${sname}IO] =
+    |    new Catchable[${sname}IO] {
+    |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
+    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.delay(throw err)
+    |    }
+    |
+    |  ${liftingSmartCtors(sname).mkString("\n\n  ")}
+    |
+    |  /** 
+    |   * Lift a ${sname}IO[A] into an exception-capturing ${sname}IO[Throwable \\/ A].
+    |   * @group Constructors (Lifting)
+    |   */
+    |  def attempt[A](a: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] =
+    |    F.liftFC[${sname}Op, Throwable \\/ A](Attempt(a))
+    | 
+    |  /**
+    |   * Non-strict unit for capturing effects.
+    |   * @group Constructors (Lifting)
+    |   */
+    |  def delay[A](a: => A): ${sname}IO[A] =
+    |    F.liftFC(Pure(a _))
+    |
+    |  ${ctors[A].map(_.lifted(sname)).mkString("\n\n  ")}
+    |
+    | /** 
+    |  * Natural transformation from `${sname}Op` to `Kleisli` for the given `M`, consuming a `${ev.runtimeClass.getName}`. 
+    |  * @group Algebra
+    |  */
+    | def kleisliTrans[M[_]: Monad: Catchable: LiftM]: ${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l =
+    |   new (${sname}Op ~>  ({type l[a] = Kleisli[M, ${sname}, a]})#l) {
+    |
+    |     val L = Predef.implicitly[LiftM[M]]
+    |
+    |     def primitive[A](f: ${sname} => A): Kleisli[M, ${sname}, A] =
+    |       Kleisli(s => L.apply(f(s)))
+    |
+    |     def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] = 
+    |       op match {
+    |
+    |        // Lifting
+    |        ${liftingCases(sname).mkString("\n        ")}
+    |  
+    |        // Combinators
+    |        case Pure(a) => primitive(_ => a())
+    |        case Attempt(a) => a.liftK[M].attempt
+    |  
+    |        // Primitive Operations
+    |        ${ctors[A].map(_.prim(sname)).mkString("\n        ")}
+    |  
+    |      }
+    |  
+    |    }
+    |
+    |  /**
+    |   * Syntax for `${sname}IO`.
+    |   * @group Algebra
+    |   */
+    |  implicit class ${sname}IOOps[A](ma: ${sname}IO[A]) {
+    |    def liftK[M[_]: Monad: Catchable: LiftM]: Kleisli[M, ${sname}, A] =
+    |      runFC[${sname}Op,({type l[a]=Kleisli[M,${sname},a]})#l,A](ma)(kleisliTrans[M])
+    |  }
+    |
+    |}
+    |""".trim.stripMargin
+  }
+
+  def gen(base: File): Seq[java.io.File] = {
+    import java.io._
+    log.info("Generating free algebras into " + base)
+    managed.map { c =>
+      base.mkdirs
+      val mod  = module(ClassTag(c))
+      val file = new File(base, s"${c.getSimpleName.toLowerCase}.scala")
+      val pw = new PrintWriter(file)
+      pw.println(mod)
+      pw.close()
+      log.info(s"${c.getName} -> ${file.getName}")
+      file
+    }
+  }
+
+}
+
+
