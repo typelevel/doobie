@@ -21,7 +21,7 @@ scalacOptions in ThisBuild ++= Seq(
   "-Xlint",
   "-Yno-adapted-args",       
   "-Ywarn-dead-code",       
-  "-Ywarn-numeric-widen",   
+  // "-Ywarn-numeric-widen",   
   "-Ywarn-value-discard"     
 )
 
@@ -30,4 +30,6 @@ lazy val core = project.in(file("core"))
 lazy val test = project.in(file("test")).dependsOn(core)
 
 lazy val example = project.in(file("example")).dependsOn(core)
+
+lazy val free = project.in(file("free"))
 

@@ -7,6 +7,7 @@ import scalaz.effect.{IO, MonadIO}
 import scalaz.syntax.effect.monadCatchIO._
 import scalaz.stream._
 import Process._
+import doobie.hi.syntax._
 
 /** Pure functional high-level JDBC layer. */
 package object hi extends doobie.util.ToMonadCatchSqlOps {
@@ -54,46 +55,7 @@ package object hi extends doobie.util.ToMonadCatchSqlOps {
   }
 
 
-  implicit class SqlInterpolator(val sc: StringContext) {
-    import connection.prepareStatement
+  implicit def toSqlInterpolator(sc: StringContext): SqlInterpolator = 
+    new SqlInterpolator(sc)
 
-    class Source[A: Comp](a: A) {
-
-      def go[B](b: PreparedStatement[B]): Connection[B] =
-        prepareStatement(sc.parts.mkString("?"))(preparedstatement.set(1, a) >> b)
-
-      def executeQuery[B](b: ResultSet[B]): Connection[B] =
-        go(preparedstatement.executeQuery(b))
-    
-      def execute: Connection[Boolean] =
-        go(preparedstatement.execute)
-
-      def executeUpdate: Connection[Int] =
-        go(preparedstatement.executeUpdate)
-
-      def process[O: Comp]: Process[Connection, O] =
-        connection.process[O](sc.parts.mkString("?"), preparedstatement.set1(a))
-
-    }
-
-    class Source0 extends Source[Int](1) { // TODO: fix this
-
-      override def go[B](b: PreparedStatement[B]): Connection[B] =
-        prepareStatement(sc.parts.mkString("?"))(b)
-
-      override def process[O: Comp]: Process[Connection, O] =
-        connection.process[O](sc.parts.mkString("?"),().point[preparedstatement.Action])
-
-    }
-
-    def sql() = new Source0
-    def sql[A: Prim](a: A) = new Source(a)
-    def sql[A: Prim, B: Prim](a: A, b: B) = new Source((a,b))
-    def sql[A: Prim, B: Prim, C: Prim](a: A, b: B, c: C) = new Source((a,b,c))
-    def sql[A: Prim, B: Prim, C: Prim, D: Prim](a: A, b: B, c: C, d: D) = new Source((a,b,c,d))
-    def sql[A: Prim, B: Prim, C: Prim, D: Prim, E: Prim](a: A, b: B, c: C, d: D, e: E) = new Source((a,b,c,d,e))
-    def sql[A: Prim, B: Prim, C: Prim, D: Prim, E: Prim, F: Prim](a: A, b: B, c: C, d: D, e: E, f: F) = new Source((a,b,c,d,e, f))
-
-  }
-  
 }

@@ -7,7 +7,7 @@ import java.sql.SQLException
 
 import scalaz._, Scalaz._
 import scalaz.effect._, stateTEffect._, IO._
-import syntax.effect.monadCatchIO._
+import scalaz.syntax.effect.monadCatchIO._
 
 import dbc.sqlstate.{ postgresql => sqlstate }
 
