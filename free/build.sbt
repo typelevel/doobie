@@ -2,7 +2,8 @@ import FreeGen._
 
 freeGenSettings
 
-freeGenDir := (sourceManaged in Compile).value
+// freeGenDir := (scalaSource in Compile).value / "doobie" / "free"
+freeGenDir := (sourceManaged in Compile).value / "doobie" / "free"
 
 freeGenClasses := {
   import java.sql._
@@ -33,8 +34,8 @@ resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= Seq(
   "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
-  "org.scalaz"        %% "scalaz-core"      % "7.1.0-M7",
-  "org.scalaz"        %% "scalaz-effect"    % "7.1.0-M7",
+  "org.scalaz"        %% "scalaz-core"      % "7.1.0-RC1",
+  "org.scalaz"        %% "scalaz-effect"    % "7.1.0-RC1",
   "org.scalaz.stream" %% "scalaz-stream"    % "0.4.1a",
   "io.argonaut"       %% "argonaut"         % "6.1-M2",
   "com.chuusai"       %  "shapeless_2.10.4" % "2.0.0"

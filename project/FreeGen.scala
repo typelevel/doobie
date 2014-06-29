@@ -204,6 +204,8 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \\/ }
     |import scalaz.concurrent.Task
     |
+    |import doobie.util.capture._
+    |
     |${imports[A].mkString("\n")}
     |
     |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.${c}IO").mkString("\n")}
@@ -219,7 +221,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     | * `Free.runFC`. 
     | *
     | * The library provides a natural transformation to `Kleisli[M, ${sname}, A]` for any
-    | * exception-trapping (`Catchable`) and effect-capturing (`LiftM`) monad `M`. Such evidence is 
+    | * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
     | * provided for `Task`, `IO`, and stdlib `Future`; and `liftK[M]` is provided as syntax.
     | *
     | * {{{
@@ -309,10 +311,11 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  * Natural transformation from `${sname}Op` to `Kleisli` for the given `M`, consuming a `${ev.runtimeClass.getName}`. 
     |  * @group Algebra
     |  */
-    | def kleisliTrans[M[_]: Monad: Catchable: LiftM]: ${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l =
+    | def kleisliTrans[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l =
     |   new (${sname}Op ~>  ({type l[a] = Kleisli[M, ${sname}, a]})#l) {
+    |     import scalaz.syntax.catchable._
     |
-    |     val L = Predef.implicitly[LiftM[M]]
+    |     val L = Predef.implicitly[Capture[M]]
     |
     |     def primitive[A](f: ${sname} => A): Kleisli[M, ${sname}, A] =
     |       Kleisli(s => L.apply(f(s)))
@@ -339,8 +342,8 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * @group Algebra
     |   */
     |  implicit class ${sname}IOOps[A](ma: ${sname}IO[A]) {
-    |    def liftK[M[_]: Monad: Catchable: LiftM]: Kleisli[M, ${sname}, A] =
-    |      runFC[${sname}Op,({type l[a]=Kleisli[M,${sname},a]})#l,A](ma)(kleisliTrans[M])
+    |    def liftK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A] =
+    |      F.runFC[${sname}Op,({type l[a]=Kleisli[M,${sname},a]})#l,A](ma)(kleisliTrans[M])
     |  }
     |
     |}

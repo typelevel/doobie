@@ -1,4 +1,7 @@
 package doobie
 
-/** Package doc. */
+/** 
+ * High-level database API.
+ * @group Modules
+ */
 package object hi
