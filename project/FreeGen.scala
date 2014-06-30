@@ -122,7 +122,6 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     def lifted(sname: String): String =
       if (cargs.isEmpty) {
         s"""|/** 
-            |   * Fill in doc for $mname.
             |   * @group Constructors (Primitives)
             |   */
             |  val $mname: ${sname}IO[$ret] =
@@ -130,7 +129,6 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
          """.trim.stripMargin
       } else {
         s"""|/** 
-            |   * Fill in doc for $mname.
             |   * @group Constructors (Primitives)
             |   */
             |  def $mname$ctparams(${cargs.mkString(", ")}): ${sname}IO[$ret] =
@@ -151,7 +149,6 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
 
   def liftingSmartCtor(cname: String, sname: String): String = 
    s"""|/**
-       |   * Lift a `${cname}IO` into `${sname}IO`.
        |   * @group Constructors (Lifting)
        |   */
        |  def lift${cname}[A](s: ${cname}, k: ${cname}IO[A]): ${sname}IO[A] =

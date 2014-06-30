@@ -7,5 +7,9 @@ object capture {
     def apply[A](a: => A): M[A]
   }
 
+  object Capture {
+    def apply[M[_]](implicit M: Capture[M]): Capture[M] = M
+  }
+
 }
 
