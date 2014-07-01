@@ -1,6 +1,7 @@
 package doobie.util
 
 import scalaz.{ Monad, Catchable, \/, -\/, \/- }
+import scalaz.syntax.monad._
 
 /** Module of additional combinators for `Catchable`, similar to those provided for `MonadCatchIO`. */
 object catchable {
@@ -28,41 +29,41 @@ object catchable {
   def catchLeft[M[_]: Catchable, A](ma: M[A])(implicit M: Monad[M]): M[Throwable \/ A] =
     except(M.map(ma)(\/.right[Throwable, A]))(t => M.point(\/.left[Throwable, A](t)))
 
-  // /** Like "catchLeft" but takes a predicate to select which exceptions are caught. */
-  // def catchSomeLeft[M[_]: Monad: Catchable, A, B](ma: M[A])(p: Throwable => Option[B]): M[B \/ A] =
-  //   catchLeft(ma) map (_.leftMap(e => p(e).getOrElse(throw e)))
+  /** Like "catchLeft" but takes a predicate to select which exceptions are caught. */
+  def catchSomeLeft[M[_]: Catchable, A, B](ma: M[A])(p: Throwable => Option[B])(implicit M: Monad[M]): M[B \/ A] =
+    M.map(catchLeft(ma))(_.leftMap(e => p(e).getOrElse(throw e)))
 
-  // /** Like "finally", but only performs the final action if there was an exception. */
-  // def onException[M[_]: Monad: Catchable, A, B](ma: M[A], action: M[B]): M[A] =
-  //   except(ma)(e =>
-  //     for {
-  //       _ <- action
-  //       a <- (throw e): M[A]
-  //     } yield a)
+  /** Like "finally", but only performs the final action if there was an exception. */
+  def onException[M[_]: Monad: Catchable, A, B](ma: M[A], action: M[B]): M[A] =
+    except(ma)(e =>
+      for {
+        _ <- action
+        a <- (throw e): M[A]
+      } yield a)
 
-  // def bracket[M[_]: Monad: Catchable, A, B, C](before: M[A])(after: A => M[B])(during: A => M[C]): M[C] =
-  //   for {
-  //     a <- before
-  //     r <- onException(during(a), after(a))
-  //     _ <- after(a)
-  //   } yield r
+  def bracket[M[_]: Monad: Catchable, A, B, C](before: M[A])(after: A => M[B])(during: A => M[C]): M[C] =
+    for {
+      a <- before
+      r <- onException(during(a), after(a))
+      _ <- after(a)
+    } yield r
 
-  // /** Like "bracket", but takes only a computation to run afterward. Generalizes "finally". */
-  // def ensuring[M[_]: Monad: Catchable, A, B](ma: M[A], sequel: M[B]): M[A] =
-  //   for {
-  //     r <- onException(ma, sequel)
-  //     _ <- sequel
-  //   } yield r
+  /** Like "bracket", but takes only a computation to run afterward. Generalizes "finally". */
+  def ensuring[M[_]: Monad: Catchable, A, B](ma: M[A], sequel: M[B]): M[A] =
+    for {
+      r <- onException(ma, sequel)
+      _ <- sequel
+    } yield r
 
-  // /** A variant of "bracket" where the return value of this computation is not needed. */
-  // def bracket_[M[_]: Monad: Catchable, A, B, C](before: M[A])(after: M[B])(during: M[C]): M[C] =
-  //   bracket(before)(_ => after)(_ => during)
+  /** A variant of "bracket" where the return value of this computation is not needed. */
+  def bracket_[M[_]: Monad: Catchable, A, B, C](before: M[A])(after: M[B])(during: M[C]): M[C] =
+    bracket(before)(_ => after)(_ => during)
 
-  // /** A variant of "bracket" that performs the final action only if there was an error. */
-  // def bracketOnError[M[_]: Monad: Catchable, A, B, C](before: M[A])(after: A => M[B])(during: A => M[C]): M[C] =
-  //   for {
-  //     a <- before
-  //     r <- onException(during(a), after(a))
-  //   } yield r
+  /** A variant of "bracket" that performs the final action only if there was an error. */
+  def bracketOnError[M[_]: Monad: Catchable, A, B, C](before: M[A])(after: A => M[B])(during: A => M[C]): M[C] =
+    for {
+      a <- before
+      r <- onException(during(a), after(a))
+    } yield r
 
 }

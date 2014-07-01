@@ -20,3 +20,6 @@ bin/
 
 # OS X
 .DS_Store
+
+# Ctags
+.tags

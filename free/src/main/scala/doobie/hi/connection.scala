@@ -3,6 +3,8 @@ package doobie.hi
 import doobie.enum.holdability._
 import doobie.enum.transactionisolation._
 
+import doobie.syntax.catchable._
+
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ callablestatement => CS }
@@ -27,7 +29,7 @@ import scala.collection.JavaConverters._
  *  - Actions that compute values of impure types (`CLOB`, `InputStream`, etc.) do not appear in this API.
  *    They are available in the low-level API but must be used with considerable caution.
  *  - An exception to the above rule is that actions consuming or returning Scala `Array` are available
- *    here but use `scalaz.ImmutableArray`. 
+ *    here but use `scalaz.ImmutableArray` or `List`, depending on usage.
  *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear 
  *    in this API.
  *
@@ -43,25 +45,25 @@ object connection {
    * @group Statements
    */
   def createStatement[A](k: StatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.createStatement.flatMap(s => C.liftStatement(s, k ensuring S.close))
 
   /** 
    * @group Statements
    */
   def createStatement[A](rst: Int, rsc: Int)(k: StatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.createStatement(rst, rsc).flatMap(s => C.liftStatement(s, k ensuring S.close))
 
   /** 
    * @group Statements
    */
   def createStatement[A](rst: Int, rsc: Int, rsh: Holdability)(k: StatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.createStatement(rst, rsc, rsh.toInt).flatMap(s => C.liftStatement(s, k ensuring S.close))
 
   /** 
    * @group Connection Properties
    */
   val getCatalog: ConnectionIO[String] =
-    Predef.???
+    C.getCatalog
 
   /** 
    * @group Connection Properties
@@ -85,7 +87,7 @@ object connection {
    * @group Connection Properties
    */
   def getMetaData[A](k: DatabaseMetaDataIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.getMetaData.flatMap(s => C.liftDatabaseMetaData(s, k))
 
   /** 
    * @group Transaction Control
@@ -97,91 +99,91 @@ object connection {
    * @group Connection Properties
    */
   val isReadOnly: ConnectionIO[Boolean] =
-    Predef.???
+    C.isReadOnly
 
   /** 
    * @group Callable Statements
    */
   def prepareCall[A](sql: String, b: Int, c: Int)(k: CallableStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareCall(sql, b, c).flatMap(s => C.liftCallableStatement(s, k ensuring CS.close))
 
   /** 
    * @group Callable Statements
    */
   def prepareCall[A](sql: String)(k: CallableStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareCall(sql).flatMap(s => C.liftCallableStatement(s, k ensuring CS.close))
 
   /** 
    * @group Callable Statements
    */
   def prepareCall[A](sql: String, b: Int, c: Int, d: Int)(k: CallableStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareCall(sql, b, c,d).flatMap(s => C.liftCallableStatement(s, k ensuring CS.close))
 
   /** 
    * @group Prepared Statements
    */
   def prepareStatement[A](sql: String, b: Int, c: Int)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareStatement(sql, b, c).flatMap(s => C.liftPreparedStatement(s, k ensuring PS.close))
 
   /** 
    * @group Prepared Statements
    */
   def prepareStatement[A](sql: String)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareStatement(sql).flatMap(s => C.liftPreparedStatement(s, k ensuring PS.close))
 
   /** 
    * @group Prepared Statements
    */
   def prepareStatement[A](sql: String, b: Int, c: Int, d: Int)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareStatement(sql, b, c, d).flatMap(s => C.liftPreparedStatement(s, k ensuring PS.close))
 
   /** 
    * @group Prepared Statements
    */
   def prepareStatement[A](sql: String, b: Int)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareStatement(sql, b).flatMap(s => C.liftPreparedStatement(s, k ensuring PS.close))
 
   /** 
    * @group Prepared Statements
    */
   def prepareStatementI[A](sql: String, b: List[Int])(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareStatement(sql, b.toArray).flatMap(s => C.liftPreparedStatement(s, k ensuring PS.close))
 
   /** 
    * @group Prepared Statements
    */
   def prepareStatementS[A](sql: String, b: List[String])(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    Predef.???
+    C.prepareStatement(sql, b.toArray).flatMap(s => C.liftPreparedStatement(s, k ensuring PS.close))
 
   /** 
    * @group Transaction Control
    */
   def releaseSavepoint(sp: Savepoint): ConnectionIO[Unit] =
-    Predef.???
+    C.releaseSavepoint(sp)
 
   /** 
    * @group Transaction Control
    */
   def rollback(sp: Savepoint): ConnectionIO[Unit] =
-    Predef.???
+    C.rollback(sp)
 
   /** 
    * @group Transaction Control
    */
   val rollback: ConnectionIO[Unit] =
-    Predef.???
+    C.rollback
 
   /** 
    * @group Connection Properties
    */
   def setCatalog(catalog: String): ConnectionIO[Unit] =
-    Predef.???
+    C.setCatalog(catalog)
 
   /** 
    * @group Connection Properties
    */
   def setClientInfo(key: String, value: String): ConnectionIO[Unit] =
-    Predef.???
+    C.setClientInfo(key, value)
 
   /** 
    * @group Connection Properties
@@ -203,19 +205,19 @@ object connection {
    * @group Connection Properties
    */
   def setReadOnly(readOnly: Boolean): ConnectionIO[Unit] =
-    Predef.???
+    C.setReadOnly(readOnly)
 
   /** 
    * @group Transaction Control
    */
   val setSavepoint: ConnectionIO[Savepoint] =
-    Predef.???
+    C.setSavepoint
 
   /** 
    * @group Transaction Control
    */
   def setSavepoint(name: String): ConnectionIO[Savepoint] =
-    Predef.???
+    C.setSavepoint(name)
 
   /** 
    * @group Transaction Control
