@@ -9,11 +9,13 @@ import scalaz.std.anyVal.intInstance
 
 object holdability {
 
+  /** @group Implementation */
   sealed abstract class Holdability(val toInt: Int) extends Product with Serializable
+  
+  /** @group Values */ case object HoldCursorsOverCommit extends Holdability(HOLD_CURSORS_OVER_COMMIT)
+  /** @group Values */ case object CloseCursorsAtCommit  extends Holdability(CLOSE_CURSORS_AT_COMMIT)
 
-  case object HoldCursorsOverCommit extends Holdability(HOLD_CURSORS_OVER_COMMIT)
-  case object CloseCursorsAtCommit  extends Holdability(CLOSE_CURSORS_AT_COMMIT)
-
+  /** @group Implementation */
   object Holdability {
 
     def fromInt(n:Int): Option[Holdability] =

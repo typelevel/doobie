@@ -9,14 +9,16 @@ import scalaz.std.anyVal.intInstance
 
 object transactionisolation {
 
+  /** @group Implementation */
   sealed abstract class TransactionIsolation(val toInt: Int)
+  
+  /** @group Values */ case object TransactionNone            extends TransactionIsolation(TRANSACTION_NONE)
+  /** @group Values */ case object TransactionReadUncommitted extends TransactionIsolation(TRANSACTION_READ_UNCOMMITTED)
+  /** @group Values */ case object TransactionReadCommitted   extends TransactionIsolation(TRANSACTION_READ_COMMITTED)
+  /** @group Values */ case object TransactionRepeatableRead  extends TransactionIsolation(TRANSACTION_REPEATABLE_READ)
+  /** @group Values */ case object TransactionSerializable    extends TransactionIsolation(TRANSACTION_SERIALIZABLE)
 
-  case object TransactionNone            extends TransactionIsolation(TRANSACTION_NONE)
-  case object TransactionReadUncommitted extends TransactionIsolation(TRANSACTION_READ_UNCOMMITTED)
-  case object TransactionReadCommitted   extends TransactionIsolation(TRANSACTION_READ_COMMITTED)
-  case object TransactionRepeatableRead  extends TransactionIsolation(TRANSACTION_REPEATABLE_READ)
-  case object TransactionSerializable    extends TransactionIsolation(TRANSACTION_SERIALIZABLE)
-
+  /** @group Implementation */
   object TransactionIsolation {
 
     def fromInt(n: Int): Option[TransactionIsolation] =
