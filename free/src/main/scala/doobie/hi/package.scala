@@ -1,6 +1,8 @@
 package doobie
 
 import doobie.free.{ connection => C }
+import doobie.free.{ driver => D }
+import doobie.free.{ drivermanager => DM }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ callablestatement => CS }
 import doobie.free.{ resultset => RS }
@@ -29,6 +31,8 @@ import doobie.free.{ resultsetmetadata => RSMD }
 package object hi {
 
   /** @group Aliases */  type ConnectionIO[A]        = C.ConnectionIO[A]
+  /** @group Aliases */  type DriverIO[A]            = D.DriverIO[A]
+  /** @group Aliases */  type DriverManagerIO[A]     = DM.DriverManagerIO[A]
   /** @group Aliases */  type StatementIO[A]         = S.StatementIO[A]
   /** @group Aliases */  type CallableStatementIO[A] = CS.CallableStatementIO[A]
   /** @group Aliases */  type PreparedStatementIO[A] = PS.PreparedStatementIO[A]

@@ -6,6 +6,7 @@ This is a small, pure-functional JDBC layer for Scala.
 
 ### Principles
 
+ - Support entire JDBC 4.0 core API.
  - Any JDBC program should be representable.
  - No vendor-specific stuff.
  - Functional and typesafe (natch).

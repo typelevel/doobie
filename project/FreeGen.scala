@@ -182,7 +182,9 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
   def imports[A](implicit ev: ClassTag[A]): List[String] = 
     (s"import ${ev.runtimeClass.getName}" :: ctors.map(_.method).flatMap { m =>
       m.getReturnType :: managed.toList.filterNot(_ == ev.runtimeClass) ::: m.getParameterTypes.toList
-    }.filterNot(t => t.isPrimitive || t.isArray).map { c =>
+    }.map { t => 
+      if (t.isArray) t.getComponentType else t 
+    }.filterNot(t => t.isPrimitive).map { c =>
       val sn = c.getSimpleName
       val an = renames.getOrElse(c, sn)
       if (sn == an) s"import ${c.getName}"
