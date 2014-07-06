@@ -2,7 +2,6 @@ import FreeGen._
 
 freeGenSettings
 
-// freeGenDir := (scalaSource in Compile).value / "doobie" / "free"
 freeGenDir := (sourceManaged in Compile).value / "doobie" / "free"
 
 freeGenClasses := {
@@ -29,8 +28,6 @@ freeGenClasses := {
 
 name := "doobie-free"
 
-// scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits")
-
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= Seq(
@@ -40,6 +37,11 @@ libraryDependencies ++= Seq(
   "org.scalaz.stream" %% "scalaz-stream"    % "0.4.1a",
   "io.argonaut"       %% "argonaut"         % "6.1-M2",
   "com.chuusai"       %  "shapeless_2.10.4" % "2.0.0"
+)
+
+libraryDependencies ++= Seq(     
+  "org.scalacheck" %% "scalacheck" % "1.10.1" % "test",
+  "org.specs2"     %% "specs2"     % "1.12.3" % "test"
 )
 
 scalacOptions := Seq(

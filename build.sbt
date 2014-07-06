@@ -33,3 +33,4 @@ lazy val example = project.in(file("example")).dependsOn(core)
 
 lazy val free = project.in(file("free"))
 
+lazy val free_example = project.in(file("free-example")).dependsOn(free)
