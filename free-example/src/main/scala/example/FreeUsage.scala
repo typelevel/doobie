@@ -17,7 +17,7 @@ object FreeUsage {
   case class CountryCode(code: String)
   
   def main(args: Array[String]): Unit =
-    tmain.xxx[Task].run
+    tmain.translate[Task].run
 
   val tmain: DM.DriverManagerIO[Unit] = 
     for {
