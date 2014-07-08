@@ -1,7 +1,10 @@
 package doobie.hi
 
-import doobie.enum.holdability._
-import doobie.enum.transactionisolation._
+import doobie.enum.holdability.Holdability
+import doobie.enum.transactionisolation.TransactionIsolation
+import doobie.enum.fetchdirection.FetchDirection
+import doobie.enum.resultsetconcurrency.ResultSetConcurrency
+import doobie.enum.resultsettype.ResultSetType
 
 import doobie.syntax.catchable._
 
@@ -48,7 +51,7 @@ object preparedstatement {
   val clearBatch: PreparedStatementIO[Unit] =
     PS.clearBatch
 
-  /** @group Query Parameters */
+  /** @group Parameters */
   val clearParameters: PreparedStatementIO[Unit] =
     PS.clearParameters
 
@@ -73,28 +76,28 @@ object preparedstatement {
     PS.getConnection.flatMap(s => PS.liftConnection(s, k))
 
   /** @group Properties */
-  val getFetchDirection: PreparedStatementIO[Int] =
-    Predef.???
+  val getFetchDirection: PreparedStatementIO[FetchDirection] =
+    PS.getFetchDirection.map(FetchDirection.unsafeFromInt)
 
   /** @group Properties */
   val getFetchSize: PreparedStatementIO[Int] =
-    Predef.???
+    PS.getFetchSize
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    Predef.???
+    PS.getGeneratedKeys.flatMap(s => PS.liftResultSet(s, k ensuring RS.close))
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =
-    Predef.???
+    PS.getMaxFieldSize
 
   /** @group Properties */
   val getMaxRows: PreparedStatementIO[Int] =
-    Predef.???
-
+    PS.getMaxRows
+     
   /** @group Properties */
   def getMetaData[A](k: ResultSetMetaDataIO[A]): PreparedStatementIO[A] =
-    Predef.???
+    PS.getMetaData.flatMap(s => PS.liftResultSetMetaData(s, k))
 
   /** @group Batching */
   def getMoreResults(a: Int): PreparedStatementIO[Boolean] =
@@ -102,43 +105,43 @@ object preparedstatement {
 
   /** @group Batching */
   val getMoreResults: PreparedStatementIO[Boolean] =
-    Predef.???
+    PS.getMoreResults
 
   /** @group Properties */
   val getParameterMetaData: PreparedStatementIO[ParameterMetaData] =
-    Predef.???
+    PS.getParameterMetaData
 
   /** @group Properties */
   val getQueryTimeout: PreparedStatementIO[Int] =
-    Predef.???
+    PS.getQueryTimeout
 
   /** @group Batching */
   def getResultSet[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    Predef.???
+    PS.getResultSet.flatMap(s => PS.liftResultSet(s, k))
 
   /** @group Properties */
-  val getResultSetConcurrency: PreparedStatementIO[Int] =
-    Predef.???
+  val getResultSetConcurrency: PreparedStatementIO[ResultSetConcurrency] =
+    PS.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
 
   /** @group Properties */
-  val getResultSetHoldability: PreparedStatementIO[Int] =
-    Predef.???
+  val getResultSetHoldability: PreparedStatementIO[Holdability] =
+    PS.getResultSetHoldability.map(Holdability.unsafeFromInt)
 
   /** @group Properties */
-  val getResultSetType: PreparedStatementIO[Int] =
-    Predef.???
+  val getResultSetType: PreparedStatementIO[ResultSetType] =
+    PS.getResultSetType.map(ResultSetType.unsafeFromInt)
 
   /** @group Results */
   val getUpdateCount: PreparedStatementIO[Int] =
-    Predef.???
+    PS.getUpdateCount
 
   /** @group Results */
   val getWarnings: PreparedStatementIO[SQLWarning] =
-    Predef.???
+    PS.getWarnings
 
   /** @group Properties */
   val isPoolable: PreparedStatementIO[Boolean] =
-    Predef.???
+    PS.isPoolable
 
   /** 
    * Set the given composite value, starting at column `n`.
@@ -155,35 +158,35 @@ object preparedstatement {
     A.set(1, a)
 
   /** @group Properties */
-  def setCursorName(a: String): PreparedStatementIO[Unit] =
-    Predef.???
+  def setCursorName(name: String): PreparedStatementIO[Unit] =
+    PS.setCursorName(name)
 
   /** @group Properties */
   def setEscapeProcessing(a: Boolean): PreparedStatementIO[Unit] =
-    Predef.???
+    PS.setEscapeProcessing(a)
 
   /** @group Properties */
-  def setFetchDirection(a: Int): PreparedStatementIO[Unit] =
-    Predef.???
+  def setFetchDirection(fd: FetchDirection): PreparedStatementIO[Unit] =
+    PS.setFetchDirection(fd.toInt)
 
   /** @group Properties */
-  def setFetchSize(a: Int): PreparedStatementIO[Unit] =
-    Predef.???
+  def setFetchSize(n: Int): PreparedStatementIO[Unit] =
+    PS.setFetchSize(n)
 
   /** @group Properties */
-  def setMaxFieldSize(a: Int): PreparedStatementIO[Unit] =
-    Predef.???
+  def setMaxFieldSize(n: Int): PreparedStatementIO[Unit] =
+    PS.setMaxFieldSize(n)
 
   /** @group Properties */
-  def setMaxRows(a: Int): PreparedStatementIO[Unit] =
-    Predef.???
+  def setMaxRows(n: Int): PreparedStatementIO[Unit] =
+    PS.setMaxRows(n)
 
   /** @group Properties */
   def setPoolable(a: Boolean): PreparedStatementIO[Unit] =
-    Predef.???
+    PS.setPoolable(a)
 
   /** @group Properties */
   def setQueryTimeout(a: Int): PreparedStatementIO[Unit] =
-    Predef.???
+    PS.setQueryTimeout(a)
 
 }
