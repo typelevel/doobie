@@ -12,6 +12,8 @@ import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
 
+import doobie.util.composite._
+
 import java.net.URL
 import java.util.{ Date, Calendar }
 import java.sql.{ ParameterMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
@@ -78,7 +80,7 @@ object preparedstatement {
   val getFetchSize: PreparedStatementIO[Int] =
     Predef.???
 
-  /** @group Constructors (Primitives) */
+  /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
     Predef.???
 
@@ -126,11 +128,11 @@ object preparedstatement {
   val getResultSetType: PreparedStatementIO[Int] =
     Predef.???
 
-  /** @group Constructors (Primitives) */
+  /** @group Results */
   val getUpdateCount: PreparedStatementIO[Int] =
     Predef.???
 
-  /** @group Constructors (Primitives) */
+  /** @group Results */
   val getWarnings: PreparedStatementIO[SQLWarning] =
     Predef.???
 
@@ -138,124 +140,50 @@ object preparedstatement {
   val isPoolable: PreparedStatementIO[Boolean] =
     Predef.???
 
-  /** @group Query Parameters */
-  def setBigDecimal(a: Int, b: BigDecimal): PreparedStatementIO[Unit] =
-    Predef.???
+  /** 
+   * Set the given composite value, starting at column `n`.
+   * @group Parameters 
+   */
+  def set[A](n: Int, a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
+    A.set(n, a)
 
-  /** @group Query Parameters */
-  def setBoolean(a: Int, b: Boolean): PreparedStatementIO[Unit] =
-    Predef.???
+  /** 
+   * Set the given composite value, starting at column `1`.
+   * @group Parameters 
+   */
+  def set[A](a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
+    A.set(1, a)
 
-  /** @group Query Parameters */
-  def setByte(a: Int, b: Byte): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setBytes(a: Int, b: Array[Byte]): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
+  /** @group Properties */
   def setCursorName(a: String): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
-  def setDate(a: Int, b: Date, c: Calendar): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setDate(a: Int, b: Date): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setDouble(a: Int, b: Double): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
+  /** @group Properties */
   def setEscapeProcessing(a: Boolean): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
+  /** @group Properties */
   def setFetchDirection(a: Int): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
+  /** @group Properties */
   def setFetchSize(a: Int): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
-  def setFloat(a: Int, b: Float): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setInt(a: Int, b: Int): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setLong(a: Int, b: Long): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
+  /** @group Properties */
   def setMaxFieldSize(a: Int): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
+  /** @group Properties */
   def setMaxRows(a: Int): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
-  def setNString(a: Int, b: String): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setNull(a: Int, b: Int, c: String): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setNull(a: Int, b: Int): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
+  /** @group Properties */
   def setPoolable(a: Boolean): PreparedStatementIO[Unit] =
     Predef.???
 
-  /** @group Query Parameters */
+  /** @group Properties */
   def setQueryTimeout(a: Int): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setRef(a: Int, b: Ref): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setRowId(a: Int, b: RowId): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setShort(a: Int, b: Short): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setString(a: Int, b: String): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setTime(a: Int, b: Time): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setTime(a: Int, b: Time, c: Calendar): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setTimestamp(a: Int, b: Timestamp): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setTimestamp(a: Int, b: Timestamp, c: Calendar): PreparedStatementIO[Unit] =
-    Predef.???
-
-  /** @group Query Parameters */
-  def setURL(a: Int, b: URL): PreparedStatementIO[Unit] =
     Predef.???
 
 }

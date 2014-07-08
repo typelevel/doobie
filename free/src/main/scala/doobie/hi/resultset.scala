@@ -37,4 +37,10 @@ object resultset {
   val wasNull: ResultSetIO[Boolean] =
     RS.wasNull
 
+  val next: ResultSetIO[Boolean] =
+    RS.next
+
+  def getString(n:Int): ResultSetIO[String] =
+    RS.getString(n)
+
 }

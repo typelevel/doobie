@@ -31,6 +31,10 @@ object connection {
   /** @group Typeclass Instances */
   implicit val CatchableConnectionIO = C.CatchableConnectionIO
 
+  /** @group Lifting */
+  def delay[A](a: => A): ConnectionIO[A] =
+    C.delay(a)
+
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
     C.commit

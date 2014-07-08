@@ -1,6 +1,8 @@
 package doobie.util
 
-import doobie.hi._
+import doobie.free._
+import doobie.free.{ preparedstatement => PS }
+import doobie.free.{ resultset => RS }
 import doobie.enum.jdbctype._
 
 import scalaz.InvariantFunctor
@@ -12,14 +14,14 @@ object atom {
 
   trait Atom[A] {
 
-    def set: (Int, A) => PreparedStatementIO[Unit]
+    def set: (Int, A) => PS.PreparedStatementIO[Unit]
 
-    def get: Int => ResultSetIO[A]
+    def get: Int => RS.ResultSetIO[A]
 
     def jdbcType: JdbcType
 
-    def setNull: Int => PreparedStatementIO[Unit] = i =>
-      preparedstatement.setNull(i, jdbcType.toInt)
+    def setNull: Int => PS.PreparedStatementIO[Unit] = i =>
+      PS.setNull(i, jdbcType.toInt)
 
   }
 
@@ -41,7 +43,7 @@ object atom {
     // values) and value types (need to call wasNull). Throw UnmetInvariantException or something on
     // unexpected null.
 
-    def prim[A](jdbc: JdbcType, s: (Int, A) => PreparedStatementIO[Unit], g: Int => ResultSetIO[A]): Atom[A] =
+    def atom[A](jdbc: JdbcType, s: (Int, A) => PS.PreparedStatementIO[Unit], g: Int => RS.ResultSetIO[A]): Atom[A] =
       new Atom[A] {
         val set = s
         val get = g

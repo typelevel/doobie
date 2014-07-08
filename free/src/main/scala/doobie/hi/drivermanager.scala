@@ -30,6 +30,10 @@ object drivermanager {
   /** @group Typeclass Instances */
   implicit val CatchableDriverManagerIO = DM.CatchableDriverManagerIO
 
+  /** @group Lifting */
+  def delay[A](a: => A): DriverManagerIO[A] =
+    DM.delay(a)
+
   /** @group Connections */
   def getConnection[A](url: String)(k: ConnectionIO[A]): DM.DriverManagerIO[A] =
     DM.getConnection(url).flatMap(s => DM.liftConnection(s, k ensuring C.close))
@@ -61,11 +65,11 @@ object drivermanager {
     DM.getDrivers.flatMap(ds => enumToList(ds).traverse(DM.liftDriver(_, k)))
   }
 
-  /** @group Login Timeout */
+  /** @group Properties */
   val getLoginTimeout: DriverManagerIO[Int] =
     DM.getLoginTimeout
 
-  /** @group Login Timeout */
+  /** @group Properties */
   def setLoginTimeout(a: Int): DriverManagerIO[Unit] =
     DM.setLoginTimeout(a)
 
