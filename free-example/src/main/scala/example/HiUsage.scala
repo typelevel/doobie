@@ -47,10 +47,7 @@ object HiUsage {
 
   def speakerQuery(s: String, p: Double): ConnectionIO[List[CountryCode]] =
     C.prepareStatement("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?") {
-      for {
-        _ <- PS.set((s, p))
-        l <- PS.executeQuery(unroll(RS.getString(1).map(CountryCode(_))))
-      } yield l
+      PS.set((s, p)) >> PS.executeQuery(unroll(RS.getString(1).map(CountryCode(_))))
     }
 
   def unroll[A](a: ResultSetIO[A]): ResultSetIO[List[A]] = {

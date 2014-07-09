@@ -8,7 +8,6 @@ import doobie.free.{ callablestatement => CS }
 import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
-import doobie.free.{ resultsetmetadata => RSMD }
 
 /** 
  * High-level database API. The constructors here are defined
@@ -16,6 +15,7 @@ import doobie.free.{ resultsetmetadata => RSMD }
  *
  *  - Enumerated values represented by `Int` values in JDBC are mapped to one of the proper types
  *    defined in `doobie.enum`.
+ *  - Nullable values are represented in terms of `Option`.
  *  - Java collection types are translated to immutable Scala equivalents.
  *  - Actions that compute liftime-managed resources do not return the resource directly, but rather 
  *    take a continuation in the resource's monad.
@@ -37,7 +37,6 @@ package object hi {
   /** @group Aliases */  type CallableStatementIO[A] = CS.CallableStatementIO[A]
   /** @group Aliases */  type PreparedStatementIO[A] = PS.PreparedStatementIO[A]
   /** @group Aliases */  type DatabaseMetaDataIO[A]  = DMD.DatabaseMetaDataIO[A]
-  /** @group Aliases */  type ResultSetMetaDataIO[A] = RSMD.ResultSetMetaDataIO[A]
   /** @group Aliases */  type ResultSetIO[A]         = RS.ResultSetIO[A]
 
 }

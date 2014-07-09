@@ -13,7 +13,6 @@ freeGenClasses := {
     classOf[java.sql.Clob],
     classOf[java.sql.DatabaseMetaData],
     classOf[java.sql.Driver],
-    classOf[java.sql.ResultSetMetaData],
     classOf[java.sql.Ref],
     classOf[java.sql.SQLData],
     classOf[java.sql.SQLInput],

@@ -19,7 +19,7 @@ import doobie.util.composite._
 
 import java.net.URL
 import java.util.{ Date, Calendar }
-import java.sql.{ ParameterMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
+import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
@@ -28,7 +28,8 @@ import scala.Predef.intArrayOps
 import scalaz.syntax.id._
 
 /**
- * Module of high-level constructors for `PreparedStatementIO` actions.
+ * Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not
+ * provided; see the `statement` module for this functionality.
  * @group Modules
  */
 object preparedstatement {
@@ -39,29 +40,29 @@ object preparedstatement {
   /** @group Typeclass Instances */
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
 
-  /** @group Batching */
-  val addBatch: PreparedStatementIO[Unit] =
-    PS.addBatch
+  // /** @group Batching */
+  // val addBatch: PreparedStatementIO[Unit] =
+  //   PS.addBatch
 
-  /** @group Batching */
-  def addBatch(sql: String): PreparedStatementIO[Unit] =
-    PS.addBatch(sql)
+  // /** @group Batching */
+  // def addBatch(sql: String): PreparedStatementIO[Unit] =
+  //   PS.addBatch(sql)
 
-  /** @group Batching */
-  val clearBatch: PreparedStatementIO[Unit] =
-    PS.clearBatch
+  // /** @group Batching */
+  // val clearBatch: PreparedStatementIO[Unit] =
+  //   PS.clearBatch
 
-  /** @group Parameters */
-  val clearParameters: PreparedStatementIO[Unit] =
-    PS.clearParameters
+  // /** @group Parameters */
+  // val clearParameters: PreparedStatementIO[Unit] =
+  //   PS.clearParameters
 
-  /** @group Execution */
-  val execute: PreparedStatementIO[Boolean] =
-    PS.execute
+  // /** @group Execution */
+  // val execute: PreparedStatementIO[Boolean] =
+  //   PS.execute
 
-  /** @group Execution */
-  val executeBatch: PreparedStatementIO[List[Int]] =
-    PS.executeBatch.map(_.toList)
+  // /** @group Execution */
+  // val executeBatch: PreparedStatementIO[List[Int]] =
+  //   PS.executeBatch.map(_.toList)
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
@@ -71,9 +72,9 @@ object preparedstatement {
   val executeUpdate: PreparedStatementIO[Int] =
     PS.executeUpdate
 
-  /** @group Properties */
-  def getConnection[A](k: ConnectionIO[A]): PreparedStatementIO[A] =
-    PS.getConnection.flatMap(s => PS.liftConnection(s, k))
+  // /** @group Properties */
+  // def getConnection[A](k: ConnectionIO[A]): PreparedStatementIO[A] =
+  //   PS.getConnection.flatMap(s => PS.liftConnection(s, k))
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
@@ -95,19 +96,19 @@ object preparedstatement {
   val getMaxRows: PreparedStatementIO[Int] =
     PS.getMaxRows
      
-  /** @group Properties */
-  def getMetaData[A](k: ResultSetMetaDataIO[A]): PreparedStatementIO[A] =
-    PS.getMetaData.flatMap(s => PS.liftResultSetMetaData(s, k))
+  /** @group MetaData */
+  val getMetaData: PreparedStatementIO[ResultSetMetaData] =
+    PS.getMetaData
 
-  /** @group Batching */
-  def getMoreResults(a: Int): PreparedStatementIO[Boolean] =
-    Predef.???
+  // /** @group Batching */
+  // def getMoreResults(a: Int): PreparedStatementIO[Boolean] =
+  //   Predef.???
 
-  /** @group Batching */
-  val getMoreResults: PreparedStatementIO[Boolean] =
-    PS.getMoreResults
+  // /** @group Batching */
+  // val getMoreResults: PreparedStatementIO[Boolean] =
+  //   PS.getMoreResults
 
-  /** @group Properties */
+  /** @group MetaData */
   val getParameterMetaData: PreparedStatementIO[ParameterMetaData] =
     PS.getParameterMetaData
 
@@ -115,9 +116,9 @@ object preparedstatement {
   val getQueryTimeout: PreparedStatementIO[Int] =
     PS.getQueryTimeout
 
-  /** @group Batching */
-  def getResultSet[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.getResultSet.flatMap(s => PS.liftResultSet(s, k))
+  // /** @group Batching */
+  // def getResultSet[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
+  //   PS.getResultSet.flatMap(s => PS.liftResultSet(s, k))
 
   /** @group Properties */
   val getResultSetConcurrency: PreparedStatementIO[ResultSetConcurrency] =
@@ -131,17 +132,17 @@ object preparedstatement {
   val getResultSetType: PreparedStatementIO[ResultSetType] =
     PS.getResultSetType.map(ResultSetType.unsafeFromInt)
 
-  /** @group Results */
-  val getUpdateCount: PreparedStatementIO[Int] =
-    PS.getUpdateCount
+  // /** @group Results */
+  // val getUpdateCount: PreparedStatementIO[Int] =
+  //   PS.getUpdateCount
 
   /** @group Results */
   val getWarnings: PreparedStatementIO[SQLWarning] =
     PS.getWarnings
 
-  /** @group Properties */
-  val isPoolable: PreparedStatementIO[Boolean] =
-    PS.isPoolable
+  // /** @group Properties */
+  // val isPoolable: PreparedStatementIO[Boolean] =
+  //   PS.isPoolable
 
   /** 
    * Set the given composite value, starting at column `n`.
@@ -181,9 +182,9 @@ object preparedstatement {
   def setMaxRows(n: Int): PreparedStatementIO[Unit] =
     PS.setMaxRows(n)
 
-  /** @group Properties */
-  def setPoolable(a: Boolean): PreparedStatementIO[Unit] =
-    PS.setPoolable(a)
+  // /** @group Properties */
+  // def setPoolable(a: Boolean): PreparedStatementIO[Unit] =
+  //   PS.setPoolable(a)
 
   /** @group Properties */
   def setQueryTimeout(a: Int): PreparedStatementIO[Unit] =
