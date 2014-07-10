@@ -1,7 +1,9 @@
 package doobie.util
 
 import doobie.util.atom._
-import doobie.hi._
+import doobie.free._
+import doobie.free.resultset.ResultSetIO
+import doobie.free.preparedstatement.PreparedStatementIO
 import scalaz._, Scalaz._
 import shapeless._
 
