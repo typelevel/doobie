@@ -4,6 +4,7 @@ import java.io.File
 
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
+import scalaz.stream.Process
 
 import doobie.hi._
 import doobie.hi.{ drivermanager => DM }
@@ -37,16 +38,13 @@ object HiUsage {
     for {
       _ <- C.delay(println("Loading database..."))
       _ <- loadDatabase(new File("example/world.sql"))
-      s <- speakerQuery("French", 0.7)
-      // _ <- s.traverseU(a => C.delay(println(a)))
+      s <- speakerQuery("French", 0.7).sink(c => C.delay(println("~> " + c)))
     } yield "Ok"
 
   def loadDatabase(f: File): ConnectionIO[Unit] =
     C.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")(PS.set(f.getName) >> PS.executeUpdate.void)
 
-  def speakerQuery(s: String, p: Double): ConnectionIO[Unit] =
-    C.prepareStatement("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?") {
-      PS.set((s, p)) >> PS.process[CountryCode].sink(c => PS.delay(println("--> " + c)))
-    }
+  def speakerQuery(s: String, p: Double): Process[ConnectionIO,CountryCode] =
+    C.process[CountryCode]("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?", PS.set((s, p)))
 
 }

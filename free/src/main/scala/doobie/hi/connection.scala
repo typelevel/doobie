@@ -17,7 +17,7 @@ import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
 
-import java.sql.Savepoint
+import java.sql.{ Savepoint, PreparedStatement }
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
@@ -42,21 +42,28 @@ object connection {
   def delay[A](a: => A): ConnectionIO[A] =
     C.delay(a)
 
-  // /** @group Execution */
-  // def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = {
-  //   import java.sql.PreparedStatement
-  //
-  //   val acquire: ConnectionIO[PreparedStatement] = 
-  //     for {
-  //       ps <- C.prepareStatement(sql)
-  //       _  <- C.liftPreparedStatement(ps, prep).onException(C.liftPreparedStatement(ps, PS.close))
-  //     } yield ps
-  //
-  //   val ps: Process[ConnectionIO, PreparedStatement] = 
-  //     resource(acquire)(C.liftPreparedStatement(_, PS.delay("closing ps") >> PS.close))(Option(_).point[ConnectionIO]).take(1)
-  //
-  //   Predef.???
-  // }
+  /** @group Execution */
+  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = {
+    
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+      resource(
+        C.prepareStatement(sql))(ps =>
+        C.liftPreparedStatement(ps, PS.close))(ps =>
+        Option(ps).point[ConnectionIO]).take(1) // note
+  
+    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+      resource(
+        C.liftPreparedStatement(ps, PS.executeQuery))(rs =>
+        C.liftResultSet(rs, RS.close))(rs =>
+        C.liftResultSet(rs, resultset.getNext[A]))
+
+    for {
+      ps <- preparedStatement
+      _  <- Process.eval(C.liftPreparedStatement(ps, prep))
+      a  <- results(ps)
+    } yield a
+
+  }
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
