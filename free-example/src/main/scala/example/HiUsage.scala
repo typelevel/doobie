@@ -49,7 +49,7 @@ object HiUsage {
     } yield "Ok"
 
   def loadDatabase(f: File): ConnectionIO[Unit] =
-    sql"RUNSCRIPT FROM f CHARSET 'UTF-8'".executeUpdate.void
+    sql"RUNSCRIPT FROM $f CHARSET 'UTF-8'".executeUpdate.void
 
   def speakerQuery(s: String, p: Double): Process[ConnectionIO,CountryCode] =
     sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $s AND PERCENTAGE > $p".process[CountryCode]
