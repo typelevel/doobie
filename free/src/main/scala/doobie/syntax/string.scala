@@ -15,18 +15,6 @@ object string {
 
     class Source[A: Composite](a: A) {
 
-      // def go[B](b: PreparedStatementIO[B]): ConnectionIO[B] =
-      //   prepareStatement(sc.parts.mkString("?"))(preparedstatement.set(1, a) >> b)
-
-      // def executeQuery[B](b: ResultSet[B]): ConnectionIO[B] =
-      //   go(preparedstatement.executeQuery(b))
-    
-      // def execute: ConnectionIO[Boolean] =
-      //   go(preparedstatement.execute)
-
-      // def executeUpdate: ConnectionIO[Int] =
-      //   go(preparedstatement.executeUpdate)
-
       def executeUpdate: ConnectionIO[Int] =
         connection.prepareStatement(sc.parts.mkString("?"))(preparedstatement.set(a) >> preparedstatement.executeUpdate)
 
@@ -36,9 +24,6 @@ object string {
     }
 
     class Source0 { 
-
-      // override def go[B](b: PreparedStatementIO[B]): ConnectionIO[B] =
-      //   prepareStatement(sc.parts.mkString("?"))(b)
 
       def executeUpdate: ConnectionIO[Int] =
         connection.prepareStatement(sc.parts.mkString("?"))(preparedstatement.executeUpdate)

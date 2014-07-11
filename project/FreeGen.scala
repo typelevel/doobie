@@ -311,7 +311,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  * @group Algebra
     |  */
     | def kleisliTrans[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l =
-    |   new (${sname}Op ~>  ({type l[a] = Kleisli[M, ${sname}, a]})#l) {
+    |   new (${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l) {
     |     import scalaz.syntax.catchable._
     |
     |     val L = Predef.implicitly[Capture[M]]
@@ -319,7 +319,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |     def primitive[A](f: ${sname} => A): Kleisli[M, ${sname}, A] =
     |       Kleisli(s => L.apply(f(s)))
     |
-    |     def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] = 
+    |     def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] = {
     |       op match {
     |
     |        // Lifting

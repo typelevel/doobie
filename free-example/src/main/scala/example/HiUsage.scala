@@ -2,56 +2,56 @@ package doobie.example
 
 import java.io.File
 
-import scalaz._, Scalaz._
 import scalaz.concurrent.Task
 import scalaz.stream.Process
+import scalaz.syntax.monad._
 
 import doobie.hi._
-import doobie.hi.{ drivermanager => DM }
-import doobie.hi.{ connection => C }
-import doobie.hi.{ preparedstatement => PS }
-import doobie.hi.{ resultset => RS }
-
 import doobie.std.task._
 import doobie.std.string._
 import doobie.std.double._
-
-import doobie.syntax.catchable._
 import doobie.syntax.process._
 import doobie.syntax.string._
-
-import doobie.util.atom._
+import doobie.util.database.Database
 
 // JDBC program using the high-level API
 object HiUsage {
 
+  // A very simple data type we will read
   case class CountryCode(code: String)
 
-  // Just an example: map a File to a String column
-  implicit val FileAtom: Atom[File] =
-    Atom[String].xmap(new File(_), _.getName)
+  // Database is just a module of combinators parameterized on connect info
+  lazy val db = Database("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   
+  // Program entry point simply delegates to a scalaz.concurrent.Task; could also be scalaz.effect.IO
   def main(args: Array[String]): Unit =
-    tmain.translate[Task].run
+    tmain.run
 
-  val tmain: DriverManagerIO[Unit] = 
+  // Our logical entry point is a Task[Unit]. One of the things it does is a database interaction.
+  lazy val tmain: Task[Unit] = 
     for {
-      _ <- DM.delay(Class.forName("org.h2.Driver"))
-      a <- DM.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")(examples).except(_.toString.point[DriverManagerIO])
-      _ <- DM.delay(Console.println(a))
+      a <- db.transact(example).translate[Task]
+      _ <- Task.delay(Console.println(a))
     } yield ()
 
-  def examples: ConnectionIO[String] =
+  // Our example loads up a test database and does a query, streaming results to the console. Note
+  // that this is a value; nothing "happens" until it is transformed into an effectful monad and
+  // executed by main above.
+  lazy val example: ConnectionIO[String] =
     for {
-      _ <- C.delay(println("Loading database..."))
+      _ <- connection.delay(println("Loading database..."))
       _ <- loadDatabase(new File("example/world.sql"))
-      s <- speakerQuery("French", 0.7).sink(c => C.delay(println("~> " + c))) // streaming; constant space
+      _ <- speakerQuery("French", 0.7).sink(c => connection.delay(println("~> " + c))) // streaming; constant space
     } yield "Ok"
 
+  // Construct an action to load up a database from the specified file.
   def loadDatabase(f: File): ConnectionIO[Unit] =
-    sql"RUNSCRIPT FROM $f CHARSET 'UTF-8'".executeUpdate.void
+    sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".executeUpdate.void
 
-  def speakerQuery(s: String, p: Double): Process[ConnectionIO,CountryCode] =
-    sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $s AND PERCENTAGE > $p".process[CountryCode]
+  // Construct an action to find countries where more than `pct` of the population speaks `lang`.
+  // The result is a scalaz.stream.Process that can be further manipulated by the caller.
+  def speakerQuery(lang: String, pct: Double): Process[ConnectionIO,CountryCode] =
+    sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".process[CountryCode]
 
 }
+
