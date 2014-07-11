@@ -9,7 +9,6 @@ scalaVersion in ThisBuild := "2.10.4"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 scalacOptions in ThisBuild ++= Seq(
-  "-deprecation",           
   "-encoding", "UTF-8", // 2 args
   "-feature",                
   "-language:existentials",
@@ -17,20 +16,33 @@ scalacOptions in ThisBuild ++= Seq(
   "-language:implicitConversions",
   "-language:experimental.macros",
   "-unchecked",
-  "-Xfatal-warnings",       
   "-Xlint",
   "-Yno-adapted-args",       
   "-Ywarn-dead-code",       
-  // "-Ywarn-numeric-widen",   
   "-Ywarn-value-discard"     
 )
 
+scalacOptions in (ThisBuild, Compile, doc) ++=
+  Seq("-groups")
+
+// scalacOptions := Seq(
+//   "-Yno-predef",
+//   // "-deprecation",           
+//   "-encoding", "UTF-8", // 2 args
+//   "-feature",                
+//   "-language:existentials",
+//   "-language:higherKinds",
+//   "-language:implicitConversions",
+//   "-language:experimental.macros",
+//   "-unchecked",
+//   // "-Xfatal-warnings",       
+//   "-Xlint",
+//   "-Yno-adapted-args",       
+//   // "-Ywarn-dead-code",       
+//   // "-Ywarn-numeric-widen",   
+//   "-Ywarn-value-discard"     
+// )
+
 lazy val core = project.in(file("core"))
 
-lazy val test = project.in(file("test")).dependsOn(core)
-
 lazy val example = project.in(file("example")).dependsOn(core)
-
-lazy val free = project.in(file("free"))
-
-lazy val free_example = project.in(file("free-example")).dependsOn(free)

@@ -319,7 +319,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |     def primitive[A](f: ${sname} => A): Kleisli[M, ${sname}, A] =
     |       Kleisli(s => L.apply(f(s)))
     |
-    |     def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] = {
+    |     def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] = 
     |       op match {
     |
     |        // Lifting
