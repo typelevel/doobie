@@ -18,11 +18,18 @@ import doobie.std.double._
 
 import doobie.syntax.catchable._
 import doobie.syntax.process._
+import doobie.syntax.string._
+
+import doobie.util.atom._
 
 // JDBC program using the high-level API
 object HiUsage {
 
   case class CountryCode(code: String)
+
+  // Just an example: map a File to a String column
+  implicit val FileAtom: Atom[File] =
+    Atom[String].xmap(new File(_), _.getName)
   
   def main(args: Array[String]): Unit =
     tmain.translate[Task].run
@@ -38,13 +45,13 @@ object HiUsage {
     for {
       _ <- C.delay(println("Loading database..."))
       _ <- loadDatabase(new File("example/world.sql"))
-      s <- speakerQuery("French", 0.7).sink(c => C.delay(println("~> " + c)))
+      s <- speakerQuery("French", 0.7).sink(c => C.delay(println("~> " + c))) // streaming; constant space
     } yield "Ok"
 
   def loadDatabase(f: File): ConnectionIO[Unit] =
-    C.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")(PS.set(f.getName) >> PS.executeUpdate.void)
+    sql"RUNSCRIPT FROM f CHARSET 'UTF-8'".executeUpdate.void
 
   def speakerQuery(s: String, p: Double): Process[ConnectionIO,CountryCode] =
-    C.process[CountryCode]("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?", PS.set((s, p)))
+    sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $s AND PERCENTAGE > $p".process[CountryCode]
 
 }

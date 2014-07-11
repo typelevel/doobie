@@ -42,7 +42,11 @@ object connection {
   def delay[A](a: => A): ConnectionIO[A] =
     C.delay(a)
 
-  /** @group Execution */
+  /**
+   * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
+   * action, and return results via a `Process`.
+   * @group Prepared Statements 
+   */
   def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = {
     
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
