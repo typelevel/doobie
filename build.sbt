@@ -25,24 +25,6 @@ scalacOptions in ThisBuild ++= Seq(
 scalacOptions in (ThisBuild, Compile, doc) ++=
   Seq("-groups")
 
-// scalacOptions := Seq(
-//   "-Yno-predef",
-//   // "-deprecation",           
-//   "-encoding", "UTF-8", // 2 args
-//   "-feature",                
-//   "-language:existentials",
-//   "-language:higherKinds",
-//   "-language:implicitConversions",
-//   "-language:experimental.macros",
-//   "-unchecked",
-//   // "-Xfatal-warnings",       
-//   "-Xlint",
-//   "-Yno-adapted-args",       
-//   // "-Ywarn-dead-code",       
-//   // "-Ywarn-numeric-widen",   
-//   "-Ywarn-value-discard"     
-// )
-
 lazy val core = project.in(file("core"))
 
 lazy val example = project.in(file("example")).dependsOn(core)

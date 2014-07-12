@@ -19,7 +19,7 @@ The low-level API provided by `doobie.free` is a family of machine-generated alg
 
 - Each method in the Java API has an associated smart constructor in the low-level API. The names, types, and computed result types are identical to those in the Java API, and the implementation in the provided Kleisli interpreter (described below) is a direct delegation. This 1:1 correspondence makes it  straightforward to construct pure monadic equivalents of existing imperative JDBC code.
 - In addition to constructors for operations on carrier types, Doobie also provides an effect-capturing constructor (essential when working with native JDBC objects) and an exception-catching constructor in each algebra, as well as lifting constructors to embed programs written in the free monads of other algebras.
-- For each algebra we provide a natural transformation to `Kleisli[M, C, A]` given carrier type `C`, target monad `M`, and evidence that `M` can capture effects and catch exceptions. Or you can of course write your own interpreter. An exception here is the provided natural transformation for `DriverManager`, which has no carrier type and goes straight to `M[A]`.
+- For each algebra we provide a natural transformation to `Kleisli[M, C, A]` given carrier type `C`, target monad `M`, and evidence that `M` can capture effects and catch exceptions. Or you can of course write your own interpreter. Note that the provided natural transformation for `DriverManager` (which has no carrier type) goes straight to `M[A]`.
 
 Because the constructors are in a 1:1 correspondence with JDBC (with no swizzling of types whatsoever) this API must be used with a great deal of caution; many computed types have side-effecting methods and some are liftetime-managed and must be closed in a particular order.
 
@@ -51,11 +51,12 @@ Doobie provides, in no particular order, some other stuff:
 
 In no particular order:
 
+- `callablestatement` module in `hi`
 - `Catchable` combinators that are specific to JDBC, as well as SQLSTATE tables for common vendors.
 - Structured logging. This will need to get wired through the `Kleieli` interpreters.
 - Flesh out the `Atom` implementations for all ground types, and add example of using tagged types for alternative mappings.
 - String interpolator for callable statements (needs In/Out/InOut params).
 - Expand `Atom/Composite` and `hi` to handle resultset updating.
-- Alternative instances of `Capture[Task]` that forks native calls (right now everything is straight-line).
+- Alternative instance of `Capture[Task]` that forks native calls (right now everything is straight-line).
 - More/bigger examples.
 
