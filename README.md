@@ -53,7 +53,7 @@ In no particular order:
 
 - `callablestatement` module in `hi`
 - `Catchable` combinators that are specific to JDBC, as well as SQLSTATE tables for common vendors.
-- Structured logging. This will need to get wired through the `Kleieli` interpreters.
+- Structured logging. This will need to get wired through the `Kleisli` interpreters.
 - Flesh out the `Atom` implementations for all ground types, and add example of using tagged types for alternative mappings.
 - String interpolator for callable statements (needs In/Out/InOut params).
 - Expand `Atom/Composite` and `hi` to handle resultset updating.
