@@ -2,6 +2,7 @@ package doobie.hi
 
 import doobie.enum.holdability._
 import doobie.enum.transactionisolation._
+import doobie.enum.fetchdirection._
 
 import doobie.syntax.catchable._
 
@@ -47,54 +48,64 @@ object resultset {
   def delay[A](a: => A): ResultSetIO[A] =
     RS.delay(a)
 
-  // /** @group Cursor Control */
-  // def absolute(a: Int): ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  def absolute(row: Int): ResultSetIO[Boolean] =
+    RS.absolute(row)
 
-  // /** @group Cursor Control */
-  // val afterLast: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val afterLast: ResultSetIO[Unit] =
+    RS.afterLast
 
-  // /** @group Cursor Control */
-  // val beforeFirst: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val beforeFirst: ResultSetIO[Unit] =
+    RS.beforeFirst
 
-  // /** @group Updating */
-  // val cancelRowUpdates: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Updating */
+  val cancelRowUpdates: ResultSetIO[Unit] =
+    RS.cancelRowUpdates
 
-  // /** @group Warnings */
-  // val clearWarnings: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Warnings */
+  val clearWarnings: ResultSetIO[Unit] =
+    RS.clearWarnings
 
-  // /** @group Updating */
-  // val deleteRow: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Updating */
+  val deleteRow: ResultSetIO[Unit] =
+    RS.deleteRow
 
-  // /** @group Cursor Control */
-  // def findColumn(a: String): ResultSetIO[Int] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val first: ResultSetIO[Boolean] =
+    RS.first
 
-  // /** @group Cursor Control */
-  // val first: ResultSetIO[Boolean] =
-  //   Predef.???
-
-  /** @group Results */
+  /** 
+   * Read a value of type `A` starting at column `n`.
+   * @group Results 
+   */
   def get[A](n: Int)(implicit A: Composite[A]): ResultSetIO[A] =
     A.get(n)
 
-  /** @group Results */
+  /** 
+   * Read a value of type `A` starting at column 1.
+   * @group Results 
+   */
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
     A.get(1)
 
-  /** @group Results */
+  /** 
+   * Similar to `next >> get` but lifted into `Option`; returns `None` when no more rows are
+   * available.
+   * @group Results 
+   */
   def getNext[A: Composite]: ResultSetIO[Option[A]] =
     next >>= {
       case true  => get[A].map(Some(_))
       case false => Monad[ResultSetIO].point(None)
     }
     
-  /** @group Results */
+  /** 
+   * Equivalent to `getNext`, but verifies that there is exactly one row remaining.
+   * @throws `UnexpectedCursorPosition` if there is not exactly one row remaining
+   * @group Results 
+   */
   def getUnique[A: Composite]: ResultSetIO[A] =
     (getNext[A] |@| next) {
       case (Some(a), false) => a
@@ -102,104 +113,104 @@ object resultset {
       case (None, _)        => throw UnexpectedEnd
     }
 
-  /** @group Results */
+  /** 
+   * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
+   * mechanism for dealing with query results.
+   * @group Results 
+   */
   def process[A: Composite]: Process[ResultSetIO, A] = 
     Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
 
-  // /** Consume all remaining by passing to effectful action `effect`. */
-  // def sink[A: Composite](effect: A => IO[Unit]): ResultSetIO[Unit] = 
-  //   resultset.push(s"sink($effect)")(process[A].to(mkSink(effect)).run)
+  /** @group Properties */
+  val getFetchDirection: ResultSetIO[FetchDirection] =
+    RS.getFetchDirection.map(FetchDirection.unsafeFromInt)
 
-  // /** @group Properties */
-  // val getFetchDirection: ResultSetIO[Int] =
-  //   Predef.???
+  /** @group Properties */
+  val getFetchSize: ResultSetIO[Int] =
+    RS.getFetchSize
 
-  // /** @group Properties */
-  // val getFetchSize: ResultSetIO[Int] =
-  //   Predef.???
+  /** @group Properties */
+  val getHoldability: ResultSetIO[Holdability] =
+    RS.getHoldability.map(Holdability.unsafeFromInt)
 
-  // /** @group Properties */
-  // val getHoldability: ResultSetIO[Int] =
-  //   Predef.???
+  /** @group Properties */
+  val getMetaData: ResultSetIO[ResultSetMetaData] =
+    RS.getMetaData
 
-  // /** @group Properties */
-  // val getMetaData: ResultSetIO[ResultSetMetaData] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val getRow: ResultSetIO[Int] =
+    RS.getRow
 
-  // /** @group Cursor Control */
-  // val getRow: ResultSetIO[Int] =
-  //   Predef.???
+  /** @group Warnings */
+  val getWarnings: ResultSetIO[Option[SQLWarning]] =
+    RS.getWarnings.map(Option(_))
 
-  // /** @group Warnings */
-  // val getWarnings: ResultSetIO[SQLWarning] =
-  //   Predef.???
+  /** @group Updating */
+  val insertRow: ResultSetIO[Unit] =
+    RS.insertRow
 
-  // /** @group Updating */
-  // val insertRow: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val isAfterLast: ResultSetIO[Boolean] =
+    RS.isAfterLast
 
-  // /** @group Cursor Control */
-  // val isAfterLast: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val isBeforeFirst: ResultSetIO[Boolean] =
+    RS.isBeforeFirst
 
-  // /** @group Cursor Control */
-  // val isBeforeFirst: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val isFirst: ResultSetIO[Boolean] =
+    RS.isFirst
 
-  // /** @group Cursor Control */
-  // val isFirst: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val isLast: ResultSetIO[Boolean] =
+    RS.isLast
 
-  // /** @group Cursor Control */
-  // val isLast: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val last: ResultSetIO[Boolean] =
+    RS.last
 
-  // /** @group Cursor Control */
-  // val last: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val moveToCurrentRow: ResultSetIO[Unit] =
+    RS.moveToCurrentRow
 
-  // /** @group Cursor Control */
-  // val moveToCurrentRow: ResultSetIO[Unit] =
-  //   Predef.???
-
-  // /** @group Cursor Control */
-  // val moveToInsertRow: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val moveToInsertRow: ResultSetIO[Unit] =
+    RS.moveToInsertRow
 
   /** @group Cursor Control */
   val next: ResultSetIO[Boolean] =
     RS.next
 
-  // /** @group Cursor Control */
-  // val previous: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val previous: ResultSetIO[Boolean] =
+    RS.previous
 
-  // /** @group Cursor Control */
-  // val refreshRow: ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val refreshRow: ResultSetIO[Unit] =
+    RS.refreshRow
 
-  // /** @group Cursor Control */
-  // def relative(a: Int): ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  def relative(n: Int): ResultSetIO[Boolean] =
+    RS.relative(n)
 
-  // /** @group Cursor Control */
-  // val rowDeleted: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val rowDeleted: ResultSetIO[Boolean] =
+    RS.rowDeleted
 
-  // /** @group Cursor Control */
-  // val rowInserted: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val rowInserted: ResultSetIO[Boolean] =
+    RS.rowInserted
 
-  // /** @group Cursor Control */
-  // val rowUpdated: ResultSetIO[Boolean] =
-  //   Predef.???
+  /** @group Cursor Control */
+  val rowUpdated: ResultSetIO[Boolean] =
+    RS.rowUpdated
 
-  // /** @group Properties */
-  // def setFetchDirection(a: Int): ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Properties */
+  def setFetchDirection(fd: FetchDirection): ResultSetIO[Unit] =
+    RS.setFetchDirection(fd.toInt)
 
-  // /** @group Properties */
-  // def setFetchSize(a: Int): ResultSetIO[Unit] =
-  //   Predef.???
+  /** @group Properties */
+  def setFetchSize(n: Int): ResultSetIO[Unit] =
+    RS.setFetchSize(n)
 
 }
