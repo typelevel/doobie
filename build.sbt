@@ -22,9 +22,6 @@ scalacOptions in ThisBuild ++= Seq(
   "-Ywarn-value-discard"     
 )
 
-scalacOptions in (ThisBuild, Compile, doc) ++=
-  Seq("-groups")
-
 lazy val core = project.in(file("core"))
 
 lazy val example = project.in(file("example")).dependsOn(core)

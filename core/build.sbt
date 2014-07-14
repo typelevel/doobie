@@ -44,4 +44,5 @@ scalacOptions ++= Seq(
   "-Yno-predef"
 )
 
-
+scalacOptions in (Compile, doc) ++=
+  Seq("-groups")
