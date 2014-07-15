@@ -91,6 +91,21 @@ object resultset {
     A.get(1)
 
   /** 
+   * Updates a value of type `A` starting at column `n`.
+   * @group Updating 
+   */
+  def update[A](n: Int, a:A)(implicit A: Composite[A]): ResultSetIO[Unit] =
+    A.update(n, a)
+
+  /** 
+   * Updates a value of type `A` starting at column 1.
+   * @group Updating 
+   */
+  def update[A](a: A)(implicit A: Composite[A]): ResultSetIO[Unit] =
+    A.update(1, a)
+
+
+  /** 
    * Similar to `next >> get` but lifted into `Option`; returns `None` when no more rows are
    * available.
    * @group Results 

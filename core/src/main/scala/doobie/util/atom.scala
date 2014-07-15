@@ -18,6 +18,8 @@ object atom {
 
     def set: (Int, A) => PS.PreparedStatementIO[Unit]
 
+    def update: (Int, A) => RS.ResultSetIO[Unit]
+
     def get: Int => RS.ResultSetIO[A]
 
     def jdbcType: JdbcType
@@ -34,6 +36,7 @@ object atom {
     implicit def optionAtom[A](implicit A: Atom[A]): Atom[Option[A]] =
       new Atom[Option[A]] {
         def set = (n, a) => a.fold(setNull(n))(A.set(n, _))
+        def update = (n, a) => a.fold(RS.updateNull(n))(A.update(n, _))
         def get = n => (A.get(n) |@| RS.wasNull)((a, b) => b option a)
         val jdbcType = A.jdbcType
       }
@@ -43,15 +46,20 @@ object atom {
         def xmap[A,B](fa: Atom[A], f: A => B, g: B => A): Atom[B] =
           new Atom[B] {
             def set = (i, b) => fa.set(i, g(b))
+            def update = (i, b) => fa.update(i, g(b))
             def get = i => fa.get(i).map(f)
             val jdbcType = fa.jdbcType
           }
       }
 
-    def atom[A](jdbc: JdbcType, s: (Int, A) => PS.PreparedStatementIO[Unit], g: Int => RS.ResultSetIO[A]): Atom[A] =
+    def atom[A](jdbc: JdbcType, 
+        s: (Int, A) => PS.PreparedStatementIO[Unit], 
+        u: (Int, A) => RS.ResultSetIO[Unit], 
+        g: Int => RS.ResultSetIO[A]): Atom[A] =
       new Atom[A] {
         val set = s
         val get = g
+        val update = u
         val jdbcType = jdbc
       }
 
