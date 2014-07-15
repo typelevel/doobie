@@ -31,7 +31,7 @@ The high-level API provided by `doobie.hi` directly exposes a subset of construc
 
 - JDBC integer flags are swizzled to/from proper enumerated types defined in `doobie.enum`.
 - Actions that compute lifetime-managed types do not expose the computed value directly, but rather take a continuation written in that carrier type's monad. These actions guarantee resource safety.
-- For setting query parameters and getting column results the high-level API provides typeclass-driven `get` and `set` constructors that can read and write primitive values, as well as [nested] products and case classes thereof (these may span multiple columns). This also sweeps up the issue of `null` values, which must be handled via `Option`; reading a `null` value into a non-option type is an error.
+- For setting query parameters and getting/updating column results the high-level API provides typeclass-driven `get`, `update`, and `set` constructors that can read, update, and write primitive values, as well as [nested] products and case classes thereof (these may span multiple columns). This also sweeps up the issue of `null` values, which must be handled via `Option`; reading a `null` value into a non-option type is an error, for example.
 - Constructors are provided that allow `ResultSet` programs to be treated as `scalaz.stream.Process` values, which provides a natural way to do many kinds of common tasks such as transforming and streaming results to an output channel.
 
 Note that the types in `doobie.hi` and `doobie.free` are identical; you can freely mix code written using either API, and indeed you will need to if you're dealing with vendor-specific extensions or types like `CLOB` that are not supported directly in the high-level API.
@@ -54,9 +54,8 @@ In no particular order:
 - `callablestatement` module in `hi`
 - `Catchable` combinators that are specific to JDBC, as well as SQLSTATE tables for common vendors.
 - Structured logging. This will need to get wired through the `Kleisli` interpreters.
-- Flesh out the `Atom` implementations for all ground types, and add example of using tagged types for alternative mappings.
+- Add example of using tagged types for alternative `Atom` instances.
 - String interpolator for callable statements (needs In/Out/InOut params).
-- Expand `Atom/Composite` and `hi` to handle resultset updating.
 - Alternative instance of `Capture[Task]` that forks native calls (right now everything is straight-line).
 - More/bigger examples.
 
