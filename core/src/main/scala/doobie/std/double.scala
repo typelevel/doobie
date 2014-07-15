@@ -8,6 +8,6 @@ import doobie.enum.jdbctype
 object double {
 
   implicit val DoubleAtom: Atom[Double] = 
-    Atom.atom(jdbctype.Real, setDouble, getDouble)
+    Atom.atom(jdbctype.Double, setDouble, getDouble)
 
 }

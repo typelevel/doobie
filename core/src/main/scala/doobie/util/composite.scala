@@ -46,25 +46,11 @@ object composite {
       }
 
     /** @group Typeclass Instances */
-    implicit val trans: (Atom ~> Composite) =
-      new (Atom ~> Composite) {
-        def apply[A](fa: Atom[A]): Composite[A] =
-          prim(fa)
-      }
-
-    /** @group Typeclass Instances */
     implicit def inOpt[A](implicit A: Atom[A]): Composite[Option[A]] =
       new Composite[Option[A]] {
         def set = (i, a) => a.fold(A.setNull(i))(a => A.set(i, a))
         def get = i => A.get(i) >>= (a => resultset.wasNull.map(n => (!n).option(a)))
         def length = 1
-      }
-
-    /** @group Typeclass Instances */
-    implicit val transOpt: (Atom ~> ({ type l[a] = Composite[Option[a]] })#l) =
-      new (Atom ~> ({ type l[a] = Composite[Option[a]] })#l) {
-        def apply[A](fa: Atom[A]): Composite[Option[A]] =
-          inOpt(fa)
       }
 
     /** @group Typeclass Instances */

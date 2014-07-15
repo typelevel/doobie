@@ -6,6 +6,8 @@ import doobie.free.{ resultset => RS }
 import doobie.enum.jdbctype._
 
 import scalaz.InvariantFunctor
+import scalaz.syntax.apply._
+import scalaz.syntax.std.boolean._
 
 /** 
  * Module defining a typeclass for atomic database types (those that map to a single column).
@@ -29,7 +31,14 @@ object atom {
 
     def apply[A](implicit A: Atom[A]): Atom[A] = A
 
-    implicit val invariantFunctor: InvariantFunctor[Atom] =
+    implicit def optionAtom[A](implicit A: Atom[A]): Atom[Option[A]] =
+      new Atom[Option[A]] {
+        def set = (n, a) => a.fold(setNull(n))(A.set(n, _))
+        def get = n => (A.get(n) |@| RS.wasNull)((a, b) => b option a)
+        val jdbcType = A.jdbcType
+      }
+
+    implicit val AtomInvariantFunctor: InvariantFunctor[Atom] =
       new InvariantFunctor[Atom] {
         def xmap[A,B](fa: Atom[A], f: A => B, g: B => A): Atom[B] =
           new Atom[B] {
@@ -39,20 +48,12 @@ object atom {
           }
       }
 
-    // todo: generate Atom[A] and Atom[Option[A]] pairs, both for reference types (need to check null 
-    // values) and value types (need to call wasNull). Throw UnmetInvariantException or something on
-    // unexpected null.
-
     def atom[A](jdbc: JdbcType, s: (Int, A) => PS.PreparedStatementIO[Unit], g: Int => RS.ResultSetIO[A]): Atom[A] =
       new Atom[A] {
         val set = s
         val get = g
         val jdbcType = jdbc
       }
-
-    // implicit val pInt = prim[Int](JdbcType.Integer, ps.setInt, rs.getInt) 
-    // implicit val pStr = prim[String](JdbcType.VarChar, ps.setString, rs.getString)
-    // implicit val pDouble = prim[Double](JdbcType.Real, ps.setDouble, rs.getDouble)
 
   }
 

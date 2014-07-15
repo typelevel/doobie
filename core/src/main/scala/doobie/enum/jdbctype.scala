@@ -14,14 +14,14 @@ object jdbctype {
   sealed abstract class JdbcType(val toInt: Int) extends Product with Serializable
 
   /** @group Values */ case object Array         extends JdbcType(ARRAY)
-  /** @group Values */ case object Bigint        extends JdbcType(BIGINT)
+  /** @group Values */ case object BigInt        extends JdbcType(BIGINT)
   /** @group Values */ case object Binary        extends JdbcType(BINARY)
   /** @group Values */ case object Bit           extends JdbcType(BIT)
   /** @group Values */ case object Blob          extends JdbcType(BLOB)
   /** @group Values */ case object Boolean       extends JdbcType(BOOLEAN)
   /** @group Values */ case object Char          extends JdbcType(CHAR)
   /** @group Values */ case object Clob          extends JdbcType(CLOB)
-  /** @group Values */ case object Datalink      extends JdbcType(DATALINK)
+  /** @group Values */ case object DataLink      extends JdbcType(DATALINK)
   /** @group Values */ case object Date          extends JdbcType(DATE)
   /** @group Values */ case object Decimal       extends JdbcType(DECIMAL)
   /** @group Values */ case object Distinct      extends JdbcType(DISTINCT)
@@ -56,14 +56,14 @@ object jdbctype {
     def fromInt(n:Int): Option[JdbcType] =
       Some(n) collect {
         case Array.toInt         => Array         
-        case Bigint.toInt        => Bigint        
+        case BigInt.toInt        => BigInt        
         case Binary.toInt        => Binary        
         case Bit.toInt           => Bit           
         case Blob.toInt          => Blob          
         case Boolean.toInt       => Boolean       
         case Char.toInt          => Char          
         case Clob.toInt          => Clob          
-        case Datalink.toInt      => Datalink      
+        case DataLink.toInt      => DataLink      
         case Date.toInt          => Date          
         case Decimal.toInt       => Decimal       
         case Distinct.toInt      => Distinct      

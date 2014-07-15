@@ -18,7 +18,7 @@ import doobie.util.database.Database
 object HiUsage {
 
   // A very simple data type we will read
-  case class CountryCode(code: String)
+  case class CountryCode(code: Option[String])
 
   // Database is just a module of combinators parameterized on connect info
   lazy val db = Database("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
