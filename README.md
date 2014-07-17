@@ -44,7 +44,7 @@ Doobie provides, in no particular order, some other stuff:
 
 - Additional combinators for `Process` to make sinking and folding operations somewhat easier.
 - Additional combinators for `Catchable` that bring it into parity with `MonadCatchIO`. 
-- Syntax for the above.
+- Bedazzlement for the above.
 - A `sql` string interpolater for typesafe statement construction.
 
 #### Left to Do
