@@ -1,6 +1,6 @@
 ## doobie - mellow database access
 
-**Status**: Nearing 0.1, which will be a **preview* release to let people play around and see how it feels.
+**Status**: Nearing 0.1, which will be a **preview** release to let people play around and see how it feels.
 
 This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it  provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here.
 
