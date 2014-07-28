@@ -51,6 +51,7 @@ Doobie provides, in no particular order, some other stuff:
 
 In no particular order:
 
+- Split `Atom` (ironically) into distinct get, set, and update typeclasses.
 - `callablestatement` module in `hi`
 - `Catchable` combinators that are specific to JDBC, as well as SQLSTATE tables for common vendors.
 - Structured logging. This will need to get wired through the `Kleisli` interpreters.
