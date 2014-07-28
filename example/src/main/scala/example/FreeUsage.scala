@@ -4,12 +4,14 @@ import java.io.File
 
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
+import scalaz.effect.IO
 
 import doobie.free.{ drivermanager => DM }
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.std.task._
+import doobie.std.io._
 import doobie.syntax.catchable._
 
 // JDBC program using the low-level API
@@ -17,8 +19,8 @@ object FreeUsage {
 
   case class CountryCode(code: String)
   
-  def main(args: Array[String]): Unit =
-    tmain.translate[Task].run
+  def main(args: Array[String]): Unit = 
+    tmain.translate[IO].unsafePerformIO
 
   val tmain: DM.DriverManagerIO[Unit] = 
     for {
