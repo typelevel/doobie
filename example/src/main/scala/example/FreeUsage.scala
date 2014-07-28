@@ -20,7 +20,7 @@ object FreeUsage {
   case class CountryCode(code: String)
   
   def main(args: Array[String]): Unit = 
-    tmain.translate[IO].unsafePerformIO
+    tmain.liftK[IO].unsafePerformIO
 
   val tmain: DM.DriverManagerIO[Unit] = 
     for {

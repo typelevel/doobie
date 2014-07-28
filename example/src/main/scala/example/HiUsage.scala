@@ -30,7 +30,7 @@ object HiUsage {
   // Our logical entry point is a Task[Unit]. One of the things it does is a database interaction.
   lazy val tmain: Task[Unit] = 
     for {
-      a <- db.transact(example).translate[Task]
+      a <- db.transact(example).liftK[Task]
       _ <- Task.delay(Console.println(a))
     } yield ()
 

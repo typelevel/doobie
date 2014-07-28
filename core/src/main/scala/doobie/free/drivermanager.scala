@@ -208,7 +208,7 @@ object drivermanager {
 
         // Combinators
         case Pure(a) => L.apply(a())
-        case Attempt(a) => a.translate[M].attempt
+        case Attempt(a) => a.liftK[M].attempt
   
         // Primitive Operations
         case DeregisterDriver(a) => L.apply(DriverManager.deregisterDriver(a))
@@ -235,7 +235,7 @@ object drivermanager {
    * @group Algebra
    */
   implicit class DriverManagerIOOps[A](ma: DriverManagerIO[A]) {
-    def translate[M[_]: Monad: Catchable: Capture]: M[A] =
+    def liftK[M[_]: Monad: Catchable: Capture]: M[A] =
       F.runFC(ma)(trans[M])
   }
 
