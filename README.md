@@ -11,7 +11,7 @@ Doobie is a library in the spirit of those on [typelevel.org](http://typelevel.o
 - Doobie is provided as modules of types and functions; in order to use it you simply import symbols. It's all *a-la-carte*; there is no Sizzler import. In the end I think this makes things simpler because it's always very clear where things originate.
 - Doobie adheres to the scalazzi safe subset (the types given can be trusted) and the tpolecat bad attitude subset (no macros).
 - Because JDBC is a heavily side-effecting API with many failure modes (most of which are fatal) Doobie provides exception-handling combinators a la `MonadCatchIO` rather than computing all values in a disjunction. I have tried it both ways and this is what I prefer. You are free to lift any subprogram into `Throwable \/ A` via `.attempt` if you wish, or write a new interpreter that carries exceptions along rather than allowing them to propagate.
-- I think documentation is important, so I have put some effort into making Doobie produce useful Scaladoc. It's still  sparse but it's very easy to peruse (in part due to the simple module structure).
+- I think documentation is important, so I have put some effort into making Doobie produce useful Scaladoc. It's still sparse but it's easy to peruse (in part due to the simple module structure). [Check it out](http://tpolecat.github.io/doc/doobie/0.1/api/index.html).
 
 #### Low-Level API
 

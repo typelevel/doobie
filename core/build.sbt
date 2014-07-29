@@ -2,7 +2,7 @@ import FreeGen._
 
 freeGenSettings
 
-freeGenDir := (sourceManaged in Compile).value / "doobie" / "free"
+freeGenDir := (scalaSource in Compile).value / "doobie" / "free"
 
 freeGenClasses := {
   import java.sql._

@@ -7,12 +7,12 @@ object FreeGen {
 
   lazy val freeGenClasses = settingKey[List[Class[_]]]("classes for which free algebras should be generated")
   lazy val freeGenDir = settingKey[File]("directory where free algebras go")
+  lazy val freeGen = taskKey[Seq[File]]("generate free algebras")
 
   lazy val freeGenSettings = Seq(
     freeGenClasses := Nil,
-    sourceGenerators in Compile += Def.task {
-      new FreeGen(freeGenClasses.value, state.value.log).gen(freeGenDir.value)
-    }.taskValue
+    freeGenDir := (sourceManaged in Compile).value,
+    freeGen := new FreeGen(freeGenClasses.value, state.value.log).gen(freeGenDir.value)
   )
 
 }
