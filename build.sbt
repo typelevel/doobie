@@ -1,5 +1,3 @@
-name := "doobie"
-
 organization := "org.tpolecat"
 
 version in ThisBuild := "0.1"
@@ -25,3 +23,4 @@ scalacOptions in ThisBuild ++= Seq(
 lazy val core = project.in(file("core"))
 
 lazy val example = project.in(file("example")).dependsOn(core)
+

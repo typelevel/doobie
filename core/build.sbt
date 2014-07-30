@@ -46,3 +46,12 @@ scalacOptions ++= Seq(
 
 scalacOptions in (Compile, doc) ++=
   Seq("-groups")
+
+bintrayPublishSettings
+
+licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
+
+name := "doobie"
+
+description := "Pure functional JDBC layer for Scala."
+
