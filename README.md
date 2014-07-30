@@ -1,8 +1,51 @@
-## doobie - mellow database access
+# Doobie
 
-**Status**: Nearing 0.1, which will be a **preview** release to let people play around and see how it feels.
+This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it  provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here. The obligatory code sample (without imports, to keep you guessing):
 
-This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it  provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here.
+```scala
+// Database just closes over connection info
+scala> val db = Database("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+db: doobie.util.database.Database = Database(org.h2.Driver,jdbc:h2:mem:test;DB_CLOSE_DELAY=-1,sa,)
+
+// A case class to read
+scala> case class Country(name: String, continent: String, population: Int)
+defined class Country
+
+// A parameterized query, as a scalaz-stream Process
+scala> def q(e: Double) = sql"SELECT NAME, CONTINENT, POPULATION FROM COUNTRY WHERE LIFEEXPECTANCY >= $e".process[Country]
+q: (e: Double)scalaz.stream.Process[doobie.hi.ConnectionIO,Country]
+
+// Sink the process to stdout, wrap in a transaction and lift to Task
+scala> val task = db.transact(q(80).sink(c => delay(println(c)))).liftK[Task]
+task: scalaz.concurrent.Task[Unit] = scalaz.concurrent.Task@39477119
+
+// Run it!
+scala> task.run
+Country(Andorra,Europe,78000)
+Country(Japan,Asia,126714000)
+Country(Macao,Asia,473000)
+Country(San Marino,Europe,27000)
+Country(Singapore,Asia,3567000)
+```
+
+## Quick Start
+
+The current release is **0.1** which is a **preview release** intended for scalaz users who are interested in playing with the API. You should expect breaking changes for at least the next few versions. To use Doobie you need to add the following to your `build.sbt`.
+
+```scala
+resolvers += "tpolecat" at "http://dl.bintray.com/tpolecat/maven"
+
+libraryDependencies += "org.tpolecat" %% "doobie" % "0.1"
+```
+
+Doobie works with **Scala 2.10** and **scalaz 7.1** right now; see `core/build.sbt` for details on other dependencies. 2.11 support will be available when scalaz-stream catches up.
+
+Right now documentation is a bit sparse, but if you look at the high level and low level examples (links below, to encourage you to read the design notes) and check out the scaladoc (ditto) and maybe look at, you know, the source, you should be able to follow the types and hack something up for yourself. And of course you can always find me on Twitter and on the `#scala` and `#scalaz` IRC channels on FreeNode.
+
+If you try out Doobie **please** let me know how it goes. If it sucks, file an issue and tell me why. 
+
+
+## Design Notes
 
 #### General Design
 
@@ -47,7 +90,13 @@ Doobie provides, in no particular order, some other stuff:
 - Bedazzlement for the above.
 - A `sql` string interpolater for typesafe statement construction.
 
-#### Post 0.1
+## Anticipated FAQs
+
+- **Why do I have to write my own goddamn SQL?** Abstracting away the database (and vendor) is a very hard general problem, and in my experience every solution is lacking; I always end up dropping down to native SQL very quickly. So I didn't try to solve this problem. However, Doobie provides a basis upon which such a solution could be built.
+- **What's up with the lawless `Capture` typeclass?** scalaz has been a little handwavey with calling conventions for monadic unit and I need a way to say what I mean, so that's what `Capture` does. When we lift a value into a monadic context we can do so by value (i.e., eagerly) or by need (i.e., lazily) or by name (i.e., thunkily). `Task` and `IO` variously provide all three, but the third is the one I'm after. The **effect-capturing unit** is the FFI that allows us to turn an effect into a value, and this is what `Capture` is intended to do. So `Capture[IO]` is just `IO.apply` and `Capture[Task]` is `Task.delay` or `Task.apply` depending on whether you wish to [logically] fork or not.
+- **Can we make imports more like scalaz so it's less fiddly?** Maybe. It's simple but irritating right now, which may or may not be better than complex and non-irritating. Let me know what you think.
+
+## Next Steps
 
 In no particular order:
 
@@ -59,4 +108,6 @@ In no particular order:
 - String interpolator for callable statements (needs In/Out/InOut params).
 - Alternative instance of `Capture[Task]` that forks native calls (right now everything is straight-line).
 - More/bigger examples.
+
+These will become Github issues at some point.
 
