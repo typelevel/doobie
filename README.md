@@ -1,6 +1,6 @@
 # Doobie
 
-This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it  provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here. The obligatory code sample (without imports, to keep you guessing):
+This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here. The obligatory code sample (without imports, to keep you guessing):
 
 ```scala
 // Database just closes over connection info
@@ -15,7 +15,7 @@ defined class Country
 scala> def q(e: Double) = sql"SELECT NAME, CONTINENT, POPULATION FROM COUNTRY WHERE LIFEEXPECTANCY >= $e".process[Country]
 q: (e: Double)scalaz.stream.Process[doobie.hi.ConnectionIO,Country]
 
-// Sink the process to stdout, wrap in a transaction and lift to Task
+// Sink the process to stdout, wrap in a transaction and translate to Task
 scala> val task = db.transact(q(80).sink(c => delay(println(c)))).liftK[Task]
 task: scalaz.concurrent.Task[Unit] = scalaz.concurrent.Task@39477119
 
@@ -35,7 +35,7 @@ The current release is **0.1** which is a **preview release** intended for scala
 ```scala
 resolvers += "tpolecat" at "http://dl.bintray.com/tpolecat/maven"
 
-libraryDependencies += "org.tpolecat" %% "doobie" % "0.1"
+libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.1"
 ```
 
 Doobie works with **Scala 2.10** and **scalaz 7.1** right now; see `core/build.sbt` for details on other dependencies. 2.11 support will be available when scalaz-stream catches up.
