@@ -1,28 +1,12 @@
 import FreeGen._
 
-freeGenSettings
+/// PROJECT METADATA
 
-freeGenDir := (scalaSource in Compile).value / "doobie" / "free"
+name := "doobie-core"
 
-freeGenClasses := {
-  import java.sql._
-  List[Class[_]](
-    classOf[java.sql.NClob],
-    classOf[java.sql.Blob],
-    classOf[java.sql.Clob],
-    classOf[java.sql.DatabaseMetaData],
-    classOf[java.sql.Driver],
-    classOf[java.sql.Ref],
-    classOf[java.sql.SQLData],
-    classOf[java.sql.SQLInput],
-    classOf[java.sql.SQLOutput],
-    classOf[java.sql.Connection],
-    classOf[java.sql.Statement],
-    classOf[java.sql.PreparedStatement],
-    classOf[java.sql.CallableStatement],
-    classOf[java.sql.ResultSet]
-  )
-}
+description := "Pure functional JDBC layer for Scala."
+
+/// DEPENDENCIES
 
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
@@ -47,11 +31,34 @@ scalacOptions ++= Seq(
 scalacOptions in (Compile, doc) ++=
   Seq("-groups")
 
+/// PUBLISH SETTINGS
+
 bintrayPublishSettings
 
-licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
+/// CODE GENERATION SETTINGS
 
-name := "doobie"
+freeGenSettings
 
-description := "Pure functional JDBC layer for Scala."
+freeGenDir := (scalaSource in Compile).value / "doobie" / "free"
+
+freeGenClasses := {
+  import java.sql._
+  List[Class[_]](
+    classOf[java.sql.NClob],
+    classOf[java.sql.Blob],
+    classOf[java.sql.Clob],
+    classOf[java.sql.DatabaseMetaData],
+    classOf[java.sql.Driver],
+    classOf[java.sql.Ref],
+    classOf[java.sql.SQLData],
+    classOf[java.sql.SQLInput],
+    classOf[java.sql.SQLOutput],
+    classOf[java.sql.Connection],
+    classOf[java.sql.Statement],
+    classOf[java.sql.PreparedStatement],
+    classOf[java.sql.CallableStatement],
+    classOf[java.sql.ResultSet]
+  )
+}
+
 

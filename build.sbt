@@ -1,10 +1,13 @@
-organization := "org.tpolecat"
 
-version in ThisBuild := "0.1"
+/// SHARED SETTINGS
+
+organization in ThisBuild := "org.tpolecat"
+
+version in ThisBuild := "0.1-SNAPSHOT"
+
+licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 
 scalaVersion in ThisBuild := "2.10.4"
-
-licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 scalacOptions in ThisBuild ++= Seq(
   "-encoding", "UTF-8", // 2 args
@@ -19,6 +22,8 @@ scalacOptions in ThisBuild ++= Seq(
   "-Ywarn-dead-code",       
   "-Ywarn-value-discard"     
 )
+
+/// SUBMODULES
 
 lazy val core = project.in(file("core"))
 
