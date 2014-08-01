@@ -33,7 +33,10 @@ Country(Singapore,Asia,3567000)
 The current release is **0.1** which is a **preview release** intended for scalaz users who are interested in playing with the API. You should expect breaking changes for at least the next few versions. To use Doobie you need to add the following to your `build.sbt`.
 
 ```scala
-resolvers += "tpolecat" at "http://dl.bintray.com/tpolecat/maven"
+resolvers ++= Seq(
+  "tpolecat" at "http://dl.bintray.com/tpolecat/maven",
+  "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
+)
 
 libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.1"
 ```
