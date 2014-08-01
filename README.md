@@ -35,6 +35,8 @@ The current release is **0.1** which is a **preview release** intended for scala
 ```scala
 resolvers += "tpolecat" at "http://dl.bintray.com/tpolecat/maven"
 
+resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
+
 libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.1"
 ```
 
