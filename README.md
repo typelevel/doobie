@@ -82,7 +82,7 @@ The high-level API provided by `doobie.hi` directly exposes a subset of construc
 
 Note that the types in `doobie.hi` and `doobie.free` are identical; you can freely mix code written using either API, and indeed you will need to if you're dealing with vendor-specific extensions or types like `CLOB` that are not supported directly in the high-level API.
 
-An example program written with this API is provided [here](example/src/main/scala/example/HiUsage.scala).
+An example program written with this API is provided [here](example/src/main/scala/example/HiUsage.scala) and another [here](example/src/main/scala/example/FirstExample.scala).
 
 #### Other Facilities
 
