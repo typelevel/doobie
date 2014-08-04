@@ -1,5 +1,6 @@
 package doobie.util
 
+import scala.annotation.implicitNotFound
 import doobie.util.atom._
 import doobie.free._
 import doobie.free.resultset.{ ResultSetIO, updateNull }
@@ -12,6 +13,7 @@ import shapeless._
  */
 object composite {
   
+  @implicitNotFound("Could not find or construct a Composite[${A}]; be sure that an Atom instance is available for each field in ${A}. For example, if there is an Int field you should import doobie.std.int._")
   trait Composite[A] { outer =>
 
     def set: (Int, A) => PreparedStatementIO[Unit]
