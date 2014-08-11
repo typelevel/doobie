@@ -30,7 +30,7 @@ object HiUsage {
   // Our logical entry point is a Task[Unit]. One of the things it does is a database interaction.
   lazy val tmain: Task[Unit] = 
     for {
-      a <- db.transact(example).liftK[Task]
+      a <- db.transact(example).trans[Task]
       _ <- Task.delay(Console.println(a))
     } yield ()
 
@@ -40,7 +40,7 @@ object HiUsage {
   lazy val example: ConnectionIO[String] =
     for {
       _ <- connection.delay(println("Loading database..."))
-      _ <- loadDatabase(new File("example/world.sql"))
+      _ <- loadDatabase(new File("world.sql"))
       _ <- speakerQuery("French", 0.7).sink(c => connection.delay(println("~> " + c))) // streaming; constant space
     } yield "Ok"
 

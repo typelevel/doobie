@@ -5,7 +5,9 @@ import doobie.free.connection.setAutoCommit
 import doobie.hi._
 import doobie.hi.connection.{ commit, rollback }
 import doobie.syntax.catchable._
+
 import scalaz.syntax.monad._
+import scalaz.stream.Process
 
 object database {
   

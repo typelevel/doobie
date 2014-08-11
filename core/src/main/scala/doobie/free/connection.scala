@@ -57,7 +57,7 @@ import resultset.ResultSetIO
  *
  * The library provides a natural transformation to `Kleisli[M, Connection, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
- * provided for `Task`, `IO`, and stdlib `Future`; and `liftK[M]` is provided as syntax.
+ * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
@@ -67,7 +67,7 @@ import resultset.ResultSetIO
  * val s: Connection = ...
  * 
  * // Unfolding into a Task
- * val ta: Task[A] = a.liftK[Task].run(s)
+ * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
  *
  * @group Modules
@@ -587,23 +587,23 @@ object connection {
        op match {
 
         // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.liftK[M].run(s))
+        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
+        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
   
         // Combinators
         case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.liftK[M].attempt
+        case Attempt(a) => a.transK[M].attempt
   
         // Primitive Operations
         case ClearWarnings => primitive(_.clearWarnings)
@@ -665,7 +665,7 @@ object connection {
    * @group Algebra
    */
   implicit class ConnectionIOOps[A](ma: ConnectionIO[A]) {
-    def liftK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Connection, A] =
+    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Connection, A] =
       F.runFC[ConnectionOp,({type l[a]=Kleisli[M,Connection,a]})#l,A](ma)(kleisliTrans[M])
   }
 

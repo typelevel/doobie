@@ -203,12 +203,12 @@ object drivermanager {
        op match {
 
         // Lifting
-        case LiftConnection(s, a) => a.liftK[M].run(s)
-        case LiftDriver(s, a) => a.liftK[M].run(s)
+        case LiftConnection(s, a) => a.transK[M].run(s)
+        case LiftDriver(s, a) => a.transK[M].run(s)
 
         // Combinators
         case Pure(a) => L.apply(a())
-        case Attempt(a) => a.liftK[M].attempt
+        case Attempt(a) => a.trans[M].attempt
   
         // Primitive Operations
         case DeregisterDriver(a) => L.apply(DriverManager.deregisterDriver(a))
@@ -235,8 +235,8 @@ object drivermanager {
    * @group Algebra
    */
   implicit class DriverManagerIOOps[A](ma: DriverManagerIO[A]) {
-    def liftK[M[_]: Monad: Catchable: Capture]: M[A] =
-      F.runFC(ma)(trans[M])
+    def trans[M[_]: Monad: Catchable: Capture]: M[A] =
+      F.runFC(ma)(drivermanager.trans[M])
   }
 
 }

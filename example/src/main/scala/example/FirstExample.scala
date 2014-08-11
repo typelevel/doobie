@@ -25,7 +25,7 @@ object FirstExample extends SafeApp {
   // Entry point for SafeApp
   override def runc: IO[Unit] = 
     for {
-      a <- db.transact(examples).attempt.liftK[IO]
+      a <- db.transact(examples).attempt.trans[IO]
       _ <- IO.putStrLn(a.toString)
     } yield ()
 

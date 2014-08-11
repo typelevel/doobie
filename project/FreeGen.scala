@@ -157,7 +157,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
 
   def liftingCases(sname: String): List[String] =
     managed.toList.map(toScalaType).sorted.filterNot(_ == sname).map { c => 
-      s"case Lift${c}IO(s, k) => Kleisli(_ => k.liftK[M].run(s))"
+      s"case Lift${c}IO(s, k) => Kleisli(_ => k.transK[M].run(s))"
     }
 
 
@@ -221,7 +221,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     | *
     | * The library provides a natural transformation to `Kleisli[M, ${sname}, A]` for any
     | * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
-    | * provided for `Task`, `IO`, and stdlib `Future`; and `liftK[M]` is provided as syntax.
+    | * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
     | *
     | * {{{
     | * // An action to run
@@ -231,7 +231,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     | * val s: ${sname} = ...
     | * 
     | * // Unfolding into a Task
-    | * val ta: Task[A] = a.liftK[Task].run(s)
+    | * val ta: Task[A] = a.transK[Task].run(s)
     | * }}}
     | *
     | * @group Modules
@@ -327,7 +327,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  
     |        // Combinators
     |        case Pure(a) => primitive(_ => a())
-    |        case Attempt(a) => a.liftK[M].attempt
+    |        case Attempt(a) => a.transK[M].attempt
     |  
     |        // Primitive Operations
     |        ${ctors[A].map(_.prim(sname)).mkString("\n        ")}
@@ -341,7 +341,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * @group Algebra
     |   */
     |  implicit class ${sname}IOOps[A](ma: ${sname}IO[A]) {
-    |    def liftK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A] =
+    |    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A] =
     |      F.runFC[${sname}Op,({type l[a]=Kleisli[M,${sname},a]})#l,A](ma)(kleisliTrans[M])
     |  }
     |

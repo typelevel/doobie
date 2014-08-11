@@ -21,7 +21,7 @@ object ConnectionPool {
   final class JdbcConnectionPoolTransactor[M[_]: Monad: Catchable: Capture] private (pool: JdbcConnectionPool) {
     def transact[A](a: ConnectionIO[A]): M[A] = {
       val a0 = setAutoCommit(false) *> a.onException(rollback) <* commit
-      Capture[M].apply(pool.getConnection) >>= (a0 ensuring close).liftK[M]
+      Capture[M].apply(pool.getConnection) >>= (a0 ensuring close).transK[M]
     }
   }
 
