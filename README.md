@@ -69,7 +69,7 @@ The low-level API provided by `doobie.free` is a family of machine-generated alg
 
 Because the constructors are in a 1:1 correspondence with JDBC (with no swizzling of types whatsoever) this API must be used with a great deal of caution; many computed types have side-effecting methods and some are liftetime-managed and must be closed in a particular order.
 
-An example program written with this API: for **v0.1** [here](blob/v0.1/example/src/main/scala/example/FreeUsage.scala) • for the **tip** [here](example/src/main/scala/example/FreeUsage.scala).
+An example program written with this API: for **v0.1** [here](../v0.1/example/src/main/scala/example/FreeUsage.scala) • for the **tip** [here](example/src/main/scala/example/FreeUsage.scala).
 
 #### High-Level API
 
@@ -82,7 +82,7 @@ The high-level API provided by `doobie.hi` directly exposes a subset of construc
 
 Note that the types in `doobie.hi` and `doobie.free` are identical; you can freely mix code written using either API, and indeed you will need to if you're dealing with vendor-specific extensions or types like `CLOB` that are not supported directly in the high-level API.
 
-Some example programs written with this API: for **v0.1** [here](blob/v0.1example/src/main/scala/example/HiUsage.scala) and [here](blob/v0.1example/src/main/scala/example/FirstExample.scala) • for the **tip** [here](example/src/main/scala/example/HiUsage.scala) and [here](example/src/main/scala/example/FirstExample.scala).
+Some example programs written with this API: for **v0.1** [here](../v0.1/example/src/main/scala/example/HiUsage.scala) and [here](../v0.1/example/src/main/scala/example/FirstExample.scala) • for the **tip** [here](example/src/main/scala/example/HiUsage.scala) and [here](example/src/main/scala/example/FirstExample.scala).
 
 #### Other Facilities
 
