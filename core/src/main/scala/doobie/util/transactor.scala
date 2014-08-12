@@ -38,7 +38,7 @@ object transactor {
       (before *> ma <* after) onException oops ensuring always
 
     private def safe[A](pa: Process[ConnectionIO, A]): Process[ConnectionIO, A] =
-      (before.p ++ pa ++ after.p) onFailure oops.p onComplete always.p
+      (before.p ++ pa ++ after.p) onFailure (_ => oops.p) onComplete always.p
 
     def transact[A](ma: ConnectionIO[A]): M[A] = 
       connect >>= safe(ma).transK[M]

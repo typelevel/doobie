@@ -41,7 +41,7 @@ resolvers ++= Seq(
 libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.1"
 ```
 
-Doobie works with **Scala 2.10** and **scalaz 7.1** right now; see `core/build.sbt` for details on other dependencies. 2.11 support will be available when scalaz-stream catches up.
+Doobie **0.1** works with **Scala 2.10** and **scalaz 7.1**; the **tip** supports **Scala 2.11**, as will the next release of doobie. So `publish-local` or stay tuned for a release.
 
 Right now documentation is a bit sparse, but if you look at the high level and low level examples (links below, to encourage you to read the design notes) and check out the scaladoc (ditto) and maybe look at, you know, the source, you should be able to follow the types and hack something up for yourself. And of course you can always find me on Twitter and on the `#scala` and `#scalaz` IRC channels on FreeNode.
 
