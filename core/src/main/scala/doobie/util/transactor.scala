@@ -1,14 +1,14 @@
 package doobie.util
 
           
-import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close }
+import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
 import doobie.hi.connection.ProcessConnectionIOOps
 import doobie.syntax.catchable._
 import doobie.util.capture._
 
 import scalaz.syntax.monad._
 import scalaz.stream.Process
-import scalaz.stream.Process. { eval, halt }
+import scalaz.stream.Process. { eval, eval_, halt }
 
 import scalaz.{ Monad, Catchable, Kleisli }
 import scalaz.stream.Process
@@ -38,7 +38,7 @@ object transactor {
       (before *> ma <* after) onException oops ensuring always
 
     private def safe[A](pa: Process[ConnectionIO, A]): Process[ConnectionIO, A] =
-      (before.p ++ pa ++ after.p) onFailure (_ => oops.p) onComplete always.p
+      (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
 
     def transact[A](ma: ConnectionIO[A]): M[A] = 
       connect >>= safe(ma).transK[M]

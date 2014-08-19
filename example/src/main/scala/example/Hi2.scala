@@ -26,7 +26,7 @@ object Hi2 extends App {
   lazy val tmain: Task[Unit] = 
     for {
       a <- dao.loadDatabase(new File("world.sql"))
-      _ <- dao.speakerQuery("French", 0.7).map(_.toString).to(io.stdOutLines).runLog
+      _ <- dao.speakerQuery("English", 10).map(_.toString).to(io.stdOutLines).runLog
     } yield ()
 
   // End of the world

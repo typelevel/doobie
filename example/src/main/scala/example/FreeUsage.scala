@@ -34,7 +34,7 @@ object FreeUsage {
     for {
       _ <- C.delay(println("Loading database..."))
       _ <- loadDatabase(new File("example/world.sql"))
-      s <- speakerQuery("French", 0.7)
+      s <- speakerQuery("English", 10)
       _ <- s.traverseU(a => C.delay(println(a)))
     } yield "Ok"
 

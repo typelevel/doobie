@@ -4,65 +4,90 @@ import doobie.free._
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.enum.jdbctype._
+import doobie.util.invariant._
 
-import scalaz.InvariantFunctor
+import scalaz.{ Functor, Contravariant, InvariantFunctor }
 import scalaz.syntax.apply._
 import scalaz.syntax.std.boolean._
 
-/** 
- * Module defining a typeclass for atomic database types (those that map to a single column).
- */
 object atom {
 
-  trait Atom[A] {
-
-    def set: (Int, A) => PS.PreparedStatementIO[Unit]
-
-    def update: (Int, A) => RS.ResultSetIO[Unit]
-
-    def get: Int => RS.ResultSetIO[A]
-
-    def jdbcType: JdbcType
-
-    def setNull: Int => PS.PreparedStatementIO[Unit] = i =>
+  /** 
+   * Typeclass for types that can be represented in a single column. There are two subtypes, for 
+   * unlifted (non-nullable) and lifted (nullable via Option) types.
+   */
+  sealed trait Atom[A] extends composite.Composite[A] { fa =>
+    final val length = 1
+    val jdbcType: JdbcType
+    val get: Int => RS.ResultSetIO[A]
+    val set: (Int, A) => PS.PreparedStatementIO[Unit]
+    val update: (Int, A) => RS.ResultSetIO[Unit]
+    val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
       PS.setNull(i, jdbcType.toInt)
-
+  }
+  object Atom {
+    def apply[A](implicit A: Atom[A]): Atom[A] = A
+    implicit def lift[A](implicit A: Unlifted[A]): Atom[Option[A]] =
+      A.lift
   }
 
-  object Atom {
+  /**
+   * `Atom` that permits reading and writing of SQL `NULL` via `Option`. Such atoms cannot be 
+   * constructed directly, but can be obtained from an `Unlifted` via `.lift` or via the provided 
+   * implicit.
+   */
+  final class Lifted[A] private[atom] (
+    j: JdbcType,
+    g: Int => RS.ResultSetIO[A],
+    s: (Int, A) => PS.PreparedStatementIO[Unit],
+    u: (Int, A) => RS.ResultSetIO[Unit]
+  ) extends Atom[Option[A]] {
+      val jdbcType = j
+      val get = (n: Int) => ^(g(n), RS.wasNull)((a, b) => (!b) option a)
+      val set = (n: Int, a: Option[A]) => a.fold(setNull(n))(s(n, _))
+      val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
+      def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
+        new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)))
+  }
+  object Lifted {
+    def apply[A](implicit A: Lifted[A]): Lifted[A] = A
+    implicit def lift[A](implicit A: Unlifted[A]): Lifted[A] =
+      A.lift
+  }
 
-    def apply[A](implicit A: Atom[A]): Atom[A] = A
+  /** 
+   * Atom that does not permit reading or writing of SQL `NULL`. This is the only type of `Atom` (or
+   * `Composite`) that can be constructed directly. Implicit instances are provided for ground types
+   * in the `std` package.
+   */
+  final case class Unlifted[A](lift: Lifted[A]) extends Atom[A] { fa =>
+    val jdbcType = lift.jdbcType
+    val get = (n: Int) => lift.get(n).map(_.getOrElse(throw NonNullableColumnRead(n, jdbcType)))
+    val set = (n: Int, a: A) => lift.set(n, if (a == null) throw NonNullableParameter(n, jdbcType) else Some(a))
+    val update = (n: Int, a: A) => lift.update(n, if (a == null) throw NonNullableColumnUpdate(n, jdbcType) else Some(a))
+    def xmap[B](ab: A => B, ba: B => A): Unlifted[B] =
+      Unlifted(lift.xmap(ab, ba))
+  }
+  object Unlifted {
+    def apply[A](implicit A: Unlifted[A]): Unlifted[A] = A
 
-    implicit def optionAtom[A](implicit A: Atom[A]): Atom[Option[A]] =
-      new Atom[Option[A]] {
-        def set = (n, a) => a.fold(setNull(n))(A.set(n, _))
-        def update = (n, a) => a.fold(RS.updateNull(n))(A.update(n, _))
-        def get = n => (A.get(n) |@| RS.wasNull)((a, b) => b option a)
-        val jdbcType = A.jdbcType
-      }
-
-    implicit val AtomInvariantFunctor: InvariantFunctor[Atom] =
-      new InvariantFunctor[Atom] {
-        def xmap[A,B](fa: Atom[A], f: A => B, g: B => A): Atom[B] =
-          new Atom[B] {
-            def set = (i, b) => fa.set(i, g(b))
-            def update = (i, b) => fa.update(i, g(b))
-            def get = i => fa.get(i).map(f)
-            val jdbcType = fa.jdbcType
-          }
-      }
-
-    def atom[A](jdbc: JdbcType, 
+    /** 
+     * Construct an `Unlifted` atom for the given type. Such instances are typically marked as
+     * implicit to allow automatic derivation of the `Lifted` variant, as well as larger 
+     * `Composite` instances that contain `A` or `Option[A]` as a field.
+     */
+    def create[A](
+        j: JdbcType, 
         s: (Int, A) => PS.PreparedStatementIO[Unit], 
-        u: (Int, A) => RS.ResultSetIO[Unit], 
-        g: Int => RS.ResultSetIO[A]): Atom[A] =
-      new Atom[A] {
-        val set = s
-        val get = g
-        val update = u
-        val jdbcType = jdbc
-      }
-
+        u: (Int, A) => RS.ResultSetIO[Unit],
+        g: Int => RS.ResultSetIO[A]): Unlifted[A] = 
+      Unlifted(new Lifted(j, g, s, u))
+      
   }
 
 }
+
+
+
+
+

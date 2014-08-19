@@ -41,7 +41,7 @@ object HiUsage {
     for {
       _ <- connection.delay(println("Loading database..."))
       _ <- loadDatabase(new File("world.sql"))
-      _ <- speakerQuery("French", 0.7).sink(c => connection.delay(println("~> " + c))) // streaming; constant space
+      _ <- speakerQuery("English", 10).sink(c => connection.delay(println("~> " + c))) // streaming; constant space
     } yield "Ok"
 
   // Construct an action to load up a database from the specified file.

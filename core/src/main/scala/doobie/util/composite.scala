@@ -42,23 +42,8 @@ object composite {
           }
       }
 
-    /** @group Typeclass Instances */
-    implicit def prim[A](implicit A: Atom[A]): Composite[A] =
-      new Composite[A] {
-        def set = A.set
-        def update = A.update
-        def get = A.get
-        def length = 1
-      }
-
-    /** @group Typeclass Instances */
-    implicit def inOpt[A](implicit A: Atom[A]): Composite[Option[A]] =
-      new Composite[Option[A]] {
-        def set = (i, a) => a.fold(A.setNull(i))(a => A.set(i, a))
-        def update = (i, a) => a.fold(updateNull(i))(a => A.update(i, a))
-        def get = i => A.get(i) >>= (a => resultset.wasNull.map(n => (!n).option(a)))
-        def length = 1
-      }
+    implicit def lift[A](implicit A: Unlifted[A]): Composite[Option[A]] =
+      A.lift
 
     /** @group Typeclass Instances */
     implicit val productComposite: ProductTypeClass[Composite] =
