@@ -6,6 +6,7 @@ import scalaz.concurrent.Task
 
 import doobie.free.connection.{ ConnectionIO, close, setAutoCommit, commit, rollback }
 import doobie.util.capture._
+import doobie.util.transactor._
 import doobie.std.task._
 import doobie.syntax.catchable._
 import java.sql.Connection
@@ -18,11 +19,9 @@ object ConnectionPool {
   // we make the smart constructor an effect as well. In real life we would probably add operations
   // to inspect and configure the pool.
 
-  final class JdbcConnectionPoolTransactor[M[_]: Monad: Catchable: Capture] private (pool: JdbcConnectionPool) {
-    def transact[A](a: ConnectionIO[A]): M[A] = {
-      val a0 = setAutoCommit(false) *> a.onException(rollback) <* commit
-      Capture[M].apply(pool.getConnection) >>= (a0 ensuring close).transK[M]
-    }
+  final class JdbcConnectionPoolTransactor[M[_]: Monad: Catchable: Capture] private (pool: JdbcConnectionPool) extends Transactor[M] {
+    protected def connect: M[Connection] =
+      Capture[M].apply(pool.getConnection) 
   }
 
   object JdbcConnectionPoolTransactor {
