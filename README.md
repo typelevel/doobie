@@ -3,9 +3,13 @@
 This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here. The obligatory code sample (without imports, to keep you guessing):
 
 ```scala
-// Database just closes over connection info
-scala> val db = Database("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-db: doobie.util.database.Database = Database(org.h2.Driver,jdbc:h2:mem:test;DB_CLOSE_DELAY=-1,sa,)
+// Transactor just closes over connection info and knows how to allocate connections
+scala> val xa = DriverManagerTransactor[Task]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+xa: doobie.util.transactor.Transactor[scalaz.concurrent.Task] = doobie.util.transactor$DriverManagerTransactor$$anon$1@c7efaf9
+
+// An action to load up some test data
+scala> val load = sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".executeUpdate.void
+load: doobie.hi.ConnectionIO[Unit] = Gosub()
 
 // A case class to read
 scala> case class Country(name: String, continent: String, population: Int)
@@ -15,17 +19,19 @@ defined class Country
 scala> def q(e: Double) = sql"SELECT NAME, CONTINENT, POPULATION FROM COUNTRY WHERE LIFEEXPECTANCY >= $e".process[Country]
 q: (e: Double)scalaz.stream.Process[doobie.hi.ConnectionIO,Country]
 
-// Sink the process to stdout, wrap in a transaction and translate to Task
-scala> val task = db.transact(q(80).sink(c => delay(println(c)))).liftK[Task]
-task: scalaz.concurrent.Task[Unit] = scalaz.concurrent.Task@39477119
+// Our program is two transactions, one loading data and one querying and streaming results to stdout
+scala> val program = xa.transact(load) *> xa.transact(q(80)).take(5).map(_.toString).to(io.stdOutLines).run
+program: scalaz.concurrent.Task[Unit] = scalaz.concurrent.Task@51f0819c
 
 // Run it!
-scala> task.run
+scala> program.run
 Country(Andorra,Europe,78000)
 Country(Japan,Asia,126714000)
 Country(Macao,Asia,473000)
 Country(San Marino,Europe,27000)
 Country(Singapore,Asia,3567000)
+
+scala> // yay!
 ```
 
 ## Quick Start
