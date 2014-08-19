@@ -99,18 +99,3 @@ Doobie provides, in no particular order, some other stuff:
 - **What's up with the lawless `Capture` typeclass?** scalaz has been a little handwavey with calling conventions for monadic unit and I need a way to say what I mean, so that's what `Capture` does. When we lift a value into a monadic context we can do so by value (i.e., eagerly) or by need (i.e., lazily) or by name (i.e., thunkily). `Task` and `IO` variously provide all three, but the third is the one I'm after. The **effect-capturing unit** is the FFI that allows us to turn an effect into a value, and this is what `Capture` is intended to do. So `Capture[IO]` is just `IO.apply` and `Capture[Task]` is `Task.delay` or `Task.apply` depending on whether you wish to [logically] fork or not.
 - **Can we make imports more like scalaz so it's less fiddly?** Maybe. It's simple but irritating right now, which may or may not be better than complex and non-irritating. Let me know what you think.
 
-## Next Steps
-
-In no particular order:
-
-- Split `Atom` (ironically) into distinct get, set, and update typeclasses.
-- `callablestatement` module in `hi`
-- `Catchable` combinators that are specific to JDBC, as well as SQLSTATE tables for common vendors.
-- Structured logging. This will need to get wired through the `Kleisli` interpreters.
-- Add example of using tagged types for alternative `Atom` instances.
-- String interpolator for callable statements (needs In/Out/InOut params).
-- Alternative instance of `Capture[Task]` that forks native calls (right now everything is straight-line).
-- More/bigger examples.
-
-These will become Github issues at some point.
-
