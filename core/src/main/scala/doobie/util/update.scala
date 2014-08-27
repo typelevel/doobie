@@ -25,6 +25,13 @@ object update {
         def check = u.check
       }
 
+    def toUpdate0(a: A): Update0 =
+      new Update0 {
+        def sql = u.sql
+        def run = u.run(a)
+        def check = u.check
+      }
+
   }
 
   object Update {

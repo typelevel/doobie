@@ -46,12 +46,12 @@ object HiUsage {
 
   // Construct an action to load up a database from the specified file.
   def loadDatabase(f: File): ConnectionIO[Unit] =
-    sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".executeUpdate.void
+    sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".update.run.void
 
   // Construct an action to find countries where more than `pct` of the population speaks `lang`.
   // The result is a scalaz.stream.Process that can be further manipulated by the caller.
   def speakerQuery(lang: String, pct: Double): Process[ConnectionIO,CountryCode] =
-    sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".process[CountryCode]
+    sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".query[CountryCode].run
 
 }
 
