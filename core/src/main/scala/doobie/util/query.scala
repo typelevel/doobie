@@ -3,6 +3,7 @@ package doobie.util
 import doobie.hi._
 import doobie.util.invariant.MappingViolation
 import doobie.util.composite.Composite
+import doobie.util.prepared.Prepared
 
 import scalaz.{ Contravariant, Functor, Monad, Profunctor, ValidationNel }
 import scalaz.stream.Process
@@ -10,10 +11,8 @@ import scalaz.stream.Process
 object query {
 
   /** Encapsulates a `ConnectionIO` that prepares and executes a parameterized statement. */
-  trait Query[A, B] { q =>
+  trait Query[A, B] extends Prepared { q =>
 
-    def sql: String
-    def check: ConnectionIO[ValidationNel[MappingViolation, Unit]]
     def run(a: A): Process[ConnectionIO, B] 
 
     def map[C](f: B => C): Query[A, C] =
@@ -64,11 +63,9 @@ object query {
   }
 
   /** Encapsulates a `ConnectionIO` that prepares and executes a zero-parameter statement. */
-  trait Query0[B] { q =>
+  trait Query0[B] extends Prepared { q =>
 
-    def sql: String
-    def check: ConnectionIO[ValidationNel[MappingViolation, Unit]]
-    def run(): Process[ConnectionIO, B] 
+    def run: Process[ConnectionIO, B] 
 
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {
@@ -85,7 +82,7 @@ object query {
     def apply[B: Composite](sql0: String): Query0[B] =
       new Query0[B] {
         def sql = sql0
-        def run() = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
+        def run = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
         def check = Predef.??? /// TODO
       }
 

@@ -5,6 +5,7 @@ import doobie.hi.connection.prepareStatement
 import doobie.hi.preparedstatement.{ set, executeUpdate }
 import doobie.util.invariant.MappingViolation
 import doobie.util.composite.Composite
+import doobie.util.prepared.Prepared
 
 import scalaz.{ Contravariant, Functor, Profunctor, ValidationNel }
 import scalaz.stream.Process
@@ -12,10 +13,8 @@ import scalaz.syntax.monad._
 
 object update {
 
-  trait Update[A] { u =>
+  trait Update[A] extends Prepared { u =>
 
-    def sql: String
-    def check: ConnectionIO[ValidationNel[MappingViolation, Unit]]
     def run(a: A): ConnectionIO[Int]
 
     def contramap[C](f: C => A): Update[C] =
@@ -50,9 +49,7 @@ object update {
 
   }
 
-  trait Update0 {
-    def sql: String
-    def check: ConnectionIO[ValidationNel[MappingViolation, Unit]]
+  trait Update0 extends Prepared {
     def run: ConnectionIO[Int]
   }
 
