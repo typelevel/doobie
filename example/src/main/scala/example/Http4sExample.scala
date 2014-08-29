@@ -16,17 +16,29 @@ import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.util.transactor._
 
-// Experimenting with transactors and fully-lifted streams
-object Hi2 extends App {
+import org.http4s._
+import org.http4s.dsl._
+import org.http4s.server._
+import org.http4s.server.blaze.BlazeServer
 
-  // How about a DAO parameterized on the transactor?
+import _root_.argonaut._, Argonaut._
+
+object Http4sExample extends App {
+
+  // DAO parameterized with the transactor
   val dao = DAO(DriverManagerTransactor[Task]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""))
 
+  // A wee service
+  val service: HttpService = {
+    case GET -> Root / lang => 
+      Ok(dao.speakerQuery(lang).map(_.asJson.nospaces + "\n")) 
+  }
+
   // Our program
-  lazy val tmain: Task[Unit] = 
+  val tmain: Task[Unit] = 
     for {
       a <- dao.loadDatabase(new File("world.sql"))
-      _ <- dao.speakerQuery("English", 10).map(_.toString).to(io.stdOutLines).runLog
+      _ <- Task.delay(BlazeServer.newBuilder.mountService(service, "/speakers").run)
     } yield ()
 
   // End of the world
@@ -39,19 +51,24 @@ case class DAO[M[_]](xa: Transactor[M]) {
 
   // A data type we will read from the database
   case class Country(name: String, indepYear: Option[Int])
+  object Country {
+    implicit val countryCodec: CodecJson[Country] = 
+      casecodec2(Country.apply, Country.unapply)("name", "indepYear")
+  }
 
   // Construct an action to load up a database from the specified file.
   def loadDatabase(f: File): M[Unit] =
     xa.transact(sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".executeUpdate.void)
 
-  // Construct an action to stream countries where more than `pct` of the population speaks `lang`.
-  def speakerQuery(lang: String, pct: Double): Process[M, Country] =
+  // Construct an action to stream countries where more than 10% of the population speaks `lang`.
+  def speakerQuery(lang: String): Process[M, (Country, Int)] =
     xa.transact(sql"""
-      SELECT C.NAME, C.INDEPYEAR FROM COUNTRYLANGUAGE CL
+      SELECT C.NAME, C.INDEPYEAR, PERCENTAGE 
+      FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
       WHERE LANGUAGE = $lang 
-      AND PERCENTAGE > $pct
-    """.process[Country])
+      AND PERCENTAGE > 10
+      ORDER BY PERCENTAGE DESC
+    """.process[(Country, Int)])
 
 }
-
