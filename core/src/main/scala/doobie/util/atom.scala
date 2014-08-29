@@ -37,17 +37,17 @@ object atom {
    * implicit.
    */
   final class Lifted[A] private[atom] (
-    j: JdbcType,
-    g: Int => RS.ResultSetIO[A],
-    s: (Int, A) => PS.PreparedStatementIO[Unit],
-    u: (Int, A) => RS.ResultSetIO[Unit]
+      j: JdbcType,
+      g: Int => RS.ResultSetIO[A],
+      s: (Int, A) => PS.PreparedStatementIO[Unit],
+      u: (Int, A) => RS.ResultSetIO[Unit]
   ) extends Atom[Option[A]] {
-      val jdbcType = j
-      val get = (n: Int) => ^(g(n), RS.wasNull)((a, b) => (!b) option a)
-      val set = (n: Int, a: Option[A]) => a.fold(setNull(n))(s(n, _))
-      val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
-      def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
-        new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)))
+    val jdbcType = j
+    val get = (n: Int) => ^(g(n), RS.wasNull)((a, b) => (!b) option a)
+    val set = (n: Int, a: Option[A]) => a.fold(setNull(n))(s(n, _))
+    val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
+    def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
+      new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)))
   }
   object Lifted {
     def apply[A](implicit A: Lifted[A]): Lifted[A] = A
