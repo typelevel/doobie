@@ -17,22 +17,20 @@ import doobie.syntax.string._
 import doobie.util.transactor._
 
 import org.http4s._
-import org.http4s.Status._
 import org.http4s.dsl._
 import org.http4s.server._
 import org.http4s.server.blaze.BlazeServer
 
 import _root_.argonaut._, Argonaut._
 
-// Experimenting with transactors and fully-lifted streams
-object Hi2 extends App {
+object Http4sExample extends App {
 
   // DAO parameterized with the transactor
   val dao = DAO(DriverManagerTransactor[Task]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""))
 
   // A wee service
   val service: HttpService = {
-    case GET -> Root / "speakers" / lang => 
+    case GET -> Root / lang => 
       Ok(dao.speakerQuery(lang).map(_.asJson.nospaces + "\n")) 
   }
 
@@ -40,7 +38,7 @@ object Hi2 extends App {
   val tmain: Task[Unit] = 
     for {
       a <- dao.loadDatabase(new File("world.sql"))
-      _ <- Task.delay(BlazeServer.newBuilder.mountService(service, "/hi2").run)
+      _ <- Task.delay(BlazeServer.newBuilder.mountService(service, "/speakers").run)
     } yield ()
 
   // End of the world
