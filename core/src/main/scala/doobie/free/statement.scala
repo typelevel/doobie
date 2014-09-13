@@ -172,6 +172,15 @@ object statement {
     }
 
   /**
+   * Capture instance for [[StatementIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureStatementIO: Capture[StatementIO] =
+    new Capture[StatementIO] {
+      def apply[A](a: => A): StatementIO[A] = statement.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): StatementIO[A] =

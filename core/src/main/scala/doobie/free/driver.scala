@@ -135,6 +135,15 @@ object driver {
     }
 
   /**
+   * Capture instance for [[DriverIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureDriverIO: Capture[DriverIO] =
+    new Capture[DriverIO] {
+      def apply[A](a: => A): DriverIO[A] = driver.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): DriverIO[A] =

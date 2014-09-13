@@ -148,8 +148,8 @@ object callablestatement {
     case class  GetByte1(a: Int) extends CallableStatementOp[Byte]
     case class  GetBytes(a: Int) extends CallableStatementOp[Array[Byte]]
     case class  GetBytes1(a: String) extends CallableStatementOp[Array[Byte]]
-    case class  GetCharacterStream(a: String) extends CallableStatementOp[Reader]
-    case class  GetCharacterStream1(a: Int) extends CallableStatementOp[Reader]
+    case class  GetCharacterStream(a: Int) extends CallableStatementOp[Reader]
+    case class  GetCharacterStream1(a: String) extends CallableStatementOp[Reader]
     case class  GetClob(a: Int) extends CallableStatementOp[Clob]
     case class  GetClob1(a: String) extends CallableStatementOp[Clob]
     case object GetConnection extends CallableStatementOp[Connection]
@@ -222,8 +222,8 @@ object callablestatement {
     case class  RegisterOutParameter5(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit]
     case class  SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit]
     case class  SetAsciiStream(a: String, b: InputStream) extends CallableStatementOp[Unit]
-    case class  SetAsciiStream1(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit]
-    case class  SetAsciiStream2(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit]
+    case class  SetAsciiStream1(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit]
+    case class  SetAsciiStream2(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit]
     case class  SetAsciiStream3(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit]
     case class  SetAsciiStream4(a: Int, b: InputStream) extends CallableStatementOp[Unit]
     case class  SetAsciiStream5(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit]
@@ -232,9 +232,9 @@ object callablestatement {
     case class  SetBinaryStream(a: String, b: InputStream) extends CallableStatementOp[Unit]
     case class  SetBinaryStream1(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit]
     case class  SetBinaryStream2(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit]
-    case class  SetBinaryStream3(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit]
+    case class  SetBinaryStream3(a: Int, b: InputStream) extends CallableStatementOp[Unit]
     case class  SetBinaryStream4(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit]
-    case class  SetBinaryStream5(a: Int, b: InputStream) extends CallableStatementOp[Unit]
+    case class  SetBinaryStream5(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit]
     case class  SetBlob(a: String, b: Blob) extends CallableStatementOp[Unit]
     case class  SetBlob1(a: String, b: InputStream) extends CallableStatementOp[Unit]
     case class  SetBlob2(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit]
@@ -247,12 +247,12 @@ object callablestatement {
     case class  SetByte1(a: Int, b: Byte) extends CallableStatementOp[Unit]
     case class  SetBytes(a: String, b: Array[Byte]) extends CallableStatementOp[Unit]
     case class  SetBytes1(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit]
-    case class  SetCharacterStream(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit]
-    case class  SetCharacterStream1(a: String, b: Reader) extends CallableStatementOp[Unit]
-    case class  SetCharacterStream2(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit]
-    case class  SetCharacterStream3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit]
-    case class  SetCharacterStream4(a: Int, b: Reader) extends CallableStatementOp[Unit]
-    case class  SetCharacterStream5(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit]
+    case class  SetCharacterStream(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit]
+    case class  SetCharacterStream1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit]
+    case class  SetCharacterStream2(a: String, b: Reader) extends CallableStatementOp[Unit]
+    case class  SetCharacterStream3(a: Int, b: Reader) extends CallableStatementOp[Unit]
+    case class  SetCharacterStream4(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit]
+    case class  SetCharacterStream5(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit]
     case class  SetClob(a: String, b: Reader) extends CallableStatementOp[Unit]
     case class  SetClob1(a: String, b: Clob) extends CallableStatementOp[Unit]
     case class  SetClob2(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit]
@@ -296,9 +296,9 @@ object callablestatement {
     case class  SetObject(a: String, b: Object, c: Int) extends CallableStatementOp[Unit]
     case class  SetObject1(a: String, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit]
     case class  SetObject2(a: String, b: Object) extends CallableStatementOp[Unit]
-    case class  SetObject3(a: Int, b: Object) extends CallableStatementOp[Unit]
-    case class  SetObject4(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit]
-    case class  SetObject5(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit]
+    case class  SetObject3(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit]
+    case class  SetObject4(a: Int, b: Object) extends CallableStatementOp[Unit]
+    case class  SetObject5(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit]
     case class  SetPoolable(a: Boolean) extends CallableStatementOp[Unit]
     case class  SetQueryTimeout(a: Int) extends CallableStatementOp[Unit]
     case class  SetRef(a: Int, b: Ref) extends CallableStatementOp[Unit]
@@ -316,8 +316,8 @@ object callablestatement {
     case class  SetTime3(a: Int, b: Time) extends CallableStatementOp[Unit]
     case class  SetTimestamp(a: String, b: Timestamp) extends CallableStatementOp[Unit]
     case class  SetTimestamp1(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit]
-    case class  SetTimestamp2(a: Int, b: Timestamp) extends CallableStatementOp[Unit]
-    case class  SetTimestamp3(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit]
+    case class  SetTimestamp2(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit]
+    case class  SetTimestamp3(a: Int, b: Timestamp) extends CallableStatementOp[Unit]
     case class  SetURL(a: String, b: URL) extends CallableStatementOp[Unit]
     case class  SetURL1(a: Int, b: URL) extends CallableStatementOp[Unit]
     case class  SetUnicodeStream(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit]
@@ -349,6 +349,15 @@ object callablestatement {
     new Catchable[CallableStatementIO] {
       def attempt[A](f: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(f)
       def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.delay(throw err)
+    }
+
+  /**
+   * Capture instance for [[CallableStatementIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureCallableStatementIO: Capture[CallableStatementIO] =
+    new Capture[CallableStatementIO] {
+      def apply[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
     }
 
   /**
@@ -644,13 +653,13 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def getCharacterStream(a: String): CallableStatementIO[Reader] =
+  def getCharacterStream(a: Int): CallableStatementIO[Reader] =
     F.liftFC(GetCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getCharacterStream(a: Int): CallableStatementIO[Reader] =
+  def getCharacterStream(a: String): CallableStatementIO[Reader] =
     F.liftFC(GetCharacterStream1(a))
 
   /** 
@@ -1088,13 +1097,13 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setAsciiStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
+  def setAsciiStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
     F.liftFC(SetAsciiStream1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setAsciiStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
+  def setAsciiStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
     F.liftFC(SetAsciiStream2(a, b, c))
 
   /** 
@@ -1148,8 +1157,8 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBinaryStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetBinaryStream3(a, b, c))
+  def setBinaryStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream3(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1160,8 +1169,8 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBinaryStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftFC(SetBinaryStream5(a, b))
+  def setBinaryStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream5(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
@@ -1238,37 +1247,37 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
+  def setCharacterStream(a: String, b: Reader, c: Int): CallableStatementIO[Unit] =
     F.liftFC(SetCharacterStream(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
+  def setCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream1(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def setCharacterStream(a: String, b: Reader): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setCharacterStream(a: String, b: Reader, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream2(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setCharacterStream(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream3(a, b, c))
+    F.liftFC(SetCharacterStream2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Int, b: Reader): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream4(a, b))
+    F.liftFC(SetCharacterStream3(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Int, b: Reader, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream4(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setCharacterStream(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
     F.liftFC(SetCharacterStream5(a, b, c))
 
   /** 
@@ -1532,20 +1541,20 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
+  def setObject(a: Int, b: Object, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetObject3(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def setObject(a: Int, b: Object): CallableStatementIO[Unit] =
-    F.liftFC(SetObject3(a, b))
+    F.liftFC(SetObject4(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setObject(a: Int, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetObject4(a, b, c, d))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setObject(a: Int, b: Object, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetObject5(a, b, c))
+    F.liftFC(SetObject5(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
@@ -1652,14 +1661,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setTimestamp(a: Int, b: Timestamp): CallableStatementIO[Unit] =
-    F.liftFC(SetTimestamp2(a, b))
+  def setTimestamp(a: Int, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
+    F.liftFC(SetTimestamp2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setTimestamp(a: Int, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
-    F.liftFC(SetTimestamp3(a, b, c))
+  def setTimestamp(a: Int, b: Timestamp): CallableStatementIO[Unit] =
+    F.liftFC(SetTimestamp3(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1844,9 +1853,9 @@ object callablestatement {
         case SetBinaryStream(a, b) => primitive(_.setBinaryStream(a, b))
         case SetBinaryStream1(a, b, c) => primitive(_.setBinaryStream(a, b, c))
         case SetBinaryStream2(a, b, c) => primitive(_.setBinaryStream(a, b, c))
-        case SetBinaryStream3(a, b, c) => primitive(_.setBinaryStream(a, b, c))
+        case SetBinaryStream3(a, b) => primitive(_.setBinaryStream(a, b))
         case SetBinaryStream4(a, b, c) => primitive(_.setBinaryStream(a, b, c))
-        case SetBinaryStream5(a, b) => primitive(_.setBinaryStream(a, b))
+        case SetBinaryStream5(a, b, c) => primitive(_.setBinaryStream(a, b, c))
         case SetBlob(a, b) => primitive(_.setBlob(a, b))
         case SetBlob1(a, b) => primitive(_.setBlob(a, b))
         case SetBlob2(a, b, c) => primitive(_.setBlob(a, b, c))
@@ -1860,10 +1869,10 @@ object callablestatement {
         case SetBytes(a, b) => primitive(_.setBytes(a, b))
         case SetBytes1(a, b) => primitive(_.setBytes(a, b))
         case SetCharacterStream(a, b, c) => primitive(_.setCharacterStream(a, b, c))
-        case SetCharacterStream1(a, b) => primitive(_.setCharacterStream(a, b))
-        case SetCharacterStream2(a, b, c) => primitive(_.setCharacterStream(a, b, c))
-        case SetCharacterStream3(a, b, c) => primitive(_.setCharacterStream(a, b, c))
-        case SetCharacterStream4(a, b) => primitive(_.setCharacterStream(a, b))
+        case SetCharacterStream1(a, b, c) => primitive(_.setCharacterStream(a, b, c))
+        case SetCharacterStream2(a, b) => primitive(_.setCharacterStream(a, b))
+        case SetCharacterStream3(a, b) => primitive(_.setCharacterStream(a, b))
+        case SetCharacterStream4(a, b, c) => primitive(_.setCharacterStream(a, b, c))
         case SetCharacterStream5(a, b, c) => primitive(_.setCharacterStream(a, b, c))
         case SetClob(a, b) => primitive(_.setClob(a, b))
         case SetClob1(a, b) => primitive(_.setClob(a, b))
@@ -1908,9 +1917,9 @@ object callablestatement {
         case SetObject(a, b, c) => primitive(_.setObject(a, b, c))
         case SetObject1(a, b, c, d) => primitive(_.setObject(a, b, c, d))
         case SetObject2(a, b) => primitive(_.setObject(a, b))
-        case SetObject3(a, b) => primitive(_.setObject(a, b))
-        case SetObject4(a, b, c, d) => primitive(_.setObject(a, b, c, d))
-        case SetObject5(a, b, c) => primitive(_.setObject(a, b, c))
+        case SetObject3(a, b, c) => primitive(_.setObject(a, b, c))
+        case SetObject4(a, b) => primitive(_.setObject(a, b))
+        case SetObject5(a, b, c, d) => primitive(_.setObject(a, b, c, d))
         case SetPoolable(a) => primitive(_.setPoolable(a))
         case SetQueryTimeout(a) => primitive(_.setQueryTimeout(a))
         case SetRef(a, b) => primitive(_.setRef(a, b))
@@ -1928,8 +1937,8 @@ object callablestatement {
         case SetTime3(a, b) => primitive(_.setTime(a, b))
         case SetTimestamp(a, b) => primitive(_.setTimestamp(a, b))
         case SetTimestamp1(a, b, c) => primitive(_.setTimestamp(a, b, c))
-        case SetTimestamp2(a, b) => primitive(_.setTimestamp(a, b))
-        case SetTimestamp3(a, b, c) => primitive(_.setTimestamp(a, b, c))
+        case SetTimestamp2(a, b, c) => primitive(_.setTimestamp(a, b, c))
+        case SetTimestamp3(a, b) => primitive(_.setTimestamp(a, b))
         case SetURL(a, b) => primitive(_.setURL(a, b))
         case SetURL1(a, b) => primitive(_.setURL(a, b))
         case SetUnicodeStream(a, b, c) => primitive(_.setUnicodeStream(a, b, c))

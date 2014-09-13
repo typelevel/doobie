@@ -165,6 +165,15 @@ object sqloutput {
     }
 
   /**
+   * Capture instance for [[SQLOutputIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureSQLOutputIO: Capture[SQLOutputIO] =
+    new Capture[SQLOutputIO] {
+      def apply[A](a: => A): SQLOutputIO[A] = sqloutput.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): SQLOutputIO[A] =

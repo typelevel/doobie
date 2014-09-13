@@ -133,6 +133,15 @@ object ref {
     }
 
   /**
+   * Capture instance for [[RefIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureRefIO: Capture[RefIO] =
+    new Capture[RefIO] {
+      def apply[A](a: => A): RefIO[A] = ref.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): RefIO[A] =

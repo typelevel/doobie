@@ -288,6 +288,15 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.delay(throw err)
     |    }
     |
+    |  /**
+    |   * Capture instance for [[${sname}IO]].
+    |   * @group Typeclass Instances
+    |   */
+    |  implicit val Capture${sname}IO: Capture[${sname}IO] =
+    |    new Capture[${sname}IO] {
+    |      def apply[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
+    |    }
+    |
     |  ${liftingSmartCtors(sname).mkString("\n\n  ")}
     |
     |  /** 

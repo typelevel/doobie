@@ -332,6 +332,15 @@ object resultset {
     }
 
   /**
+   * Capture instance for [[ResultSetIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureResultSetIO: Capture[ResultSetIO] =
+    new Capture[ResultSetIO] {
+      def apply[A](a: => A): ResultSetIO[A] = resultset.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): ResultSetIO[A] =

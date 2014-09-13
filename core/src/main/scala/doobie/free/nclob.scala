@@ -144,6 +144,15 @@ object nclob {
     }
 
   /**
+   * Capture instance for [[NClobIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureNClobIO: Capture[NClobIO] =
+    new Capture[NClobIO] {
+      def apply[A](a: => A): NClobIO[A] = nclob.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): NClobIO[A] =

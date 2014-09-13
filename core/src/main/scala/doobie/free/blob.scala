@@ -139,6 +139,15 @@ object blob {
     }
 
   /**
+   * Capture instance for [[BlobIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureBlobIO: Capture[BlobIO] =
+    new Capture[BlobIO] {
+      def apply[A](a: => A): BlobIO[A] = blob.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftCallableStatement[A](s: CallableStatement, k: CallableStatementIO[A]): BlobIO[A] =

@@ -130,6 +130,15 @@ object sqldata {
     }
 
   /**
+   * Capture instance for [[SQLDataIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureSQLDataIO: Capture[SQLDataIO] =
+    new Capture[SQLDataIO] {
+      def apply[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): SQLDataIO[A] =

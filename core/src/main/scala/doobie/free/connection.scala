@@ -185,6 +185,15 @@ object connection {
     }
 
   /**
+   * Capture instance for [[ConnectionIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureConnectionIO: Capture[ConnectionIO] =
+    new Capture[ConnectionIO] {
+      def apply[A](a: => A): ConnectionIO[A] = connection.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): ConnectionIO[A] =

@@ -304,6 +304,15 @@ object databasemetadata {
     }
 
   /**
+   * Capture instance for [[DatabaseMetaDataIO]].
+   * @group Typeclass Instances
+   */
+  implicit val CaptureDatabaseMetaDataIO: Capture[DatabaseMetaDataIO] =
+    new Capture[DatabaseMetaDataIO] {
+      def apply[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
+    }
+
+  /**
    * @group Constructors (Lifting)
    */
   def liftBlob[A](s: Blob, k: BlobIO[A]): DatabaseMetaDataIO[A] =
