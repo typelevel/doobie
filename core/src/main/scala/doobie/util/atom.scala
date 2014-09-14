@@ -4,11 +4,15 @@ import doobie.free._
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.enum.jdbctype._
+import doobie.enum.nullability._
 import doobie.util.invariant._
+import doobie.util.indexed._
 
 import scalaz.{ Functor, Contravariant, InvariantFunctor }
 import scalaz.syntax.apply._
 import scalaz.syntax.std.boolean._
+
+import java.sql.ParameterMetaData
 
 object atom {
 
@@ -48,6 +52,7 @@ object atom {
     val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
     def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
       new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)))
+    def meta = List(Indexed.Meta(jdbcType, Nullable))
   }
   object Lifted {
     def apply[A](implicit A: Lifted[A]): Lifted[A] = A
@@ -67,6 +72,7 @@ object atom {
     val update = (n: Int, a: A) => lift.update(n, if (a == null) throw NonNullableColumnUpdate(n, jdbcType) else Some(a))
     def xmap[B](ab: A => B, ba: B => A): Unlifted[B] =
       Unlifted(lift.xmap(ab, ba))
+    def meta = List(Indexed.Meta(jdbcType, NoNulls))
   }
   object Unlifted {
     def apply[A](implicit A: Unlifted[A]): Unlifted[A] = A

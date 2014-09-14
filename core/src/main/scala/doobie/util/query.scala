@@ -1,11 +1,15 @@
 package doobie.util
 
 import doobie.hi._
-import doobie.util.invariant.MappingViolation
 import doobie.util.composite.Composite
-import doobie.util.prepared.Prepared
+import doobie.util.prepared._
+import doobie.syntax.catchable._
+import doobie.enum.jdbctype.JdbcType
+import doobie.enum.parameternullable._
+import doobie.hi.connection.{ prepareStatement, delay => cdelay }
+import doobie.hi.preparedstatement.{ getMetaData, getParameterMetaData, delay }
 
-import scalaz.{ Contravariant, Functor, Monad, Profunctor, ValidationNel }
+import scalaz._, Scalaz._
 import scalaz.stream.Process
 
 object query {
@@ -45,7 +49,7 @@ object query {
       new Query[A, B] {
         def sql = sql0
         def run(a: A) = connection.process[B](sql, preparedstatement.set(a))
-        def check = Predef.??? /// TODO
+        def check = prepareStatement(sql)(analysis[A,B](sql))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =

@@ -8,6 +8,11 @@ libraryDependencies ++= Seq(
   "org.http4s"     %% "http4s-argonaut"    % "0.3.0"
 )
 
+libraryDependencies ++= Seq(
+  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
+  "org.specs2"     %% "specs2"     % "2.4"    % "test"
+)
+
 scalacOptions ++= Seq(
   "-deprecation",
   "-Xfatal-warnings"
