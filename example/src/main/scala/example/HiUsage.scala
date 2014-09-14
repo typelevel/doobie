@@ -12,7 +12,7 @@ import doobie.std.string._
 import doobie.std.double._
 import doobie.syntax.process._
 import doobie.syntax.string._
-import doobie.util.database.Database
+import doobie.util.transactor.DriverManagerTransactor
 
 // JDBC program using the high-level API
 object HiUsage {
@@ -20,8 +20,8 @@ object HiUsage {
   // A very simple data type we will read
   case class CountryCode(code: Option[String])
 
-  // Database is just a module of combinators parameterized on connect info
-  lazy val db = Database("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  // Transactor is just a module of combinators parameterized on connect info
+  lazy val db = DriverManagerTransactor[Task]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   
   // Program entry point simply delegates to a scalaz.concurrent.Task; could also be scalaz.effect.IO
   def main(args: Array[String]): Unit =
@@ -30,7 +30,7 @@ object HiUsage {
   // Our logical entry point is a Task[Unit]. One of the things it does is a database interaction.
   lazy val tmain: Task[Unit] = 
     for {
-      a <- db.transact(example).trans[Task]
+      a <- db.transact(example)
       _ <- Task.delay(Console.println(a))
     } yield ()
 

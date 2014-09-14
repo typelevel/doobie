@@ -13,19 +13,19 @@ import doobie.std.string._
 import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.syntax.catchable._
-import doobie.util.database.Database
+import doobie.util.transactor.DriverManagerTransactor
 
 // Example lifted from slick
 object FirstExample extends SafeApp {
   import FirstAppModel._, FirstExampleDAO._ 
 
   // Our database
-  val db = Database("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  val db = DriverManagerTransactor[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
   // Entry point for SafeApp
   override def runc: IO[Unit] = 
     for {
-      a <- db.transact(examples).attempt.trans[IO]
+      a <- db.transact(examples).attempt
       _ <- IO.putStrLn(a.toString)
     } yield ()
 
