@@ -26,7 +26,7 @@ object HiUsage2 extends App {
     for {
       a <- dao.loadDatabase(new File("world.sql"))
       x <- xa.transact(HiUsage2DAO.speakerQuery("ignored", 0).check)
-      _ <- Task.delay(Console.println(x.dump))
+      _ <- Task.delay(Console.println(x))
       // _ <- dao.speakerQuery("English", 10).map(_.toString).to(io.stdOutLines).runLog
     } yield ()
 
