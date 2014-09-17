@@ -25,7 +25,7 @@ object catchable {
 
   /** Like "finally", but only performs the final action if there was an exception. */
   def onException[M[_]: Monad: Catchable, A, B](ma: M[A])(action: M[B]): M[A] =
-    except(ma)(e => action *> ((throw e): M[A]))
+    except(ma)(e => action *> Catchable[M].fail(e))
 
   /** Always execute `sequel` following `ma`; generalizes `finally`. */
   def ensuring[M[_]: Monad: Catchable, A, B](ma: M[A])(sequel: M[B]): M[A] =
