@@ -8,7 +8,7 @@ import java.sql.SQLException
 /** Syntax for `Catchable` combinators defined in `util.catchsql`. */
 object catchsql {
 
-  implicit class DoobieCatchaSqlOps[M[_]: Monad: Catchable, A](self: M[A]) {
+  implicit class DoobieCatchSqlOps[M[_]: Monad: Catchable, A](self: M[A]) {
 
     def attemptSql: M[SQLException \/ A] =
       C.attemptSql(self)
