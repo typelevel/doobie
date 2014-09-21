@@ -25,7 +25,7 @@ object HiUsage2 extends App {
   lazy val tmain: Task[Unit] = 
     for {
       a <- dao.loadDatabase(new File("world.sql"))
-      x <- xa.transact(HiUsage2DAO.speakerQuery("ignored", 0).check)
+      x <- xa.transact(HiUsage2DAO.speakerQuery("ignored", 0).analysis)
       _ <- Task.delay(Console.println(x))
       // _ <- dao.speakerQuery("English", 10).map(_.toString).to(io.stdOutLines).runLog
     } yield ()

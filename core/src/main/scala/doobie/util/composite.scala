@@ -3,7 +3,6 @@ package doobie.util
 import doobie.enum.jdbctype.JdbcType
 import doobie.util.atom._
 import doobie.util.invariant._
-import doobie.util.indexed._
 import doobie.free._
 import doobie.free.resultset.{ ResultSetIO, updateNull }
 import doobie.free.preparedstatement.PreparedStatementIO
@@ -26,7 +25,7 @@ object composite {
     def update: (Int, A) => ResultSetIO[Unit]
     def get: Int => ResultSetIO[A]
     def length: Int // column span
-    def meta: List[Indexed.Meta]
+    def ameta: List[analysis.JdkMeta]
   }
 
   object Composite {
@@ -42,7 +41,7 @@ object composite {
             def update = (i, b) => fa.update(i, g(b))
             def get = i => fa.get(i).map(f)
             def length = fa.length
-            def meta = fa.meta
+            def ameta = fa.ameta
           }
       }
 
@@ -59,7 +58,7 @@ object composite {
             def update = (i, l) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
             def get = i => (H.get(i) |@| T.get(i + H.length))(_ :: _)
             def length = H.length + T.length
-            def meta = H.meta ++ T.meta
+            def ameta = H.ameta ++ T.ameta
           }
 
         def emptyProduct: Composite[HNil] =
@@ -68,7 +67,7 @@ object composite {
             def update = (_, _) => ().point[ResultSetIO]
             def get = _ => (HNil : HNil).point[ResultSetIO]
             def length = 0
-            def meta = Nil
+            def ameta = Nil
           }
 
         def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =
@@ -77,7 +76,7 @@ object composite {
             def update = (i, f) => instance.update(i, to(f))
             def get = i => instance.get(i).map(from)
             def length = instance.length
-            def meta = instance.meta
+            def ameta = instance.ameta
           }
 
       }

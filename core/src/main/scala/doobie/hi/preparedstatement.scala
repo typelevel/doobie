@@ -1,5 +1,9 @@
 package doobie.hi
 
+import doobie.enum.jdbctype.JdbcType
+import doobie.enum.columnnullable.ColumnNullable
+import doobie.enum.parameternullable.ParameterNullable
+import doobie.enum.parametermode.ParameterMode
 import doobie.enum.holdability.Holdability
 import doobie.enum.transactionisolation.TransactionIsolation
 import doobie.enum.fetchdirection.FetchDirection
@@ -15,6 +19,7 @@ import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
 
+import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.process.resource
 
@@ -28,6 +33,11 @@ import scala.Predef.intArrayOps
 
 import scalaz.stream.Process
 import scalaz.syntax.id._
+import scalaz.syntax.enum._
+import scalaz.syntax.align._
+import scalaz.std.anyVal._
+import scalaz.std.list._
+import scalaz.\&/
 
 /**
  * Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not
@@ -63,6 +73,27 @@ object preparedstatement {
   val executeUpdate: PreparedStatementIO[Int] =
     PS.executeUpdate
 
+  /** 
+   * Compute the column `JdbcMeta` list for this `PreparedStatement`.
+   * @group Metadata 
+   */
+  def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
+    PS.getMetaData.map { md =>
+      (1 |-> md.getColumnCount).map { i =>
+        val j = JdbcType.unsafeFromInt(md.getColumnType(i))
+        val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
+        ColumnMeta(j, n)
+      }
+    }
+  
+  /** 
+   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+   * with the `JdbcMeta` provided by a `Composite` instance.
+   * @group Metadata 
+   */
+  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[JdkMeta \&/ ColumnMeta]] =
+    getColumnJdbcMeta.map(m => A.ameta align m)
+
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
     PS.getFetchDirection.map(FetchDirection.unsafeFromInt)
@@ -74,6 +105,28 @@ object preparedstatement {
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
     PS.getGeneratedKeys.flatMap(s => PS.liftResultSet(s, k ensuring RS.close))
+
+  /** 
+   * Compute the parameter `JdbcMeta` list for this `PreparedStatement`.
+   * @group Metadata 
+   */
+  def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
+    PS.getParameterMetaData.map { md =>
+      (1 |-> md.getParameterCount).map { i =>
+        val j = JdbcType.unsafeFromInt(md.getParameterType(i))
+        val n = ParameterNullable.unsafeFromInt(md.isNullable(i)).toNullability
+        val m = ParameterMode.unsafeFromInt(md.getParameterMode(i))
+        ParameterMeta(j, n, m)
+      }
+    }
+
+  /** 
+   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+   * with the `JdbcMeta` provided by a `Composite` instance.
+   * @group Metadata 
+   */
+  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[JdkMeta \&/ ParameterMeta]] =
+    getParameterJdbcMeta.map(m => A.ameta align m)
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =
