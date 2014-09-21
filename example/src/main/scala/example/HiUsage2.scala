@@ -55,7 +55,7 @@ object HiUsage2DAO {
   import doobie.util.invariant.MappingViolation
 
   // A data type we will read from the database
-  case class Country(name: String, indepYear: Int)
+  case class Country(name: Option[String], indepYear: Int)
 
   def loadDatabase(f: File): Update0 =
     sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".update

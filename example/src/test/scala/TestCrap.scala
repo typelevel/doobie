@@ -5,6 +5,7 @@ import java.io.File
 import scalaz.concurrent.Task
 import scalaz._, Scalaz._, scalaz.\&/._
 
+import doobie.enum.nullability._
 import doobie.hi._
 import doobie.hi.connection.ProcessConnectionIOOps
 import doobie.std.task._
@@ -26,8 +27,8 @@ abstract class PreparedSpec(transactor: Transactor[Task], setup: ConnectionIO[Un
           val n = n0 + 1
           s"Have proper null handling for column $n" in {
             c match {
-              case Both(Meta(ta, na), Meta(tb, nb)) =>
-                if (na == nb) success else failure("Incompatible")
+              case Both(Meta(ta, Nullable), Meta(tb, NoNulls)) => failure(s"Column $n is nullable, but is not mapped to an Option type.")
+              case Both(Meta(ta, NoNulls), Meta(tb, Nullable)) => failure(s"Column $n will never be null, but is mapped to an Option type.")
               case _ => skipped("-- n/a")
             }
           }
@@ -40,7 +41,7 @@ abstract class PreparedSpec(transactor: Transactor[Task], setup: ConnectionIO[Un
 object HiUsage2DAOSpec extends PreparedSpec(
   DriverManagerTransactor[Task]("org.h2.Driver", "jdbc:h2:mem:test", "sa", ""),
   loadDatabase(new File("world.sql")).run.void,
-  (speakerQuery("ignored", 0), "Speaker Query"),
+  // (speakerQuery("ignored", 0), "Speaker Query"),
   (speakerQuery("ignored", 0), "Speaker Query")
 )
 
