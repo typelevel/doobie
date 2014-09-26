@@ -25,8 +25,8 @@ object HiUsage2 extends App {
   lazy val tmain: Task[Unit] = 
     for {
       a <- dao.loadDatabase(new File("world.sql"))
-      x <- xa.transact(HiUsage2DAO.speakerQuery("ignored", 0).analysis)
-      _ <- Task.delay(Console.println(x))
+      a <- xa.transact(HiUsage2DAO.speakerQuery("ignored", 0).analysis)
+      _ <- a.print
       // _ <- dao.speakerQuery("English", 10).map(_.toString).to(io.stdOutLines).runLog
     } yield ()
 
@@ -55,7 +55,7 @@ object HiUsage2DAO {
   import doobie.util.invariant.MappingViolation
 
   // A data type we will read from the database
-  case class Country(name: Option[String], indepYear: Int)
+  case class Country(name: Option[String], indepYear: Option[Int])
 
   def loadDatabase(f: File): Update0 =
     sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".update

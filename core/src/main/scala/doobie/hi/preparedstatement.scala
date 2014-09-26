@@ -82,7 +82,8 @@ object preparedstatement {
       (1 |-> md.getColumnCount).map { i =>
         val j = JdbcType.unsafeFromInt(md.getColumnType(i))
         val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
-        ColumnMeta(j, n)
+        val c = md.getColumnName(i)
+        ColumnMeta(j, n, c)
       }
     }
   

@@ -20,8 +20,10 @@ object nullability {
       
   }
 
-  /** @group Values */ case object NoNulls         extends Nullability
-  /** @group Values */ case object Nullable        extends Nullability
+  sealed abstract class NullabilityKnown extends Nullability
+
+  /** @group Values */ case object NoNulls         extends NullabilityKnown
+  /** @group Values */ case object Nullable        extends NullabilityKnown
   /** @group Values */ case object NullableUnknown extends Nullability
 
   /** @group Implementation */
