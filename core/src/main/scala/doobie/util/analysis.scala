@@ -87,7 +87,7 @@ object analysis {
 
             case (Both(j @ JdkMeta(j1, n1, t), ParameterMeta(j2, s2, n2, m)), i) => 
               val jdbcColor = if (j1 == j2) color(BLACK) else color(RED)
-              List(f"$i%-2d", 
+              List(f"${i+1}%-2d", 
                    s"${j.scalaType}", 
                    jdbcColor(j1.toString.toUpperCase),
                    " → ", 
@@ -95,7 +95,7 @@ object analysis {
                    gray(s2.toUpperCase))
 
             case (This(j @ JdkMeta(j1, n1, t)), i) => 
-              List(f"$i%-2d", 
+              List(f"${i+1}%-2d", 
                    s"${j.scalaType}", 
                    black(j1.toString.toUpperCase),
                    " → ", 
@@ -103,7 +103,7 @@ object analysis {
                    "")
 
             case (That(ParameterMeta(j2, s2, n2, m)), i) => 
-              List(f"$i%-2d", 
+              List(f"${i+1}%-2d", 
                    "",
                    none, 
                    " → ", 
@@ -118,7 +118,7 @@ object analysis {
 
             case (Both(j @ JdkMeta(j1, n1, t), cm @ ColumnMeta(j2, s2, n2, m)), i) =>
               val nullColor = if (n1 == n2) color(BLACK) else color(RED)
-              List(f"$i%-2d", 
+              List(f"${i+1}%-2d", 
                m.toUpperCase, 
                j2.toString.toUpperCase, 
                gray(s2.toUpperCase), 
@@ -127,10 +127,10 @@ object analysis {
                nullColor(j.scalaType.toString))
             
             case (This(j @ JdkMeta(j1, n1, t)), i) =>
-              List(f"$i%-2d", none, "", "", "",  " → ", red(j.scalaType.toString))
+              List(f"${i+1}%-2d", none, "", "", "",  " → ", red(j.scalaType.toString))
             
             case (That(ColumnMeta(j2, s2, n2, m)), i) =>
-              List(f"$i%-2d", m.toUpperCase, j2.toString.toUpperCase, gray(s2.toUpperCase), black(formatNullability(n2)), " → ", none)
+              List(f"${i+1}%-2d", m.toUpperCase, j2.toString.toUpperCase, gray(s2.toUpperCase), black(formatNullability(n2)), " → ", none)
           
           } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _)
 
