@@ -81,9 +81,10 @@ object preparedstatement {
     PS.getMetaData.map { md =>
       (1 |-> md.getColumnCount).map { i =>
         val j = JdbcType.unsafeFromInt(md.getColumnType(i))
+        val s = md.getColumnTypeName(i)
         val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
         val c = md.getColumnName(i)
-        ColumnMeta(j, n, c)
+        ColumnMeta(j, s, n, c)
       }
     }
   
@@ -115,9 +116,10 @@ object preparedstatement {
     PS.getParameterMetaData.map { md =>
       (1 |-> md.getParameterCount).map { i =>
         val j = JdbcType.unsafeFromInt(md.getParameterType(i))
+        val s = md.getParameterTypeName(i)
         val n = ParameterNullable.unsafeFromInt(md.isNullable(i)).toNullability
         val m = ParameterMode.unsafeFromInt(md.getParameterMode(i))
-        ParameterMeta(j, n, m)
+        ParameterMeta(j, s, n, m)
       }
     }
 

@@ -19,10 +19,10 @@ object analysis {
   }
   
   /** Metadata for the JDBC end of a column/parameter mapping. */
-  final case class ColumnMeta(jdbcType: JdbcType, nullability: Nullability, name: String) extends Meta
+  final case class ColumnMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String) extends Meta
   
   /** Metadata for the JDBC end of a column/parameter mapping. */
-  final case class ParameterMeta(jdbcType: JdbcType, nullability: Nullability, mode: ParameterMode) extends Meta 
+  final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode) extends Meta 
 
   /** Metadata for the JDK end of a column/parameter mapping. */
   final case class JdkMeta(jdbcType: JdbcType, nullability: NullabilityKnown, jdkType: TypeTag[_]) extends Meta {
@@ -55,7 +55,7 @@ object analysis {
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
       columnAlignment.zipWithIndex.collect {
-        case (Both(JdkMeta(_, na, _), ColumnMeta(_, nb, col)), n) => NullabilityMisalignment(n + 1, col, na, nb)
+        case (Both(JdkMeta(_, na, _), ColumnMeta(_, _, nb, col)), n) => NullabilityMisalignment(n + 1, col, na, nb)
       }
 
     def print[M[_]](implicit M: Capture[M]): M[Unit] =
@@ -65,32 +65,80 @@ object analysis {
         import pretty._
         import scalaz._, Scalaz._
 
+        def color(esc: String): String => String = 
+          s => esc + s + RESET
+
+        val gray  = color("\033[0;37m")
+        val black = color(BLACK)
+        val red   = color(RED)
+        val none  = red("«none»")
+
+        def formatNullability(n: Nullability): String =
+          n match {
+            case NoNulls         => "NOT NULL"
+            case Nullable        => "NULL"
+            case NullableUnknown => "«null?»"
+          }
+
         val sqlBlock = Block(sql.lines.map(_.trim).filterNot(_.isEmpty).map(s => s"$BLUE$s$RESET").toList)
 
         val params: Block = 
           parameterAlignment.zipWithIndex.map { 
 
-            case (Both(j @ JdkMeta(j1, n1, t), ParameterMeta(j2, n2, m)), i) => 
-              List(f"$i%-2d", s"${j.scalaType}", s"${j1.toString.toUpperCase}", "→", s"${j2.toString.toUpperCase}")
+            case (Both(j @ JdkMeta(j1, n1, t), ParameterMeta(j2, s2, n2, m)), i) => 
+              val jdbcColor = if (j1 == j2) color(BLACK) else color(RED)
+              List(f"$i%-2d", 
+                   s"${j.scalaType}", 
+                   jdbcColor(j1.toString.toUpperCase),
+                   " → ", 
+                   jdbcColor(j2.toString.toUpperCase),
+                   gray(s2.toUpperCase))
 
-          } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf2 _)
+            case (This(j @ JdkMeta(j1, n1, t)), i) => 
+              List(f"$i%-2d", 
+                   s"${j.scalaType}", 
+                   black(j1.toString.toUpperCase),
+                   " → ", 
+                   none,
+                   "")
+
+            case (That(ParameterMeta(j2, s2, n2, m)), i) => 
+              List(f"$i%-2d", 
+                   "",
+                   none, 
+                   " → ", 
+                   black(j2.toString.toUpperCase),
+                   gray(s2.toUpperCase))
+
+          } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _)
+
 
         val cols: Block = 
           columnAlignment.zipWithIndex.map { 
 
-            case (Both(j @ JdkMeta(j1, n1, t), ColumnMeta(j2, n2, m)), i) =>
-              if (n1 == n2) List(f"$i%-2d", s"$m", s"${j2.toString.toUpperCase}", s"$BLACK$n2$RESET", "→", s"${j.scalaType}")
-              else          List(f"$i%-2d", s"$m", s"${j2.toString.toUpperCase}", s"$RED$n2$RESET",   "→", s"$RED${j.scalaType}$RESET")
-          
+            case (Both(j @ JdkMeta(j1, n1, t), cm @ ColumnMeta(j2, s2, n2, m)), i) =>
+              val nullColor = if (n1 == n2) color(BLACK) else color(RED)
+              List(f"$i%-2d", 
+               m.toUpperCase, 
+               j2.toString.toUpperCase, 
+               gray(s2.toUpperCase), 
+               nullColor(formatNullability(n2)),
+               " → ",
+               nullColor(j.scalaType.toString))
+            
             case (This(j @ JdkMeta(j1, n1, t)), i) =>
-              List(f"$i%-2d", s"$RED«missing»$RESET", "", "",   "→", s"$RED${j.scalaType}$RESET")
+              List(f"$i%-2d", none, "", "", "",  " → ", red(j.scalaType.toString))
+            
+            case (That(ColumnMeta(j2, s2, n2, m)), i) =>
+              List(f"$i%-2d", m.toUpperCase, j2.toString.toUpperCase, gray(s2.toUpperCase), black(formatNullability(n2)), " → ", none)
+          
+          } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _)
 
-            case (That(ColumnMeta(j2, n2, m)), i) =>
-              List(f"$i%-2d", s"$m", s"${j2.toString.toUpperCase}", s"$BLACK$n2$RESET", "→", s"$RED«missing»$RESET")
-
-          } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf2 _)
-
-        val x = sqlBlock above Block(List("", "PARAMETERS")) above params above Block(List("", "COLUMNS")) above cols
+        val x = sqlBlock above 
+                Block(List("", "PARAMETERS")) above 
+                params above 
+                Block(List("", "COLUMNS")) above 
+                cols
 
         Console.println((Block(List("")) above (Block(List("  ")) leftOf x)) above Block(List("")))
       }
@@ -102,3 +150,13 @@ object analysis {
   case class NullabilityMisalignment(index: Int, name: String, jdk: Nullability, jdbc: Nullability)
 
 }
+
+
+
+
+
+
+
+
+
+
