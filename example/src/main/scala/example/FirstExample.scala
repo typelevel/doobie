@@ -94,25 +94,25 @@ object FirstExampleDAO {
       SELECT cof_name, sup_name
       FROM coffees JOIN suppliers ON coffees.sup_id = suppliers.sup_id
       WHERE price < $price
-    """.process[(String, String)]
+    """.query[(String, String)].run
 
   def insertSupplier(s: Supplier): ConnectionIO[Int] =
     sql"""
       INSERT INTO suppliers 
       VALUES (${s.id}, ${s.name}, ${s.street}, ${s.city}, ${s.state}, ${s.zip})
-    """.executeUpdate
+    """.update.run
 
   def insertCoffee(c: Coffee): ConnectionIO[Int] =
     sql"""
       INSERT INTO coffees 
       VALUES (${c.name}, ${c.supId}, ${c.price}, ${c.sales}, ${c.total})
-    """.executeUpdate
+    """.update.run
 
   def allCoffees[A]: Process[ConnectionIO, Coffee] =
     sql"""
       SELECT cof_name, sup_id, price, sales, total 
       FROM coffees
-    """.process[Coffee]
+    """.query[Coffee].run
 
   def create: ConnectionIO[Unit] = 
     sql"""
@@ -137,6 +137,6 @@ object FirstExampleDAO {
       ALTER TABLE coffees
       ADD CONSTRAINT coffees_suppliers_fk FOREIGN KEY (sup_id) REFERENCES suppliers(sup_id);
 
-    """.executeUpdate.void
+    """.update.run.void
 
 } 

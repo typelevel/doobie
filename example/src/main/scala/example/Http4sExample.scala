@@ -38,7 +38,7 @@ object Http4sExample extends App {
   val tmain: Task[Unit] = 
     for {
       a <- dao.loadDatabase(new File("world.sql"))
-      _ <- Task.delay(BlazeServer.newBuilder.mountService(service, "/speakers").run)
+      _ <- Task.delay(BlazeServer.newBuilder.mountService(service, "/speakers").run) // port 8080
     } yield ()
 
   // End of the world
@@ -58,7 +58,7 @@ case class DAO[M[_]](xa: Transactor[M]) {
 
   // Construct an action to load up a database from the specified file.
   def loadDatabase(f: File): M[Unit] =
-    xa.transact(sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".executeUpdate.void)
+    xa.transact(sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".update.run.void)
 
   // Construct an action to stream countries where more than 10% of the population speaks `lang`.
   def speakerQuery(lang: String): Process[M, (Country, Int)] =
@@ -69,6 +69,6 @@ case class DAO[M[_]](xa: Transactor[M]) {
       WHERE LANGUAGE = $lang 
       AND PERCENTAGE > 10
       ORDER BY PERCENTAGE DESC
-    """.process[(Country, Int)])
+    """.query[(Country, Int)].run)
 
 }

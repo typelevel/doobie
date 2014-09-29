@@ -4,11 +4,16 @@ import doobie.free._
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.enum.jdbctype._
+import doobie.enum.nullability._
 import doobie.util.invariant._
 
 import scalaz.{ Functor, Contravariant, InvariantFunctor }
 import scalaz.syntax.apply._
 import scalaz.syntax.std.boolean._
+
+import java.sql.ParameterMetaData
+
+import scala.reflect.runtime.universe.TypeTag
 
 object atom {
 
@@ -24,6 +29,9 @@ object atom {
     val update: (Int, A) => RS.ResultSetIO[Unit]
     val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
       PS.setNull(i, jdbcType.toInt)
+
+    /** Tag for the innermost JDK type that defines the primitive mapping to JDBC. */
+    def jdkType: TypeTag[_]
   }
   object Atom {
     def apply[A](implicit A: Atom[A]): Atom[A] = A
@@ -37,17 +45,19 @@ object atom {
    * implicit.
    */
   final class Lifted[A] private[atom] (
-    j: JdbcType,
-    g: Int => RS.ResultSetIO[A],
-    s: (Int, A) => PS.PreparedStatementIO[Unit],
-    u: (Int, A) => RS.ResultSetIO[Unit]
+      j: JdbcType,
+      g: Int => RS.ResultSetIO[A],
+      s: (Int, A) => PS.PreparedStatementIO[Unit],
+      u: (Int, A) => RS.ResultSetIO[Unit],
+      val jdkType: TypeTag[_]
   ) extends Atom[Option[A]] {
-      val jdbcType = j
-      val get = (n: Int) => ^(g(n), RS.wasNull)((a, b) => (!b) option a)
-      val set = (n: Int, a: Option[A]) => a.fold(setNull(n))(s(n, _))
-      val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
-      def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
-        new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)))
+    val jdbcType = j
+    val get = (n: Int) => ^(g(n), RS.wasNull)((a, b) => (!b) option a)
+    val set = (n: Int, a: Option[A]) => a.fold(setNull(n))(s(n, _))
+    val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
+    def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
+      new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)), jdkType)
+    def ameta = List(analysis.JdkMeta(jdbcType, Nullable, jdkType))
   }
   object Lifted {
     def apply[A](implicit A: Lifted[A]): Lifted[A] = A
@@ -67,6 +77,8 @@ object atom {
     val update = (n: Int, a: A) => lift.update(n, if (a == null) throw NonNullableColumnUpdate(n, jdbcType) else Some(a))
     def xmap[B](ab: A => B, ba: B => A): Unlifted[B] =
       Unlifted(lift.xmap(ab, ba))
+    def jdkType = lift.jdkType
+    def ameta =List(analysis.JdkMeta(jdbcType, NoNulls, jdkType))
   }
   object Unlifted {
     def apply[A](implicit A: Unlifted[A]): Unlifted[A] = A
@@ -80,8 +92,8 @@ object atom {
         j: JdbcType, 
         s: (Int, A) => PS.PreparedStatementIO[Unit], 
         u: (Int, A) => RS.ResultSetIO[Unit],
-        g: Int => RS.ResultSetIO[A]): Unlifted[A] = 
-      Unlifted(new Lifted(j, g, s, u))
+        g: Int => RS.ResultSetIO[A])(implicit tt: TypeTag[A]): Unlifted[A] = 
+      Unlifted(new Lifted(j, g, s, u, tt))
       
   }
 
