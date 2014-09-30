@@ -55,8 +55,10 @@ object analysis {
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
       columnAlignment.zipWithIndex.collect {
-        case (Both(JdkMeta(_, na, _), ColumnMeta(_, _, nb, col)), n) => NullabilityMisalignment(n + 1, col, na, nb)
+        case (Both(JdkMeta(_, na, _), ColumnMeta(_, _, nb, col)), n) if na != nb => NullabilityMisalignment(n + 1, col, na, nb)
       }
+
+    def alignmentErrors = parameterMisalignments ++ columnMisalignments ++ nullabilityMisalignments
 
     def print[M[_]](implicit M: Capture[M]): M[Unit] =
       M.apply {
@@ -119,12 +121,12 @@ object analysis {
             case (Both(j @ JdkMeta(j1, n1, t), cm @ ColumnMeta(j2, s2, n2, m)), i) =>
               val nullColor = if (n1 == n2) color(BLACK) else color(RED)
               List(f"C${i+1}%02d", 
-               m.toUpperCase, 
-               j2.toString.toUpperCase, 
-               gray(s2.toUpperCase), 
-               nullColor(formatNullability(n2)),
-               " → ",
-               nullColor(j.scalaType.toString))
+                   m.toUpperCase, 
+                   j2.toString.toUpperCase, 
+                   gray(s2.toUpperCase), 
+                   nullColor(formatNullability(n2)),
+                   " → ",
+                   nullColor(j.scalaType.toString))
             
             case (This(j @ JdkMeta(j1, n1, t)), i) =>
               List(f"C${i+1}%02d", none, "", "", "",  " → ", red(j.scalaType.toString))
@@ -134,18 +136,50 @@ object analysis {
           
           } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
 
-        val x = Block(Nil) leftOf2 (sqlBlock above1 params above1 cols)
+        val x = Block(Nil) leftOf2 (sqlBlock above1 Block(List("PARAMETERS")) above params above1 Block(List("COLUMNS")) above cols above1
+            alignmentErrors.map { a => 
+              Block(List(f"${a.tag}${a.index}%02d")) leftOf1 Block(wrap(90)(a.msg))
+            }.foldLeft(Block(List("WARNINGS")))(_ above _)) 
 
         Console.println()
         Console.println(x)
         Console.println()
+
       }
 
   }
 
-  case class ParameterMisalignment(index: Int, alignment: JdkMeta \/ ParameterMeta)
-  case class ColumnMisalignment(index: Int, alignment: JdkMeta \/ ColumnMeta)
-  case class NullabilityMisalignment(index: Int, name: String, jdk: Nullability, jdbc: Nullability)
+  sealed trait AlignmentError {
+    def tag: String
+    def index: Int
+    def msg: String
+  }
+
+  case class ParameterMisalignment(index: Int, alignment: JdkMeta \/ ParameterMeta) extends AlignmentError {
+    val tag = "P"
+    def msg = 
+      this match {
+        case ParameterMisalignment(i, -\/(jdk)) => s"${jdk.scalaType} parameter $index is unused. Check the SQL statement; the parameter may appear inside a comment or quoted string."
+        case ParameterMisalignment(i, \/-(pm))  => toString
+      }
+  }
+
+  case class ColumnMisalignment(index: Int, alignment: JdkMeta \/ ColumnMeta) extends AlignmentError {
+    val tag = "C"
+    def msg =this match {
+      case ColumnMisalignment(i, -\/(jdk)) => toString
+      case ColumnMisalignment(i, \/-(col)) => s"Column ${col.name.toUpperCase} is unused. Remove it from the SELECT statement."
+    }
+  }
+
+  case class NullabilityMisalignment(index: Int, name: String, jdk: Nullability, jdbc: Nullability) extends AlignmentError {
+    val tag = "C"
+    def msg = this match {
+      case NullabilityMisalignment(i, name, Nullable, NoNulls) => s"Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."
+      case NullabilityMisalignment(i, name, NoNulls, Nullable) => s"Nullable column ${name.toUpperCase} should be mapped to an Option type; reading a NULL value will cause a runtime failure."
+      case _ => "..."
+    }
+  }
 
 }
 
