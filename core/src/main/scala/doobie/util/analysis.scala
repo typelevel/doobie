@@ -58,7 +58,9 @@ object analysis {
         case (Both(JdkMeta(_, na, _), ColumnMeta(_, _, nb, col)), n) if na != nb => NullabilityMisalignment(n + 1, col, na, nb)
       }
 
-    def alignmentErrors = parameterMisalignments ++ columnMisalignments ++ nullabilityMisalignments
+    def alignmentErrors = 
+      (parameterMisalignments).sortBy(m => (m.index, m.msg)) ++ 
+      (columnMisalignments ++ nullabilityMisalignments).sortBy(m => (m.index, m.msg))
 
     def print[M[_]](implicit M: Capture[M]): M[Unit] =
       M.apply {
@@ -157,17 +159,16 @@ object analysis {
 
   case class ParameterMisalignment(index: Int, alignment: JdkMeta \/ ParameterMeta) extends AlignmentError {
     val tag = "P"
-    def msg = 
-      this match {
-        case ParameterMisalignment(i, -\/(jdk)) => s"${jdk.scalaType} parameter $index is unused. Check the SQL statement; the parameter may appear inside a comment or quoted string."
-        case ParameterMisalignment(i, \/-(pm))  => toString
-      }
+    def msg = this match {
+      case ParameterMisalignment(i, -\/(jdk)) => s"${jdk.scalaType} parameter $index is unused. Check the SQL statement; the parameter may appear inside a comment or quoted string."
+      case ParameterMisalignment(i, \/-(pm))  => s"${pm.jdbcType.toString.toUpperCase} parameter $index (native type ${pm.vendorTypeName.toUpperCase}) is not set; this will result in a runtime failure. Perhaps you used a literal ? rather than an interpolated value."
+    }
   }
 
   case class ColumnMisalignment(index: Int, alignment: JdkMeta \/ ColumnMeta) extends AlignmentError {
     val tag = "C"
-    def msg =this match {
-      case ColumnMisalignment(i, -\/(jdk)) => toString
+    def msg = this match {
+      case ColumnMisalignment(i, -\/(jdk)) => s"Too few columns are selected, which will result in a runtime failure. Add a column or remove mapped ${jdk.scalaType} from the result type."
       case ColumnMisalignment(i, \/-(col)) => s"Column ${col.name.toUpperCase} is unused. Remove it from the SELECT statement."
     }
   }
@@ -176,8 +177,9 @@ object analysis {
     val tag = "C"
     def msg = this match {
       case NullabilityMisalignment(i, name, Nullable, NoNulls) => s"Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."
-      case NullabilityMisalignment(i, name, NoNulls, Nullable) => s"Nullable column ${name.toUpperCase} should be mapped to an Option type; reading a NULL value will cause a runtime failure."
-      case _ => "..."
+      case NullabilityMisalignment(i, name, NoNulls, Nullable) => s"Nullable column ${name.toUpperCase} should be mapped to an Option type; reading a NULL value will result in a runtime failure."
+      case NullabilityMisalignment(i, name, NullableUnknown, NoNulls) => s"Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may want to map to an Option type; reading a NULL value will result in a runtime failure."
+      case NullabilityMisalignment(i, name, NullableUnknown, Nullable) => s"Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may not need the Option wrapper."
     }
   }
 
