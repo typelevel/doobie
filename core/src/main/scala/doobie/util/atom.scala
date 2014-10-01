@@ -64,7 +64,7 @@ object atom {
     val update = (n: Int, a: Option[A]) => a.fold(RS.updateNull(n))(u(n, _))
     def xmap[B](ab: A => B, ba: B => A): Lifted[B] =
       new Lifted[B](j, n => g(n).map(ab), (n, b) => s(n, ba(b)), (n, b) => u(n, ba(b)), jdkType)
-    def ameta = List(analysis.JdkMeta(jdbcMapping.primaryTarget, Nullable, jdkType))
+    def ameta = List(analysis.JdkMeta(jdbcMapping, Nullable, jdkType))
   }
   object Lifted {
     def apply[A](implicit A: Lifted[A]): Lifted[A] = A
@@ -84,7 +84,7 @@ object atom {
     val update = (n: Int, a: A) => lift.update(n, if (a == null) throw NonNullableColumnUpdate(n, jdbcMapping.primaryTarget) else Some(a))
     def xmap[B](ab: A => B, ba: B => A): Unlifted[B] = Unlifted(lift.xmap(ab, ba))
     def jdkType = lift.jdkType
-    def ameta =List(analysis.JdkMeta(jdbcMapping.primaryTarget, NoNulls, jdkType))
+    def ameta =List(analysis.JdkMeta(jdbcMapping, NoNulls, jdkType))
   }
   object Unlifted {
     def apply[A](implicit A: Unlifted[A]): Unlifted[A] = A

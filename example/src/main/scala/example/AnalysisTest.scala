@@ -19,7 +19,7 @@ object AnalysisTest {
     sql"""
       SELECT C.NAME, C.INDEPYEAR, C.CODE FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
-      WHERE LANGUAGE = $lang AND PERCENTAGE > $pct -- $x
+      WHERE LANGUAGE = $lang AND PERCENTAGE > $pct -- comment here ... $x
     """.query[Country]
 
   val xa: Transactor[Task] = 

@@ -4,6 +4,7 @@ import doobie.enum.nullability._
 import doobie.enum.parametermode._
 import doobie.enum.jdbctype._
 import doobie.util.capture._
+import doobie.util.atom.JdbcMapping
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -12,20 +13,14 @@ import scalaz.\&/._
 
 object analysis {
 
-  /** Metadata for either endpoint of a column/parameter mapping. */
-  sealed trait Meta {
-    def jdbcType: JdbcType
-    def nullability: Nullability
-  }
+  /** Metadata for the JDBC end of a column/parameter mapping. */
+  final case class ColumnMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String)
   
   /** Metadata for the JDBC end of a column/parameter mapping. */
-  final case class ColumnMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String) extends Meta
-  
-  /** Metadata for the JDBC end of a column/parameter mapping. */
-  final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode) extends Meta 
+  final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode) 
 
   /** Metadata for the JDK end of a column/parameter mapping. */
-  final case class JdkMeta(jdbcType: JdbcType, nullability: NullabilityKnown, jdkType: TypeTag[_]) extends Meta {
+  final case class JdkMeta(jdbcMapping: JdbcMapping, nullability: NullabilityKnown, jdkType: TypeTag[_]) {
     import Predef._
     def simpleType: String = jdkType.tpe.toString.split("\\.").last
     def scalaType: String =
@@ -47,6 +42,13 @@ object analysis {
         case (That(p), n) => ParameterMisalignment(n + 1, \/-(p))
       }
 
+    def parameterTypeErrors: List[ParameterTypeError] =
+      parameterAlignment.zipWithIndex.collect {
+        case (Both(j, p), n) if j.jdbcMapping.primaryTarget != p.jdbcType && 
+                               !j.jdbcMapping.secondaryTargets.contains(p.jdbcType) =>
+          ParameterTypeError(n + 1, j.scalaType, j.jdbcMapping, p.jdbcType, p.vendorTypeName)
+      }
+
     def columnMisalignments: List[ColumnMisalignment] =
       columnAlignment.zipWithIndex.collect {
         case (This(j), n) => ColumnMisalignment(n + 1, -\/(j))
@@ -55,11 +57,12 @@ object analysis {
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
       columnAlignment.zipWithIndex.collect {
-        case (Both(JdkMeta(_, na, _), ColumnMeta(_, _, nb, col)), n) if na != nb => NullabilityMisalignment(n + 1, col, na, nb)
+        case (Both(JdkMeta(_, na, _), ColumnMeta(_, _, nb, col)), n) if na != nb => 
+          NullabilityMisalignment(n + 1, col, na, nb)
       }
 
     def alignmentErrors = 
-      (parameterMisalignments).sortBy(m => (m.index, m.msg)) ++ 
+      (parameterMisalignments ++ parameterTypeErrors).sortBy(m => (m.index, m.msg)) ++ 
       (columnMisalignments ++ nullabilityMisalignments).sortBy(m => (m.index, m.msg))
 
     def print[M[_]](implicit M: Capture[M]): M[Unit] =
@@ -90,10 +93,10 @@ object analysis {
           parameterAlignment.zipWithIndex.map { 
 
             case (Both(j @ JdkMeta(j1, n1, t), ParameterMeta(j2, s2, n2, m)), i) => 
-              val jdbcColor = if (j1 == j2) color(BLACK) else color(RED)
+              val jdbcColor = if (j1.primaryTarget == j2) color(BLACK) else color(RED)
               List(f"P${i+1}%02d", 
                    s"${j.scalaType}", 
-                   jdbcColor(j1.toString.toUpperCase),
+                   jdbcColor(j1.primaryTarget.toString.toUpperCase),
                    " → ", 
                    jdbcColor(j2.toString.toUpperCase),
                    gray(s2.toUpperCase))
@@ -101,7 +104,7 @@ object analysis {
             case (This(j @ JdkMeta(j1, n1, t)), i) => 
               List(f"P${i+1}%02d", 
                    s"${j.scalaType}", 
-                   black(j1.toString.toUpperCase),
+                   black(j1.primaryTarget.toString.toUpperCase),
                    " → ", 
                    none,
                    "")
@@ -160,9 +163,16 @@ object analysis {
   case class ParameterMisalignment(index: Int, alignment: JdkMeta \/ ParameterMeta) extends AlignmentError {
     val tag = "P"
     def msg = this match {
-      case ParameterMisalignment(i, -\/(jdk)) => s"${jdk.scalaType} parameter $index is unused. Check the SQL statement; the parameter may appear inside a comment or quoted string."
+      case ParameterMisalignment(i, -\/(jdk)) => s"${jdk.scalaType} parameter $index has no corresponding SQL parameter and will result in a runtime failure when set. Check the SQL statement; the interpolated value may appear inside a comment or quoted string."
       case ParameterMisalignment(i, \/-(pm))  => s"${pm.jdbcType.toString.toUpperCase} parameter $index (native type ${pm.vendorTypeName.toUpperCase}) is not set; this will result in a runtime failure. Perhaps you used a literal ? rather than an interpolated value."
     }
+  }
+
+  case class ParameterTypeError(index: Int, scalaType: String, jdbcMapping: JdbcMapping, jdbcType: JdbcType, vendorTypeName: String) extends AlignmentError {
+    val tag = "P"
+    def msg = 
+      // TODO: suggest alternatives: which Scala types would match? which JDBC types would match?
+      s"$scalaType parameter $index (JDBC type ${jdbcMapping.primaryTarget.toString.toUpperCase}) may not be coercible to ${jdbcType.toString.toUpperCase} (native type ${vendorTypeName.toUpperCase})."
   }
 
   case class ColumnMisalignment(index: Int, alignment: JdkMeta \/ ColumnMeta) extends AlignmentError {
