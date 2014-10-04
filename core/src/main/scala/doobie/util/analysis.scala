@@ -6,6 +6,7 @@ import doobie.enum.jdbctype._
 import doobie.util.capture._
 import doobie.util.atom.JdbcMapping
 
+import scala.Predef._ // TODO: minimize
 import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.{ \&/, \/, -\/, \/- }
@@ -30,9 +31,82 @@ object analysis {
       }
   }
 
+  sealed trait AlignmentError {
+    def tag: String
+    def index: Int
+    def msg: String
+  }
+
+  case class ParameterMisalignment(index: Int, alignment: JdkMeta \/ ParameterMeta) extends AlignmentError {
+    val tag = "P"
+    def msg = this match {
+
+      case ParameterMisalignment(i, -\/(jdk)) => 
+        s"""|Parameter $index (Scala ${jdk.scalaType}, JDBC ${jdk.jdbcMapping.primaryTarget.toString.toUpperCase})
+            |has no corresponding SQL parameter and will result in a runtime failure when set. Check 
+            |the SQL statement; the interpolated value may appear inside a comment or quoted 
+            |string.""".stripMargin.lines.mkString(" ")
+
+      case ParameterMisalignment(i, \/-(pm)) => 
+        s"""|Parameter $index (JDBC ${pm.jdbcType.toString.toUpperCase}, native ${pm.vendorTypeName.toUpperCase})
+            |is not set; this will result in a runtime failure. Perhaps you used a literal ? rather
+            |than an interpolated value.""".stripMargin.lines.mkString(" ")
+    }
+  }
+
+  case class ParameterTypeError(index: Int, scalaType: String, jdbcMapping: JdbcMapping, jdbcType: JdbcType, vendorTypeName: String, nativeMap: Map[String, JdbcType]) extends AlignmentError {
+    val tag = "P"
+    def msg = 
+      s"""|Parameter $index (Scala $scalaType, JDBC ${jdbcMapping.primaryTarget.toString.toUpperCase}) 
+          |may not be coercible to the 
+          |schema type (JDBC ${jdbcType.toString.toUpperCase}, native ${vendorTypeName.toUpperCase}). 
+          |Possible remedies: (1) change schema type to JDBC ${jdbcMapping.primaryTarget.toString.toUpperCase}, 
+          |native ${nativeMap.filter(_._2 == jdbcMapping.primaryTarget).keys.map(_.toUpperCase).mkString(" or ")}; 
+          |or (2) change the parameter type to Scala ???, JDBC ${jdbcType.toString.toUpperCase}.""".stripMargin.lines.mkString(" ")
+  }
+  
+
+  case class ColumnMisalignment(index: Int, alignment: JdkMeta \/ ColumnMeta) extends AlignmentError {
+    val tag = "C"
+    def msg = this match {
+
+      case ColumnMisalignment(i, -\/(jdk)) => 
+        s"""|Too few columns are selected, which will result in a runtime failure. Add a column or 
+            |remove mapped ${jdk.scalaType} from the result type.""".stripMargin.lines.mkString(" ")
+
+      case ColumnMisalignment(i, \/-(col)) => 
+        s"""Column ${col.name.toUpperCase} is unused. Remove it from the SELECT statement."""
+
+    }
+  }
+
+  case class NullabilityMisalignment(index: Int, name: String, jdk: Nullability, jdbc: Nullability) extends AlignmentError {
+    val tag = "C"
+    def msg = this match {
+
+      case NullabilityMisalignment(i, name, Nullable, NoNulls) => 
+        s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
+      
+      case NullabilityMisalignment(i, name, NoNulls, Nullable) => 
+        s"""|Nullable column ${name.toUpperCase} should be mapped to an Option type; reading a NULL 
+            |value will result in a runtime failure.""".stripMargin.lines.mkString(" ")
+      
+      case NullabilityMisalignment(i, name, NullableUnknown, NoNulls)  => 
+        s"""|Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may want 
+            |to map to an Option type; reading a NULL value will result in a runtime 
+            |failure.""".stripMargin.lines.mkString(" ")
+      
+      case NullabilityMisalignment(i, name, NullableUnknown, Nullable) => 
+        s"""|Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may not 
+            |need the Option wrapper.""".stripMargin.lines.mkString(" ")
+    
+    }
+  }
+
   /** Compatibility analysis for the given statement and aligned mappings. */
   final case class Analysis(
     sql: String,
+    nativeMap: Map[String, JdbcType],
     parameterAlignment: List[JdkMeta \&/ ParameterMeta],
     columnAlignment:    List[JdkMeta \&/ ColumnMeta]) {
 
@@ -46,7 +120,7 @@ object analysis {
       parameterAlignment.zipWithIndex.collect {
         case (Both(j, p), n) if j.jdbcMapping.primaryTarget != p.jdbcType && 
                                !j.jdbcMapping.secondaryTargets.contains(p.jdbcType) =>
-          ParameterTypeError(n + 1, j.scalaType, j.jdbcMapping, p.jdbcType, p.vendorTypeName)
+          ParameterTypeError(n + 1, j.scalaType, j.jdbcMapping, p.jdbcType, p.vendorTypeName, nativeMap)
       }
 
     def columnMisalignments: List[ColumnMisalignment] =
@@ -119,7 +193,6 @@ object analysis {
 
           } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
 
-
         val cols: Block = 
           columnAlignment.zipWithIndex.map { 
 
@@ -152,45 +225,6 @@ object analysis {
 
       }
 
-  }
-
-  sealed trait AlignmentError {
-    def tag: String
-    def index: Int
-    def msg: String
-  }
-
-  case class ParameterMisalignment(index: Int, alignment: JdkMeta \/ ParameterMeta) extends AlignmentError {
-    val tag = "P"
-    def msg = this match {
-      case ParameterMisalignment(i, -\/(jdk)) => s"${jdk.scalaType} parameter $index has no corresponding SQL parameter and will result in a runtime failure when set. Check the SQL statement; the interpolated value may appear inside a comment or quoted string."
-      case ParameterMisalignment(i, \/-(pm))  => s"${pm.jdbcType.toString.toUpperCase} parameter $index (native type ${pm.vendorTypeName.toUpperCase}) is not set; this will result in a runtime failure. Perhaps you used a literal ? rather than an interpolated value."
-    }
-  }
-
-  case class ParameterTypeError(index: Int, scalaType: String, jdbcMapping: JdbcMapping, jdbcType: JdbcType, vendorTypeName: String) extends AlignmentError {
-    val tag = "P"
-    def msg = 
-      // TODO: suggest alternatives: which Scala types would match? which JDBC types would match?
-      s"$scalaType parameter $index (JDBC type ${jdbcMapping.primaryTarget.toString.toUpperCase}) may not be coercible to ${jdbcType.toString.toUpperCase} (native type ${vendorTypeName.toUpperCase})."
-  }
-
-  case class ColumnMisalignment(index: Int, alignment: JdkMeta \/ ColumnMeta) extends AlignmentError {
-    val tag = "C"
-    def msg = this match {
-      case ColumnMisalignment(i, -\/(jdk)) => s"Too few columns are selected, which will result in a runtime failure. Add a column or remove mapped ${jdk.scalaType} from the result type."
-      case ColumnMisalignment(i, \/-(col)) => s"Column ${col.name.toUpperCase} is unused. Remove it from the SELECT statement."
-    }
-  }
-
-  case class NullabilityMisalignment(index: Int, name: String, jdk: Nullability, jdbc: Nullability) extends AlignmentError {
-    val tag = "C"
-    def msg = this match {
-      case NullabilityMisalignment(i, name, Nullable, NoNulls) => s"Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."
-      case NullabilityMisalignment(i, name, NoNulls, Nullable) => s"Nullable column ${name.toUpperCase} should be mapped to an Option type; reading a NULL value will result in a runtime failure."
-      case NullabilityMisalignment(i, name, NullableUnknown, NoNulls) => s"Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may want to map to an Option type; reading a NULL value will result in a runtime failure."
-      case NullabilityMisalignment(i, name, NullableUnknown, Nullable) => s"Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may not need the Option wrapper."
-    }
   }
 
 }
