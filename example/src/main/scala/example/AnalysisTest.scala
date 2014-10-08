@@ -4,9 +4,6 @@ import scalaz.concurrent.Task
 import scalaz.syntax.monad._
 
 import doobie.std.task._
-import doobie.std.string._
-import doobie.std.int._
-import doobie.std.double._
 import doobie.syntax.string._
 import doobie.util.transactor._
 import doobie.util.query.Query0

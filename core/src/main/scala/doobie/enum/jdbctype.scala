@@ -2,7 +2,7 @@ package doobie.enum
 
 import doobie.util.invariant._
 import doobie.util.atom._
-import doobie.std.int._
+import doobie.enum.scalatype.ScalaType
 
 import java.sql.ResultSet._
 import java.sql.Types._
@@ -101,8 +101,8 @@ object jdbctype {
     implicit val EqualJdbcType: Equal[JdbcType] =
       Equal.equalBy(_.toInt)
 
-    implicit val JdbcTypeAtom: Unlifted[JdbcType] =
-      Unlifted[Int].xmap(JdbcType.unsafeFromInt, _.toInt)
+    implicit val ScalaTypeJdbcType: ScalaType[JdbcType] =
+      ScalaType[Int].xmap(unsafeFromInt, _.toInt)
 
   }
 
