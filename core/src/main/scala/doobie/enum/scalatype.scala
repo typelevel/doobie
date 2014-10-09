@@ -21,7 +21,7 @@ object scalatype {
     
     /** 
      * Tag for the underlying Scala type, used exclusively for error reporting. Note that `ScalaType`
-     * is an invairant functor, so this tag may not be for `A`; it may be for an underlying type
+     * is an invariant functor, so this tag may not be for `A`; it may be for an underlying type
      * that has been mapped over. This may simply turn into a String, so don't try anything fancy.
      */
     val tag: TypeTag[_]
