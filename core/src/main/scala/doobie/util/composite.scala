@@ -33,6 +33,8 @@ object composite {
 
   object Composite {
 
+    def apply[A](implicit A: Composite[A]): Composite[A] = A
+
     implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
       new Composite[A] {
         val set = A.set

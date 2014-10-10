@@ -40,6 +40,8 @@ object atom {
   }
   object Atom {
 
+    def apply[A](implicit A: Atom[A]): Atom[A] = A
+
     implicit def fromScalaType[A](implicit A: ScalaType[A]): Atom[A] = 
       new Atom[A] {
         val get = (n: Int) => ^(A.get(n), RS.wasNull)((a, b) => if (b) throw NonNullableColumnRead(n, A.primaryTarget) else a)
