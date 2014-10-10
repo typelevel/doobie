@@ -14,27 +14,28 @@ object CustomAtom {
 
   // Treat a Long as a date in code, but store it as a SQL DATE for reporting purposes.
   // We'll use a scalaz tagged type, but a value class would work fine as well.
-  trait PosixTime
-  val PosixTime = Tag.of[PosixTime]
-  type LongPosixTime = Long @@ PosixTime
+  trait PosixTimeTag
+  type PosixTime = Long @@ PosixTimeTag
+  val  PosixTime = Tag.of[PosixTimeTag]
 
   // Create our base ScalaType by invariant mapping an existing one.
-  implicit val LongPosixTimeScalaType: ScalaType[LongPosixTime] =
+  implicit val LongPosixTimeScalaType: ScalaType[PosixTime] =
     ScalaType[Date].xmap(d => PosixTime(d.getTime), t => new Date(PosixTime.unwrap(t)))
 
-  // Our base unsafe column type
-  ScalaType[LongPosixTime]
+  // What we just defined
+  ScalaType[PosixTime]
 
-  // Atom with null handling
-  Atom[LongPosixTime] // non-nullable
-  Atom[Option[LongPosixTime]] // nullable
+  // Free derived Atom with null handling
+  Atom[PosixTime] // non-nullable
+  Atom[Option[PosixTime]] // nullable
 
-  // Composites containing atomic types
-  Composite[(LongPosixTime, Int, String)]
-  Composite[(Option[LongPosixTime], Int, String)]
+  // Free derived composites containing atomic types
+  Composite[(PosixTime, Int, String)]
+  Composite[(Option[PosixTime], Int, String)]
 
-  // You can now use LongPosixTime as a column or parameter type
-  def test(lpt: LongPosixTime) = sql"UPDATE WOOZLE SET DATE = $lpt".update 
+  // You can now use PosixTime as a column or parameter type (both demonstrated here)
+  def query(lpt: PosixTime) = 
+    sql"SELECT NAME, DATE FROM FOO WHERE DATE > $lpt".query[(String, PosixTime)] 
 
 }
 
