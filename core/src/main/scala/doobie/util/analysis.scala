@@ -26,14 +26,21 @@ object analysis {
     def msg: String
   }
 
+  def typeName(t: ScalaType[_], n: NullabilityKnown): String = {
+    val name = t.tag.tpe.toString // good enough?
+    n match {
+      case NoNulls  => name
+      case Nullable => s"Option[${name}]"
+    }
+  }
+
+
   case class ParameterMisalignment(index: Int, alignment: (ScalaType[_], NullabilityKnown) \/ ParameterMeta) extends AlignmentError {
     val tag = "P"
     def msg = this match {
 
-      // todo: typeName(n: Nullability)
-
       case ParameterMisalignment(i, -\/((st, n))) => 
-        s"""|Parameter $index (Scala ${st.typeName}, JDBC ${st.primaryTarget.toString.toUpperCase})
+        s"""|Parameter $index (Scala ${typeName(st, n)}, JDBC ${st.primaryTarget.toString.toUpperCase})
             |has no corresponding SQL parameter and will result in a runtime failure when set. Check 
             |the SQL statement; the interpolated value may appear inside a comment or quoted 
             |string.""".stripMargin.lines.mkString(" ")
@@ -45,15 +52,15 @@ object analysis {
     }
   }
 
-  case class ParameterTypeError(index: Int, scalaType: ScalaType[_], jdbcType: JdbcType, vendorTypeName: String, nativeMap: Map[String, JdbcType]) extends AlignmentError {
+  case class ParameterTypeError(index: Int, scalaType: ScalaType[_], n: NullabilityKnown, jdbcType: JdbcType, vendorTypeName: String, nativeMap: Map[String, JdbcType]) extends AlignmentError {
     val tag = "P"
     def msg = 
-      s"""|Parameter $index (Scala ${scalaType.typeName}, JDBC ${scalaType.primaryTarget.toString.toUpperCase}) 
+      s"""|Parameter $index (Scala ${typeName(scalaType, n)}, JDBC ${scalaType.primaryTarget.toString.toUpperCase}) 
           |may not be coercible to the schema type (JDBC ${jdbcType.toString.toUpperCase}, native 
           |${vendorTypeName.toUpperCase}). Possible remedies: (1) change schema type to JDBC 
           |${scalaType.primaryTarget.toString.toUpperCase}, native 
           |${nativeMap.filter(_._2 == scalaType.primaryTarget).keys.map(_.toUpperCase).mkString(" or ")}; 
-          |or (2) change the parameter type to Scala ${ScalaType.forPrimaryTarget(jdbcType).get.typeName}, JDBC
+          |or (2) change the parameter type to Scala ${typeName(ScalaType.forPrimaryTarget(jdbcType).get, n)}, JDBC
           |${jdbcType.toString.toUpperCase}.""".stripMargin.lines.mkString(" ")
   }
   
@@ -63,7 +70,7 @@ object analysis {
 
       case ColumnMisalignment(i, -\/((j, n))) => 
         s"""|Too few columns are selected, which will result in a runtime failure. Add a column or 
-            |remove mapped ${j.typeName} from the result type.""".stripMargin.lines.mkString(" ")
+            |remove mapped ${typeName(j, n)} from the result type.""".stripMargin.lines.mkString(" ")
 
       case ColumnMisalignment(i, \/-(col)) => 
         s"""Column ${col.name.toUpperCase} is unused. Remove it from the SELECT statement."""
@@ -118,9 +125,9 @@ object analysis {
 
     def parameterTypeErrors: List[ParameterTypeError] =
       parameterAlignment.zipWithIndex.collect {
-        case (Both((j, _), p), n) if j.primaryTarget != p.jdbcType && 
+        case (Both((j, n1), p), n) if j.primaryTarget != p.jdbcType && 
                                !j.secondaryTargets.contains(p.jdbcType) =>
-          ParameterTypeError(n + 1, j, p.jdbcType, p.vendorTypeName, nativeMap)
+          ParameterTypeError(n + 1, j, n1, p.jdbcType, p.vendorTypeName, nativeMap)
       }
 
     def columnMisalignments: List[ColumnMisalignment] =
@@ -169,7 +176,7 @@ object analysis {
             case (Both((j1, n1), ParameterMeta(j2, s2, n2, m)), i) => 
               val jdbcColor = if (j1.primaryTarget == j2) color(BLACK) else color(RED)
               List(f"P${i+1}%02d", 
-                   s"${j1.typeName}", 
+                   s"${typeName(j1, n1)}", 
                    jdbcColor(j1.primaryTarget.toString.toUpperCase),
                    " → ", 
                    jdbcColor(j2.toString.toUpperCase),
@@ -177,7 +184,7 @@ object analysis {
 
             case (This((j1, n1)), i) => 
               List(f"P${i+1}%02d", 
-                   s"${j1.typeName}", 
+                   s"${typeName(j1, n1)}", 
                    black(j1.primaryTarget.toString.toUpperCase),
                    " → ", 
                    none,
@@ -204,10 +211,10 @@ object analysis {
                    gray(s2.toUpperCase), 
                    nullColor(formatNullability(n2)),
                    " → ",
-                   nullColor(j1.typeName))
+                   nullColor(typeName(j1, n1)))
             
             case (This((j1, n1)), i) =>
-              List(f"C${i+1}%02d", none, "", "", "",  " → ", red(j1.typeName))
+              List(f"C${i+1}%02d", none, "", "", "",  " → ", red(typeName(j1, n1)))
             
             case (That(ColumnMeta(j2, s2, n2, m)), i) =>
               List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, gray(s2.toUpperCase), black(formatNullability(n2)), " → ", none)

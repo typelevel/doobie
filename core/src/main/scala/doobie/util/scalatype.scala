@@ -26,9 +26,6 @@ object scalatype {
      */
     val tag: TypeTag[_]
 
-    def typeName: String =
-      tag.tpe.toString // ?
-
     /** 
      * The primary target JDBC type for `set` operations. The JDBC spec defines exactly one such 
      * type, although coercion to wider secondary target types are allowed in some cases; when
