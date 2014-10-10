@@ -2,7 +2,7 @@ package doobie.enum
 
 import doobie.util.invariant._
 import doobie.util.atom._
-import doobie.enum.scalatype.ScalaType
+import doobie.util.scalatype.ScalaType
 
 import java.sql.ResultSet._
 import java.sql.Types._

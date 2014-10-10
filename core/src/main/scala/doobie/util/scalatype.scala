@@ -1,4 +1,4 @@
-package doobie.enum
+package doobie.util
 
 import doobie.enum.jdbctype._
 import doobie.free.{ resultset => RS, preparedstatement => PS }
@@ -87,13 +87,15 @@ object scalatype {
 
     def apply[A](implicit A: ScalaType[A]): ScalaType[A] = A
 
+    /** The primitive instances. */
     lazy val instances: List[ScalaType[_]] = 
-      List(ByteType, ShortType, IntType, LongType, FloatType, DoubleType, StringType)
+      List(ByteType, ShortType, IntType, LongType, FloatType, DoubleType, BigDecimalType, 
+        BooleanType, StringType, ByteArrayType, DateType, TimeType, TimestampType)
 
     def forPrimaryTarget(t: JdbcType): Option[ScalaType[_]] =
       instances.find(_.primaryTarget === t)
 
-    implicit case object ByteType extends ScalaType[Byte] {
+    implicit val ByteType = new ScalaType[Byte] {
       val tag = Predef.implicitly[TypeTag[Byte]]
       val primaryTarget = TinyInt
       val secondaryTargets = Nil
@@ -101,10 +103,11 @@ object scalatype {
       val set = PS.setByte(_: Int, _: Byte)
       val update = RS.updateByte(_: Int, _:Byte)
       val primarySources = NonEmptyList(TinyInt)
-      val secondarySources = List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar)
+      val secondarySources = List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, 
+        Bit, Char, VarChar, LongVarChar)
     }
 
-    implicit case object ShortType extends ScalaType[Short] {
+    implicit val ShortType = new ScalaType[Short] {
       val tag = Predef.implicitly[TypeTag[Short]]
       val primaryTarget = SmallInt
       val secondaryTargets = Nil
@@ -112,10 +115,11 @@ object scalatype {
       val set = PS.setShort(_: Int, _: Short)
       val update = RS.updateShort(_: Int, _:Short)
       val primarySources = NonEmptyList(SmallInt)
-      val secondarySources = List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar)
+      val secondarySources = List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, 
+        Bit, Char, VarChar, LongVarChar)
     }
 
-    implicit case object IntType extends ScalaType[Int] {
+    implicit val IntType = new ScalaType[Int] {
       val tag = Predef.implicitly[TypeTag[Int]]
       val primaryTarget = Integer
       val secondaryTargets = Nil
@@ -123,10 +127,11 @@ object scalatype {
       val set = PS.setInt(_: Int, _: Int)
       val update = RS.updateInt(_: Int, _:Int)
       val primarySources = NonEmptyList(Integer)
-      val secondarySources = List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar)
+      val secondarySources = List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, 
+        Bit, Char, VarChar, LongVarChar)
     }
 
-    implicit case object LongType extends ScalaType[Long] {
+    implicit val LongType = new ScalaType[Long] {
       val tag = Predef.implicitly[TypeTag[Long]]
       val primaryTarget = BigInt
       val secondaryTargets = Nil
@@ -134,10 +139,11 @@ object scalatype {
       val set = PS.setLong(_: Int, _: Long)
       val update = RS.updateLong(_: Int, _:Long)
       val primarySources = NonEmptyList(BigInt)
-      val secondarySources = List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar)
+      val secondarySources = List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, 
+        Bit, Char, VarChar, LongVarChar)
     }
 
-    implicit case object FloatType extends ScalaType[Float] {
+    implicit val FloatType = new ScalaType[Float] {
       val tag = Predef.implicitly[TypeTag[Float]]
       val primaryTarget = Real
       val secondaryTargets = Nil
@@ -145,10 +151,11 @@ object scalatype {
       val set = PS.setFloat(_: Int, _: Float)
       val update = RS.updateFloat(_: Int, _:Float)
       val primarySources = NonEmptyList(Real)
-      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar)
+      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, 
+        Numeric, Bit, Char, VarChar, LongVarChar)
     }
 
-    implicit case object DoubleType extends ScalaType[Double] {
+    implicit val DoubleType = new ScalaType[Double] {
       val tag = Predef.implicitly[TypeTag[Double]]
       val primaryTarget = Double
       val secondaryTargets = Nil
@@ -156,15 +163,39 @@ object scalatype {
       val set = PS.setDouble(_: Int, _: Double)
       val update = RS.updateDouble(_: Int, _:Double)
       val primarySources = NonEmptyList(Float, Double)
-      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar, LongVarChar)
+      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, 
+        Bit, Char, VarChar, LongVarChar)
     }
 
+    implicit val BigDecimalType = new ScalaType[java.math.BigDecimal] {
+      val tag = Predef.implicitly[TypeTag[java.math.BigDecimal]]
+      val primaryTarget = Numeric
+      val secondaryTargets = Nil
+      val get = RS.getBigDecimal(_: Int)
+      val set = PS.setBigDecimal(_: Int, _: java.math.BigDecimal)
+      val update = RS.updateBigDecimal(_: Int, _:java.math.BigDecimal)
+      val primarySources = NonEmptyList(Decimal, Numeric)
+      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, 
+        Char, VarChar, LongVarChar)
+    }
 
+    // N.B. derived; not included in the primitive instance list
+    implicit val ScalaBigDecimalType: ScalaType[BigDecimal] =
+      BigDecimalType.xmap(BigDecimal(_), _.bigDecimal)
 
+    implicit val BooleanType = new ScalaType[Boolean] {
+      val tag = Predef.implicitly[TypeTag[Boolean]]
+      val primaryTarget = Bit
+      val secondaryTargets = Nil
+      val get = RS.getBoolean(_: Int)
+      val set = PS.setBoolean(_: Int, _: Boolean)
+      val update = RS.updateBoolean(_: Int, _:Boolean)
+      val primarySources = NonEmptyList(Bit)
+      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, 
+        Numeric, Char, VarChar, LongVarChar)
+    }
 
-
-
-    implicit case object StringType extends ScalaType[String] {
+    implicit val StringType = new ScalaType[String] {
       val tag = Predef.implicitly[TypeTag[String]]
       val primaryTarget = VarChar
       val secondaryTargets = List(Char, LongVarChar)
@@ -172,8 +203,60 @@ object scalatype {
       val set = PS.setString(_: Int, _: String)
       val update = RS.updateString(_: Int, _:String)
       val primarySources = NonEmptyList(Char, VarChar)
-      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit, LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp)
+      val secondarySources = List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, 
+        Numeric, Bit, LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp)
     }
+  
+    implicit val ByteArrayType = new ScalaType[Array[Byte]] {
+      val tag = Predef.implicitly[TypeTag[Array[Byte]]]
+      val primaryTarget = Binary
+      val secondaryTargets = List(VarBinary, LongVarBinary)
+      val get = RS.getBytes(_: Int)
+      val set = PS.setBytes(_: Int, _: Array[Byte])
+      val update = RS.updateBytes(_: Int, _: Array[Byte])
+      val primarySources = NonEmptyList(Binary, VarBinary)
+      val secondarySources = List(LongVarBinary)
+    }
+
+    implicit val DateType = new ScalaType[java.sql.Date] {
+      val tag = Predef.implicitly[TypeTag[java.sql.Date]]
+      val primaryTarget = Date
+      val secondaryTargets = List()
+      val get = RS.getDate(_: Int)
+      val set = PS.setDate(_: Int, _: java.sql.Date)
+      val update = RS.updateDate(_: Int, _: java.sql.Date)
+      val primarySources = NonEmptyList(Date)
+      val secondarySources = List(Char, VarChar, LongVarChar, Timestamp)
+    }
+
+    // N.B. derived; not included in the primitive instance list
+    implicit val JavaUtilDateType: ScalaType[java.util.Date] =
+      DateType.xmap(Predef.conforms, d => new java.sql.Date(d.getTime))
+
+    implicit val TimeType = new ScalaType[java.sql.Time] {
+      val tag = Predef.implicitly[TypeTag[java.sql.Time]]
+      val primaryTarget = Time
+      val secondaryTargets = List()
+      val get = RS.getTime(_: Int)
+      val set = PS.setTime(_: Int, _: java.sql.Time)
+      val update = RS.updateTime(_: Int, _: java.sql.Time)
+      val primarySources = NonEmptyList(Time)
+      val secondarySources = List(Char, VarChar, LongVarChar, Timestamp)
+    }
+
+    implicit val TimestampType = new ScalaType[java.sql.Timestamp] {
+      val tag = Predef.implicitly[TypeTag[java.sql.Timestamp]]
+      val primaryTarget = Timestamp
+      val secondaryTargets = List()
+      val get = RS.getTimestamp(_: Int)
+      val set = PS.setTimestamp(_: Int, _: java.sql.Timestamp)
+      val update = RS.updateTimestamp(_: Int, _: java.sql.Timestamp)
+      val primarySources = NonEmptyList(Timestamp)
+      val secondarySources = List(Char, VarChar, LongVarChar, Date, Time)
+    }
+
   }
+
+
 
 }

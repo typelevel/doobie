@@ -3,7 +3,7 @@ package doobie.util
 import doobie.enum.nullability._
 import doobie.enum.parametermode._
 import doobie.enum.jdbctype._
-import doobie.enum.scalatype._
+import doobie.util.scalatype._
 import doobie.util.capture._
 
 import scala.Predef._ // TODO: minimize

@@ -5,7 +5,7 @@ import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.enum.jdbctype._
 import doobie.enum.nullability._
-import doobie.enum.scalatype._
+import doobie.util.scalatype._
 import doobie.util.invariant._
 
 import scalaz.{ Functor, Contravariant, InvariantFunctor, NonEmptyList }

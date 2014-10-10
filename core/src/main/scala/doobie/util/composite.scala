@@ -1,7 +1,7 @@
 package doobie.util
 
 import doobie.enum.jdbctype.JdbcType
-import doobie.enum.scalatype.ScalaType
+import doobie.util.scalatype.ScalaType
 import doobie.enum.nullability._
 import doobie.util.atom._
 import doobie.util.invariant._

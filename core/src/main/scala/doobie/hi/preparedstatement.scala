@@ -1,7 +1,7 @@
 package doobie.hi
 
 import doobie.enum.jdbctype.JdbcType
-import doobie.enum.scalatype.ScalaType
+import doobie.util.scalatype.ScalaType
 import doobie.enum.columnnullable.ColumnNullable
 import doobie.enum.parameternullable.ParameterNullable
 import doobie.enum.parametermode.ParameterMode
