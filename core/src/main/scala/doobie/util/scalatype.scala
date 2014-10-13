@@ -8,6 +8,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.NonEmptyList
 import scalaz.syntax.equal._
+import scalaz.syntax.foldable._
 
 object scalatype {
 
@@ -91,6 +92,9 @@ object scalatype {
 
     def forPrimaryTarget(t: JdbcType): Option[ScalaType[_]] =
       instances.find(_.primaryTarget === t)
+
+    def forPrimarySource(t: JdbcType): Option[ScalaType[_]] =
+      instances.find(_.primarySources.element(t))
 
     implicit val ByteType = new ScalaType[Byte] {
       val tag = Predef.implicitly[TypeTag[Byte]]
