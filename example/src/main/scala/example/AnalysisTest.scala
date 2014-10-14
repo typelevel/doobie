@@ -1,7 +1,6 @@
 package doobie.example
 
 import scalaz.concurrent.Task
-import scalaz.syntax.monad._
 
 import doobie.std.task._
 import doobie.syntax.string._
@@ -23,7 +22,10 @@ object AnalysisTest {
     DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "rnorris", "")
 
   val tmain: Task[Unit] = 
-    xa.transact(speakerQuery("ignored", 0).analysis) >>= (_.print)
+    for {
+      a <- xa.transact(speakerQuery("ignored", 0).analysis)
+      _ <- Task.delay(println(a.summary))
+    } yield ()
 
   def main(args: Array[String]): Unit =
     tmain.run

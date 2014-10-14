@@ -163,8 +163,7 @@ object analysis {
       (parameterMisalignments ++ parameterTypeErrors).sortBy(m => (m.index, m.msg)) ++ 
       (columnMisalignments ++ columnTypeErrors ++ columnTypeWarnings ++ nullabilityMisalignments).sortBy(m => (m.index, m.msg))
 
-    def print[M[_]](implicit M: Capture[M]): M[Unit] =
-      M.apply {
+    def summary: String = {
         import pretty._
         import scalaz._, Scalaz._
    
@@ -190,10 +189,7 @@ object analysis {
               Block(List(f"${a.tag}${a.index}%02d")) leftOf1 Block(wrap(90)(a.msg))
             }.foldLeft(Block(List("WARNINGS")))(_ above _)) 
 
-        Console.println()
-        Console.println(x)
-        Console.println()
-
+        s"\n$x\n"
       }
 
   }
