@@ -1,10 +1,12 @@
 package doobie.hi
 
 import doobie.enum.jdbctype.JdbcType
+import doobie.util.scalatype.ScalaType
 import doobie.enum.columnnullable.ColumnNullable
 import doobie.enum.parameternullable.ParameterNullable
 import doobie.enum.parametermode.ParameterMode
 import doobie.enum.holdability.Holdability
+import doobie.enum.nullability.NullabilityKnown
 import doobie.enum.transactionisolation.TransactionIsolation
 import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
@@ -93,8 +95,8 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata 
    */
-  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[JdkMeta \&/ ColumnMeta]] =
-    getColumnJdbcMeta.map(m => A.ameta align m)
+  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(ScalaType[_], NullabilityKnown) \&/ ColumnMeta]] =
+    getColumnJdbcMeta.map(m => A.meta align m)
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
@@ -128,8 +130,8 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata 
    */
-  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[JdkMeta \&/ ParameterMeta]] =
-    getParameterJdbcMeta.map(m => A.ameta align m)
+  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(ScalaType[_], NullabilityKnown) \&/ ParameterMeta]] =
+    getParameterJdbcMeta.map(m => A.meta align m)
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =

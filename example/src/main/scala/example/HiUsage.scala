@@ -8,8 +8,6 @@ import scalaz.syntax.monad._
 
 import doobie.hi._
 import doobie.std.task._
-import doobie.std.string._
-import doobie.std.double._
 import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.util.transactor.DriverManagerTransactor

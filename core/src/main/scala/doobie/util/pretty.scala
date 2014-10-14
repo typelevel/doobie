@@ -38,6 +38,24 @@ object pretty {
 
   }
 
+  def wrap(cols: Int)(s: String): List[String] = {
+    def go(ws: List[String], accum: List[String]): List[String] =
+      ws match {
+        case Nil => accum.reverse
+        case w :: ws =>
+          accum match {
+            case Nil      => go(ws, List(w))
+            case l :: ls  => 
+              val l0 = l + " " + w
+              if (l0.length > cols) go(ws, w :: accum)
+              else go(ws, l0 :: ls)
+          }
+      }
+
+    go(s.split(" +").toList, Nil)
+  }
+
+
 }
 
 //  (Block(List("foo", "banana")) leftOf2 Block(List("1", "two", "seven"))).lines.foreach(println)
