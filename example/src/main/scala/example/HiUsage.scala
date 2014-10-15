@@ -7,7 +7,6 @@ import scalaz.stream.Process
 import scalaz.syntax.monad._
 
 import doobie.hi._
-import doobie.std.task._
 import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.util.transactor.DriverManagerTransactor

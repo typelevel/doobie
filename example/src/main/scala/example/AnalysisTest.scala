@@ -2,7 +2,6 @@ package doobie.example
 
 import scalaz.concurrent.Task
 
-import doobie.std.task._
 import doobie.syntax.string._
 import doobie.util.transactor._
 import doobie.util.query.Query0

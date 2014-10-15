@@ -6,7 +6,6 @@ import scalaz.stream.Process
 
 import doobie.hi._
 import doobie.hi.connection._
-import doobie.std.io._
 import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.syntax.catchable._
