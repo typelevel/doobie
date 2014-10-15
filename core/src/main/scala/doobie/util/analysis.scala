@@ -163,6 +163,31 @@ object analysis {
       (parameterMisalignments ++ parameterTypeErrors).sortBy(m => (m.index, m.msg)) ++ 
       (columnMisalignments ++ columnTypeErrors ++ columnTypeWarnings ++ nullabilityMisalignments).sortBy(m => (m.index, m.msg))
 
+    def header: String = {
+        import pretty._
+        import scalaz._, Scalaz._
+   
+        val none = "«none»"
+        val sqlBlock = Block(sql.lines.map(_.trim).filterNot(_.isEmpty).toList)
+
+        val params: Block = 
+          parameterAlignment.zipWithIndex.map { 
+            case (Both((j1, n1), ParameterMeta(j2, s2, n2, m)), i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase)
+            case (This((j1, n1)), i)                               => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", none)
+            case (That(ParameterMeta(j2, s2, n2, m)), i)           => List(f"P${i+1}%02d", none,                   " → ", j2.toString.toUpperCase)
+          } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
+
+        val cols: Block = 
+          columnAlignment.zipWithIndex.map { 
+            case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", typeName(j1, n1))            
+            case (This((j1, n1)), i)                            => List(f"C${i+1}%02d", none,          "",                      "",                    " → ", typeName(j1, n1))    
+            case (That(ColumnMeta(j2, s2, n2, m)), i)           => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", none)        
+          } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
+
+        (Block(Nil) leftOf2 (sqlBlock above1 Block(List("PARAMETERS")) above params above1 Block(List("COLUMNS")) above cols)).toString
+      }
+
+      // TODO: factor
     def summary: String = {
         import pretty._
         import scalaz._, Scalaz._
