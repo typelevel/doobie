@@ -8,7 +8,6 @@ import scalaz.syntax.monad._
 
 import doobie.hi._
 import doobie.hi.connection.ProcessConnectionIOOps
-import doobie.std.task._
 import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.util.transactor._
