@@ -6,8 +6,10 @@ import doobie.util.analysis._
 import doobie.util.pretty._
 
 import org.specs2.mutable.Specification
+import org.specs2.execute.Failure
 
 import scalaz.concurrent.Task
+import scalaz._, Scalaz._
 
 object specs2 {
 
@@ -15,23 +17,34 @@ object specs2 {
 
     val transactor: Transactor[Task]
 
-    private def assertEmpty(es: List[AlignmentError]) = 
-      if (es.isEmpty) success else failure(es.flatMap(e => wrap(100)(e.msg)).mkString("\n"))
+    def check[A](q: Query0[A])(implicit ev: Manifest[A]) = {
 
-    implicit class AnalysisSpecStringOps(s: String) {
-      def is[A](q: Query0[A]) = {
-        val a = transactor.transact(q.analysis).run
-        val title = if (a.alignmentErrors.isEmpty) s else s + "\n\n" + a.header + "\n\n"
-        title should {
-          "have correct input arity"   in assertEmpty(a.parameterMisalignments)
-          "have well-typed parameters" in assertEmpty(a.parameterTypeErrors)
-          "have correct column arity"  in assertEmpty(a.columnMisalignments)
-          "have well-typed columns"    in assertEmpty(a.columnTypeErrors ++ a.columnTypeWarnings)
-          "have correct NULL mappings" in assertEmpty(a.nullabilityMisalignments)
-        }
+      def formatError(e: AlignmentError): String =
+        (wrap(100)(e.msg) match {
+          case s :: ss => ("* " + s) :: ss.map("  " + _)
+          case Nil => Nil
+        }).mkString("\n")
+
+      def assertEmpty(es: List[AlignmentError]) = 
+        if (es.isEmpty) success 
+        else new Failure(es.map(formatError).mkString("\n"), "", q.stackFrame.toList)
+
+      val loc = q.stackFrame.map(f => s"${f.getFileName}:${f.getLineNumber}").getOrElse("(source location unknown)")
+
+      s"Query0[${ev.runtimeClass.getSimpleName}] defined at $loc\n${q.sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
+        transactor.transact(q.analysis).attemptRun match {
+          case -\/(e) => "SQL Compiles and Typechecks" in failure(e.getMessage)
+          case \/-(a) => 
+            "SQL Compiles and Typechecks" in ok
+            examplesBlock { 
+              a.paramDescriptions.foreach { case (s, es) => s in assertEmpty(es) }
+              a.columnDescriptions.foreach { case (s, es) => s in assertEmpty(es) }
+            }
+        }        
       }
     }
 
-  }
 
+
+  }
 }

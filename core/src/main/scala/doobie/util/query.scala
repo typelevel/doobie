@@ -16,24 +16,35 @@ object query {
   /** Encapsulates a `ConnectionIO` that prepares and executes a parameterized statement. */
   trait Query[A, B] { q =>
 
+    val sql: String
+
+    /** Stack frame where defined, for diagnostic purposes. */
+    val stackFrame: Option[StackTraceElement]
+
     def analysis: ConnectionIO[Analysis]
 
     def run(a: A): Process[ConnectionIO, B] 
 
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
+        val sql = q.sql
+        val stackFrame = q.stackFrame
         val analysis = q.analysis
         def run(a: A) = q.run(a).map(f)
       }
 
     def contramap[C](f: C => A): Query[C, B] =
       new Query[C, B] {
+        val sql = q.sql
+        val stackFrame = q.stackFrame
         val analysis = q.analysis
         def run(c: C) = q.run(f(c))
       }
 
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
+        val sql = q.sql
+        val stackFrame = q.stackFrame
         val analysis = q.analysis
         def run = q.run(a)
       }
@@ -43,8 +54,10 @@ object query {
   object Query {
 
     /** Construct a `Query` for the given parameter and output types. */
-    def apply[A: Composite, B: Composite](sql: String): Query[A, B] =
+    def apply[A: Composite, B: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Query[A, B] =
       new Query[A, B] {
+        val sql = sql0
+        val stackFrame = stackFrame0
         val analysis = connection.prepareStatementAnalysis[A,B](sql)
         def run(a: A) = connection.process[B](sql, preparedstatement.set(a))
       }
@@ -66,12 +79,18 @@ object query {
   /** Encapsulates a `ConnectionIO` that prepares and executes a zero-parameter statement. */
   trait Query0[B] { q =>
 
+    val sql: String
+
+    val stackFrame: Option[StackTraceElement]
+
     def analysis: ConnectionIO[Analysis]
 
     def run: Process[ConnectionIO, B] 
 
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {
+        val sql = q.sql
+        val stackFrame = q.stackFrame
         def analysis = q.analysis
         def run = q.run.map(f)
       }
@@ -81,8 +100,10 @@ object query {
   object Query0 {
 
     /** Construct a `Query0` for the given parameter and output types. */
-    def apply[B: Composite](sql: String): Query0[B] =
+    def apply[B: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Query0[B] =
       new Query0[B] {
+        val sql = sql0
+        val stackFrame = stackFrame0
         def analysis = Predef.???
         def run = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
       }
