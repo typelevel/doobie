@@ -180,7 +180,7 @@ object analysis {
           case (Both((j1, n1), ParameterMeta(j2, s2, n2, m)), i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase)
           case (This((j1, n1)), i)                               => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", none)
           case (That(ParameterMeta(j2, s2, n2, m)), i)           => List(f"P${i+1}%02d", none,                   " → ", j2.toString.toUpperCase)
-        } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
+        } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _) // TODO: fix this
 
       params.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, parameterAlignmentErrors.filter(_.index == n + 1))
@@ -199,7 +199,7 @@ object analysis {
           case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", typeName(j1, n1))            
           case (This((j1, n1)), i)                            => List(f"C${i+1}%02d", none,          "",                      "",                    " → ", typeName(j1, n1))    
           case (That(ColumnMeta(j2, s2, n2, m)), i)           => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", none)        
-        } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
+        } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _)
 
       cols.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, columnAlignmentErrors.filter(_.index == n + 1))

@@ -10,5 +10,8 @@ import scalaz.concurrent.Task
 object AnalysisTestSpec extends Specification with AnalysisSpec {
   val transactor = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "rnorris", "")
   check(AnalysisTest.speakerQuery(null, 0))
+  check(AnalysisTest.speakerQuery2)
+  check(AnalysisTest.update("foo", 42))
+  check(AnalysisTest.update2)
 }
 

@@ -6,22 +6,22 @@ import doobie.util.analysis.Analysis
 import doobie.syntax.catchable._
 import doobie.enum.jdbctype.JdbcType
 import doobie.enum.parameternullable._
-import doobie.hi.connection.{ prepareStatementAnalysis, delay => cdelay }
+import doobie.hi.connection.{ delay => cdelay }
 
 import scalaz._, Scalaz._
 import scalaz.stream.Process
 
 object query {
 
-  /** Encapsulates a `ConnectionIO` that prepares and executes a parameterized statement. */
-  trait Query[A, B] { q =>
-
+  /** Mixin trait for queries with diagnostic information. */
+  trait QueryDiagnostics {
     val sql: String
-
-    /** Stack frame where defined, for diagnostic purposes. */
     val stackFrame: Option[StackTraceElement]
-
     def analysis: ConnectionIO[Analysis]
+  }
+
+  /** Encapsulates a `ConnectionIO` that prepares and executes a parameterized statement. */
+  trait Query[A, B] extends QueryDiagnostics { q =>
 
     def run(a: A): Process[ConnectionIO, B] 
 
@@ -47,7 +47,7 @@ object query {
         val stackFrame = q.stackFrame
         val analysis = q.analysis
         def run = q.run(a)
-      }
+    }
 
   }
 
@@ -58,7 +58,7 @@ object query {
       new Query[A, B] {
         val sql = sql0
         val stackFrame = stackFrame0
-        val analysis = connection.prepareStatementAnalysis[A,B](sql)
+        val analysis = connection.prepareQueryAnalysis[A,B](sql)
         def run(a: A) = connection.process[B](sql, preparedstatement.set(a))
       }
 
@@ -77,13 +77,7 @@ object query {
   }
 
   /** Encapsulates a `ConnectionIO` that prepares and executes a zero-parameter statement. */
-  trait Query0[B] { q =>
-
-    val sql: String
-
-    val stackFrame: Option[StackTraceElement]
-
-    def analysis: ConnectionIO[Analysis]
+  trait Query0[B] extends QueryDiagnostics { q =>
 
     def run: Process[ConnectionIO, B] 
 
@@ -104,7 +98,7 @@ object query {
       new Query0[B] {
         val sql = sql0
         val stackFrame = stackFrame0
-        def analysis = Predef.???
+        def analysis = connection.prepareQueryAnalysis0[B](sql)
         def run = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
       }
 
