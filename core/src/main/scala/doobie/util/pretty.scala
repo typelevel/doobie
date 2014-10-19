@@ -36,6 +36,9 @@ object pretty {
     override def toString: String =
       lines.mkString("\n")
 
+    def trimLeft(n: Int): Block = 
+      Block(lines.map(_ drop n))
+
   }
 
   def wrap(cols: Int)(s: String): List[String] = {

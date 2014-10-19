@@ -26,12 +26,10 @@ object analysis {
     def msg: String
   }
 
-  def typeName(t: ScalaType[_], n: NullabilityKnown): String = {
-    val name = t.tag.tpe.toString match {
-      case "java.lang.String"  => "String"
-      case "scala.Array[Byte]" => "Array[Byte]"
-      case s                   => s
-    } 
+  private val packagePrefix = "\\b[a-z]+\\.".r
+
+  private def typeName(t: ScalaType[_], n: NullabilityKnown): String = {
+    val name = packagePrefix.replaceAllIn(t.tag.tpe.toString, "")
     n match {
       case NoNulls  => name
       case Nullable => s"Option[${name}]"
@@ -169,18 +167,17 @@ object analysis {
       (parameterAlignmentErrors).sortBy(m => (m.index, m.msg)) ++ 
       (columnAlignmentErrors).sortBy(m => (m.index, m.msg))
 
+
     lazy val paramDescriptions: List[(String, List[AlignmentError])] = {
       import pretty._
       import scalaz._, Scalaz._
- 
-      val none = "«none»"
 
       val params: Block = 
         parameterAlignment.zipWithIndex.map { 
           case (Both((j1, n1), ParameterMeta(j2, s2, n2, m)), i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase)
-          case (This((j1, n1)), i)                               => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", none)
-          case (That(ParameterMeta(j2, s2, n2, m)), i)           => List(f"P${i+1}%02d", none,                   " → ", j2.toString.toUpperCase)
-        } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _) // TODO: fix this
+          case (This((j1, n1)), i)                               => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", "")
+          case (That(ParameterMeta(j2, s2, n2, m)), i)           => List(f"P${i+1}%02d", "",                   " → ", j2.toString.toUpperCase)
+        } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
 
       params.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, parameterAlignmentErrors.filter(_.index == n + 1))
@@ -192,14 +189,12 @@ object analysis {
       import pretty._
       import scalaz._, Scalaz._
  
-      val none = "«none»"
-
       val cols: Block = 
         columnAlignment.zipWithIndex.map { 
           case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", typeName(j1, n1))            
-          case (This((j1, n1)), i)                            => List(f"C${i+1}%02d", none,          "",                      "",                    " → ", typeName(j1, n1))    
-          case (That(ColumnMeta(j2, s2, n2, m)), i)           => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", none)        
-        } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _)
+          case (This((j1, n1)), i)                            => List(f"C${i+1}%02d", "",          "",                      "",                    " → ", typeName(j1, n1))    
+          case (That(ColumnMeta(j2, s2, n2, m)), i)           => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", "")        
+        } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
 
       cols.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, columnAlignmentErrors.filter(_.index == n + 1))
@@ -207,35 +202,34 @@ object analysis {
 
     }
 
-
-    def summary: String = {
-      import pretty._
-      import scalaz._, Scalaz._
+    // def summary: String = {
+    //   import pretty._
+    //   import scalaz._, Scalaz._
  
-      val none = "«none»"
-      val sqlBlock = Block(sql.lines.map(_.trim).filterNot(_.isEmpty).toList)
+    //   val none = "«none»"
+    //   val sqlBlock = Block(sql.lines.map(_.trim).filterNot(_.isEmpty).toList)
 
-      val params: Block = 
-        parameterAlignment.zipWithIndex.map { 
-          case (Both((j1, n1), ParameterMeta(j2, s2, n2, m)), i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase)
-          case (This((j1, n1)), i)                               => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", none)
-          case (That(ParameterMeta(j2, s2, n2, m)), i)           => List(f"P${i+1}%02d", none,                   " → ", j2.toString.toUpperCase)
-        } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
+    //   val params: Block = 
+    //     parameterAlignment.zipWithIndex.map { 
+    //       case (Both((j1, n1), ParameterMeta(j2, s2, n2, m)), i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase)
+    //       case (This((j1, n1)), i)                               => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", none)
+    //       case (That(ParameterMeta(j2, s2, n2, m)), i)           => List(f"P${i+1}%02d", none,                   " → ", j2.toString.toUpperCase)
+    //     } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
 
-      val cols: Block = 
-        columnAlignment.zipWithIndex.map { 
-          case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", typeName(j1, n1))            
-          case (This((j1, n1)), i)                            => List(f"C${i+1}%02d", none,          "",                      "",                    " → ", typeName(j1, n1))    
-          case (That(ColumnMeta(j2, s2, n2, m)), i)           => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", none)        
-        } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
+    //   val cols: Block = 
+    //     columnAlignment.zipWithIndex.map { 
+    //       case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", typeName(j1, n1))            
+    //       case (This((j1, n1)), i)                            => List(f"C${i+1}%02d", none,          "",                      "",                    " → ", typeName(j1, n1))    
+    //       case (That(ColumnMeta(j2, s2, n2, m)), i)           => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", none)        
+    //     } .transpose.map(Block(_)).reduceLeft(_ leftOf1 _)
 
-      val x = Block(Nil) leftOf2 (sqlBlock above1 Block(List("PARAMETERS")) above params above1 Block(List("COLUMNS")) above cols above1
-          alignmentErrors.map { a => 
-            Block(List(f"${a.tag}${a.index}%02d")) leftOf1 Block(wrap(90)(a.msg))
-          }.foldLeft(Block(List("WARNINGS")))(_ above _)) 
+    //   val x = Block(Nil) leftOf2 (sqlBlock above1 Block(List("PARAMETERS")) above params above1 Block(List("COLUMNS")) above cols above1
+    //       alignmentErrors.map { a => 
+    //         Block(List(f"${a.tag}${a.index}%02d")) leftOf1 Block(wrap(90)(a.msg))
+    //       }.foldLeft(Block(List("WARNINGS")))(_ above _)) 
 
-      s"\n$x\n"
-    }
+    //   s"\n$x\n"
+    // }
 
   }
 
