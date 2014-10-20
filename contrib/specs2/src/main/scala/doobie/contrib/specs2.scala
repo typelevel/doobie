@@ -1,5 +1,7 @@
 package doobie.contrib
 
+import doobie.free.connection.ConnectionIO
+
 import doobie.util.transactor._
 import doobie.util.query._
 import doobie.util.update._
@@ -18,50 +20,30 @@ object specs2 {
 
   trait AnalysisSpec { this: Specification =>
 
-    val transactor: Transactor[Task]
-
+    def transactor: Transactor[Task]
 
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]) =
-      checkD(s"Query[${typeName(A)}, ${typeName(B)}]", q)
+      checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.stackFrame, q.sql, q.analysis)
 
     def check[A](q: Query0[A])(implicit A: TypeTag[A]) =
-      checkD(s"Query0[${typeName(A)}]", q)
+      checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
 
     def check[A](q: Update[A])(implicit A: TypeTag[A]) =
-      checkU(s"Update[${typeName(A)}]", q)
+      checkAnalysis(s"Update[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
 
     def check[A](q: Update0)(implicit A: TypeTag[A]) =
-      checkU(s"Update0", q)
+      checkAnalysis(s"Update0", q.stackFrame, q.sql, q.analysis)
 
-
-
-
-
-    private def checkD(typeName: String, q: QueryDiagnostics) =
-      s"$typeName defined at ${loc(q.stackFrame)}\n${q.sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
-        transactor.transact(q.analysis).attemptRun match {
+    private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]) =
+      s"$typeName defined at ${loc(stackFrame)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
+        transactor.transact(analysis).attemptRun match {
           case -\/(e) => "SQL Compiles and Typechecks" in failure(formatError(e.getMessage))
-          case \/-(a) => 
-            "SQL Compiles and Typechecks" in ok
+          case \/-(a) => "SQL Compiles and Typechecks" in ok
             examplesBlock { 
-              a.paramDescriptions.foreach  { case (s, es) => s in assertEmpty(es, q.stackFrame) }
-              a.columnDescriptions.foreach { case (s, es) => s in assertEmpty(es, q.stackFrame) }
+              a.paramDescriptions.foreach  { case (s, es) => s in assertEmpty(es, stackFrame) }
+              a.columnDescriptions.foreach { case (s, es) => s in assertEmpty(es, stackFrame) }
             }
-        }        
-      }
-
-    private def checkU(typeName: String, q: UpdateDiagnostics) = 
-      s"$typeName defined at ${loc(q.stackFrame)}\n${q.sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
-        transactor.transact(q.analysis).attemptRun match {
-          case -\/(e) => "SQL Compiles and Typechecks" in failure(formatError(e.getMessage))
-          case \/-(a) => 
-            "SQL Compiles and Typechecks" in ok
-            // TODO: verify that this is not a select statement; there should be no output columns
-            examplesBlock { 
-              a.paramDescriptions.foreach  { case (s, es) => s in assertEmpty(es, q.stackFrame) }
-              a.columnDescriptions.foreach { case (s, es) => s in assertEmpty(es, q.stackFrame) }
-            }
-        }        
+        }
       }
 
     private def loc(f: Option[StackTraceElement]): String = 
@@ -85,7 +67,7 @@ object specs2 {
         case Nil => Nil
       }).mkString("\n")
 
-}
+  }
 
 }
 
