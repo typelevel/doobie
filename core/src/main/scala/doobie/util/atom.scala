@@ -58,6 +58,12 @@ object atom {
         val meta = (A, Nullable)
       }
 
+    implicit val atomInvariantFunctor: InvariantFunctor[Atom] =
+      new InvariantFunctor[Atom] {
+        def xmap[A, B](ma: Atom[A], f: A => B, g: B => A): Atom[B] =
+          ma.xmap(f, g)
+      }
+
   }
   
 }
