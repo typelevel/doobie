@@ -6,7 +6,7 @@ import doobie.free.{ resultset => RS, preparedstatement => PS }
 import scala.annotation.implicitNotFound
 import scala.reflect.runtime.universe.TypeTag
 
-import scalaz.NonEmptyList
+import scalaz.{ InvariantFunctor, NonEmptyList }
 import scalaz.syntax.equal._
 import scalaz.syntax.foldable._
 
@@ -84,6 +84,12 @@ object scalatype {
   object ScalaType {
 
     def apply[A](implicit A: ScalaType[A]): ScalaType[A] = A
+
+    implicit val scalaTypeInvariantFunctor: InvariantFunctor[ScalaType] =
+      new InvariantFunctor[ScalaType] {
+        def xmap[A, B](ma: ScalaType[A], f: A => B, g: B => A): ScalaType[B] =
+          ma.xmap(f, g)
+      }
 
     /** The primitive instances. */
     lazy val instances: List[ScalaType[_]] = 
