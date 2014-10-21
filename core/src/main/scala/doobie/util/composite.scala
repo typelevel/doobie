@@ -23,17 +23,31 @@ import java.sql.ParameterMetaData
 object composite {
 
   @implicitNotFound("Could not find or construct Composite[${A}]; ensure that all members of A have Atom or ScalaType instances.")
-  trait Composite[A] { 
+  trait Composite[A] { c =>    
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
     val update: (Int, A) => RS.ResultSetIO[Unit]
     val get: Int => RS.ResultSetIO[A]
     val length: Int
     val meta: List[(ScalaType[_], NullabilityKnown)]
+    final def xmap[B](f: A => B, g: B => A): Composite[B] =
+      new Composite[B] {
+        val set    = (n: Int, b: B) => c.set(n, g(b))
+        val update = (n: Int, b: B) => c.update(n, g(b))
+        val get    = (n: Int) => c.get(n).map(f)
+        val length = c.length
+        val meta   = c.meta
+      }
   }
 
   object Composite {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
+
+    implicit val compositeInvariantFunctor: InvariantFunctor[Composite] = 
+      new InvariantFunctor[Composite] {
+        def xmap[A, B](ma: Composite[A], f: A => B, g: B => A): Composite[B] =
+          ma.xmap(f, g)
+      }
 
     implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
       new Composite[A] {
