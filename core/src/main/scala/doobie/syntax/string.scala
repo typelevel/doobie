@@ -16,6 +16,11 @@ object string {
 
   implicit class SqlInterpolator(val sc: StringContext) {
 
+    val stackFrame = {
+      import Predef._
+      Thread.currentThread.getStackTrace.lift(3)
+    }
+
     val rawSql = sc.parts.mkString("?")
 
     trait Builder {
@@ -24,13 +29,13 @@ object string {
     }
 
     class Source[A: Composite](a: A) extends Builder {
-      def query[O: Composite] = Query[A, O](rawSql).toQuery0(a)
-      def update = Update[A](rawSql).toUpdate0(a)
+      def query[O: Composite] = Query[A, O](rawSql, stackFrame).toQuery0(a)
+      def update = Update[A](rawSql, stackFrame).toUpdate0(a)
     }
 
     class Source0 extends Builder { 
-      def query[O: Composite] = Query0(rawSql)
-      def update = Update0(rawSql)
+      def query[O: Composite] = Query0(rawSql, stackFrame)
+      def update = Update0(rawSql, stackFrame)
     }
 
     def sql(): Builder = new Source0

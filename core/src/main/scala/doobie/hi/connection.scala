@@ -83,13 +83,29 @@ object connection {
     C.commit
 
   /**
-   * Construct an analysis for the provided `sql`, given parameter composite type `A` and 
+   * Construct an analysis for the provided `sql` query, given parameter composite type `A` and 
    * resultset row composite `B`.
    */
-  def prepareStatementAnalysis[A: Composite, B: Composite](sql: String): ConnectionIO[Analysis] =
+  def prepareQueryAnalysis[A: Composite, B: Composite](sql: String): ConnectionIO[Analysis] =
     nativeTypeMap flatMap (m => prepareStatement(sql) { 
       (HPS.getParameterMappings[A] |@| HPS.getColumnMappings[B])(Analysis(sql, m, _, _))
     })
+
+  def prepareQueryAnalysis0[B: Composite](sql: String): ConnectionIO[Analysis] =
+    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+      HPS.getColumnMappings[B] map (cm => Analysis(sql, m, Nil, cm))
+    })
+
+  def prepareUpdateAnalysis[A: Composite](sql: String): ConnectionIO[Analysis] =
+    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+      HPS.getParameterMappings[A] map (pm => Analysis(sql, m, pm, Nil))
+    })
+
+  def prepareUpdateAnalysis0(sql: String): ConnectionIO[Analysis] =
+    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+      Analysis(sql, m, Nil, Nil).point[PreparedStatementIO]
+    })
+
 
   /** @group Statements */
   def createStatement[A](k: StatementIO[A]): ConnectionIO[A] =
