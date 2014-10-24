@@ -16,10 +16,9 @@ object PostgresPoint extends App {
   val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "rnorris", "")
 
   // A custom Point type with a ScalaType instance xmapped from the PostgreSQL native type (which
-  // would be weird to use directly in a data model). Currently this can't be a case class (sorry).
-  class Point(val x: Double, val y: Double) {
-    override def toString = s"Point($x, $y)"
-  }
+  // would be weird to use directly in a data model). Note that the presence of this `ScalaType`
+  // instance precludes mapping `Point` to two columns. If you want two mappings you need two types.
+  case class Point(x: Double, y: Double)
   object Point {
     implicit val PointType: ScalaType[Point] = 
       ScalaType[PGpoint].xmap(p => new Point(p.x, p.y), p => new PGpoint(p.x, p.y))

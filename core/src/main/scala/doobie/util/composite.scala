@@ -40,7 +40,7 @@ object composite {
       }
   }
 
-  object Composite {
+  object Composite extends LowerPriorityComposite {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
 
@@ -58,6 +58,13 @@ object composite {
         val length = 1
         val meta = List(A.meta)
       }
+
+  }
+
+  // N.B. we're separating this out in order to make the atom ~> composite derivation higher
+  // priority than the product ~> composite derivation. So this means if we have an product mapped
+  // to a single column, we will get only the atomic mapping, not the multi-column one.
+  trait LowerPriorityComposite {
 
     /** @group Typeclass Instances */
     implicit val productComposite: ProductTypeClass[Composite] =
