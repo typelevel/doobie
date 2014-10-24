@@ -262,6 +262,22 @@ object scalatype {
       val secondarySources = List(Char, VarChar, LongVarChar, Date, Time)
     }
 
+    // N.B. private, not implicit, used only to derive more specific types
+    private val AnyRefType = new ScalaType[AnyRef] {
+      val tag = Predef.implicitly[TypeTag[AnyRef]]
+      val primaryTarget = JavaObject
+      val secondaryTargets = List()
+      val get = RS.getObject(_: Int)
+      val set = PS.setObject(_: Int, _: AnyRef)
+      val update = RS.updateObject(_: Int, _: AnyRef)
+      val primarySources = NonEmptyList(JavaObject)
+      val secondarySources = List() // TODO
+    }
+
+    /** Construct a `ScalaType[A]` mapped to an opaque `JavaObject` JDBC type. */
+    def objectType[A <: AnyRef]: ScalaType[A] =
+      AnyRefType.xmap(_.asInstanceOf[A], a => a) // TODO: throw a better error message
+
   }
 
 
