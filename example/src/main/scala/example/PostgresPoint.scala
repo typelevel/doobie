@@ -1,11 +1,12 @@
 
 package doobie.example
 
+import doobie.contrib.postgresql.pgtypes._
 import doobie.syntax.process._
 import doobie.syntax.string._
-import doobie.util.transactor.DriverManagerTransactor
-import doobie.contrib.postgresql.pgtypes._
+import doobie.util.composite.Composite
 import doobie.util.scalatype.ScalaType
+import doobie.util.transactor.DriverManagerTransactor
 
 import org.postgresql.geometric.PGpoint
 
@@ -28,5 +29,8 @@ object PostgresPoint extends App {
   def q = sql"select '(1, 2)'::point".query[Point]
   val a = xa.transact(q.run.list).run
   Console.println(a)
+
+  // Just to be clear; the Composite instance has width 1, not 2
+  Console.println(Composite[Point].length) // 1
 
 }
