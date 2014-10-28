@@ -1,10 +1,14 @@
 package doobie.util
 
-import doobie.enum.jdbctype._
+import doobie.enum.jdbctype.{ Array => JdbcArray, _ }
 import doobie.free.{ resultset => RS, preparedstatement => PS }
+
+import java.sql.{ Array => SqlArray }
 
 import scala.annotation.implicitNotFound
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.ClassTag
+import scala.Predef._
 
 import scalaz.{ InvariantFunctor, NonEmptyList }
 import scalaz.syntax.equal._
@@ -277,6 +281,29 @@ object scalatype {
     /** Construct a `ScalaType[A]` mapped to an opaque `JavaObject` JDBC type. */
     def objectType[A <: AnyRef]: ScalaType[A] =
       AnyRefType.xmap(_.asInstanceOf[A], a => a) // TODO: throw a better error message
+
+    // N.B. not useful on its own
+    val ArrayType = new ScalaType[AnyRef] {
+      val tag = Predef.implicitly[TypeTag[SqlArray]]
+      val primaryTarget = JdbcArray
+      val secondaryTargets = List()
+      val get = RS.getArray(_: Int).map(_.getArray)
+      val set = null // PS.setArray(_: Int, _: SqlArray)
+      val update = null // RS.updateArray(_: Int, _: SqlArray)
+      val primarySources = NonEmptyList(JdbcArray)
+      val secondarySources = List() // TODO
+    }
+
+    def arrayType[A]: ScalaType[Array[A]] =
+      ArrayType.xmap(_.asInstanceOf[Array[A]], a => a)
+
+    implicit def ArrayTypeAsListType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[List[A]] =
+      ev.xmap(_.toList, _.toArray)
+
+    implicit def ArrayTypeAsVectorType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[Vector[A]] =
+      ev.xmap(_.toVector, _.toArray)
+
+    // more?
 
   }
 
