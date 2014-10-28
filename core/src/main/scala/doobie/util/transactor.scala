@@ -4,7 +4,9 @@ package doobie.util
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
 import doobie.hi.connection.ProcessConnectionIOOps
 import doobie.syntax.catchable._
+import doobie.syntax.process._
 import doobie.util.capture._
+import doobie.util.query._
 
 import scalaz.syntax.monad._
 import scalaz.stream.Process
@@ -48,6 +50,15 @@ object transactor {
 
     // implementors need to give us this
     protected def connect: M[Connection] 
+
+    object yolo {
+
+      implicit class Query0YoloOps[A](q: Query0[A]) {
+        def quick: M[Unit] =
+          transact(q.run.sink(a => delay(Console.println(s"${Console.BLUE}  $a${Console.RESET}"))))
+      }
+
+    }
 
   }
 
