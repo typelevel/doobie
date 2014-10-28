@@ -50,6 +50,7 @@ object pgtypes {
   implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]
   implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]
   implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double]
+  implicit val (unliftedCharArrayType,    liftedCharArrayType)    = boxedPair[java.lang.Character]
   implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String]
 
   // Construct a pair of ScalaType instances for arrays of lifted (nullable) and unlifted (non-
@@ -63,13 +64,14 @@ object pgtypes {
   }
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) AnyVals
-  implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean, scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
-  implicit val (unliftedUnboxedByteArrayType,    liftedUnboxedByteArrayType)    = unboxedPair[java.lang.Byte,    scala.Byte](   _.byteValue,    java.lang.Byte.valueOf)
-  implicit val (unliftedUnboxedShortArrayType,   liftedUnboxedShortArrayType)   = unboxedPair[java.lang.Short,   scala.Short](  _.shortValue,   java.lang.Short.valueOf)
-  implicit val (unliftedUnboxedIntegerArrayType, liftedUnboxedIntegerArrayType) = unboxedPair[java.lang.Integer, scala.Int](    _.intValue,     java.lang.Integer.valueOf)
-  implicit val (unliftedUnboxedLongArrayType,    liftedUnboxedLongArrayType)    = unboxedPair[java.lang.Long,    scala.Long](   _.longValue,    java.lang.Long.valueOf)
-  implicit val (unliftedUnboxedFloatArrayType,   liftedUnboxedFloatArrayType)   = unboxedPair[java.lang.Float,   scala.Float](  _.floatValue,   java.lang.Float.valueOf)
-  implicit val (unliftedUnboxedDoubleArrayType,  liftedUnboxedDoubleArrayType)  = unboxedPair[java.lang.Double,  scala.Double]( _.doubleValue,  java.lang.Double.valueOf)
+  implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean,   scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
+  implicit val (unliftedUnboxedByteArrayType,    liftedUnboxedByteArrayType)    = unboxedPair[java.lang.Byte,      scala.Byte]   (_.byteValue,    java.lang.Byte.valueOf)
+  implicit val (unliftedUnboxedShortArrayType,   liftedUnboxedShortArrayType)   = unboxedPair[java.lang.Short,     scala.Short]  (_.shortValue,   java.lang.Short.valueOf)
+  implicit val (unliftedUnboxedIntegerArrayType, liftedUnboxedIntegerArrayType) = unboxedPair[java.lang.Integer,   scala.Int]    (_.intValue,     java.lang.Integer.valueOf)
+  implicit val (unliftedUnboxedLongArrayType,    liftedUnboxedLongArrayType)    = unboxedPair[java.lang.Long,      scala.Long]   (_.longValue,    java.lang.Long.valueOf)
+  implicit val (unliftedUnboxedFloatArrayType,   liftedUnboxedFloatArrayType)   = unboxedPair[java.lang.Float,     scala.Float]  (_.floatValue,   java.lang.Float.valueOf)
+  implicit val (unliftedUnboxedDoubleArrayType,  liftedUnboxedDoubleArrayType)  = unboxedPair[java.lang.Double,    scala.Double] (_.doubleValue,  java.lang.Double.valueOf)
+  implicit val (unliftedUnboxedCharArrayType,    liftedUnboxedCharArrayType)    = unboxedPair[java.lang.Character, scala.Char]   (_.charValue,    java.lang.Character.valueOf)
 
   // So, it turns out that arrays of structs don't work because something is missing from the
   // implementation. So this means we will only be able to support primitive types for arrays.
