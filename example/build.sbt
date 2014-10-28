@@ -18,3 +18,13 @@ scalacOptions ++= Seq(
   "-Xfatal-warnings"
 )
 
+initialCommands := """
+  import scalaz.concurrent.Task
+  import doobie.syntax.string._
+  import doobie.util.transactor._
+  import doobie.util.query.Query0
+  import doobie.util.update.Update0
+  val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "rnorris", "")
+  import xa.yolo._
+  """
+
