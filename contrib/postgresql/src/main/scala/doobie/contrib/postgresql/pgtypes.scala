@@ -1,5 +1,6 @@
 package doobie.contrib.postgresql
 
+import doobie.enum.jdbctype
 import doobie.util.scalatype.ScalaType
 
 import org.postgresql.util._
@@ -7,6 +8,7 @@ import org.postgresql.geometric._
 
 import scala.Predef._
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 /** `ScalaType` instances for PostgreSQL types. */
 object pgtypes {
@@ -35,43 +37,42 @@ object pgtypes {
 
   // Construct a pair of ScalaType instances for arrays of lifted (nullable) and unlifted (non-
   // nullable) reference types (as noted above, PostgreSQL doesn't ship arrays of primitives).
-  def boxedPair[A >: Null <: AnyRef: ClassTag]: (ScalaType[Array[A]], ScalaType[Array[Option[A]]]) = {
-    val raw = ScalaType.arrayType[A]
+  def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String): (ScalaType[Array[A]], ScalaType[Array[Option[A]]]) = {
+    val raw = ScalaType.arrayType[A](elemType)
     (raw, // TODO: ban nulls
-     raw.xmap[Array[Option[A]]](_.map(Option(_)), _.map(_.get).toArray)
+     raw.xmap[Array[Option[A]]](_.map(Option(_)), _.map(_.orNull).toArray)
     )
   }
 
-  // Arrays of lifted (nullable) and unlifted (non-nullable) Java wrapped primitives
-  implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]
-  implicit val (unliftedByteArrayType,    liftedByteArrayType)    = boxedPair[java.lang.Byte]
-  implicit val (unliftedShortArrayType,   liftedShortArrayType)   = boxedPair[java.lang.Short]
-  implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]
-  implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]
-  implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]
-  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double]
-  implicit val (unliftedCharArrayType,    liftedCharArrayType)    = boxedPair[java.lang.Character]
-  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String]
+  // Arrays of lifted (nullable) and unlifted (non-nullable) Java wrapped primitives. Note that the
+  // name of the element type is driver-specific and case-sensitive. (╯°□°）╯︵ ┻━┻ 
+  // So we need tests for all of these.
+  implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit")
+  implicit val (unliftedByteArrayType,    liftedByteArrayType)    = boxedPair[java.lang.Byte]   ("tinyint")
+  implicit val (unliftedShortArrayType,   liftedShortArrayType)   = boxedPair[java.lang.Short]  ("smallint")
+  implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]("integer")
+  implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("bigint")
+  implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("real")
+  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("double")
+  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar")
 
   // Construct a pair of ScalaType instances for arrays of lifted (nullable) and unlifted (non-
   // nullable) types xmapped to a desitination type B. This is a more general form of `boxedPair`
   // above, but distinct to avoid extra array copying in the base case.
-  def unboxedPair[A >: Null <: AnyRef: ClassTag, B: ClassTag](f: A => B, g: B => A): (ScalaType[Array[B]], ScalaType[Array[Option[B]]]) = {
-    val raw = ScalaType.arrayType[A]
-    (raw.xmap(_.map(f), _.map(g)), // TODO: ban nulls
-     raw.xmap(_.map(a => Option(f(a))), _.map(_.map(g).get).toArray)
+  def unboxedPair[A >: Null <: AnyRef: ClassTag, B: ClassTag](f: A => B, g: B => A)(implicit boxed: ScalaType[Array[A]]): (ScalaType[Array[B]], ScalaType[Array[Option[B]]]) = {
+    (boxed.xmap(_.map(f), _.map(g)), // TODO: ban nulls
+     boxed.xmap(_.map(a => Option(a).map(f)), _.map(_.map(g).orNull).toArray)
     )  
   }
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) AnyVals
-  implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean,   scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
-  implicit val (unliftedUnboxedByteArrayType,    liftedUnboxedByteArrayType)    = unboxedPair[java.lang.Byte,      scala.Byte]   (_.byteValue,    java.lang.Byte.valueOf)
-  implicit val (unliftedUnboxedShortArrayType,   liftedUnboxedShortArrayType)   = unboxedPair[java.lang.Short,     scala.Short]  (_.shortValue,   java.lang.Short.valueOf)
-  implicit val (unliftedUnboxedIntegerArrayType, liftedUnboxedIntegerArrayType) = unboxedPair[java.lang.Integer,   scala.Int]    (_.intValue,     java.lang.Integer.valueOf)
-  implicit val (unliftedUnboxedLongArrayType,    liftedUnboxedLongArrayType)    = unboxedPair[java.lang.Long,      scala.Long]   (_.longValue,    java.lang.Long.valueOf)
-  implicit val (unliftedUnboxedFloatArrayType,   liftedUnboxedFloatArrayType)   = unboxedPair[java.lang.Float,     scala.Float]  (_.floatValue,   java.lang.Float.valueOf)
-  implicit val (unliftedUnboxedDoubleArrayType,  liftedUnboxedDoubleArrayType)  = unboxedPair[java.lang.Double,    scala.Double] (_.doubleValue,  java.lang.Double.valueOf)
-  implicit val (unliftedUnboxedCharArrayType,    liftedUnboxedCharArrayType)    = unboxedPair[java.lang.Character, scala.Char]   (_.charValue,    java.lang.Character.valueOf)
+  implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean, scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
+  implicit val (unliftedUnboxedByteArrayType,    liftedUnboxedByteArrayType)    = unboxedPair[java.lang.Byte,    scala.Byte]   (_.byteValue,    java.lang.Byte.valueOf)
+  implicit val (unliftedUnboxedShortArrayType,   liftedUnboxedShortArrayType)   = unboxedPair[java.lang.Short,   scala.Short]  (_.shortValue,   java.lang.Short.valueOf)
+  implicit val (unliftedUnboxedIntegerArrayType, liftedUnboxedIntegerArrayType) = unboxedPair[java.lang.Integer, scala.Int]    (_.intValue,     java.lang.Integer.valueOf)
+  implicit val (unliftedUnboxedLongArrayType,    liftedUnboxedLongArrayType)    = unboxedPair[java.lang.Long,    scala.Long]   (_.longValue,    java.lang.Long.valueOf)
+  implicit val (unliftedUnboxedFloatArrayType,   liftedUnboxedFloatArrayType)   = unboxedPair[java.lang.Float,   scala.Float]  (_.floatValue,   java.lang.Float.valueOf)
+  implicit val (unliftedUnboxedDoubleArrayType,  liftedUnboxedDoubleArrayType)  = unboxedPair[java.lang.Double,  scala.Double] (_.doubleValue,  java.lang.Double.valueOf)
 
   // So, it turns out that arrays of structs don't work because something is missing from the
   // implementation. So this means we will only be able to support primitive types for arrays.
