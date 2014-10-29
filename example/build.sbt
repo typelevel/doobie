@@ -19,6 +19,7 @@ scalacOptions ++= Seq(
 )
 
 initialCommands := """
+  import scalaz._,Scalaz._
   import scalaz.concurrent.Task
   import doobie.syntax.string._
   import doobie.util.transactor._
