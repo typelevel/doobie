@@ -279,8 +279,14 @@ object scalatype {
     }
 
     /** Construct a `ScalaType[A]` mapped to an opaque `JavaObject` JDBC type. */
-    def objectType[A <: AnyRef]: ScalaType[A] =
-      AnyRefType.xmap(_.asInstanceOf[A], a => a) // TODO: throw a better error message
+    def objectType[A <: AnyRef](implicit A: ClassTag[A]): ScalaType[A] = {
+      val runtimeClass = A.runtimeClass
+      AnyRefType.xmap(a => {
+        // this forces the cast right here rather than leaking a mistyped value
+        // TODO: improve reporting with an invariant violation
+        Option(runtimeClass.cast(a).asInstanceOf[A]).getOrElse(sys.error(s"can't cast $a (${a.getClass.getName}) to ${runtimeClass.getName}"))
+      }, a => a) // TODO: better error message
+    }
 
     /** 
      * Construct an ARRAY type for the given reference type, with driver-specific `elementType` 

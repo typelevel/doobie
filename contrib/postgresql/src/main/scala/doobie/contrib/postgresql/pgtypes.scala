@@ -3,6 +3,9 @@ package doobie.contrib.postgresql
 import doobie.enum.jdbctype
 import doobie.util.scalatype.ScalaType
 
+import java.util.UUID
+import java.net.InetAddress
+
 import org.postgresql.util._
 import org.postgresql.geometric._
 
@@ -13,16 +16,39 @@ import scala.reflect.runtime.universe.TypeTag
 /** `ScalaType` instances for PostgreSQL types. */
 object pgtypes {
 
-  // The PG* types map nicely via getObject; nothing special is needed here.
+  // Geometric Types, minus PGline which is "not fully implemented"
   implicit val PGboxType      = ScalaType.objectType[PGbox]
   implicit val PGcircleType   = ScalaType.objectType[PGcircle]
-  implicit val PGIntervalType = ScalaType.objectType[PGInterval]
-  implicit val PGlineType     = ScalaType.objectType[PGline]
   implicit val PGlsegType     = ScalaType.objectType[PGlseg]
-  implicit val PGmoneyType    = ScalaType.objectType[PGmoney]
   implicit val PGpathType     = ScalaType.objectType[PGpath]
   implicit val PGpointType    = ScalaType.objectType[PGpoint]
   implicit val PGpolygonType  = ScalaType.objectType[PGpolygon]
+
+  // PGmoney doesn't seem to work:
+  // PSQLException: : Bad value for type double : 1,234.56  (AbstractJdbc2ResultSet.java:3059)
+  //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.toDouble(AbstractJdbc2ResultSet.java:3059)
+  //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.getDouble(AbstractJdbc2ResultSet.java:2383)
+  //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.internalGetObject(AbstractJdbc2ResultSet.java:152)
+  //   org.postgresql.jdbc3.AbstractJdbc3ResultSet.internalGetObject(AbstractJdbc3ResultSet.java:36)
+  //   org.postgresql.jdbc4.AbstractJdbc4ResultSet.internalGetObject(AbstractJdbc4ResultSet.java:300)
+  //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.getObject(AbstractJdbc2ResultSet.java:2704)
+
+  // Interval Type (TODO)
+  // implicit val PGIntervalType = ScalaType.objectType[PGInterval]
+
+  // UUID
+  implicit val UuidType = ScalaType.objectType[UUID]
+
+  // Network Address Types
+  implicit val InetType = ScalaType.objectType[PGobject].xmap[InetAddress](
+    o => Option(o.getValue).map(InetAddress.getByName).orNull,
+    a => Option(a).map { a =>
+        val o = new PGobject
+        o.setType("inet")
+        o.setValue(a.getHostAddress)
+        o
+      }.orNull
+    )
 
   // java.sql.Array::getArray returns an Object that may be of primitive type or of boxed type,
   // depending on the driver, so we can't really abstract over it. Also there's no telling what 
@@ -48,12 +74,12 @@ object pgtypes {
   // name of the element type is driver-specific and case-sensitive. (╯°□°）╯︵ ┻━┻ 
   // So we need tests for all of these.
   implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit")
-  implicit val (unliftedByteArrayType,    liftedByteArrayType)    = boxedPair[java.lang.Byte]   ("tinyint")
-  implicit val (unliftedShortArrayType,   liftedShortArrayType)   = boxedPair[java.lang.Short]  ("smallint")
+//implicit val (unliftedByteArrayType,    liftedByteArrayType)    = boxedPair[java.lang.Byte]   ("tinyint")
+//implicit val (unliftedShortArrayType,   liftedShortArrayType)   = boxedPair[java.lang.Short]  ("smallint")
   implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]("integer")
   implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("bigint")
   implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("real")
-  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("double")
+  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("double precision")
   implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar")
 
   // Construct a pair of ScalaType instances for arrays of lifted (nullable) and unlifted (non-
@@ -67,8 +93,8 @@ object pgtypes {
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) AnyVals
   implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean, scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
-  implicit val (unliftedUnboxedByteArrayType,    liftedUnboxedByteArrayType)    = unboxedPair[java.lang.Byte,    scala.Byte]   (_.byteValue,    java.lang.Byte.valueOf)
-  implicit val (unliftedUnboxedShortArrayType,   liftedUnboxedShortArrayType)   = unboxedPair[java.lang.Short,   scala.Short]  (_.shortValue,   java.lang.Short.valueOf)
+//implicit val (unliftedUnboxedByteArrayType,    liftedUnboxedByteArrayType)    = unboxedPair[java.lang.Byte,    scala.Byte]   (_.byteValue,    java.lang.Byte.valueOf)
+//implicit val (unliftedUnboxedShortArrayType,   liftedUnboxedShortArrayType)   = unboxedPair[java.lang.Short,   scala.Short]  (_.shortValue,   java.lang.Short.valueOf)
   implicit val (unliftedUnboxedIntegerArrayType, liftedUnboxedIntegerArrayType) = unboxedPair[java.lang.Integer, scala.Int]    (_.intValue,     java.lang.Integer.valueOf)
   implicit val (unliftedUnboxedLongArrayType,    liftedUnboxedLongArrayType)    = unboxedPair[java.lang.Long,    scala.Long]   (_.longValue,    java.lang.Long.valueOf)
   implicit val (unliftedUnboxedFloatArrayType,   liftedUnboxedFloatArrayType)   = unboxedPair[java.lang.Float,   scala.Float]  (_.floatValue,   java.lang.Float.valueOf)
