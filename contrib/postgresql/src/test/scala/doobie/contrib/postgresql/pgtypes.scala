@@ -16,6 +16,7 @@ import org.specs2.mutable.Specification
 
 import scalaz.concurrent.Task
 
+// Establisg that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object pgtypesspec extends Specification {
 
   val xa = DriverManagerTransactor[Task](
@@ -29,7 +30,55 @@ object pgtypesspec extends Specification {
       xa.transact(prepareStatement(s"SELECT $e")(executeQuery(getUnique[A]))).run
   }
 
-  "Geometric Types" >> {
+  "8.1 Numeric Types" >> {
+    "smallint         → Short"      in { "123::smallint".as[Short] must_== 123 }
+    "integer          → Int"        in { "123::integer".as[Int] must_== 123 }
+    "bigint           → Long"       in { "123::bigint".as[Long] must_== 123 }
+    "decimal          → BigDecimal" in { "123.45::decimal".as[BigDecimal] must_== 123.45 }
+    "numeric          → BigDecimal" in { "123.456::numeric".as[BigDecimal] must_== 123.456 }
+    "real             → Float"      in { "123.456::real".as[Float] must_== 123.456f }
+    "double precision → Double"     in { "123.456::double precision".as[Double] must_== 123.456 }
+  }
+
+  "8.2 Monetary Types" >> {
+    "money             → PGmoney" in { 
+      skipped("* seems not to work; comes back a DOUBLE ")
+    }
+  }
+
+  "8.3 Character Types" >> {
+    "character varying → String" in { "'abcdef'::character varying".as[String] must_== "abcdef"}
+    "varchar           → String" in { "'abcdef'::varchar".as[String] must_== "abcdef"}
+    "character         → String" in { "'abcdef'::character(6)".as[String] must_== "abcdef"}
+    "char              → String" in { "'abcdef'::char(6)".as[String] must_== "abcdef"}
+    "text              → String" in { "'abcdef'::text".as[String] must_== "abcdef"}
+  }
+
+  "8.4 Binary Types" >> {
+    "bytea             → Array[Byte]" in { 
+      """E'\\xDEADBEEF'::bytea""".as[List[Byte]] must_== 
+        BigInt("DEADBEEF",16).toByteArray.dropWhile(_ == 0).toList 
+    }
+  }
+
+  "8.5 Date/Time Types" >> {
+    "timestamp" in pending
+    "timestamp with time zone" in pending
+    "date" in pending
+    "time" in pending
+    "time with time zone" in pending
+    "interval" in pending
+  }
+
+  "8.6 Boolean Type" >> {
+    "boolean" in pending
+  }
+
+  "8.7 Enumerated Types" >> {
+    "«example»" in pending
+  }
+
+  "8.8 Geometric Types" >> {
     "box     → PGbox" in { 
       "'((1,2),(3,4))'::box".as[PGbox] must_== new PGbox(new PGpoint(1, 2), new PGpoint(3, 4)) 
     }
@@ -54,19 +103,7 @@ object pgtypesspec extends Specification {
     "line    → PGline" in skipped("* doc says: \"not fully implemented\"")
   }
 
-  "Monetary Types" >> {
-    "money   → PGmoney" in { 
-      skipped("* seems not to work; comes back a DOUBLE ")
-    }
-  }
-
-  "UUID Type" >> {
-    "uuid    → UUID" in {
-      "'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid".as[UUID] must_== UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
-    }
-  }
-
-  "Network Address Types" >>  {
+  "8.9 Network Address Types" >> {
     "inet    → InetAddress" in {
       "'123.45.67.8'::inet".as[InetAddress] must_== InetAddress.getByName("123.45.67.8")
     }
@@ -74,7 +111,26 @@ object pgtypesspec extends Specification {
     "macaddr → ???" in skipped("* No suitable JDK Type")
   }
 
-  "Array Types" >> {
+  "8.10 Bit String Types" >> {
+    "bit" in pending
+    "bit varying" in pending
+  }
+
+  "8.11 Text Search Types" >> {
+    "tsvector" in pending
+    "tsquery" in pending
+  }
+
+  "8.12 UUID Type" >> {
+    "uuid    → UUID" in {
+      "'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid".as[UUID] must_== UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
+    }
+  }
+
+
+
+
+  "8.15 Arrays" >> {
     "bit[]              → Array[Boolean]" in {
       "'{1, 0}'::bit[]".as[List[Boolean]] must_== List[Boolean](true, false)
     }

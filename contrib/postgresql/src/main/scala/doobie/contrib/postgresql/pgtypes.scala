@@ -13,6 +13,8 @@ import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
+import scalaz._, Scalaz._
+
 /** `ScalaType` instances for PostgreSQL types. */
 object pgtypes {
 
@@ -42,13 +44,7 @@ object pgtypes {
   // Network Address Types
   implicit val InetType = ScalaType.objectType[PGobject].xmap[InetAddress](
     o => Option(o.getValue).map(InetAddress.getByName).orNull,
-    a => Option(a).map { a =>
-        val o = new PGobject
-        o.setType("inet")
-        o.setValue(a.getHostAddress)
-        o
-      }.orNull
-    )
+    a => Option(a).map(a => new PGobject <| (_.setType("inet")) <| (_.setValue(a.getHostAddress))).orNull)
 
   // java.sql.Array::getArray returns an Object that may be of primitive type or of boxed type,
   // depending on the driver, so we can't really abstract over it. Also there's no telling what 
@@ -72,7 +68,6 @@ object pgtypes {
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) Java wrapped primitives. Note that the
   // name of the element type is driver-specific and case-sensitive. (╯°□°）╯︵ ┻━┻ 
-  // So we need tests for all of these.
   implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit")
 //implicit val (unliftedByteArrayType,    liftedByteArrayType)    = boxedPair[java.lang.Byte]   ("tinyint")
 //implicit val (unliftedShortArrayType,   liftedShortArrayType)   = boxedPair[java.lang.Short]  ("smallint")
