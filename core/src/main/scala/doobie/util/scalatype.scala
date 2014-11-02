@@ -2,6 +2,7 @@ package doobie.util
 
 import doobie.enum.jdbctype.{ Array => JdbcArray, _ }
 import doobie.free.{ connection => C, resultset => RS, preparedstatement => PS, statement => S }
+import doobie.util.invariant._
 
 import java.sql.{ Array => SqlArray }
 
@@ -279,26 +280,30 @@ object scalatype {
     }
 
     /** Construct a `ScalaType[A]` mapped to an opaque `JavaObject` JDBC type. */
-    def objectType[A <: AnyRef](implicit A: ClassTag[A]): ScalaType[A] = {
+    def objectType[A >: Null <: AnyRef](implicit A: ClassTag[A]): ScalaType[A] = {
       val runtimeClass = A.runtimeClass
-      AnyRefType.xmap(a => {
-        // this forces the cast right here rather than leaking a mistyped value
-        // TODO: improve reporting with an invariant violation
-        Option(runtimeClass.cast(a).asInstanceOf[A]).getOrElse(sys.error(s"can't cast $a (${a.getClass.getName}) to ${runtimeClass.getName}"))
-      }, a => a) // TODO: better error message
+      AnyRefType.xmap(a => {        
+        if (a == null) 
+          null
+        else 
+          try runtimeClass.cast(a).asInstanceOf[A] // force the cast
+          catch {
+            case cce: ClassCastException => throw InvalidObjectMapping(runtimeClass, a.getClass)
+          }
+      }, a => a)
     }
 
     /** 
      * Construct an ARRAY type for the given reference type, with driver-specific `elementType` 
      * (which is passed to `Connection::createArrayOf(...)`. The JDBC API for arrays is really 
-     * terrible and totally unportable, sorry.
+     * terrible, sorry.
      */
     def arrayType[A >: Null <: AnyRef: ClassTag: TypeTag](elementType: String): ScalaType[Array[A]] =
       new ScalaType[Array[A]] {
         val tag = Predef.implicitly[TypeTag[Array[A]]]
         val primaryTarget = JdbcArray
         val secondaryTargets = List()
-        val get = RS.getArray(_: Int).map(_.getArray.asInstanceOf[Array[A]])
+        val get = RS.getArray(_: Int).map(a => (if (a == null) null else a.getArray).asInstanceOf[Array[A]])
         val set = (n: Int, a: Array[A]) =>
           for {
             conn <- PS.getConnection
@@ -317,10 +322,10 @@ object scalatype {
       }
 
     implicit def ArrayTypeAsListType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[List[A]] =
-      ev.xmap(_.toList, _.toArray)
+      ev.xmap(a => if (a == null) null else a.toList, a => if (a == null) null else a.toArray)
 
     implicit def ArrayTypeAsVectorType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[Vector[A]] =
-      ev.xmap(_.toVector, _.toArray)
+      ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
 
     // more?
 
