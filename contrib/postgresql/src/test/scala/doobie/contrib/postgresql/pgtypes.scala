@@ -16,7 +16,7 @@ import org.specs2.mutable.Specification
 
 import scalaz.concurrent.Task
 
-// Establisg that we can read various types. It's not very comprehensive as a test, bit it's a start.
+// Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object pgtypesspec extends Specification {
 
   val xa = DriverManagerTransactor[Task](
@@ -62,12 +62,12 @@ object pgtypesspec extends Specification {
   }
 
   "8.5 Date/Time Types" >> {
-    "timestamp" in pending
+    "timestamp               " in pending
     "timestamp with time zone" in pending
-    "date" in pending
-    "time" in pending
-    "time with time zone" in pending
-    "interval" in pending
+    "date                    " in pending
+    "time                    " in pending
+    "time with time zone     " in pending
+    "interval                " in pending
   }
 
   "8.6 Boolean Type" >> {
@@ -112,13 +112,13 @@ object pgtypesspec extends Specification {
   }
 
   "8.10 Bit String Types" >> {
-    "bit" in pending
+    "bit        " in pending
     "bit varying" in pending
   }
 
   "8.11 Text Search Types" >> {
     "tsvector" in pending
-    "tsquery" in pending
+    "tsquery " in pending
   }
 
   "8.12 UUID Type" >> {
@@ -127,14 +127,19 @@ object pgtypesspec extends Specification {
     }
   }
 
+  "8.13 XML Type" >> {
+    "xml" in pending
+  }
 
-
+  "8.14 JSON Type" >> {
+    "json" in pending
+  }
 
   "8.15 Arrays" >> {
     "bit[]              → Array[Boolean]" in {
       "'{1, 0}'::bit[]".as[List[Boolean]] must_== List[Boolean](true, false)
     }
-    "???                → Array[Byte] " in skipped(" * No byte type; use a binary type.")
+    "???                → Array[Byte]  " in skipped("* No byte type; bytea.")
     "smallint[]         → Array[Short] " in skipped("* Oops always comes back as Array[Int]")
     "integer[]          → Array[Int]" in {
       "'{1,2}'::integer[]".as[List[Int]] must_== List[Int](1,2)
@@ -151,6 +156,28 @@ object pgtypesspec extends Specification {
     "varchar[]          → Array[String]" in {
       "ARRAY['foo', 'bar']::varchar[]".as[List[String]] must_== List[String]("foo", "bar")
     } 
+  }
+
+  "8.16 Composite Types" >> {
+    "composite" in pending
+  }
+
+  "8.17 Range Types" >> {
+    "int4range" in pending
+    "int8range" in pending
+    "numrange " in pending
+    "tsrange  " in pending
+    "tstzrange" in pending
+    "daterange" in pending
+    "custom   " in pending
+  }
+
+  "8.18 Object Identifier Types" >> {
+    "n/a" in skipped
+  }
+
+  "8.19 Pseudo-Types" >> {
+    "n/a" in skipped
   }
 
 }

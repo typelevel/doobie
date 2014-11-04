@@ -19,6 +19,8 @@ import scalaz._, Scalaz._
 /** `ScalaType` instances for PostgreSQL types. */
 object pgtypes {
 
+  // N.B. `ScalaType` is the lowest-level mapping and must always cope with NULL. Easy to forget.
+
   // Geometric Types, minus PGline which is "not fully implemented"
   implicit val PGboxType      = ScalaType.objectType[PGbox]
   implicit val PGcircleType   = ScalaType.objectType[PGcircle]
@@ -113,3 +115,7 @@ object pgtypes {
   // we can certainly do better than that.
 
 }
+
+
+
+
