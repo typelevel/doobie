@@ -43,7 +43,9 @@ object analysis {
   case class ParameterTypeError(index: Int, scalaType: ScalaType[_], n: NullabilityKnown, jdbcType: JdbcType, vendorTypeName: String, nativeMap: Map[String, JdbcType]) extends AlignmentError {
     val tag = "P"
     def msg = 
-      s"""|${typeName(scalaType, n)} is likely not coercible to ${jdbcType.toString.toUpperCase}.
+      s"""|${typeName(scalaType, n)} is not coercible to ${jdbcType.toString.toUpperCase}
+          |(${vendorTypeName})
+          |according to the JDBC specification.
           |Fix this by changing the schema type to ${scalaType.primaryTarget.toString.toUpperCase}, 
           |or the Scala type to ${typeName(ScalaType.forPrimaryTarget(jdbcType).get, n)}.""".stripMargin.lines.mkString(" ")
   }
@@ -59,22 +61,15 @@ object analysis {
     }
   }
 
-  case class NullabilityMisalignment(index: Int, name: String, st: ScalaType[_], jdk: Nullability, jdbc: Nullability) extends AlignmentError {
+  case class NullabilityMisalignment(index: Int, name: String, st: ScalaType[_], jdk: NullabilityKnown, jdbc: NullabilityKnown) extends AlignmentError {
     val tag = "C"
     def msg = this match {
-      case NullabilityMisalignment(i, name, st, Nullable, NoNulls) => 
-        s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
       case NullabilityMisalignment(i, name, st, NoNulls, Nullable) => 
+        s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
+      case NullabilityMisalignment(i, name, st, Nullable, NoNulls) => 
         s"""|Reading a NULL value into ${typeName(st, NoNulls)} will result in a runtime failure. 
             |Fix this by making the schema type ${formatNullability(NoNulls)} or by changing the 
             |Scala type to ${typeName(st, Nullable)}""".stripMargin.lines.mkString(" ")
-      case NullabilityMisalignment(i, name, st, NoNulls, NullableUnknown)  => 
-        s"""|Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may want 
-            |to map to an Option type; reading a NULL value will result in a runtime 
-            |failure.""".stripMargin.lines.mkString(" ")
-      case NullabilityMisalignment(i, name, st, Nullable, NullableUnknown) => 
-        s"""|Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may not 
-            |need the Option wrapper.""".stripMargin.lines.mkString(" ")
     }
   }
 
@@ -83,13 +78,15 @@ object analysis {
     def msg =
       ScalaType.forPrimarySource(schema.jdbcType).map(typeName(_, n)) match {
         case Some(st) => 
-          s"""|${schema.jdbcType.toString.toUpperCase} is likely not coercible to ${typeName(jdk, n)}. 
+          s"""|${schema.jdbcType.toString.toUpperCase} (${schema.vendorTypeName}) is not 
+              |coercible to ${typeName(jdk, n)} according to the JDBC specification. 
               |Fix this by changing the schema type to 
-              |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }; or the
+              |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }, or the
               |Scala type to $st.
               |""".stripMargin.lines.mkString(" ")
         case None =>
-          s"""|${schema.jdbcType.toString.toUpperCase} is likely not coercible to ${typeName(jdk, n)}. 
+          s"""|${schema.jdbcType.toString.toUpperCase} (${schema.vendorTypeName}) is not 
+              |coercible to ${typeName(jdk, n)} according to the JDBC specification. 
               |Fix this by changing the schema type to 
               |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }; or the
               |Scala type to an appropriate ${if (schema.jdbcType == Array) "array" else "object"} 
@@ -101,8 +98,10 @@ object analysis {
   case class ColumnTypeWarning(index: Int, jdk: ScalaType[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
     val tag = "C"
     def msg =
-      s"""|${schema.jdbcType.toString.toUpperCase} is ostensibly coercible to ${typeName(jdk, n)}
-          |but is not a recommended target type. Fix this by changing the schema type to 
+      s"""|${schema.jdbcType.toString.toUpperCase} (${schema.vendorTypeName}) is ostensibly 
+          |coercible to ${typeName(jdk, n)}
+          |according to the JDBC specification but is not a recommended target type. Fix this by 
+          |changing the schema type to 
           |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }; or the
           |Scala type to ${ScalaType.forPrimarySource(schema.jdbcType).map(typeName(_, n)).get}.
           |""".stripMargin.lines.mkString(" ")
@@ -147,8 +146,9 @@ object analysis {
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
       columnAlignment.zipWithIndex.collect {
-        case (Both((st, na), ColumnMeta(_, _, nb, col)), n) if na != nb => 
-          NullabilityMisalignment(n + 1, col, st, na, nb)
+        case (Both((st, Nullable), ColumnMeta(_, _, NoNulls, col)), n) => NullabilityMisalignment(n + 1, col, st, NoNulls, Nullable)
+        case (Both((st, NoNulls), ColumnMeta(_, _, Nullable, col)), n) => NullabilityMisalignment(n + 1, col, st, Nullable, NoNulls)
+        // N.B. if we had a warning mechanism we could issue a warning for NullableUnknown
       }
 
     lazy val parameterAlignmentErrors = 
@@ -207,7 +207,7 @@ object analysis {
     n match {
       case NoNulls         => "NOT NULL"
       case Nullable        => "NULL"
-      case NullableUnknown => "???"
+      case NullableUnknown => "NULL?"
     }
 
 
