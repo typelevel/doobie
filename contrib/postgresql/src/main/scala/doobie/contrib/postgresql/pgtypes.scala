@@ -68,7 +68,7 @@ object pgtypes {
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String): (ScalaType[Array[A]], ScalaType[Array[Option[A]]]) = {
     val raw = ScalaType.arrayType[A](elemType)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
-    def checkNull[A >: Null](a: Array[A], e: Exception): Array[A] =
+    def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a
     (raw.xmap(checkNull(_, NullableCellRead), checkNull(_, NullableCellUpdate)),
      raw.xmap[Array[Option[A]]](_.map(Option(_)), _.map(_.orNull).toArray))
