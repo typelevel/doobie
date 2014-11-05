@@ -68,11 +68,11 @@ object analysis {
         s"""|Reading a NULL value into ${typeName(st, NoNulls)} will result in a runtime failure. 
             |Fix this by making the schema type ${formatNullability(NoNulls)} or by changing the 
             |Scala type to ${typeName(st, Nullable)}""".stripMargin.lines.mkString(" ")
-      case NullabilityMisalignment(i, name, st, NullableUnknown, NoNulls)  => 
+      case NullabilityMisalignment(i, name, st, NoNulls, NullableUnknown)  => 
         s"""|Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may want 
             |to map to an Option type; reading a NULL value will result in a runtime 
             |failure.""".stripMargin.lines.mkString(" ")
-      case NullabilityMisalignment(i, name, st, NullableUnknown, Nullable) => 
+      case NullabilityMisalignment(i, name, st, Nullable, NullableUnknown) => 
         s"""|Column ${name.toUpperCase} may be nullable, but the driver doesn't know. You may not 
             |need the Option wrapper.""".stripMargin.lines.mkString(" ")
     }
@@ -81,11 +81,21 @@ object analysis {
   case class ColumnTypeError(index: Int, jdk: ScalaType[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
     val tag = "C"
     def msg =
-      s"""|${schema.jdbcType.toString.toUpperCase} is likely not coercible to ${typeName(jdk, n)}. 
-          |Fix this by changing the schema type to 
-          |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }; or the
-          |Scala type to ${ScalaType.forPrimarySource(schema.jdbcType).map(typeName(_, n)).get}.
-          |""".stripMargin.lines.mkString(" ")
+      ScalaType.forPrimarySource(schema.jdbcType).map(typeName(_, n)) match {
+        case Some(st) => 
+          s"""|${schema.jdbcType.toString.toUpperCase} is likely not coercible to ${typeName(jdk, n)}. 
+              |Fix this by changing the schema type to 
+              |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }; or the
+              |Scala type to $st.
+              |""".stripMargin.lines.mkString(" ")
+        case None =>
+          s"""|${schema.jdbcType.toString.toUpperCase} is likely not coercible to ${typeName(jdk, n)}. 
+              |Fix this by changing the schema type to 
+              |${jdk.primarySources.list.map(_.toString.toUpperCase).mkString(" or ") }; or the
+              |Scala type to an appropriate ${if (schema.jdbcType == Array) "array" else "object"} 
+              |type.
+              |""".stripMargin.lines.mkString(" ")
+      }
   }
 
   case class ColumnTypeWarning(index: Int, jdk: ScalaType[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
@@ -170,9 +180,9 @@ object analysis {
       import scalaz._, Scalaz._
       val cols: Block = 
         columnAlignment.zipWithIndex.map { 
-          case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", typeName(j1, n1))            
-          case (This((j1, n1)),                            i)                            => List(f"C${i+1}%02d", "",          "",                      "",                    " → ", typeName(j1, n1))    
-          case (That(          ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m.toUpperCase, j2.toString.toUpperCase, formatNullability(n2), " → ", "")        
+          case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", typeName(j1, n1))            
+          case (This((j1, n1)),                            i) => List(f"C${i+1}%02d", "",          "", "",                       "",                    " → ", typeName(j1, n1))    
+          case (That(          ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", "")        
         } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
       cols.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, columnAlignmentErrors.filter(_.index == n + 1))
@@ -197,7 +207,7 @@ object analysis {
     n match {
       case NoNulls         => "NOT NULL"
       case Nullable        => "NULL"
-      case NullableUnknown => "«null?»"
+      case NullableUnknown => "???"
     }
 
 
