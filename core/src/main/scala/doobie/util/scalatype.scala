@@ -1,10 +1,15 @@
 package doobie.util
 
-import doobie.enum.jdbctype._
-import doobie.free.{ resultset => RS, preparedstatement => PS }
+import doobie.enum.jdbctype.{ Array => JdbcArray, _ }
+import doobie.free.{ connection => C, resultset => RS, preparedstatement => PS, statement => S }
+import doobie.util.invariant._
+
+import java.sql.{ Array => SqlArray }
 
 import scala.annotation.implicitNotFound
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.ClassTag
+import scala.Predef._
 
 import scalaz.{ InvariantFunctor, NonEmptyList }
 import scalaz.syntax.equal._
@@ -275,8 +280,54 @@ object scalatype {
     }
 
     /** Construct a `ScalaType[A]` mapped to an opaque `JavaObject` JDBC type. */
-    def objectType[A <: AnyRef]: ScalaType[A] =
-      AnyRefType.xmap(_.asInstanceOf[A], a => a) // TODO: throw a better error message
+    def objectType[A >: Null <: AnyRef](implicit A: ClassTag[A]): ScalaType[A] = {
+      val runtimeClass = A.runtimeClass
+      AnyRefType.xmap(a => {        
+        if (a == null) 
+          null
+        else 
+          try runtimeClass.cast(a).asInstanceOf[A] // force the cast
+          catch {
+            case cce: ClassCastException => throw InvalidObjectMapping(runtimeClass, a.getClass)
+          }
+      }, a => a)
+    }
+
+    /** 
+     * Construct an ARRAY type for the given reference type, with driver-specific `elementType` 
+     * (which is passed to `Connection::createArrayOf(...)`. The JDBC API for arrays is really 
+     * terrible, sorry.
+     */
+    def arrayType[A >: Null <: AnyRef: ClassTag: TypeTag](elementType: String): ScalaType[Array[A]] =
+      new ScalaType[Array[A]] {
+        val tag = Predef.implicitly[TypeTag[Array[A]]]
+        val primaryTarget = JdbcArray
+        val secondaryTargets = List()
+        val get = RS.getArray(_: Int).map(a => (if (a == null) null else a.getArray).asInstanceOf[Array[A]])
+        val set = (n: Int, a: Array[A]) =>
+          for {
+            conn <- PS.getConnection
+            arr  <- PS.liftConnection(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
+            _    <- PS.setArray(n, arr)
+          } yield ()
+        val update = (n: Int, a: Array[A]) => 
+          for {
+            stmt <- RS.getStatement // somewhat irritating; no getConnection on ResultSet
+            conn <- RS.liftStatement(stmt, S.getConnection)
+            arr  <- RS.liftConnection(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
+            _    <- RS.updateArray(n, arr)
+          } yield ()
+        val primarySources = NonEmptyList(JdbcArray)
+        val secondarySources = List()
+      }
+
+    implicit def ArrayTypeAsListType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[List[A]] =
+      ev.xmap(a => if (a == null) null else a.toList, a => if (a == null) null else a.toArray)
+
+    implicit def ArrayTypeAsVectorType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[Vector[A]] =
+      ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
+
+    // more?
 
   }
 

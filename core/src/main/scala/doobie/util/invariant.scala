@@ -36,4 +36,15 @@ object invariant {
   final case class NonNullableColumnRead(index: Int, jdbcType: JdbcType)
     extends MappingViolation(s"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here.")
 
+  /** Array violations. Not terribly illuminating at this point. */
+  sealed abstract class ArrayStructureViolation(msg: String) extends InvariantViolation(msg)
+  final case object NullableCellRead 
+    extends ArrayStructureViolation("SQL `NULL` appears in an array cell that was asserted to be non-null.")
+  final case object NullableCellUpdate
+    extends ArrayStructureViolation("Scala `null` value appears in an array cell that was asserted to be non-null.")
+
+  /** Invalid JAVA_OBJECT mapping. */
+  final case class InvalidObjectMapping[A, B](expected: Class[A], actual: Class[B])
+    extends InvariantViolation(s"SQL object of class ${actual.getName} cannot be cast to mapped class ${expected.getName}.") 
+
 }
