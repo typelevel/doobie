@@ -46,7 +46,7 @@ object pgtypes {
 
   // Network Address Types
   implicit val InetType = ScalaType.objectType[PGobject].xmap[InetAddress](
-    o => Option(if (o == null) null else o.getValue).map(InetAddress.getByName).orNull,
+    o => Option(o).map(a => InetAddress.getByName(a.getValue)).orNull,
     a => Option(a).map(a => new PGobject <| (_.setType("inet")) <| (_.setValue(a.getHostAddress))).orNull)
 
   // java.sql.Array::getArray returns an Object that may be of primitive type or of boxed type,
@@ -65,10 +65,11 @@ object pgtypes {
   // automatic lifting to Atom will give us lifted and unlifted arrays, for a total of four variants
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
-  def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String): (ScalaType[Array[A]], ScalaType[Array[Option[A]]]) = {
+  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String): (ScalaType[Array[A]], ScalaType[Array[Option[A]]]) = {
     val raw = ScalaType.arrayType[A](elemType)
+    // Ensure `a`, which may be null, which is ok, contains no null elements.
     def checkNull[A >: Null](a: Array[A], e: Exception): Array[A] =
-      if (a == null) a else if (a.exists(_ == null)) throw e else a
+      if (a == null) null else if (a.exists(_ == null)) throw e else a
     (raw.xmap(checkNull(_, NullableCellRead), checkNull(_, NullableCellUpdate)),
      raw.xmap[Array[Option[A]]](_.map(Option(_)), _.map(_.orNull).toArray))
   }
@@ -91,7 +92,7 @@ object pgtypes {
   private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag](f: A => B, g: B => A)(
     implicit boxed: ScalaType[Array[A]], boxedLifted: ScalaType[Array[Option[A]]]): (ScalaType[Array[B]], ScalaType[Array[Option[B]]]) = 
     // TODO: assert, somehow, that A is the boxed version of B so we catch errors on instance 
-    // construction, which is somewhat better than at [logical] execution time. :-\
+    // construction, which is somewhat better than at [logical] execution time.
     (boxed.xmap(a => if (a == null) null else a.map(f), a => if (a == null) null else a.map(g)),
      boxedLifted.xmap(_.asInstanceOf[Array[Option[B]]], _.asInstanceOf[Array[Option[A]]])) 
 
