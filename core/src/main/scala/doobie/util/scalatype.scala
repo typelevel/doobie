@@ -271,11 +271,11 @@ object scalatype {
     private val AnyRefType = new ScalaType[AnyRef] {
       val tag = Predef.implicitly[TypeTag[AnyRef]]
       val primaryTarget = JavaObject
-      val secondaryTargets = List()
+      val secondaryTargets = List(Other)
       val get = RS.getObject(_: Int)
       val set = PS.setObject(_: Int, _: AnyRef)
       val update = RS.updateObject(_: Int, _: AnyRef)
-      val primarySources = NonEmptyList(JavaObject)
+      val primarySources = NonEmptyList(JavaObject, Other)
       val secondarySources = List() // TODO
     }
 
@@ -326,8 +326,6 @@ object scalatype {
 
     implicit def ArrayTypeAsVectorType[A: ClassTag](implicit ev: ScalaType[Array[A]]): ScalaType[Vector[A]] =
       ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
-
-    // more?
 
   }
 
