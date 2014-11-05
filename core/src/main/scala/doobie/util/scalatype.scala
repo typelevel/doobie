@@ -267,31 +267,26 @@ object scalatype {
       val secondarySources = List(Char, VarChar, LongVarChar, Date, Time)
     }
 
-    // N.B. private, not implicit, used only to derive more specific types
-    private val AnyRefType = new ScalaType[AnyRef] {
-      val tag = Predef.implicitly[TypeTag[AnyRef]]
-      val primaryTarget = JavaObject
-      val secondaryTargets = List(Other)
-      val get = RS.getObject(_: Int)
-      val set = PS.setObject(_: Int, _: AnyRef)
-      val update = RS.updateObject(_: Int, _: AnyRef)
-      val primarySources = NonEmptyList(JavaObject, Other)
-      val secondarySources = List() // TODO
-    }
-
-    /** Construct a `ScalaType[A]` mapped to an opaque `JavaObject` JDBC type. */
-    def objectType[A >: Null <: AnyRef](implicit A: ClassTag[A]): ScalaType[A] = {
-      val runtimeClass = A.runtimeClass
-      AnyRefType.xmap(a => {        
-        if (a == null) 
-          null
-        else 
-          try runtimeClass.cast(a).asInstanceOf[A] // force the cast
-          catch {
-            case cce: ClassCastException => throw InvalidObjectMapping(runtimeClass, a.getClass)
-          }
-      }, a => a)
-    }
+    /** Construct a JAVA_OBJECT/OTHER type for the given reference type. */
+    def objectType[A >: Null <: AnyRef : TypeTag](implicit A: ClassTag[A]): ScalaType[A] =
+      new ScalaType[A] {
+        val runtimeClass = A.runtimeClass
+        val tag = Predef.implicitly[TypeTag[A]]
+        val primaryTarget = JavaObject
+        val secondaryTargets = List(Other)
+        val get = RS.getObject(_: Int).map { a =>   
+          if (a == null) null
+          else 
+            try runtimeClass.cast(a).asInstanceOf[A] // force the cast
+            catch {
+              case cce: ClassCastException => throw InvalidObjectMapping(runtimeClass, a.getClass)
+            }
+        }
+        val set = PS.setObject(_: Int, _: A)
+        val update = RS.updateObject(_: Int, _: A)
+        val primarySources = NonEmptyList(JavaObject, Other)
+        val secondarySources = List() // TODO
+      }
 
     /** 
      * Construct an ARRAY type for the given reference type, with driver-specific `elementType` 
