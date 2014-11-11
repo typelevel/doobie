@@ -1,7 +1,7 @@
 package doobie.contrib.postgresql
 
 import doobie.enum.jdbctype
-import doobie.util.scalatype.ScalaType
+import doobie.util.meta._
 import doobie.util.invariant._
 
 import java.util.UUID
@@ -16,18 +16,18 @@ import scala.reflect.runtime.universe.TypeTag
 
 import scalaz._, Scalaz._
 
-/** `ScalaType` instances for PostgreSQL types. */
+/** `Meta` instances for PostgreSQL types. */
 object pgtypes {
 
-  // N.B. `ScalaType` is the lowest-level mapping and must always cope with NULL. Easy to forget.
+  // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
 
   // Geometric Types, minus PGline which is "not fully implemented"
-  implicit val PGboxType      = ScalaType.objectType[PGbox]
-  implicit val PGcircleType   = ScalaType.objectType[PGcircle]
-  implicit val PGlsegType     = ScalaType.objectType[PGlseg]
-  implicit val PGpathType     = ScalaType.objectType[PGpath]
-  implicit val PGpointType    = ScalaType.objectType[PGpoint]
-  implicit val PGpolygonType  = ScalaType.objectType[PGpolygon]
+  implicit val PGboxType      = Meta.other[PGbox]("box")
+  implicit val PGcircleType   = Meta.other[PGcircle]("circle")
+  implicit val PGlsegType     = Meta.other[PGlseg]("lseg")
+  implicit val PGpathType     = Meta.other[PGpath]("path")
+  implicit val PGpointType    = Meta.other[PGpoint]("point")
+  implicit val PGpolygonType  = Meta.other[PGpolygon]("polygon")
 
   // PGmoney doesn't seem to work:
   // PSQLException: : Bad value for type double : 1,234.56  (AbstractJdbc2ResultSet.java:3059)
@@ -39,13 +39,13 @@ object pgtypes {
   //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.getObject(AbstractJdbc2ResultSet.java:2704)
 
   // Interval Type (TODO)
-  // implicit val PGIntervalType = ScalaType.objectType[PGInterval]
+  // implicit val PGIntervalType = Meta.other[PGInterval]
 
   // UUID
-  implicit val UuidType = ScalaType.objectType[UUID]
+  implicit val UuidType = Meta.other[UUID]("uuid")
 
   // Network Address Types
-  implicit val InetType = ScalaType.objectType[PGobject].xmap[InetAddress](
+  implicit val InetType = Meta.other[PGobject]("inet").xmap[InetAddress](
     o => Option(o).map(a => InetAddress.getByName(a.getValue)).orNull,
     a => Option(a).map(a => new PGobject <| (_.setType("inet")) <| (_.setValue(a.getHostAddress))).orNull)
 
@@ -60,13 +60,13 @@ object pgtypes {
   // i.e., {{1,2,3}, {4,5,NULL}} is ok but {{1,2,3}, NULL} is not. So this means we only have to 
   // worry about Array[Array[...[A]]] and Array[Array[...[Option[A]]]] in our mappings.
 
-  // Construct a pair of ScalaType instances for arrays of lifted (nullable) and unlifted (non-
+  // Construct a pair of Meta instances for arrays of lifted (nullable) and unlifted (non-
   // nullable) reference types (as noted above, PostgreSQL doesn't ship arrays of primitives). The
   // automatic lifting to Atom will give us lifted and unlifted arrays, for a total of four variants
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
-  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String): (ScalaType[Array[A]], ScalaType[Array[Option[A]]]) = {
-    val raw = ScalaType.arrayType[A](elemType)
+  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String, arrayType: String): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
+    val raw = Meta.array[A](elemType, arrayType)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a
@@ -76,21 +76,22 @@ object pgtypes {
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) Java wrapped primitives. PostgreSQL
   // does not seem to support tinyint[] (use a bytea instead) and smallint[] always arrives as Int[]
-  // so you can xmap if you need Short[]. Note that the name of the element type is driver-specific 
-  // and case-sensitive. (╯°□°）╯︵ ┻━┻ 
-  implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit")
-  implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]("integer")
-  implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("bigint")
-  implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("real")
-  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("double precision")
-  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar")
+  // so you can xmap if you need Short[]. The type names provided here are what is reported by JDBC
+  // when metadata is requested; there are numerous aliases but these are the ones we need. Nothing
+  // about this is portable, sorry. (╯°□°）╯︵ ┻━┻ 
+  implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit",     "_bit")
+  implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]("int4",    "_int4")
+  implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("int8",    "_int8")
+  implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("float4",  "_float4")
+  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("float8",  "_float8")
+  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar", "_varchar")
 
   // Unboxed equivalents (actually identical in the lifted case). We require that B is the unboxed
   // equivalent of A, otherwise this will fail in spectacular fashion, and we're using a cast in the
   // lifted case because the representation is identical, assuming no nulls. In the long run this 
   // may need to become something slower but safer. Unclear.
-  private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag](f: A => B, g: B => A)(
-    implicit boxed: ScalaType[Array[A]], boxedLifted: ScalaType[Array[Option[A]]]): (ScalaType[Array[B]], ScalaType[Array[Option[B]]]) = 
+  private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag: TypeTag](f: A => B, g: B => A)(
+    implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) = 
     // TODO: assert, somehow, that A is the boxed version of B so we catch errors on instance 
     // construction, which is somewhat better than at [logical] execution time.
     (boxed.xmap(a => if (a == null) null else a.map(f), a => if (a == null) null else a.map(g)),
