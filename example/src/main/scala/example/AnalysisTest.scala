@@ -4,6 +4,7 @@ import scalaz.concurrent.Task
 
 import doobie.contrib.postgresql.pgtypes._
 import doobie.syntax.string._
+import doobie.util.meta._
 import doobie.util.transactor._
 import doobie.util.query.Query0
 import doobie.util.update.Update0
@@ -42,10 +43,12 @@ object AnalysisTest {
       SELECT '(1, 2)'::point test
     """.query[PGpoint]
 
-  def pointTest2 =
+  def pointTest2 = {
+    Meta[PostgresPoint.Point] // why not? ... irritating that it must be instantiated. what to do?
     sql"""
       SELECT '(1, 2)'::point test
     """.query[PGcircle]
+  }
 
   def update(code: String, name: Int) = 
     sql"""

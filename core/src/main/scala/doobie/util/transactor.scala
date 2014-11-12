@@ -8,6 +8,7 @@ import doobie.syntax.process._
 import doobie.util.capture._
 import doobie.util.query._
 import doobie.util.update._
+import doobie.util.yolo._
 
 import scalaz.syntax.monad._
 import scalaz.stream.Process
@@ -53,19 +54,7 @@ object transactor {
     protected def connect: M[Connection] 
 
     /** Unethical syntax for use in the REPL. */
-    object yolo {
-      private def out(s: String): ConnectionIO[Unit] =
-        delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
-      implicit class Query0YoloOps[A](q: Query0[A]) {
-        def quick: M[Unit] = transact(q.run.sink(a => out(a.toString)))
-      }
-      implicit class Update0YoloOps(u: Update0) {
-        def quick: M[Unit] = transact(u.run.flatMap(a => out(s"$a row(s) updated")))
-      }
-      implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
-        def quick: M[Unit] = transact(ca.flatMap(a => out(a.toString)))
-      }
-    }
+    lazy val yolo = Yolo(this)
 
   }
 
