@@ -65,8 +65,8 @@ object pgtypes {
   // automatic lifting to Atom will give us lifted and unlifted arrays, for a total of four variants
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
-  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String, arrayType: String): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
-    val raw = Meta.array[A](elemType, arrayType)
+  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String, arrayType: String, arrayTypeT: String*): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
+    val raw = Meta.array[A](elemType, arrayType, arrayTypeT: _*)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a
@@ -84,7 +84,7 @@ object pgtypes {
   implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("int8",    "_int8")
   implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("float4",  "_float4")
   implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("float8",  "_float8")
-  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar", "_varchar")
+  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar", "_varchar", "_char", "_text", "_bpchar")
 
   // Unboxed equivalents (actually identical in the lifted case). We require that B is the unboxed
   // equivalent of A, otherwise this will fail in spectacular fashion, and we're using a cast in the
