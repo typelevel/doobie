@@ -25,7 +25,7 @@ import java.sql.Connection
  */
 object transactor {
 
-  abstract class Transactor[M[_]: Monad: Catchable: Capture] {
+  trait Transactor[M[_]] {
 
     private val before = setAutoCommit(false)
     private val oops   = rollback       
@@ -44,17 +44,17 @@ object transactor {
     private def safe[A](pa: Process[ConnectionIO, A]): Process[ConnectionIO, A] =
       (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
 
-    def transact[A](ma: ConnectionIO[A]): M[A] = 
+    def transact[A](ma: ConnectionIO[A])(implicit ev0: Monad[M], ev1: Catchable[M], ev3: Capture[M]): M[A] = 
       connect >>= safe(ma).transK[M]
 
-    def transact[A](pa: Process[ConnectionIO, A]): Process[M, A] = 
+    def transact[A](pa: Process[ConnectionIO, A])(implicit ev0: Monad[M], ev1: Catchable[M], ev3: Capture[M]): Process[M, A] = 
       eval(connect) >>= safe(pa).trans[M]
 
     // implementors need to give us this
     protected def connect: M[Connection] 
 
     /** Unethical syntax for use in the REPL. */
-    lazy val yolo = Yolo(this)
+    def yolo(implicit ev0: Monad[M], ev1: Catchable[M], ev3: Capture[M]) = Yolo(this)
 
   }
 
