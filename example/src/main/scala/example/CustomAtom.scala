@@ -1,6 +1,6 @@
 package doobie.example
 
-import doobie.util.scalatype.ScalaType
+import doobie.util.meta.Meta
 import doobie.util.atom.Atom
 import doobie.util.composite.Composite
 
@@ -18,12 +18,12 @@ object CustomAtom {
   type PosixTime = Long @@ PosixTimeTag
   val  PosixTime = Tag.of[PosixTimeTag]
 
-  // Create our base ScalaType by invariant mapping an existing one.
-  implicit val LongPosixTimeScalaType: ScalaType[PosixTime] =
-    ScalaType[Date].xmap(d => PosixTime(d.getTime), t => new Date(PosixTime.unwrap(t)))
+  // Create our base Meta by invariant mapping an existing one.
+  implicit val LongPosixTimeScalaType: Meta[PosixTime] =
+    Meta[Date].xmap(d => PosixTime(d.getTime), t => new Date(PosixTime.unwrap(t)))
 
   // What we just defined
-  ScalaType[PosixTime]
+  Meta[PosixTime]
 
   // Free derived Atom with null handling
   Atom[PosixTime] // non-nullable

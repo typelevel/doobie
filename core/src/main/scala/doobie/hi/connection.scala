@@ -231,7 +231,7 @@ object connection {
   implicit class ProcessConnectionIOOps[A](pa: Process[ConnectionIO, A]) {
     def trans[M[_]: Monad: Catchable: Capture](c: Connection): Process[M, A] =
       pa.translate(new (ConnectionIO ~> M) {
-        def apply[A](ma: ConnectionIO[A]): M[A] =
+        def apply[B](ma: ConnectionIO[B]): M[B] =
           ma.transK[M].run(c)
       })
   }

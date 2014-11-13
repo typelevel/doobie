@@ -54,8 +54,8 @@ object drivermanager {
 
   /** @group Drivers */
   def getDrivers[A](k: DriverIO[A]): DriverManagerIO[List[A]] = {
-    def enumToList[A](e: java.util.Enumeration[A]): List[A] = {
-      def go(e: java.util.Enumeration[A], accum: List[A]): List[A] =
+    def enumToList[B](e: java.util.Enumeration[B]): List[B] = {
+      def go(e: java.util.Enumeration[B], accum: List[B]): List[B] =
         e.hasMoreElements match {
           case true  => go(e, e.nextElement :: accum)
           case false => accum.reverse

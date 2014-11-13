@@ -8,6 +8,7 @@ import doobie.syntax.process._
 import doobie.util.capture._
 import doobie.util.query._
 import doobie.util.update._
+import doobie.util.yolo._
 
 import scalaz.syntax.monad._
 import scalaz.stream.Process
@@ -24,7 +25,7 @@ import java.sql.Connection
  */
 object transactor {
 
-  abstract class Transactor[M[_]: Monad: Catchable: Capture] {
+  trait Transactor[M[_]] {
 
     private val before = setAutoCommit(false)
     private val oops   = rollback       
@@ -43,29 +44,17 @@ object transactor {
     private def safe[A](pa: Process[ConnectionIO, A]): Process[ConnectionIO, A] =
       (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
 
-    def transact[A](ma: ConnectionIO[A]): M[A] = 
+    def transact[A](ma: ConnectionIO[A])(implicit ev0: Monad[M], ev1: Catchable[M], ev3: Capture[M]): M[A] = 
       connect >>= safe(ma).transK[M]
 
-    def transact[A](pa: Process[ConnectionIO, A]): Process[M, A] = 
+    def transact[A](pa: Process[ConnectionIO, A])(implicit ev0: Monad[M], ev1: Catchable[M], ev3: Capture[M]): Process[M, A] = 
       eval(connect) >>= safe(pa).trans[M]
 
     // implementors need to give us this
     protected def connect: M[Connection] 
 
     /** Unethical syntax for use in the REPL. */
-    object yolo {
-      private def out(s: String): ConnectionIO[Unit] =
-        delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
-      implicit class Query0YoloOps[A](q: Query0[A]) {
-        def quick: M[Unit] = transact(q.run.sink(a => out(a.toString)))
-      }
-      implicit class Update0YoloOps(u: Update0) {
-        def quick: M[Unit] = transact(u.run.flatMap(a => out(s"$a row(s) updated")))
-      }
-      implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
-        def quick: M[Unit] = transact(ca.flatMap(a => out(a.toString)))
-      }
-    }
+    def yolo(implicit ev0: Monad[M], ev1: Catchable[M], ev3: Capture[M]) = Yolo(this)
 
   }
 

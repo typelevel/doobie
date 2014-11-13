@@ -2,12 +2,12 @@ package doobie.enum
 
 import doobie.util.invariant._
 import doobie.util.atom._
-import doobie.util.scalatype.ScalaType
+import doobie.util.meta.Meta
 
 import java.sql.ResultSet._
 import java.sql.Types._
 
-import scalaz.Equal
+import scalaz.Order
 import scalaz.std.anyVal.intInstance
 
 object jdbctype {
@@ -98,11 +98,11 @@ object jdbctype {
     def unsafeFromInt(n:Int): JdbcType =
       fromInt(n).getOrElse(throw InvalidOrdinal[JdbcType](n))
 
-    implicit val EqualJdbcType: Equal[JdbcType] =
-      Equal.equalBy(_.toInt)
+    implicit val OrderJdbcType: Order[JdbcType] =
+      Order.orderBy(_.toInt)
 
-    implicit val ScalaTypeJdbcType: ScalaType[JdbcType] =
-      ScalaType[Int].xmap(unsafeFromInt, _.toInt)
+    implicit lazy val JdbcTypeMeta: Meta[JdbcType] =
+      Meta[Int].xmap(unsafeFromInt, _.toInt)
 
   }
 

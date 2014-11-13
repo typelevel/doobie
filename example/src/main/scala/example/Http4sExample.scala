@@ -5,12 +5,14 @@ import java.io.File
 import scalaz.concurrent.Task
 import scalaz.stream._
 import scalaz.syntax.monad._
+import scalaz.{ Monad, Catchable }
 
 import doobie.hi._
 import doobie.hi.connection.ProcessConnectionIOOps
 import doobie.syntax.process._
 import doobie.syntax.string._
 import doobie.util.transactor._
+import doobie.util.capture._
 
 import org.http4s._
 import org.http4s.dsl._
@@ -43,7 +45,7 @@ object Http4sExample extends App {
 }
 
 // Data access module parameterized on our transactor, because why not?
-case class DAO[M[_]](xa: Transactor[M]) {
+case class DAO[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 
   // A data type we will read from the database
   case class Country(name: String, indepYear: Option[Int])

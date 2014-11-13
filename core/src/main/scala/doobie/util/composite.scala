@@ -2,7 +2,7 @@
 package doobie.util
 
 import doobie.enum.jdbctype.JdbcType
-import doobie.util.scalatype.ScalaType
+import doobie.util.meta.Meta
 import doobie.enum.nullability._
 import doobie.util.atom._
 import doobie.util.invariant._
@@ -23,13 +23,13 @@ import java.sql.ParameterMetaData
  */
 object composite {
 
-  @implicitNotFound("Could not find or construct Composite[${A}]; ensure that all members of A have Atom or ScalaType instances.")
+  @implicitNotFound("Could not find or construct Composite[${A}]; ensure that all members of A have Atom (or Meta) instances.")
   trait Composite[A] { c =>    
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
     val update: (Int, A) => RS.ResultSetIO[Unit]
     val get: Int => RS.ResultSetIO[A]
     val length: Int
-    val meta: List[(ScalaType[_], NullabilityKnown)]
+    val meta: List[(Meta[_], NullabilityKnown)]
     final def xmap[B](f: A => B, g: B => A): Composite[B] =
       new Composite[B] {
         val set    = (n: Int, b: B) => c.set(n, g(b))

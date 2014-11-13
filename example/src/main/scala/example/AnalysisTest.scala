@@ -2,10 +2,14 @@ package doobie.example
 
 import scalaz.concurrent.Task
 
+import doobie.contrib.postgresql.pgtypes._
 import doobie.syntax.string._
+import doobie.util.meta._
 import doobie.util.transactor._
 import doobie.util.query.Query0
 import doobie.util.update.Update0
+
+import org.postgresql.geometric._
 
 object AnalysisTest {
 
@@ -23,6 +27,28 @@ object AnalysisTest {
       SELECT C.NAME, C.INDEPYEAR, C.CODE FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
     """.query[(String, Option[Short], String)]
+
+  def arrayTest = 
+    sql"""
+      SELECT ARRAY[1, 2, NULL] test -- should fail
+    """.query[Option[List[String]]]
+
+  def arrayTest2 = 
+    sql"""
+      SELECT ARRAY[1, 2, NULL] test
+    """.query[String]
+
+  def pointTest =
+    sql"""
+      SELECT '(1, 2)'::point test
+    """.query[PGpoint]
+
+  def pointTest2 = {
+    Meta[PostgresPoint.Point] // why not? ... irritating that it must be instantiated. what to do?
+    sql"""
+      SELECT '(1, 2)'::point test
+    """.query[PGcircle]
+  }
 
   def update(code: String, name: Int) = 
     sql"""
