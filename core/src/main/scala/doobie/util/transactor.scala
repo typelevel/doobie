@@ -54,7 +54,7 @@ object transactor {
     protected def connect: M[Connection] 
 
     /** Unethical syntax for use in the REPL. */
-    lazy val yolo = Yolo(this)
+    lazy val yolo = new Yolo(this)
 
   }
 
