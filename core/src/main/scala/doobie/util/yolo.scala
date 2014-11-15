@@ -24,7 +24,7 @@ import Predef._
 /** Module for implicit syntax useful in REPL session. */
 object yolo {
 
-  case class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
+  class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 
     private def out(s: String): ConnectionIO[Unit] =
       delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
@@ -35,12 +35,12 @@ object yolo {
         xa.transact(q.run.sink(a => out(a.toString)))
 
       def check: M[Unit] = 
-        xa.transact(delay(Console.println) >> q.analysis.attempt.flatMap {
+        xa.transact(delay(showSql(q.sql)) >> q.analysis.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
-              success("SQL Compiles and Typechecks", None)
-              a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
-              a.columnDescriptions.foreach { case (s, es) => assertEmpty(s, es) }
+            success("SQL Compiles and Typechecks", None)
+            a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
+            a.columnDescriptions.foreach { case (s, es) => assertEmpty(s, es) }
           }
         })
 
@@ -75,6 +75,12 @@ object yolo {
         case s :: ss => (s"${Console.RED}  - $s${Console.RESET}") :: ss.map(s => s"${Console.RED}    $s${Console.RESET}")
         case Nil => Nil
       }).mkString("\n")
+
+    def showSql(sql: String): Unit = {
+      println()
+      sql.lines.foreach(s => println(s"  \033[37m$s${Console.RESET}"))
+      println()
+    }
 
     def failure(name: String, desc: String): Unit = {
       println(s"${Console.RED}  ✕ ${Console.RESET}$name")
