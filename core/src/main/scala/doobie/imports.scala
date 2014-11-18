@@ -84,6 +84,9 @@ object imports {
   /** @group Type Aliases */      type Atom[A] = doobie.util.atom.Atom[A]
   /** @group Companion Aliases */ val  Atom    = doobie.util.atom.Atom
 
+  /** @group Type Aliases */      type Capture[M[_]] = doobie.util.capture.Capture[M]
+  /** @group Companion Aliases */ val  Capture       = doobie.util.capture.Capture
+
   /** @group Type Aliases */      type Composite[A] = doobie.util.composite.Composite[A]
   /** @group Companion Aliases */ val  Composite    = doobie.util.composite.Composite
 
