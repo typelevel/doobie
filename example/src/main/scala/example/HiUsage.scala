@@ -6,10 +6,7 @@ import scalaz.concurrent.Task
 import scalaz.stream.Process
 import scalaz.syntax.monad._
 
-import doobie.hi._
-import doobie.syntax.process._
-import doobie.syntax.string._
-import doobie.util.transactor.DriverManagerTransactor
+import doobie.imports._
 
 // JDBC program using the high-level API
 object HiUsage {
@@ -36,9 +33,9 @@ object HiUsage {
   // executed by main above.
   lazy val example: ConnectionIO[String] =
     for {
-      _ <- connection.delay(println("Loading database..."))
+      _ <- FC.delay(println("Loading database..."))
       _ <- loadDatabase(new File("world.sql"))
-      _ <- speakerQuery("English", 10).sink(c => connection.delay(println("~> " + c))) // streaming; constant space
+      _ <- speakerQuery("English", 10).sink(c => FC.delay(println("~> " + c))) // streaming; constant space
     } yield "Ok"
 
   // Construct an action to load up a database from the specified file.

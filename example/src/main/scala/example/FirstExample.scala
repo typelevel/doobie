@@ -4,12 +4,8 @@ import scalaz._, Scalaz._
 import scalaz.effect.{ SafeApp, IO }
 import scalaz.stream.Process
 
-import doobie.hi._
-import doobie.hi.connection._
-import doobie.syntax.process._
-import doobie.syntax.string._
-import doobie.syntax.catchable._
-import doobie.util.transactor.DriverManagerTransactor
+import doobie.imports._
+
 
 // Example lifted from slick
 object FirstExample extends SafeApp {
@@ -27,7 +23,7 @@ object FirstExample extends SafeApp {
 
   // Lifted println
   def putStrLn(s: => String): ConnectionIO[Unit] =
-    delay(println(s))
+    FC.delay(println(s))
 
   // Some suppliers
   val suppliers = List(

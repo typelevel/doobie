@@ -1,10 +1,6 @@
 package doobie.example
 
-import doobie.util.meta.Meta
-import doobie.util.atom.Atom
-import doobie.util.composite.Composite
-
-import doobie.syntax.string._
+import doobie.imports._
 
 import java.sql.Date
 

@@ -4,10 +4,8 @@ import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.monad._
 import scalaz.concurrent.Task
 
-import doobie.free.connection.{ ConnectionIO, close, setAutoCommit, commit, rollback }
-import doobie.util.capture._
-import doobie.util.transactor._
-import doobie.syntax.catchable._
+import doobie.imports._
+
 import java.sql.Connection
 
 import org.h2.jdbcx.JdbcConnectionPool
