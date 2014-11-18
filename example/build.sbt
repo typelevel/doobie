@@ -21,16 +21,12 @@ scalacOptions ++= Seq(
 initialCommands := """
   import scalaz._,Scalaz._
   import scalaz.concurrent.Task
-
   import doobie.imports._
   import doobie.contrib.postgresql.pgtypes._
-  
   import org.postgresql.util._
   import org.postgresql.geometric._
-
   // Lame, how can we fix this?
   doobie.contrib.postgresql.pgtypes
-
   val xa: Transactor[Task] = DriverManagerTransactor[Task](
     "org.postgresql.Driver", 
     "jdbc:postgresql:world", 
