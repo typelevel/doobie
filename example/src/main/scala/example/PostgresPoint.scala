@@ -1,12 +1,8 @@
 
 package doobie.example
 
+import doobie.imports._
 import doobie.contrib.postgresql.pgtypes._
-import doobie.syntax.process._
-import doobie.syntax.string._
-import doobie.util.composite.Composite
-import doobie.util.meta.Meta
-import doobie.util.transactor.DriverManagerTransactor
 
 import org.postgresql.geometric.PGpoint
 

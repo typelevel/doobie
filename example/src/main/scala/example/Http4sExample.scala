@@ -7,12 +7,7 @@ import scalaz.stream._
 import scalaz.syntax.monad._
 import scalaz.{ Monad, Catchable }
 
-import doobie.hi._
-import doobie.hi.connection.ProcessConnectionIOOps
-import doobie.syntax.process._
-import doobie.syntax.string._
-import doobie.util.transactor._
-import doobie.util.capture._
+import doobie.imports._
 
 import org.http4s._
 import org.http4s.dsl._

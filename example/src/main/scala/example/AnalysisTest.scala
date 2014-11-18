@@ -2,12 +2,8 @@ package doobie.example
 
 import scalaz.concurrent.Task
 
+import doobie.imports._
 import doobie.contrib.postgresql.pgtypes._
-import doobie.syntax.string._
-import doobie.util.meta._
-import doobie.util.transactor._
-import doobie.util.query.Query0
-import doobie.util.update.Update0
 
 import org.postgresql.geometric._
 
