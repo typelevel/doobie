@@ -3,10 +3,7 @@ package doobie
 import scalaz.{ Monad, Catchable }
 import scalaz.stream.Process
 
-/** 
- * Module of aliases for commonly-used types and syntax; use as `import doobie.imports._`
- * @group Modules
- */
+/** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
 object imports {
 
   /**

@@ -1,7 +1,4 @@
 package doobie
 
-/** 
- * Enumerated types for JDBC constants. 
- * @group Modules
- */
+/** Enumerated types for JDBC constants. */
 package object enum

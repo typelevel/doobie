@@ -11,6 +11,7 @@ import doobie.hi.connection.{ delay => cdelay }
 import scalaz._, Scalaz._
 import scalaz.stream.Process
 
+/** Module defining queries parameterized by input and output types. */
 object query {
 
   /** Mixin trait for queries with diagnostic information. */

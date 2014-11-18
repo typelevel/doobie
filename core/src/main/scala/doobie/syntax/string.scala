@@ -12,6 +12,7 @@ import scalaz.Monad
 import scalaz.syntax.monad._
 import scalaz.stream.Process
 
+/** String interpolator for SQL literals. */
 object string {
 
   implicit class SqlInterpolator(val sc: StringContext) {

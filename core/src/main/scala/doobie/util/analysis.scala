@@ -14,6 +14,7 @@ import scala.reflect.runtime.universe.TypeTag
 import scalaz._, Scalaz._
 import scalaz.\&/._
 
+/** Module defining a type for analyzing the type alignment of prepared statements. */
 object analysis {
 
   /** Metadata for the JDBC end of a column/parameter mapping. */
