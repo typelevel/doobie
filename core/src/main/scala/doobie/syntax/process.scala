@@ -1,5 +1,10 @@
 package doobie.syntax
 
+import doobie.util.transactor.Transactor
+import doobie.free.connection.ConnectionIO
+
+import scala.Predef.=:=
+
 import scalaz.{ Catchable, Monad }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
@@ -17,6 +22,9 @@ object process {
 
     def sink(f: A => F[Unit]): F[Unit] =     
       fa.to(doobie.util.process.sink(f)).run
+
+    def transact[M[_]](xa: Transactor[M])(implicit ev: Process[F, A] =:= Process[ConnectionIO, A]): Process[M, A] =
+      xa.transact(fa)
 
   }
 

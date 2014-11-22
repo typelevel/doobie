@@ -55,13 +55,13 @@ case class DAO[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 
   // Construct an action to stream countries where more than 10% of the population speaks `lang`.
   def speakerQuery(lang: String): Process[M, (Country, Int)] =
-    xa.transact(sql"""
+    sql"""
       SELECT C.NAME, C.INDEPYEAR, PERCENTAGE 
       FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
       WHERE LANGUAGE = $lang 
       AND PERCENTAGE > 10
       ORDER BY PERCENTAGE DESC
-    """.query[(Country, Int)].process)
+    """.query[(Country, Int)].process.transact(xa)
 
 }
