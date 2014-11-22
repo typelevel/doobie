@@ -5,6 +5,7 @@ import doobie.hi.preparedstatement.executeQuery
 import doobie.hi.resultset.getUnique
 import doobie.util.transactor.DriverManagerTransactor
 import doobie.util.composite.Composite
+import doobie.syntax.connectionio._
 import doobie.contrib.postgresql.pgtypes._
 
 import java.net.InetAddress
@@ -27,7 +28,7 @@ object pgtypesspec extends Specification {
 
   implicit class CrazyStringOps(e: String) {
     def as[A: Composite]: A =
-      xa.transact(prepareStatement(s"SELECT $e")(executeQuery(getUnique[A]))).run
+      prepareStatement(s"SELECT $e")(executeQuery(getUnique[A])).transact(xa).run
   }
 
   "8.1 Numeric Types" >> {

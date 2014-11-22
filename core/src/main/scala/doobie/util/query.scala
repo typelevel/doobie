@@ -27,6 +27,15 @@ object query {
 
     def process(a: A): Process[ConnectionIO, B]
 
+    def list(a: A): ConnectionIO[List[B]] =
+      process(a).list
+
+    def vector(a: A): ConnectionIO[Vector[B]] =
+      process(a).vector
+
+    def sink(a: A)(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
+      process(a).sink(f)
+
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
         val sql = q.sql
@@ -82,6 +91,15 @@ object query {
   trait Query0[B] extends QueryDiagnostics { q =>
 
     def process: Process[ConnectionIO, B] 
+
+    def list: ConnectionIO[List[B]] =
+      process.list
+
+    def vector: ConnectionIO[Vector[B]] =
+      process.vector
+
+    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
+      process.sink(f)
 
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {

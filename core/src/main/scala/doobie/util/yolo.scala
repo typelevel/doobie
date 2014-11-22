@@ -5,6 +5,7 @@ import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, c
 import doobie.hi.connection.ProcessConnectionIOOps
 import doobie.syntax.catchable._
 import doobie.syntax.process._
+import doobie.syntax.connectionio._
 import doobie.util.analysis._
 import doobie.util.capture._
 import doobie.util.query._
@@ -32,30 +33,30 @@ object yolo {
     implicit class Query0YoloOps[A: TypeTag](q: Query0[A]) {
       
       def quick: M[Unit] = 
-        xa.transact(q.process.sink(a => out(a.toString)))
+        q.sink(a => out(a.toString)).transact(xa)
 
       def check: M[Unit] = 
-        xa.transact(delay(showSql(q.sql)) >> q.analysis.attempt.flatMap {
+        (delay(showSql(q.sql)) >> q.analysis.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)
             a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
             a.columnDescriptions.foreach { case (s, es) => assertEmpty(s, es) }
           }
-        })
+        }).transact(xa)
 
     }
     
     implicit class Update0YoloOps(u: Update0) {
-      def quick: M[Unit] = xa.transact(u.run.flatMap(a => out(s"$a row(s) updated")))
+      def quick: M[Unit] = u.run.flatMap(a => out(s"$a row(s) updated")).transact(xa)
     }
     
     implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
-      def quick: M[Unit] = xa.transact(ca.flatMap(a => out(a.toString)))
+      def quick: M[Unit] = ca.flatMap(a => out(a.toString)).transact(xa)
     }
 
     implicit class ProcessYoloOps[A](pa: Process[ConnectionIO, A]) {
-      def quick: M[Unit] = xa.transact(pa.sink(a => out(a.toString)))
+      def quick: M[Unit] = pa.sink(a => out(a.toString)).transact(xa)
     }
   
     private def assertEmpty(name: String, es: List[AlignmentError]) = 
