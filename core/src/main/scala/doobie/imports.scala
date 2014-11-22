@@ -75,6 +75,10 @@ object imports {
   implicit def toSqlInterpolator(sc: StringContext) =
     new doobie.syntax.string.SqlInterpolator(sc)
 
+  /** @group Syntax */
+  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
+    new doobie.syntax.connectionio.MoreConnectionIOOps(ma)
+
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
 
