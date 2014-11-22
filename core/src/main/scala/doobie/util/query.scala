@@ -4,6 +4,7 @@ import doobie.hi._
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.syntax.catchable._
+import doobie.syntax.process._
 import doobie.enum.jdbctype.JdbcType
 import doobie.enum.parameternullable._
 import doobie.hi.connection.{ delay => cdelay }
@@ -24,14 +25,14 @@ object query {
   /** Encapsulates a `ConnectionIO` that prepares and executes a parameterized statement. */
   trait Query[A, B] extends QueryDiagnostics { q =>
 
-    def run(a: A): Process[ConnectionIO, B] 
+    def process(a: A): Process[ConnectionIO, B]
 
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
         val sql = q.sql
         val stackFrame = q.stackFrame
         val analysis = q.analysis
-        def run(a: A) = q.run(a).map(f)
+        def process(a: A) = q.process(a).map(f)
       }
 
     def contramap[C](f: C => A): Query[C, B] =
@@ -39,7 +40,7 @@ object query {
         val sql = q.sql
         val stackFrame = q.stackFrame
         val analysis = q.analysis
-        def run(c: C) = q.run(f(c))
+        def process(c: C) = q.process(f(c))
       }
 
     def toQuery0(a: A): Query0[B] =
@@ -47,7 +48,7 @@ object query {
         val sql = q.sql
         val stackFrame = q.stackFrame
         val analysis = q.analysis
-        def run = q.run(a)
+        def process = q.process(a)
     }
 
   }
@@ -60,7 +61,7 @@ object query {
         val sql = sql0
         val stackFrame = stackFrame0
         val analysis = connection.prepareQueryAnalysis[A,B](sql)
-        def run(a: A) = connection.process[B](sql, preparedstatement.set(a))
+        def process(a: A) = connection.process[B](sql, preparedstatement.set(a))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -80,14 +81,14 @@ object query {
   /** Encapsulates a `ConnectionIO` that prepares and executes a zero-parameter statement. */
   trait Query0[B] extends QueryDiagnostics { q =>
 
-    def run: Process[ConnectionIO, B] 
+    def process: Process[ConnectionIO, B] 
 
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {
         val sql = q.sql
         val stackFrame = q.stackFrame
         def analysis = q.analysis
-        def run = q.run.map(f)
+        def process = q.process.map(f)
       }
 
   }
@@ -100,7 +101,7 @@ object query {
         val sql = sql0
         val stackFrame = stackFrame0
         def analysis = connection.prepareQueryAnalysis0[B](sql)
-        def run = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
+        def process = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
       }
 
     implicit val query0Covariant: Functor[Query0] =

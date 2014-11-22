@@ -62,6 +62,6 @@ case class DAO[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
       WHERE LANGUAGE = $lang 
       AND PERCENTAGE > 10
       ORDER BY PERCENTAGE DESC
-    """.query[(Country, Int)].run)
+    """.query[(Country, Int)].process)
 
 }

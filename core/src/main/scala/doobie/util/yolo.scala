@@ -32,7 +32,7 @@ object yolo {
     implicit class Query0YoloOps[A: TypeTag](q: Query0[A]) {
       
       def quick: M[Unit] = 
-        xa.transact(q.run.sink(a => out(a.toString)))
+        xa.transact(q.process.sink(a => out(a.toString)))
 
       def check: M[Unit] = 
         xa.transact(delay(showSql(q.sql)) >> q.analysis.attempt.flatMap {

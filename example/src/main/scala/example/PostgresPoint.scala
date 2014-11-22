@@ -23,7 +23,7 @@ object PostgresPoint extends App {
 
   // Point is now a perfectly cromulent input/output type
   def q = sql"select '(1, 2)'::point".query[Point]
-  val a = xa.transact(q.run.list).run
+  val a = xa.transact(q.process.list).run
   Console.println(a) // List(Point(1.0,2.0))
 
   // Just to be clear; the Composite instance has width 1, not 2
