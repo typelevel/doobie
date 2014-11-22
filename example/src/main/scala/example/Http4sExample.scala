@@ -51,17 +51,17 @@ case class DAO[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 
   // Construct an action to load up a database from the specified file.
   def loadDatabase(f: File): M[Unit] =
-    xa.transact(sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".update.run.void)
+    sql"RUNSCRIPT FROM ${f.getName} CHARSET 'UTF-8'".update.run.transact(xa).void
 
   // Construct an action to stream countries where more than 10% of the population speaks `lang`.
   def speakerQuery(lang: String): Process[M, (Country, Int)] =
-    xa.transact(sql"""
+    sql"""
       SELECT C.NAME, C.INDEPYEAR, PERCENTAGE 
       FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
       WHERE LANGUAGE = $lang 
       AND PERCENTAGE > 10
       ORDER BY PERCENTAGE DESC
-    """.query[(Country, Int)].run)
+    """.query[(Country, Int)].process.transact(xa)
 
 }

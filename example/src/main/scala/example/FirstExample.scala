@@ -86,7 +86,7 @@ object FirstExampleDAO {
       SELECT cof_name, sup_name
       FROM coffees JOIN suppliers ON coffees.sup_id = suppliers.sup_id
       WHERE price < $price
-    """.query[(String, String)].run
+    """.query[(String, String)].process
 
   def insertSupplier(s: Supplier): ConnectionIO[Int] =
     sql"""
@@ -104,7 +104,7 @@ object FirstExampleDAO {
     sql"""
       SELECT cof_name, sup_id, price, sales, total 
       FROM coffees
-    """.query[Coffee].run
+    """.query[Coffee].process
 
   def create: ConnectionIO[Unit] = 
     sql"""
