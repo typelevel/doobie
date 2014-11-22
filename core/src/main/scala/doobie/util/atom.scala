@@ -12,6 +12,7 @@ import scalaz.syntax.std.boolean._
 
 import scala.annotation.implicitNotFound
 
+/** Module defining `NULL`-aware column mappings; the next step "up" from `Meta`. */
 object atom {
 
   /** 

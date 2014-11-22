@@ -11,6 +11,7 @@ import scala.Predef._
 
 import scalaz._, Scalaz._
 
+/** Module defining the lowest level of column mapping. */
 object meta {
 
   /** 

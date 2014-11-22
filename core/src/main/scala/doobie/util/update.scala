@@ -11,6 +11,7 @@ import scalaz.{ Contravariant, Functor, Profunctor, ValidationNel }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
 
+/** Module defining updates parameterized by input type. */
 object update {
 
   /** Mixin trait for queries with diagnostic information. */

@@ -4,6 +4,7 @@ import scalaz.{ Catchable, Monad }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
 
+/** Syntax for `Process` operations defined in `util.process`. */
 object process {
 
   implicit class ProcessOps[F[_]: Monad: Catchable, A](fa: Process[F, A]) {

@@ -25,8 +25,6 @@ import doobie.free.{ databasemetadata => DMD }
  *    here but use `scalaz.ImmutableArray` or `List`, depending on usage.
  *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear 
  *    in this API.
- *
- * @group Modules
  */
 package object hi {
 
