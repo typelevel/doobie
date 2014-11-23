@@ -75,6 +75,10 @@ object preparedstatement {
   val executeUpdate: PreparedStatementIO[Int] =
     PS.executeUpdate
 
+  /** @group Execution */
+  def executeUpdateWithUniqueGeneratedKeys[A: Composite] =
+    executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
+
   /** 
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata 
@@ -109,6 +113,10 @@ object preparedstatement {
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
     PS.getGeneratedKeys.flatMap(s => PS.liftResultSet(s, k ensuring RS.close))
+
+  /** @group Results */
+  def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
+    getGeneratedKeys(resultset.getUnique[A])
 
   /** 
    * Compute the parameter `JdbcMeta` list for this `PreparedStatement`.

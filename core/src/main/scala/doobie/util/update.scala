@@ -1,8 +1,8 @@
 package doobie.util
 
 import doobie.hi.ConnectionIO
-import doobie.hi.connection.{ prepareStatement, prepareUpdateAnalysis, prepareUpdateAnalysis0 }
-import doobie.hi.preparedstatement.{ set, executeUpdate }
+import doobie.hi.connection.{ prepareStatement, prepareStatementS, prepareUpdateAnalysis, prepareUpdateAnalysis0 }
+import doobie.hi.preparedstatement.{ set, executeUpdate, executeUpdateWithUniqueGeneratedKeys }
 import doobie.util.invariant.MappingViolation
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
@@ -25,12 +25,16 @@ object update {
 
     def run(a: A): ConnectionIO[Int]
 
+    def withGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K]
+
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
         val sql = u.sql
         val stackFrame = u.stackFrame
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
+        def withGeneratedKeys[K: Composite](columns: String*)(c: C) =
+          u.withGeneratedKeys(columns: _*)(f(c))
       }
 
     def toUpdate0(a: A): Update0 =
@@ -39,6 +43,7 @@ object update {
         val stackFrame = u.stackFrame
         def analysis = u.analysis
         def run = u.run(a)
+        def withGeneratedKeys[K: Composite](columns: String*) = u.withGeneratedKeys(columns: _*)(a)
       }
 
   }
@@ -51,6 +56,8 @@ object update {
         val stackFrame = stackFrame0
         def analysis: ConnectionIO[Analysis] = prepareUpdateAnalysis[A](sql)
         def run(a: A) = prepareStatement(sql)(set(a) >> executeUpdate)
+        def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
+          prepareStatementS(sql, columns.toList)(set(a) >> executeUpdateWithUniqueGeneratedKeys[K])
       }
 
     implicit val updateContravariant: Contravariant[Update] =
@@ -62,6 +69,7 @@ object update {
 
   trait Update0 extends UpdateDiagnostics {
     def run: ConnectionIO[Int]
+    def withGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
   }
 
   object Update0 {
@@ -72,6 +80,8 @@ object update {
         val stackFrame = stackFrame0
         def analysis: ConnectionIO[Analysis] = prepareUpdateAnalysis0(sql)
         def run = prepareStatement(sql)(executeUpdate)
+        def withGeneratedKeys[K: Composite](columns: String*) =
+          prepareStatementS(sql, columns.toList)(executeUpdateWithUniqueGeneratedKeys[K])
       }
 
   }
