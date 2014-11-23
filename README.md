@@ -1,5 +1,7 @@
 # Doobie
 
+> **Hello tweeters** ... it seems that the v0.1 announcement from July was picked up in a tweetstorm on Nov 22. So just an update, v0.2 is well on its way and will be out by year's end, so check back for some really nice new stuff coming up soon. - rob
+
 This is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level APIs) that use JDBC. Doobie introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here. The obligatory code sample (without imports, to keep you guessing):
 
 ```scala
