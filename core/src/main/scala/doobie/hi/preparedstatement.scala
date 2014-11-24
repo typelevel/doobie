@@ -79,6 +79,12 @@ object preparedstatement {
   def executeUpdateWithUniqueGeneratedKeys[A: Composite] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
+ /** @group Execution */
+  def executeUpdateWithGeneratedKeys[A: Composite]: Process[PreparedStatementIO, A] =
+    resource(PS.executeUpdate.flatMap(_ => PS.getGeneratedKeys) : PreparedStatementIO[java.sql.ResultSet])(rs =>
+             PS.liftResultSet(rs, RS.close))(rs =>
+             PS.liftResultSet(rs, resultset.getNext[A]))
+
   /** 
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata 

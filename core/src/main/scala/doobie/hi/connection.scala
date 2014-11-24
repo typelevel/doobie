@@ -78,6 +78,28 @@ object connection {
 
   }
 
+  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = {
+
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] =
+      resource(
+        C.prepareStatement(sql, cols.toArray))(ps =>
+        C.liftPreparedStatement(ps, PS.close))(ps =>
+        Option(ps).point[ConnectionIO]).take(1) // note
+
+    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+      resource(
+        C.liftPreparedStatement(ps, PS.executeUpdate >> PS.getGeneratedKeys))(rs =>
+        C.liftResultSet(rs, RS.close))(rs =>
+        C.liftResultSet(rs, resultset.getNext[A]))
+
+    for {
+      ps <- preparedStatement
+      _  <- Process.eval(C.liftPreparedStatement(ps, prep))
+      a  <- results(ps)
+    } yield a
+
+  }
+
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
     C.commit
