@@ -78,6 +78,13 @@ object connection {
 
   }
 
+  /**
+   * Construct a prepared update statement with the given return columns (and composite destination
+   * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return 
+   * the generated key results via a 
+   * `Process`.
+   * @group Prepared Statements 
+   */
   def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = {
 
     val preparedStatement: Process[ConnectionIO, PreparedStatement] =
