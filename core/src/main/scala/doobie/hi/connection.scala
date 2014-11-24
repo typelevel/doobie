@@ -25,7 +25,7 @@ import doobie.free.{ databasemetadata => DMD }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
 
-import java.sql.{ Connection, Savepoint, PreparedStatement }
+import java.sql.{ Connection, Savepoint, PreparedStatement, ResultSet }
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
@@ -51,22 +51,21 @@ object connection {
   def delay[A](a: => A): ConnectionIO[A] =
     C.delay(a)
 
-  /**
-   * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
-   * action, and return results via a `Process`.
-   * @group Prepared Statements 
-   */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = {
+  // TODO: make this public if the API sticks; still iffy
+  private def liftProcess[A: Composite](
+    create: ConnectionIO[PreparedStatement],
+    prep:   PreparedStatementIO[Unit], 
+    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
     
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
       resource(
-        C.prepareStatement(sql))(ps =>
+        create)(ps =>
         C.liftPreparedStatement(ps, PS.close))(ps =>
         Option(ps).point[ConnectionIO]).take(1) // note
   
     def results(ps: PreparedStatement): Process[ConnectionIO, A] =
       resource(
-        C.liftPreparedStatement(ps, PS.executeQuery))(rs =>
+        C.liftPreparedStatement(ps, exec))(rs =>
         C.liftResultSet(rs, RS.close))(rs =>
         C.liftResultSet(rs, resultset.getNext[A]))
 
@@ -77,6 +76,24 @@ object connection {
     } yield a
 
   }
+
+  /**
+   * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
+   * action, and return results via a `Process`.
+   * @group Prepared Statements 
+   */
+  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = 
+    liftProcess(C.prepareStatement(sql), prep, PS.executeQuery)
+
+  /**
+   * Construct a prepared update statement with the given return columns (and composite destination
+   * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return 
+   * the generated key results via a 
+   * `Process`.
+   * @group Prepared Statements 
+   */
+  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
+    liftProcess(C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
