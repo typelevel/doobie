@@ -51,13 +51,13 @@ object catchablespec extends Specification {
     }
 
     "catch matching throwables" in {
-      Task.delay(throw new IllegalArgumentException).exceptSome {
+      Task.delay[Int](throw new IllegalArgumentException).exceptSome {
         case ie: IllegalArgumentException => Task.delay(42)
       }.run must_== 42
     }
 
     "ignore non-matching throwables" in {      
-      Task.delay(throw new IllegalArgumentException).exceptSome {
+      Task.delay[Int](throw new IllegalArgumentException).exceptSome {
         case ise: IllegalStateException => Task.delay(42)
       }.run must throwA[IllegalArgumentException]
     }
@@ -78,7 +78,7 @@ object catchablespec extends Specification {
         Task.delay[Int](Predef.???).onException(Task.delay(a += 1)).run 
         false
       } catch {
-        case _ => a == 2
+        case _: Throwable => a == 2
       }      
     }
 
@@ -98,7 +98,7 @@ object catchablespec extends Specification {
         Task.delay[Int](Predef.???).ensuring(Task.delay(a += 1)).run 
         false
       } catch {
-        case _ => a == 2
+        case _: Throwable => a == 2
       }      
     }
 
