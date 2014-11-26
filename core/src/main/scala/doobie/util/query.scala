@@ -1,15 +1,15 @@
 package doobie.util
 
-import doobie.hi._
+import doobie.hi.{ ConnectionIO, PreparedStatementIO }
+import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
+import doobie.hi.preparedstatement.{ set, executeQuery }
+import doobie.hi.resultset.{ getUnique }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
-import doobie.syntax.catchable._
 import doobie.syntax.process._
-import doobie.enum.jdbctype.JdbcType
-import doobie.enum.parameternullable._
-import doobie.hi.connection.{ delay => cdelay }
 
-import scalaz._, Scalaz._
+import scalaz.{ Profunctor, Contravariant, Functor, Monad }
+import scalaz.syntax.monad._
 import scalaz.stream.Process
 
 /** Module defining queries parameterized by input and output types. */
@@ -74,11 +74,9 @@ object query {
       new Query[A, B] {
         val sql = sql0
         val stackFrame = stackFrame0
-        val analysis = connection.prepareQueryAnalysis[A,B](sql)
-        def process(a: A) = connection.process[B](sql, preparedstatement.set(a))
-        def unique(a: A) = connection.prepareStatement(sql) {
-          preparedstatement.set(a) >> preparedstatement.executeQuery(resultset.getUnique[B])
-        }
+        val analysis = prepareQueryAnalysis[A,B](sql)
+        def process(a: A) = cprocess[B](sql, set(a))
+        def unique(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getUnique[B]))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -129,11 +127,9 @@ object query {
       new Query0[B] {
         val sql = sql0
         val stackFrame = stackFrame0
-        def analysis = connection.prepareQueryAnalysis0[B](sql)
-        def process = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
-        def unique = connection.prepareStatement(sql) {
-          preparedstatement.executeQuery(resultset.getUnique[B])
-        }
+        def analysis = prepareQueryAnalysis0[B](sql)
+        def process = cprocess[B](sql, Monad[PreparedStatementIO].point(()))
+        def unique = prepareStatement(sql)(executeQuery(getUnique[B]))
       }
 
     implicit val query0Covariant: Functor[Query0] =
