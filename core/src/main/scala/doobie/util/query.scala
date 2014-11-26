@@ -36,12 +36,15 @@ object query {
     def sink(a: A)(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       process(a).sink(f)
 
+    def unique(a: A): ConnectionIO[B]
+
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
         val sql = q.sql
         val stackFrame = q.stackFrame
         val analysis = q.analysis
         def process(a: A) = q.process(a).map(f)
+        def unique(a: A) = q.unique(a).map(f)
       }
 
     def contramap[C](f: C => A): Query[C, B] =
@@ -50,6 +53,7 @@ object query {
         val stackFrame = q.stackFrame
         val analysis = q.analysis
         def process(c: C) = q.process(f(c))
+        def unique(c: C) = q.unique(f(c))
       }
 
     def toQuery0(a: A): Query0[B] =
@@ -58,6 +62,7 @@ object query {
         val stackFrame = q.stackFrame
         val analysis = q.analysis
         def process = q.process(a)
+        def unique = q.unique(a)
     }
 
   }
@@ -71,6 +76,9 @@ object query {
         val stackFrame = stackFrame0
         val analysis = connection.prepareQueryAnalysis[A,B](sql)
         def process(a: A) = connection.process[B](sql, preparedstatement.set(a))
+        def unique(a: A) = connection.prepareStatement(sql) {
+          preparedstatement.set(a) >> preparedstatement.executeQuery(resultset.getUnique[B])
+        }
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -101,12 +109,15 @@ object query {
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       process.sink(f)
 
+    def unique: ConnectionIO[B]
+
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {
         val sql = q.sql
         val stackFrame = q.stackFrame
         def analysis = q.analysis
         def process = q.process.map(f)
+        def unique = q.unique.map(f)
       }
 
   }
@@ -120,6 +131,9 @@ object query {
         val stackFrame = stackFrame0
         def analysis = connection.prepareQueryAnalysis0[B](sql)
         def process = connection.process[B](sql, Monad[PreparedStatementIO].point(()))
+        def unique = connection.prepareStatement(sql) {
+          preparedstatement.executeQuery(resultset.getUnique[B])
+        }
       }
 
     implicit val query0Covariant: Functor[Query0] =
