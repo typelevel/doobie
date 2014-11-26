@@ -1,14 +1,12 @@
 package doobie.util
 
-import doobie.hi.ConnectionIO
-import doobie.hi.PreparedStatementIO
-import doobie.hi.connection.{ prepareStatement, prepareStatementS, prepareUpdateAnalysis, prepareUpdateAnalysis0,updateWithGeneratedKeys }
+import doobie.hi.{ ConnectionIO, PreparedStatementIO }
+import doobie.hi.connection.{ prepareStatement, prepareStatementS, prepareUpdateAnalysis, prepareUpdateAnalysis0, updateWithGeneratedKeys }
 import doobie.hi.preparedstatement.{ set, executeUpdate, executeUpdateWithUniqueGeneratedKeys }
-import doobie.util.invariant.MappingViolation
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 
-import scalaz.{ Contravariant, Functor, Profunctor, ValidationNel }
+import scalaz.Contravariant
 import scalaz.stream.Process
 import scalaz.syntax.monad._
 
