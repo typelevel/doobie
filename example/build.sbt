@@ -18,6 +18,8 @@ scalacOptions ++= Seq(
   "-Xfatal-warnings"
 )
 
+publishArtifact := false
+
 initialCommands := """
   import scalaz._,Scalaz._
   import scalaz.concurrent.Task

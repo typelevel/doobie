@@ -35,3 +35,4 @@ lazy val postgres = project.in(file("contrib/postgresql")).dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 
+publishArtifact := false
