@@ -37,6 +37,12 @@ object imports {
   val HC   = doobie.hi.connection
 
   /**
+   * Alias for `doobie.hi.drivermanager`.
+   * @group Hi Module Aliases
+   */
+  val HDM  = doobie.hi.drivermanager
+
+  /**
    * Alias for `doobie.hi.statement`.
    * @group Hi Module Aliases
    */
