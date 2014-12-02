@@ -37,5 +37,3 @@ initialCommands := """
   )
   import xa.yolo._
   """
-
-tutSettings

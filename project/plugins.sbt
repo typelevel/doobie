@@ -17,4 +17,4 @@ resolvers += Resolver.url(
     url("http://dl.bintray.com/content/tpolecat/sbt-plugin-releases"))(
         Resolver.ivyStylePatterns)
 
-addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.2.2")
+addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.3-SNAPSHOT")
