@@ -28,7 +28,8 @@ object yolo {
   class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 
     private def out(s: String): ConnectionIO[Unit] =
-      delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
+      delay(Console.println(s))
+      // delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
     
     implicit class Query0YoloOps[A: TypeTag](q: Query0[A]) {
       
