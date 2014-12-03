@@ -37,7 +37,7 @@ task.run
 
 Hooray! We have computed a constant. Now let's try something more interesting.
 
-### Our Second and Third Programs
+### Our Second Program
 
 Let's use the `sql` interpolator to construct a *query* that computes a constant. Step by step, right? Note the types here; they are the same as above.
 
@@ -47,7 +47,11 @@ val task2 = program2.transact(xa)
 task2.run
 ```
 
-So we have now connected to a database to compute a constant. Considerably more impressive. But what if we want to do more than one thing in a transaction? Let's try it.
+So we have now connected to a database to compute a constant. Considerably more impressive. 
+
+### Our Third Program
+
+What if we want to do more than one thing in a transaction? Easy! `ConnecionIO` is a monad, so we can [flatmap that shit](http://flatmapthatshit.com/).
 
 ```tut:silent
 val program3 = 
