@@ -7,26 +7,26 @@
 
 CREATE TABLE IF NOT EXISTS city (
     id integer NOT NULL,
-    name text NOT NULL,
+    name varchar NOT NULL,
     countrycode character(3) NOT NULL,
-    district text NOT NULL,
+    district varchar NOT NULL,
     population integer NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS country (
     code character(3) NOT NULL,
-    name text NOT NULL,
-    continent text NOT NULL,
-    region text NOT NULL,
+    name varchar NOT NULL,
+    continent varchar NOT NULL,
+    region varchar NOT NULL,
     surfacearea real NOT NULL,
     indepyear smallint,
     population integer NOT NULL,
     lifeexpectancy real,
     gnp numeric(10,2),
     gnpold numeric(10,2),
-    localname text NOT NULL,
-    governmentform text NOT NULL,
-    headofstate text,
+    localname varchar NOT NULL,
+    governmentform varchar NOT NULL,
+    headofstate varchar,
     capital integer,
     code2 character(2) NOT NULL --,
     -- TODO: we can do this with CREATE DOMAIN
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS country (
 
 CREATE TABLE IF NOT EXISTS countrylanguage (
     countrycode character(3) NOT NULL,
-    language text NOT NULL,
+    language varchar NOT NULL,
     isofficial boolean NOT NULL,
     percentage real NOT NULL
 );
