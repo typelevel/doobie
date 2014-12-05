@@ -23,7 +23,7 @@ This is a perfectly cromulent **doobie** program, but we can't run it as-is; we 
 ```tut:silent
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
+  "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1", // connect URL
   "sa", ""                              // user and pass
 )
 ```

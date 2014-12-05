@@ -1,4 +1,4 @@
-## 3. Selecting Data
+## 4. Selecting Data
 
 
 ### Setting Up
@@ -10,7 +10,7 @@ import doobie.imports._
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
+  "jdbc:h2:mem:ch4;DB_CLOSE_DELAY=-1", // connect URL
   "sa", ""                              // user and pass
 )
 ```
@@ -25,11 +25,11 @@ Ok we now have some data out there that we can start messing with. Just for refe
 
 ```sql
 CREATE TABLE country (
-    code character(3) NOT NULL,
-    name text NOT NULL,
-    population integer NOT NULL,
-    gnp numeric(10,2)
-    -- more columns, but we won't use them here
+  code character(3)  NOT NULL,
+  name text          NOT NULL,
+  population integer NOT NULL,
+  gnp numeric(10,2)
+  -- more columns, but we won't use them here
 )
 ```
 
@@ -90,19 +90,19 @@ This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]
 
 ### Multi-Column Queries
 
-We can select multiple columns, of course, and map them to a tuple.
+We can select multiple columns, of course, and map them to a tuple. The `gnp` column is nullable so we'll select that one into an `Option[Double]`. In a later chapter we'll see how to check the types to be sure they're sensible.
 
 ```tut
 sql"""
   select code, name, population, gnp 
   from country
-""".query[(String, String, Int, Int)].process.take(5).quick.run
+""".query[(String, String, Int, Option[Double])].process.take(5).quick.run
 ```
 
 But this is kind of lame; we really want a proper type. So let's define one.
 
 ```tut:silent
-case class Country(code: String, name: String, pop: Int, gnp: Int)
+case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```
 
 And try our query again, using `Country` rather than our tuple type.
@@ -118,7 +118,7 @@ Nesting also works fine, of course.
 
 ```tut:silent
 case class Code(code: String)
-case class Country(name: String, pop: Int, gnp: Int)
+case class Country(name: String, pop: Int, gnp: Option[Double])
 ```
 
 ```tut
@@ -140,4 +140,13 @@ This kind of thing is useful for example if we want a `Map` rather than a `List`
    .map(_.toMap)           // ConnectionIO[Map[Code, Country]]
    .quick.run)
 ```
+
+
+
+
+
+
+
+
+
 
