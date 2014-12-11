@@ -1,4 +1,9 @@
-## 2. Toolkit
+---
+layout: book
+number: 2
+title: Toolkit
+---
+
 
 Before we get into **doobie** itself it's worth spending a moment to explain the big picture, and how this stuff fits into the rest of your program. The short answer is:
 

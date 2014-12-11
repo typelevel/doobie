@@ -1,4 +1,8 @@
-## 5. Parameterized Queries
+---
+layout: book
+number: 5
+title: Parameterized Queries
+---
 
 ### Setting Up
 

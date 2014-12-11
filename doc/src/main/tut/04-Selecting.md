@@ -1,5 +1,8 @@
-## 4. Selecting Data
-
+---
+layout: book
+number: 4
+title: Selecting Data
+---
 
 ### Setting Up
 

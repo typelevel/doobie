@@ -1,5 +1,8 @@
-## 3. Connecting to a Database
-
+---
+layout: book
+number: 3
+title: Connecting to a Database
+---
 
 ### Our First Program
 
