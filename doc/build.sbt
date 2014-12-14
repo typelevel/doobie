@@ -16,3 +16,19 @@ val xa = DriverManagerTransactor[Task](
   "sa", ""                              // user and pass
 )
 """
+
+lazy val cp = taskKey[Unit]("Copy tut output to blog repo nearby.")
+
+cp := {
+  val src = crossTarget.value / "tut"
+  val dst = file("../tpolecat.github.io/_book/")
+  if (!src.isDirectory) {
+    println("Input directory " + dst + " not found.")   
+  } else if (!dst.isDirectory) {
+    println("Output directory " + dst + " not found.")   
+  } else {
+    val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
+    IO.copy(map, true, false)
+  }
+}
+
