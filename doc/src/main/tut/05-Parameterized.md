@@ -34,10 +34,10 @@ This time we'll still be playing with the `country` table, but just with a few c
 
 ```sql
 CREATE TABLE country (
-  code character(3)  NOT NULL,
-  name text          NOT NULL,
-  population integer NOT NULL,
-  gnp numeric(10,2)
+  code       character(3)  NOT NULL,
+  name       text          NOT NULL,
+  population integer       NOT NULL,
+  gnp        numeric(10,2)
   -- more columns, but we won't use them here
 )
 ```
