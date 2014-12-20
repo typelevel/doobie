@@ -84,7 +84,7 @@ val kleisli = program3.transK[Task]
 val task = (null: java.sql.Connection).point[Task] >>= kleisli
 ```
 
-So the `Transactor` above simply knows how to construct a `Task[Connection]`, which it can bind through the `Kleisli`, yielding our `Task[Int]`. There is a bit more going on; we also set up a transaction, error handlers, etc., but fundamentally that's all that is going on.
+So the `Transactor` above simply knows how to construct a `Task[Connection]`, which it can bind through the `Kleisli`, yielding our `Task[Int]`.
 
 ##### The Capture Typeclass
 

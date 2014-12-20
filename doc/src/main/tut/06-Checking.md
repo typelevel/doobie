@@ -75,7 +75,7 @@ If we fix all of these problems and try again, we get a clean bill of health.
 case class Country(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
 
 def biggerThan(minPop: Int) = sql"""
-  select code, name, population, gnp, indepyear
+  select code, name, population, gnp
   from country
   where population > $minPop
 """.query[Country]
