@@ -58,7 +58,7 @@ def biggerThan(minPop: Short) = sql"""
 
 So let's try the `check` method provided by YOLO and see what happens.
 
-```tut
+```tut:plain
 biggerThan(0).check.run
 ```
 
@@ -81,7 +81,7 @@ def biggerThan(minPop: Int) = sql"""
 """.query[Country]
 ```
 
-```tut
+```tut:plain
 biggerThan(0).check.run
 ```
 
