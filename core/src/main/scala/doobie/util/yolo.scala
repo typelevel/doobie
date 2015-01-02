@@ -80,7 +80,7 @@ object yolo {
 
     def showSql(sql: String): Unit = {
       println()
-      sql.lines.foreach(s => println(s"  \033[37m$s${Console.RESET}"))
+      sql.lines.dropWhile(_.trim.isEmpty).foreach(s => println(s"  \033[37m$s${Console.RESET}"))
       println()
     }
 
