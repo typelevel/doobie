@@ -26,7 +26,7 @@ This is a perfectly cromulent **doobie** program, but we can't run it as-is; we 
 ```tut:silent
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1", // connect URL
+  "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",  // connect URL
   "sa", ""                              // user and pass
 )
 ```
@@ -86,7 +86,7 @@ val task = (null: java.sql.Connection).point[Task] >>= kleisli
 
 So the `Transactor` above simply knows how to construct a `Task[Connection]`, which it can bind through the `Kleisli`, yielding our `Task[Int]`.
 
-##### The Capture Typeclass
+#### The Capture Typeclass
 
 Currently scalaz has no typeclass for monads with **effect-capturing unit** so that's all `Capture` does; it's simply `(=> A) => M[A]` that is referentially transparent for *all* expressions, even those with side-effects. This allows us to sequence the same effect multiple times in the same program. This is exactly the behavior you expect from `IO` for example. 
 

@@ -3,7 +3,7 @@
 
 organization in ThisBuild := "org.tpolecat"
 
-version in ThisBuild := "0.2-SNAPSHOT"
+version in ThisBuild := "0.2.0-SNAPSHOT"
 
 licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 

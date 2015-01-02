@@ -13,7 +13,7 @@ import doobie.imports._
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch5;DB_CLOSE_DELAY=-1", // connect URL
+  "jdbc:h2:mem:ch5;DB_CLOSE_DELAY=-1",  // connect URL
   "sa", ""                              // user and pass
 )
 ```
@@ -54,20 +54,23 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 And try our query again, just to be sure.
 
 ```tut
-sql"""
-  select code, name, population, gnp 
-  from country
-""".query[Country].process.take(5).quick.run
+(sql"select code, name, population, gnp from country"
+  .query[Country].process.take(5).quick.run)
 ```
 
-Still works. Ok. So let's add a parameter. 
+Still works. Ok. So let's factor our query into a method and add a parameter.
 
-```tut
+```tut:silent
 def biggerThan(minPop: Int) = sql"""
   select code, name, population, gnp 
   from country
   where population > $minPop
 """.query[Country]
+```
+
+And we can run it of course.
+
+```tut
 biggerThan(150000000).quick.run // Let's see them all
 ```
 

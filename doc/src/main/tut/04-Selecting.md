@@ -13,7 +13,7 @@ import doobie.imports._
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch4;DB_CLOSE_DELAY=-1", // connect URL
+  "jdbc:h2:mem:ch4;DB_CLOSE_DELAY=-1",  // connect URL
   "sa", ""                              // user and pass
 )
 ```
@@ -96,10 +96,9 @@ This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]
 We can select multiple columns, of course, and map them to a tuple. The `gnp` column is nullable so we'll select that one into an `Option[Double]`. In a later chapter we'll see how to check the types to be sure they're sensible.
 
 ```tut
-sql"""
-  select code, name, population, gnp 
-  from country
-""".query[(String, String, Int, Option[Double])].process.take(5).quick.run
+(sql"select code, name, population, gnp from country"
+  .query[(String, String, Int, Option[Double])]
+  .process.take(5).quick.run)
 ```
 
 But this is kind of lame; we really want a proper type. So let's define one.
@@ -111,10 +110,9 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 And try our query again, using `Country` rather than our tuple type.
 
 ```tut
-sql"""
-  select code, name, population, gnp 
-  from country
-""".query[Country].process.take(5).quick.run
+(sql"select code, name, population, gnp from country"
+  .query[Country] // Query0[Country]
+  .process.take(5).quick.run)
 ```
 
 Nesting also works fine, of course.
@@ -125,19 +123,16 @@ case class Country(name: String, pop: Int, gnp: Option[Double])
 ```
 
 ```tut
-sql"""
-  select code, name, population, gnp 
-  from country
-""".query[(Code, Country)].process.take(5).quick.run
+(sql"select code, name, population, gnp from country"
+  .query[(Code, Country)] // Query0[(Code, Country)]
+  .process.take(5).quick.run)
 ```
 
 This kind of thing is useful for example if we want a `Map` rather than a `List` as our result. With types illustrated, for your convenience:
 
 ```tut
-(sql"""
-  select code, name, population, gnp 
-  from country
-""".query[(Code, Country)] // Query0[(Code, Country)]
+(sql"select code, name, population, gnp from country"
+   .query[(Code, Country)] // Query0[(Code, Country)]
    .process.take(5)        // Process[ConnectionIO, (Code, Country)]
    .list                   // ConnectionIO[List[(Code, Country)]]
    .map(_.toMap)           // ConnectionIO[Map[Code, Country]]
@@ -145,9 +140,23 @@ This kind of thing is useful for example if we want a `Map` rather than a `List`
 ```
 
 
+### Diving Deeper
 
+The `sql` interpolator is sugar for constructors defined in the `doobie.hi.connection` module, aliased as `HC` if you use the standard imports. Using these constructors directly, the above program would look like this:
 
+```tut:silent
 
+val sql = "select code, name, population, gnp from country"
+
+val proc = HC.process[(Code, Country)](sql, ().point[PreparedStatementIO])
+
+(proc.take(5)        // Process[ConnectionIO, (Code, Country)]
+     .list           // ConnectionIO[List[(Code, Country)]]
+     .map(_.toMap)   // ConnectionIO[Map[Code, Country]]
+     .quick.run)
+```
+
+The `process` combinator is parameterized on the process element type and consumes a sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration.
 
 
 

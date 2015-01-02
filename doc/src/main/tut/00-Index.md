@@ -1,11 +1,7 @@
 ---
 layout: book
 number: 0
-title: Welcome!
+title: Cover
 ---
 
-
-
-```tut
-s""""This text was compiled on ${new java.util.Date}.""""
-```
+<p class="text-center"><img src="/assets/doobie.png"></p>
