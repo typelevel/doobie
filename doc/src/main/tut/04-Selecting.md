@@ -4,13 +4,14 @@ number: 4
 title: Selecting Data
 ---
 
+In this chapter we construct some programs that retrieve data from the database and stream it back, mapping to Scala types on the way. We also introduce YOLO mode for experimenting with **doobie** in the REPL.
+
 ### Setting Up
 
-First let's get our imports out of the way and set up a `Transactor` as in the previous chapter. This is an in-memory database, by the way, so there won't be anything left behind when we exit the VM.
+First let's get our imports out of the way and set up a `Transactor` as we did before. You can skip this step if you still have your REPL running from last chapter.
 
 ```tut:silent
-import doobie.imports._
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      // driver class
   "jdbc:h2:mem:ch4;DB_CLOSE_DELAY=-1",  // connect URL
@@ -18,7 +19,7 @@ val xa = DriverManagerTransactor[Task](
 )
 ```
 
-Now let's load up the sample database at the root of the **doobie** source tree. You can go grab it from github if you want to play along at home. The result is the total number of inserted rows.
+Now let's load up the sample database at the root of the **doobie** source tree (you can go grab it from github if you want to play along at home). Note that this is an in-memory database, so there won't be anything left behind when we exit the VM.The result of this program is the total number of inserted rows.
 
 ```tut
 sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".update.run.transact(xa).run
@@ -38,7 +39,7 @@ CREATE TABLE country (
 
 ### Elementary Streaming
 
-Let's aim low and select some country names into a `List` and print out the first few. The parens are just to make the REPL understand what's going on. We'll fix tut at some point.
+For our first query let's aim low and select some country names into a `List`, then print out the first few. There are several steps here so we have noted the types along the way.
 
 ```tut
 (sql"select name from country"
@@ -51,11 +52,11 @@ Let's aim low and select some country names into a `List` and print out the firs
 
 Let's break this down a bit.
 
-- `sql"select name from country".query[String]` defines a `Query0[String]`, which is just a one-column query that maps to a `String`. We will get to more interesting row types soon.
-- `.list` is a convenience method that streams the results, accumulating them in a `List[String]`, yielding a `ConnectionIO[String]`.
+- `sql"select name from country".query[String]` defines a `Query0[String]`, which is a one-column query that maps each returned row to a `String`. We will get to more interesting row types soon.
+- `.list` is a convenience method that streams the results, accumulating them in a `List`, in this case yielding a `ConnectionIO[List[String]]`.
 - The rest is familar; `transact(xa)` yields a `Task[List[String]]` which we run, giving us a normal Scala `List[String]` that we print out.
 
-This is ok, but there's not much point streaming all the results from the database when we only want the first few rows. So let's try a different approach.
+This is ok, but there's not much point reading all the results from the database when we only want the first few rows. So let's try a different approach.
 
 ```tut
 (sql"select name from country"
@@ -68,11 +69,13 @@ This is ok, but there's not much point streaming all the results from the databa
   .foreach(println))
 ```
 
-The difference here is that `process` gives us a `scalaz.stream.Process[ConnectionIO, String]` which emits the results as they arrive from the database. If we then `take(5)` from the process, we simply get a process that will shut everything down (and clean everything up) once five elements have been emitted. So this is much more efficient than pulling all 239 rows across. 
+The difference here is that `process` gives us a `scalaz.stream.Process[ConnectionIO, String]` which emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
+
+Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and elegant tool.
 
 ### YOLO Mode
 
-Although this API is already fairly expressive, it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So *just for REPL exploration* there is a module of extra syntax provided on `Transactor` that you can import, and it gives you some shortcuts.
+The API we have seen so far is pretty expressive, but it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So **just for REPL exploration** there is a module of extra syntax provided on `Transactor` that you can import, and it gives you some shortcuts.
 
 ```tut:silent
 import xa.yolo._
@@ -93,15 +96,14 @@ This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]
 
 ### Multi-Column Queries
 
-We can select multiple columns, of course, and map them to a tuple. The `gnp` column is nullable so we'll select that one into an `Option[Double]`. In a later chapter we'll see how to check the types to be sure they're sensible.
+We can select multiple columns, of course, and map them to a tuple. The `gnp` column in our table is nullable so we'll select that one into an `Option[Double]`. In a later chapter we'll see how to check the types to be sure they're sensible.
 
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[(String, String, Int, Option[Double])]
   .process.take(5).quick.run)
 ```
-
-But this is kind of lame; we really want a proper type. So let's define one.
+**doobie** automatically supports queries of atomic column types, as well as tuples and case classes thereof. So let's try a case class.
 
 ```tut:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
@@ -114,6 +116,7 @@ And try our query again, using `Country` rather than our tuple type.
   .query[Country] // Query0[Country]
   .process.take(5).quick.run)
 ```
+
 
 Nesting also works fine, of course.
 

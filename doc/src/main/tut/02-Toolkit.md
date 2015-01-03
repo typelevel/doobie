@@ -14,7 +14,7 @@ Before we get into writing **doobie** programs it's worth spending a moment to e
 
 <p class="text-center"><img src="/assets/nesting.png"></p>
 
-Many patterns of composition are so common and generic that they can be provided for you, and **doobie** provides these in its high-level API. As a result many programs can be written entirely in terms of `ConnectionIO`. Some examples are:
+Some patterns of composition are so common and generic that they can be provided for you, as **doobie** does with its high-level API. As a result many programs can be written entirely in terms of `ConnectionIO`. Some examples are:
 
 - Performing a query and reading the results as a stream.
 - Performing an update and returning updated rows as a stream.
@@ -24,15 +24,18 @@ This book largely focuses on these common interactions, but also explains their 
 
 ### Low and High
 
-The **low-level API** in `doobie.free` provides a direct 1:1 mapping to the underlying JDBC API, giving library implementors a pure functional wrapper for the full JDBC 4.0 API. This API provides no resource safety, null checking, or type mapping, and exposes lifetime-managed JDBC objects, so coding at this level still requires a great deal of care.
+**doobie** provides two APIs intended for different audiences.
 
-The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-level API) provides a safe subset of the JDBC API. Programs written with this API have no access to the underlying JDBC objects and cannot leak references. Other features of this API include:
+The **low-level API** in `doobie.free` provides a direct 1:1 mapping to the underlying JDBC API, giving library implementors a pure functional wrapper for the full JDBC 4.0 API. This API provides no resource safety, `NULL` checking, or type mapping; and it directly exposes lifetime-managed JDBC objects; programs written at this level have desirable compositional properties but still require a great deal of care.
 
-- Typeclass-based mapping of scalar, array, and vendor-specific types to column values.
-- Nullability is represented by `Option`; Scala `null` cannot be observed.
-- Typeclass-based mapping of product types to columns.
+The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-level API) provides a safe subset of the JDBC API. Programs written with this API have no access to the underlying JDBC objects and cannot leak references. Features of this API include:
+
+- Typeclass-based mapping of scalar, array, and vendor-specific types to columns.
+- Typeclass-based mapping of product types to rows.
+- Trivial custom two-way row/column mapping via invariant functors.
+- Nullability via `Option` (Scala `null` cannot be observed).
 - Proper enumerated types for all JDBC constants.
-- Result sets appear as scalaz streams.
+- Result sets as scalaz streams.
 - Typesafe string interpolator for SQL literals.
 
 As noted above, the types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the `doobie.hi` API can use constuctors from `doobie.free` to implement advanced or vendor-specific behavior directly, without translation or lifting.
