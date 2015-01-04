@@ -103,13 +103,11 @@ We can select multiple columns, of course, and map them to a tuple. The `gnp` co
   .query[(String, String, Int, Option[Double])]
   .process.take(5).quick.run)
 ```
-**doobie** automatically supports queries of atomic column types, as well as tuples and case classes thereof. So let's try a case class.
+**doobie** automatically supports row mappings for atomic column types, as well as options, tuples, and case classes thereof. So let's try the same query, mapping rows to a case class.
 
 ```tut:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```
-
-And try our query again, using `Country` rather than our tuple type.
 
 ```tut
 (sql"select code, name, population, gnp from country"
@@ -117,8 +115,7 @@ And try our query again, using `Country` rather than our tuple type.
   .process.take(5).quick.run)
 ```
 
-
-Nesting also works fine, of course.
+You can also nest case classes and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
 
 ```tut:silent
 case class Code(code: String)
@@ -131,7 +128,7 @@ case class Country(name: String, pop: Int, gnp: Option[Double])
   .process.take(5).quick.run)
 ```
 
-This kind of thing is useful for example if we want a `Map` rather than a `List` as our result. With types illustrated, for your convenience:
+And just for fun, since the `Code` values are constructed from the primary key, let's turn the results into a `Map`. Trivial but useful.
 
 ```tut
 (sql"select code, name, population, gnp from country"
@@ -159,7 +156,7 @@ val proc = HC.process[(Code, Country)](sql, ().point[PreparedStatementIO])
      .quick.run)
 ```
 
-The `process` combinator is parameterized on the process element type and consumes a sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration.
+The `process` combinator is parameterized on the process element type and consumes a sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
 
 
 
