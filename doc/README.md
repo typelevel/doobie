@@ -4,27 +4,37 @@ This project is a set of [tut](https://github.com/tpolecat/tut) documents that y
 
 #### Chapter Roadmap
 
-1. Introduction
-1. Toolkit (overview)
-1. Connecting to a Database
-1. Selecting Data
-1. Parameterized Queries
-1. Typechecking Queries
-1. Updating Data
-1. Updating with Results
-1. Batch Updates
-1. Typechecking Updates
-1. SQL Arrays
-1. SQL Structs
-1. Blobs and Clobs
-1. Vendor-Specific Types
-1. Custom Column Mappings
-1. Connection Pooling
-1. Unit Testing
-1. Getting Help
+- Introduction
+- Toolkit (overview)
+- Connecting to a Database
+- Selecting Data
+- Parameterized Queries
+- Typechecking Queries
+
+- Inserting and Updating
+  - Inserting
+  - Updating
+  - Retrieving Results
+- Error Handling
+  - Catchable
+  - CatchSql
+- SQL Arrays
+  - Reading Arrays
+  - Writing Arrays
+- Custom Column Mappings
+  - Meta, Atom, Composite
+  - Meta by Invariant Map
+  - Meta by Construction
+    - Arrays
+    - Objects
+- Unit Testing
+  - 
+- Getting Help
+
 
 #### Appendices
 
 1. Core Column Mappings
 1. PostresSQL Extensions
+1. H2 Extensions
 
