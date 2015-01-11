@@ -93,6 +93,12 @@ object jdbctype {
         case TinyInt.toInt       => TinyInt       
         case VarBinary.toInt     => VarBinary     
         case VarChar.toInt       => VarChar       
+
+        // Gets a little iffy here. Some databases (H2 and allegedly SQL Server) report NVarChar as 
+        // -10 rather than -9 ... no idea. It's definitely not in the spec. So let's just accept it 
+        // here and call it good. What's the worst thing that could happen? heh-heh
+        case -10                 => NVarChar
+
       }
 
     def unsafeFromInt(n:Int): JdbcType =
