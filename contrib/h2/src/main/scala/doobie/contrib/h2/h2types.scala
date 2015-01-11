@@ -20,7 +20,7 @@ object h2types {
   // see postgres contrib for an explanation of array mapping; we may want to factor this out
 
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
-    val raw = Meta.other[Array[A]]("ARRAY")
+    val raw = Meta.other[Array[Object]]("ARRAY").xmap[Array[A]](_.map(_.asInstanceOf[A]), _.map(_.asInstanceOf[Object]))
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a
     (raw.xmap(checkNull(_, NullableCellRead), checkNull(_, NullableCellUpdate)),
