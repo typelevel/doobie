@@ -4,7 +4,7 @@ number: 5
 title: Parameterized Queries
 ---
 
-In this short chapter we learn how to construct parameterized queries, and introduce the `Composite` typeclass.
+In this chapter we learn how to construct parameterized queries, and introduce the `Composite` typeclass.
 
 ### Setting Up
 
