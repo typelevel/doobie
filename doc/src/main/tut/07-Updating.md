@@ -79,7 +79,7 @@ Of course when we insert we usually want the row back, so let's do that. First w
 def insert2(name: String, age: Option[Int]): ConnectionIO[Person] =
   for {
     _  <- sql"insert into person (name, age) values ($name, $age)".update.run
-    id <- sql"call identity()".query[Int].unique
+    id <- sql"call identity()".query[Long].unique
     p  <- sql"select id, name, age from person where id = $id".query[Person].unique
   } yield p
 ```
@@ -92,18 +92,24 @@ This is irritating but it is supported by all databases (although the "get the l
 
 
 ```tut:silent
-def insert3(name: String, age: Option[Int]): ConnectionIO[Person] = {
-  sql"insert into person (name, age) values ($name, $age)"
-    .update
-    .withUniqueGeneratedKeys[Person]("id", "name", "age") // ConnectionIO[Person]
-}
+
+// DOH, doesn't work in H2
+
+// def insert3(name: String, age: Option[Int]): ConnectionIO[Person] = {
+//   sql"insert into person (name, age) values ($name, $age)"
+//     .update
+//     .withUniqueGeneratedKeys[Person]("id", "name", "age") // ConnectionIO[Person]
+// }
 ```
 
 ```tut
-insert2("Elvis", None).quick.run
+//insert3("Elvis", None).quick.run
 ```
 
 This mechanism also works for updates, for databases that support it (PostgreSQL for example, but not H2). In the case of multiple row updates use `.withGeneratedKeys[A](cols...)` to get a `Process[ConnectionIO, A]`.
+
+
+
 
 
 
