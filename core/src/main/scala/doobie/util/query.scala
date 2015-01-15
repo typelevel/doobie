@@ -3,7 +3,7 @@ package doobie.util
 import doobie.hi.{ ConnectionIO, PreparedStatementIO }
 import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
 import doobie.hi.preparedstatement.{ set, executeQuery }
-import doobie.hi.resultset.{ getUnique }
+import doobie.hi.resultset.{ getUnique, getOption }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.syntax.process._
@@ -38,6 +38,8 @@ object query {
 
     def unique(a: A): ConnectionIO[B]
 
+    def option(a: A): ConnectionIO[Option[B]]
+
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
         val sql = q.sql
@@ -45,6 +47,7 @@ object query {
         val analysis = q.analysis
         def process(a: A) = q.process(a).map(f)
         def unique(a: A) = q.unique(a).map(f)
+        def option(a: A) = q.option(a).map(_.map(f))
       }
 
     def contramap[C](f: C => A): Query[C, B] =
@@ -54,6 +57,7 @@ object query {
         val analysis = q.analysis
         def process(c: C) = q.process(f(c))
         def unique(c: C) = q.unique(f(c))
+        def option(c: C) = q.option(f(c))
       }
 
     def toQuery0(a: A): Query0[B] =
@@ -63,6 +67,7 @@ object query {
         val analysis = q.analysis
         def process = q.process(a)
         def unique = q.unique(a)
+        def option = q.option(a)
     }
 
   }
@@ -77,6 +82,7 @@ object query {
         val analysis = prepareQueryAnalysis[A,B](sql)
         def process(a: A) = cprocess[B](sql, set(a))
         def unique(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getUnique[B]))
+        def option(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getOption[B]))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -109,6 +115,8 @@ object query {
 
     def unique: ConnectionIO[B]
 
+    def option: ConnectionIO[Option[B]]
+
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {
         val sql = q.sql
@@ -116,6 +124,7 @@ object query {
         def analysis = q.analysis
         def process = q.process.map(f)
         def unique = q.unique.map(f)
+        def option = q.option.map(_.map(f))
       }
 
   }
@@ -130,6 +139,7 @@ object query {
         def analysis = prepareQueryAnalysis0[B](sql)
         def process = cprocess[B](sql, Monad[PreparedStatementIO].point(()))
         def unique = prepareStatement(sql)(executeQuery(getUnique[B]))
+        def option = prepareStatement(sql)(executeQuery(getOption[B]))
       }
 
     implicit val query0Covariant: Functor[Query0] =

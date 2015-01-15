@@ -128,6 +128,18 @@ object resultset {
       case (None, _)        => throw UnexpectedEnd
     }
 
+  /**
+   * Equivalent to `getNext`, but verifies that there is at most one row remaining.
+   * @throws `UnexpectedContinuation` if there is more than one row remaining
+   * @group Results
+   */
+  def getOption[A: Composite]: ResultSetIO[Option[A]] =
+    (getNext[A] |@| next) {
+      case (a @ Some(_), false) => a
+      case (Some(a), true)      => throw UnexpectedContinuation
+      case (None, _)            => None
+    }
+
   /** 
    * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
