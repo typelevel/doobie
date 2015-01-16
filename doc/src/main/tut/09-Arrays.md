@@ -15,7 +15,7 @@ import doobie.imports._
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.h2.Driver",                      
-  "jdbc:h2:mem:ch7;DB_CLOSE_DELAY=-1",  
+  "jdbc:h2:mem:ch9;DB_CLOSE_DELAY=-1",
   "sa", ""                              
 )
 import xa.yolo._
