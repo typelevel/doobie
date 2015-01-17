@@ -62,14 +62,14 @@ insert("Alice", None, Nil).quick.run
 
 ### Diving Deep
 
-```tut
+```tut:silent
 import scala.reflect.runtime.universe.TypeTag
 
 implicit def IListAtom[A: TypeTag](implicit ev: Meta[List[A]]): Meta[IList[A]] =
   ev.xmap[IList[A]](IList.fromList, _.toList)
 ```
 
-```tut:silent
+```tut
 sql"select pets from person".query[IList[String]].quick.run
 ```
 

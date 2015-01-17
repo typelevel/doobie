@@ -69,7 +69,7 @@ Ok! We have now connected to a database to compute a constant. Considerably more
 
 ### Our Third Program
 
-What if we want to do more than one thing in a transaction? Easy! `ConnecionIO` is a monad, so we can use a `for` comprehension to compose two smaller programs into one larger program.
+What if we want to do more than one thing in a transaction? Easy! `ConnectionIO` is a monad, so we can use a `for` comprehension to compose two smaller programs into one larger program.
 
 ```tut:silent
 val program3 = 
