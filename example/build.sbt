@@ -37,4 +37,3 @@ initialCommands := """
   )
   import xa.yolo._
   """
-
