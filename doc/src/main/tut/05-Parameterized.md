@@ -119,7 +119,7 @@ When reading a row or setting parameters in the high-level API, we require an in
 
 ```tut
 Composite[Country]
-Composite[(Int, Int)]
+// Composite[(Int, Int)] // hmm crashes compiler
 ```
 
 
