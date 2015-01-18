@@ -16,7 +16,7 @@ final class HikariTransactor[M[_]: Monad : Catchable: Capture] private (ds: Hika
   val shutdown: M[Unit] = Capture[M].apply(ds.shutdown)
 
   /** Constructs a program that configures the underlying `HikariDataSource`. */
-  def configure(f: HikariDataSource => M[Unit]): M[Unit] = ds.point[M] >>= f
+  def configure(f: HikariDataSource => M[Unit]): M[Unit] = f(ds)
 
 }
 
