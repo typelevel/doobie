@@ -37,6 +37,6 @@ lazy val h2 = project.in(file("contrib/h2")).dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 
-lazy val doc = project.in(file("doc")).dependsOn(core, h2)
+lazy val doc = project.in(file("doc")).dependsOn(core, h2, specs2)
 
 publishArtifact := false

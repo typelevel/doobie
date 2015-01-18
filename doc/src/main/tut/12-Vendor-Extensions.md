@@ -4,15 +4,25 @@ number: 12
 title: Vendor Extensions
 ---
 
+### HikariCP Support
 
-### H2 Extensions
+The `contrib-hikari` add-on provides a `Transactor` backed by a `HikariDataSource`.
+
+```scala
+for {
+  xa <- HikariTransactor[Task]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  _  <- longRunningProgram(xa) ensuring xa.shutdown
+} yield ()
+```
+
+### H2 Support
 
 The `contrib-h2` add-on provides mappings for the following H2 types in the `doobie.contrib.h2.h2types` module.
 
 - H2 `array` types are supported and map to `Array`, `List`, `Vector`.
 - The `uuid` type is supported and maps to `java.util.UUID`.
 
-### PostgreSQL Extensions
+### PostgreSQL Support
 
 The `contrib-postgres` add-on provides mappings for the following PostgreSQL types in the `doobie.contrib.postgresql.pgtypes` module.
 
