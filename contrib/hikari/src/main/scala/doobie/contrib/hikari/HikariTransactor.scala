@@ -8,7 +8,7 @@ import scalaz.syntax.id._
 import scalaz.syntax.monad._
 
 /** A `Transactor` backed by a `HikariDataSource`. */
-final class HikariTransactor[M[_]: Monad : Catchable: Capture] private (ds: HikariDataSource) extends Transactor[M] {
+final class HikariTransactor[M[_]: Monad : Catchable : Capture] private (ds: HikariDataSource) extends Transactor[M] {
   
   protected def connect = Capture[M].apply(ds.getConnection)
 
@@ -27,7 +27,7 @@ object HikariTransactor {
     Capture[M].apply(new HikariTransactor(new HikariDataSource()))
 
   /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
-  def apply[M[_]: Monad : Catchable: Capture](url: String, user: String, pass: String): M[HikariTransactor[M]] =
+  def apply[M[_]: Monad : Catchable : Capture](url: String, user: String, pass: String): M[HikariTransactor[M]] =
     for {
       t <- initial[M]
       _ <- t.configure(ds => Capture[M].apply {
