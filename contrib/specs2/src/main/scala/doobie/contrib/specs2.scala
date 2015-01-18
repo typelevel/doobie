@@ -62,7 +62,7 @@ object specs2 {
       formatError(e.msg)
 
     private def formatError(s: String): String =
-      (wrap(100)(s) match {
+      (wrap(80)(s) match {
         case s :: ss => (s"x " + s) :: ss.map("  " + _)
         case Nil => Nil
       }).mkString("\n")
