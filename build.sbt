@@ -29,11 +29,13 @@ scalacOptions in ThisBuild ++= Seq(
 
 lazy val core = project.in(file("core"))
 
-lazy val example = project.in(file("example")).dependsOn(core, postgres, specs2)
+lazy val example = project.in(file("example")).dependsOn(core, postgres, specs2, hikari)
 
 lazy val postgres = project.in(file("contrib/postgresql")).dependsOn(core)
 
 lazy val h2 = project.in(file("contrib/h2")).dependsOn(core)
+
+lazy val hikari = project.in(file("contrib/hikari")).dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 
