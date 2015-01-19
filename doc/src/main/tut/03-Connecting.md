@@ -22,15 +22,15 @@ We will also import the [scalaz](https://github.com/scalaz/scalaz) core, as well
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 ```
 
-In the **doobie** high level API the most common type we will deal with is `ConnectionIO[A]`. It specifies a computation that takes place in a context where a `java.sql.Connection` is available, and ultimately produces a value of type `A`.
+In the **doobie** high level API the most common types we will deal with have the form `ConnectionIO[A]`, specifying computations that takes place in a context where a `java.sql.Connection` is available, ultimately producing a value of type `A`.
 
 So let's start with a `ConnectionIO` program that simply returns a constant.
 
 ```tut
-val program = 42.point[ConnectionIO]
+val program1 = 42.point[ConnectionIO]
 ```
 
-This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are many ways to do this, but here let's use a `Transactor`.
+This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
 ```tut:silent
 val xa = DriverManagerTransactor[Task](
@@ -43,12 +43,11 @@ val xa = DriverManagerTransactor[Task](
 A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> Task`, which gives us something we can run. Specifically it gives us a `Task` that, when run, will connect to the database and run our program in a single transaction.
 
 ```tut
-val task = program.transact(xa)
+val task = program1.transact(xa)
 task.run
 ```
 
 Hooray! We have computed a constant. It's not very interesting because we never ask the database to perform any work, but it's a first step.
-
 
 > Keep in mind that all the code in this book is pure *except* the calls to `Task.run`, which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
 
@@ -56,7 +55,7 @@ Right. Now let's try something more interesting.
 
 ### Our Second Program
 
-Let's use the `sql` string interpolator to construct a query that asks the *database* to compute a constant. We will cover this construction in great detail later on, but the meaning of `program2` is "run the query, interpret the resultset as a stream of `Int` values, and return its one and only value."
+Let's use the `sql` string interpolator to construct a query that asks the *database* to compute a constant. We will cover this construction in great detail later on, but the meaning of `program2` is "run the query, interpret the resultset as a stream of `Int` values, and return its one and only element."
 
 ```tut
 val program2 = sql"select 42".query[Int].unique
@@ -117,8 +116,9 @@ All of the **doobie** monads are implemented via `Free` and have no operational 
 Out of the box all of the **doobie** free monads provide a transformation to `Kleisli[M, Foo, A]` given `Monad[M]`, `Catchable[M]`, and `Capture[M]` (we will discuss `Capture` shortly, standby). The `transK` method gives quick access to this transformation.
 
 ```tut
-val kleisli = program3.transK[Task] 
-val task = (null: java.sql.Connection).point[Task] >>= kleisli
+val kleisli = program1.transK[Task] 
+val task = Task.delay(null: java.sql.Connection) >>= kleisli
+task.run // sneaky; program1 never looks at the connection
 ```
 
 So the `Transactor` above simply knows how to construct a `Task[Connection]`, which it can bind through the `Kleisli`, yielding our `Task[Int]`. There is a bit more going on (we add commit/rollback handling and ensure that the connection is closed in all cases) but fundamentally it's just a natural transformation and a bind.
