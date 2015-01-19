@@ -1,5 +1,7 @@
 # Doobie
 
+<img src="https://api.travis-ci.org/tpolecat/doobie.svg?branch=master"/>
+
 > **Hello tweeters** ... it seems that the v0.1 announcement from July was picked up in a tweetstorm on Nov 22. So just an update, v0.2 is well on its way and will be out by year's end*, so check back for some really nice new stuff coming up soon. - rob
 >
 > *Soon thereafter, actually. Writing doc made me realize I needed a few more features.
