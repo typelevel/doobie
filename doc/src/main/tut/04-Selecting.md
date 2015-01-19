@@ -75,7 +75,7 @@ Of course a server-side `LIMIT` would be an even better way to do this (for data
 
 ### YOLO Mode
 
-The API we have seen so far is pretty expressive, but it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So **just for REPL exploration** there is a module of extra syntax provided on `Transactor` that you can import, and it gives you some shortcuts.
+The API we have seen so far is ok, but it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So **just for REPL exploration** there is a module of extra syntax provided on `Transactor` that you can import, and it gives you some shortcuts.
 
 ```tut:silent
 import xa.yolo._
