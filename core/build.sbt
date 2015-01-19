@@ -68,4 +68,21 @@ freeGenClasses := {
   )
 }
 
+/// BUILD INFO
+
+sourceGenerators in Compile += Def.task {
+  val outDir = (sourceManaged in Compile).value / "doobie"
+  val outFile = new File(outDir, "buildinfo.scala")
+  outDir.mkdirs
+  IO.write(outFile,
+    s"""|package doobie
+        |
+        |object buildinfo {
+        |  val version = "${version.value}"
+        |  val date    = new java.util.Date(${System.currentTimeMillis}L)
+        |}
+        |""".stripMargin)
+  Seq(outFile)
+}.taskValue
+
 
