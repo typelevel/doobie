@@ -8,6 +8,8 @@ title: SQL Arrays
 
 ### Setting Up
 
+Note that the code in this chapter requires the `doobie-contrib-h2` module.
+
 Again we set up an H2 transactor and pull in YOLO mode, but this time we're not using the world database.
 
 ```tut:silent

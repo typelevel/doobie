@@ -42,5 +42,5 @@ The types used for both APIs are identical; the difference lies only in the expo
 
 ### Vendor Extensions
 
-The 0.2.0 release introduces small add-on libraries to support vendor-specific features outside of (or underspecified in) the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), and [PostgreSQL](http://www.postgresql.org/) are available and are described briefly in a later chapter. This is an area of active development and contributions are especially welcome. 
+The 0.2.0 release introduces small add-on libraries to support vendor-specific features outside of (or underspecified in) the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), [PostgreSQL](http://www.postgresql.org/), and [Specs2](http://etorreborre.github.io/specs2/) are available and are described briefly in a later chapter. This is an area of active development and contributions are especially welcome. 
 

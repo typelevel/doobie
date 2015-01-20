@@ -8,11 +8,11 @@ title: Typechecking Queries
 <b>Warning:</b> The functionality described in this chapter is experimental and is likely to change in future versions. But it's still pretty freakin' cool.
 </div>
 
-In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that ours type mappings are correct (and if not, get some hints on how to fix them).
+In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that our type mappings are correct (and if not, get some hints on how to fix them).
 
 ### Setting Up
 
-Our setup here is the same as last chapter, so if you're still set up you can skip this section. Otherwise: imports, `Transactor`, test data, and YOLO mode.
+Our setup here is the same as last chapter, so if you're still running from last chapter you can skip this section. Otherwise: imports, `Transactor`, test data, and YOLO mode.
 
 ```tut:silent
 import doobie.imports._

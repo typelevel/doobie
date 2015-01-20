@@ -21,7 +21,7 @@ Having said this, if you find yourself confused or frustrated by this documentat
 
 ### The Setup
 
-This book is compiled as part of the build using the [tut](https://github.com/tpolecat/tut) tutorial generator, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own; if you copy and paste stuff starting from the top, it will work in your REPL as long as you have the proper version of **doobie** and the [H2](http://www.h2database.com/) driver, which you can add to your sbt build as follows:
+This book is compiled as part of the build using the [tut](https://github.com/tpolecat/tut) tutorial generator, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own; if you copy and paste stuff starting from the top, it will work in your REPL as long as you have the proper version of **doobie** and the extensions used here, as well as the [H2](http://www.h2database.com/) driver, which you can add to your sbt build as follows:
 
 ```scala
 resolvers ++= Seq(
@@ -29,10 +29,13 @@ resolvers ++= Seq(
   "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 )
 
+lazy val doobieVersion = "0.2.0"
+
 libraryDependencies ++= Seq(
-  "org.tpolecat"   %% "doobie-core"       % "0.2.0",
-  "org.tpolecat"   %% "doobie-contrib-h2" % "0.2.0",
-  "com.h2database" %  "h2"                % "1.3.170"
+  "org.tpolecat"   %% "doobie-core"           % doobieVersion.value,
+  "org.tpolecat"   %% "doobie-contrib-h2"     % doobieVersion.value,
+  "org.tpolecat"   %% "doobie-contrib-specs2" % doobieVersion.value,
+  "com.h2database" %  "h2"                    % "1.3.170"
 )
 ```
 
