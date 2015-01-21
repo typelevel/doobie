@@ -23,7 +23,7 @@ object pgtypesspec extends Specification {
   val xa = DriverManagerTransactor[Task](
     "org.postgresql.Driver", 
     "jdbc:postgresql:world", 
-    "rnorris", ""
+    "postgres", ""
   )
 
   implicit class CrazyStringOps(e: String) {

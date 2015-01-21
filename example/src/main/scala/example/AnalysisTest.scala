@@ -57,7 +57,7 @@ object AnalysisTest {
     """.update
 
   val xa: Transactor[Task] = 
-    DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "rnorris", "")
+    DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
 }
 

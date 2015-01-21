@@ -14,7 +14,7 @@ initialCommands := """
   import doobie.syntax.string._
   import doobie.util.transactor._
   import doobie.contrib.postgresql.pgtypes._
-  val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "rnorris", "")
+  val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   import xa.yolo._
   """
 
