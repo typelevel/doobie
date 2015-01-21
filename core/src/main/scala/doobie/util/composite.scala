@@ -23,7 +23,7 @@ import java.sql.ParameterMetaData
  */
 object composite {
 
-  @implicitNotFound("Could not find or construct Composite[${A}]; ensure that all members of A have Atom (or Meta) instances.")
+  @implicitNotFound("Could not find or construct Composite[${A}].")
   trait Composite[A] { c =>    
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
     val update: (Int, A) => RS.ResultSetIO[Unit]

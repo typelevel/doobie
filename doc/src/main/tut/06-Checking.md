@@ -1,0 +1,110 @@
+---
+layout: book
+number: 6
+title: Typechecking Queries
+---
+
+<div class="alert alert-warning" role="alert">
+<b>Warning:</b> The functionality described in this chapter is experimental and is likely to change in future versions. But it's still pretty freakin' cool.
+</div>
+
+In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that our type mappings are correct (and if not, get some hints on how to fix them).
+
+### Setting Up
+
+Our setup here is the same as last chapter, so if you're still running from last chapter you can skip this section. Otherwise: imports, `Transactor`, test data, and YOLO mode.
+
+```tut:silent
+import doobie.imports._
+import scalaz._, Scalaz._, scalaz.concurrent.Task
+val xa = DriverManagerTransactor[Task](
+  "org.h2.Driver",                      // driver class
+  "jdbc:h2:mem:ch6;DB_CLOSE_DELAY=-1",  // connect URL
+  "sa", ""                              // user and pass
+)
+sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".update.run.transact(xa).run
+import xa.yolo._
+```
+
+And again, we're playing with the `country` table, shown here for reference.
+
+```sql
+CREATE TABLE country (
+  code        character(3)  NOT NULL,
+  name        text          NOT NULL,
+  population  integer NOT NULL,
+  gnp         numeric(10,2),
+  indepyear   smallint
+  -- more columns, but we won't use them here
+)
+```
+
+### Checking a Query
+
+In order to create a query that's not quite right, let's redefine our `Country` class with slightly different types.
+
+```tut:silent
+case class Country(code: Int, name: String, pop: Int, gnp: Double)
+```
+
+Here's our parameterized query from last chapter, but with the new `Country` definition and the `minPop` parameter changed to a `Short`. 
+
+```tut:silent
+def biggerThan(minPop: Short) = sql"""
+  select code, name, population, gnp, indepyear
+  from country
+  where population > $minPop
+""".query[Country]
+```
+
+Now let's try the `check` method provided by YOLO and see what happens.
+
+```tut:plain
+biggerThan(0).check.run
+```
+
+Yikes, there are quite a few problems, in several categories. In this case **doobie** found
+
+- a parameter coercion that should always work but is not required to be supported by compliant drivers;
+- two column coercions that **are** supported by JDBC but are not recommended and can fail in some cases;
+- a column nullability mismatch, where a column is read into a non-`Option` type;
+- and an unused column.
+
+Suggested fixes are given in terms of both JDBC and vendor-specific schema types (which mostly have the same names in H2) and include known custom types like **doobie**'s enumerated `JdbcType`.  Currently this is based on instantiated `Meta` instances, which is not ideal; hopefully in the next release the tooling will improve to support all instances in scope.
+
+Anyway, if we fix all of these problems and try again, we get a clean bill of health.
+
+```tut:silent
+case class Country(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
+
+def biggerThan(minPop: Int) = sql"""
+  select code, name, population, gnp
+  from country
+  where population > $minPop
+""".query[Country]
+```
+
+```tut:plain
+biggerThan(0).check.run
+```
+
+**doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `contrib-specs2` package, which allows checking to become part of your unit test suite. We will investigate this in the chapter on testing.
+
+### Diving Deeper
+
+The `check` logic requires both a database connection and concrete `Meta` instances that define column-level JDBC mappings. This could in principle happen at compile-time, but it's not clear that this is what you always want and it's potentially hairy to implement. So for now checking happens at unit-test time.
+
+The way this works is that a `Query` value has enough type information to describe all parameter and column mappings, as well as the SQL literal itself (with interpolated parameters erased into `?`). From here it is straightforward to prepare the statement, pull the `ResultsetMetaData` and `DatabaseMetaData` and work out whether things are aligned correctly (and if not, determine how misalignments might be fixed). The `Anaylsis` class consumes this metadata and is able to provide the following diagnostics:
+
+- SQL validity. The query must compile, which means it must be consistent with the schema.
+- Parameter and column arity. All query inputs and outputs must map 1:1 with parameters and columns.
+- Nullability. Nullable schema types must be mapped to Scala `Option` types, and non-nullable schema types should not.
+- Coercibility of types. Mapping of Scala types to JDBC types and JDBC types to vendor types, is asymmetric with respect to reading and writing, and the specification is quite terrible. **doobie** encodes the JDBC spec and combines this with vendor-specific metadata to determine whether a given asserted mapping is sensible or not, and if not, will suggest a fix via changing the Scala type, and another via changing the schema type.
+
+
+
+
+
+
+
+

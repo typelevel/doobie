@@ -72,14 +72,14 @@ object yolo {
       formatError(e.msg)
 
     private def formatError(s: String): String =
-      (wrap(100)(s) match {
+      (wrap(80)(s) match {
         case s :: ss => (s"${Console.RED}  - $s${Console.RESET}") :: ss.map(s => s"${Console.RED}    $s${Console.RESET}")
         case Nil => Nil
       }).mkString("\n")
 
     def showSql(sql: String): Unit = {
       println()
-      sql.lines.foreach(s => println(s"  \033[37m$s${Console.RESET}"))
+      sql.lines.dropWhile(_.trim.isEmpty).foreach(s => println(s"  \033[37m$s${Console.RESET}"))
       println()
     }
 

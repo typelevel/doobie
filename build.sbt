@@ -3,7 +3,7 @@
 
 organization in ThisBuild := "org.tpolecat"
 
-version in ThisBuild := "0.2-SNAPSHOT"
+version in ThisBuild := "0.2.0-SNAPSHOT"
 
 licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 
@@ -38,5 +38,7 @@ lazy val h2 = project.in(file("contrib/h2")).dependsOn(core)
 lazy val hikari = project.in(file("contrib/hikari")).dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
+
+lazy val doc = project.in(file("doc")).dependsOn(core, h2, specs2)
 
 publishArtifact := false
