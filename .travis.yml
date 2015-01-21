@@ -1,8 +1,17 @@
 language: scala
+
 scala:
   - 2.11.5
   - 2.10.4
+
 jdk:
   - oraclejdk7
 
 script: sbt ++$TRAVIS_SCALA_VERSION compile core/test h2/test tut
+
+addons:
+  postgresql: "9.3"
+
+before_script:
+  - psql -c 'create database world;' -U postgres
+  - psql -c '\i world.sql' -d world -U postgres
