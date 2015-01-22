@@ -13,19 +13,11 @@ First let's get our imports out of the way and set up a `Transactor` as we did b
 ```tut:silent
 import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
-  "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch4;DB_CLOSE_DELAY=-1",  // connect URL
-  "sa", ""                              // user and pass
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
 
-Now let's load up the sample database at the root of the **doobie** source tree (you can go grab it from github if you want to play along at home). Note that this is an in-memory database, so there won't be anything left behind when we exit the VM. The result of this program (which we will explain more in the chapter on updates) is the total number of inserted rows.
-
-```tut
-sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".update.run.transact(xa).run
-```
-
-Ok we now have some data out there that we can start messing with. Just for reference, the table we're playing with looks like this:
+We will be playing with the `country` table, shown here for reference.
 
 ```sql
 CREATE TABLE country (

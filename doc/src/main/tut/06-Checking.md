@@ -12,17 +12,13 @@ In this chapter we learn how to use YOLO mode to validate queries against the da
 
 ### Setting Up
 
-Our setup here is the same as last chapter, so if you're still running from last chapter you can skip this section. Otherwise: imports, `Transactor`, test data, and YOLO mode.
+Our setup here is the same as last chapter, so if you're still running from last chapter you can skip this section. Otherwise: imports, `Transactor`, and YOLO mode.
 
 ```tut:silent
-import doobie.imports._
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
-  "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch6;DB_CLOSE_DELAY=-1",  // connect URL
-  "sa", ""                              // user and pass
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".update.run.transact(xa).run
 import xa.yolo._
 ```
 
@@ -70,7 +66,7 @@ Yikes, there are quite a few problems, in several categories. In this case **doo
 - a column nullability mismatch, where a column is read into a non-`Option` type;
 - and an unused column.
 
-Suggested fixes are given in terms of both JDBC and vendor-specific schema types (which mostly have the same names in H2) and include known custom types like **doobie**'s enumerated `JdbcType`.  Currently this is based on instantiated `Meta` instances, which is not ideal; hopefully in the next release the tooling will improve to support all instances in scope.
+Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like **doobie**'s enumerated `JdbcType`.  Currently this is based on instantiated `Meta` instances, which is not ideal; hopefully in the next release the tooling will improve to support all instances in scope.
 
 Anyway, if we fix all of these problems and try again, we get a clean bill of health.
 

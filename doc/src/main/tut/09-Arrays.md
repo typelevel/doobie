@@ -8,52 +8,54 @@ title: SQL Arrays
 
 ### Setting Up
 
-Note that the code in this chapter requires the `doobie-contrib-h2` module.
+Note that the code in this chapter requires the `doobie-contrib-postgres` module.
 
-Again we set up an H2 transactor and pull in YOLO mode, but this time we're not using the world database.
+Again we set up a transactor and pull in YOLO mode.
 
 ```tut:silent
-import doobie.imports._
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
-  "org.h2.Driver",                      
-  "jdbc:h2:mem:ch9;DB_CLOSE_DELAY=-1",
-  "sa", ""                              
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 import xa.yolo._
 ```
 
-This time we need an extra import to get the H2-specific type mappings.
+This time we need an extra import to get PostgreSQL-specific type mappings.
 
 ```tut:silent
-import doobie.contrib.h2.h2types._
+import doobie.contrib.postgresql.pgtypes._
 ```
 
-Let's create a new table, which we will use for the examples to follow. Note that one of our columns has a SQL `ARRAY` type. In H2 the array type is essentially unconstrained, so it takes a degree of trust to use it. Other databases like PostgreSQL have arrays whose elements are constrained to a specific type.
+Let's create a new table, which we will use for the examples to follow. Note that one of our columns is an array of `VARCHAR`.
 
 ```tut
-sql"""
-  CREATE TABLE person (
-    id   BIGINT IDENTITY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    age  TINYINT,
-    pets ARRAY NOT NULL
-  )""".update.quick.run
+val drop = sql"DROP TABLE IF EXISTS person".update.quick
+
+val create = 
+  sql"""
+    CREATE TABLE person (
+      id   SERIAL,
+      name VARCHAR NOT NULL UNIQUE,
+      age  SMALLINT,
+      pets VARCHAR[] NOT NULL
+    )
+  """.update.quick
+
+(drop *> create).run
 ```
 
 ### Reading and Writing
 
-**doobie** maps SQL `ARRAY` columns to `Array`, `List`, and `Vector` by default, but you can easily add a mapping to any sequence type you like.
+**doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default.
 
 ```tut:silent
 case class Person(id: Long, name: String, age: Option[Int], pets: List[String])
 
-def insert(name: String, age: Option[Int], pets: List[String]): ConnectionIO[Person] =
-  for {
-    _  <- sql"insert into person (name, age, pets) values ($name, $age, $pets)".update.run
-    id <- sql"call identity()".query[Long].unique
-    p  <- sql"select id, name, age, pets from person where id = $id".query[Person].unique
-  } yield p
+def insert(name: String, age: Option[Int], pets: List[String]): ConnectionIO[Person] = {
+  sql"insert into person (name, age, pets) values ($name, $age, $pets)"
+    .update
+    .withUniqueGeneratedKeys[Person]("id", "name", "age", "pets")
+}
 ```
 
 ```tut
@@ -63,6 +65,8 @@ insert("Alice", None, Nil).quick.run
 
 
 ### Diving Deep
+
+We can add a mapping from array types to `scalaz.IList` by invariant mapping.
 
 ```tut:silent
 import scala.reflect.runtime.universe.TypeTag

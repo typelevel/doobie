@@ -39,6 +39,6 @@ lazy val hikari = project.in(file("contrib/hikari")).dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 
-lazy val doc = project.in(file("doc")).dependsOn(core, h2, specs2)
+lazy val doc = project.in(file("doc")).dependsOn(core, postgres, specs2)
 
 publishArtifact := false
