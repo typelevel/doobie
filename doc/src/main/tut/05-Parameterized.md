@@ -8,25 +8,17 @@ In this chapter we learn how to construct parameterized queries, and introduce t
 
 ### Setting Up
 
-Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up an in-memory database.
+Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up a `Transactor` and YOLO mode.
 
 ```tut:silent
 import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
-  "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch5;DB_CLOSE_DELAY=-1",  // connect URL
-  "sa", ""                              // user and pass
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-```
-
-And then load up our sample data and pull in YOLO mode to save some typing.
-
-```tut
-sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".update.run.transact(xa).run
 import xa.yolo._
 ```
 
-This time we're still be playing with the `country` table, but just with a few columns, shown here.
+We're still playing with the `country` table, shown here for reference.
 
 ```sql
 CREATE TABLE country (
@@ -37,7 +29,6 @@ CREATE TABLE country (
   -- more columns, but we won't use them here
 )
 ```
-
 
 ### Adding a Parameter
 

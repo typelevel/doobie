@@ -15,14 +15,10 @@ The YOLO-mode query checking feature demonstated in an earlier chapter is also a
 Note that the code in this chapter requires the `doobie-contrib-specs2` module.
 
 ```tut:silent
-import doobie.imports._
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
-  "org.h2.Driver",                      
-  "jdbc:h2:mem:ch11;DB_CLOSE_DELAY=-1", 
-  "sa", ""                              
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-sql"RUNSCRIPT FROM 'world.sql' CHARSET 'UTF-8'".update.run.transact(xa).run
 ```
 
 And again, playing with the `country` table, here again for reference.
@@ -69,9 +65,7 @@ import org.specs2.mutable.Specification
 object AnalysisTestSpec extends Specification with AnalysisSpec {
 
   val transactor = DriverManagerTransactor[Task](
-    "org.h2.Driver",                      
-    "jdbc:h2:mem:ch11;DB_CLOSE_DELAY=-1", 
-    "sa", ""                              
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   check(trivial)

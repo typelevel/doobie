@@ -34,9 +34,7 @@ This is a perfectly respectable **doobie** program, but we can't run it as-is; w
 
 ```tut:silent
 val xa = DriverManagerTransactor[Task](
-  "org.h2.Driver",                      // driver class
-  "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",  // connect URL
-  "sa", ""                              // user and pass
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
 
