@@ -10,8 +10,7 @@ title: DDL, Inserting, and Updating
 Again we set up an H2 transactor and pull in YOLO mode, but this time we're not using the world database.
 
 ```tut:silent
-import doobie.imports._
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -111,9 +110,12 @@ def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
 insert3("Elvis", None).quick.run
 ```
 
-This mechanism also works for updates, for databases that support it (PostgreSQL for example, but not H2). In the case of multiple row updates use `.withGeneratedKeys[A](cols...)` to get a `Process[ConnectionIO, A]`.
+This mechanism also works for updates, for databases that support it. In the case of multiple row updates we use `.withGeneratedKeys[A](cols...)` to get a `Process[ConnectionIO, A]`.
 
 
+```
+TODO
+```
 
 
 

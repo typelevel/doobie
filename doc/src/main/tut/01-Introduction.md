@@ -34,15 +34,39 @@ $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
 ```
 
-Note that the final `ANALYZE` comand will emit a few errors for system tables. This is expected and is fine.
+Note that the final `ANALYZE` comand will emit a few errors for system tables. This is expected and is fine. Try a query or two to double-check your setup:
+
+```
+$ psql -d world -U postgres
+psql (9.3.5)
+Type "help" for help.
+
+world=> select name, continent, population from country where name like 'U%';
+                 name                 |   continent   | population 
+--------------------------------------+---------------+------------
+ United Arab Emirates                 | Asia          |    2441000
+ United Kingdom                       | Europe        |   59623400
+ Uganda                               | Africa        |   21778000
+ Ukraine                              | Europe        |   50456000
+ Uruguay                              | South America |    3337000
+ Uzbekistan                           | Asia          |   24318000
+ United States                        | North America |  278357000
+ United States Minor Outlying Islands | Oceania       |          0
+(8 rows)
+
+world=> \q
+$ 
+```
 
 You can of course change this setup if you like, but you will need to adjust your JDBC connection information accordingly. Most examples will work with any compliant database, but in a few cases (noted in the text) we rely on vendor-specific behavior.
 
 #### Scala Setup
 
-On the Scala side you just need a console with the proper dependencies, which you can add to your `build.sbt` thus:
+On the Scala side you just need a console with the proper dependencies. A minimal `build.sbt` would look something like this.
 
 ```scala
+scalaVersion := "2.11.4" // also works with 2.10
+
 resolvers ++= Seq(
   "tpolecat" at "http://dl.bintray.com/tpolecat/maven",
   "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
@@ -51,9 +75,9 @@ resolvers ++= Seq(
 lazy val doobieVersion = "0.2.0"
 
 libraryDependencies ++= Seq(
-  "org.tpolecat"   %% "doobie-core"             % doobieVersion.value,
-  "org.tpolecat"   %% "doobie-contrib-postgres" % doobieVersion.value,
-  "org.tpolecat"   %% "doobie-contrib-specs2"   % doobieVersion.value
+  "org.tpolecat"   %% "doobie-core"               % doobieVersion,
+  "org.tpolecat"   %% "doobie-contrib-postgresql" % doobieVersion,
+  "org.tpolecat"   %% "doobie-contrib-specs2"     % doobieVersion
 )
 ```
 
@@ -64,8 +88,7 @@ If you are not using PostgreSQL you can omit `doobie-contrib-postgres` and will 
 Each page begins with some imports, like this.
 
 ```tut:silent
-import scalaz._, Scalaz._
-import doobie.imports._
+import scalaz._, Scalaz._, doobie.imports._
 ```
 
 After that there is text interspersed with code examples. Sometimes definitions will stand alone.

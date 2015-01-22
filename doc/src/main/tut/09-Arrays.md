@@ -13,8 +13,7 @@ Note that the code in this chapter requires the `doobie-contrib-postgres` module
 Again we set up a transactor and pull in YOLO mode.
 
 ```tut:silent
-import doobie.imports._
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
