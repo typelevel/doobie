@@ -23,7 +23,7 @@ object pgtypesspec extends Specification {
   val xa = DriverManagerTransactor[Task](
     "org.postgresql.Driver", 
     "jdbc:postgresql:world", 
-    "rnorris", ""
+    "postgres", ""
   )
 
   implicit class CrazyStringOps(e: String) {
@@ -35,8 +35,8 @@ object pgtypesspec extends Specification {
     "smallint         → Short"      in { "123::smallint".as[Short] must_== 123 }
     "integer          → Int"        in { "123::integer".as[Int] must_== 123 }
     "bigint           → Long"       in { "123::bigint".as[Long] must_== 123 }
-    "decimal          → BigDecimal" in { "123.45::decimal".as[BigDecimal] must_== 123.45 }
-    "numeric          → BigDecimal" in { "123.456::numeric".as[BigDecimal] must_== 123.456 }
+    "decimal          → BigDecimal" in { "123.45::decimal".as[BigDecimal] must_== BigDecimal(123.45) }
+    "numeric          → BigDecimal" in { "123.456::numeric".as[BigDecimal] must_== BigDecimal(123.456) }
     "real             → Float"      in { "123.456::real".as[Float] must_== 123.456f }
     "double precision → Double"     in { "123.456::double precision".as[Double] must_== 123.456 }
   }

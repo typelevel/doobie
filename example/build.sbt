@@ -32,7 +32,7 @@ initialCommands := """
   val xa: Transactor[Task] = DriverManagerTransactor[Task](
     "org.postgresql.Driver", 
     "jdbc:postgresql:world", 
-    "rnorris", 
+    "postgres", 
     ""
   )
   import xa.yolo._
