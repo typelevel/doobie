@@ -1,4 +1,4 @@
-package doobie.contrib.hikari
+package doobie.contrib.h2
 
 import doobie.imports._
 
