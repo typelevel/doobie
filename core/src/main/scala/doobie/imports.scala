@@ -107,4 +107,10 @@ object imports {
 
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
 
+  /** @group Typeclass Instances */
+  implicit val NameCatchable = doobie.util.name.NameCatchable
+
+  /** @group Typeclass Instances */
+  implicit val NameCapture   = doobie.util.name.NameCapture
+
 }
