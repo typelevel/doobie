@@ -33,7 +33,7 @@ The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-
 - Typeclass-based mapping of scalar, array, and vendor-specific types to columns.
 - Typeclass-based mapping of product types to rows.
 - Trivial custom two-way row/column mapping via invariant functors.
-- Nullability via `Option` (Scala `null` cannot be observed).
+- Nullability via `Option` (SQL `NULL` cannot be observed).
 - Proper enumerated types for all JDBC constants.
 - Result sets as scalaz streams.
 - Typesafe string interpolator for SQL literals.
@@ -42,5 +42,5 @@ The types used for both APIs are identical; the difference lies only in the expo
 
 ### Vendor Extensions
 
-The 0.2.0 release introduces small add-on libraries to support vendor-specific features outside of (or underspecified in) the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), [PostgreSQL](http://www.postgresql.org/), and [Specs2](http://etorreborre.github.io/specs2/) are available and are described briefly in a later chapter. This is an area of active development and contributions are especially welcome. 
+The 0.2.0 release introduces small add-on libraries to support vendor-specific features outside the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), [PostgreSQL](http://www.postgresql.org/), and [Specs2](http://etorreborre.github.io/specs2/) are available and are described briefly in a later chapter. This is an area of active development and contributions are especially welcome. 
 

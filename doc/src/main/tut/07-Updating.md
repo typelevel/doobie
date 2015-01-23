@@ -22,27 +22,25 @@ import xa.yolo._
 Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The types are indicated.
 
 ```tut:silent
-val drop = 
- (sql"""
+val drop: ConnectionIO[Int] = 
+  sql"""
     DROP TABLE IF EXISTS person
-  """.update         // Update0
-     .run            // ConnectionIO[Int]
-     .transact(xa))  // Task[Int]
+  """.update.run
 
-val create = 
+val create: ConnectionIO[Int] = 
   sql"""
     CREATE TABLE person (
       id   SERIAL,
       name VARCHAR NOT NULL UNIQUE,
       age  SMALLINT
     )
-  """.update.quick  // Task[Int] via YOLO mode
+  """.update.run
 ```
 
 We can compose these and run them together.
 
 ```tut
-(drop *> create).run
+(drop *> create).quick.run
 ```
 
 
@@ -102,7 +100,7 @@ This is irritating but it is supported by all databases (although the "get the l
 def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
   sql"insert into person (name, age) values ($name, $age)"
     .update
-    .withUniqueGeneratedKeys[Person]("id", "name", "age") // ConnectionIO[Person]
+    .withUniqueGeneratedKeys("id", "name", "age")
 }
 ```
 

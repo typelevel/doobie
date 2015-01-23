@@ -81,7 +81,7 @@ libraryDependencies ++= Seq(
 )
 ```
 
-If you are not using PostgreSQL you can omit `doobie-contrib-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-contrib-h2` add-on if you happen to be using [H2](http://www.h2database.com/.
+If you are not using PostgreSQL you can omit `doobie-contrib-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-contrib-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
 
 ### Conventions
 

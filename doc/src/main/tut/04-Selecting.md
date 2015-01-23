@@ -29,7 +29,7 @@ CREATE TABLE country (
 )
 ```
 
-### Elementary Streaming
+### Internal Streaming
 
 For our first query let's aim low and select some country names into a `List`, then print out the first few. There are several steps here so we have noted the types along the way.
 
@@ -64,6 +64,7 @@ This is ok, but there's not much point reading all the results from the database
 The difference here is that `process` gives us a `scalaz.stream.Process[ConnectionIO, String]` which emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
 Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool. For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) site, which has a good list of learning resources. 
+
 
 ### YOLO Mode
 
@@ -130,6 +131,24 @@ And just for fun, since the `Code` values are constructed from the primary key, 
    .map(_.toMap)           // ConnectionIO[Map[Code, Country]]
    .quick.run)
 ```
+
+### Final Streaming
+
+In the examples above we construct a `Process[ConnectionIO, A]` and discharge it via `.list` (which is just shorthand for `.runLog.map(_.toList)`), yielding a `ConnectionIO[List[A]]` which eventually becomes a `Task[List[A]]`. So the construction and execution of the `Process` is entirely internal to the **doobie** program.
+
+However in some cases a stream is what we want as our "top level" type. For example, [http4s](https://github.com/http4s/http4s) can use a `Process[Task, A]` directly as a response type, which could allow us to stream a resultset directly to the network socket. We can achieve this in **doobie** by calling `transact` directly on the `Process[ConnectionIO, A]`.
+
+```tut
+val p = {
+  sql"select name, population, gnp from country"
+    .query[Country]  // Query0[Country]
+    .process         // Process[ConnectionIO, Country]
+    .transact(xa)    // Process[Task, Country]
+ }
+
+p.take(5).runLog.run.foreach(println)
+```
+
 
 
 ### Diving Deeper

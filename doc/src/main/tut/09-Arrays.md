@@ -29,7 +29,7 @@ import doobie.contrib.postgresql.pgtypes._
 Let's create a new table, which we will use for the examples to follow. Note that one of our columns is an array of `VARCHAR`.
 
 ```tut
-val drop = sql"DROP TABLE IF EXISTS person".update.quick
+val drop = sql"DROP TABLE IF EXISTS person".update.run
 
 val create = 
   sql"""
@@ -39,9 +39,9 @@ val create =
       age  SMALLINT,
       pets VARCHAR[] NOT NULL
     )
-  """.update.quick
+  """.update.run
 
-(drop *> create).run
+(drop *> create).quick.run
 ```
 
 ### Reading and Writing
@@ -54,7 +54,7 @@ case class Person(id: Long, name: String, age: Option[Int], pets: List[String])
 def insert(name: String, age: Option[Int], pets: List[String]): ConnectionIO[Person] = {
   sql"insert into person (name, age, pets) values ($name, $age, $pets)"
     .update
-    .withUniqueGeneratedKeys[Person]("id", "name", "age", "pets")
+    .withUniqueGeneratedKeys("id", "name", "age", "pets")
 }
 ```
 

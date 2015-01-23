@@ -53,7 +53,7 @@ Right. Now let's try something more interesting.
 
 ### Our Second Program
 
-Let's use the `sql` string interpolator to construct a query that asks the *database* to compute a constant. We will cover this construction in great detail later on, but the meaning of `program2` is "run the query, interpret the resultset as a stream of `Int` values, and return its one and only element."
+Let's use the `sql` string interpolator to construct a query that asks the *database* to compute a constant. We will cover this construction in great detail later on, but the meaning of `program2` is "run the query, interpret the resultset as a stream of `Int` values, and yield its one and only element."
 
 ```tut
 val program2 = sql"select 42".query[Int].unique
