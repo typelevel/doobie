@@ -79,7 +79,7 @@ sql"select id, name, age from person".query[Person].quick.run
 
 ### Retrieving Results
 
-Of course when we insert we usually want the row back, so let's do that. First we'll do it the hard way, by inserting, getting the last used key via H2's `identity()` function, then selecting the indicated row. 
+Of course when we insert we usually want the row back, so let's do that. First we'll do it the hard way, by inserting, getting the last used key via `lastVal()`, then selecting the indicated row. 
 
 ```tut:silent
 def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =

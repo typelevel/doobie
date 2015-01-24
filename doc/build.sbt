@@ -26,3 +26,4 @@ ctut := {
   }
 }
 
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4"
