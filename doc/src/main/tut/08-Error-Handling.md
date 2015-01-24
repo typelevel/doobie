@@ -7,7 +7,11 @@ title: Error Handling
 ### Setting Up
 
 ```tut:silent
-import scalaz._, Scalaz._, doobie.imports._
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+val xa = DriverManagerTransactor[Task](
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+)
+import xa.yolo._
 ```
 
 ### About Exceptions
@@ -57,4 +61,55 @@ And finally we have a set of combinators that focus on `SQLState`s.
 - `exceptSomeSqlState`  recovers from specified `SQLState`s with a new action.
 
 See the ScalaDoc for more information.
+
+### Example: Unique Constraint Violation
+
+
+```tut
+(sql"""DROP TABLE IF EXISTS person""".update.quick *>
+ sql"""CREATE TABLE person (
+        id    SERIAL,
+        name  VARCHAR NOT NULL UNIQUE
+      )
+    """.update.quick).run
+```
+
+
+```tut:silent
+
+case class Person(id: Int, name: String)
+
+def insert(s: String): ConnectionIO[Person] = {
+  sql"insert into person (name) values ($s)"
+    .update.withUniqueGeneratedKeys("id", "name")
+}
+```
+
+```tut
+insert("bob").quick.run
+```
+
+```tut:nofail:plain
+insert("bob").quick.run // This will fail
+```
+
+```tut:silent
+import doobie.contrib.postgresql.sqlstate
+
+def safeInsert(s: String): ConnectionIO[String \/ Person] =
+  insert(s).attemptSomeSqlState {
+    case sqlstate.class23.UNIQUE_VIOLATION => "Oops!"
+  }
+```
+
+```tut
+safeInsert("bob").quick.run
+
+safeInsert("steve").quick.run
+```
+
+
+
+
+
 
