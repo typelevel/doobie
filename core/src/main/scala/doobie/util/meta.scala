@@ -49,9 +49,20 @@ object meta {
     /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
     val setNull: Int => PS.PreparedStatementIO[Unit]
 
-    // Not quite an invariant functor because of the tag constraint, but I think it's worth the
-    // sacrifice because we get much better diagnostic information as a result.
+    /**
+     * Invariant map (note that you must handle `null`; see `nxmap`). `Meta` is 
+     * not quite an invariant functor because of the tag constraint, but I think it's worth the
+     * sacrifice because we get much better diagnostic information as a result.
+     */
     def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B]
+
+    /** 
+     * Invariant map with `null` handling, for `A, B >: Null`; the functions `f` and `g` will
+     * never be passed a `null` value.
+     */
+    def nxmap[B >: Null : TypeTag](f: A => B, g: B => A)(implicit ev: Null <:< A): Meta[B] =
+      xmap(a => if (a == null)    null  else f(a),
+           b => if (b == null) ev(null) else g(b))
 
   }
 

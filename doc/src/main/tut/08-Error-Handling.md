@@ -66,12 +66,11 @@ See the ScalaDoc for more information.
 
 
 ```tut
-(sql"""DROP TABLE IF EXISTS person""".update.quick *>
- sql"""CREATE TABLE person (
-        id    SERIAL,
-        name  VARCHAR NOT NULL UNIQUE
-      )
-    """.update.quick).run
+List(sql"""DROP TABLE IF EXISTS person""",
+     sql"""CREATE TABLE person (
+             id    SERIAL,
+             name  VARCHAR NOT NULL UNIQUE
+           )""").traverse(_.update.quick).void.run
 ```
 
 
@@ -89,8 +88,12 @@ def insert(s: String): ConnectionIO[Person] = {
 insert("bob").quick.run
 ```
 
-```tut:nofail:plain
-insert("bob").quick.run // This will fail
+```tut:nofail
+try {
+  insert("bob").quick.run
+} catch {
+  case e: Exception => println(e.getMessage)
+}
 ```
 
 ```tut:silent

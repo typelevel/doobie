@@ -88,12 +88,12 @@ Mapping for `Json`, here throwing a `RuntimeException` with the parse error on f
 import scala.reflect.runtime.universe.TypeTag
 import org.postgresql.util.PGobject
 
-implicit val JsonMeta = Meta.other[PGobject]("json").xmap[Json](
-    o => Option(o).map(a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge).orNull,
-    a => Option(a).map(a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces))).orNull)
+implicit val JsonMeta = Meta.other[PGobject]("json").nxmap[Json](
+    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge,
+    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces)))
 
-def codecMeta[A: CodecJson: TypeTag] =
-  Meta[Json].xmap[A](_.as[A].toOption.get, _.asJson)
+def codecMeta[A >: Null : CodecJson: TypeTag] =
+  Meta[Json].nxmap[A](_.as[A].toOption.get, _.asJson)
 
 implicit val codecPerson = codecMeta[Person]
 ```
