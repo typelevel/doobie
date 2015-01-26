@@ -82,26 +82,33 @@ def insert(s: String): ConnectionIO[Person] = {
   sql"insert into person (name) values ($s)"
     .update.withUniqueGeneratedKeys("id", "name")
 }
+
 ```
+
+The first insert will work.
 
 ```tut
 insert("bob").quick.run
 ```
 
-```tut:nofail
+The second will fail with a unique constraint violation.
+
+```tut
 try {
   insert("bob").quick.run
 } catch {
-  case e: Exception => println(e.getMessage)
+  case e: java.sql.SQLException => 
+    println(e.getMessage)
+    println(e.getSQLState)
 }
 ```
 
 ```tut:silent
-import doobie.contrib.postgresql.sqlstate
+import doobie.contrib.postgresql.sqlstate.class23.UNIQUE_VIOLATION
 
 def safeInsert(s: String): ConnectionIO[String \/ Person] =
   insert(s).attemptSomeSqlState {
-    case sqlstate.class23.UNIQUE_VIOLATION => "Oops!"
+    case UNIQUE_VIOLATION => "Oops!"
   }
 ```
 
@@ -110,9 +117,3 @@ safeInsert("bob").quick.run
 
 safeInsert("steve").quick.run
 ```
-
-
-
-
-
-
