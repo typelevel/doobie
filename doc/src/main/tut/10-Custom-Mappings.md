@@ -75,7 +75,7 @@ val create =
     CREATE TABLE pet (
       id    SERIAL,
       name  VARCHAR NOT NULL UNIQUE,
-      owner JSON NOT NULL
+      owner JSON    NOT NULL
     )
   """.update.run
 
