@@ -4,6 +4,8 @@ number: 8
 title: Error Handling
 ---
 
+In this chapter we examine a set of combinators that allow us to construct programs that trap and handle exceptions.
+
 ### Setting Up
 
 ```tut:silent
@@ -64,6 +66,7 @@ See the ScalaDoc for more information.
 
 ### Example: Unique Constraint Violation
 
+Ok let's set up a `person` table again, using a slightly different formulation just for fun. Note that the `name` column is marked as being unique.
 
 ```tut
 List(sql"""DROP TABLE IF EXISTS person""",
@@ -72,6 +75,8 @@ List(sql"""DROP TABLE IF EXISTS person""",
              name  VARCHAR NOT NULL UNIQUE
            )""").traverse(_.update.quick).void.run
 ```
+
+Alright, let's define a `Person` class and a way to insert them.
 
 
 ```tut:silent
@@ -103,6 +108,9 @@ try {
 }
 ```
 
+So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `contrib-postgresql` add-on. 
+
+
 ```tut:silent
 import doobie.contrib.postgresql.sqlstate.class23.UNIQUE_VIOLATION
 
@@ -111,6 +119,9 @@ def safeInsert(s: String): ConnectionIO[String \/ Person] =
     case UNIQUE_VIOLATION => "Oops!"
   }
 ```
+
+Given this definition we can safely attempt to insert duplicate records and get a helpful error message rather than an exception.
+
 
 ```tut
 safeInsert("bob").quick.run
