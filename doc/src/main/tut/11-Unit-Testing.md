@@ -12,7 +12,7 @@ The YOLO-mode query checking feature demonstated in an earlier chapter is also a
 
 ### Setting Up
 
-Note that the code in this chapter requires the `doobie-contrib-specs2` module.
+As with earlier chapters we set up a `Transactor` and YOLO mode. Note that the code in this chapter also requires the `doobie-contrib-specs2` add-on.
 
 ```tut:silent
 import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
@@ -21,7 +21,7 @@ val xa = DriverManagerTransactor[Task](
 )
 ```
 
-And again, playing with the `country` table, here again for reference.
+And again we are playing with the `country` table, given here for reference.
 
 ```sql
 CREATE TABLE country (
@@ -36,13 +36,15 @@ CREATE TABLE country (
 
 ### The Specs Package
 
-Here are some queries we would like to check. Note that we can only check values of type `Query0` and `Update0`; we can't check `Process` or `ConnectionIO` values, so a good practice is to define your queries in a DAO module and apply further operations at a higher level. 
+The `doobie-contrib-specs2` add-on provides a mix-in trait that we can add to a `Specification` to allow for typechecking of queries, interpreted as a set of specifications.
+
+So here are a few queries we would like to check. Note that we can only check values of type `Query0` and `Update0`; we can't check `Process` or `ConnectionIO` values, so a good practice is to define your queries in a DAO module and apply further operations at a higher level. 
 
 ```tut:silent
 case class Country(code: Int, name: String, pop: Int, gnp: Double)
 
 val trivial = sql"""
-  select 42, 'foo'
+  select 42, 'foo'::varchar
 """.query[(Int, String)]
 
 def biggerThan(minPop: Short) = sql"""
@@ -78,7 +80,7 @@ object AnalysisTestSpec extends Specification with AnalysisSpec {
 When we run the test we get output similar to what we saw in the previous chapter on checking queries, but each item is now a test. Note that doing this in the REPL is a little awkward; in real source you would get the source file and line number associated with each query.
 
 ```tut:plain
-specs2 run AnalysisTestSpec
+{ specs2 run AnalysisTestSpec; () } // pretend this is sbt> test
 ```
 
 
