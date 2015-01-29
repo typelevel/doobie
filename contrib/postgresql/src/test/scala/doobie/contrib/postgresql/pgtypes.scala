@@ -51,6 +51,11 @@ object pgtypesspec extends Specification {
       }
     }
 
+  def skip(col: String, msg: String = "not yet implemented") =
+    s"Mapping for $col" >> {
+      "PENDING:" in pending(msg)
+    }
+
   // 8.1 Numeric Types
   testInOut[Short]("smallint", 123)
   testInOut[Int]("integer", 123)
@@ -60,9 +65,8 @@ object pgtypesspec extends Specification {
   testInOut[Float]("real", 123.45f)
   testInOut[Double]("double precision", 123.45)
 
-  // "8.2 Monetary Types" >> {
-  //   "money ~ PGmoney"     in skipped("SKIPPED: seems not to work; comes back a DOUBLE ")
-  // }  
+  // 8.2 Monetary Types
+  skip("pgmoney", "getObject returns Double")
 
   // 8.3 Character Types"
   testInOut("character varying", "abcdef")
@@ -75,21 +79,19 @@ object pgtypesspec extends Specification {
   testInOut[List[Byte]]  ("bytea", BigInt("DEADBEEF",16).toByteArray.toList) 
   testInOut[Vector[Byte]]("bytea", BigInt("DEADBEEF",16).toByteArray.toVector) 
 
-  // "8.5 Date/Time Types" >> {
-  //   "timestamp                " in pending
-  //   "timestamp with time zone " in pending
-  //   "date                     " in pending
-  //   "time                     " in pending
-  //   "time with time zone      " in pending
-  //   "interval                 " in pending
-  // }
-
+  // 8.5 Date/Time Types"
+  skip("timestamp")
+  skip("timestamp with time zone")
+  skip("date")
+  skip("time")
+  skip("time with time zone")
+  skip("interval")
+  
   // 8.6 Boolean Type
   testInOut("boolean", true)
 
-  // "8.7 Enumerated Types" >> {
-  //   "«example»" in pending
-  // }
+  // 8.7 Enumerated Types
+  skip("enum")
 
   // 8.8 Geometric Types
   testInOut("box", new PGbox(new PGpoint(1, 2), new PGpoint(3, 4)))
@@ -99,68 +101,50 @@ object pgtypesspec extends Specification {
   testInOut("path", new PGpath(Array(new PGpoint(1, 2), new PGpoint(3, 4)), true))
   testInOut("point", new PGpoint(1, 2))
   testInOut("polygon", new PGpolygon(Array(new PGpoint(1, 2), new PGpoint(3, 4))))
-  //             "line    ~ PGline" in skipped("SKIPPED: doc says: \"not fully implemented\"")
-  // }
+  skip("line", "doc says \"not fully implemented\"")
 
   // 8.9 Network Address Types
   testInOut("inet", InetAddress.getByName("123.45.67.8"))
-  //             "inet    ~" in skipped("SKIPPED: No suitable JDK Type")
-  //             "macaddr ~" in skipped("SKIPPED: No suitable JDK Type")
-  // }
+  skip("inet", "no suitable JDK type")
+  skip("macaddr", "no suitable JDK type")
 
-  // "8.10 Bit String Types" >> {
-  //   "bit        " in pending
-  //   "bit varying" in pending
-  // }
+  // 8.10 Bit String Types
+  skip("bit")
+  skip("bit varying")
 
-  // "8.11 Text Search Types" >> {
-  //   "tsvector" in pending
-  //   "tsquery " in pending
-  // }
+  // 8.11 Text Search Types
+  skip("tsvector")
+  skip("tsquery")
 
   // 8.12 UUID Type
   testInOut("uuid", UUID.randomUUID)
-  // }
 
-  // "8.13 XML Type" >> {
-  //   "xml ~" in pending
-  // }
+  // 8.13 XML Type
+  skip("xml")
 
-  // "8.14 JSON Type" >> {
-  //   "json ~" in pending
-  // }
+  // 8.14 JSON Type
+  skip("json")
 
   // 8.15 Arrays
-  //             "bit[]              ~ scala.List[Boolean]" in skipped("SKIPPED: Requires a cast")
-  //             "???                ~ scala.List[Byte]   " in skipped("SKIPPED: No byte type; use bytea.")
-  //             "smallint[]         ~ scala.List[Short]  " in skipped("SKIPPED: Oops always comes back as Array[Int]")
+
+  skip("bit[]", "Requires a cast")
+  skip("smallint[]", "always comes back as Array[Int]")
   testInOut("integer[]", List[Int](1,2))
   testInOut("bigint[]", List[Long](1,2))
   testInOut("real[]", List[Float](1.2f, 3.4f))
   testInOut("double precision[]", List[Double](1.2, 3.4))
   testInOut("varchar[]", List[String]("foo", "bar"))
-  // }
 
-  // "8.16 Composite Types" >> {
-  //   "composite" in pending
-  // }
+  // 8.16 Composite Types
+  skip("composite")
 
-  // "8.17 Range Types" >> {
-  //   "int4range" in pending
-  //   "int8range" in pending
-  //   "numrange " in pending
-  //   "tsrange  " in pending
-  //   "tstzrange" in pending
-  //   "daterange" in pending
-  //   "custom   " in pending
-  // }
-
-  // "8.18 Object Identifier Types" >> {
-  //   "n/a" in skipped
-  // }
-
-  // "8.19 Pseudo-Types" >> {
-  //   "n/a" in skipped
-  // }
+  // 8.17 Range Types
+  skip("int4range")
+  skip("int8range")
+  skip("numrange")
+  skip("tsrange")
+  skip("tstzrange")
+  skip("daterange")
+  skip("custom")
 
 }
