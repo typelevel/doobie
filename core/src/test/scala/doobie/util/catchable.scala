@@ -84,7 +84,7 @@ object catchablespec extends Specification {
 
   }
 
-  "onException" should {
+  "ensuring" should {
 
     "perform its effect on success" in {
       var a = 1
