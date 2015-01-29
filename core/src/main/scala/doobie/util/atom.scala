@@ -48,7 +48,7 @@ object atom {
     implicit def fromScalaTypeOption[A](implicit A: Meta[A]): Atom[Option[A]] = 
       new Atom[Option[A]] {
         val get = (n: Int) => ^(A.get(n), wasNull)((a, b) => (!b) option a)
-        val set = (n: Int, a: Option[A]) => a.fold(setNull(n, A.jdbcTarget.head.toInt))(A.set(n, _))
+        val set = (n: Int, a: Option[A]) => a.fold(A.setNull(n))(A.set(n, _))
         val update = (n: Int, a: Option[A]) => a.fold(updateNull(n))(A.update(n, _))
         val meta = (A, Nullable)
       }
