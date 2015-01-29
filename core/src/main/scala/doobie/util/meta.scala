@@ -47,8 +47,7 @@ object meta {
     val update: (Int, A) => RS.ResultSetIO[Unit] 
 
     /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
-    val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
-      PS.setNull(i, jdbcTarget.head.toInt)
+    val setNull: Int => PS.PreparedStatementIO[Unit]
 
     // Not quite an invariant functor because of the tag constraint, but I think it's worth the
     // sacrifice because we get much better diagnostic information as a result.
@@ -84,6 +83,10 @@ object meta {
     def mightReadFrom(jdbc: JdbcType): Boolean =
       jdbcSource.element(jdbc) || jdbcSourceSecondary.element(jdbc)
 
+    /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
+    val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
+      PS.setNull(i, jdbcTarget.head.toInt)
+
   }
 
   /**
@@ -117,7 +120,12 @@ object meta {
     def canReadFrom(jdbc: JdbcType, schema: String): Boolean =
       schemaTypes.element(schema) && jdbcSource.element(jdbc)
 
+    /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
+    val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
+      PS.setNull(i, jdbcTarget.head.toInt, schemaTypes.head)
+
   }
+
 
   /** Constructors, accessors, and typeclass instances. */
   object Meta extends {
@@ -236,11 +244,11 @@ object meta {
         )
 
     /**
-     * Construct an `AdvancedMeta` for the given type, mapped as JDBC `JavaObject/Other`.
+     * Construct an `AdvancedMeta` for the given type, mapped as JDBC `Other,JavaObject`.
      * @group Constructors     
      */
     def other[A >: Null <: AnyRef: TypeTag](schemaH: String, schemaT: String*)(implicit A: ClassTag[A]): AdvancedMeta[A] =
-      advanced[A](NonEmptyList(JavaObject, Other), NonEmptyList(schemaH, schemaT : _*),
+      advanced[A](NonEmptyList(Other, JavaObject), NonEmptyList(schemaH, schemaT : _*),
         RS.getObject(_: Int).map { 
           case null => null
           case a    => 
@@ -366,11 +374,15 @@ object meta {
 
     /** @group Instances */
     implicit val ScalaBigDecimalMeta: Meta[BigDecimal] =
-      BigDecimalMeta.xmap(BigDecimal(_), _.bigDecimal)
+      BigDecimalMeta.xmap(
+        a => if (a == null) null else BigDecimal(a), 
+        a => if (a == null) null else a.bigDecimal)
 
     /** @group Instances */
     implicit val JavaUtilDateMeta: Meta[java.util.Date] =
-      DateMeta.xmap(a => a, d => new java.sql.Date(d.getTime))
+      DateMeta.xmap(
+        a => a, 
+        d => if (d == null) null else new java.sql.Date(d.getTime))
 
   }
 
