@@ -1,5 +1,5 @@
 // > dash -s List
-commands += {
+commands in ThisBuild += {
   import scala.sys.process._
   import complete.DefaultParsers._
   val stuff = Seq(("-6", "java6",  "Java SE6"),
