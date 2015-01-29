@@ -92,23 +92,92 @@ object catchsqlpec extends Specification {
   }
 
   "exceptSql" should {
-    "..." in pending
+
+    val rescue = Task.delay(4)
+
+    "do nothing on success" in {
+      Task.delay(3).exceptSql(e => rescue).run must_== 3
+    }
+
+    "catch SQLException" in {
+      val e = new SQLException("", SQLSTATE_FOO.value)
+      Task.delay(throw e).exceptSql(e => rescue).run must_== 4
+    }
+
+    "ignore non-SQLException" in {      
+      val e = new IllegalArgumentException
+      Task.delay(throw e).exceptSql(e => rescue).run must throwA[IllegalArgumentException]
+    }
+
   }
 
   "exceptSqlState" should {
-    "..." in pending
+
+    val rescue = Task.delay(4)
+
+    "do nothing on success" in {
+      Task.delay(3).exceptSqlState(e => rescue).run must_== 3
+    }
+
+    "catch SQLException" in {
+      val e = new SQLException("", SQLSTATE_FOO.value)
+      Task.delay(throw e).exceptSqlState(e => rescue).run must_== 4
+    }
+
+    "ignore non-SQLException" in {      
+      val e = new IllegalArgumentException
+      Task.delay(throw e).exceptSqlState(e => rescue).run must throwA[IllegalArgumentException]
+    }
+
   }
 
   "exceptSomeSqlState" should {
-    "..." in pending
-  }
 
-  "exceptSql" should {
-    "..." in pending
+    val rescue = Task.delay(4)
+
+    "do nothing on success" in {
+      Task.delay(3).exceptSomeSqlState { case _ => rescue }.run must_== 3
+    }
+
+    "catch SQLException with some state" in {
+      val e = new SQLException("", SQLSTATE_FOO.value)
+      Task.delay(throw e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.run must_== 4
+    }
+
+    "ignore SQLException with other state" in {
+      val e = new SQLException("", SQLSTATE_FOO.value)
+      Task.delay(throw e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.run must throwA[SQLException]
+    }
+
+    "ignore non-SQLException" in {      
+      val e = new IllegalArgumentException
+      Task.delay(throw e).exceptSomeSqlState { case _ => rescue }.run must throwA[IllegalArgumentException]
+    }
+
   }
 
   "onSqlException" should {
-    "..." in pending
+
+    "do nothing on success" in {
+      var a = 1
+      Task.delay(3).onSqlException(Task.delay(a += 1)).attemptRun
+      a must_== 1
+    }
+
+    "perform its effect on SQLException" in {
+      var a = 1
+      val e = new SQLException("", SQLSTATE_FOO.value)
+      Task.delay(throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
+      a must_== 2
+    }
+
+    "ignore its effect on non-SQLException" in {      
+      var a = 1
+      val e = new IllegalArgumentException
+      Task.delay(throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
+      a must_== 1
+    }
+
   }
 
 }
