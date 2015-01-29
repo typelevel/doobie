@@ -101,12 +101,12 @@ object catchsqlpec extends Specification {
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay(throw e).exceptSql(e => rescue).run must_== 4
+      Task.delay[Int](throw e).exceptSql(e => rescue).run must_== 4
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay(throw e).exceptSql(e => rescue).run must throwA[IllegalArgumentException]
+      Task.delay[Int](throw e).exceptSql(e => rescue).run must throwA[IllegalArgumentException]
     }
 
   }
@@ -121,12 +121,12 @@ object catchsqlpec extends Specification {
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay(throw e).exceptSqlState(e => rescue).run must_== 4
+      Task.delay[Int](throw e).exceptSqlState(e => rescue).run must_== 4
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay(throw e).exceptSqlState(e => rescue).run must throwA[IllegalArgumentException]
+      Task.delay[Int](throw e).exceptSqlState(e => rescue).run must throwA[IllegalArgumentException]
     }
 
   }
@@ -141,17 +141,17 @@ object catchsqlpec extends Specification {
 
     "catch SQLException with some state" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay(throw e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.run must_== 4
+      Task.delay[Int](throw e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.run must_== 4
     }
 
     "ignore SQLException with other state" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay(throw e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.run must throwA[SQLException]
+      Task.delay[Int](throw e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.run must throwA[SQLException]
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay(throw e).exceptSomeSqlState { case _ => rescue }.run must throwA[IllegalArgumentException]
+      Task.delay[Int](throw e).exceptSomeSqlState { case _ => rescue }.run must throwA[IllegalArgumentException]
     }
 
   }
@@ -167,14 +167,14 @@ object catchsqlpec extends Specification {
     "perform its effect on SQLException" in {
       var a = 1
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay(throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
+      Task.delay[Int](throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
       a must_== 2
     }
 
     "ignore its effect on non-SQLException" in {      
       var a = 1
       val e = new IllegalArgumentException
-      Task.delay(throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
+      Task.delay[Int](throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
       a must_== 1
     }
 
