@@ -25,17 +25,10 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  val next: ConnectionIO[Int] = {
-    val cell = new AtomicInteger(0)
-    HC.delay(cell.getAndIncrement)
-  }
-
   def inOut[A: Atom](col: String, a: A) =
     for {
-      n  <- next.map("TEMP" + _)
-      _  <- Update0(s"CREATE TEMPORARY TABLE $n (value $col)", None).run
-      _  <- Update[A](s"INSERT INTO $n VALUES (?)", None).run(a)
-      a0 <- Query0[A](s"SELECT value FROM $n", None).unique
+      _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
+      a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield (a0)
 
   def testInOut[A](col: String, a: A)(implicit m: Meta[A]) = 
@@ -126,7 +119,6 @@ object pgtypesspec extends Specification {
   skip("json")
 
   // 8.15 Arrays
-
   skip("bit[]", "Requires a cast")
   skip("smallint[]", "always comes back as Array[Int]")
   testInOut("integer[]", List[Int](1,2))
