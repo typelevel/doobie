@@ -73,10 +73,10 @@ object pgtypesspec extends Specification {
   testInOut[Vector[Byte]]("bytea", BigInt("DEADBEEF",16).toByteArray.toVector) 
 
   // 8.5 Date/Time Types"
-  skip("timestamp")
+  testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
   skip("timestamp with time zone")
-  skip("date")
-  skip("time")
+  testInOut("date", new java.sql.Date(4,5,6))
+  testInOut("time", new java.sql.Time(3,4,5))
   skip("time with time zone")
   skip("interval")
   
