@@ -54,10 +54,10 @@ object h2typesspec extends Specification {
   testInOut[Short]("SMALLINT", 123)
   testInOut[Long]("BIGINT", 123)
   testInOut[BigDecimal]("DECIMAL", 123.45)
-  skip("TIME")
-  skip("DATE")
-  skip("TIMESTAMP")
-  skip("BINARY")
+  testInOut[java.sql.Time]("TIME", new java.sql.Time(3,4,5))
+  testInOut[java.sql.Date]("DATE", new java.sql.Date(4,5,6))
+  testInOut[java.sql.Timestamp]("TIMESTAMP", new java.sql.Timestamp(System.currentTimeMillis))
+  testInOut[List[Byte]]("BINARY", BigInt("DEADBEEF",16).toByteArray.toList) 
   skip("OTHER")
   testInOut[String]("VARCHAR", "abc")
   testInOut[String]("CHAR(3)", "abc")
@@ -69,3 +69,4 @@ object h2typesspec extends Specification {
   skip("GEOMETRY")
 
 }
+
