@@ -1,19 +1,18 @@
 package doobie.contrib.h2
 
-import doobie.hi.connection.prepareStatement
-import doobie.hi.preparedstatement.executeQuery
-import doobie.hi.resultset.getUnique
-import doobie.util.transactor.DriverManagerTransactor
-import doobie.util.composite.Composite
-import doobie.syntax.connectionio._
 import doobie.contrib.h2.h2types._
+import doobie.imports._
+import doobie.util.update._
+import doobie.util.query._
 
 import java.net.InetAddress
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.specs2.mutable.Specification
 
 import scalaz.concurrent.Task
+import scalaz.\/-
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object h2typesspec extends Specification {
@@ -24,31 +23,49 @@ object h2typesspec extends Specification {
     "sa", ""                              
   )
 
-  implicit class CrazyStringOps(e: String) {
-    def as[A: Composite]: A =
-      prepareStatement(s"SELECT $e")(executeQuery(getUnique[A])).transact(xa).run
-  }
+  def inOut[A: Atom](col: String, a: A) =
+    for {
+      _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
+      _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
+      a0 <- sql"SELECT value FROM TEST".query[A].unique
+    } yield (a0)
 
-  "Data Types" >> {
-    "INT       → Int"          in { "123::INT".as[Int] must_== 123 }
-    "BOOLEAN   → Boolean"      in { "TRUE".as[Boolean] must_== true }
-    "TINYINT   → Byte"         in { "123".as[Byte] must_== (123 : Byte) }
-    "SMALLINT  → Short"        in { "123::SMALLINT".as[Short] must_== (123 : Short) }
-    "BIGINT    → Long"         in { "123::BIGINT".as[Long] must_== 123L }
-    "DECIMAL   → BigDecimal"   in { "123.456::DECIMAL".as[BigDecimal] must_== BigDecimal("123.456") }
-    "TIME      → Time"         in { skipped }
-    "DATE      → Date"         in { skipped }
-    "TIMESTAMP → Timestamp"    in { skipped }
-    "BINARY    → Array[Byte]"  in { skipped }
-    "OTHER     → Object"       in { skipped }
-    "VARCHAR   → String"       in { "'abc'".as[String] must_== "abc" }
-    "CHAR      → String"       in { "'abc'::CHAR(3)".as[String] must_== "abc" }
-    "BLOB      → Blob"         in { skipped }
-    "CLOB      → Clob"         in { skipped }
-    "UUID      → UUID"         in { "'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::UUID".as[UUID] must_== UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11") }
-    "ARRAY     → List[Int]"    in { "(1,2,3)".as[List[Integer]] must_== List(1,2,3)  }
-    "ARRAY     → List[String]" in { "('foo', 'bar')".as[List[String]] must_== List("foo", "bar")  }
-    "GEOMETRY  →"      in { skipped }
-  }
+  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) = 
+    s"Mapping for $col as ${m.scalaType}" >> {
+      s"write+read $col as ${m.scalaType}" in { 
+        inOut(col, a).transact(xa).attemptRun must_== \/-(a)
+      }
+      s"write+read $col as Option[${m.scalaType}] (Some)" in { 
+        inOut[Option[A]](col, Some(a)).transact(xa).attemptRun must_== \/-(Some(a))
+      }
+      s"write+read $col as Option[${m.scalaType}] (None)" in { 
+        inOut[Option[A]](col, None).transact(xa).attemptRun must_== \/-(None)
+      }
+    }
+
+  def skip(col: String, msg: String = "not yet implemented") =
+    s"Mapping for $col" >> {
+      "PENDING:" in pending(msg)
+    }
+
+  testInOut[Int]("INT", 123)
+  testInOut[Boolean]("BOOLEAN", true)
+  testInOut[Byte]("TINYINT",  123)
+  testInOut[Short]("SMALLINT", 123)
+  testInOut[Long]("BIGINT", 123)
+  testInOut[BigDecimal]("DECIMAL", 123.45)
+  skip("TIME")
+  skip("DATE")
+  skip("TIMESTAMP")
+  skip("BINARY")
+  skip("OTHER")
+  testInOut[String]("VARCHAR", "abc")
+  testInOut[String]("CHAR(3)", "abc")
+  skip("BLOB")
+  skip("CLOB")
+  testInOut[UUID]("UUID", UUID.randomUUID)
+  testInOut[List[Int]]("ARRAY", List(1,2,3))
+  testInOut[List[String]]("ARRAY", List("foo", "bar"))
+  skip("GEOMETRY")
 
 }
