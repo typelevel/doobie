@@ -4,10 +4,14 @@ number: 10
 title: Custom Mappings
 ---
 
+In this chapter we examine using custom `Meta` instances to provide new column mappings, and `Composite` mappings to provide new multi-column mappings.
+
 ### Setting Up
 
+We will use a very basic setup for this chapter.
+
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, java.awt.geom.Point2D
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, java.awt.Point
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -16,32 +20,75 @@ import xa.yolo._
 
 ### Meta, Atom, and Composite
 
-### Meta by Invariant Map
+The `doobie.free` API provides constructors for JDBC actions like `setString(1, "foo")` and `getBoolean(4)`, which operate on single columns specified by name or offset. Query parameters are set and resulting rows are read by repeated applications of these low-level actions.
 
-Let's say we have a class that we want to map to a column.
+The `doobie.hi` API abstracts the construction of these composite operations via the `Composite` typeclass, which provides actions to get or set a heterogeneous **sequence** of column values. For example, the following programs are equivalent:
 
 ```tut:silent
-case class PersonId(toInt: Int)
-val pid = PersonId(42)
+// Using doobie.free
+FPS.setString(1, "foo") >> FPS.setInt(2, 42)
+
+// Using doobie.hi
+HPS.set(1, ("foo", 42))
+
+// Or leave the 1 out if you like, since we usually start there
+HPS.set(("foo", 42))
+
+// Which simply delegates to the Composite instance
+Composite[(String,Int)].set(1, ("foo", 42))
 ```
 
-If we try to use this type for a column value, it doesn't compile. However it gives a useful error message.
+**doobie** can derive `Composite` instances for primitive column types, plus tuples and case classes whose elements have `Composite` instances. These primitive column types are identified by `Atom` instances, which describe `null`-safe column mappings. These `Atom` instances are almost always derived from lower-level `null`-unsafe mappings specified by the `Meta` typeclass.
+
+So our strategy for mapping custom types is to construct a new `Meta` instance (given `Meta[A]` you get `Atom[A]` and `Atom[Option[A]]` for free); and our strategy for multi-column mappings is to construct a new `Composite` instance. We consider both case below.
+
+### Meta by Invariant Map
+
+Let's say we have a structured value that's represented by a single string in a legacy database. We also have conversion methods to and from the legacy format. 
+
+```tut:silent
+case class PersonId(department: String, number: Int) {
+  def toLegacy = department + ":" + number
+}
+object PersonId {
+
+  def fromLegacy(s: String): Option[PersonId] =
+    s.split(":") match {
+      case Array(dept, num) => num.parseInt.toOption.map(new PersonId(dept, _))
+      case _                => None
+    }
+
+  def unsafeFromLegacy(s: String): PersonId =
+    fromLegacy(s).getOrElse(throw new RuntimeException("Invalid format: " + s))
+
+}
+val pid = PersonId.unsafeFromLegacy("sales:42")
+```
+
+Because `PersonId` is a case class of primitive column values, we can already map it across two columns. We can look at its `Composite` instance and see that its column span is two:
+
+```tut:nofail
+Composite[PersonId].length
+```
+
+However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires an `Atom` instance), it doesn't compile.
 
 ```tut:nofail
 sql"select * from person where id = $pid"
 ```
 
-So how do we create a `Meta[PersonId]` instance? The simplest way is by basing it on an existing instance, using the invariant functor method `xmap`.
+According to the error message we need a `Meta[PersonId]` instance. So how do we get one? The simplest way is by basing it on an existing instance, using the invariant functor method `xmap`.
 
 ```tut:silent
 implicit val PersonIdMeta: Meta[PersonId] = 
-  Meta[Int].xmap(PersonId, _.toInt)
+  Meta[String].xmap(PersonId.unsafeFromLegacy, _.toLegacy)
 ```
 
-Now it works!
+Now it works as a column value and as a `Composite` that maps to a *single* column:
 
 ```tut
 sql"select * from person where id = $pid"
+sql"select 'podiatry:123'".query[PersonId].quick.run
 ```
 
 ### Meta by Construction
@@ -122,18 +169,18 @@ We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes w
 
 
 ```tut:nofail
-sql"select x, y from points".query[Point2D.Double]
+sql"select x, y from points".query[Point]
 ```
 
 ```tut:silent
-implicit val Point2DComposite: Composite[Point2D.Double] = 
-  Composite[(Double, Double)].xmap(
-    t => new Point2D.Double(t._1, t._2),
-    p => (p.x, p.y)
+val Point2DComposite: Composite[Point] = 
+  Composite[(Int, Int)].xmap(
+    (t: (Int,Int)) => new Point(t._1, t._2),
+    (p: Point) => (p.x, p.y)
   )
 ```
 
 ```tut
-sql"select 12, 42".query[Point2D.Double].unique.quick.run
+// sql"select 12, 42".query[Point].unique.quick.run
 ```
 
