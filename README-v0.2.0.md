@@ -54,7 +54,7 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0-SNAPSHOT/00-
 - Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0-SNAPSHOT/00-index.html) ← start here
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
-- Find **tpolecat** on the FreeNode `#scala` channel.
+- Find **tpolecat** on the FreeNode `#scala` channel, or join the [Gitter Channel](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)!
 
 
 
