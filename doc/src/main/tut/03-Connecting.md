@@ -22,7 +22,7 @@ We will also import the [scalaz](https://github.com/scalaz/scalaz) core, as well
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 ```
 
-In the **doobie** high level API the most common types we will deal with have the form `ConnectionIO[A]`, specifying computations that takes place in a context where a `java.sql.Connection` is available, ultimately producing a value of type `A`.
+In the **doobie** high level API the most common types we will deal with have the form `ConnectionIO[A]`, specifying computations that take place in a context where a `java.sql.Connection` is available, ultimately producing a value of type `A`.
 
 So let's start with a `ConnectionIO` program that simply returns a constant.
 
