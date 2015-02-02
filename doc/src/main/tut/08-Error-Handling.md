@@ -4,10 +4,16 @@ number: 8
 title: Error Handling
 ---
 
+In this chapter we examine a set of combinators that allow us to construct programs that trap and handle exceptions.
+
 ### Setting Up
 
 ```tut:silent
-import scalaz._, Scalaz._, doobie.imports._
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+val xa = DriverManagerTransactor[Task](
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+)
+import xa.yolo._
 ```
 
 ### About Exceptions
@@ -58,3 +64,67 @@ And finally we have a set of combinators that focus on `SQLState`s.
 
 See the ScalaDoc for more information.
 
+### Example: Unique Constraint Violation
+
+Ok let's set up a `person` table again, using a slightly different formulation just for fun. Note that the `name` column is marked as being unique.
+
+```tut
+List(sql"""DROP TABLE IF EXISTS person""",
+     sql"""CREATE TABLE person (
+             id    SERIAL,
+             name  VARCHAR NOT NULL UNIQUE
+           )""").traverse(_.update.quick).void.run
+```
+
+Alright, let's define a `Person` class and a way to insert them.
+
+
+```tut:silent
+
+case class Person(id: Int, name: String)
+
+def insert(s: String): ConnectionIO[Person] = {
+  sql"insert into person (name) values ($s)"
+    .update.withUniqueGeneratedKeys("id", "name")
+}
+
+```
+
+The first insert will work.
+
+```tut
+insert("bob").quick.run
+```
+
+The second will fail with a unique constraint violation.
+
+```tut
+try {
+  insert("bob").quick.run
+} catch {
+  case e: java.sql.SQLException => 
+    println(e.getMessage)
+    println(e.getSQLState)
+}
+```
+
+So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `contrib-postgresql` add-on. 
+
+
+```tut:silent
+import doobie.contrib.postgresql.sqlstate.class23.UNIQUE_VIOLATION
+
+def safeInsert(s: String): ConnectionIO[String \/ Person] =
+  insert(s).attemptSomeSqlState {
+    case UNIQUE_VIOLATION => "Oops!"
+  }
+```
+
+Given this definition we can safely attempt to insert duplicate records and get a helpful error message rather than an exception.
+
+
+```tut
+safeInsert("bob").quick.run
+
+safeInsert("steve").quick.run
+```

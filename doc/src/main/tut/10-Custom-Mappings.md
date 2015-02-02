@@ -4,65 +4,186 @@ number: 10
 title: Custom Mappings
 ---
 
+In this chapter we examine using custom `Meta` instances to provide single-column mappings, and custom `Composite` mappings to provide new multi-column mappings.
+
 ### Setting Up
 
+We will use a very basic setup for this chapter.
+
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, java.awt.geom.Point2D
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, java.awt.Point
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 import xa.yolo._
+import argonaut._, Argonaut._
+import scala.reflect.runtime.universe.TypeTag
+import org.postgresql.util.PGobject
 ```
 
 ### Meta, Atom, and Composite
 
-### Meta by Invariant Map
+The `doobie.free` API provides constructors for JDBC actions like `setString(1, "foo")` and `getBoolean(4)`, which operate on single columns specified by name or offset. Query parameters are set and resulting rows are read by repeated applications of these low-level actions.
 
-Let's say we have a class that we want to map to a column.
+The `doobie.hi` API abstracts the construction of these composite operations via the `Composite` typeclass, which provides actions to get or set a heterogeneous **sequence** of column values. For example, the following programs are equivalent:
 
 ```tut:silent
-case class PersonId(toInt: Int)
-val pid = PersonId(42)
+// Using doobie.free
+FPS.setString(1, "foo") >> FPS.setInt(2, 42)
+
+// Using doobie.hi
+HPS.set(1, ("foo", 42))
+
+// Or leave the 1 out if you like, since we usually start there
+HPS.set(("foo", 42))
+
+// Which simply delegates to the Composite instance
+Composite[(String,Int)].set(1, ("foo", 42))
 ```
 
-If we try to use this type for a column value, it doesn't compile. However it gives a useful error message.
+**doobie** can derive `Composite` instances for primitive column types, plus tuples and case classes whose elements have `Composite` instances. These primitive column types are identified by `Atom` instances, which describe `null`-safe column mappings. These `Atom` instances are almost always derived from lower-level `null`-unsafe mappings specified by the `Meta` typeclass.
+
+So our strategy for mapping custom types is to construct a new `Meta` instance (given `Meta[A]` you get `Atom[A]` and `Atom[Option[A]]` for free); and our strategy for multi-column mappings is to construct a new `Composite` instance. We consider both case below.
+
+### Meta by Invariant Map
+
+Let's say we have a structured value that's represented by a single string in a legacy database. We also have conversion methods to and from the legacy format. 
+
+```tut:silent
+case class PersonId(department: String, number: Int) {
+  def toLegacy = department + ":" + number
+}
+object PersonId {
+
+  def fromLegacy(s: String): Option[PersonId] =
+    s.split(":") match {
+      case Array(dept, num) => num.parseInt.toOption.map(new PersonId(dept, _))
+      case _                => None
+    }
+
+  def unsafeFromLegacy(s: String): PersonId =
+    fromLegacy(s).getOrElse(throw new RuntimeException("Invalid format: " + s))
+
+}
+val pid = PersonId.unsafeFromLegacy("sales:42")
+```
+
+Because `PersonId` is a case class of primitive column values, we can already map it across two columns. We can look at its `Composite` instance and see that its column span is two:
+
+```tut:nofail
+Composite[PersonId].length
+```
+
+However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires an `Atom` instance), it doesn't compile.
 
 ```tut:nofail
 sql"select * from person where id = $pid"
 ```
 
-So how do we create a `Meta[PersonId]` instance? The simplest way is by basing it on an existing instance, using the invariant functor method `xmap`.
+According to the error message we need a `Meta[PersonId]` instance. So how do we get one? The simplest way is by basing it on an existing instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
 
 ```tut:silent
 implicit val PersonIdMeta: Meta[PersonId] = 
-  Meta[Int].xmap(PersonId, _.toInt)
+  Meta[String].nxmap(PersonId.unsafeFromLegacy, _.toLegacy)
 ```
 
-Now it works!
+Now it compiles as a column value and as a `Composite` that maps to a *single* column:
 
 ```tut
 sql"select * from person where id = $pid"
+Composite[PersonId].length
+sql"select 'podiatry:123'".query[PersonId].quick.run
+```
+
+### Meta by Construction
+
+The following example uses the [argonaut](http://argonaut.io/) JSON library, which you can add to your `build.sbt` as follows:
+
+```scala
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4" // as of date of publication
+```
+
+Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
+
+We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. 
+
+```tut
+implicit val JsonMeta = Meta.other[PGobject]("json").nxmap[Json](
+    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge,
+    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces)))
+```
+
+Given this mapping to and from `Json` we can construct a mapping to any type that has a `CodecJson` instance. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : CodecJson: TypeTag`. On failure we throw an exception.
+
+```tut
+def codecMeta[A >: Null : CodecJson: TypeTag] =
+  Meta[Json].nxmap[A](
+    _.as[A].result.fold(p => sys.error(p._1), identity), 
+    _.asJson
+  )
+```
+
+Let's make sure it works. Here is a simple class with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
+
+```tut:silent
+case class Person(name: String, age: Int, things: List[String])
+ 
+implicit def PersonCodecJson =
+  casecodec3(Person.apply, Person.unapply)("name", "age", "things")
+
+implicit val codecPerson = codecMeta[Person]
+```
+
+Now let's create a table that has a `json` column to store a `Person`.
+
+```tut:silent
+val drop = sql"DROP TABLE IF EXISTS pet".update.run
+
+val create = 
+  sql"""
+    CREATE TABLE pet (
+      id    SERIAL,
+      name  VARCHAR NOT NULL UNIQUE,
+      owner JSON    NOT NULL
+    )
+  """.update.run
+
+(drop *> create).quick.run
+```
+
+Note that our `check` output now knows about the `Json` and `Person` mappings. This is a side-effect of constructing instance above, which isn't a good design. Will revisit this, possibly after 0.2.0; this information is only used for diagnostics so it's not critical.
+
+```tut:plain
+sql"select owner from pet".query[Int].check.run
+```
+
+And we can now use `Person` as a parameter type and as a column type.
+
+```tut
+
+val p = Person("Steve", 10, List("Train", "Ball"))
+
+(sql"insert into pet (name, owner) values ('Bob', $p)"
+  .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.run
+
 ```
 
 
 ### Composite by Invariant Map
 
-We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types (non-`case` classes for instance). 
-
-
-```tut:nofail
-sql"select x, y from points".query[Point2D.Double]
-```
+We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types (non-`case` classes for instance). For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it, but we can get there via `xmap`:
 
 ```tut:silent
-implicit val Point2DComposite: Composite[Point2D.Double] = 
-  Composite[(Double, Double)].xmap(
-    t => new Point2D.Double(t._1, t._2),
-    p => (p.x, p.y)
+implicit val Point2DComposite: Composite[Point] = 
+  Composite[(Int, Int)].xmap(
+    (t: (Int,Int)) => new Point(t._1, t._2),
+    (p: Point) => (p.x, p.y)
   )
 ```
 
+And it works!
+
 ```tut
-sql"select 12, 42".query[Point2D.Double].unique.quick.run
+sql"select 12, 42".query[Point].unique.quick.run
 ```
 
