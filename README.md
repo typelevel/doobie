@@ -1,4 +1,6 @@
 # Doobie 
+
+[![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 <img src="https://api.travis-ci.org/tpolecat/doobie.svg?branch=master"/>
 
 > **Hello tweeters** ... it seems that the v0.1 announcement from July was picked up in a tweetstorm on Nov 22. So just an update, v0.2 is well on its way and will be out by year's end*, so check back for some really nice new stuff coming up soon. - rob
