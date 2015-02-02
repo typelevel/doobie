@@ -10,7 +10,7 @@ Before we get into writing **doobie** programs it's worth spending a moment to e
 
 ### Nested Programs
 
-**doobie** is a monadic API that provides a number of monads that all work the same way but describe computations in different contexts. For example `ConnectionIO` describes computations that take place in a context where a `java.sql.Connection` is available. Similar monads exist for each major type in `java.sql`. Programs written in these contexts compose naturally via lifting, mirroring the lifecycles of each contexts's carrier type.
+**doobie** is a monadic API that provides a number of data types that all work the same way but describe computations in different contexts. For example `ConnectionIO` describes computations that take place in a context where a `java.sql.Connection` is available. Similar data types exist for each major type in `java.sql`. Programs written in these contexts compose naturally via lifting, mirroring the lifecycles of each contexts's carrier type.
 
 <p class="text-center"><img src="/assets/nesting.png"></p>
 
