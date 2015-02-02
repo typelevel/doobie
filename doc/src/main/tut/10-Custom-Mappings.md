@@ -4,7 +4,7 @@ number: 10
 title: Custom Mappings
 ---
 
-In this chapter we examine using custom `Meta` instances to provide new column mappings, and `Composite` mappings to provide new multi-column mappings.
+In this chapter we examine using custom `Meta` instances to provide single-column mappings, and custom `Composite` mappings to provide new multi-column mappings.
 
 ### Setting Up
 
@@ -16,6 +16,9 @@ val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 import xa.yolo._
+import argonaut._, Argonaut._
+import scala.reflect.runtime.universe.TypeTag
+import org.postgresql.util.PGobject
 ```
 
 ### Meta, Atom, and Composite
@@ -77,17 +80,18 @@ However if we try to use this type for a *single* column value (i.e., as a query
 sql"select * from person where id = $pid"
 ```
 
-According to the error message we need a `Meta[PersonId]` instance. So how do we get one? The simplest way is by basing it on an existing instance, using the invariant functor method `xmap`.
+According to the error message we need a `Meta[PersonId]` instance. So how do we get one? The simplest way is by basing it on an existing instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
 
 ```tut:silent
 implicit val PersonIdMeta: Meta[PersonId] = 
-  Meta[String].xmap(PersonId.unsafeFromLegacy, _.toLegacy)
+  Meta[String].nxmap(PersonId.unsafeFromLegacy, _.toLegacy)
 ```
 
-Now it works as a column value and as a `Composite` that maps to a *single* column:
+Now it compiles as a column value and as a `Composite` that maps to a *single* column:
 
 ```tut
 sql"select * from person where id = $pid"
+Composite[PersonId].length
 sql"select 'podiatry:123'".query[PersonId].quick.run
 ```
 
@@ -99,20 +103,38 @@ The following example uses the [argonaut](http://argonaut.io/) JSON library, whi
 libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4" // as of date of publication
 ```
 
-Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns.
+Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
 
-Here is a simple class with an argonaut serializer, taken straight from the website.
+We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. 
+
+```tut
+implicit val JsonMeta = Meta.other[PGobject]("json").nxmap[Json](
+    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge,
+    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces)))
+```
+
+Given this mapping to and from `Json` we can construct a mapping to any type that has a `CodecJson` instance. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : CodecJson: TypeTag`. On failure we throw an exception.
+
+```tut
+def codecMeta[A >: Null : CodecJson: TypeTag] =
+  Meta[Json].nxmap[A](
+    _.as[A].result.fold(p => sys.error(p._1), identity), 
+    _.asJson
+  )
+```
+
+Let's make sure it works. Here is a simple class with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
 
 ```tut:silent
-import argonaut._, Argonaut._
-
 case class Person(name: String, age: Int, things: List[String])
  
 implicit def PersonCodecJson =
   casecodec3(Person.apply, Person.unapply)("name", "age", "things")
+
+implicit val codecPerson = codecMeta[Person]
 ```
 
-Now let's create a table that has a `json` column.
+Now let's create a table that has a `json` column to store a `Person`.
 
 ```tut:silent
 val drop = sql"DROP TABLE IF EXISTS pet".update.run
@@ -127,22 +149,6 @@ val create =
   """.update.run
 
 (drop *> create).quick.run
-```
-
-Mapping for `Json`, here throwing a `RuntimeException` with the parse error on failure.
-
-```tut:silent
-import scala.reflect.runtime.universe.TypeTag
-import org.postgresql.util.PGobject
-
-implicit val JsonMeta = Meta.other[PGobject]("json").nxmap[Json](
-    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge,
-    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces)))
-
-def codecMeta[A >: Null : CodecJson: TypeTag] =
-  Meta[Json].nxmap[A](_.as[A].toOption.get, _.asJson)
-
-implicit val codecPerson = codecMeta[Person]
 ```
 
 Note that our `check` output now knows about the `Json` and `Person` mappings. This is a side-effect of constructing instance above, which isn't a good design. Will revisit this, possibly after 0.2.0; this information is only used for diagnostics so it's not critical.
@@ -165,22 +171,19 @@ val p = Person("Steve", 10, List("Train", "Ball"))
 
 ### Composite by Invariant Map
 
-We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types (non-`case` classes for instance). 
-
-
-```tut:nofail
-sql"select x, y from points".query[Point]
-```
+We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types (non-`case` classes for instance). For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it, but we can get there via `xmap`:
 
 ```tut:silent
-val Point2DComposite: Composite[Point] = 
+implicit val Point2DComposite: Composite[Point] = 
   Composite[(Int, Int)].xmap(
     (t: (Int,Int)) => new Point(t._1, t._2),
     (p: Point) => (p.x, p.y)
   )
 ```
 
+And it works!
+
 ```tut
-// sql"select 12, 42".query[Point].unique.quick.run
+sql"select 12, 42".query[Point].unique.quick.run
 ```
 
