@@ -1,3 +1,4 @@
+import UnidocKeys._
 
 /// SHARED SETTINGS
 
@@ -25,6 +26,17 @@ scalacOptions in ThisBuild ++= Seq(
   "-Ywarn-value-discard"     
 )
 
+unidocSettings
+
+unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example)
+
+scalacOptions in (Compile, doc) ++= Seq(
+  "-groups",
+  "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath, 
+  "-doc-source-url", "https://github.com/tpolecat/doobie/tree/master€{FILE_PATH}.scala", // master for now
+  "-skip-packages", "scalaz"
+)
+
 /// SUBMODULES
 
 lazy val core = project.in(file("core"))
@@ -39,6 +51,6 @@ lazy val hikari = project.in(file("contrib/hikari")).dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 
-lazy val doc = project.in(file("doc")).dependsOn(core, postgres, specs2)
+lazy val docs = project.in(file("doc")).dependsOn(core, postgres, specs2)
 
 publishArtifact := false

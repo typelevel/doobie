@@ -5,9 +5,9 @@ import scalaz.{ Monad, Catchable }
 import doobie.contrib.postgresql.sqlstate._
 import doobie.util.catchsql.exceptSomeSqlState
 
+/** Module of recovery combinators for PostgreSQL-specific SQL states. */
 object syntax {
 
-  /** Module of SQLSTATE constants for PostgreSQL. */
   implicit class SqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]) {
 
     def onSuccessfulCompletion(handler: M[A]): M[A] = 

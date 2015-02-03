@@ -3,7 +3,7 @@ package doobie.example
 import scalaz._, Scalaz._, scalaz.concurrent.Task
 
 import doobie.imports._
-import doobie.contrib.h2._
+import doobie.contrib.h2.h2transactor._
 
 object H2TransactorExample {
 

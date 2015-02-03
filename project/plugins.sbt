@@ -18,3 +18,5 @@ resolvers += Resolver.url(
         Resolver.ivyStylePatterns)
 
 addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.3.0")
+
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.1")

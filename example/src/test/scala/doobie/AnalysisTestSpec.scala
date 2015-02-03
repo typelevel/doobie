@@ -1,7 +1,7 @@
 package doobie.example
 
 import doobie.imports._
-import doobie.contrib.specs2.AnalysisSpec
+import doobie.contrib.specs2.analysisspec._
 
 import org.specs2.mutable.Specification
 
