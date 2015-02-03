@@ -61,7 +61,7 @@ def update(oldName: String, newName: String) = sql"""
 Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[Task]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
 
 ```tut:silent
-import doobie.contrib.specs2.AnalysisSpec
+import doobie.contrib.specs2.analysisspec.AnalysisSpec
 import org.specs2.mutable.Specification
 
 object AnalysisTestSpec extends Specification with AnalysisSpec {

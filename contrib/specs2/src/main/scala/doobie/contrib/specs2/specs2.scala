@@ -1,4 +1,4 @@
-package doobie.contrib
+package doobie.contrib.specs2
 
 import doobie.free.connection.ConnectionIO
 
@@ -16,7 +16,27 @@ import scala.reflect.runtime.universe.TypeTag
 import scalaz.concurrent.Task
 import scalaz._, Scalaz._
 
-object specs2 {
+/**
+ * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
+ * {{{
+ * // An example specification, taken from the examples project.
+ * object AnalysisTestSpec extends Specification with AnalysisSpec {
+ *
+ *   // The transactor to use for the tests.
+ *   val transactor = DriverManagerTransactor[Task](
+ *     "org.postgresql.Driver", 
+ *     "jdbc:postgresql:world", 
+ *     "postgres", ""
+ *   )
+ *
+ *   // Now just mention the queries. Arguments are not used.
+ *   check(MyDaoModule.findByNameAndAge(null, 0))
+ *   check(MyDaoModule.allWoozles)
+ *
+ * }
+ * }}}
+ */
+object analysisspec {
 
   trait AnalysisSpec { this: Specification =>
 

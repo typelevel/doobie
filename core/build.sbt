@@ -31,13 +31,6 @@ scalacOptions ++= Seq(
   "-Yno-predef"
 )
 
-scalacOptions in (Compile, doc) ++= Seq(
-  "-groups",
-  "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath, 
-  "-doc-source-url", "https://github.com/tpolecat/doobie/tree/master€{FILE_PATH}.scala", // master for now
-  "-skip-packages", "scalaz"
-)
-
 /// PUBLISH SETTINGS
 
 bintrayPublishSettings
@@ -74,12 +67,17 @@ sourceGenerators in Compile += Def.task {
   val outDir = (sourceManaged in Compile).value / "doobie"
   val outFile = new File(outDir, "buildinfo.scala")
   outDir.mkdirs
+  val v = version.value
+  val t = System.currentTimeMillis
   IO.write(outFile,
     s"""|package doobie
         |
+        |/** Auto-generated build information. */
         |object buildinfo {
-        |  val version = "${version.value}"
-        |  val date    = new java.util.Date(${System.currentTimeMillis}L)
+        |  /** Current version of doobie ($v). */
+        |  val version = "$v"
+        |  /** Build date (${new java.util.Date(t)}). */
+        |  val date    = new java.util.Date(${t}L)
         |}
         |""".stripMargin)
   Seq(outFile)
