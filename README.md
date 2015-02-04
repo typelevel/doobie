@@ -45,7 +45,7 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 * `doobie-postgresql` for [PostgreSQL](postgresql.org)-specific type mappings.
 * `doobie-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 
-See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0-SNAPSHOT/00-index.html) for [somewhat] more information on these add-ons.
+See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.html) for [somewhat] more information on these add-ons.
 
 **doobie** **0.2.0** works with **Scala 2.10 and 2.11** and **scalaz 7.1**.
 
