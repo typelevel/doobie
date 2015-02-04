@@ -18,3 +18,6 @@ initialCommands := """
   import xa.yolo._
   """
 
+/// PUBLISH SETTINGS
+
+bintrayPublishSettings
