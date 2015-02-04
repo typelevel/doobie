@@ -102,7 +102,7 @@ def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
 insert2("Jimmy", Some(42)).quick.run
 ```
 
-This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor). A nicer way to do this is in one shot by returning specified columns from the inserted row. PostgreSQL supports this feature.
+This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor). A nicer way to do this is in one shot by returning specified columns from the inserted row. Not all databases support this feature, but PostgreSQL does.
 
 ```tut:silent
 def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
