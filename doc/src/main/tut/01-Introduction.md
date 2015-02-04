@@ -4,7 +4,6 @@ number: 1
 title: Introduction
 ---
 
-
 This is a very short book about **doobie**, which is a pure-functional JDBC layer for Scala. 
 
 **doobie** provides low-level access to everything in `java.sql` (as of JDK 1.6, JDBC 4.0), allowing you to write any JDBC program in a pure functional style. However the focus of this book is the **high-level API**, which is where most users will spend their time.
@@ -16,7 +15,7 @@ This book is organized cookbook-style: we demonstrate a common task and then exp
 
 This library is designed for people who are interested in typed, pure functional programming. If you are not a [scalaz](https://github.com/scalaz/scalaz) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
-Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* file an [issue](https://github.com/tpolecat/doobie/issues) or find `tpolecat` on Twitter or `#scala` (FreeNode IRC) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear.
+Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) or `#scala` (FreeNode IRC) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book will be updated continuously** to address problems and omissions.
 
 
 ### The Setup
@@ -114,5 +113,5 @@ woozle(nel) // doesn't compile
 
 ### Feedback and Contributions
 
-Feedback of all kinds (especially negative) on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or find and chat with `tpolecat` as mentioned above.
+Feedback of all kinds (especially negative) on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or find and chat with **tpolecat** as mentioned above.
 

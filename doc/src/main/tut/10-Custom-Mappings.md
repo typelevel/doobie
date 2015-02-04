@@ -4,11 +4,17 @@ number: 10
 title: Custom Mappings
 ---
 
-In this chapter we examine using custom `Meta` instances to provide single-column mappings, and custom `Composite` mappings to provide new multi-column mappings.
+In this chapter we learn how to use custom `Meta` instances to map arbitrary data types as single-column values; and how to use custom `Composite` instances to map arbitrary types across multiple columns.
 
 ### Setting Up
 
-We will use a very basic setup for this chapter.
+The examples in this chapter require the `contrib-postgresql` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can to your build thus:
+
+```scala
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4" // as of date of publication
+```
+
+In our REPL we have the same setup as before, plus a few extra imports.
 
 ```tut:silent
 import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, java.awt.Point
@@ -95,35 +101,35 @@ Composite[PersonId].length
 sql"select 'podiatry:123'".query[PersonId].quick.run
 ```
 
+Note that the `Composite` width is now a single column. The rule is: if there exists an instance `Meta[A]` in scope, it will take precedence over any automatic derivation of `Composite[A]`.
+
 ### Meta by Construction
-
-The following example uses the [argonaut](http://argonaut.io/) JSON library, which you can add to your `build.sbt` as follows:
-
-```scala
-libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4" // as of date of publication
-```
 
 Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
 
-We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. 
+We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value. 
 
-```tut
-implicit val JsonMeta = Meta.other[PGobject]("json").nxmap[Json](
-    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge,
-    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces)))
+Here we go:
+
+```tut:silent
+implicit val JsonMeta: Meta[Json] = 
+  Meta.other[PGobject]("json").nxmap[Json](
+    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
+    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces))
+  )
 ```
 
-Given this mapping to and from `Json` we can construct a mapping to any type that has a `CodecJson` instance. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : CodecJson: TypeTag`. On failure we throw an exception.
+Given this mapping to and from `Json` we can construct a *further* mapping to any type that has a `CodecJson` instance. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : CodecJson: TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
 
-```tut
-def codecMeta[A >: Null : CodecJson: TypeTag] =
+```tut:silent
+def codecMeta[A >: Null : CodecJson: TypeTag]: Meta[A] =
   Meta[Json].nxmap[A](
     _.as[A].result.fold(p => sys.error(p._1), identity), 
     _.asJson
   )
 ```
 
-Let's make sure it works. Here is a simple class with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
+Let's make sure it works. Here is a simple data type with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
 
 ```tut:silent
 case class Person(name: String, age: Int, things: List[String])
@@ -131,7 +137,7 @@ case class Person(name: String, age: Int, things: List[String])
 implicit def PersonCodecJson =
   casecodec3(Person.apply, Person.unapply)("name", "age", "things")
 
-implicit val codecPerson = codecMeta[Person]
+implicit val PersonMeta = codecMeta[Person]
 ```
 
 Now let's create a table that has a `json` column to store a `Person`.
@@ -160,18 +166,20 @@ sql"select owner from pet".query[Int].check.run
 And we can now use `Person` as a parameter type and as a column type.
 
 ```tut
-
 val p = Person("Steve", 10, List("Train", "Ball"))
-
 (sql"insert into pet (name, owner) values ('Bob', $p)"
   .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.run
-
 ```
 
+If we ask for the `owner` column as a string value we can see that it is in fact storing JSON data.
+
+```tut
+sql"select name, owner from pet".query[(String,String)].quick.run
+```
 
 ### Composite by Invariant Map
 
-We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types (non-`case` classes for instance). For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it, but we can get there via `xmap`:
+We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types. For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it for free, but we can get there via `xmap`. Here we map `Point` to a pair of `Int` columns.
 
 ```tut:silent
 implicit val Point2DComposite: Composite[Point] = 
@@ -184,6 +192,7 @@ implicit val Point2DComposite: Composite[Point] =
 And it works!
 
 ```tut
-sql"select 12, 42".query[Point].unique.quick.run
+sql"select 'foo', 12, 42, true".query[(String, Point, Boolean)].unique.quick.run
 ```
+
 

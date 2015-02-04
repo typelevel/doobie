@@ -85,7 +85,10 @@ We can now run our previous query in an abbreviated form.
   .run)
 ```
 
-This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around.
+This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around. 
+
+- The `.quick` method sinks the stream to standard out (adding ANSI coloring for fun) and then calls `.transact`, yielding a `Task[Unit]`. 
+- The `.check` method returns a `Task[Unit]` that performs a metadata analysis on the provided query and asserted types and prints out a report. This is covered in detail in the chapter on typechecking queries.
 
 ### Multi-Column Queries
 
