@@ -52,7 +52,7 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.htm
 ## Documentation and Support
 
 - Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.html) ← start here
-- The [**javadoc**](http://tpolecat.github.io/doc/doobie/0.2.0/api/index.html) will be handy once you get your feet wet.
+- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.0/api/index.html) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
 - Find **tpolecat** on the FreeNode `#scala` channel, or join the [Gitter Channel](https://gitter.im/tpolecat/doobie).
