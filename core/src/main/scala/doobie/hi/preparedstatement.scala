@@ -83,14 +83,14 @@ object preparedstatement {
    * @group Batching
    */
   def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
-    fa.foldRight(PS.executeBatch)((a, b) => set(a) *> PS.addBatch *> b).map(_.sum)
+    fa.foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b).map(_.sum)
 
   /**
    * Add many sets of parameters.
    * @group Batching
    */
   def addBatches[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Unit] =
-    fa.foldRight(().point[PreparedStatementIO])((a, b) => set(a) *> PS.addBatch *> b)
+    fa.foldRight(().point[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
