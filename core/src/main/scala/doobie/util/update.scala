@@ -2,13 +2,16 @@ package doobie.util
 
 import doobie.hi.{ ConnectionIO, PreparedStatementIO }
 import doobie.hi.connection.{ prepareStatement, prepareStatementS, prepareUpdateAnalysis, prepareUpdateAnalysis0, updateWithGeneratedKeys }
-import doobie.hi.preparedstatement.{ set, executeUpdate, executeUpdateWithUniqueGeneratedKeys }
+import doobie.hi.preparedstatement.{ set, executeUpdate, executeUpdateWithUniqueGeneratedKeys, addBatchesAndExecute }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 
 import scalaz.Contravariant
+import scalaz.Foldable
+import scalaz.std.list._
 import scalaz.stream.Process
 import scalaz.syntax.monad._
+import scalaz.syntax.foldable._
 
 /** Module defining updates parameterized by input type. */
 object update {
@@ -28,12 +31,15 @@ object update {
 
     def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K]
 
+    def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int]
+
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
         val sql = u.sql
         val stackFrame = u.stackFrame
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
+        def updateMany[F[_]: Foldable](fa: F[C]) = u.updateMany(fa.toList.map(f))
         def withGeneratedKeys[K: Composite](columns: String*)(c: C) =
           u.withGeneratedKeys(columns: _*)(f(c))
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(c: C) =
@@ -46,6 +52,7 @@ object update {
         val stackFrame = u.stackFrame
         def analysis = u.analysis
         def run = u.run(a)
+        def updateMany[F[_]: Foldable](fa: F[A]) = u.updateMany(fa)
         def withGeneratedKeys[K: Composite](columns: String*) = 
           u.withGeneratedKeys(columns: _*)(a)
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
@@ -56,12 +63,14 @@ object update {
 
   object Update {
 
-    def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Update[A] =
+    def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement] = None): Update[A] =
       new Update[A] {
         val sql = sql0
         val stackFrame = stackFrame0
         def analysis: ConnectionIO[Analysis] = prepareUpdateAnalysis[A](sql)
         def run(a: A) = prepareStatement(sql)(set(a) >> executeUpdate)
+        def updateMany[F[_]: Foldable](fa: F[A]) =
+          prepareStatement(sql)(addBatchesAndExecute(fa))
         def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
           updateWithGeneratedKeys[K](columns.toList)(sql, set(a))
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A) =

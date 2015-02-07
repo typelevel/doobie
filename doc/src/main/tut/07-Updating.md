@@ -134,8 +134,28 @@ up.quick.run
 up.quick.run // and again!
 ```
 
+### Batch Updates
 
+**doobie** supports batch updating via the `updateMany` operation on the `Update` type, which we haven't seen before. Unlike an `Update0`, whose arguments are fixed on construction, an `Update` must be applied to parameters before it can be "executed" to yield a `ConnectionIO`.
 
+```tut:silent
+def insertMany(ps: List[(String, Option[Short])]) = {
+  val sql = "insert into person (name, age) values (?, ?)"
+  Update[(String, Option[Short])](sql).updateMany(ps)
+}
+
+// Some rows to insert
+val data = List[(String, Option[Short])](
+  ("Banjo",   Some(39)), 
+  ("Skeeter", None), 
+  ("Jim-Bob", Some(12)))
+```
+
+The return value is the total number of rows inserted.
+
+```tut
+insertMany(data).quick.run
+```
 
 
 
