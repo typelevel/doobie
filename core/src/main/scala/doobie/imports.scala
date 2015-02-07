@@ -103,8 +103,11 @@ object imports {
   /** @group Type Aliases */      type Update[A] = doobie.util.update.Update[A]
   /** @group Companion Aliases */ val  Update    = doobie.util.update.Update
 
-  /** @group Type Aliases */ type Query0[A]  = doobie.util.query.Query0[A]
-  /** @group Type Aliases */ type Update0   = doobie.util.update.Update0
+  /** @group Type Aliases */      type Query0[A]  = doobie.util.query.Query0[A]
+  /** @group Companion Aliases */ val  Query0     = doobie.util.query.Query0
+
+  /** @group Type Aliases */      type Update0   = doobie.util.update.Update0
+  /** @group Companion Aliases */ val  Update0   = doobie.util.update.Update0
 
   /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
 

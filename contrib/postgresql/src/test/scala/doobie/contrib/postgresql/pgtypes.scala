@@ -2,8 +2,6 @@ package doobie.contrib.postgresql
 
 import doobie.imports._
 import doobie.contrib.postgresql.pgtypes._
-import doobie.util.update._
-import doobie.util.query._
 
 import java.net.InetAddress
 import java.util.UUID
