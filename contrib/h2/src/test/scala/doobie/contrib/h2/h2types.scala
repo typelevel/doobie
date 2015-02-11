@@ -2,8 +2,6 @@ package doobie.contrib.h2
 
 import doobie.contrib.h2.h2types._
 import doobie.imports._
-import doobie.util.update._
-import doobie.util.query._
 
 import java.net.InetAddress
 import java.util.UUID

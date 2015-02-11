@@ -36,9 +36,12 @@ import scala.Predef.intArrayOps
 import scalaz.stream.Process
 import scalaz.syntax.id._
 import scalaz.syntax.enum._
+import scalaz.syntax.foldable._
+import scalaz.syntax.monad._
 import scalaz.syntax.align._
 import scalaz.std.anyVal._
 import scalaz.std.list._
+import scalaz.Foldable
 import scalaz.\&/
 
 /**
@@ -66,6 +69,28 @@ object preparedstatement {
    */
   def delay[A](a: => A): PreparedStatementIO[A] =
     PS.delay(a)
+
+  /** @group Batching */
+  val executeBatch: PreparedStatementIO[List[Int]] =
+    PS.executeBatch.map(_.toList)
+
+  /** @group Batching */
+  val addBatch: PreparedStatementIO[Unit] =
+    PS.addBatch
+
+  /**
+   * Add many sets of parameters and execute as a batch update, returning total rows updated.
+   * @group Batching
+   */
+  def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
+    fa.foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b).map(_.sum)
+
+  /**
+   * Add many sets of parameters.
+   * @group Batching
+   */
+  def addBatches[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Unit] =
+    fa.foldRight(().point[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
