@@ -12,14 +12,14 @@ import org.postgresql.geometric._
 import org.specs2.mutable.Specification
 
 import scalaz.concurrent.Task
-import scalaz.\/-
+import scalaz.{ Maybe, \/- }
 
 // Establish that we can write and read various types.
 object pgtypesspec extends Specification {
 
   val xa = DriverManagerTransactor[Task](
-    "org.postgresql.Driver", 
-    "jdbc:postgresql:world", 
+    "org.postgresql.Driver",
+    "jdbc:postgresql:world",
     "postgres", ""
   )
 
@@ -29,16 +29,22 @@ object pgtypesspec extends Specification {
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield (a0)
 
-  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) = 
+  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
     s"Mapping for $col as ${m.scalaType}" >> {
-      s"write+read $col as ${m.scalaType}" in { 
+      s"write+read $col as ${m.scalaType}" in {
         inOut(col, a).transact(xa).attemptRun must_== \/-(a)
       }
-      s"write+read $col as Option[${m.scalaType}] (Some)" in { 
+      s"write+read $col as Option[${m.scalaType}] (Some)" in {
         inOut[Option[A]](col, Some(a)).transact(xa).attemptRun must_== \/-(Some(a))
       }
-      s"write+read $col as Option[${m.scalaType}] (None)" in { 
+      s"write+read $col as Option[${m.scalaType}] (None)" in {
         inOut[Option[A]](col, None).transact(xa).attemptRun must_== \/-(None)
+      }
+      s"write+read $col as Maybe[${m.scalaType}] (Just)" in {
+        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).attemptRun must_== \/-(Maybe.Just(a))
+      }
+      s"write+read $col as Maybe[${m.scalaType}] (Empty)" in {
+        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).attemptRun must_== \/-(Maybe.Empty())
       }
     }
 
@@ -50,9 +56,9 @@ object pgtypesspec extends Specification {
   // 8.1 Numeric Types
   testInOut[Short]("smallint", 123)
   testInOut[Int]("integer", 123)
-  testInOut[Long]("bigint", 123) 
-  testInOut[BigDecimal]("decimal", 123)      
-  testInOut[BigDecimal]("numeric", 123)      
+  testInOut[Long]("bigint", 123)
+  testInOut[BigDecimal]("decimal", 123)
+  testInOut[BigDecimal]("numeric", 123)
   testInOut[Float]("real", 123.45f)
   testInOut[Double]("double precision", 123.45)
 
@@ -67,8 +73,8 @@ object pgtypesspec extends Specification {
   testInOut("text", "abcdef")
 
   // 8.4 Binary Types
-  testInOut[List[Byte]]  ("bytea", BigInt("DEADBEEF",16).toByteArray.toList) 
-  testInOut[Vector[Byte]]("bytea", BigInt("DEADBEEF",16).toByteArray.toVector) 
+  testInOut[List[Byte]]  ("bytea", BigInt("DEADBEEF",16).toByteArray.toList)
+  testInOut[Vector[Byte]]("bytea", BigInt("DEADBEEF",16).toByteArray.toVector)
 
   // 8.5 Date/Time Types"
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
@@ -77,7 +83,7 @@ object pgtypesspec extends Specification {
   testInOut("time", new java.sql.Time(3,4,5))
   skip("time with time zone")
   skip("interval")
-  
+
   // 8.6 Boolean Type
   testInOut("boolean", true)
 

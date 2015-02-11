@@ -10,15 +10,15 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.specs2.mutable.Specification
 
 import scalaz.concurrent.Task
-import scalaz.\/-
+import scalaz.{ Maybe, \/- }
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object h2typesspec extends Specification {
 
   val xa = DriverManagerTransactor[Task](
-    "org.h2.Driver",                     
-    "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",  
-    "sa", ""                              
+    "org.h2.Driver",
+    "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",
+    "sa", ""
   )
 
   def inOut[A: Atom](col: String, a: A) =
@@ -28,16 +28,22 @@ object h2typesspec extends Specification {
       a0 <- sql"SELECT value FROM TEST".query[A].unique
     } yield (a0)
 
-  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) = 
+  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
     s"Mapping for $col as ${m.scalaType}" >> {
-      s"write+read $col as ${m.scalaType}" in { 
+      s"write+read $col as ${m.scalaType}" in {
         inOut(col, a).transact(xa).attemptRun must_== \/-(a)
       }
-      s"write+read $col as Option[${m.scalaType}] (Some)" in { 
+      s"write+read $col as Option[${m.scalaType}] (Some)" in {
         inOut[Option[A]](col, Some(a)).transact(xa).attemptRun must_== \/-(Some(a))
       }
-      s"write+read $col as Option[${m.scalaType}] (None)" in { 
+      s"write+read $col as Option[${m.scalaType}] (None)" in {
         inOut[Option[A]](col, None).transact(xa).attemptRun must_== \/-(None)
+      }
+      s"write+read $col as Maybe[${m.scalaType}] (Just)" in {
+        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).attemptRun must_== \/-(Maybe.Just(a))
+      }
+      s"write+read $col as Maybe[${m.scalaType}] (Empty)" in {
+        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).attemptRun must_== \/-(Maybe.Empty())
       }
     }
 
@@ -55,7 +61,7 @@ object h2typesspec extends Specification {
   testInOut[java.sql.Time]("TIME", new java.sql.Time(3,4,5))
   testInOut[java.sql.Date]("DATE", new java.sql.Date(4,5,6))
   testInOut[java.sql.Timestamp]("TIMESTAMP", new java.sql.Timestamp(System.currentTimeMillis))
-  testInOut[List[Byte]]("BINARY", BigInt("DEADBEEF",16).toByteArray.toList) 
+  testInOut[List[Byte]]("BINARY", BigInt("DEADBEEF",16).toByteArray.toList)
   skip("OTHER")
   testInOut[String]("VARCHAR", "abc")
   testInOut[String]("CHAR(3)", "abc")
