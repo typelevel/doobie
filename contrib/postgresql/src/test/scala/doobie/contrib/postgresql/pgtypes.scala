@@ -7,6 +7,7 @@ import java.net.InetAddress
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
 import org.specs2.mutable.Specification
@@ -143,4 +144,22 @@ object pgtypesspec extends Specification {
   skip("daterange")
   skip("custom")
 
+  // PostGIS geometry types
+
+
+  testInOut[Geometry]("geometry", new Point(12.34, 56.78, 90.12))
+  // implicit val ComposedGeomType       = geometryType[ComposedGeom]
+  // implicit val GeometryCollectionType = geometryType[GeometryCollection]
+  testInOut("geometry", new MultiLineString(Array(new LineString(Array(new Point(1, 2), new Point(3, 4))), new LineString(Array(new Point(5, 6), new Point(7, 8), new Point(0, 0))))))
+  // implicit val MultiPolygonType       = geometryType[MultiPolygon]
+  // implicit val PointComposedGeomType  = geometryType[PointComposedGeom]
+  // implicit val LinearRingType         = geometryType[LinearRing]
+  testInOut("geometry", new LineString(Array(new Point(1, 2), new Point(3, 4))))
+  // implicit val MultiPointType         = geometryType[MultiPoint]
+  testInOut("geometry", new MultiPoint(Array(new Point(1, 2), new Point(3, 4))))
+  // implicit val PolygonType            = geometryType[Polygon]
+  testInOut("geometry", new Point(12.34, 56.78, 90.12))
+
 }
+
+
