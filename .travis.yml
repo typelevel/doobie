@@ -13,6 +13,7 @@ addons:
   postgresql: "9.3"
 
 before_script:
+  - psql -c "create extension postgis" -U postgres
   - psql -c 'create database world;' -U postgres
   - psql -c '\i world.sql' -d world -U postgres
 

@@ -146,19 +146,25 @@ object pgtypesspec extends Specification {
 
   // PostGIS geometry types
 
+  // Random streams of geometry types. Not as good as scalacheck, sorry.
+  val rnd: Iterator[Double]     = Stream.continually(util.Random.nextDouble).iterator
+  val pts: Iterator[Point]      = Stream.continually(new Point(rnd.next, rnd.next)).iterator
+  val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator
 
-  testInOut[Geometry]("geometry", new Point(12.34, 56.78, 90.12))
-  // implicit val ComposedGeomType       = geometryType[ComposedGeom]
-  // implicit val GeometryCollectionType = geometryType[GeometryCollection]
-  testInOut("geometry", new MultiLineString(Array(new LineString(Array(new Point(1, 2), new Point(3, 4))), new LineString(Array(new Point(5, 6), new Point(7, 8), new Point(0, 0))))))
-  // implicit val MultiPolygonType       = geometryType[MultiPolygon]
-  // implicit val PointComposedGeomType  = geometryType[PointComposedGeom]
-  // implicit val LinearRingType         = geometryType[LinearRing]
-  testInOut("geometry", new LineString(Array(new Point(1, 2), new Point(3, 4))))
-  // implicit val MultiPointType         = geometryType[MultiPoint]
-  testInOut("geometry", new MultiPoint(Array(new Point(1, 2), new Point(3, 4))))
-  // implicit val PolygonType            = geometryType[Polygon]
-  testInOut("geometry", new Point(12.34, 56.78, 90.12))
+  def testInOutGeom[A <: Geometry: Meta](a: A) =
+    testInOut[A]("geometry", a)
+
+  testInOutGeom[Geometry](pts.next)
+  // testInOutGeom[ComposedGeom]()
+  // testInOutGeom[GeometryCollection]()
+  testInOutGeom[MultiLineString](new MultiLineString(Array(lss.next, lss.next, lss.next)))
+  // testInOutGeom[MultiPolygon]()
+  // testInOutGeom[PointComposedGeom]()
+  // testInOutGeom[LinearRing]()
+  testInOutGeom[LineString](lss.next)
+  testInOutGeom[MultiPoint](new MultiPoint(Array(pts.next, pts.next, pts.next)))
+  // testInOutGeom[Polygon]()
+  testInOutGeom[Point](pts.next)
 
 }
 
