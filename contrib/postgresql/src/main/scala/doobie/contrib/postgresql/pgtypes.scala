@@ -137,7 +137,6 @@ object pgtypes {
   implicit val MultiLineStringType    = geometryType[MultiLineString]
   implicit val MultiPolygonType       = geometryType[MultiPolygon]
   implicit val PointComposedGeomType  = geometryType[PointComposedGeom]
-  implicit val LinearRingType         = geometryType[LinearRing]
   implicit val LineStringType         = geometryType[LineString]
   implicit val MultiPointType         = geometryType[MultiPoint]
   implicit val PolygonType            = geometryType[Polygon]

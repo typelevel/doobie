@@ -4,7 +4,7 @@ number: 1
 title: Introduction
 ---
 
-This is a very short book about **doobie**, which is a pure-functional JDBC layer for Scala. 
+This is a very short book about **doobie**, which is a pure-functional JDBC layer for Scala.
 
 **doobie** provides low-level access to everything in `java.sql` (as of JDK 1.6, JDBC 4.0), allowing you to write any JDBC program in a pure functional style. However the focus of this book is the **high-level API**, which is where most users will spend their time.
 
@@ -24,16 +24,17 @@ This book is compiled as part of the build using the [tut](https://github.com/tp
 
 #### Sample Database Setup
 
-The example code assumes a local [PostgreSQL](http://www.postgresql.org/) server with a `postgres` user with no password, and the sample `world` database loaded up. If you're on a Mac you might check out the excellent [Postgres.app](http://postgresapp.com/) if you don't want to install PostgreSQL as a service. You can set up the user and sample database as follows:
+The example code assumes a local [PostgreSQL](http://www.postgresql.org/) server with a `postgres` user with no password, [PostGIS](http://postgis.net/) extensions (optional), and the sample `world` database loaded up. If you're on a Mac you might check out the excellent [Postgres.app](http://postgresapp.com/) if you don't want to install PostgreSQL as a service. You can set up the user and sample database as follows:
 
 ```
 $ curl -O https://raw.githubusercontent.com/tpolecat/doobie/master/world.sql
 $ psql -c 'create user postgres createdb'
 $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
+$ psql -d world -c "create extension postgis" -U postgres
 ```
 
-Note that the final `ANALYZE` comand will emit a few errors for system tables. This is expected and is fine. Try a query or two to double-check your setup:
+Skip the last statement if you don't have PostGIS installed. Note that the final `ANALYZE` comand in the import will emit a few errors for system tables. This is expected and is fine. Try a query or two to double-check your setup:
 
 ```
 $ psql -d world -U postgres
@@ -41,7 +42,7 @@ psql (9.3.5)
 Type "help" for help.
 
 world=> select name, continent, population from country where name like 'U%';
-                 name                 |   continent   | population 
+                 name                 |   continent   | population
 --------------------------------------+---------------+------------
  United Arab Emirates                 | Asia          |    2441000
  United Kingdom                       | Europe        |   59623400
@@ -54,7 +55,7 @@ world=> select name, continent, population from country where name like 'U%';
 (8 rows)
 
 world=> \q
-$ 
+$
 ```
 
 You can of course change this setup if you like, but you will need to adjust your JDBC connection information accordingly. Most examples will work with any compliant database, but in a few cases (noted in the text) we rely on vendor-specific behavior.
