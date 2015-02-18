@@ -40,7 +40,7 @@ object composite {
       }
   }
 
-  object Composite extends LowerPriorityComposite {
+  object Composite extends LowerPriorityComposite with HListComposite {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
 
@@ -63,16 +63,16 @@ object composite {
   // N.B. we're separating this out in order to make the atom ~> composite derivation higher
   // priority than the product ~> composite derivation. So this means if we have an product mapped
   // to a single column, we will get only the atomic mapping, not the multi-column one.
-  trait LowerPriorityComposite extends HListComposite {
+  trait LowerPriorityComposite {
 
     /** @group Typeclass Instances */
     implicit val productComposite: ProductTypeClass[Composite] =
       new ProductTypeClass[Composite] {
 
         def product[H, T <: HList](H: Composite[H], T: Composite[T]): Composite[H :: T] =
-          hlist[H, T](H, T)
+          HListComposite.hlistComposite[H, T](H, T)
 
-        def emptyProduct: Composite[HNil] = hnil
+        def emptyProduct: Composite[HNil] = HListComposite.hnilComposite
 
         def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =
           instance.xmap(from, to)
@@ -83,8 +83,10 @@ object composite {
       macro GenericMacros.deriveProductInstance[Composite, T]
   }
 
+  object HListComposite extends HListComposite
+
   trait HListComposite {
-    implicit def hlist[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
+    implicit def hlistComposite[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
       new Composite[H :: T] {
         val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
         val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
@@ -93,7 +95,7 @@ object composite {
         val meta = H.meta ++ T.meta
       }
 
-    implicit def hnil: Composite[HNil] =
+    implicit val hnilComposite: Composite[HNil] =
       new Composite[HNil] {
         val set = (_: Int, _: HNil) => ().point[PS.PreparedStatementIO]
         val update = (_: Int, _: HNil) => ().point[RS.ResultSetIO]
