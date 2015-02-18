@@ -75,14 +75,7 @@ object composite {
         def emptyProduct: Composite[HNil] = hnil
 
         def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =
-          new Composite[F] {
-            val set = (i: Int, f: F) => instance.set(i, to(f))
-            val update = (i: Int, f: F) => instance.update(i, to(f))
-            val get = (i: Int) => instance.get(i).map(from)
-            val length = instance.length
-            val meta = instance.meta
-          }
-
+          instance.xmap(from, to)
       }
 
     /** @group Typeclass Instances */
