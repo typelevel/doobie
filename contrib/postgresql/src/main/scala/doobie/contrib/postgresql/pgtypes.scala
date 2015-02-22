@@ -1,7 +1,7 @@
 package doobie.contrib.postgresql
 
 import doobie.enum.jdbctype
-import doobie.util.meta._
+import doobie.imports._
 import doobie.util.invariant._
 
 import java.util.UUID
@@ -21,6 +21,25 @@ import scalaz._, Scalaz._
 object pgtypes {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
+
+  // // Enum types
+  // def pgJavaEnum[E >: Null <: java.lang.Enum[E]: TypeTag](implicit E: ClassTag[E]): Meta[E] = {
+  //   val clazz = E.runtimeClass.asInstanceOf[Class[E]]
+  //   StringMeta.nxmap[E](java.lang.Enum.valueOf(clazz, _), _.name)
+  // }
+
+  def pgEnum(e: Enumeration, name: String)(implicit ev: TypeTag[e.Value]): Meta[e.Value] =
+    Meta.basic1(jdbctype.VarChar, Nil,
+      n => FRS.getString(n).map(s => if (s != null) e.withName(s) else null),
+      (n, a) => if (a == null) ().point[PreparedStatementIO]  
+                          else FPS.setObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))),
+      (n, a) => if (a == null) FRS.updateNull(n) else FRS.updateObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name)))
+      )
+
+    // Meta.other[PGobject](name).nxmap[e.Value](
+    //   a => e.withName(a.getValue), 
+    //   a => new PGobject <| (_.setType(name)) <| (_.setValue(a.toString)))
+
 
   // Geometric Types, minus PGline which is "not fully implemented"
   implicit val PGboxType      = Meta.other[PGbox]("box")
