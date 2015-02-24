@@ -19,6 +19,8 @@ import scalaz.stream.Process
 
 import java.sql.Connection
 
+import javax.sql.DataSource
+
 /**
  * Module defining `Transactor`, a type that lifts `ConnectionIO` directly into a target effectful
  * monad.
@@ -66,5 +68,21 @@ object transactor {
           (delay(Class.forName(driver)) *> getConnection(url, user, pass)).trans[M]      
       }
     }
+
+  /** `Transactor` wrapping an existing `DataSource`. */
+  sealed abstract class DataSourceTransactor[M[_]: Monad: Catchable: Capture] extends Transactor[M] {
+    val dataSource: M[DataSource]
+  }
+
+  object DataSourceTransactor {
+
+    /** Construct a `DataSourceTransactor` backed by an existing `DataSource`. */
+    def apply[M[_]: Monad: Catchable](ds: DataSource)(implicit C: Capture[M]): Transactor[M] =
+      new DataSourceTransactor[M] {
+        val connect = C.apply(ds.getConnection)
+        val dataSource = ds.point[M]
+      }
+
+  }
 
 }
