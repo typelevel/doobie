@@ -103,52 +103,7 @@ sql"select 'podiatry:123'".query[PersonId].quick.run
 
 Note that the `Composite` width is now a single column. The rule is: if there exists an instance `Meta[A]` in scope, it will take precedence over any automatic derivation of `Composite[A]`.
 
-### Meta by Construction - Enumerated Types
-
-SQL enum values are just strings as far as JDBC is concerned, so it's straightforward to say `Meta[String].nxmap(...)` to create a mapping for a Scala-side enumerated type following the pattern discussed above. If you define enumerated types as a `sealed trait` with a number of `case object`s then you will need to use the `nxmap` method. However if you happen to use `scala.Enumeration` you can use the `Meta.enum` constructor.
-
-Let's create an enum (syntax will vary if you're not using PostgreSQL).
-
-```tut:silent
-val drop = sql"DROP TYPE IF EXISTS weekday".update.quick
-val create = {
-  sql"CREATE TYPE weekday AS ENUM ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')"
-    .update.quick
-}
-```
-
-And set it up.
-
-```tut
-(drop *> create).run
-```
-
-On the Scala side we can create a matching `Enumeration` and construct a mapping via `Meta.enum`.
-
-```tut:silent
-object Weekdays extends Enumeration { val Sun, Mon, Tue, Wed, Thu, Fri, Sat = Value }
-implicit val WeekdayMeta = Meta.enum(Weekdays)
-```
-
-Testing it out we see that it works just fine.
-
-```tut
-sql"select 'Mon'::weekday".query[Weekdays.Value].unique.transact(xa).run
-```
-
-This also works for enumerated types defined in Java, via the `Meta.javeEnum` constructor. Here we create a mapping for the JDK's `Thread.State` values.
-
-```tut:silent
-implicit val ThreadStateMeta = Meta.javaEnum[Thread.State]
-```
-
-And it works.
-
-```tut
-sql"select 'WAITING'".query[Thread.State].unique.transact(xa).run
-```
-
-### Meta by Construction - JSON Encoding
+### Meta by Construction
 
 Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
 
