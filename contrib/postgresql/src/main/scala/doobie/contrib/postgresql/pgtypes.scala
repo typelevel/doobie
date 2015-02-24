@@ -144,21 +144,29 @@ object pgtypes {
 
   // It seems impossible to write a NULL value for an enum column/parameter using the current JDBC
   // driver, so we will define a mapping only for non-nullables. As a further twist, we read as 
-  // String and write as PGobject. This Meta instance isn't able to write NULL.
-
+  // String and write as PGobject. This Meta instance isn't able to write NULL. This would be a good
+  // use case for splitting the read/write halves of Meta/Atom/Composite because here it's no
+  // problem to *read* NULL, we just can't write it.
   private def enumPartialMeta(name: String): Meta[String] =
     Meta.basic1[String](jdbctype.Other, Nil,
       n => FRS.getString(n),
       (n, a) => FPS.setObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))),
       (n, a) => FRS.updateObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))))
 
-
+  /** 
+   * Construct an `Atom` for value members of the given `Enumeration`. Note that this precludes
+   * reading or writing `Option[e.Value]` because writing NULL is unsupported by the driver.
+   */
   def pgEnum(e: Enumeration, name: String): Atom[e.Value] =
     Atom.fromScalaType(enumPartialMeta(name)).xmap[e.Value](
       a => try e.withName(a) catch { 
         case _: NoSuchElementException => throw InvalidEnum[e.Value](a) 
       }, _.toString)
 
+  /** 
+   * Construct an `Atom` for value members of the given Jave `enum`. Note that this precludes
+   * reading or writing `Option[E]` because writing NULL is unsupported by the driver.
+   */
   def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Atom[E] = {
     val clazz = E.runtimeClass.asInstanceOf[Class[E]]
     Atom.fromScalaType(enumPartialMeta(name)).xmap[E](
