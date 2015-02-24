@@ -8,7 +8,7 @@ import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.syntax.process._
 
-import scalaz.{ Profunctor, Contravariant, Functor, Monad }
+import scalaz.{ Profunctor, Contravariant, Functor, Monad, OptionT }
 import scalaz.syntax.monad._
 import scalaz.stream.Process
 
@@ -39,6 +39,9 @@ object query {
     def unique(a: A): ConnectionIO[B]
 
     def option(a: A): ConnectionIO[Option[B]]
+
+    def optionT(a: A): OptionT[ConnectionIO, B] =
+      OptionT(option(a))
 
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
@@ -116,6 +119,9 @@ object query {
     def unique: ConnectionIO[B]
 
     def option: ConnectionIO[Option[B]]
+
+    def optionT: OptionT[ConnectionIO, B] =
+      OptionT(option)
 
     def map[C](f: B => C): Query0[C] =
       new Query0[C] {
