@@ -13,7 +13,6 @@ import org.postgresql.geometric._
 import org.specs2.mutable.Specification
 
 import scalaz.concurrent.Task
-import scalaz.syntax.monad._
 import scalaz.{ Maybe, \/- }
 
 // Establish that we can write and read various types.
