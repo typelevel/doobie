@@ -287,22 +287,6 @@ object meta {
     implicit def ArrayTypeAsVectorMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[Vector[A]] =
       ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
 
-    /**
-     * Construct a `Meta` mapping a SQL enumeration (via `String`) to a `java.lang.Enum`.
-     * @group Constructors
-     */
-    def javaEnum[E >: Null <: java.lang.Enum[E]: TypeTag](implicit E: ClassTag[E]): Meta[E] = {
-      val clazz = E.runtimeClass.asInstanceOf[Class[E]]
-      StringMeta.nxmap[E](java.lang.Enum.valueOf(clazz, _), _.name)
-    }
-
-    /**
-     * Construct a `Meta` mapping a SQL enumeration (via `String`) to a `scala.Enumeration`.
-     * @group Constructors
-     */
-    def enum(e: Enumeration)(implicit ev: TypeTag[e.Value]): Meta[e.Value] =
-      StringMeta.nxmap[e.Value](e.withName(_), _.toString)
-
   }
 
   // Instances for basic types, according to the JDBC spec
