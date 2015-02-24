@@ -143,22 +143,28 @@ object pgtypes {
   implicit val PointType              = geometryType[Point]
 
   // It seems impossible to write a NULL value for an enum column/parameter using the current JDBC
-  // driver, so we will define a mapping only for non-nullables.
+  // driver, so we will define a mapping only for non-nullables. As a further twist, we read as 
+  // String and write as PGobject. This Meta instance isn't able to write NULL.
+
+  private def enumPartialMeta(name: String): Meta[String] =
+    Meta.basic1[String](jdbctype.Other, Nil,
+      n => FRS.getString(n),
+      (n, a) => FPS.setObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))),
+      (n, a) => FRS.updateObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))))
+
 
   def pgEnum(e: Enumeration, name: String): Atom[e.Value] =
-    Atom.fromScalaType(Meta.other[PGobject](name)).xmap[e.Value](
-      a => try e.withName(a.getValue) catch {
-        case _: NoSuchElementException => throw InvalidEnum[e.Value](a.getValue)
-      },
-      a => new PGobject <| (_.setValue(a.toString)) <| (_.setType(name)))
+    Atom.fromScalaType(enumPartialMeta(name)).xmap[e.Value](
+      a => try e.withName(a) catch { 
+        case _: NoSuchElementException => throw InvalidEnum[e.Value](a) 
+      }, _.toString)
 
   def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Atom[E] = {
     val clazz = E.runtimeClass.asInstanceOf[Class[E]]
-    Atom.fromScalaType(Meta.other[PGobject](name)).xmap[E](
-      a => try java.lang.Enum.valueOf(clazz, a.getValue).asInstanceOf[E] catch {
-        case _: NoSuchElementException => throw InvalidEnum[E](a.getValue)
-      },
-      a => new PGobject <| (_.setValue(a.toString)) <| (_.setType(name)))
+    Atom.fromScalaType(enumPartialMeta(name)).xmap[E](
+      a => try java.lang.Enum.valueOf(clazz, a).asInstanceOf[E] catch {
+        case _: NoSuchElementException => throw InvalidEnum[E](a)
+      }, _.name)
   }
 
 }

@@ -51,9 +51,9 @@ object pgtypesspec extends Specification {
       }
     }
 
-  def testInOutNN[A](col: String, a: A, setup: ConnectionIO[Unit] = ().point[ConnectionIO])(implicit m: Meta[A]) =
-    s"Mapping for $col as ${m.scalaType}" >> {
-      s"write+read $col as ${m.scalaType}" in {
+  def testInOutNN[A](col: String, a: A, setup: ConnectionIO[Unit] = ().point[ConnectionIO])(implicit m: Atom[A]) =
+    s"Mapping for $col as ${m.meta._1.scalaType}" >> {
+      s"write+read $col as ${m.meta._1.scalaType}" in {
         inOut(col, a, setup).transact(xa).attemptRun must_== \/-(a)
       }
     }
@@ -99,8 +99,16 @@ object pgtypesspec extends Specification {
 
   // 8.7 Enumerated Types
   object MyEnum extends Enumeration { val foo, bar = Value }
+  
+  // as scala.Enumeration
   implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
   testInOutNN("myenum", MyEnum.foo, 
+    sql"drop type if exists myenum cascade".update.run *> 
+    sql"create type myenum as enum ('foo', 'bar')".update.run.void)
+
+  // as java.lang.Enum
+  implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
+  testInOutNN("myenum", MyJavaEnum.foo, 
     sql"drop type if exists myenum cascade".update.run *> 
     sql"create type myenum as enum ('foo', 'bar')".update.run.void)
 
