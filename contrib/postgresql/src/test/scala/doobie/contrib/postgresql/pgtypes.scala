@@ -49,6 +49,13 @@ object pgtypesspec extends Specification {
       }
     }
 
+  def testInOutNN[A](col: String, a: A)(implicit m: Atom[A]) =
+    s"Mapping for $col as ${m.meta._1.scalaType}" >> {
+      s"write+read $col as ${m.meta._1.scalaType}" in {
+        inOut(col, a).transact(xa).attemptRun must_== \/-(a)
+      }
+    }
+
   def skip(col: String, msg: String = "not yet implemented") =
     s"Mapping for $col" >> {
       "PENDING:" in pending(msg)
@@ -89,7 +96,16 @@ object pgtypesspec extends Specification {
   testInOut("boolean", true)
 
   // 8.7 Enumerated Types
-  skip("enum")
+  // create type myenum as enum ('foo', 'bar') <-- part of setup
+  object MyEnum extends Enumeration { val foo, bar = Value }
+
+  // as scala.Enumeration
+  implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
+  testInOutNN("myenum", MyEnum.foo)
+
+  // as java.lang.Enum
+  implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
+  testInOutNN("myenum", MyJavaEnum.bar)
 
   // 8.8 Geometric Types
   testInOut("box", new PGbox(new PGpoint(1, 2), new PGpoint(3, 4)))

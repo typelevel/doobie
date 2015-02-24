@@ -24,6 +24,10 @@ object invariant {
   final case class InvalidOrdinal[A](value: Int)(implicit ev: Manifest[A]) 
     extends InvariantViolation(s"${ev.runtimeClass.getName}: invalid ordinal: $value")
 
+  /** Unexpected string value for an enumerated type. */
+  final case class InvalidEnum[A](value: String)(implicit ev: Manifest[A]) 
+    extends InvariantViolation(s"${ev.runtimeClass.getName}: invalid ordinal: $value")
+
   /** The type of schema violations. */
   sealed abstract class MappingViolation(msg: String) extends InvariantViolation(msg) {
     def index: Int
