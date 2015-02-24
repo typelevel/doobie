@@ -17,29 +17,10 @@ import scala.reflect.runtime.universe.TypeTag
 
 import scalaz._, Scalaz._
 
-/** `Meta` instances for PostgreSQL types. */
+/** `Meta` and `Atom` instances for PostgreSQL types. */
 object pgtypes {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
-
-  // // Enum types
-  // def pgJavaEnum[E >: Null <: java.lang.Enum[E]: TypeTag](implicit E: ClassTag[E]): Meta[E] = {
-  //   val clazz = E.runtimeClass.asInstanceOf[Class[E]]
-  //   StringMeta.nxmap[E](java.lang.Enum.valueOf(clazz, _), _.name)
-  // }
-
-  def pgEnum(e: Enumeration, name: String)(implicit ev: TypeTag[e.Value]): Meta[e.Value] =
-    Meta.basic1(jdbctype.VarChar, Nil,
-      n => FRS.getString(n).map(s => if (s != null) e.withName(s) else null),
-      (n, a) => if (a == null) ().point[PreparedStatementIO]  
-                          else FPS.setObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))),
-      (n, a) => if (a == null) FRS.updateNull(n) else FRS.updateObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name)))
-      )
-
-    // Meta.other[PGobject](name).nxmap[e.Value](
-    //   a => e.withName(a.getValue), 
-    //   a => new PGobject <| (_.setType(name)) <| (_.setValue(a.toString)))
-
 
   // Geometric Types, minus PGline which is "not fully implemented"
   implicit val PGboxType      = Meta.other[PGbox]("box")
@@ -161,7 +142,29 @@ object pgtypes {
   implicit val PolygonType            = geometryType[Polygon]
   implicit val PointType              = geometryType[Point]
 
+  // It seems impossible to write a NULL value for an enum column/parameter using the current JDBC
+  // driver, so we will define a mapping only for non-nullables.
+
+  def pgEnum(e: Enumeration, name: String): Atom[e.Value] =
+    Atom.fromScalaType(Meta.other[PGobject](name)).xmap[e.Value](
+      a => try e.withName(a.getValue) catch {
+        case _: NoSuchElementException => throw InvalidEnum[e.Value](a.getValue)
+      },
+      a => new PGobject <| (_.setValue(a.toString)) <| (_.setType(name)))
+
+  def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Atom[E] = {
+    val clazz = E.runtimeClass.asInstanceOf[Class[E]]
+    Atom.fromScalaType(Meta.other[PGobject](name)).xmap[E](
+      a => try java.lang.Enum.valueOf(clazz, a.getValue).asInstanceOf[E] catch {
+        case _: NoSuchElementException => throw InvalidEnum[E](a.getValue)
+      },
+      a => new PGobject <| (_.setValue(a.toString)) <| (_.setType(name)))
+  }
+
 }
+
+
+
 
 
 
