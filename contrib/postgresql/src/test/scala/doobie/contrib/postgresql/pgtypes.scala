@@ -25,36 +25,35 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Atom](col: String, a: A, setup: ConnectionIO[Unit]) =
+  def inOut[A: Atom](col: String, a: A) =
     for {
-      _  <- setup
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield (a0)
 
-  def testInOut[A](col: String, a: A, setup: ConnectionIO[Unit] = ().point[ConnectionIO])(implicit m: Meta[A]) =
+  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
     s"Mapping for $col as ${m.scalaType}" >> {
       s"write+read $col as ${m.scalaType}" in {
-        inOut(col, a, setup).transact(xa).attemptRun must_== \/-(a)
+        inOut(col, a).transact(xa).attemptRun must_== \/-(a)
       }
       s"write+read $col as Option[${m.scalaType}] (Some)" in {
-        inOut[Option[A]](col, Some(a), setup).transact(xa).attemptRun must_== \/-(Some(a))
+        inOut[Option[A]](col, Some(a)).transact(xa).attemptRun must_== \/-(Some(a))
       }
       s"write+read $col as Option[${m.scalaType}] (None)" in {
-        inOut[Option[A]](col, None, setup).transact(xa).attemptRun must_== \/-(None)
+        inOut[Option[A]](col, None).transact(xa).attemptRun must_== \/-(None)
       }
       s"write+read $col as Maybe[${m.scalaType}] (Just)" in {
-        inOut[Maybe[A]](col, Maybe.just(a), setup).transact(xa).attemptRun must_== \/-(Maybe.Just(a))
+        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).attemptRun must_== \/-(Maybe.Just(a))
       }
       s"write+read $col as Maybe[${m.scalaType}] (Empty)" in {
-        inOut[Maybe[A]](col, Maybe.empty[A], setup).transact(xa).attemptRun must_== \/-(Maybe.Empty())
+        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).attemptRun must_== \/-(Maybe.Empty())
       }
     }
 
-  def testInOutNN[A](col: String, a: A, setup: ConnectionIO[Unit] = ().point[ConnectionIO])(implicit m: Atom[A]) =
+  def testInOutNN[A](col: String, a: A)(implicit m: Atom[A]) =
     s"Mapping for $col as ${m.meta._1.scalaType}" >> {
       s"write+read $col as ${m.meta._1.scalaType}" in {
-        inOut(col, a, setup).transact(xa).attemptRun must_== \/-(a)
+        inOut(col, a).transact(xa).attemptRun must_== \/-(a)
       }
     }
 
@@ -98,19 +97,16 @@ object pgtypesspec extends Specification {
   testInOut("boolean", true)
 
   // 8.7 Enumerated Types
+  // create type myenum as enum ('foo', 'bar') <-- part of setup
   object MyEnum extends Enumeration { val foo, bar = Value }
-  
+
   // as scala.Enumeration
   implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
-  testInOutNN("myenum", MyEnum.foo, 
-    sql"drop type if exists myenum cascade".update.run *> 
-    sql"create type myenum as enum ('foo', 'bar')".update.run.void)
+  testInOutNN("myenum", MyEnum.foo)
 
   // as java.lang.Enum
   implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
-  testInOutNN("myenum", MyJavaEnum.bar, 
-    sql"drop type if exists myenum cascade".update.run *> 
-    sql"create type myenum as enum ('foo', 'bar')".update.run.void)
+  testInOutNN("myenum", MyJavaEnum.bar)
 
   // 8.8 Geometric Types
   testInOut("box", new PGbox(new PGpoint(1, 2), new PGpoint(3, 4)))
