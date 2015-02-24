@@ -108,7 +108,7 @@ object pgtypesspec extends Specification {
 
   // as java.lang.Enum
   implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
-  testInOutNN("myenum", MyJavaEnum.foo, 
+  testInOutNN("myenum", MyJavaEnum.bar, 
     sql"drop type if exists myenum cascade".update.run *> 
     sql"create type myenum as enum ('foo', 'bar')".update.run.void)
 
