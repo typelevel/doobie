@@ -70,18 +70,22 @@ object transactor {
     }
 
   /** `Transactor` wrapping an existing `DataSource`. */
-  sealed abstract class DataSourceTransactor[M[_]: Monad: Catchable: Capture] extends Transactor[M] {
-    val dataSource: M[DataSource]
+  abstract class DataSourceTransactor[M[_]: Monad: Catchable: Capture, D <: DataSource] extends Transactor[M] {
+    def configure[A](f: D => M[A]): M[A]
   }
 
   object DataSourceTransactor {
+  
+    // So we can specify M and infer D.
+    class DataSourceTransactorCtor[M[_]] {
+      def apply[D <: DataSource](ds: D)(implicit e0: Monad[M], e1: Catchable[M], e2: Capture[M]): DataSourceTransactor[M ,D] =
+        new DataSourceTransactor[M, D] {
+          def configure[A](f: D => M[A]): M[A] = f(ds)
+          val connect = e2.apply(ds.getConnection)
+        }
+    }
 
-    /** Construct a `DataSourceTransactor` backed by an existing `DataSource`. */
-    def apply[M[_]: Monad: Catchable](ds: DataSource)(implicit C: Capture[M]): Transactor[M] =
-      new DataSourceTransactor[M] {
-        val connect = C.apply(ds.getConnection)
-        val dataSource = ds.point[M]
-      }
+    def apply[M[_]] = new DataSourceTransactorCtor[M]
 
   }
 
