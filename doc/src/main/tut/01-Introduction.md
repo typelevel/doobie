@@ -72,7 +72,7 @@ resolvers ++= Seq(
   "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 )
 
-lazy val doobieVersion = "0.2.0"
+lazy val doobieVersion = "0.2.1"
 
 libraryDependencies ++= Seq(
   "org.tpolecat"   %% "doobie-core"               % doobieVersion,
