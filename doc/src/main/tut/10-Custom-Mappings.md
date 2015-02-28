@@ -157,7 +157,7 @@ val create =
 (drop *> create).quick.run
 ```
 
-Note that our `check` output now knows about the `Json` and `Person` mappings. This is a side-effect of constructing instance above, which isn't a good design. Will revisit this, possibly after 0.2.0; this information is only used for diagnostics so it's not critical.
+Note that our `check` output now knows about the `Json` and `Person` mappings. This is a side-effect of constructing instance above, which isn't a good design. Will revisit this for 0.3.0; this information is only used for diagnostics so it's not critical.
 
 ```tut:plain
 sql"select owner from pet".query[Int].check.run
