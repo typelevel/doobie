@@ -47,7 +47,7 @@ HPS.set(("foo", 42))
 Composite[(String,Int)].set(1, ("foo", 42))
 ```
 
-**doobie** can derive `Composite` instances for primitive column types, plus tuples and case classes whose elements have `Composite` instances. These primitive column types are identified by `Atom` instances, which describe `null`-safe column mappings. These `Atom` instances are almost always derived from lower-level `null`-unsafe mappings specified by the `Meta` typeclass.
+**doobie** can derive `Composite` instances for primitive column types, plus tuples, `HList`s. and case classes whose elements have `Composite` instances. These primitive column types are identified by `Atom` instances, which describe `null`-safe column mappings. These `Atom` instances are almost always derived from lower-level `null`-unsafe mappings specified by the `Meta` typeclass.
 
 So our strategy for mapping custom types is to construct a new `Meta` instance (given `Meta[A]` you get `Atom[A]` and `Atom[Option[A]]` for free); and our strategy for multi-column mappings is to construct a new `Composite` instance. We consider both case below.
 
@@ -179,7 +179,7 @@ sql"select name, owner from pet".query[(String,String)].quick.run
 
 ### Composite by Invariant Map
 
-We get `Composite[A]` for free given `Atom[A]`, or for tuples and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types. For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it for free, but we can get there via `xmap`. Here we map `Point` to a pair of `Int` columns.
+We get `Composite[A]` for free given `Atom[A]`, or for tuples, `HList`s, and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types. For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it for free, but we can get there via `xmap`. Here we map `Point` to a pair of `Int` columns.
 
 ```tut:silent
 implicit val Point2DComposite: Composite[Point] = 
