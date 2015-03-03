@@ -40,10 +40,10 @@ libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.0"
 
 It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core` and are released together.
 
-* `doobie-h2` for [H2](http://www.h2database.com/html/main.html)-specific type mappings.
-* `doobie-hikari` for [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling.
-* `doobie-postgresql` for [PostgreSQL](postgresql.org)-specific type mappings.
-* `doobie-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
+* `doobie-contrib-h2` for [H2](http://www.h2database.com/html/main.html)-specific type mappings.
+* `doobie-contrib-hikari` for [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling.
+* `doobie-contrib-postgresql` for [PostgreSQL](http://postgresql.org)-specific type mappings.
+* `doobie-contrib-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.html) for [somewhat] more information on these add-ons.
 
