@@ -154,11 +154,18 @@ object pgtypes {
       (n, a) => FRS.updateObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))))
 
   /** 
+   * Construct an `Atom` for values of the given type, mapped via `String` to the named PostgreSQL
+   * enum type.
+   */
+  def pgEnumString[A](name: String, f: String => A, g: A => String): Atom[A] =
+    Atom.fromScalaType(enumPartialMeta(name)).xmap[A](f, g)
+
+  /** 
    * Construct an `Atom` for value members of the given `Enumeration`. Note that this precludes
    * reading or writing `Option[e.Value]` because writing NULL is unsupported by the driver.
    */
   def pgEnum(e: Enumeration, name: String): Atom[e.Value] =
-    Atom.fromScalaType(enumPartialMeta(name)).xmap[e.Value](
+    pgEnumString[e.Value](name, 
       a => try e.withName(a) catch { 
         case _: NoSuchElementException => throw InvalidEnum[e.Value](a) 
       }, _.toString)
@@ -169,7 +176,7 @@ object pgtypes {
    */
   def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Atom[E] = {
     val clazz = E.runtimeClass.asInstanceOf[Class[E]]
-    Atom.fromScalaType(enumPartialMeta(name)).xmap[E](
+    pgEnumString[E](name,
       a => try java.lang.Enum.valueOf(clazz, a).asInstanceOf[E] catch {
         case _: NoSuchElementException => throw InvalidEnum[E](a)
       }, _.name)
