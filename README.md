@@ -42,7 +42,7 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 
 * `doobie-h2` for [H2](http://www.h2database.com/html/main.html)-specific type mappings.
 * `doobie-hikari` for [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling.
-* `doobie-postgresql` for [PostgreSQL](postgresql.org)-specific type mappings.
+* `doobie-postgresql` for [PostgreSQL](http://postgresql.org)-specific type mappings.
 * `doobie-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.html) for [somewhat] more information on these add-ons.
