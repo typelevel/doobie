@@ -24,7 +24,7 @@ This book is compiled as part of the build using the [tut](https://github.com/tp
 
 #### Sample Database Setup
 
-The example code assumes a local [PostgreSQL](http://www.postgresql.org/) server with a `postgres` user with no password, [PostGIS](http://postgis.net/) extensions (optional), and the sample `world` database loaded up. If you're on a Mac you might check out the excellent [Postgres.app](http://postgresapp.com/) if you don't want to install PostgreSQL as a service. You can set up the user and sample database as follows:
+The example code assumes a local [PostgreSQL](http://www.postgresql.org/) server with a `postgres` user with no password, [PostGIS](http://postgis.net/) extensions (optional), and the sample `world` database loaded up. If you're on a Mac you might check out the excellent [Postgres.app](http://postgresapp.com/) if you don't want to install PostgreSQL as a service. You can set up the user and sample database (and an `enum` we use in a few examples) as follows:
 
 ```
 $ curl -O https://raw.githubusercontent.com/tpolecat/doobie/master/world.sql
@@ -32,6 +32,7 @@ $ psql -c 'create user postgres createdb'
 $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
 $ psql -d world -c "create extension postgis" -U postgres
+$ psql -d world -c "create type myenum as enum ('foo', 'bar')" -U postgres
 ```
 
 Skip the last statement if you don't have PostGIS installed. Note that the final `ANALYZE` comand in the import will emit a few errors for system tables. This is expected and is fine. Try a query or two to double-check your setup:
