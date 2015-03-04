@@ -6,24 +6,12 @@ import scalaz.stream.Process
 
 import doobie.imports._
 
-
 // Example lifted from slick
 object FirstExample extends SafeApp {
-  import FirstAppModel._, FirstExampleDAO._ 
 
-  // Our database
-  val db = DriverManagerTransactor[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-
-  // Entry point for SafeApp
-  override def runc: IO[Unit] = 
-    for {
-      a <- db.transact(examples).attempt
-      _ <- IO.putStrLn(a.toString)
-    } yield ()
-
-  // Lifted println
-  def putStrLn(s: => String): ConnectionIO[Unit] =
-    FC.delay(println(s))
+  // Our data model
+  case class Supplier(id: Int, name: String, street: String, city: String, state: String, zip: String)
+  case class Coffee(name: String, supId: Int, price: Double, sales: Int, total: Int)
 
   // Some suppliers
   val suppliers = List(
@@ -46,89 +34,105 @@ object FirstExample extends SafeApp {
     for {
 
       // Create and populate
-      _  <- create
-      ns <- suppliers.traverseU(insertSupplier).map(_.sum)
-      nc <- coffees.traverseU(insertCoffee).map(_.sum)
+      _  <- DAO.create
+      ns <- DAO.insertSuppliers(suppliers)
+      nc <- DAO.insertCoffees(coffees)
       _  <- putStrLn(s"Inserted $ns suppliers and $nc coffees.")
 
       // Select and stream the coffees to stdout
-      _ <- allCoffees.sink(c => putStrLn(c.toString))
+      _ <- DAO.allCoffees.sink(c => putStrLn(c.toString))
 
       // Get the names and supplier names for all coffees costing less than $9.00,
       // again streamed directly to stdout
-      _ <- coffeesLessThan(9.0).sink(p => putStrLn(p.toString))
+      _ <- DAO.coffeesLessThan(9.0).sink(p => putStrLn(p.toString))
 
       // Same thing, but read into a list this time
-      l <- coffeesLessThan(9.0).list
+      l <- DAO.coffeesLessThan(9.0).list
       _ <- putStrLn(l.toString)
 
       // Read into a vector this time, with some stream processing
-      v <- coffeesLessThan(9.0).take(2).map(p => (p._1 + "*" + p._2)).vector
+      v <- DAO.coffeesLessThan(9.0).take(2).map(p => (p._1 + "*" + p._2)).vector
       _ <- putStrLn(v.toString)
 
     } yield "All done!"
 
+  // Entry point for SafeApp
+  override def runc: IO[Unit] = {
+    val db = DriverManagerTransactor[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    for {
+      a <- examples.transact(db).attempt
+      _ <- IO.putStrLn(a.toString)
+    } yield ()
+  }
+
+  /** DAO module provides ConnectionIO constructors for end users. */
+  object DAO {
+
+    def coffeesLessThan(price: Double): Process[ConnectionIO, (String, String)] =
+      Queries.coffeesLessThan(price).process
+
+    def insertSuppliers(ss: List[Supplier]): ConnectionIO[Int] =
+      Queries.insertSupplier.updateMany(ss) // bulk insert (!)
+
+    def insertCoffees(cs: List[Coffee]): ConnectionIO[Int] =
+      Queries.insertCoffee.updateMany(cs)
+
+    def allCoffees: Process[ConnectionIO, Coffee] =
+      Queries.allCoffees.process
+
+    def create: ConnectionIO[Unit] = 
+      Queries.create.run.void
+
+  }
+
+  /** Queries module contains "raw" Query/Update values. */
+  object Queries {
+
+    def coffeesLessThan(price: Double): Query0[(String, String)] =
+      sql"""
+        SELECT cof_name, sup_name
+        FROM coffees JOIN suppliers ON coffees.sup_id = suppliers.sup_id
+        WHERE price < $price
+      """.query[(String, String)]
+
+    val insertSupplier: Update[Supplier] =
+      Update[Supplier]("INSERT INTO suppliers VALUES (?, ?, ?, ?, ?, ?)", None)
+
+    val insertCoffee: Update[Coffee] =
+      Update[Coffee]("INSERT INTO coffees VALUES (?, ?, ?, ?, ?)", None)
+
+    def allCoffees[A]: Query0[Coffee] =
+      sql"SELECT cof_name, sup_id, price, sales, total FROM coffees".query[Coffee]
+
+    def create: Update0 = 
+      sql"""
+
+        CREATE TABLE suppliers (
+          sup_id   INT     NOT NULL PRIMARY KEY,
+          sup_name VARCHAR NOT NULL,
+          street   VARCHAR NOT NULL,
+          city     VARCHAR NOT NULL,
+          state    VARCHAR NOT NULL,
+          zip      VARCHAR NOT NULL        
+        );
+
+        CREATE TABLE coffees (
+          cof_name VARCHAR NOT NULL,
+          sup_id   INT     NOT NULL,
+          price    DOUBLE  NOT NULL,
+          sales    INT     NOT NULL,
+          total    INT     NOT NULL
+        );
+
+        ALTER TABLE coffees
+        ADD CONSTRAINT coffees_suppliers_fk FOREIGN KEY (sup_id) REFERENCES suppliers(sup_id);
+
+      """.update
+
+  } 
+
+  // Lifted println
+  def putStrLn(s: => String): ConnectionIO[Unit] =
+    FC.delay(println(s))
+
 }
-
-
-// Our data model
-object FirstAppModel {
-  case class Supplier(id: Int, name: String, street: String, city: String, state: String, zip: String)
-  case class Coffee(name: String, supId: Int, price: Double, sales: Int, total: Int)
-}
-
-// It's an old but reasonable pattern. If you must have SQL in strings, keep it in one place.
-object FirstExampleDAO {
-  import FirstAppModel._
-
-  def coffeesLessThan[A](price: Double): Process[ConnectionIO, (String, String)] =
-    sql"""
-      SELECT cof_name, sup_name
-      FROM coffees JOIN suppliers ON coffees.sup_id = suppliers.sup_id
-      WHERE price < $price
-    """.query[(String, String)].process
-
-  def insertSupplier(s: Supplier): ConnectionIO[Int] =
-    sql"""
-      INSERT INTO suppliers 
-      VALUES (${s.id}, ${s.name}, ${s.street}, ${s.city}, ${s.state}, ${s.zip})
-    """.update.run
-
-  def insertCoffee(c: Coffee): ConnectionIO[Int] =
-    sql"""
-      INSERT INTO coffees 
-      VALUES (${c.name}, ${c.supId}, ${c.price}, ${c.sales}, ${c.total})
-    """.update.run
-
-  def allCoffees[A]: Process[ConnectionIO, Coffee] =
-    sql"""
-      SELECT cof_name, sup_id, price, sales, total 
-      FROM coffees
-    """.query[Coffee].process
-
-  def create: ConnectionIO[Unit] = 
-    sql"""
-
-      CREATE TABLE suppliers (
-        sup_id   INT     NOT NULL PRIMARY KEY,
-        sup_name VARCHAR NOT NULL,
-        street   VARCHAR NOT NULL,
-        city     VARCHAR NOT NULL,
-        state    VARCHAR NOT NULL,
-        zip      VARCHAR NOT NULL        
-      );
-
-      CREATE TABLE coffees (
-        cof_name VARCHAR NOT NULL,
-        sup_id   INT     NOT NULL,
-        price    DOUBLE  NOT NULL,
-        sales    INT     NOT NULL,
-        total    INT     NOT NULL
-      );
-
-      ALTER TABLE coffees
-      ADD CONSTRAINT coffees_suppliers_fk FOREIGN KEY (sup_id) REFERENCES suppliers(sup_id);
-
-    """.update.run.void
-
-} 

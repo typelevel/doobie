@@ -7,6 +7,7 @@ import doobie.contrib.postgresql.pgtypes._
 
 import org.postgresql.geometric._
 
+// Some queries to test using the AnalysisTestSpec in src/test
 object AnalysisTest {
 
   case class Country(name: String, indepYear: Int)
