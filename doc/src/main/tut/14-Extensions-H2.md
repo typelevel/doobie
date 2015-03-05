@@ -13,3 +13,6 @@ The `doobie-contrib-h2` add-on provides mappings for the following [H2](http://w
 ### Other Nonstandard Types
 
 - The `uuid` type is supported and maps to `java.util.UUID`.
+
+### H2 Connection Pool
+

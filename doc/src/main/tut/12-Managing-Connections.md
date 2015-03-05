@@ -28,16 +28,24 @@ However, for experimentation as described in this book, the `DriverManager` is i
 
 #### Using a HikariCP Connection Pool
 
-The `doobie-contrib-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. Constructing an instance is an effect:
+The `doobie-contrib-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
-```scala
-for {
-  xa <- HikariTransactor[Task]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-  _  <- longRunningProgram(xa) ensuring xa.shutdown
+```tut
+import doobie.contrib.hikari.hikaritransactor._
+
+val q = sql"select 42".query[Int].unique
+
+val p = for {
+  xa <- HikariTransactor[Task]("jdbc:postgresql:world", "postgres", "")
+  _  <- q.transact(xa) ensuring xa.shutdown
 } yield ()
 ```
 
-The returned instance is of type `HikariTransactor`, which provides a `shutdown` method (shown above) as well as a `configure` method that provides access to the underlying `HikariDataSource`. See the source for details.
+```tut
+p.run
+```
+
+The returned instance is of type `HikariTransactor`, which provides a `shutdown` method (shown above) as well as a `configure` method that provides access to the underlying `HikariDataSource`. 
 
 
 #### Using an existing DataSource
