@@ -38,13 +38,13 @@ The `doobie.hi` API abstracts the construction of these composite operations via
 FPS.setString(1, "foo") >> FPS.setInt(2, 42)
 
 // Using doobie.hi
-HPS.set(1, ("foo", 42))
+HPS.set(("foo", 42))
 
 // Or leave the 1 out if you like, since we usually start there
 HPS.set(("foo", 42))
 
 // Which simply delegates to the Composite instance
-Composite[(String,Int)].set(1, ("foo", 42))
+Composite[(String,Int)].set(("foo", 42))
 ```
 
 **doobie** can derive `Composite` instances for primitive column types, plus tuples and case classes whose elements have `Composite` instances. These primitive column types are identified by `Atom` instances, which describe `null`-safe column mappings. These `Atom` instances are almost always derived from lower-level `null`-unsafe mappings specified by the `Meta` typeclass.
@@ -97,7 +97,6 @@ Now it compiles as a column value and as a `Composite` that maps to a *single* c
 
 ```tut
 sql"select * from person where id = $pid"
-Composite[PersonId].length
 sql"select 'podiatry:123'".query[PersonId].quick.run
 ```
 

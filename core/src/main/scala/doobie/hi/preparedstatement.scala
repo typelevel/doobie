@@ -60,7 +60,7 @@ object preparedstatement {
   /** @group Execution */
   def process[A: Composite]: Process[PreparedStatementIO, A] =
     resource(PS.executeQuery)(rs =>
-             PS.liftResultSet(rs, RS.close))(rs => 
+             PS.liftResultSet(rs, RS.close))(rs =>
              PS.liftResultSet(rs, resultset.getNext[A]))
 
   /**
@@ -110,9 +110,9 @@ object preparedstatement {
              PS.liftResultSet(rs, RS.close))(rs =>
              PS.liftResultSet(rs, resultset.getNext[A]))
 
-  /** 
+  /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
-   * @group Metadata 
+   * @group Metadata
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
     PS.getMetaData.map { md =>
@@ -124,11 +124,11 @@ object preparedstatement {
         ColumnMeta(j, s, n, c)
       }
     }
-  
-  /** 
-   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+
+  /**
+   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta`
    * with the `JdbcMeta` provided by a `Composite` instance.
-   * @group Metadata 
+   * @group Metadata
    */
   def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ColumnMeta]] =
     getColumnJdbcMeta.map(m => A.meta align m)
@@ -149,9 +149,9 @@ object preparedstatement {
   def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
     getGeneratedKeys(resultset.getUnique[A])
 
-  /** 
+  /**
    * Compute the parameter `JdbcMeta` list for this `PreparedStatement`.
-   * @group Metadata 
+   * @group Metadata
    */
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
     PS.getParameterMetaData.map { md =>
@@ -164,10 +164,10 @@ object preparedstatement {
       }
     }
 
-  /** 
-   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+  /**
+   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta`
    * with the `JdbcMeta` provided by a `Composite` instance.
-   * @group Metadata 
+   * @group Metadata
    */
   def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ParameterMeta]] =
     getParameterJdbcMeta.map(m => A.meta align m)
@@ -179,7 +179,7 @@ object preparedstatement {
   /** @group Properties */
   val getMaxRows: PreparedStatementIO[Int] =
     PS.getMaxRows
-     
+
   /** @group MetaData */
   val getMetaData: PreparedStatementIO[ResultSetMetaData] =
     PS.getMetaData
@@ -208,19 +208,19 @@ object preparedstatement {
   val getWarnings: PreparedStatementIO[SQLWarning] =
     PS.getWarnings
 
-  /** 
+  /**
    * Set the given composite value, starting at column `n`.
-   * @group Parameters 
+   * @group Parameters
    */
   def set[A](n: Int, a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
-    A.set(n, a)
+    A.set(a).eval(n)
 
-  /** 
+  /**
    * Set the given composite value, starting at column `1`.
-   * @group Parameters 
+   * @group Parameters
    */
   def set[A](a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
-    A.set(1, a)
+    A.set(a).eval(1)
 
   /** @group Properties */
   def setCursorName(name: String): PreparedStatementIO[Unit] =
