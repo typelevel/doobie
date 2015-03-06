@@ -8,7 +8,7 @@ version in ThisBuild := "0.2.1-SNAPSHOT"
 
 licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 
-scalaVersion in ThisBuild := "2.11.4"
+scalaVersion in ThisBuild := "2.11.6"
 
 crossScalaVersions in ThisBuild := Seq("2.10.4", scalaVersion.value)
 
