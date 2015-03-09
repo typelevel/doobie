@@ -4,13 +4,15 @@ number: 12
 title: Managing Connections
 ---
 
-
+In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
 
 ```tut:silent
 import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 ```
 
 ### Using Transactors
+
+
 
 A `Transactor` is ...
 
@@ -30,25 +32,28 @@ However, for experimentation as described in this book, the `DriverManager` is i
 
 The `doobie-contrib-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
-```tut
+```tut:silent
 import doobie.contrib.hikari.hikaritransactor._
 
 val q = sql"select 42".query[Int].unique
 
-val p = for {
+val p: Task[Int] = for {
   xa <- HikariTransactor[Task]("jdbc:postgresql:world", "postgres", "")
-  _  <- q.transact(xa) ensuring xa.shutdown
-} yield ()
+  a  <- q.transact(xa) ensuring xa.shutdown
+} yield a
 ```
+
+And running this `Task` gives us the desired result.
 
 ```tut
 p.run
 ```
 
-The returned instance is of type `HikariTransactor`, which provides a `shutdown` method (shown above) as well as a `configure` method that provides access to the underlying `HikariDataSource`. 
+The returned instance is of type `HikariTransactor`, which provides a `shutdown` method (shown above) as well as a `configure` method that provides access to the underlying `HikariDataSource`. See the source for details.
 
 
 #### Using an existing DataSource
+
 
 
 #### Building your own Transactor
