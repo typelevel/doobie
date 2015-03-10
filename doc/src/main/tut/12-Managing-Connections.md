@@ -12,9 +12,8 @@ import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 
 ### Using Transactors
 
+Most **doobie** programs are values of type `ConnectionIO[A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can be executed. The most common way of performing this transformation is via a `Transactor`.
 
-
-A `Transactor` is ...
 
 The `transact` method does the following...
 
