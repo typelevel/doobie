@@ -39,6 +39,8 @@ object composite {
   object CompositeReadable {
     def apply[A](implicit A: CompositeReadable[A]): CompositeReadable[A] = A
 
+    implicit def fromComposite[A: Composite]: CompositeReadable[A] = Composite[A]
+
     implicit val compositeReadableFunctor: Functor[CompositeReadable] =
       new Functor[CompositeReadable] {
         def map[A, B](fa: CompositeReadable[A])(f: A => B): CompositeReadable[B] =
@@ -64,6 +66,8 @@ object composite {
 
   object CompositeWriteable {
     def apply[A](implicit A: CompositeWriteable[A]): CompositeWriteable[A] = A
+
+    implicit def fromComposite[A: Composite]: CompositeWriteable[A] = Composite[A]
 
     implicit val compositeWriteableContravariant: Contravariant[CompositeWriteable] =
       new Contravariant[CompositeWriteable] {
