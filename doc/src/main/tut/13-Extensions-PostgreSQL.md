@@ -32,7 +32,18 @@ import doobie.contrib.postgresql.pgtypes._
 
 ### Array Types
 
-Postgres typed arrays are supported and map to `Array`, `List`, `Vector`. Multi-dimensional arrays are not supported yet.
+**doobie** supports single-dimensional arrays of the following types:
+
+- `bit[]` maps to `Array[Boolean]`
+- `int4[]` map to `Array[Int]`
+- `int8[]` maps to `Array[Long]`
+- `float4[]` maps to `Array[Float]`
+- `float8[]` maps to `Array[Double]`
+- `varchar[]`, `char[]`, `text[],` and `bpchar[]` all map to `Array[String]`.
+
+In addition to `Array` you can also map to `List` and `Vector`. Note that arrays of advanced types and structs are not supported by the driver; arrays of `Byte` are represented as `bytea`; and arrays of `int2` are incorrectly mapped by the driver as `Array[Int]` rather than `Array[Short]` and are not supported in **doobie**.
+
+See the previous chapter on **SQL Arrays** for usage examples.
 
 ### Enum Types
 
@@ -103,7 +114,7 @@ sql"select 'foo'::myenum".query[FooBar].unique.quick.run
 
 ### Geometric Types
 
-The following geometric types are supported, and map to driver-supplied types. These will normally be mapped to application-specific types.
+The following geometric types are supported, and map to driver-supplied types.
 
 - the `box` schema type maps to `org.postgresql.geometric.PGbox`
 - the `circle` schema type maps to `org.postgresql.geometric.PGcircle`
@@ -112,15 +123,17 @@ The following geometric types are supported, and map to driver-supplied types. T
 - the `point` schema type maps to `org.postgresql.geometric.PGpoint`
 - the `polygon` schema type maps to `org.postgresql.geometric.PGpolygon`
 
+It is expected that these will be mapped to application-specific types via `nxmap` as described in **Custom Mappings**.
+
 ### PostGIS Types
 
-This adds support for the main PostGIS types:
+**doobie** provides mappings for the top-level PostGIS geometric types provided by the `org.postgis` driver extension.
 
 - `PGgeometry`
 - `PGbox2d`
 - `PGbox3d`
 
-As well as the following abstract and fine-grained types carried by `PGgeometry`:
+In addition to the general types above, **doobie** provides mappings for the following abstract and concrete fine-grained types carried by `PGgeometry`:
 
 - `Geometry`
 - `ComposedGeom`

@@ -12,11 +12,24 @@ import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 
 ### Using Transactors
 
-Most **doobie** programs are values of type `ConnectionIO[A]` or `Process[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can be executed. The most common way of performing this transformation is via a `Transactor`.
+Most **doobie** programs are values of type `ConnectionIO[A]` or `Process[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
+A `Transactor` is a parameterized by some target monad `M` and closes over some source of connections (and configuration information, as needed) yielding a pair of natural transformations:
 
+```scala
+ConnectionIO ~> M
+Process[ConnectionIO, ?] ~> Process[M, ?]
+```
 
-The `transact` method does the following...
+So once you have a `Transactor[M]` you have a way of discharging `ConnectionIO` and replacing it with some effectful `M` like `Task` or `IO`. In effect this turns a **doobie** program into a "real" program value that you can integrate with the rest of your application; all doobieness is left behind.
+
+In addition to simply supplying a connection, a `Transactor` (by default) wraps the transformed `ConnectionIO` as follows:
+
+- The connection is configured with `setAutoCommit(false)`
+- The program is followed by `commit` if it completes normally, or `rollback` is an exception escapes.
+- In all cases the connection is cleaned up with `close`.
+
+**doobie** provides several implementations, described below.
 
 
 
