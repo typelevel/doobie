@@ -76,52 +76,52 @@ object resultset {
   val first: ResultSetIO[Boolean] =
     RS.first
 
-  /** 
+  /**
    * Read a value of type `A` starting at column `n`.
-   * @group Results 
+   * @group Results
    */
-  def get[A](n: Int)(implicit A: Composite[A]): ResultSetIO[A] =
+  def get[A](n: Int)(implicit A: CompositeReadable[A]): ResultSetIO[A] =
     A.get(n)
 
-  /** 
+  /**
    * Read a value of type `A` starting at column 1.
-   * @group Results 
+   * @group Results
    */
-  def get[A](implicit A: Composite[A]): ResultSetIO[A] =
+  def get[A](implicit A: CompositeReadable[A]): ResultSetIO[A] =
     A.get(1)
 
-  /** 
+  /**
    * Updates a value of type `A` starting at column `n`.
-   * @group Updating 
+   * @group Updating
    */
-  def update[A](n: Int, a:A)(implicit A: Composite[A]): ResultSetIO[Unit] =
+  def update[A](n: Int, a:A)(implicit A: CompositeWriteable[A]): ResultSetIO[Unit] =
     A.update(n, a)
 
-  /** 
+  /**
    * Updates a value of type `A` starting at column 1.
-   * @group Updating 
+   * @group Updating
    */
-  def update[A](a: A)(implicit A: Composite[A]): ResultSetIO[Unit] =
+  def update[A](a: A)(implicit A: CompositeWriteable[A]): ResultSetIO[Unit] =
     A.update(1, a)
 
 
-  /** 
+  /**
    * Similar to `next >> get` but lifted into `Option`; returns `None` when no more rows are
    * available.
-   * @group Results 
+   * @group Results
    */
-  def getNext[A: Composite]: ResultSetIO[Option[A]] =
+  def getNext[A: CompositeReadable]: ResultSetIO[Option[A]] =
     next >>= {
       case true  => get[A].map(Some(_))
       case false => Monad[ResultSetIO].point(None)
     }
-    
-  /** 
+
+  /**
    * Equivalent to `getNext`, but verifies that there is exactly one row remaining.
    * @throws `UnexpectedCursorPosition` if there is not exactly one row remaining
-   * @group Results 
+   * @group Results
    */
-  def getUnique[A: Composite]: ResultSetIO[A] =
+  def getUnique[A: CompositeReadable]: ResultSetIO[A] =
     (getNext[A] |@| next) {
       case (Some(a), false) => a
       case (Some(a), true)  => throw UnexpectedContinuation
@@ -133,19 +133,19 @@ object resultset {
    * @throws `UnexpectedContinuation` if there is more than one row remaining
    * @group Results
    */
-  def getOption[A: Composite]: ResultSetIO[Option[A]] =
+  def getOption[A: CompositeReadable]: ResultSetIO[Option[A]] =
     (getNext[A] |@| next) {
       case (a @ Some(_), false) => a
       case (Some(a), true)      => throw UnexpectedContinuation
       case (None, _)            => None
     }
 
-  /** 
+  /**
    * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
-   * @group Results 
+   * @group Results
    */
-  def process[A: Composite]: Process[ResultSetIO, A] = 
+  def process[A: CompositeReadable]: Process[ResultSetIO, A] =
     Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
 
   /** @group Properties */
