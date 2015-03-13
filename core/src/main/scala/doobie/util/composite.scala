@@ -40,7 +40,7 @@ object composite {
       }
   }
 
-  object Composite extends LowerPriorityComposite with HListComposite {
+  object Composite extends LowerPriorityComposite {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
 
@@ -58,34 +58,7 @@ object composite {
         val length = 1
         val meta = List(A.meta)
       }
-  }
 
-  // N.B. we're separating this out in order to make the atom ~> composite derivation higher
-  // priority than the product ~> composite derivation. So this means if we have an product mapped
-  // to a single column, we will get only the atomic mapping, not the multi-column one.
-  trait LowerPriorityComposite {
-
-    /** @group Typeclass Instances */
-    implicit val productComposite: ProductTypeClass[Composite] =
-      new ProductTypeClass[Composite] {
-
-        def product[H, T <: HList](H: Composite[H], T: Composite[T]): Composite[H :: T] =
-          HListComposite.hlistComposite[H, T](H, T)
-
-        def emptyProduct: Composite[HNil] = HListComposite.hnilComposite
-
-        def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =
-          instance.xmap(from, to)
-      }
-
-    /** @group Typeclass Instances */
-    implicit def deriveComposite[T](implicit ev: ProductTypeClass[Composite]): Composite[T] =
-      macro GenericMacros.deriveProductInstance[Composite, T]
-  }
-
-  object HListComposite extends HListComposite
-
-  trait HListComposite {
     implicit def hlistComposite[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
       new Composite[H :: T] {
         val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
@@ -102,6 +75,20 @@ object composite {
         val get = (_: Int) => (HNil : HNil).point[RS.ResultSetIO]
         val length = 0
         val meta = Nil
+      }
+  }
+
+  // N.B. we're separating this out in order to make the atom ~> composite derivation higher
+  // priority than the product ~> composite derivation. So this means if we have an product mapped
+  // to a single column, we will get only the atomic mapping, not the multi-column one.
+  trait LowerPriorityComposite {
+    implicit def genericComposite[A, R](implicit gen: Generic.Aux[A, R], rc: Lazy[Composite[R]]): Composite[A] =
+      new Composite[A] {
+        val set = (n: Int, a: A) => rc.value.set(n, gen.to(a))
+        val update = (n: Int, a: A) => rc.value.update(n, gen.to(a))
+        val get = (n: Int) => rc.value.get(n).map(gen.from)
+        val length = rc.value.length
+        val meta = rc.value.meta
       }
   }
 }
