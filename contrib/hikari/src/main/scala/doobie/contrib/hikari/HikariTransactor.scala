@@ -29,8 +29,9 @@ object hikaritransactor {
       Capture[M].apply(new HikariTransactor(new HikariDataSource))
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
-    def apply[M[_]: Monad : Catchable : Capture](url: String, user: String, pass: String): M[HikariTransactor[M]] =
+    def apply[M[_]: Monad : Catchable : Capture](driverClassName: String, url: String, user: String, pass: String): M[HikariTransactor[M]] =
       for {
+        _ <- Capture[M].apply(Class.forName(driverClassName))
         t <- initial[M]
         _ <- t.configure(ds => Capture[M].apply {
           ds setJdbcUrl  url
