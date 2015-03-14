@@ -51,7 +51,7 @@ import doobie.contrib.hikari.hikaritransactor._
 val q = sql"select 42".query[Int].unique
 
 val p: Task[Int] = for {
-  xa <- HikariTransactor[Task]("jdbc:postgresql:world", "postgres", "")
+  xa <- HikariTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   a  <- q.transact(xa) ensuring xa.shutdown
 } yield a
 ```
