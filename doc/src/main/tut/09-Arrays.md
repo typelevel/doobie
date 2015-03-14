@@ -4,7 +4,7 @@ number: 9
 title: SQL Arrays
 ---
 
-This chapter shows how we can map Scala sequence types to SQL `ARRAY` types, for vendors that support it. Note that although SQL array mappings are part of the JDBC specification,  their behavior is vendor-specific and requires an add-on library; the code in this chapter requires `doobie-contrib-postgres`.
+This chapter shows how we can map Scala sequence types to SQL `ARRAY` types, for vendors that support it. Note that although SQL array mappings are part of the JDBC specification,  their behavior is vendor-specific and requires an add-on library; the code in this chapter requires `doobie-contrib-postgresql`.
 
 ### Setting Up
 
