@@ -1,6 +1,6 @@
 package doobie.util
 
-import doobie.enum.jdbctype.{ Array => JdbcArray, _ }
+import doobie.enum.jdbctype.{ Array => JdbcArray, Boolean => JdbcBoolean, _ }
 import doobie.free.{ connection => C, resultset => RS, preparedstatement => PS, statement => S }
 import doobie.util.invariant._
 
@@ -344,8 +344,9 @@ object meta {
       RS.getBigDecimal, PS.setBigDecimal, RS.updateBigDecimal)
 
     /** @group Instances */
-    implicit val BooleanMeta = Meta.basic1[Boolean](
-      Bit, 
+    implicit val BooleanMeta = Meta.basic[Boolean](
+      NonEmptyList(Bit, JdbcBoolean),
+      NonEmptyList(Bit, JdbcBoolean),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar, 
         LongVarChar),
       RS.getBoolean, PS.setBoolean, RS.updateBoolean)

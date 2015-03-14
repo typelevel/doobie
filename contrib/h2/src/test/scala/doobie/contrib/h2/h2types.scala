@@ -72,5 +72,20 @@ object h2typesspec extends Specification {
   testInOut[List[String]]("ARRAY", List("foo", "bar"))
   skip("GEOMETRY")
 
+  "Mapping for Boolean" should {
+    "pass query analysis for unascribed 'true'" in {
+      val a = sql"select true".query[Boolean].analysis.transact(xa).run
+      a.alignmentErrors must_== Nil
+    }
+    "pass query analysis for ascribed BIT" in {
+      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).run
+      a.alignmentErrors must_== Nil
+    }
+    "pass query analysis for ascribed BOOLEAN" in {
+      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).run
+      a.alignmentErrors must_== Nil
+    }
+  }
+
 }
 
