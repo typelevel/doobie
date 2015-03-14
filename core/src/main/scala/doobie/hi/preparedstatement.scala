@@ -31,7 +31,7 @@ import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning, Time, Timest
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
-import scala.Predef.intArrayOps
+import scala.Predef.{ intArrayOps, intWrapper }
 
 import scalaz.stream.Process
 import scalaz.syntax.id._
@@ -116,7 +116,7 @@ object preparedstatement {
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
     PS.getMetaData.map { md =>
-      (1 |-> md.getColumnCount).map { i =>
+      (1 to md.getColumnCount).toList.map { i =>
         val j = JdbcType.unsafeFromInt(md.getColumnType(i))
         val s = md.getColumnTypeName(i)
         val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
@@ -155,7 +155,7 @@ object preparedstatement {
    */
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
     PS.getParameterMetaData.map { md =>
-      (1 |-> md.getParameterCount).map { i =>
+      (1 to md.getParameterCount).toList.map { i =>
         val j = JdbcType.unsafeFromInt(md.getParameterType(i))
         val s = md.getParameterTypeName(i)
         val n = ParameterNullable.unsafeFromInt(md.isNullable(i)).toNullability
