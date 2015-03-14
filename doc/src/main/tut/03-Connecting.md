@@ -40,6 +40,10 @@ val xa = DriverManagerTransactor[Task](
 
 A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> Task`, which gives us something we can run. Specifically it gives us a `Task` that, when run, will connect to the database and run our program in a single transaction.
 
+The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.
+
+Right, so let's do this.
+
 ```tut
 val task = program1.transact(xa)
 task.run
