@@ -24,7 +24,7 @@ object process {
       fa.to(doobie.util.process.sink(f)).run
 
     def transact[M[_]](xa: Transactor[M])(implicit ev: Process[F, A] =:= Process[ConnectionIO, A]): Process[M, A] =
-      xa.transact(fa)
+      xa.transP(fa)
 
   }
 
