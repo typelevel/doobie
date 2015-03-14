@@ -9,7 +9,6 @@ Improvements:
 - 22-parameter limit on `sql` interpolator increased to 50; with some luck should go away entirely in the next version. There are no other arity limits in **doobie**.
 - Ensured that all `Query` and `Update` constructions are supported for typechecking with Specs2 and YOLO mode.
 - Miscellaneous improvements in **book of doobie**; added chapter for connection management and expanded vendor extensions into multiple chapters.
-- Examples tidied up.
 
 Additions:
 
