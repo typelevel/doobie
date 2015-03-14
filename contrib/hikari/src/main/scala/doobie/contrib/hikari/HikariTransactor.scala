@@ -29,6 +29,11 @@ object hikaritransactor {
       Capture[M].apply(new HikariTransactor(new HikariDataSource))
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
+    @deprecated("doesn't load driver properly; will go away in 0.2.2; use 4-arg version", "0.2.1")
+    def apply[M[_]: Monad : Catchable : Capture](url: String, user: String, pass: String): M[HikariTransactor[M]] =
+      apply("java.lang.String", url, user, pass)
+
+    /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
     def apply[M[_]: Monad : Catchable : Capture](driverClassName: String, url: String, user: String, pass: String): M[HikariTransactor[M]] =
       for {
         _ <- Capture[M].apply(Class.forName(driverClassName))
