@@ -112,6 +112,7 @@ object imports {
   /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
 
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
+  /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
 
   /** @group Typeclass Instances */
   implicit val NameCatchable = doobie.util.name.NameCatchable
