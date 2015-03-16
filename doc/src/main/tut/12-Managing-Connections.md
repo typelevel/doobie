@@ -75,7 +75,7 @@ The returned instance is of type `HikariTransactor`, which provides a `shutdown`
 
 If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`.
 
-```tut
+```tut:silent
 val ds: javax.sql.DataSource = null // pretending
 
 val xa = DataSourceTransactor[Task](ds)
@@ -97,7 +97,7 @@ If the provided `Transactor` implementations don't meet your needs, it is straig
 
 If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target monad `M` that has `Catchable` and `Capture` instances by running the `Kleisli[M, Connection, A]` provided by the `transK` method.
 
-```tut
+```tut:silent
 val conn: java.sql.Connection = null   // Connection (pretending)
 val prog = 42.point[ConnectionIO]      // ConnectionIO[Int]
 val task = prog.transK[Task].run(conn) // Task[Int]
@@ -105,7 +105,7 @@ val task = prog.transK[Task].run(conn) // Task[Int]
 
 As an aside, this technique works for programs written in *any* of the provided contexts. For example, here we run a program in `ResultSetIO`.
 
-```tut
+```tut:silent
 val rs: java.sql.ResultSet = null    // ResultSet (pretending)
 val prog = 42.point[ResultSetIO]     // ResultSetIO[Int]
 val task = prog.transK[Task].run(rs) // Task[Int]
