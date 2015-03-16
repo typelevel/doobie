@@ -59,13 +59,13 @@ object composite {
         val meta = List(A.meta)
       }
 
-    implicit def hlistComposite[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
+    implicit def hlistComposite[H, T <: HList](implicit H: Composite[H], T: Lazy[Composite[T]]): Composite[H :: T] =
       new Composite[H :: T] {
-        val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
-        val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
-        val get = (i: Int) => (H.get(i) |@| T.get(i + H.length))(_ :: _)
-        val length = H.length + T.length
-        val meta = H.meta ++ T.meta
+        val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.value.set(i + H.length, l.tail)
+        val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.value.update(i + H.length, l.tail)
+        val get = (i: Int) => (H.get(i) |@| T.value.get(i + H.length))(_ :: _)
+        val length = H.length + T.value.length
+        val meta = H.meta ++ T.value.meta
       }
 
     implicit val hnilComposite: Composite[HNil] =
