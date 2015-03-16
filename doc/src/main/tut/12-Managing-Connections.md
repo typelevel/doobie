@@ -10,7 +10,7 @@ In this chapter we discuss several ways to manage connections in applications th
 import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
 ```
 
-### Using Transactors
+### About Transactors
 
 Most **doobie** programs are values of type `ConnectionIO[A]` or `Process[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
@@ -31,17 +31,23 @@ In addition to simply supplying a connection, a `Transactor` (by default) wraps 
 
 **doobie** provides several implementations, described below.
 
-
-
-#### Using the JDBC DriverManager
+### Using the JDBC DriverManager
 
 JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections.
 
-However, for experimentation as described in this book, the `DriverManager` is ideal. Support in **doobie** is via `DriverManagerTransactor`.
+However, for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is ideal. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver
+class, as well as the connect URL and user/password.
 
+```tut:silent
+val xa = DriverManagerTransactor[Task](
+  "org.postgresql.Driver", // fully-qualified driver class name
+  "jdbc:postgresql:world", // connect URL
+  "jimmy",                 // user
+  "coconut"                // password
+)
+```
 
-
-#### Using a HikariCP Connection Pool
+### Using a HikariCP Connection Pool
 
 The `doobie-contrib-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
@@ -52,6 +58,7 @@ val q = sql"select 42".query[Int].unique
 
 val p: Task[Int] = for {
   xa <- HikariTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  _  <- xa.configure(hx => Task.delay( /* do something with hx */ ()))
   a  <- q.transact(xa) ensuring xa.shutdown
 } yield a
 ```
@@ -62,17 +69,29 @@ And running this `Task` gives us the desired result.
 p.run
 ```
 
-The returned instance is of type `HikariTransactor`, which provides a `shutdown` method (shown above) as well as a `configure` method that provides access to the underlying `HikariDataSource`. See the source for details.
+The returned instance is of type `HikariTransactor`, which provides a `shutdown` method, as well as a `configure` method that provides access to the underlying `HikariDataSource` if additional configuration is required.
 
+### Using an existing DataSource
 
-#### Using an existing DataSource
+If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`.
 
+```tut
+val ds: javax.sql.DataSource = null // pretending
 
+val xa = DataSourceTransactor[Task](ds)
 
-#### Building your own Transactor
+val p: Task[Int] = for {
+  _  <- xa.configure(ds => Task.delay( /* do something with ds */ ()))
+  a  <- q.transact(xa)
+} yield a
 
-Building your own `Transactor` to wrap a connection pool is usually quite simple ... show an example
+```
 
+The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
+
+### Building your own Transactor
+
+If the provided `Transactor` implementations don't meet your needs, it is straightforward to build your own using any connection provider. At a minimum all you need to do is implement the `connect` method, which returns a [logically] fresh connection lifted into a target monad. See the source for existing implementations; it's likely that you can copy/paste your way to a custom `Transactor` without much trouble.
 
 ### Using an Existing JDBC Connection
 
