@@ -8,13 +8,13 @@ This is a minor follow-up release, primarily to add support for some PostgreSQL 
 
 Additions:
 
-- Added `Transactor` to wrap an existing `DataSource`. See [Chapter 12](http://tpolecat.github.io/doobie-0.2.1-SNAPSHOT/12-Managing-Connections.html) for more information.
-- Added support for PostGIS and PostgreSQL `enum` types. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.1-SNAPSHOT/13-Extensions-PostgreSQL.html) for more information.
-- Added combinators for batch updates. See [Chapter 7](http://tpolecat.github.io/doobie-0.2.1-SNAPSHOT/07-Updating.html) for more information.
+- Added `Transactor` to wrap an existing `DataSource`. See [Chapter 12](http://tpolecat.github.io/doobie-0.2.1/12-Managing-Connections.html) for more information.
+- Added support for PostGIS and PostgreSQL `enum` types. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.1/13-Extensions-PostgreSQL.html) for more information.
+- Added combinators for batch updates. See [Chapter 7](http://tpolecat.github.io/doobie-0.2.1/07-Updating.html) for more information.
 - Added `Composite` support for `HList`; anywhere you could map a product or tuple type in 0.2.0 you can now also use a [shapeless](https://github.com/milessabin/shapeless) `HList`.
 - Added `Atom` support for `scalaz.Maybe`; anywhere you could map an `Option` type in 0.2.0 you can now also use `Maybe`.
 - Added `.optionT` method on `Query` and `Query0`.
-- Added an [example](https://github.com/tpolecat/doobie/blob/master/example/src/main/scala/example/PostgresNotify.scala) that exposes a PostgreSQL `NOTIFY` channel as an scalaz-stream `Process`.
+- Added an [example](https://github.com/tpolecat/doobie/blob/v0.2.1/example/src/main/scala/example/PostgresNotify.scala) that exposes a PostgreSQL `NOTIFY` channel as an scalaz-stream `Process`.
 
 Improvements:
 
