@@ -33,7 +33,7 @@ unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(examp
 scalacOptions in (Compile, doc) ++= Seq(
   "-groups",
   "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath, 
-  "-doc-source-url", "https://github.com/tpolecat/doobie/tree/" + version.value + "€{FILE_PATH}.scala",
+  "-doc-source-url", "https://github.com/tpolecat/doobie/tree/v" + version.value + "€{FILE_PATH}.scala",
   "-skip-packages", "scalaz"
 )
 
