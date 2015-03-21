@@ -4,7 +4,7 @@ import UnidocKeys._
 
 organization in ThisBuild := "org.tpolecat"
 
-version in ThisBuild := "0.2.1-SNAPSHOT"
+version in ThisBuild := "0.2.1"
 
 licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 
@@ -33,7 +33,7 @@ unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(examp
 scalacOptions in (Compile, doc) ++= Seq(
   "-groups",
   "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath, 
-  "-doc-source-url", "https://github.com/tpolecat/doobie/tree/master€{FILE_PATH}.scala", // master for now
+  "-doc-source-url", "https://github.com/tpolecat/doobie/tree/" + version.value + "€{FILE_PATH}.scala",
   "-skip-packages", "scalaz"
 )
 
