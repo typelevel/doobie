@@ -28,7 +28,7 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-The current release is **0.2.0**. You should expect breaking changes for at least the next few versions, although these will be documented and kept to a minimum. To use **doobie** you need to add the following to your `build.sbt`.
+The current release is **0.2.1**. You should expect breaking changes for at least the next few versions, although these will be documented and kept to a minimum. To use **doobie** you need to add the following to your `build.sbt`.
 
 ```scala
 resolvers ++= Seq(
@@ -36,7 +36,7 @@ resolvers ++= Seq(
   "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 )
 
-libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.0"
+libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.1"
 ```
 
 It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core` and are released together.
@@ -46,18 +46,24 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 * `doobie-contrib-postgresql` for [PostgreSQL](http://postgresql.org)-specific type mappings.
 * `doobie-contrib-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 
-See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.html) for [somewhat] more information on these add-ons.
+See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.1/00-index.html) for [somewhat] more information on these add-ons.
 
-**doobie** **0.2.0** works with **Scala 2.10 and 2.11** and **scalaz 7.1**.
+**doobie** **0.2.1** works with **Scala 2.10 and 2.11** and **scalaz 7.1**.
 
 ## Documentation and Support
 
-- Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.0/00-index.html) ← start here
-- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.0/api/index.html) will be handy once you get your feet wet.
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/master/CHANGELOG.md#0.2.1) for an overview of changes.
+- Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.1/00-index.html) ← start here
+- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.1/api/index.html) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
-- Find **tpolecat** on the FreeNode `#scala` channel, or join the [Gitter Channel](https://gitter.im/tpolecat/doobie).
+- Find **tpolecat** on the FreeNode `#scala` channel, or join the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).
 
+## Presentations, Blog Posts, etc.
+
+If you have given a presentation or have written a blog post on **doobie**, let me know and I'll add it to this list.
+
+- [**Da Terry**](https://twitter.com/da_terry) gave a presentation at [ScalaSyd](http://www.meetup.com/scalasyd/) on **doobie**, [argonaut](http://argonaut.io/), and [http4s](http://http4s.org/). Slides [here](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) and code [here](https://bitbucket.org/da_terry/scalasyd-doobie-http4s).
 
 
 
