@@ -4,7 +4,7 @@ import UnidocKeys._
 
 organization in ThisBuild := "org.tpolecat"
 
-version in ThisBuild := "0.2.2-SNAPSHOT"
+version in ThisBuild := "0.2.1"
 
 licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 
