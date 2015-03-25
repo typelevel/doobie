@@ -10,16 +10,12 @@ description := "Pure functional JDBC layer for Scala."
 
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
-def shapeless(v: String) =
-  if (v.startsWith("2.11")) "com.chuusai" %%  "shapeless"       % "2.0.0"
-  else                      "com.chuusai" %  ("shapeless_" + v) % "2.0.0"
-
 libraryDependencies ++= Seq(
   "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
   "org.scalaz"        %% "scalaz-core"      % "7.1.1",
   "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
   "org.scalaz.stream" %% "scalaz-stream"    % "0.6a",
-  shapeless(scalaVersion.value)
+  "com.chuusai"       %% "shapeless"        % "2.2.0-RC4"
 )
 
 libraryDependencies ++= Seq(
