@@ -157,7 +157,7 @@ A complete table of SQLSTATE values is provided in the `doobie.contrib.postgresq
 
 ### Server-Side Statements
 
-PostgreSQL supports server-side caching of prepared statements after a certain number of excutions, which can have desirable performance consequences for statements that only need to be planned once. Note that this caching happens only for `PreparedStatement` instances that are re-used within a single connection lifetime. **doobie** supports programmatic configuration of the prepare threshold:
+PostgreSQL supports server-side caching of prepared statements after a certain number of executions, which can have desirable performance consequences for statements that only need to be planned once. Note that this caching happens only for `PreparedStatement` instances that are re-used within a single connection lifetime. **doobie** supports programmatic configuration of the prepare threshold:
 
 - For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.contrib.postgresql.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 - For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.contrib.postgresql.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
@@ -166,13 +166,13 @@ See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93
 
 ### `LISTEN` and `NOTIFY`
 
-PostgreSQL provides a simple asynchronous transactional message queue that can be used to notify a connection that something interesting has happened. Such notifications can be tied to database triggers, which provides a way to notify clients that data has changed. Which is cool.
+PostgreSQL provides a simple transactional message queue that can be used to notify a connection that something interesting has happened. Such notifications can be tied to database triggers, which provides a way to notify clients that data has changed. Which is cool.
 
 **doobie** provides `ConnectionIO` constructors for SQL `LISTEN`, `UNLISTEN`, and `NOTIFY` in the `doobie.contrib.postgresql.hi.connection` module. New notifications are retrieved (synchronously, sadly, that's all the driver provides) via `pgGetNotifications`. Note that all of the "listening" operations apply to the **current connection**, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must `setAutoCommit(false)` on this connection or `commit` between each call in order to retrieve messages. The `examples` project includes a program that demonstrates how to present a channel as a `Process[Task, PGNotification]`.
 
 ### Large Objects
 
-
+PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via byte-block transfer. Note that "normal" large object columns types such as `BLOB` and `CLOB` can store valued as large as 1GB each, the large object API is rarely used. **doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.contrib.postgresql.free` package, and for now let's assume that if you need to use it you'll either figure it out on your own or ask for help on the Gitter channel.
 
 ### Copy Manager
 
