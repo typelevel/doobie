@@ -12,6 +12,7 @@ import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
 import largeobjectmanager.LargeObjectManagerIO
+import largeobject.LargeObjectIO
 
 /**
  * Algebra and free monad for primitive operations over a `org.postgresql.largeobject.LargeObjectManager`. This is
@@ -56,29 +57,19 @@ object largeobjectmanager {
   object LargeObjectManagerOp {
     
     // Lifting
-    
+    case class LiftLargeObjectIO[A](s: LargeObject, action: LargeObjectIO[A]) extends LargeObjectManagerOp[A]
 
     // Combinators
     case class Attempt[A](action: LargeObjectManagerIO[A]) extends LargeObjectManagerOp[Throwable \/ A]
     case class Pure[A](a: () => A) extends LargeObjectManagerOp[A]
 
     // Primitive Operations
-    case class  Create(a: Int) extends LargeObjectManagerOp[Int]
-    case object Create1 extends LargeObjectManagerOp[Int]
     case object CreateLO extends LargeObjectManagerOp[Long]
     case class  CreateLO1(a: Int) extends LargeObjectManagerOp[Long]
-    case class  Delete(a: Int) extends LargeObjectManagerOp[Unit]
-    case class  Delete1(a: Long) extends LargeObjectManagerOp[Unit]
+    case class  Delete(a: Long) extends LargeObjectManagerOp[Unit]
     case class  Open(a: Long, b: Int) extends LargeObjectManagerOp[LargeObject]
-    case class  Open1(a: Int, b: Boolean) extends LargeObjectManagerOp[LargeObject]
-    case class  Open2(a: Long, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject]
-    case class  Open3(a: Int) extends LargeObjectManagerOp[LargeObject]
-    case class  Open4(a: Long, b: Boolean) extends LargeObjectManagerOp[LargeObject]
-    case class  Open5(a: Long) extends LargeObjectManagerOp[LargeObject]
-    case class  Open6(a: Int, b: Int) extends LargeObjectManagerOp[LargeObject]
-    case class  Open7(a: Int, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject]
+    case class  Open1(a: Long) extends LargeObjectManagerOp[LargeObject]
     case class  Unlink(a: Long) extends LargeObjectManagerOp[Unit]
-    case class  Unlink1(a: Int) extends LargeObjectManagerOp[Unit]
 
   }
   import LargeObjectManagerOp._ // We use these immediately
@@ -115,8 +106,12 @@ object largeobjectmanager {
     new Capture[LargeObjectManagerIO] {
       def apply[A](a: => A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
     }
-
   
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftLargeObject[A](s: LargeObject, action: LargeObjectIO[A]): LargeObjectManagerIO[A] =
+    F.liftFC(LiftLargeObjectIO(s, action))
 
   /** 
    * Lift a LargeObjectManagerIO[A] into an exception-capturing LargeObjectManagerIO[Throwable \/ A].
@@ -135,18 +130,6 @@ object largeobjectmanager {
   /** 
    * @group Constructors (Primitives)
    */
-  def create(a: Int): LargeObjectManagerIO[Int] =
-    F.liftFC(Create(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  val create: LargeObjectManagerIO[Int] =
-    F.liftFC(Create1)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   val createLO: LargeObjectManagerIO[Long] =
     F.liftFC(CreateLO)
 
@@ -159,14 +142,8 @@ object largeobjectmanager {
   /** 
    * @group Constructors (Primitives)
    */
-  def delete(a: Int): LargeObjectManagerIO[Unit] =
-    F.liftFC(Delete(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def delete(a: Long): LargeObjectManagerIO[Unit] =
-    F.liftFC(Delete1(a))
+    F.liftFC(Delete(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -177,56 +154,14 @@ object largeobjectmanager {
   /** 
    * @group Constructors (Primitives)
    */
-  def open(a: Int, b: Boolean): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def open(a: Long, b: Int, c: Boolean): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open2(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def open(a: Int): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open3(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def open(a: Long, b: Boolean): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open4(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def open(a: Long): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open5(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def open(a: Int, b: Int): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open6(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def open(a: Int, b: Int, c: Boolean): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open7(a, b, c))
+    F.liftFC(Open1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def unlink(a: Long): LargeObjectManagerIO[Unit] =
     F.liftFC(Unlink(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def unlink(a: Int): LargeObjectManagerIO[Unit] =
-    F.liftFC(Unlink1(a))
 
  /** 
   * Natural transformation from `LargeObjectManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObjectManager`. 
@@ -245,29 +180,19 @@ object largeobjectmanager {
        op match {
 
         // Lifting
-        
+        case LiftLargeObjectIO(s, k) => Kleisli(_ => k.transK[M].run(s))
   
         // Combinators
         case Pure(a) => primitive(_ => a())
         case Attempt(a) => a.transK[M].attempt
   
         // Primitive Operations
-        case Create(a) => primitive(_.create(a))
-        case Create1 => primitive(_.create)
         case CreateLO => primitive(_.createLO)
         case CreateLO1(a) => primitive(_.createLO(a))
         case Delete(a) => primitive(_.delete(a))
-        case Delete1(a) => primitive(_.delete(a))
         case Open(a, b) => primitive(_.open(a, b))
-        case Open1(a, b) => primitive(_.open(a, b))
-        case Open2(a, b, c) => primitive(_.open(a, b, c))
-        case Open3(a) => primitive(_.open(a))
-        case Open4(a, b) => primitive(_.open(a, b))
-        case Open5(a) => primitive(_.open(a))
-        case Open6(a, b) => primitive(_.open(a, b))
-        case Open7(a, b, c) => primitive(_.open(a, b, c))
+        case Open1(a) => primitive(_.open(a))
         case Unlink(a) => primitive(_.unlink(a))
-        case Unlink1(a) => primitive(_.unlink(a))
   
       }
   
