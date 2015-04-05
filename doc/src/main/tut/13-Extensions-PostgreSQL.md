@@ -172,7 +172,11 @@ PostgreSQL provides a simple transactional message queue that can be used to not
 
 ### Large Objects
 
-PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via byte-block transfer. Note that "normal" large object columns types such as `BLOB` and `CLOB` can store valued as large as 1GB each, the large object API is rarely used. **doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.contrib.postgresql.free` package, and for now let's assume that if you need to use it you'll either figure it out on your own or ask for help on the Gitter channel.
+PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via fast byte-block transfer. Note that "normal" large object columns types such as `bytea` and `text` can store values as large as 1GB each, so the large object API is rarely used. However there are cases where the size and/or efficiency of large objects justifies the use of this API.
+
+**doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.contrib.postgresql.free` package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The `example` project contains a brief usage example.
+
+Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat/doobie) channel if you need to use this API; it will evaolve as use cases demand.
 
 ### Copy Manager
 
