@@ -46,7 +46,7 @@ object connection {
    * user input here.
    */
   def pgNotify(channel: String): ConnectionIO[Unit] = 
-    execVoid("LISTEN " + channel)
+    execVoid("NOTIFY " + channel)
 
   /** 
    * Construct a program that notifies on the given channel, with a payload. Note that neither the 
@@ -54,7 +54,7 @@ object connection {
    * interpolated into the statement. DO NOT pass user input here.
    */
   def pgNotify(channel: String, payload: String): ConnectionIO[Unit] = 
-    execVoid(s"LISTEN $channel, '$payload'")
+    execVoid(s"NOTIFY $channel, '$payload'")
 
   /** 
    * Construct a program that starts listening on the given channel. Note that the channel is NOT 
