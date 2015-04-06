@@ -10,7 +10,7 @@ In this chapter we discuss the extended support that **doobie** offers for users
 libraryDependencies += "org.tpolecat" %% "doobie-contrib-postgresql" % "0.2.2"
 ```
 
-This library pulls in [PostgreSQL JDBC Driver 9.3](https://jdbc.postgresql.org/documentation/93/index.html) as a transitive dependency.
+This library pulls in [PostgreSQL JDBC Driver 9.4](https://jdbc.postgresql.org/documentation/94/index.html) as a transitive dependency.
 
 ### Setting Up
 
