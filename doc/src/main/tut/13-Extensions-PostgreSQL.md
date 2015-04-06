@@ -155,4 +155,54 @@ In addition to the general types above, **doobie** provides mappings for the fol
 
 A complete table of SQLSTATE values is provided in the `doobie.contrib.postgresql.sqlstate` module, and recovery combinators for each of these (`onUniqueViolation` for example) are provided in `doobie.contrib.postgresql.syntax`. 
 
+### Server-Side Statements
+
+PostgreSQL supports server-side caching of prepared statements after a certain number of executions, which can have desirable performance consequences for statements that only need to be planned once. Note that this caching happens only for `PreparedStatement` instances that are re-used within a single connection lifetime. **doobie** supports programmatic configuration of the prepare threshold:
+
+- For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.contrib.postgresql.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
+- For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.contrib.postgresql.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
+
+See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93/server-prepare.html) for more information.
+
+### `LISTEN` and `NOTIFY`
+
+PostgreSQL provides a simple transactional message queue that can be used to notify a connection that something interesting has happened. Such notifications can be tied to database triggers, which provides a way to notify clients that data has changed. Which is cool.
+
+**doobie** provides `ConnectionIO` constructors for SQL `LISTEN`, `UNLISTEN`, and `NOTIFY` in the `doobie.contrib.postgresql.hi.connection` module. New notifications are retrieved (synchronously, sadly, that's all the driver provides) via `pgGetNotifications`. Note that all of the "listening" operations apply to the **current connection**, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must `setAutoCommit(false)` on this connection or `commit` between each call in order to retrieve messages. The `examples` project includes a program that demonstrates how to present a channel as a `Process[Task, PGNotification]`.
+
+### Large Objects
+
+PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via fast byte-block transfer. Note that "normal" large object columns types such as `bytea` and `text` can store values as large as 1GB each, so the large object API is rarely used. However there are cases where the size and/or efficiency of large objects justifies the use of this API.
+
+**doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.contrib.postgresql.free` package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The `example` project contains a brief usage example.
+
+Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat/doobie) channel if you need to use this API; it will evaolve as use cases demand.
+
+### Copy Manager
+
+The PostgreSQL JDBC driver's [CopyManager](https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html) API provides a pass-through for the SQL [`COPY`](http://www.postgresql.org/docs/9.3/static/sql-copy.html) statement, allowing very fast data transfer via `java.io` streams. Here we construct a program that dumps a table to `Console.out` in CSV format, with quoted values.
+
+```tut:silent
+import doobie.contrib.postgresql.free.copymanager.copyOut
+import doobie.contrib.postgresql.hi.connection.pgGetCopyAPI
+
+val q = """
+  copy country (name, code, population) 
+  to stdout (
+    encoding 'utf-8', 
+    force_quote *, 
+    format csv
+  )
+  """
+
+val prog: ConnectionIO[Long] = 
+  pgGetCopyAPI(copyOut(q, Console.out)) // return value is the row count
+```
+
+See the links above and the source (sorry) for more information on this specialized API.
+
+### Fastpath
+
+**doobie** provides an algebra and free monad for constructing programs that use the `FastPathAPI` provided by the PostgreSQL JDBC driver, however this API is mostly deprecated in favor of server-side statements (see above). And in any case I can't find an example of how you would use it from Java so I don't have an example here. But if you're using it let me know and we can figure it out.
+
 

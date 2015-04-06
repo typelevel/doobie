@@ -1,6 +1,7 @@
 package doobie.example
 
 import doobie.imports._
+import doobie.contrib.postgresql.hi.connection._
 
 import org.postgresql._
 
@@ -19,29 +20,6 @@ import scalaz.stream._, Process.{ eval, eval_, repeatEval, emitAll}
  */
 object PostgresNotify {
 
-  /** Program that retrieves the underlying PGConnection */
-  val getPGConnection: ConnectionIO[PGConnection] =
-    FC.unwrap(classOf[PGConnection])
-
-  /** Program that gets all new notifications. */
-  val getNotifications: ConnectionIO[List[PGNotification]] =
-    getPGConnection.flatMap(c => HC.delay(c.getNotifications).map {
-      case null => Nil
-      case as   => as.toList  
-    })
-
-  /** Construct a program that execs a no-param statement and discards the return value */
-  def execVoid(sql: String): ConnectionIO[Unit] =
-    HC.prepareStatement(sql)(HPS.executeUpdate).void
-
-  /** Construct a program that starts listening on the given channel. */
-  def listen(channel: String): ConnectionIO[Unit] = 
-    execVoid("LISTEN " + channel)
-
-  /** Construct a program that stops listening on the given channel. */
-  def unlisten(channel: String): ConnectionIO[Unit] = 
-    execVoid("UNLISTEN " + channel)
-
   /** 
    * Construct a program that pauses the current thread. This doesn't scale, but neither do 
    * long- running connection-bound operations like NOTIFY/LISTEN. So the approach here is to
@@ -56,10 +34,10 @@ object PostgresNotify {
    */
   def notificationStream(channel: String, ms: Long): Process[ConnectionIO, PGNotification] =
     (for {
-      _  <- eval(listen(channel) *> HC.commit)
-      ns <- repeatEval(sleep(ms) *> getNotifications <* HC.commit)
+      _  <- eval(pgListen(channel) *> HC.commit)
+      ns <- repeatEval(sleep(ms) *> pgGetNotifications <* HC.commit)
       n  <- emitAll(ns)
-    } yield n).onComplete(eval_(unlisten(channel) *> HC.commit))
+    } yield n).onComplete(eval_(pgUnlisten(channel) *> HC.commit))
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa: Transactor[Task] = 
