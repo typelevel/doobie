@@ -51,7 +51,6 @@ trait FileEquality {
   def filesEqual(f1: File, f2: File): Boolean =
     mapIn(f1) { bb1 =>
     mapIn(f2) { bb2 =>
-      println(f1 + " =? " + f2)
       bb1 == bb2
     }}
     
