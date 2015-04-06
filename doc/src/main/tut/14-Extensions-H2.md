@@ -7,7 +7,7 @@ title: Extensions for H2
 In this chapter we discuss the extended support that **doobie** offers for users of [H2](http://www.h2database.com/html/main.html) . To use these extensions you must add an additional dependency to your project:
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-contrib-h2" % "0.2.1"
+libraryDependencies += "org.tpolecat" %% "doobie-contrib-h2" % "0.2.2"
 ```
 
 This library pulls in [H2 Version 1.3.170](http://www.h2database.com/html/main.html) as a transitive dependency.
