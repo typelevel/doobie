@@ -1,5 +1,5 @@
 
-def macroParadise(v: String) =
+def macroParadise(v: String): List[ModuleID] =
   if (v.startsWith("2.11")) Nil
   else List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
 
