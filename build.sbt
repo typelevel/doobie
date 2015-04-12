@@ -26,16 +26,22 @@ scalacOptions in ThisBuild ++= Seq(
   "-Ywarn-value-discard"     
 )
 
-unidocSettings
-
-unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example)
-
 scalacOptions in (Compile, doc) ++= Seq(
   "-groups",
   "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath, 
   "-doc-source-url", "https://github.com/tpolecat/doobie/tree/v" + version.value + "€{FILE_PATH}.scala",
   "-skip-packages", "scalaz"
 )
+
+/// UNIDOC
+
+resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
+
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
+
+unidocSettings
+
+unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example)
 
 /// SUBMODULES
 

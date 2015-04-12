@@ -31,6 +31,12 @@ scalacOptions ++= Seq(
   "-Yno-predef"
 )
 
+/// COMPILER PLUGINS
+
+resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
+
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
+
 /// PUBLISH SETTINGS
 
 bintrayPublishSettings

@@ -1,6 +1,6 @@
 package doobie.contrib.postgresql
 
-import scalaz.{ Monad, Catchable }
+import scalaz.{ Monad, Catchable, Unapply }
 
 import doobie.contrib.postgresql.sqlstate._
 import doobie.util.catchsql.exceptSomeSqlState
@@ -8,7 +8,14 @@ import doobie.util.catchsql.exceptSomeSqlState
 /** Module of recovery combinators for PostgreSQL-specific SQL states. */
 object syntax {
 
-  implicit class SqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]) {
+  implicit def toSqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]) =
+    new SqlStateOps(ma)
+
+  implicit def toSqlStateOpsUnapply[FA](v: FA)
+    (implicit F0: Unapply[Monad, FA], F1: Unapply[Catchable, FA]) =
+    new SqlStateOps[F0.M, F0.A](F0(v))(F0.TC, F1.TC.asInstanceOf[Catchable[F0.M]])
+
+  class SqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]) {
 
     def onSuccessfulCompletion(handler: M[A]): M[A] = 
       exceptSomeSqlState(ma) { case class00.SUCCESSFUL_COMPLETION => handler }
