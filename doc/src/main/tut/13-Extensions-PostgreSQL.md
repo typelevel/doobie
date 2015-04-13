@@ -153,7 +153,26 @@ In addition to the general types above, **doobie** provides mappings for the fol
 
 ### Extended Error Handling
 
-A complete table of SQLSTATE values is provided in the `doobie.contrib.postgresql.sqlstate` module, and recovery combinators for each of these (`onUniqueViolation` for example) are provided in `doobie.contrib.postgresql.syntax`. 
+A complete table of SQLSTATE values is provided in the `doobie.contrib.postgresql.sqlstate` module. Recovery combinators for each of these states (`onUniqueViolation` for example) are provided in `doobie.contrib.postgresql.syntax`.
+
+```tut
+import doobie.contrib.postgresql.sqlstate, doobie.contrib.postgresql.syntax._
+
+val p = sql"oops".query[String].unique // this won't work
+
+p.attempt.quick.run // attempt provided by Catchable instance
+
+p.attemptSqlState.quick.run // this catches only SQL exceptions
+
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.run // catch it
+
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.run // same, w/constant
+
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".point[ConnectionIO] } .quick.run // recover
+
+p.onSyntaxError("caught!".point[ConnectionIO]).quick.run // using recovery combinator
+```
+
 
 ### Server-Side Statements
 

@@ -109,6 +109,10 @@ object imports {
   /** @group Type Aliases */      type Update0   = doobie.util.update.Update0
   /** @group Companion Aliases */ val  Update0   = doobie.util.update.Update0
 
+  /** @group Type Aliases */      type SqlState = doobie.enum.sqlstate.SqlState
+  /** @group Companion Aliases */ val  SqlState = doobie.enum.sqlstate.SqlState
+
+
   /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
 
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
