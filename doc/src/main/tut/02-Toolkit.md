@@ -6,7 +6,7 @@ title: Toolkit
 
 Before we get into writing **doobie** programs it's worth spending a moment to explain the big picture. The short explanation is:
 
-> **doobie** programs are values. You can compose small programs to build larger programs. Once you have constructed a program you wish to run, you interpret it into an effectiful target monad of your choice (`Task` or `IO` for example) and drop it into your main application wherever you like.
+> **doobie** programs are values. You can compose small programs to build larger programs. Once you have constructed a program you wish to run, you interpret it into an effectful target monad of your choice (`Task` or `IO` for example) and drop it into your main application wherever you like.
 
 ### Nested Programs
 
