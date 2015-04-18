@@ -10,17 +10,17 @@ description := "Pure functional JDBC layer for Scala."
 
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
-def shapeless(v: String) =
-  if (v.startsWith("2.11")) "com.chuusai" %%  "shapeless"       % "2.0.0"
-  else                      "com.chuusai" %  ("shapeless_" + v) % "2.0.0"
+def macroParadise(v: String) =
+  if (v.startsWith("2.11")) Nil
+  else List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
 
 libraryDependencies ++= Seq(
   "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
   "org.scalaz"        %% "scalaz-core"      % "7.1.1",
   "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
   "org.scalaz.stream" %% "scalaz-stream"    % "0.6a",
-  shapeless(scalaVersion.value)
-)
+  "com.chuusai"       %% "shapeless"        % "2.2.0-RC4"
+) ++ macroParadise(scalaVersion.value)
 
 libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
