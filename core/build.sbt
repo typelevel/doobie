@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
   "org.scalaz"        %% "scalaz-core"      % "7.1.1",
   "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
-  "org.scalaz.stream" %% "scalaz-stream"    % "0.6a",
+  "org.scalaz.stream" %% "scalaz-stream"    % "0.7a",
   shapeless(scalaVersion.value)
 )
 
