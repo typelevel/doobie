@@ -10,7 +10,7 @@ licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))
 
 scalaVersion in ThisBuild := "2.11.6"
 
-crossScalaVersions in ThisBuild := Seq("2.10.4", scalaVersion.value)
+crossScalaVersions in ThisBuild := Seq("2.10.5", scalaVersion.value)
 
 scalacOptions in ThisBuild ++= Seq(
   "-encoding", "UTF-8", // 2 args
