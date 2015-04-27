@@ -11,7 +11,7 @@ In this chapter we examine operations that modify data in the database, and ways
 Again we set up a transactor and pull in YOLO mode, but this time we're not using the world database.
 
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, scalaz.stream.Process
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -136,26 +136,42 @@ up.quick.run // and again!
 
 ### Batch Updates
 
-**doobie** supports batch updating via the `updateMany` operation on the `Update` type, which we haven't seen before. Unlike an `Update0`, whose arguments are fixed on construction, an `Update` must be applied to parameters before it can be "executed" to yield a `ConnectionIO`.
+**doobie** supports batch updating via the `updateMany` and `updateManyWithGeneratedKeys` operations on the `Update` data type (which we haven't seen before). An `Update0`, which is the type of a `sql"..."` expression, represents a parameterized statement where the arguments are known. An `Update[A]` is more general, and represents a parameterized statement where the composite argument of type `A` is *not* known.
 
 ```tut:silent
-def insertMany(ps: List[(String, Option[Short])]) = {
+// Given some values ...
+val a = 1; val b = "foo"
+
+// this expression ...
+sql"... $a $b ..."
+
+// is syntactic sugar for this one, which is an Update applied to (a, b)
+Update[(Int, String)]("... ? ? ...").run((a, b))
+```
+
+By using an `Update` directly we can apply *many* sets of arguments to the same statement, and execute it as a single batch operation, returning the updated rows:
+
+```tut:silent
+type PersonInfo = (String, Option[Short])
+
+def insertMany(ps: List[PersonInfo]): Process[ConnectionIO, Person] = {
   val sql = "insert into person (name, age) values (?, ?)"
-  Update[(String, Option[Short])](sql).updateMany(ps)
+  Update[PersonInfo](sql).updateManyWithGeneratedKeys[List, Person]("id", "name", "age")(ps)
 }
 
 // Some rows to insert
-val data = List[(String, Option[Short])](
+val data = List[PersonInfo](
   ("Banjo",   Some(39)), 
   ("Skeeter", None), 
   ("Jim-Bob", Some(12)))
 ```
 
-The return value is the total number of rows inserted.
+Running this program yields the updated instances.
 
 ```tut
 insertMany(data).quick.run
 ```
 
+If updated rows are not needed or are unsupported by your database, the `updateMany` operation contstructs a `ConnectionIO[Int]` that performs updates in the same way but simply returns the total number of updated rows.
 
 

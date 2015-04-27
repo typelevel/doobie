@@ -33,6 +33,8 @@ object update {
 
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int]
 
+    def updateManyWithGeneratedKeys[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]): Process[ConnectionIO, K]
+
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
         val sql = u.sql
@@ -40,6 +42,8 @@ object update {
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
         def updateMany[F[_]: Foldable](fa: F[C]) = u.updateMany(fa.toList.map(f))
+        def updateManyWithGeneratedKeys[F[_]: Foldable, K: Composite](columns: String*)(cs: F[C]): Process[ConnectionIO, K] =
+          u.updateManyWithGeneratedKeys(columns: _*)(cs.toList map f)
         def withGeneratedKeys[K: Composite](columns: String*)(c: C) =
           u.withGeneratedKeys(columns: _*)(f(c))
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(c: C) =
@@ -52,7 +56,6 @@ object update {
         val stackFrame = u.stackFrame
         def analysis = u.analysis
         def run = u.run(a)
-        def updateMany[F[_]: Foldable](fa: F[A]) = u.updateMany(fa)
         def withGeneratedKeys[K: Composite](columns: String*) = 
           u.withGeneratedKeys(columns: _*)(a)
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
@@ -71,6 +74,8 @@ object update {
         def run(a: A) = prepareStatement(sql)(set(a) >> executeUpdate)
         def updateMany[F[_]: Foldable](fa: F[A]) =
           prepareStatement(sql)(addBatchesAndExecute(fa))
+        def updateManyWithGeneratedKeys[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]) =
+          doobie.hi.connection.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().point[PreparedStatementIO], as)
         def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
           updateWithGeneratedKeys[K](columns.toList)(sql, set(a))
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A) =

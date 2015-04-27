@@ -31,7 +31,7 @@ import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
 
 import scalaz.stream.Process
-import scalaz.{ Monad, ~>, Catchable }
+import scalaz.{ Monad, ~>, Catchable, Foldable }
 import scalaz.syntax.id._
 import scalaz.syntax.monad._
 
@@ -94,6 +94,10 @@ object connection {
    */
   def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
     liftProcess(C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
+
+  /** @group Prepared Statements */
+  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A]): Process[ConnectionIO, B] =
+    liftProcess[B](C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
