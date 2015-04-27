@@ -60,3 +60,12 @@ lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 lazy val docs = project.in(file("doc")).dependsOn(core, postgres, specs2, hikari, h2)
 
 publishArtifact := false
+
+
+def macroParadise(v: String): List[ModuleID] =
+  if (v.startsWith("2.11")) Nil
+  else List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+
+libraryDependencies in ThisBuild ++= macroParadise(scalaVersion.value)
+
+
