@@ -156,7 +156,7 @@ type PersonInfo = (String, Option[Short])
 
 def insertMany(ps: List[PersonInfo]): Process[ConnectionIO, Person] = {
   val sql = "insert into person (name, age) values (?, ?)"
-  Update[PersonInfo](sql).updateManyWithGeneratedKeys[List, Person]("id", "name", "age")(ps)
+  Update[PersonInfo](sql).updateManyWithGeneratedKeys[Person]("id", "name", "age")(ps)
 }
 
 // Some rows to insert

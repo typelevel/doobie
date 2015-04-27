@@ -33,7 +33,14 @@ object update {
 
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int]
 
-    def updateManyWithGeneratedKeys[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]): Process[ConnectionIO, K]
+    // N.B. this what we want to implement, but updateManyWithGeneratedKeys is what we want to call
+    protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]): Process[ConnectionIO, K]
+
+    def updateManyWithGeneratedKeys[K](columns: String*) =
+      new Update.UpdateManyWithGeneratedKeysBuilder[A, K] {
+        def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
+          updateManyWithGeneratedKeysA[F,K](columns: _*)(as)
+      }
 
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
@@ -42,7 +49,7 @@ object update {
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
         def updateMany[F[_]: Foldable](fa: F[C]) = u.updateMany(fa.toList.map(f))
-        def updateManyWithGeneratedKeys[F[_]: Foldable, K: Composite](columns: String*)(cs: F[C]): Process[ConnectionIO, K] =
+        protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(cs: F[C]): Process[ConnectionIO, K] =
           u.updateManyWithGeneratedKeys(columns: _*)(cs.toList map f)
         def withGeneratedKeys[K: Composite](columns: String*)(c: C) =
           u.withGeneratedKeys(columns: _*)(f(c))
@@ -66,6 +73,14 @@ object update {
 
   object Update {
 
+    /** 
+     * Partial application hack to allow calling updateManyWithGeneratedKeys without passing the 
+     * F[_] type argument explicitly.
+     */
+    trait UpdateManyWithGeneratedKeysBuilder[A, K] {
+      def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K]
+    }
+
     def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement] = None): Update[A] =
       new Update[A] {
         val sql = sql0
@@ -74,7 +89,7 @@ object update {
         def run(a: A) = prepareStatement(sql)(set(a) >> executeUpdate)
         def updateMany[F[_]: Foldable](fa: F[A]) =
           prepareStatement(sql)(addBatchesAndExecute(fa))
-        def updateManyWithGeneratedKeys[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]) =
+        protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]) =
           doobie.hi.connection.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().point[PreparedStatementIO], as)
         def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
           updateWithGeneratedKeys[K](columns.toList)(sql, set(a))
