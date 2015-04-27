@@ -1,13 +1,9 @@
 package doobie.util
 
-import doobie.hi.{ ConnectionIO, PreparedStatementIO }
-import doobie.hi.connection.{ prepareStatement, prepareStatementS, prepareUpdateAnalysis, prepareUpdateAnalysis0, updateWithGeneratedKeys }
-import doobie.hi.preparedstatement.{ set, executeUpdate, executeUpdateWithUniqueGeneratedKeys, addBatchesAndExecute }
-import doobie.util.composite.Composite
+import doobie.imports._
 import doobie.util.analysis.Analysis
 
-import scalaz.Contravariant
-import scalaz.Foldable
+import scalaz.{ Contravariant, Foldable }
 import scalaz.std.list._
 import scalaz.stream.Process
 import scalaz.syntax.monad._
@@ -85,16 +81,16 @@ object update {
       new Update[A] {
         val sql = sql0
         val stackFrame = stackFrame0
-        def analysis: ConnectionIO[Analysis] = prepareUpdateAnalysis[A](sql)
-        def run(a: A) = prepareStatement(sql)(set(a) >> executeUpdate)
+        def analysis: ConnectionIO[Analysis] = HC.prepareUpdateAnalysis[A](sql)
+        def run(a: A) = HC.prepareStatement(sql)(HPS.set(a) >> HPS.executeUpdate)
         def updateMany[F[_]: Foldable](fa: F[A]) =
-          prepareStatement(sql)(addBatchesAndExecute(fa))
+          HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa))
         protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]) =
-          doobie.hi.connection.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().point[PreparedStatementIO], as)
+          HC.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().point[PreparedStatementIO], as)
         def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
-          updateWithGeneratedKeys[K](columns.toList)(sql, set(a))
+          HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a))
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A) =
-          prepareStatementS(sql0, columns.toList)(set(a) >> executeUpdateWithUniqueGeneratedKeys)
+          HC.prepareStatementS(sql0, columns.toList)(HPS.set(a) >> HPS.executeUpdateWithUniqueGeneratedKeys)
       }
 
     implicit val updateContravariant: Contravariant[Update] =
@@ -116,12 +112,12 @@ object update {
       new Update0 {
         val sql = sql0
         val stackFrame = stackFrame0
-        def analysis: ConnectionIO[Analysis] = prepareUpdateAnalysis0(sql)
-        def run = prepareStatement(sql)(executeUpdate)
+        def analysis: ConnectionIO[Analysis] = HC.prepareUpdateAnalysis0(sql)
+        def run = HC.prepareStatement(sql)(HPS.executeUpdate)
         def withGeneratedKeys[K: Composite](columns: String*) =
-          updateWithGeneratedKeys(columns.toList)(sql, ().point[PreparedStatementIO])
+          HC.updateWithGeneratedKeys(columns.toList)(sql, ().point[PreparedStatementIO])
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
-          prepareStatementS(sql0, columns.toList)(executeUpdateWithUniqueGeneratedKeys)
+          HC.prepareStatementS(sql0, columns.toList)(HPS.executeUpdateWithUniqueGeneratedKeys)
       }
 
   }
