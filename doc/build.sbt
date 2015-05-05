@@ -27,10 +27,3 @@ ctut := {
 }
 
 libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4"
-
-def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.11")) Nil
-  else List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
-
-libraryDependencies ++= macroParadise(scalaVersion.value)
-

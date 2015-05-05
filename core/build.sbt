@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
   "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
   "org.scalaz.stream" %% "scalaz-stream"    % "0.7a",
   "com.chuusai"       %% "shapeless"        % "2.2.0-RC5"
+)
 
 libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
