@@ -33,6 +33,12 @@ resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
 
+def macroParadise(v: String): List[ModuleID] =
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  else Nil
+
+libraryDependencies ++= macroParadise(scalaVersion.value)
+
 /// PUBLISH SETTINGS
 
 bintrayPublishSettings

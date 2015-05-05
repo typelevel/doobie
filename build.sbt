@@ -33,17 +33,17 @@ scalacOptions in (Compile, doc) ++= Seq(
   "-skip-packages", "scalaz"
 )
 
-def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.11")) Nil
-  else List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
-
-libraryDependencies in ThisBuild ++= macroParadise(scalaVersion.value)
-
-/// UNIDOC
+// UNIDOC
 
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
+
+def macroParadise(v: String): List[ModuleID] =
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  else Nil
+
+libraryDependencies in ThisBuild ++= macroParadise(scalaVersion.value)
 
 unidocSettings
 
