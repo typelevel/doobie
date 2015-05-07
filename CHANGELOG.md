@@ -2,6 +2,26 @@
 
 This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones) and their associated issues.
 
+### <a name="0.2.2"></a>New and Noteworthy for Version 0.2.2
+
+Additions:
+
+- Added `HC.updateManyWithGeneratedKeys` and associated syntax on `Update` to allow batch updates to return updated rows. See [Chapter 7](http://tpolecat.github.io/doobie-0.2.2/07-Updating.html) for an example.
+- Added algebras and free monads for PostgreSQL vendor-specific driver APIs, which allows **doobie** to directly support `LISTEN/NOTIFY`, `COPY FROM STDIN` and a number of other interesting features. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.2/13-Extensions-PostgreSQL.html) for details and exampls.
+
+Improvements:
+
+- Huge improvements to the implementation of the `sql` interpolator, courtesy of @milessabin. This removes the current 50-parameter arity limit.
+- Added examples of Postgres-specific error handling. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.2/13-Extensions-PostgreSQL.html) for more information.
+- Added `Unapply` instances to make the `Monad` instance for `FreeC` and associated syntax conversions inferrable.
+
+Upgrades:
+
+- Updated to Scala 2.10.5
+- Updated to shapeless 2.2.0
+- Updated to scalaz-stream 0.7a
+- Updated to PostgreSQL JDBC driver 9.4-1201-jdbc41
+
 ### <a name="0.2.1"></a>New and Noteworthy for Version 0.2.1
 
 This is a minor follow-up release, primarily to add support for some PostgreSQL features and other odds and ends reported by users. Thanks to users and contributors for their help!
