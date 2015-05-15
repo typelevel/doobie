@@ -90,6 +90,20 @@ object resultset {
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
     A.get(1)
 
+  /**
+   * Like `getNext` but loops until the end of the resultset, gathering results in a `List`.
+   * @group Results 
+   */
+  def list[A: Composite]: ResultSetIO[List[A]] = {
+    val a = get[A]
+    def go(as: List[A]): ResultSetIO[List[A]] = 
+      next flatMap { b =>
+        if (b) a.flatMap { a => go(a :: as) }
+        else as.point[ResultSetIO]
+      }
+    go(Nil).map(_.reverse)
+  }
+
   /** 
    * Updates a value of type `A` starting at column `n`.
    * @group Updating 
