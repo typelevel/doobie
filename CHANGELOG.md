@@ -14,6 +14,7 @@ Improvements:
 - Huge improvements to the implementation of the `sql` interpolator, courtesy of @milessabin. This removes the current 50-parameter arity limit.
 - Added examples of Postgres-specific error handling. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.2/13-Extensions-PostgreSQL.html) for more information.
 - Added `Unapply` instances to make the `Monad` instance for `FreeC` and associated syntax conversions inferrable.
+- Significant performance improvements for resultset processing, with `.list` and `.vector` now ~4.5x faster and `.process` ~2.5x faster. I anticipate another speed-doubling in 0.2.3 based on some prototyping, which should bring **doobie** into parity with raw SQL for most applications.
 
 Upgrades:
 
@@ -21,6 +22,7 @@ Upgrades:
 - Updated to shapeless 2.2.0
 - Updated to scalaz-stream 0.7a
 - Updated to PostgreSQL JDBC driver 9.4-1201-jdbc41
+- Updated to Specs2 3.6 (thanks @eterrebore)
 
 ### <a name="0.2.1"></a>New and Noteworthy for Version 0.2.1
 
