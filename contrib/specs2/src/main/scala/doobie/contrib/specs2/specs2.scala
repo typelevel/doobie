@@ -10,6 +10,7 @@ import doobie.util.pretty._
 
 import org.specs2.mutable.Specification
 import org.specs2.execute.Failure
+import org.specs2.specification.core.Fragments
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -57,12 +58,10 @@ object analysisspec {
     private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]) =
       s"$typeName defined at ${loc(stackFrame)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
         transactor.transact(analysis).attemptRun match {
-          case -\/(e) => "SQL Compiles and Typechecks" in failure(formatError(e.getMessage))
-          case \/-(a) => "SQL Compiles and Typechecks" in ok
-            examplesBlock { 
-              a.paramDescriptions.foreach  { case (s, es) => s in assertEmpty(es, stackFrame) }
-              a.columnDescriptions.foreach { case (s, es) => s in assertEmpty(es, stackFrame) }
-            }
+          case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
+          case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
+            Fragments.foreach(a.paramDescriptions)  { case (s, es) => s in assertEmpty(es, stackFrame) }
+            Fragments.foreach(a.columnDescriptions) { case (s, es) => s in assertEmpty(es, stackFrame) }
         }
       }
 
