@@ -85,7 +85,11 @@ object resultset {
    * Sum type of primitive operations over a `java.sql.ResultSet`.
    * @group Algebra 
    */
-  sealed trait ResultSetOp[A]
+  sealed trait ResultSetOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: ResultSet => A): Kleisli[M, ResultSet, A] = 
+      Kleisli((s: ResultSet) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ResultSet, A]
+  }
 
   /** 
    * Module of constructors for `ResultSetOp`. These are rarely useful outside of the implementation;
@@ -94,215 +98,627 @@ object resultset {
    */
   object ResultSetOp {
     
-    // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends ResultSetOp[A]
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends ResultSetOp[A]
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends ResultSetOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends ResultSetOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends ResultSetOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends ResultSetOp[A]
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends ResultSetOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends ResultSetOp[A]
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends ResultSetOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends ResultSetOp[A]
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends ResultSetOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends ResultSetOp[A]
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends ResultSetOp[A]
+    // Lifting 
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: ResultSetIO[A]) extends ResultSetOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends ResultSetOp[A]
+    case class Attempt[A](action: ResultSetIO[A]) extends ResultSetOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = action.transK[M].attempt
+    }
+    case class Pure[A](a: () => A) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: ResultSet => A) extends ResultSetOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case class  Absolute(a: Int) extends ResultSetOp[Boolean]
-    case object AfterLast extends ResultSetOp[Unit]
-    case object BeforeFirst extends ResultSetOp[Unit]
-    case object CancelRowUpdates extends ResultSetOp[Unit]
-    case object ClearWarnings extends ResultSetOp[Unit]
-    case object Close extends ResultSetOp[Unit]
-    case object DeleteRow extends ResultSetOp[Unit]
-    case class  FindColumn(a: String) extends ResultSetOp[Int]
-    case object First extends ResultSetOp[Boolean]
-    case class  GetArray(a: String) extends ResultSetOp[SqlArray]
-    case class  GetArray1(a: Int) extends ResultSetOp[SqlArray]
-    case class  GetAsciiStream(a: Int) extends ResultSetOp[InputStream]
-    case class  GetAsciiStream1(a: String) extends ResultSetOp[InputStream]
-    case class  GetBigDecimal(a: String) extends ResultSetOp[BigDecimal]
-    case class  GetBigDecimal1(a: Int) extends ResultSetOp[BigDecimal]
-    case class  GetBigDecimal2(a: String, b: Int) extends ResultSetOp[BigDecimal]
-    case class  GetBigDecimal3(a: Int, b: Int) extends ResultSetOp[BigDecimal]
-    case class  GetBinaryStream(a: String) extends ResultSetOp[InputStream]
-    case class  GetBinaryStream1(a: Int) extends ResultSetOp[InputStream]
-    case class  GetBlob(a: String) extends ResultSetOp[Blob]
-    case class  GetBlob1(a: Int) extends ResultSetOp[Blob]
-    case class  GetBoolean(a: Int) extends ResultSetOp[Boolean]
-    case class  GetBoolean1(a: String) extends ResultSetOp[Boolean]
-    case class  GetByte(a: String) extends ResultSetOp[Byte]
-    case class  GetByte1(a: Int) extends ResultSetOp[Byte]
-    case class  GetBytes(a: String) extends ResultSetOp[Array[Byte]]
-    case class  GetBytes1(a: Int) extends ResultSetOp[Array[Byte]]
-    case class  GetCharacterStream(a: String) extends ResultSetOp[Reader]
-    case class  GetCharacterStream1(a: Int) extends ResultSetOp[Reader]
-    case class  GetClob(a: Int) extends ResultSetOp[Clob]
-    case class  GetClob1(a: String) extends ResultSetOp[Clob]
-    case object GetConcurrency extends ResultSetOp[Int]
-    case object GetCursorName extends ResultSetOp[String]
-    case class  GetDate(a: Int, b: Calendar) extends ResultSetOp[Date]
-    case class  GetDate1(a: String) extends ResultSetOp[Date]
-    case class  GetDate2(a: String, b: Calendar) extends ResultSetOp[Date]
-    case class  GetDate3(a: Int) extends ResultSetOp[Date]
-    case class  GetDouble(a: Int) extends ResultSetOp[Double]
-    case class  GetDouble1(a: String) extends ResultSetOp[Double]
-    case object GetFetchDirection extends ResultSetOp[Int]
-    case object GetFetchSize extends ResultSetOp[Int]
-    case class  GetFloat(a: String) extends ResultSetOp[Float]
-    case class  GetFloat1(a: Int) extends ResultSetOp[Float]
-    case object GetHoldability extends ResultSetOp[Int]
-    case class  GetInt(a: String) extends ResultSetOp[Int]
-    case class  GetInt1(a: Int) extends ResultSetOp[Int]
-    case class  GetLong(a: String) extends ResultSetOp[Long]
-    case class  GetLong1(a: Int) extends ResultSetOp[Long]
-    case object GetMetaData extends ResultSetOp[ResultSetMetaData]
-    case class  GetNCharacterStream(a: String) extends ResultSetOp[Reader]
-    case class  GetNCharacterStream1(a: Int) extends ResultSetOp[Reader]
-    case class  GetNClob(a: Int) extends ResultSetOp[NClob]
-    case class  GetNClob1(a: String) extends ResultSetOp[NClob]
-    case class  GetNString(a: String) extends ResultSetOp[String]
-    case class  GetNString1(a: Int) extends ResultSetOp[String]
-    case class  GetObject(a: Int, b: Map[String, Class[_]]) extends ResultSetOp[Object]
-    case class  GetObject1(a: String, b: Map[String, Class[_]]) extends ResultSetOp[Object]
-    case class  GetObject2(a: String) extends ResultSetOp[Object]
-    case class  GetObject3(a: Int) extends ResultSetOp[Object]
-    case class  GetRef(a: String) extends ResultSetOp[Ref]
-    case class  GetRef1(a: Int) extends ResultSetOp[Ref]
-    case object GetRow extends ResultSetOp[Int]
-    case class  GetRowId(a: Int) extends ResultSetOp[RowId]
-    case class  GetRowId1(a: String) extends ResultSetOp[RowId]
-    case class  GetSQLXML(a: Int) extends ResultSetOp[SQLXML]
-    case class  GetSQLXML1(a: String) extends ResultSetOp[SQLXML]
-    case class  GetShort(a: String) extends ResultSetOp[Short]
-    case class  GetShort1(a: Int) extends ResultSetOp[Short]
-    case object GetStatement extends ResultSetOp[Statement]
-    case class  GetString(a: String) extends ResultSetOp[String]
-    case class  GetString1(a: Int) extends ResultSetOp[String]
-    case class  GetTime(a: String, b: Calendar) extends ResultSetOp[Time]
-    case class  GetTime1(a: String) extends ResultSetOp[Time]
-    case class  GetTime2(a: Int) extends ResultSetOp[Time]
-    case class  GetTime3(a: Int, b: Calendar) extends ResultSetOp[Time]
-    case class  GetTimestamp(a: Int) extends ResultSetOp[Timestamp]
-    case class  GetTimestamp1(a: Int, b: Calendar) extends ResultSetOp[Timestamp]
-    case class  GetTimestamp2(a: String, b: Calendar) extends ResultSetOp[Timestamp]
-    case class  GetTimestamp3(a: String) extends ResultSetOp[Timestamp]
-    case object GetType extends ResultSetOp[Int]
-    case class  GetURL(a: Int) extends ResultSetOp[URL]
-    case class  GetURL1(a: String) extends ResultSetOp[URL]
-    case class  GetUnicodeStream(a: String) extends ResultSetOp[InputStream]
-    case class  GetUnicodeStream1(a: Int) extends ResultSetOp[InputStream]
-    case object GetWarnings extends ResultSetOp[SQLWarning]
-    case object InsertRow extends ResultSetOp[Unit]
-    case object IsAfterLast extends ResultSetOp[Boolean]
-    case object IsBeforeFirst extends ResultSetOp[Boolean]
-    case object IsClosed extends ResultSetOp[Boolean]
-    case object IsFirst extends ResultSetOp[Boolean]
-    case object IsLast extends ResultSetOp[Boolean]
-    case class  IsWrapperFor(a: Class[_]) extends ResultSetOp[Boolean]
-    case object Last extends ResultSetOp[Boolean]
-    case object MoveToCurrentRow extends ResultSetOp[Unit]
-    case object MoveToInsertRow extends ResultSetOp[Unit]
-    case object Next extends ResultSetOp[Boolean]
-    case object Previous extends ResultSetOp[Boolean]
-    case object RefreshRow extends ResultSetOp[Unit]
-    case class  Relative(a: Int) extends ResultSetOp[Boolean]
-    case object RowDeleted extends ResultSetOp[Boolean]
-    case object RowInserted extends ResultSetOp[Boolean]
-    case object RowUpdated extends ResultSetOp[Boolean]
-    case class  SetFetchDirection(a: Int) extends ResultSetOp[Unit]
-    case class  SetFetchSize(a: Int) extends ResultSetOp[Unit]
-    case class  Unwrap[T](a: Class[T]) extends ResultSetOp[T]
-    case class  UpdateArray(a: Int, b: SqlArray) extends ResultSetOp[Unit]
-    case class  UpdateArray1(a: String, b: SqlArray) extends ResultSetOp[Unit]
-    case class  UpdateAsciiStream(a: String, b: InputStream) extends ResultSetOp[Unit]
-    case class  UpdateAsciiStream1(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateAsciiStream2(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateAsciiStream3(a: Int, b: InputStream) extends ResultSetOp[Unit]
-    case class  UpdateAsciiStream4(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateAsciiStream5(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateBigDecimal(a: Int, b: BigDecimal) extends ResultSetOp[Unit]
-    case class  UpdateBigDecimal1(a: String, b: BigDecimal) extends ResultSetOp[Unit]
-    case class  UpdateBinaryStream(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateBinaryStream1(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateBinaryStream2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateBinaryStream3(a: Int, b: InputStream) extends ResultSetOp[Unit]
-    case class  UpdateBinaryStream4(a: String, b: InputStream) extends ResultSetOp[Unit]
-    case class  UpdateBinaryStream5(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateBlob(a: String, b: InputStream) extends ResultSetOp[Unit]
-    case class  UpdateBlob1(a: Int, b: InputStream) extends ResultSetOp[Unit]
-    case class  UpdateBlob2(a: String, b: Blob) extends ResultSetOp[Unit]
-    case class  UpdateBlob3(a: Int, b: Blob) extends ResultSetOp[Unit]
-    case class  UpdateBlob4(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateBlob5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateBoolean(a: Int, b: Boolean) extends ResultSetOp[Unit]
-    case class  UpdateBoolean1(a: String, b: Boolean) extends ResultSetOp[Unit]
-    case class  UpdateByte(a: String, b: Byte) extends ResultSetOp[Unit]
-    case class  UpdateByte1(a: Int, b: Byte) extends ResultSetOp[Unit]
-    case class  UpdateBytes(a: String, b: Array[Byte]) extends ResultSetOp[Unit]
-    case class  UpdateBytes1(a: Int, b: Array[Byte]) extends ResultSetOp[Unit]
-    case class  UpdateCharacterStream(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateCharacterStream1(a: Int, b: Reader, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateCharacterStream2(a: String, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateCharacterStream3(a: String, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateCharacterStream4(a: Int, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateCharacterStream5(a: String, b: Reader, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateClob(a: String, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateClob1(a: String, b: Clob) extends ResultSetOp[Unit]
-    case class  UpdateClob2(a: Int, b: Clob) extends ResultSetOp[Unit]
-    case class  UpdateClob3(a: Int, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateClob4(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateClob5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateDate(a: Int, b: Date) extends ResultSetOp[Unit]
-    case class  UpdateDate1(a: String, b: Date) extends ResultSetOp[Unit]
-    case class  UpdateDouble(a: Int, b: Double) extends ResultSetOp[Unit]
-    case class  UpdateDouble1(a: String, b: Double) extends ResultSetOp[Unit]
-    case class  UpdateFloat(a: String, b: Float) extends ResultSetOp[Unit]
-    case class  UpdateFloat1(a: Int, b: Float) extends ResultSetOp[Unit]
-    case class  UpdateInt(a: Int, b: Int) extends ResultSetOp[Unit]
-    case class  UpdateInt1(a: String, b: Int) extends ResultSetOp[Unit]
-    case class  UpdateLong(a: Int, b: Long) extends ResultSetOp[Unit]
-    case class  UpdateLong1(a: String, b: Long) extends ResultSetOp[Unit]
-    case class  UpdateNCharacterStream(a: String, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateNCharacterStream1(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateNCharacterStream2(a: String, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateNCharacterStream3(a: Int, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateNClob(a: String, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateNClob1(a: Int, b: NClob) extends ResultSetOp[Unit]
-    case class  UpdateNClob2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateNClob3(a: String, b: Reader, c: Long) extends ResultSetOp[Unit]
-    case class  UpdateNClob4(a: Int, b: Reader) extends ResultSetOp[Unit]
-    case class  UpdateNClob5(a: String, b: NClob) extends ResultSetOp[Unit]
-    case class  UpdateNString(a: String, b: String) extends ResultSetOp[Unit]
-    case class  UpdateNString1(a: Int, b: String) extends ResultSetOp[Unit]
-    case class  UpdateNull(a: Int) extends ResultSetOp[Unit]
-    case class  UpdateNull1(a: String) extends ResultSetOp[Unit]
-    case class  UpdateObject(a: String, b: Object, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateObject1(a: String, b: Object) extends ResultSetOp[Unit]
-    case class  UpdateObject2(a: Int, b: Object) extends ResultSetOp[Unit]
-    case class  UpdateObject3(a: Int, b: Object, c: Int) extends ResultSetOp[Unit]
-    case class  UpdateRef(a: Int, b: Ref) extends ResultSetOp[Unit]
-    case class  UpdateRef1(a: String, b: Ref) extends ResultSetOp[Unit]
-    case object UpdateRow extends ResultSetOp[Unit]
-    case class  UpdateRowId(a: Int, b: RowId) extends ResultSetOp[Unit]
-    case class  UpdateRowId1(a: String, b: RowId) extends ResultSetOp[Unit]
-    case class  UpdateSQLXML(a: String, b: SQLXML) extends ResultSetOp[Unit]
-    case class  UpdateSQLXML1(a: Int, b: SQLXML) extends ResultSetOp[Unit]
-    case class  UpdateShort(a: Int, b: Short) extends ResultSetOp[Unit]
-    case class  UpdateShort1(a: String, b: Short) extends ResultSetOp[Unit]
-    case class  UpdateString(a: Int, b: String) extends ResultSetOp[Unit]
-    case class  UpdateString1(a: String, b: String) extends ResultSetOp[Unit]
-    case class  UpdateTime(a: Int, b: Time) extends ResultSetOp[Unit]
-    case class  UpdateTime1(a: String, b: Time) extends ResultSetOp[Unit]
-    case class  UpdateTimestamp(a: String, b: Timestamp) extends ResultSetOp[Unit]
-    case class  UpdateTimestamp1(a: Int, b: Timestamp) extends ResultSetOp[Unit]
-    case object WasNull extends ResultSetOp[Boolean]
+    case class  Absolute(a: Int) extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.absolute(a))
+    }
+    case object AfterLast extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.afterLast)
+    }
+    case object BeforeFirst extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.beforeFirst)
+    }
+    case object CancelRowUpdates extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.cancelRowUpdates)
+    }
+    case object ClearWarnings extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearWarnings)
+    }
+    case object Close extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.close)
+    }
+    case object DeleteRow extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.deleteRow)
+    }
+    case class  FindColumn(a: String) extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.findColumn(a))
+    }
+    case object First extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.first)
+    }
+    case class  GetArray(a: String) extends ResultSetOp[SqlArray] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
+    }
+    case class  GetArray1(a: Int) extends ResultSetOp[SqlArray] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
+    }
+    case class  GetAsciiStream(a: Int) extends ResultSetOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream(a))
+    }
+    case class  GetAsciiStream1(a: String) extends ResultSetOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream(a))
+    }
+    case class  GetBigDecimal(a: String) extends ResultSetOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
+    }
+    case class  GetBigDecimal1(a: Int) extends ResultSetOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
+    }
+    case class  GetBigDecimal2(a: String, b: Int) extends ResultSetOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
+    }
+    case class  GetBigDecimal3(a: Int, b: Int) extends ResultSetOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
+    }
+    case class  GetBinaryStream(a: String) extends ResultSetOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a))
+    }
+    case class  GetBinaryStream1(a: Int) extends ResultSetOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a))
+    }
+    case class  GetBlob(a: String) extends ResultSetOp[Blob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
+    }
+    case class  GetBlob1(a: Int) extends ResultSetOp[Blob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
+    }
+    case class  GetBoolean(a: Int) extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBoolean(a))
+    }
+    case class  GetBoolean1(a: String) extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBoolean(a))
+    }
+    case class  GetByte(a: String) extends ResultSetOp[Byte] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
+    }
+    case class  GetByte1(a: Int) extends ResultSetOp[Byte] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
+    }
+    case class  GetBytes(a: String) extends ResultSetOp[Array[Byte]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
+    }
+    case class  GetBytes1(a: Int) extends ResultSetOp[Array[Byte]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
+    }
+    case class  GetCharacterStream(a: String) extends ResultSetOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
+    }
+    case class  GetCharacterStream1(a: Int) extends ResultSetOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
+    }
+    case class  GetClob(a: Int) extends ResultSetOp[Clob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
+    }
+    case class  GetClob1(a: String) extends ResultSetOp[Clob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
+    }
+    case object GetConcurrency extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConcurrency)
+    }
+    case object GetCursorName extends ResultSetOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCursorName)
+    }
+    case class  GetDate(a: Int, b: Calendar) extends ResultSetOp[Date] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
+    }
+    case class  GetDate1(a: String) extends ResultSetOp[Date] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
+    }
+    case class  GetDate2(a: String, b: Calendar) extends ResultSetOp[Date] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
+    }
+    case class  GetDate3(a: Int) extends ResultSetOp[Date] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
+    }
+    case class  GetDouble(a: Int) extends ResultSetOp[Double] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
+    }
+    case class  GetDouble1(a: String) extends ResultSetOp[Double] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
+    }
+    case object GetFetchDirection extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchDirection)
+    }
+    case object GetFetchSize extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchSize)
+    }
+    case class  GetFloat(a: String) extends ResultSetOp[Float] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
+    }
+    case class  GetFloat1(a: Int) extends ResultSetOp[Float] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
+    }
+    case object GetHoldability extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getHoldability)
+    }
+    case class  GetInt(a: String) extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
+    }
+    case class  GetInt1(a: Int) extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
+    }
+    case class  GetLong(a: String) extends ResultSetOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
+    }
+    case class  GetLong1(a: Int) extends ResultSetOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
+    }
+    case object GetMetaData extends ResultSetOp[ResultSetMetaData] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMetaData)
+    }
+    case class  GetNCharacterStream(a: String) extends ResultSetOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
+    }
+    case class  GetNCharacterStream1(a: Int) extends ResultSetOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
+    }
+    case class  GetNClob(a: Int) extends ResultSetOp[NClob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
+    }
+    case class  GetNClob1(a: String) extends ResultSetOp[NClob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
+    }
+    case class  GetNString(a: String) extends ResultSetOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
+    }
+    case class  GetNString1(a: Int) extends ResultSetOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
+    }
+    case class  GetObject(a: Int, b: Map[String, Class[_]]) extends ResultSetOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+    }
+    case class  GetObject1(a: String, b: Map[String, Class[_]]) extends ResultSetOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+    }
+    case class  GetObject2(a: String) extends ResultSetOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+    }
+    case class  GetObject3(a: Int) extends ResultSetOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+    }
+    case class  GetRef(a: String) extends ResultSetOp[Ref] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRef(a))
+    }
+    case class  GetRef1(a: Int) extends ResultSetOp[Ref] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRef(a))
+    }
+    case object GetRow extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRow)
+    }
+    case class  GetRowId(a: Int) extends ResultSetOp[RowId] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
+    }
+    case class  GetRowId1(a: String) extends ResultSetOp[RowId] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
+    }
+    case class  GetSQLXML(a: Int) extends ResultSetOp[SQLXML] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
+    }
+    case class  GetSQLXML1(a: String) extends ResultSetOp[SQLXML] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
+    }
+    case class  GetShort(a: String) extends ResultSetOp[Short] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
+    }
+    case class  GetShort1(a: Int) extends ResultSetOp[Short] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
+    }
+    case object GetStatement extends ResultSetOp[Statement] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getStatement)
+    }
+    case class  GetString(a: String) extends ResultSetOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
+    }
+    case class  GetString1(a: Int) extends ResultSetOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
+    }
+    case class  GetTime(a: String, b: Calendar) extends ResultSetOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
+    }
+    case class  GetTime1(a: String) extends ResultSetOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
+    }
+    case class  GetTime2(a: Int) extends ResultSetOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
+    }
+    case class  GetTime3(a: Int, b: Calendar) extends ResultSetOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
+    }
+    case class  GetTimestamp(a: Int) extends ResultSetOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
+    }
+    case class  GetTimestamp1(a: Int, b: Calendar) extends ResultSetOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
+    }
+    case class  GetTimestamp2(a: String, b: Calendar) extends ResultSetOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
+    }
+    case class  GetTimestamp3(a: String) extends ResultSetOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
+    }
+    case object GetType extends ResultSetOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getType)
+    }
+    case class  GetURL(a: Int) extends ResultSetOp[URL] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
+    }
+    case class  GetURL1(a: String) extends ResultSetOp[URL] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
+    }
+    case class  GetUnicodeStream(a: String) extends ResultSetOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUnicodeStream(a))
+    }
+    case class  GetUnicodeStream1(a: Int) extends ResultSetOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUnicodeStream(a))
+    }
+    case object GetWarnings extends ResultSetOp[SQLWarning] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getWarnings)
+    }
+    case object InsertRow extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.insertRow)
+    }
+    case object IsAfterLast extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isAfterLast)
+    }
+    case object IsBeforeFirst extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isBeforeFirst)
+    }
+    case object IsClosed extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isClosed)
+    }
+    case object IsFirst extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isFirst)
+    }
+    case object IsLast extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isLast)
+    }
+    case class  IsWrapperFor(a: Class[_]) extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
+    }
+    case object Last extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.last)
+    }
+    case object MoveToCurrentRow extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.moveToCurrentRow)
+    }
+    case object MoveToInsertRow extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.moveToInsertRow)
+    }
+    case object Next extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.next)
+    }
+    case object Previous extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.previous)
+    }
+    case object RefreshRow extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.refreshRow)
+    }
+    case class  Relative(a: Int) extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.relative(a))
+    }
+    case object RowDeleted extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rowDeleted)
+    }
+    case object RowInserted extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rowInserted)
+    }
+    case object RowUpdated extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rowUpdated)
+    }
+    case class  SetFetchDirection(a: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchDirection(a))
+    }
+    case class  SetFetchSize(a: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchSize(a))
+    }
+    case class  Unwrap[T](a: Class[T]) extends ResultSetOp[T] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
+    }
+    case class  UpdateArray(a: Int, b: SqlArray) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateArray(a, b))
+    }
+    case class  UpdateArray1(a: String, b: SqlArray) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateArray(a, b))
+    }
+    case class  UpdateAsciiStream(a: String, b: InputStream) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateAsciiStream(a, b))
+    }
+    case class  UpdateAsciiStream1(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateAsciiStream(a, b, c))
+    }
+    case class  UpdateAsciiStream2(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateAsciiStream(a, b, c))
+    }
+    case class  UpdateAsciiStream3(a: Int, b: InputStream) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateAsciiStream(a, b))
+    }
+    case class  UpdateAsciiStream4(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateAsciiStream(a, b, c))
+    }
+    case class  UpdateAsciiStream5(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateAsciiStream(a, b, c))
+    }
+    case class  UpdateBigDecimal(a: Int, b: BigDecimal) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBigDecimal(a, b))
+    }
+    case class  UpdateBigDecimal1(a: String, b: BigDecimal) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBigDecimal(a, b))
+    }
+    case class  UpdateBinaryStream(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBinaryStream(a, b, c))
+    }
+    case class  UpdateBinaryStream1(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBinaryStream(a, b, c))
+    }
+    case class  UpdateBinaryStream2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBinaryStream(a, b, c))
+    }
+    case class  UpdateBinaryStream3(a: Int, b: InputStream) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBinaryStream(a, b))
+    }
+    case class  UpdateBinaryStream4(a: String, b: InputStream) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBinaryStream(a, b))
+    }
+    case class  UpdateBinaryStream5(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBinaryStream(a, b, c))
+    }
+    case class  UpdateBlob(a: String, b: InputStream) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBlob(a, b))
+    }
+    case class  UpdateBlob1(a: Int, b: InputStream) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBlob(a, b))
+    }
+    case class  UpdateBlob2(a: String, b: Blob) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBlob(a, b))
+    }
+    case class  UpdateBlob3(a: Int, b: Blob) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBlob(a, b))
+    }
+    case class  UpdateBlob4(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBlob(a, b, c))
+    }
+    case class  UpdateBlob5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBlob(a, b, c))
+    }
+    case class  UpdateBoolean(a: Int, b: Boolean) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBoolean(a, b))
+    }
+    case class  UpdateBoolean1(a: String, b: Boolean) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBoolean(a, b))
+    }
+    case class  UpdateByte(a: String, b: Byte) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateByte(a, b))
+    }
+    case class  UpdateByte1(a: Int, b: Byte) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateByte(a, b))
+    }
+    case class  UpdateBytes(a: String, b: Array[Byte]) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBytes(a, b))
+    }
+    case class  UpdateBytes1(a: Int, b: Array[Byte]) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateBytes(a, b))
+    }
+    case class  UpdateCharacterStream(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateCharacterStream(a, b, c))
+    }
+    case class  UpdateCharacterStream1(a: Int, b: Reader, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateCharacterStream(a, b, c))
+    }
+    case class  UpdateCharacterStream2(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateCharacterStream(a, b, c))
+    }
+    case class  UpdateCharacterStream3(a: String, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateCharacterStream(a, b))
+    }
+    case class  UpdateCharacterStream4(a: Int, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateCharacterStream(a, b))
+    }
+    case class  UpdateCharacterStream5(a: String, b: Reader, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateCharacterStream(a, b, c))
+    }
+    case class  UpdateClob(a: String, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateClob(a, b))
+    }
+    case class  UpdateClob1(a: String, b: Clob) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateClob(a, b))
+    }
+    case class  UpdateClob2(a: Int, b: Clob) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateClob(a, b))
+    }
+    case class  UpdateClob3(a: Int, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateClob(a, b))
+    }
+    case class  UpdateClob4(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateClob(a, b, c))
+    }
+    case class  UpdateClob5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateClob(a, b, c))
+    }
+    case class  UpdateDate(a: Int, b: Date) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateDate(a, b))
+    }
+    case class  UpdateDate1(a: String, b: Date) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateDate(a, b))
+    }
+    case class  UpdateDouble(a: Int, b: Double) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateDouble(a, b))
+    }
+    case class  UpdateDouble1(a: String, b: Double) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateDouble(a, b))
+    }
+    case class  UpdateFloat(a: String, b: Float) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateFloat(a, b))
+    }
+    case class  UpdateFloat1(a: Int, b: Float) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateFloat(a, b))
+    }
+    case class  UpdateInt(a: Int, b: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateInt(a, b))
+    }
+    case class  UpdateInt1(a: String, b: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateInt(a, b))
+    }
+    case class  UpdateLong(a: Int, b: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateLong(a, b))
+    }
+    case class  UpdateLong1(a: String, b: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateLong(a, b))
+    }
+    case class  UpdateNCharacterStream(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNCharacterStream(a, b, c))
+    }
+    case class  UpdateNCharacterStream1(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNCharacterStream(a, b, c))
+    }
+    case class  UpdateNCharacterStream2(a: String, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNCharacterStream(a, b))
+    }
+    case class  UpdateNCharacterStream3(a: Int, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNCharacterStream(a, b))
+    }
+    case class  UpdateNClob(a: String, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNClob(a, b))
+    }
+    case class  UpdateNClob1(a: Int, b: NClob) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNClob(a, b))
+    }
+    case class  UpdateNClob2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNClob(a, b, c))
+    }
+    case class  UpdateNClob3(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNClob(a, b, c))
+    }
+    case class  UpdateNClob4(a: Int, b: Reader) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNClob(a, b))
+    }
+    case class  UpdateNClob5(a: String, b: NClob) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNClob(a, b))
+    }
+    case class  UpdateNString(a: String, b: String) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNString(a, b))
+    }
+    case class  UpdateNString1(a: Int, b: String) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNString(a, b))
+    }
+    case class  UpdateNull(a: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNull(a))
+    }
+    case class  UpdateNull1(a: String) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateNull(a))
+    }
+    case class  UpdateObject(a: String, b: Object, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateObject(a, b, c))
+    }
+    case class  UpdateObject1(a: String, b: Object) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateObject(a, b))
+    }
+    case class  UpdateObject2(a: Int, b: Object) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateObject(a, b))
+    }
+    case class  UpdateObject3(a: Int, b: Object, c: Int) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateObject(a, b, c))
+    }
+    case class  UpdateRef(a: Int, b: Ref) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateRef(a, b))
+    }
+    case class  UpdateRef1(a: String, b: Ref) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateRef(a, b))
+    }
+    case object UpdateRow extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateRow)
+    }
+    case class  UpdateRowId(a: Int, b: RowId) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateRowId(a, b))
+    }
+    case class  UpdateRowId1(a: String, b: RowId) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateRowId(a, b))
+    }
+    case class  UpdateSQLXML(a: String, b: SQLXML) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateSQLXML(a, b))
+    }
+    case class  UpdateSQLXML1(a: Int, b: SQLXML) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateSQLXML(a, b))
+    }
+    case class  UpdateShort(a: Int, b: Short) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateShort(a, b))
+    }
+    case class  UpdateShort1(a: String, b: Short) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateShort(a, b))
+    }
+    case class  UpdateString(a: Int, b: String) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateString(a, b))
+    }
+    case class  UpdateString1(a: String, b: String) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateString(a, b))
+    }
+    case class  UpdateTime(a: Int, b: Time) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateTime(a, b))
+    }
+    case class  UpdateTime1(a: String, b: Time) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateTime(a, b))
+    }
+    case class  UpdateTimestamp(a: String, b: Timestamp) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateTimestamp(a, b))
+    }
+    case class  UpdateTimestamp1(a: Int, b: Timestamp) extends ResultSetOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updateTimestamp(a, b))
+    }
+    case object WasNull extends ResultSetOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.wasNull)
+    }
 
   }
   import ResultSetOp._ // We use these immediately
@@ -431,6 +847,13 @@ object resultset {
    */
   def delay[A](a: => A): ResultSetIO[A] =
     F.liftFC(Pure(a _))
+
+  /**
+   * Low-level escape for performance.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: ResultSet => A): ResultSetIO[A] =
+    F.liftFC(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
@@ -1572,228 +1995,8 @@ object resultset {
   */
  def kleisliTrans[M[_]: Monad: Catchable: Capture]: ResultSetOp ~> ({type l[a] = Kleisli[M, ResultSet, a]})#l =
    new (ResultSetOp ~> ({type l[a] = Kleisli[M, ResultSet, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: ResultSet => A): Kleisli[M, ResultSet, A] =
-       Kleisli(s => L.apply(f(s)))
-
      def apply[A](op: ResultSetOp[A]): Kleisli[M, ResultSet, A] = 
-       op match {
-
-        // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case Absolute(a) => primitive(_.absolute(a))
-        case AfterLast => primitive(_.afterLast)
-        case BeforeFirst => primitive(_.beforeFirst)
-        case CancelRowUpdates => primitive(_.cancelRowUpdates)
-        case ClearWarnings => primitive(_.clearWarnings)
-        case Close => primitive(_.close)
-        case DeleteRow => primitive(_.deleteRow)
-        case FindColumn(a) => primitive(_.findColumn(a))
-        case First => primitive(_.first)
-        case GetArray(a) => primitive(_.getArray(a))
-        case GetArray1(a) => primitive(_.getArray(a))
-        case GetAsciiStream(a) => primitive(_.getAsciiStream(a))
-        case GetAsciiStream1(a) => primitive(_.getAsciiStream(a))
-        case GetBigDecimal(a) => primitive(_.getBigDecimal(a))
-        case GetBigDecimal1(a) => primitive(_.getBigDecimal(a))
-        case GetBigDecimal2(a, b) => primitive(_.getBigDecimal(a, b))
-        case GetBigDecimal3(a, b) => primitive(_.getBigDecimal(a, b))
-        case GetBinaryStream(a) => primitive(_.getBinaryStream(a))
-        case GetBinaryStream1(a) => primitive(_.getBinaryStream(a))
-        case GetBlob(a) => primitive(_.getBlob(a))
-        case GetBlob1(a) => primitive(_.getBlob(a))
-        case GetBoolean(a) => primitive(_.getBoolean(a))
-        case GetBoolean1(a) => primitive(_.getBoolean(a))
-        case GetByte(a) => primitive(_.getByte(a))
-        case GetByte1(a) => primitive(_.getByte(a))
-        case GetBytes(a) => primitive(_.getBytes(a))
-        case GetBytes1(a) => primitive(_.getBytes(a))
-        case GetCharacterStream(a) => primitive(_.getCharacterStream(a))
-        case GetCharacterStream1(a) => primitive(_.getCharacterStream(a))
-        case GetClob(a) => primitive(_.getClob(a))
-        case GetClob1(a) => primitive(_.getClob(a))
-        case GetConcurrency => primitive(_.getConcurrency)
-        case GetCursorName => primitive(_.getCursorName)
-        case GetDate(a, b) => primitive(_.getDate(a, b))
-        case GetDate1(a) => primitive(_.getDate(a))
-        case GetDate2(a, b) => primitive(_.getDate(a, b))
-        case GetDate3(a) => primitive(_.getDate(a))
-        case GetDouble(a) => primitive(_.getDouble(a))
-        case GetDouble1(a) => primitive(_.getDouble(a))
-        case GetFetchDirection => primitive(_.getFetchDirection)
-        case GetFetchSize => primitive(_.getFetchSize)
-        case GetFloat(a) => primitive(_.getFloat(a))
-        case GetFloat1(a) => primitive(_.getFloat(a))
-        case GetHoldability => primitive(_.getHoldability)
-        case GetInt(a) => primitive(_.getInt(a))
-        case GetInt1(a) => primitive(_.getInt(a))
-        case GetLong(a) => primitive(_.getLong(a))
-        case GetLong1(a) => primitive(_.getLong(a))
-        case GetMetaData => primitive(_.getMetaData)
-        case GetNCharacterStream(a) => primitive(_.getNCharacterStream(a))
-        case GetNCharacterStream1(a) => primitive(_.getNCharacterStream(a))
-        case GetNClob(a) => primitive(_.getNClob(a))
-        case GetNClob1(a) => primitive(_.getNClob(a))
-        case GetNString(a) => primitive(_.getNString(a))
-        case GetNString1(a) => primitive(_.getNString(a))
-        case GetObject(a, b) => primitive(_.getObject(a, b))
-        case GetObject1(a, b) => primitive(_.getObject(a, b))
-        case GetObject2(a) => primitive(_.getObject(a))
-        case GetObject3(a) => primitive(_.getObject(a))
-        case GetRef(a) => primitive(_.getRef(a))
-        case GetRef1(a) => primitive(_.getRef(a))
-        case GetRow => primitive(_.getRow)
-        case GetRowId(a) => primitive(_.getRowId(a))
-        case GetRowId1(a) => primitive(_.getRowId(a))
-        case GetSQLXML(a) => primitive(_.getSQLXML(a))
-        case GetSQLXML1(a) => primitive(_.getSQLXML(a))
-        case GetShort(a) => primitive(_.getShort(a))
-        case GetShort1(a) => primitive(_.getShort(a))
-        case GetStatement => primitive(_.getStatement)
-        case GetString(a) => primitive(_.getString(a))
-        case GetString1(a) => primitive(_.getString(a))
-        case GetTime(a, b) => primitive(_.getTime(a, b))
-        case GetTime1(a) => primitive(_.getTime(a))
-        case GetTime2(a) => primitive(_.getTime(a))
-        case GetTime3(a, b) => primitive(_.getTime(a, b))
-        case GetTimestamp(a) => primitive(_.getTimestamp(a))
-        case GetTimestamp1(a, b) => primitive(_.getTimestamp(a, b))
-        case GetTimestamp2(a, b) => primitive(_.getTimestamp(a, b))
-        case GetTimestamp3(a) => primitive(_.getTimestamp(a))
-        case GetType => primitive(_.getType)
-        case GetURL(a) => primitive(_.getURL(a))
-        case GetURL1(a) => primitive(_.getURL(a))
-        case GetUnicodeStream(a) => primitive(_.getUnicodeStream(a))
-        case GetUnicodeStream1(a) => primitive(_.getUnicodeStream(a))
-        case GetWarnings => primitive(_.getWarnings)
-        case InsertRow => primitive(_.insertRow)
-        case IsAfterLast => primitive(_.isAfterLast)
-        case IsBeforeFirst => primitive(_.isBeforeFirst)
-        case IsClosed => primitive(_.isClosed)
-        case IsFirst => primitive(_.isFirst)
-        case IsLast => primitive(_.isLast)
-        case IsWrapperFor(a) => primitive(_.isWrapperFor(a))
-        case Last => primitive(_.last)
-        case MoveToCurrentRow => primitive(_.moveToCurrentRow)
-        case MoveToInsertRow => primitive(_.moveToInsertRow)
-        case Next => primitive(_.next)
-        case Previous => primitive(_.previous)
-        case RefreshRow => primitive(_.refreshRow)
-        case Relative(a) => primitive(_.relative(a))
-        case RowDeleted => primitive(_.rowDeleted)
-        case RowInserted => primitive(_.rowInserted)
-        case RowUpdated => primitive(_.rowUpdated)
-        case SetFetchDirection(a) => primitive(_.setFetchDirection(a))
-        case SetFetchSize(a) => primitive(_.setFetchSize(a))
-        case Unwrap(a) => primitive(_.unwrap(a))
-        case UpdateArray(a, b) => primitive(_.updateArray(a, b))
-        case UpdateArray1(a, b) => primitive(_.updateArray(a, b))
-        case UpdateAsciiStream(a, b) => primitive(_.updateAsciiStream(a, b))
-        case UpdateAsciiStream1(a, b, c) => primitive(_.updateAsciiStream(a, b, c))
-        case UpdateAsciiStream2(a, b, c) => primitive(_.updateAsciiStream(a, b, c))
-        case UpdateAsciiStream3(a, b) => primitive(_.updateAsciiStream(a, b))
-        case UpdateAsciiStream4(a, b, c) => primitive(_.updateAsciiStream(a, b, c))
-        case UpdateAsciiStream5(a, b, c) => primitive(_.updateAsciiStream(a, b, c))
-        case UpdateBigDecimal(a, b) => primitive(_.updateBigDecimal(a, b))
-        case UpdateBigDecimal1(a, b) => primitive(_.updateBigDecimal(a, b))
-        case UpdateBinaryStream(a, b, c) => primitive(_.updateBinaryStream(a, b, c))
-        case UpdateBinaryStream1(a, b, c) => primitive(_.updateBinaryStream(a, b, c))
-        case UpdateBinaryStream2(a, b, c) => primitive(_.updateBinaryStream(a, b, c))
-        case UpdateBinaryStream3(a, b) => primitive(_.updateBinaryStream(a, b))
-        case UpdateBinaryStream4(a, b) => primitive(_.updateBinaryStream(a, b))
-        case UpdateBinaryStream5(a, b, c) => primitive(_.updateBinaryStream(a, b, c))
-        case UpdateBlob(a, b) => primitive(_.updateBlob(a, b))
-        case UpdateBlob1(a, b) => primitive(_.updateBlob(a, b))
-        case UpdateBlob2(a, b) => primitive(_.updateBlob(a, b))
-        case UpdateBlob3(a, b) => primitive(_.updateBlob(a, b))
-        case UpdateBlob4(a, b, c) => primitive(_.updateBlob(a, b, c))
-        case UpdateBlob5(a, b, c) => primitive(_.updateBlob(a, b, c))
-        case UpdateBoolean(a, b) => primitive(_.updateBoolean(a, b))
-        case UpdateBoolean1(a, b) => primitive(_.updateBoolean(a, b))
-        case UpdateByte(a, b) => primitive(_.updateByte(a, b))
-        case UpdateByte1(a, b) => primitive(_.updateByte(a, b))
-        case UpdateBytes(a, b) => primitive(_.updateBytes(a, b))
-        case UpdateBytes1(a, b) => primitive(_.updateBytes(a, b))
-        case UpdateCharacterStream(a, b, c) => primitive(_.updateCharacterStream(a, b, c))
-        case UpdateCharacterStream1(a, b, c) => primitive(_.updateCharacterStream(a, b, c))
-        case UpdateCharacterStream2(a, b, c) => primitive(_.updateCharacterStream(a, b, c))
-        case UpdateCharacterStream3(a, b) => primitive(_.updateCharacterStream(a, b))
-        case UpdateCharacterStream4(a, b) => primitive(_.updateCharacterStream(a, b))
-        case UpdateCharacterStream5(a, b, c) => primitive(_.updateCharacterStream(a, b, c))
-        case UpdateClob(a, b) => primitive(_.updateClob(a, b))
-        case UpdateClob1(a, b) => primitive(_.updateClob(a, b))
-        case UpdateClob2(a, b) => primitive(_.updateClob(a, b))
-        case UpdateClob3(a, b) => primitive(_.updateClob(a, b))
-        case UpdateClob4(a, b, c) => primitive(_.updateClob(a, b, c))
-        case UpdateClob5(a, b, c) => primitive(_.updateClob(a, b, c))
-        case UpdateDate(a, b) => primitive(_.updateDate(a, b))
-        case UpdateDate1(a, b) => primitive(_.updateDate(a, b))
-        case UpdateDouble(a, b) => primitive(_.updateDouble(a, b))
-        case UpdateDouble1(a, b) => primitive(_.updateDouble(a, b))
-        case UpdateFloat(a, b) => primitive(_.updateFloat(a, b))
-        case UpdateFloat1(a, b) => primitive(_.updateFloat(a, b))
-        case UpdateInt(a, b) => primitive(_.updateInt(a, b))
-        case UpdateInt1(a, b) => primitive(_.updateInt(a, b))
-        case UpdateLong(a, b) => primitive(_.updateLong(a, b))
-        case UpdateLong1(a, b) => primitive(_.updateLong(a, b))
-        case UpdateNCharacterStream(a, b, c) => primitive(_.updateNCharacterStream(a, b, c))
-        case UpdateNCharacterStream1(a, b, c) => primitive(_.updateNCharacterStream(a, b, c))
-        case UpdateNCharacterStream2(a, b) => primitive(_.updateNCharacterStream(a, b))
-        case UpdateNCharacterStream3(a, b) => primitive(_.updateNCharacterStream(a, b))
-        case UpdateNClob(a, b) => primitive(_.updateNClob(a, b))
-        case UpdateNClob1(a, b) => primitive(_.updateNClob(a, b))
-        case UpdateNClob2(a, b, c) => primitive(_.updateNClob(a, b, c))
-        case UpdateNClob3(a, b, c) => primitive(_.updateNClob(a, b, c))
-        case UpdateNClob4(a, b) => primitive(_.updateNClob(a, b))
-        case UpdateNClob5(a, b) => primitive(_.updateNClob(a, b))
-        case UpdateNString(a, b) => primitive(_.updateNString(a, b))
-        case UpdateNString1(a, b) => primitive(_.updateNString(a, b))
-        case UpdateNull(a) => primitive(_.updateNull(a))
-        case UpdateNull1(a) => primitive(_.updateNull(a))
-        case UpdateObject(a, b, c) => primitive(_.updateObject(a, b, c))
-        case UpdateObject1(a, b) => primitive(_.updateObject(a, b))
-        case UpdateObject2(a, b) => primitive(_.updateObject(a, b))
-        case UpdateObject3(a, b, c) => primitive(_.updateObject(a, b, c))
-        case UpdateRef(a, b) => primitive(_.updateRef(a, b))
-        case UpdateRef1(a, b) => primitive(_.updateRef(a, b))
-        case UpdateRow => primitive(_.updateRow)
-        case UpdateRowId(a, b) => primitive(_.updateRowId(a, b))
-        case UpdateRowId1(a, b) => primitive(_.updateRowId(a, b))
-        case UpdateSQLXML(a, b) => primitive(_.updateSQLXML(a, b))
-        case UpdateSQLXML1(a, b) => primitive(_.updateSQLXML(a, b))
-        case UpdateShort(a, b) => primitive(_.updateShort(a, b))
-        case UpdateShort1(a, b) => primitive(_.updateShort(a, b))
-        case UpdateString(a, b) => primitive(_.updateString(a, b))
-        case UpdateString1(a, b) => primitive(_.updateString(a, b))
-        case UpdateTime(a, b) => primitive(_.updateTime(a, b))
-        case UpdateTime1(a, b) => primitive(_.updateTime(a, b))
-        case UpdateTimestamp(a, b) => primitive(_.updateTimestamp(a, b))
-        case UpdateTimestamp1(a, b) => primitive(_.updateTimestamp(a, b))
-        case WasNull => primitive(_.wasNull)
-  
-      }
-  
+       op.defaultTransK[M]  
     }
 
   /**

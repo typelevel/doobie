@@ -3,7 +3,7 @@ package doobie.util
 import doobie.hi.{ ConnectionIO, PreparedStatementIO }
 import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
 import doobie.hi.preparedstatement.{ set, executeQuery }
-import doobie.hi.resultset.{ getUnique, getOption }
+import doobie.hi.resultset.{ getUnique, getOption, list => rlist }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.syntax.process._
@@ -27,11 +27,10 @@ object query {
 
     def process(a: A): Process[ConnectionIO, B]
 
-    def list(a: A): ConnectionIO[List[B]] =
-      process(a).list
+    def list(a: A): ConnectionIO[List[B]]
 
     def vector(a: A): ConnectionIO[Vector[B]] =
-      process(a).vector
+      list(a).map(_.toVector)
 
     def sink(a: A)(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       process(a).sink(f)
@@ -51,6 +50,7 @@ object query {
         def process(a: A) = q.process(a).map(f)
         def unique(a: A) = q.unique(a).map(f)
         def option(a: A) = q.option(a).map(_.map(f))
+        def list(a: A) = q.list(a).map(_.map(f))
       }
 
     def contramap[C](f: C => A): Query[C, B] =
@@ -61,6 +61,7 @@ object query {
         def process(c: C) = q.process(f(c))
         def unique(c: C) = q.unique(f(c))
         def option(c: C) = q.option(f(c))
+        def list(c: C)   = q.list(f(c))
       }
 
     def toQuery0(a: A): Query0[B] =
@@ -71,6 +72,7 @@ object query {
         def process = q.process(a)
         def unique = q.unique(a)
         def option = q.option(a)
+        def list   = q.list(a)
     }
 
   }
@@ -86,6 +88,7 @@ object query {
         def process(a: A) = cprocess[B](sql, set(a))
         def unique(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getUnique[B]))
         def option(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getOption[B]))
+        def list(a: A)   = prepareStatement(sql)(set(a) >> executeQuery(rlist[B]))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -107,11 +110,10 @@ object query {
 
     def process: Process[ConnectionIO, B] 
 
-    def list: ConnectionIO[List[B]] =
-      process.list
+    def list: ConnectionIO[List[B]]
 
     def vector: ConnectionIO[Vector[B]] =
-      process.vector
+      list.map(_.toVector)
 
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       process.sink(f)
@@ -131,6 +133,7 @@ object query {
         def process = q.process.map(f)
         def unique = q.unique.map(f)
         def option = q.option.map(_.map(f))
+        def list = q.list.map(_.map(f))
       }
 
   }
@@ -146,6 +149,7 @@ object query {
         def process = cprocess[B](sql, Monad[PreparedStatementIO].point(()))
         def unique = prepareStatement(sql)(executeQuery(getUnique[B]))
         def option = prepareStatement(sql)(executeQuery(getOption[B]))
+        def list   = prepareStatement(sql)(executeQuery(rlist[B]))
       }
 
     implicit val query0Covariant: Functor[Query0] =
