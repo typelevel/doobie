@@ -58,9 +58,9 @@ object preparedstatement {
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
 
   /** @group Execution */
-  def process[A: Composite]: Process[PreparedStatementIO, A] =
+  def process[A: CompositeReadable]: Process[PreparedStatementIO, A] =
     resource(PS.executeQuery)(rs =>
-             PS.liftResultSet(rs, RS.close))(rs => 
+             PS.liftResultSet(rs, RS.close))(rs =>
              PS.liftResultSet(rs, resultset.getNext[A]))
 
   /**
@@ -82,14 +82,14 @@ object preparedstatement {
    * Add many sets of parameters and execute as a batch update, returning total rows updated.
    * @group Batching
    */
-  def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
+  def addBatchesAndExecute[F[_]: Foldable, A: CompositeWriteable](fa: F[A]): PreparedStatementIO[Int] =
     fa.foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b).map(_.sum)
 
   /**
    * Add many sets of parameters.
    * @group Batching
    */
-  def addBatches[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Unit] =
+  def addBatches[F[_]: Foldable, A: CompositeWriteable](fa: F[A]): PreparedStatementIO[Unit] =
     fa.foldRight(().point[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
 
   /** @group Execution */
@@ -101,18 +101,18 @@ object preparedstatement {
     PS.executeUpdate
 
   /** @group Execution */
-  def executeUpdateWithUniqueGeneratedKeys[A: Composite] =
+  def executeUpdateWithUniqueGeneratedKeys[A: CompositeReadable] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
  /** @group Execution */
-  def executeUpdateWithGeneratedKeys[A: Composite]: Process[PreparedStatementIO, A] =
+  def executeUpdateWithGeneratedKeys[A: CompositeReadable]: Process[PreparedStatementIO, A] =
     resource(PS.executeUpdate.flatMap(_ => PS.getGeneratedKeys) : PreparedStatementIO[java.sql.ResultSet])(rs =>
              PS.liftResultSet(rs, RS.close))(rs =>
              PS.liftResultSet(rs, resultset.getNext[A]))
 
-  /** 
+  /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
-   * @group Metadata 
+   * @group Metadata
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
     PS.getMetaData.map { md =>
@@ -124,13 +124,13 @@ object preparedstatement {
         ColumnMeta(j, s, n, c)
       }
     }
-  
-  /** 
-   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+
+  /**
+   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta`
    * with the `JdbcMeta` provided by a `Composite` instance.
-   * @group Metadata 
+   * @group Metadata
    */
-  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ColumnMeta]] =
+  def getColumnMappings[A](implicit A: CompositeReadable[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ColumnMeta]] =
     getColumnJdbcMeta.map(m => A.meta align m)
 
   /** @group Properties */
@@ -146,12 +146,12 @@ object preparedstatement {
     PS.getGeneratedKeys.flatMap(s => PS.liftResultSet(s, k ensuring RS.close))
 
   /** @group Results */
-  def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
+  def getUniqueGeneratedKeys[A: CompositeReadable]: PreparedStatementIO[A] =
     getGeneratedKeys(resultset.getUnique[A])
 
-  /** 
+  /**
    * Compute the parameter `JdbcMeta` list for this `PreparedStatement`.
-   * @group Metadata 
+   * @group Metadata
    */
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
     PS.getParameterMetaData.map { md =>
@@ -164,12 +164,12 @@ object preparedstatement {
       }
     }
 
-  /** 
-   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+  /**
+   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta`
    * with the `JdbcMeta` provided by a `Composite` instance.
-   * @group Metadata 
+   * @group Metadata
    */
-  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ParameterMeta]] =
+  def getParameterMappings[A](implicit A: CompositeWriteable[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ParameterMeta]] =
     getParameterJdbcMeta.map(m => A.meta align m)
 
   /** @group Properties */
@@ -179,7 +179,7 @@ object preparedstatement {
   /** @group Properties */
   val getMaxRows: PreparedStatementIO[Int] =
     PS.getMaxRows
-     
+
   /** @group MetaData */
   val getMetaData: PreparedStatementIO[ResultSetMetaData] =
     PS.getMetaData
@@ -208,18 +208,18 @@ object preparedstatement {
   val getWarnings: PreparedStatementIO[SQLWarning] =
     PS.getWarnings
 
-  /** 
+  /**
    * Set the given composite value, starting at column `n`.
-   * @group Parameters 
+   * @group Parameters
    */
-  def set[A](n: Int, a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
+  def set[A](n: Int, a: A)(implicit A: CompositeWriteable[A]): PreparedStatementIO[Unit] =
     A.set(n, a)
 
-  /** 
+  /**
    * Set the given composite value, starting at column `1`.
-   * @group Parameters 
+   * @group Parameters
    */
-  def set[A](a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
+  def set[A](a: A)(implicit A: CompositeWriteable[A]): PreparedStatementIO[Unit] =
     A.set(1, a)
 
   /** @group Properties */

@@ -97,6 +97,12 @@ object imports {
   /** @group Type Aliases */      type Composite[A] = doobie.util.composite.Composite[A]
   /** @group Companion Aliases */ val  Composite    = doobie.util.composite.Composite
 
+  /** @group Type Aliases */      type CompositeReadable[A] = doobie.util.composite.CompositeReadable[A]
+  /** @group Companion Aliases */ val  CompositeReadable    = doobie.util.composite.CompositeReadable
+
+  /** @group Type Aliases */      type CompositeWriteable[A] = doobie.util.composite.CompositeWriteable[A]
+  /** @group Companion Aliases */ val  CompositeWriteable   = doobie.util.composite.CompositeWriteable
+
   /** @group Type Aliases */      type Query[A,B] = doobie.util.query.Query[A,B]
   /** @group Companion Aliases */ val  Query      = doobie.util.query.Query
 

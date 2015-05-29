@@ -23,13 +23,61 @@ import java.sql.ParameterMetaData
  */
 object composite {
 
+  @implicitNotFound("Could not find or construct CompositeReadable[${A}].")
+  trait CompositeReadable[A] { self =>
+    def get: Int => RS.ResultSetIO[A]
+    def length: Int
+    def meta: List[(Meta[_], NullabilityKnown)]
+    def map[B](f: A => B): CompositeReadable[B] =
+      new CompositeReadable[B] {
+        val get = self.get >>> (_ map f )
+        val length = self.length
+        val meta = self.meta
+      }
+  }
+
+  object CompositeReadable {
+    def apply[A](implicit A: CompositeReadable[A]): CompositeReadable[A] = A
+
+    implicit def fromComposite[A: Composite]: CompositeReadable[A] = Composite[A]
+
+    implicit val compositeReadableFunctor: Functor[CompositeReadable] =
+      new Functor[CompositeReadable] {
+        def map[A, B](fa: CompositeReadable[A])(f: A => B): CompositeReadable[B] =
+          fa map f
+      }
+  }
+
+  @implicitNotFound("Could not find or construct CompositeWriteable[${A}].")
+  trait CompositeWriteable[A] { self =>
+    def set: (Int, A) => PS.PreparedStatementIO[Unit]
+    def update: (Int, A) => RS.ResultSetIO[Unit]
+    def length: Int
+    def meta: List[(Meta[_], NullabilityKnown)]
+
+    def contramap[B](f: B => A): CompositeWriteable[B] =
+      new CompositeWriteable[B] {
+        val set = (i: Int, b: B) => self.set(i, f(b))
+        val update = (i: Int, b: B) => self.update(i, f(b))
+        val length = self.length
+        val meta = self.meta
+      }
+  }
+
+  object CompositeWriteable {
+    def apply[A](implicit A: CompositeWriteable[A]): CompositeWriteable[A] = A
+
+    implicit def fromComposite[A: Composite]: CompositeWriteable[A] = Composite[A]
+
+    implicit val compositeWriteableContravariant: Contravariant[CompositeWriteable] =
+      new Contravariant[CompositeWriteable] {
+        def contramap[A, B](r: CompositeWriteable[A])(f: B => A): CompositeWriteable[B] =
+          r contramap f
+      }
+  }
+
   @implicitNotFound("Could not find or construct Composite[${A}].")
-  trait Composite[A] { c =>
-    val set: (Int, A) => PS.PreparedStatementIO[Unit]
-    val update: (Int, A) => RS.ResultSetIO[Unit]
-    val get: Int => RS.ResultSetIO[A]
-    val length: Int
-    val meta: List[(Meta[_], NullabilityKnown)]
+  trait Composite[A] extends CompositeReadable[A] with CompositeWriteable[A] { c =>
     final def xmap[B](f: A => B, g: B => A): Composite[B] =
       new Composite[B] {
         val set    = (n: Int, b: B) => c.set(n, g(b))

@@ -4,7 +4,8 @@ import doobie.hi.{ ConnectionIO, PreparedStatementIO }
 import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
 import doobie.hi.preparedstatement.{ set, executeQuery }
 import doobie.hi.resultset.{ getUnique, getOption }
-import doobie.util.composite.Composite
+import doobie.util.composite.CompositeWriteable
+import doobie.util.composite.CompositeReadable
 import doobie.util.analysis.Analysis
 import doobie.syntax.process._
 
@@ -78,7 +79,7 @@ object query {
   object Query {
 
     /** Construct a `Query` for the given parameter and output types. */
-    def apply[A: Composite, B: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Query[A, B] =
+    def apply[A: CompositeWriteable, B: CompositeReadable](sql0: String, stackFrame0: Option[StackTraceElement]): Query[A, B] =
       new Query[A, B] {
         val sql = sql0
         val stackFrame = stackFrame0
@@ -105,7 +106,7 @@ object query {
   /** Encapsulates a `ConnectionIO` that prepares and executes a zero-parameter statement. */
   trait Query0[B] extends QueryDiagnostics { q =>
 
-    def process: Process[ConnectionIO, B] 
+    def process: Process[ConnectionIO, B]
 
     def list: ConnectionIO[List[B]] =
       process.list
@@ -138,7 +139,7 @@ object query {
   object Query0 {
 
     /** Construct a `Query0` for the given parameter and output types. */
-    def apply[B: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Query0[B] =
+    def apply[B: CompositeReadable](sql0: String, stackFrame0: Option[StackTraceElement]): Query0[B] =
       new Query0[B] {
         val sql = sql0
         val stackFrame = stackFrame0

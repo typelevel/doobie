@@ -11,7 +11,8 @@ import doobie.syntax.catchable._
 import doobie.syntax.process._
 
 import doobie.util.analysis.Analysis
-import doobie.util.composite.Composite
+import doobie.util.composite.CompositeReadable
+import doobie.util.composite.CompositeWriteable
 import doobie.util.process.resource
 import doobie.util.capture.Capture
 
@@ -36,7 +37,7 @@ import scalaz.syntax.id._
 import scalaz.syntax.monad._
 
 /**
- * Module of high-level constructors for `ConnectionIO` actions. 
+ * Module of high-level constructors for `ConnectionIO` actions.
  * @group Modules
  */
 object connection {
@@ -52,17 +53,17 @@ object connection {
     C.delay(a)
 
   // TODO: make this public if the API sticks; still iffy
-  private def liftProcess[A: Composite](
+  private def liftProcess[A: CompositeReadable](
     create: ConnectionIO[PreparedStatement],
-    prep:   PreparedStatementIO[Unit], 
+    prep:   PreparedStatementIO[Unit],
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
-    
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] =
       resource(
         create)(ps =>
         C.liftPreparedStatement(ps, PS.close))(ps =>
         Option(ps).point[ConnectionIO]).take(1) // note
-  
+
     def results(ps: PreparedStatement): Process[ConnectionIO, A] =
       resource(
         C.liftPreparedStatement(ps, exec))(rs =>
@@ -80,19 +81,19 @@ object connection {
   /**
    * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
    * action, and return results via a `Process`.
-   * @group Prepared Statements 
+   * @group Prepared Statements
    */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = 
+  def process[A: CompositeReadable](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
     liftProcess(C.prepareStatement(sql), prep, PS.executeQuery)
 
   /**
    * Construct a prepared update statement with the given return columns (and composite destination
-   * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return 
-   * the generated key results via a 
+   * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return
+   * the generated key results via a
    * `Process`.
-   * @group Prepared Statements 
+   * @group Prepared Statements
    */
-  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
+  def updateWithGeneratedKeys[A: CompositeReadable](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
     liftProcess(C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
 
   /** @group Prepared Statements */
@@ -104,26 +105,26 @@ object connection {
     C.commit
 
   /**
-   * Construct an analysis for the provided `sql` query, given parameter composite type `A` and 
+   * Construct an analysis for the provided `sql` query, given parameter composite type `A` and
    * resultset row composite `B`.
    */
-  def prepareQueryAnalysis[A: Composite, B: Composite](sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+  def prepareQueryAnalysis[A: CompositeWriteable, B: CompositeReadable](sql: String): ConnectionIO[Analysis] =
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       (HPS.getParameterMappings[A] |@| HPS.getColumnMappings[B])(Analysis(sql, m, _, _))
     })
 
-  def prepareQueryAnalysis0[B: Composite](sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+  def prepareQueryAnalysis0[B: CompositeReadable](sql: String): ConnectionIO[Analysis] =
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       HPS.getColumnMappings[B] map (cm => Analysis(sql, m, Nil, cm))
     })
 
-  def prepareUpdateAnalysis[A: Composite](sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+  def prepareUpdateAnalysis[A: CompositeWriteable](sql: String): ConnectionIO[Analysis] =
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       HPS.getParameterMappings[A] map (pm => Analysis(sql, m, pm, Nil))
     })
 
   def prepareUpdateAnalysis0(sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       Analysis(sql, m, Nil, Nil).point[PreparedStatementIO]
     })
 
@@ -257,12 +258,13 @@ object connection {
       })
   }
 
-  /** 
+  /**
    * Compute a map from native type to closest-matching JDBC type.
-   * @group MetaData 
+   * @group MetaData
    */
   val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
-    getMetaData(DMD.getTypeInfo.flatMap(DMD.liftResultSet(_, HRS.process[(String, JdbcType)].list.map(_.toMap))))   
+    import doobie.util.composite.Composite._ // implicit for tuple
+    getMetaData(DMD.getTypeInfo.flatMap(DMD.liftResultSet(_, HRS.process[(String, JdbcType)].list.map(_.toMap))))
   }
 }
 
