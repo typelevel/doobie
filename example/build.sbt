@@ -1,11 +1,6 @@
 
 libraryDependencies ++= Seq(
-  "com.h2database" %  "h2"                 % "1.3.170",
-  "io.argonaut"    %% "argonaut"           % "6.1-M4",
-  "org.http4s"     %% "http4s-core"        % "0.3.0",
-  "org.http4s"     %% "http4s-dsl"         % "0.3.0",
-  "org.http4s"     %% "http4s-blazeserver" % "0.3.0",
-  "org.http4s"     %% "http4s-argonaut"    % "0.3.0"
+  "com.h2database" %  "h2"                 % "1.3.170"
 )
 
 libraryDependencies ++= Seq(
@@ -18,3 +13,9 @@ scalacOptions ++= Seq(
 )
 
 publishArtifact := false
+
+def macroParadise(v: String): List[ModuleID] =
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  else Nil
+
+libraryDependencies ++= macroParadise(scalaVersion.value)

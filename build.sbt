@@ -10,7 +10,7 @@ licenses in ThisBuild ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))
 
 scalaVersion in ThisBuild := "2.11.6"
 
-crossScalaVersions in ThisBuild := Seq("2.10.4", scalaVersion.value)
+crossScalaVersions in ThisBuild := Seq("2.10.5", scalaVersion.value)
 
 scalacOptions in ThisBuild ++= Seq(
   "-encoding", "UTF-8", // 2 args
@@ -33,11 +33,17 @@ scalacOptions in (Compile, doc) ++= Seq(
   "-skip-packages", "scalaz"
 )
 
-/// UNIDOC
+// UNIDOC
 
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
+
+def macroParadise(v: String): List[ModuleID] =
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  else Nil
+
+libraryDependencies in ThisBuild ++= macroParadise(scalaVersion.value)
 
 unidocSettings
 
@@ -60,3 +66,5 @@ lazy val specs2 = project.in(file("contrib/specs2")).dependsOn(core)
 lazy val docs = project.in(file("doc")).dependsOn(core, postgres, specs2, hikari, h2)
 
 publishArtifact := false
+
+
