@@ -71,8 +71,9 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.2/00-index.htm
 
 ## Presentations, Blog Posts, etc.
 
-If you have given a presentation or have written a blog post on **doobie**, let me know and I'll add it to this list.
+Listed newest first. If you have given a presentation or have written a blog post on **doobie**, let me know and I'll add it to this list.
 
+- [**Richard Dallaway**](https://twitter.com/d6y) of [underscore](http://underscore.io/) wrote a good article demonstrating [SQL literal checking](http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html) in Slick and **doobie**.
 - [**Da Terry**](https://twitter.com/da_terry) gave a presentation at [ScalaSyd](http://www.meetup.com/scalasyd/) on **doobie**, [argonaut](http://argonaut.io/), and [http4s](http://http4s.org/). Slides [here](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) and code [here](https://bitbucket.org/da_terry/scalasyd-doobie-http4s).
 
 
