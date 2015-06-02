@@ -1,2 +1,0 @@
-
-publishArtifact := false
