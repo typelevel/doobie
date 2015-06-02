@@ -9,11 +9,11 @@ This is another minor release that adds yet more support PostgreSQL-specific fea
 Additions:
 
 - Added `HC.updateManyWithGeneratedKeys` and associated syntax on `Update` to allow batch updates to return updated rows. See [Chapter 7](http://tpolecat.github.io/doobie-0.2.2/07-Updating.html) for an example.
-- Added algebras and free monads for PostgreSQL vendor-specific driver APIs, which allows **doobie** to directly support `LISTEN/NOTIFY`, `COPY FROM STDIN` and a number of other interesting features. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.2/13-Extensions-PostgreSQL.html) for details and examples.
+- Added algebras and free monads thereof for PostgreSQL vendor-specific driver APIs, which allows **doobie** to directly support `LISTEN/NOTIFY`, `COPY FROM STDIN` and a number of other interesting features. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.2/13-Extensions-PostgreSQL.html) for details and examples.
 
 Improvements:
 
-- Huge improvements to the implementation of the `sql` interpolator, courtesy of [@milessabin](https://twitter.com/milessabin). This removes the current 50-parameter arity limit.
+- Huge improvements to the implementation of the `sql` interpolator, courtesy of [@milessabin](https://twitter.com/milessabin). This removes the last remaining arity limit.
 - Added examples for PostgreSQL-specific error handling combinators. See [Chapter 13](http://tpolecat.github.io/doobie-0.2.2/13-Extensions-PostgreSQL.html) for more information.
 - Added `Unapply` instances to make the `Monad` instance for `FreeC` and associated syntax conversions inferrable. For now these are on the `doobie.imports` module.
 - Significant performance improvements for resultset processing, with `.list` and `.vector` now ~4.5x faster and `.process` ~2.5x faster. This work is ongoing.
