@@ -42,7 +42,7 @@ lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(unidocSettings)
-  .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example))
+  .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
   .dependsOn(core, example, postgres, h2, hikari, specs2, docs, bench)
   .aggregate(core, example, postgres, h2, hikari, specs2, docs, bench)
 
@@ -175,7 +175,20 @@ lazy val docs = project.in(file("doc"))
       val xa = DriverManagerTransactor[Task](
         "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
       )
-      """
+      """,
+    ctut := {
+      val src = crossTarget.value / "tut"
+      val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
+      if (!src.isDirectory) {
+        println("Input directory " + src + " not found.")
+      } else if (!dst.isDirectory) {
+        println("Output directory " + dst + " not found.")
+      } else {
+        println("Copying to " + dst.getPath)
+        val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
+        IO.copy(map, overwrite = true, preserveLastModified = false)
+      }
+    }
   )
   .settings(libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4")
   .dependsOn(core, postgres, specs2, hikari, h2)
@@ -196,18 +209,4 @@ def macroParadise(v: String): List[ModuleID] =
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
-
-ctut := {
-  val src = crossTarget.value / "tut"
-  val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
-  if (!src.isDirectory) {
-    println("Input directory " + dst + " not found.")
-  } else if (!dst.isDirectory) {
-    println("Output directory " + dst + " not found.")
-  } else {
-    println("Copying to " + dst.getPath)
-    val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
-    IO.copy(map, overwrite = true, preserveLastModified = false)
-  }
-}
 
