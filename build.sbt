@@ -30,7 +30,7 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.specs2" %% "specs2" % "2.4" % "test"
+      "org.specs2" %% "specs2-core" % "3.6" % "test"
     ),
     resolvers += "bintray/non" at "http://dl.bintray.com/non/maven",
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
@@ -39,9 +39,9 @@ lazy val commonSettings = Seq(
 lazy val doobieSettings = buildSettings ++ commonSettings ++ bintrayPublishSettings
 
 lazy val doobie = project.in(file("."))
-  .settings(doobieSettings:_*)
-  .settings(noPublishSettings:_*)
-  .settings(unidocSettings:_*)
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
+  .settings(unidocSettings)
   .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example))
   .dependsOn(core, example, postgres, h2, hikari, specs2, docs, bench)
   .aggregate(core, example, postgres, h2, hikari, specs2, docs, bench)
@@ -49,7 +49,7 @@ lazy val doobie = project.in(file("."))
 lazy val core = project.in(file("core"))
   .settings(name := "doobie-core")
   .settings(description := "Pure functional JDBC layer for Scala.")
-  .settings(doobieSettings:_*)
+  .settings(doobieSettings)
   .settings(resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases")
   .settings(
     libraryDependencies ++= Seq(
@@ -62,7 +62,7 @@ lazy val core = project.in(file("core"))
     )
   )
   .settings(scalacOptions += "-Yno-predef")
-  .settings(freeGenSettings:_*)
+  .settings(freeGenSettings)
   .settings(freeGenDir := (scalaSource in Compile).value / "doobie" / "free")
   .settings(
     freeGenClasses := {
@@ -109,20 +109,20 @@ lazy val core = project.in(file("core"))
 
 
 lazy val example = project.in(file("example"))
-  .settings(doobieSettings:_*)
+  .settings(doobieSettings)
   .settings(libraryDependencies ++= Seq(
       "com.h2database" %  "h2"         % "1.3.170",
       "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
     )
   )
   .settings(scalacOptions += "-deprecation")
-  .settings(noPublishSettings:_*)
+  .settings(noPublishSettings)
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val postgres = project.in(file("contrib/postgresql"))
   .settings(name := "doobie-contrib-postgresql")
   .settings(description := "PostgreSQL support for doobie.")
-  .settings(doobieSettings:_*)
+  .settings(doobieSettings)
   .settings(
     libraryDependencies ++= Seq(
       "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41",
@@ -147,28 +147,28 @@ lazy val postgres = project.in(file("contrib/postgresql"))
 lazy val h2 = project.in(file("contrib/h2"))
   .settings(name := "doobie-contrib-h2")
   .settings(description := "H2 support for doobie.")
-  .settings(doobieSettings:_*)
+  .settings(doobieSettings)
   .settings(libraryDependencies += "com.h2database" % "h2"  % "1.3.170")
   .dependsOn(core)
 
 lazy val hikari = project.in(file("contrib/hikari"))
   .settings(name := "doobie-contrib-hikari")
   .settings(description := "Hikari support for doobie.")
-  .settings(doobieSettings:_*)
+  .settings(doobieSettings)
   .settings(libraryDependencies += "com.zaxxer" % "HikariCP-java6" % "2.2.5")
   .dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2"))
   .settings(name := "doobie-contrib-specs2")
   .settings(description := "Specs2 support for doobie.")
-  .settings(doobieSettings:_*)
+  .settings(doobieSettings)
   .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.6")
   .dependsOn(core)
 
 lazy val docs = project.in(file("doc"))
-  .settings(doobieSettings:_*)
-  .settings(noPublishSettings:_*)
-  .settings(tutSettings:_*)
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
+  .settings(tutSettings)
   .settings(
     initialCommands := """
       import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
@@ -181,8 +181,8 @@ lazy val docs = project.in(file("doc"))
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val bench = project.in(file("bench"))
-  .settings(doobieSettings:_*)
-  .settings(noPublishSettings:_*)
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
   .dependsOn(core, postgres)
 
 lazy val noPublishSettings = Seq(
