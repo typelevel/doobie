@@ -25,8 +25,9 @@ import scala.collection.JavaConverters._
 import scala.Predef.intArrayOps
 
 import scalaz.Monad
+import scalaz.MonadPlus
 import scalaz.syntax.id._
-import scalaz.syntax.applicative._
+import scalaz.syntax.monadPlus._
 import scalaz.stream.Process
 
 /**
@@ -91,18 +92,11 @@ object resultset {
     A.get(1)
 
   /**
-   * Like `getNext` but loops until the end of the resultset, gathering results in a `List`.
+   * Like `getNext` but loops until the end of the resultset, gathering results in a `MonadPlus`.
    * @group Results 
    */
-  def list[A: Composite]: ResultSetIO[List[A]] = {
-    val a = get[A]
-    def go(as: List[A]): ResultSetIO[List[A]] = 
-      next flatMap { b =>
-        if (b) a.flatMap { a => go(a :: as) }
-        else as.point[ResultSetIO]
-      }
-    go(Nil).map(_.reverse)
-  }
+  def accumulate[G[_]: MonadPlus, A: Composite]: ResultSetIO[G[A]] =
+    get[A].whileM(next)
 
   /** 
    * Updates a value of type `A` starting at column `n`.
