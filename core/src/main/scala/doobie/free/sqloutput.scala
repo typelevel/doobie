@@ -7,7 +7,6 @@ import doobie.util.capture._
 
 import java.io.InputStream
 import java.io.Reader
-import java.lang.Object
 import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
@@ -26,7 +25,6 @@ import java.sql.RowId
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
-import java.sql.SQLType
 import java.sql.SQLXML
 import java.sql.Statement
 import java.sql.Struct
@@ -201,10 +199,7 @@ object sqloutput {
     case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNString(a))
     }
-    case class  WriteObject(a: Object, b: SQLType) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a, b))
-    }
-    case class  WriteObject1(a: SQLData) extends SQLOutputOp[Unit] {
+    case class  WriteObject(a: SQLData) extends SQLOutputOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
     }
     case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
@@ -475,14 +470,8 @@ object sqloutput {
   /** 
    * @group Constructors (Primitives)
    */
-  def writeObject(a: Object, b: SQLType): SQLOutputIO[Unit] =
-    F.liftFC(WriteObject(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def writeObject(a: SQLData): SQLOutputIO[Unit] =
-    F.liftFC(WriteObject1(a))
+    F.liftFC(WriteObject(a))
 
   /** 
    * @group Constructors (Primitives)

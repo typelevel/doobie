@@ -7,7 +7,6 @@ import doobie.util.capture._
 
 import java.io.InputStream
 import java.io.Reader
-import java.lang.Class
 import java.lang.Object
 import java.lang.String
 import java.math.BigDecimal
@@ -200,10 +199,7 @@ object sqlinput {
     case object ReadNString extends SQLInputOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNString())
     }
-    case class  ReadObject[T](a: Class[T]) extends SQLInputOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject(a))
-    }
-    case object ReadObject1 extends SQLInputOp[Object] {
+    case object ReadObject extends SQLInputOp[Object] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject())
     }
     case object ReadRef extends SQLInputOp[Ref] {
@@ -474,14 +470,8 @@ object sqlinput {
   /** 
    * @group Constructors (Primitives)
    */
-  def readObject[T](a: Class[T]): SQLInputIO[T] =
-    F.liftFC(ReadObject(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   val readObject: SQLInputIO[Object] =
-    F.liftFC(ReadObject1)
+    F.liftFC(ReadObject)
 
   /** 
    * @group Constructors (Primitives)

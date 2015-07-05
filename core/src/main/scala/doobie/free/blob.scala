@@ -162,11 +162,11 @@ object blob {
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
     }
-    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
-    }
-    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+    case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+    }
+    case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -358,14 +358,14 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
-    F.liftFC(SetBytes(a, b, c, d))
+  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
+    F.liftFC(SetBytes(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
-    F.liftFC(SetBytes1(a, b))
+  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
+    F.liftFC(SetBytes1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
