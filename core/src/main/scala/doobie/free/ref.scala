@@ -71,7 +71,11 @@ object ref {
    * Sum type of primitive operations over a `java.sql.Ref`.
    * @group Algebra 
    */
-  sealed trait RefOp[A]
+  sealed trait RefOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: Ref => A): Kleisli[M, Ref, A] = 
+      Kleisli((s: Ref) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Ref, A]
+  }
 
   /** 
    * Module of constructors for `RefOp`. These are rarely useful outside of the implementation;
@@ -81,29 +85,72 @@ object ref {
   object RefOp {
     
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends RefOp[A]
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends RefOp[A]
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends RefOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends RefOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends RefOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends RefOp[A]
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends RefOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends RefOp[A]
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends RefOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends RefOp[A]
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends RefOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends RefOp[A]
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends RefOp[A]
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: RefIO[A]) extends RefOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends RefOp[A]
+    case class Attempt[A](action: RefIO[A]) extends RefOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, Ref, ?]]].attempt(action.transK[M])
+    }
+    case class Pure[A](a: () => A) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: Ref => A) extends RefOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case object GetBaseTypeName extends RefOp[String]
-    case class  GetObject(a: Map[String, Class[_]]) extends RefOp[Object]
-    case object GetObject1 extends RefOp[Object]
-    case class  SetObject(a: Object) extends RefOp[Unit]
+    case object GetBaseTypeName extends RefOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
+    }
+    case object GetObject extends RefOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
+    }
+    case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+    }
+    case class  SetObject(a: Object) extends RefOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
+    }
 
   }
   import RefOp._ // We use these immediately
@@ -233,6 +280,13 @@ object ref {
   def delay[A](a: => A): RefIO[A] =
     F.liftFC(Pure(a _))
 
+  /**
+   * Backdoor for arbitrary computations on the underlying Ref.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: Ref => A): RefIO[A] =
+    F.liftFC(Raw(f))
+
   /** 
    * @group Constructors (Primitives)
    */
@@ -242,14 +296,14 @@ object ref {
   /** 
    * @group Constructors (Primitives)
    */
-  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
-    F.liftFC(GetObject(a))
+  val getObject: RefIO[Object] =
+    F.liftFC(GetObject)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getObject: RefIO[Object] =
-    F.liftFC(GetObject1)
+  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
+    F.liftFC(GetObject1(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -261,45 +315,10 @@ object ref {
   * Natural transformation from `RefOp` to `Kleisli` for the given `M`, consuming a `java.sql.Ref`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: RefOp ~> ({type l[a] = Kleisli[M, Ref, a]})#l =
-   new (RefOp ~> ({type l[a] = Kleisli[M, Ref, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: Ref => A): Kleisli[M, Ref, A] =
-       Kleisli(s => L.apply(f(s)))
-
-     def apply[A](op: RefOp[A]): Kleisli[M, Ref, A] = 
-       op match {
-
-        // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case GetBaseTypeName => primitive(_.getBaseTypeName)
-        case GetObject(a) => primitive(_.getObject(a))
-        case GetObject1 => primitive(_.getObject)
-        case SetObject(a) => primitive(_.setObject(a))
-  
-      }
-  
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: RefOp ~> Kleisli[M, Ref, ?] =
+    new (RefOp ~> Kleisli[M, Ref, ?]) {
+      def apply[A](op: RefOp[A]): Kleisli[M, Ref, A] =
+        op.defaultTransK[M]
     }
 
   /**
@@ -308,7 +327,7 @@ object ref {
    */
   implicit class RefIOOps[A](ma: RefIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Ref, A] =
-      F.runFC[RefOp,({type l[a]=Kleisli[M,Ref,a]})#l,A](ma)(kleisliTrans[M])
+      F.runFC[RefOp, Kleisli[M, Ref, ?], A](ma)(kleisliTrans[M])
   }
 
 }

@@ -80,7 +80,11 @@ object sqlinput {
    * Sum type of primitive operations over a `java.sql.SQLInput`.
    * @group Algebra 
    */
-  sealed trait SQLInputOp[A]
+  sealed trait SQLInputOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: SQLInput => A): Kleisli[M, SQLInput, A] = 
+      Kleisli((s: SQLInput) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLInput, A]
+  }
 
   /** 
    * Module of constructors for `SQLInputOp`. These are rarely useful outside of the implementation;
@@ -90,52 +94,141 @@ object sqlinput {
   object SQLInputOp {
     
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends SQLInputOp[A]
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends SQLInputOp[A]
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends SQLInputOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends SQLInputOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends SQLInputOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends SQLInputOp[A]
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends SQLInputOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends SQLInputOp[A]
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends SQLInputOp[A]
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends SQLInputOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends SQLInputOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends SQLInputOp[A]
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends SQLInputOp[A]
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: SQLInputIO[A]) extends SQLInputOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends SQLInputOp[A]
+    case class Attempt[A](action: SQLInputIO[A]) extends SQLInputOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, SQLInput, ?]]].attempt(action.transK[M])
+    }
+    case class Pure[A](a: () => A) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: SQLInput => A) extends SQLInputOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case object ReadArray extends SQLInputOp[SqlArray]
-    case object ReadAsciiStream extends SQLInputOp[InputStream]
-    case object ReadBigDecimal extends SQLInputOp[BigDecimal]
-    case object ReadBinaryStream extends SQLInputOp[InputStream]
-    case object ReadBlob extends SQLInputOp[Blob]
-    case object ReadBoolean extends SQLInputOp[Boolean]
-    case object ReadByte extends SQLInputOp[Byte]
-    case object ReadBytes extends SQLInputOp[Array[Byte]]
-    case object ReadCharacterStream extends SQLInputOp[Reader]
-    case object ReadClob extends SQLInputOp[Clob]
-    case object ReadDate extends SQLInputOp[Date]
-    case object ReadDouble extends SQLInputOp[Double]
-    case object ReadFloat extends SQLInputOp[Float]
-    case object ReadInt extends SQLInputOp[Int]
-    case object ReadLong extends SQLInputOp[Long]
-    case object ReadNClob extends SQLInputOp[NClob]
-    case object ReadNString extends SQLInputOp[String]
-    case object ReadObject extends SQLInputOp[Object]
-    case object ReadRef extends SQLInputOp[Ref]
-    case object ReadRowId extends SQLInputOp[RowId]
-    case object ReadSQLXML extends SQLInputOp[SQLXML]
-    case object ReadShort extends SQLInputOp[Short]
-    case object ReadString extends SQLInputOp[String]
-    case object ReadTime extends SQLInputOp[Time]
-    case object ReadTimestamp extends SQLInputOp[Timestamp]
-    case object ReadURL extends SQLInputOp[URL]
-    case object WasNull extends SQLInputOp[Boolean]
+    case object ReadArray extends SQLInputOp[SqlArray] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readArray())
+    }
+    case object ReadAsciiStream extends SQLInputOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readAsciiStream())
+    }
+    case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBigDecimal())
+    }
+    case object ReadBinaryStream extends SQLInputOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBinaryStream())
+    }
+    case object ReadBlob extends SQLInputOp[Blob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBlob())
+    }
+    case object ReadBoolean extends SQLInputOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBoolean())
+    }
+    case object ReadByte extends SQLInputOp[Byte] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readByte())
+    }
+    case object ReadBytes extends SQLInputOp[Array[Byte]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBytes())
+    }
+    case object ReadCharacterStream extends SQLInputOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readCharacterStream())
+    }
+    case object ReadClob extends SQLInputOp[Clob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readClob())
+    }
+    case object ReadDate extends SQLInputOp[Date] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readDate())
+    }
+    case object ReadDouble extends SQLInputOp[Double] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readDouble())
+    }
+    case object ReadFloat extends SQLInputOp[Float] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readFloat())
+    }
+    case object ReadInt extends SQLInputOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readInt())
+    }
+    case object ReadLong extends SQLInputOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readLong())
+    }
+    case object ReadNClob extends SQLInputOp[NClob] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNClob())
+    }
+    case object ReadNString extends SQLInputOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNString())
+    }
+    case object ReadObject extends SQLInputOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject())
+    }
+    case object ReadRef extends SQLInputOp[Ref] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readRef())
+    }
+    case object ReadRowId extends SQLInputOp[RowId] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readRowId())
+    }
+    case object ReadSQLXML extends SQLInputOp[SQLXML] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readSQLXML())
+    }
+    case object ReadShort extends SQLInputOp[Short] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readShort())
+    }
+    case object ReadString extends SQLInputOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readString())
+    }
+    case object ReadTime extends SQLInputOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readTime())
+    }
+    case object ReadTimestamp extends SQLInputOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readTimestamp())
+    }
+    case object ReadURL extends SQLInputOp[URL] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readURL())
+    }
+    case object WasNull extends SQLInputOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.wasNull())
+    }
 
   }
   import SQLInputOp._ // We use these immediately
@@ -264,6 +357,13 @@ object sqlinput {
    */
   def delay[A](a: => A): SQLInputIO[A] =
     F.liftFC(Pure(a _))
+
+  /**
+   * Backdoor for arbitrary computations on the underlying SQLInput.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: SQLInput => A): SQLInputIO[A] =
+    F.liftFC(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
@@ -431,68 +531,10 @@ object sqlinput {
   * Natural transformation from `SQLInputOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLInput`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: SQLInputOp ~> ({type l[a] = Kleisli[M, SQLInput, a]})#l =
-   new (SQLInputOp ~> ({type l[a] = Kleisli[M, SQLInput, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: SQLInput => A): Kleisli[M, SQLInput, A] =
-       Kleisli(s => L.apply(f(s)))
-
-     def apply[A](op: SQLInputOp[A]): Kleisli[M, SQLInput, A] = 
-       op match {
-
-        // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case ReadArray => primitive(_.readArray)
-        case ReadAsciiStream => primitive(_.readAsciiStream)
-        case ReadBigDecimal => primitive(_.readBigDecimal)
-        case ReadBinaryStream => primitive(_.readBinaryStream)
-        case ReadBlob => primitive(_.readBlob)
-        case ReadBoolean => primitive(_.readBoolean)
-        case ReadByte => primitive(_.readByte)
-        case ReadBytes => primitive(_.readBytes)
-        case ReadCharacterStream => primitive(_.readCharacterStream)
-        case ReadClob => primitive(_.readClob)
-        case ReadDate => primitive(_.readDate)
-        case ReadDouble => primitive(_.readDouble)
-        case ReadFloat => primitive(_.readFloat)
-        case ReadInt => primitive(_.readInt)
-        case ReadLong => primitive(_.readLong)
-        case ReadNClob => primitive(_.readNClob)
-        case ReadNString => primitive(_.readNString)
-        case ReadObject => primitive(_.readObject)
-        case ReadRef => primitive(_.readRef)
-        case ReadRowId => primitive(_.readRowId)
-        case ReadSQLXML => primitive(_.readSQLXML)
-        case ReadShort => primitive(_.readShort)
-        case ReadString => primitive(_.readString)
-        case ReadTime => primitive(_.readTime)
-        case ReadTimestamp => primitive(_.readTimestamp)
-        case ReadURL => primitive(_.readURL)
-        case WasNull => primitive(_.wasNull)
-  
-      }
-  
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: SQLInputOp ~> Kleisli[M, SQLInput, ?] =
+    new (SQLInputOp ~> Kleisli[M, SQLInput, ?]) {
+      def apply[A](op: SQLInputOp[A]): Kleisli[M, SQLInput, A] =
+        op.defaultTransK[M]
     }
 
   /**
@@ -501,7 +543,7 @@ object sqlinput {
    */
   implicit class SQLInputIOOps[A](ma: SQLInputIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLInput, A] =
-      F.runFC[SQLInputOp,({type l[a]=Kleisli[M,SQLInput,a]})#l,A](ma)(kleisliTrans[M])
+      F.runFC[SQLInputOp, Kleisli[M, SQLInput, ?], A](ma)(kleisliTrans[M])
   }
 
 }

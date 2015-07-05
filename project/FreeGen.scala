@@ -95,10 +95,12 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
 
     // Case class/object declaration
     def ctor(sname:String): String =
-      "case " + (cparams match {
+      ("|case " + (cparams match {
         case Nil => s"object $cname" 
         case ps  => s"class  $cname$ctparams(${cargs.mkString(", ")})"
-      }) + s" extends ${sname}Op[$ret]"
+      }) + s""" extends ${sname}Op[$ret] {
+        |      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.$mname($args))
+        |    }""").trim.stripMargin
 
     // Argument list: a, b, c, ... up to the proper arity
     def args: String =
@@ -140,7 +142,10 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
   
   def liftingCtors(sname: String): List[String] =
     managed.toList.map(toScalaType).sorted.filterNot(_ == sname).map { c => 
-      s"case class Lift${c}IO[A](s: ${c}, action: ${c}IO[A]) extends ${sname}Op[A]"
+      s"""|case class Lift${c}IO[A](s: ${c}, action: ${c}IO[A]) extends ${sname}Op[A] {
+          |      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+          |    }
+       """.trim.stripMargin
     }
 
   def liftingSmartCtors(sname: String): List[String] =
@@ -165,6 +170,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
   // This class, plus any superclasses and interfaces, "all the way up"
   def closure(c: Class[_]): List[Class[_]] =
     (c :: (Option(c.getSuperclass).toList ++ c.getInterfaces.toList).flatMap(closure)).distinct
+      .filterNot(_.getName == "java.lang.AutoCloseable") // not available in jdk1.6
 
   // All method for this class and any superclasses/interfaces
   def methods(c: Class[_]): List[Method] =
@@ -242,7 +248,11 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * Sum type of primitive operations over a `${ev.runtimeClass.getName}`.
     |   * @group Algebra 
     |   */
-    |  sealed trait ${sname}Op[A]
+    |  sealed trait ${sname}Op[A] {
+    |    protected def primitive[M[_]: Monad: Capture](f: ${sname} => A): Kleisli[M, ${sname}, A] = 
+    |      Kleisli((s: ${sname}) => Capture[M].apply(f(s)))
+    |    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A]
+    |  }
     |
     |  /** 
     |   * Module of constructors for `${sname}Op`. These are rarely useful outside of the implementation;
@@ -255,8 +265,17 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |    ${liftingCtors(sname).mkString("\n    ")}
     |
     |    // Combinators
-    |    case class Attempt[A](action: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A]
-    |    case class Pure[A](a: () => A) extends ${sname}Op[A]
+    |    case class Attempt[A](action: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A] {
+    |      import scalaz._, Scalaz._
+    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+    |        Predef.implicitly[Catchable[Kleisli[M, ${sname}, ?]]].attempt(action.transK[M])
+    |    }
+    |    case class Pure[A](a: () => A) extends ${sname}Op[A] {
+    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    |    }
+    |    case class Raw[A](f: ${sname} => A) extends ${sname}Op[A] {
+    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    |    }
     |
     |    // Primitive Operations
     |    ${ctors[A].map(_.ctor(sname)).mkString("\n    ")}
@@ -313,36 +332,23 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  def delay[A](a: => A): ${sname}IO[A] =
     |    F.liftFC(Pure(a _))
     |
+    |  /**
+    |   * Backdoor for arbitrary computations on the underlying ${sname}.
+    |   * @group Constructors (Lifting)
+    |   */
+    |  def raw[A](f: ${sname} => A): ${sname}IO[A] =
+    |    F.liftFC(Raw(f))
+    |
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n\n  ")}
     |
     | /** 
     |  * Natural transformation from `${sname}Op` to `Kleisli` for the given `M`, consuming a `${ev.runtimeClass.getName}`. 
     |  * @group Algebra
     |  */
-    | def kleisliTrans[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l =
-    |   new (${sname}Op ~> ({type l[a] = Kleisli[M, ${sname}, a]})#l) {
-    |     import scalaz.syntax.catchable._
-    |
-    |     val L = Predef.implicitly[Capture[M]]
-    |
-    |     def primitive[A](f: ${sname} => A): Kleisli[M, ${sname}, A] =
-    |       Kleisli(s => L.apply(f(s)))
-    |
-    |     def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] = 
-    |       op match {
-    |
-    |        // Lifting
-    |        ${liftingCases(sname).mkString("\n        ")}
-    |  
-    |        // Combinators
-    |        case Pure(a) => primitive(_ => a())
-    |        case Attempt(a) => a.transK[M].attempt
-    |  
-    |        // Primitive Operations
-    |        ${ctors[A].map(_.prim(sname)).mkString("\n        ")}
-    |  
-    |      }
-    |  
+    |  def kleisliTrans[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
+    |    new (${sname}Op ~> Kleisli[M, ${sname}, ?]) {
+    |      def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] =
+    |        op.defaultTransK[M]
     |    }
     |
     |  /**
@@ -351,7 +357,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   */
     |  implicit class ${sname}IOOps[A](ma: ${sname}IO[A]) {
     |    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A] =
-    |      F.runFC[${sname}Op,({type l[a]=Kleisli[M,${sname},a]})#l,A](ma)(kleisliTrans[M])
+    |      F.runFC[${sname}Op, Kleisli[M, ${sname}, ?], A](ma)(kleisliTrans[M])
     |  }
     |
     |}
