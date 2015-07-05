@@ -73,7 +73,11 @@ object nclob {
    * Sum type of primitive operations over a `java.sql.NClob`.
    * @group Algebra 
    */
-  sealed trait NClobOp[A]
+  sealed trait NClobOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: NClob => A): Kleisli[M, NClob, A] = 
+      Kleisli((s: NClob) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, NClob, A]
+  }
 
   /** 
    * Module of constructors for `NClobOp`. These are rarely useful outside of the implementation;
@@ -83,38 +87,99 @@ object nclob {
   object NClobOp {
     
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends NClobOp[A]
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends NClobOp[A]
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends NClobOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends NClobOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends NClobOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends NClobOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends NClobOp[A]
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends NClobOp[A]
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends NClobOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends NClobOp[A]
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends NClobOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends NClobOp[A]
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends NClobOp[A]
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: NClobIO[A]) extends NClobOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends NClobOp[A]
+    case class Attempt[A](action: NClobIO[A]) extends NClobOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, NClob, ?]]].attempt(action.transK[M])
+    }
+    case class Pure[A](a: () => A) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: NClob => A) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case object Free extends NClobOp[Unit]
-    case object GetAsciiStream extends NClobOp[InputStream]
-    case class  GetCharacterStream(a: Long, b: Long) extends NClobOp[Reader]
-    case object GetCharacterStream1 extends NClobOp[Reader]
-    case class  GetSubString(a: Long, b: Int) extends NClobOp[String]
-    case object Length extends NClobOp[Long]
-    case class  Position(a: String, b: Long) extends NClobOp[Long]
-    case class  Position1(a: Clob, b: Long) extends NClobOp[Long]
-    case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream]
-    case class  SetCharacterStream(a: Long) extends NClobOp[Writer]
-    case class  SetString(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int]
-    case class  SetString1(a: Long, b: String) extends NClobOp[Int]
-    case class  Truncate(a: Long) extends NClobOp[Unit]
+    case object Free extends NClobOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
+    }
+    case object GetAsciiStream extends NClobOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
+    }
+    case class  GetCharacterStream(a: Long, b: Long) extends NClobOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
+    }
+    case object GetCharacterStream1 extends NClobOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
+    }
+    case class  GetSubString(a: Long, b: Int) extends NClobOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
+    }
+    case object Length extends NClobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
+    }
+    case class  Position(a: String, b: Long) extends NClobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+    }
+    case class  Position1(a: Clob, b: Long) extends NClobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+    }
+    case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a))
+    }
+    case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
+    }
+    case class  SetString(a: Long, b: String) extends NClobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+    }
+    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
+    }
+    case class  Truncate(a: Long) extends NClobOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
+    }
 
   }
   import NClobOp._ // We use these immediately
@@ -244,6 +309,13 @@ object nclob {
   def delay[A](a: => A): NClobIO[A] =
     F.liftFC(Pure(a _))
 
+  /**
+   * Backdoor for arbitrary computations on the underlying NClob.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: NClob => A): NClobIO[A] =
+    F.liftFC(Raw(f))
+
   /** 
    * @group Constructors (Primitives)
    */
@@ -307,14 +379,14 @@ object nclob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
-    F.liftFC(SetString(a, b, c, d))
+  def setString(a: Long, b: String): NClobIO[Int] =
+    F.liftFC(SetString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String): NClobIO[Int] =
-    F.liftFC(SetString1(a, b))
+  def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
+    F.liftFC(SetString1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
@@ -326,54 +398,10 @@ object nclob {
   * Natural transformation from `NClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.NClob`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: NClobOp ~> ({type l[a] = Kleisli[M, NClob, a]})#l =
-   new (NClobOp ~> ({type l[a] = Kleisli[M, NClob, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: NClob => A): Kleisli[M, NClob, A] =
-       Kleisli(s => L.apply(f(s)))
-
-     def apply[A](op: NClobOp[A]): Kleisli[M, NClob, A] = 
-       op match {
-
-        // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case Free => primitive(_.free)
-        case GetAsciiStream => primitive(_.getAsciiStream)
-        case GetCharacterStream(a, b) => primitive(_.getCharacterStream(a, b))
-        case GetCharacterStream1 => primitive(_.getCharacterStream)
-        case GetSubString(a, b) => primitive(_.getSubString(a, b))
-        case Length => primitive(_.length)
-        case Position(a, b) => primitive(_.position(a, b))
-        case Position1(a, b) => primitive(_.position(a, b))
-        case SetAsciiStream(a) => primitive(_.setAsciiStream(a))
-        case SetCharacterStream(a) => primitive(_.setCharacterStream(a))
-        case SetString(a, b, c, d) => primitive(_.setString(a, b, c, d))
-        case SetString1(a, b) => primitive(_.setString(a, b))
-        case Truncate(a) => primitive(_.truncate(a))
-  
-      }
-  
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: NClobOp ~> Kleisli[M, NClob, ?] =
+    new (NClobOp ~> Kleisli[M, NClob, ?]) {
+      def apply[A](op: NClobOp[A]): Kleisli[M, NClob, A] =
+        op.defaultTransK[M]
     }
 
   /**
@@ -382,7 +410,7 @@ object nclob {
    */
   implicit class NClobIOOps[A](ma: NClobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, NClob, A] =
-      F.runFC[NClobOp,({type l[a]=Kleisli[M,NClob,a]})#l,A](ma)(kleisliTrans[M])
+      F.runFC[NClobOp, Kleisli[M, NClob, ?], A](ma)(kleisliTrans[M])
   }
 
 }

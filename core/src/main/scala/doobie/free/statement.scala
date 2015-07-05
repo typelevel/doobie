@@ -72,7 +72,11 @@ object statement {
    * Sum type of primitive operations over a `java.sql.Statement`.
    * @group Algebra 
    */
-  sealed trait StatementOp[A]
+  sealed trait StatementOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: Statement => A): Kleisli[M, Statement, A] = 
+      Kleisli((s: Statement) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Statement, A]
+  }
 
   /** 
    * Module of constructors for `StatementOp`. These are rarely useful outside of the implementation;
@@ -82,67 +86,216 @@ object statement {
   object StatementOp {
     
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends StatementOp[A]
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends StatementOp[A]
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends StatementOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends StatementOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends StatementOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends StatementOp[A]
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends StatementOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends StatementOp[A]
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends StatementOp[A]
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends StatementOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends StatementOp[A]
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends StatementOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends StatementOp[A]
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: StatementIO[A]) extends StatementOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends StatementOp[A]
+    case class Attempt[A](action: StatementIO[A]) extends StatementOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, Statement, ?]]].attempt(action.transK[M])
+    }
+    case class Pure[A](a: () => A) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: Statement => A) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case class  AddBatch(a: String) extends StatementOp[Unit]
-    case object Cancel extends StatementOp[Unit]
-    case object ClearBatch extends StatementOp[Unit]
-    case object ClearWarnings extends StatementOp[Unit]
-    case object Close extends StatementOp[Unit]
-    case class  Execute(a: String, b: Int) extends StatementOp[Boolean]
-    case class  Execute1(a: String) extends StatementOp[Boolean]
-    case class  Execute2(a: String, b: Array[Int]) extends StatementOp[Boolean]
-    case class  Execute3(a: String, b: Array[String]) extends StatementOp[Boolean]
-    case object ExecuteBatch extends StatementOp[Array[Int]]
-    case class  ExecuteQuery(a: String) extends StatementOp[ResultSet]
-    case class  ExecuteUpdate(a: String, b: Int) extends StatementOp[Int]
-    case class  ExecuteUpdate1(a: String) extends StatementOp[Int]
-    case class  ExecuteUpdate2(a: String, b: Array[String]) extends StatementOp[Int]
-    case class  ExecuteUpdate3(a: String, b: Array[Int]) extends StatementOp[Int]
-    case object GetConnection extends StatementOp[Connection]
-    case object GetFetchDirection extends StatementOp[Int]
-    case object GetFetchSize extends StatementOp[Int]
-    case object GetGeneratedKeys extends StatementOp[ResultSet]
-    case object GetMaxFieldSize extends StatementOp[Int]
-    case object GetMaxRows extends StatementOp[Int]
-    case class  GetMoreResults(a: Int) extends StatementOp[Boolean]
-    case object GetMoreResults1 extends StatementOp[Boolean]
-    case object GetQueryTimeout extends StatementOp[Int]
-    case object GetResultSet extends StatementOp[ResultSet]
-    case object GetResultSetConcurrency extends StatementOp[Int]
-    case object GetResultSetHoldability extends StatementOp[Int]
-    case object GetResultSetType extends StatementOp[Int]
-    case object GetUpdateCount extends StatementOp[Int]
-    case object GetWarnings extends StatementOp[SQLWarning]
-    case object IsClosed extends StatementOp[Boolean]
-    case object IsPoolable extends StatementOp[Boolean]
-    case class  IsWrapperFor(a: Class[_]) extends StatementOp[Boolean]
-    case class  SetCursorName(a: String) extends StatementOp[Unit]
-    case class  SetEscapeProcessing(a: Boolean) extends StatementOp[Unit]
-    case class  SetFetchDirection(a: Int) extends StatementOp[Unit]
-    case class  SetFetchSize(a: Int) extends StatementOp[Unit]
-    case class  SetMaxFieldSize(a: Int) extends StatementOp[Unit]
-    case class  SetMaxRows(a: Int) extends StatementOp[Unit]
-    case class  SetPoolable(a: Boolean) extends StatementOp[Unit]
-    case class  SetQueryTimeout(a: Int) extends StatementOp[Unit]
-    case class  Unwrap[T](a: Class[T]) extends StatementOp[T]
+    case class  AddBatch(a: String) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.addBatch(a))
+    }
+    case object Cancel extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.cancel())
+    }
+    case object ClearBatch extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearBatch())
+    }
+    case object ClearWarnings extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearWarnings())
+    }
+    case object Close extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.close())
+    }
+    case object CloseOnCompletion extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.closeOnCompletion())
+    }
+    case class  Execute(a: String) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
+    }
+    case class  Execute1(a: String, b: Array[String]) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    }
+    case class  Execute2(a: String, b: Array[Int]) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    }
+    case class  Execute3(a: String, b: Int) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    }
+    case object ExecuteBatch extends StatementOp[Array[Int]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeBatch())
+    }
+    case object ExecuteLargeBatch extends StatementOp[Array[Long]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeBatch())
+    }
+    case class  ExecuteLargeUpdate(a: String, b: Array[String]) extends StatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
+    }
+    case class  ExecuteLargeUpdate1(a: String, b: Array[Int]) extends StatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
+    }
+    case class  ExecuteLargeUpdate2(a: String, b: Int) extends StatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
+    }
+    case class  ExecuteLargeUpdate3(a: String) extends StatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a))
+    }
+    case class  ExecuteQuery(a: String) extends StatementOp[ResultSet] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery(a))
+    }
+    case class  ExecuteUpdate(a: String) extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
+    }
+    case class  ExecuteUpdate1(a: String, b: Array[Int]) extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate2(a: String, b: Int) extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate3(a: String, b: Array[String]) extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case object GetConnection extends StatementOp[Connection] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
+    }
+    case object GetFetchDirection extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchDirection())
+    }
+    case object GetFetchSize extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchSize())
+    }
+    case object GetGeneratedKeys extends StatementOp[ResultSet] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getGeneratedKeys())
+    }
+    case object GetLargeMaxRows extends StatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLargeMaxRows())
+    }
+    case object GetLargeUpdateCount extends StatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLargeUpdateCount())
+    }
+    case object GetMaxFieldSize extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxFieldSize())
+    }
+    case object GetMaxRows extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRows())
+    }
+    case class  GetMoreResults(a: Int) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults(a))
+    }
+    case object GetMoreResults1 extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
+    }
+    case object GetQueryTimeout extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getQueryTimeout())
+    }
+    case object GetResultSet extends StatementOp[ResultSet] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSet())
+    }
+    case object GetResultSetConcurrency extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetConcurrency())
+    }
+    case object GetResultSetHoldability extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetHoldability())
+    }
+    case object GetResultSetType extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetType())
+    }
+    case object GetUpdateCount extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUpdateCount())
+    }
+    case object GetWarnings extends StatementOp[SQLWarning] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getWarnings())
+    }
+    case object IsCloseOnCompletion extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isCloseOnCompletion())
+    }
+    case object IsClosed extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isClosed())
+    }
+    case object IsPoolable extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isPoolable())
+    }
+    case class  IsWrapperFor(a: Class[_]) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
+    }
+    case class  SetCursorName(a: String) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCursorName(a))
+    }
+    case class  SetEscapeProcessing(a: Boolean) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setEscapeProcessing(a))
+    }
+    case class  SetFetchDirection(a: Int) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchDirection(a))
+    }
+    case class  SetFetchSize(a: Int) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchSize(a))
+    }
+    case class  SetLargeMaxRows(a: Long) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLargeMaxRows(a))
+    }
+    case class  SetMaxFieldSize(a: Int) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxFieldSize(a))
+    }
+    case class  SetMaxRows(a: Int) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxRows(a))
+    }
+    case class  SetPoolable(a: Boolean) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setPoolable(a))
+    }
+    case class  SetQueryTimeout(a: Int) extends StatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setQueryTimeout(a))
+    }
+    case class  Unwrap[T](a: Class[T]) extends StatementOp[T] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
+    }
 
   }
   import StatementOp._ // We use these immediately
@@ -272,6 +425,13 @@ object statement {
   def delay[A](a: => A): StatementIO[A] =
     F.liftFC(Pure(a _))
 
+  /**
+   * Backdoor for arbitrary computations on the underlying Statement.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: Statement => A): StatementIO[A] =
+    F.liftFC(Raw(f))
+
   /** 
    * @group Constructors (Primitives)
    */
@@ -305,14 +465,20 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Int): StatementIO[Boolean] =
-    F.liftFC(Execute(a, b))
+  val closeOnCompletion: StatementIO[Unit] =
+    F.liftFC(CloseOnCompletion)
 
   /** 
    * @group Constructors (Primitives)
    */
   def execute(a: String): StatementIO[Boolean] =
-    F.liftFC(Execute1(a))
+    F.liftFC(Execute(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def execute(a: String, b: Array[String]): StatementIO[Boolean] =
+    F.liftFC(Execute1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -323,7 +489,7 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[String]): StatementIO[Boolean] =
+  def execute(a: String, b: Int): StatementIO[Boolean] =
     F.liftFC(Execute3(a, b))
 
   /** 
@@ -335,31 +501,61 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
+  val executeLargeBatch: StatementIO[Array[Long]] =
+    F.liftFC(ExecuteLargeBatch)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String, b: Array[String]): StatementIO[Long] =
+    F.liftFC(ExecuteLargeUpdate(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String, b: Array[Int]): StatementIO[Long] =
+    F.liftFC(ExecuteLargeUpdate1(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String, b: Int): StatementIO[Long] =
+    F.liftFC(ExecuteLargeUpdate2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String): StatementIO[Long] =
+    F.liftFC(ExecuteLargeUpdate3(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def executeQuery(a: String): StatementIO[ResultSet] =
     F.liftFC(ExecuteQuery(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String, b: Int): StatementIO[Int] =
-    F.liftFC(ExecuteUpdate(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def executeUpdate(a: String): StatementIO[Int] =
-    F.liftFC(ExecuteUpdate1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeUpdate(a: String, b: Array[String]): StatementIO[Int] =
-    F.liftFC(ExecuteUpdate2(a, b))
+    F.liftFC(ExecuteUpdate(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def executeUpdate(a: String, b: Array[Int]): StatementIO[Int] =
+    F.liftFC(ExecuteUpdate1(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeUpdate(a: String, b: Int): StatementIO[Int] =
+    F.liftFC(ExecuteUpdate2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeUpdate(a: String, b: Array[String]): StatementIO[Int] =
     F.liftFC(ExecuteUpdate3(a, b))
 
   /** 
@@ -385,6 +581,18 @@ object statement {
    */
   val getGeneratedKeys: StatementIO[ResultSet] =
     F.liftFC(GetGeneratedKeys)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val getLargeMaxRows: StatementIO[Long] =
+    F.liftFC(GetLargeMaxRows)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val getLargeUpdateCount: StatementIO[Long] =
+    F.liftFC(GetLargeUpdateCount)
 
   /** 
    * @group Constructors (Primitives)
@@ -455,6 +663,12 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
+  val isCloseOnCompletion: StatementIO[Boolean] =
+    F.liftFC(IsCloseOnCompletion)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   val isClosed: StatementIO[Boolean] =
     F.liftFC(IsClosed)
 
@@ -497,6 +711,12 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
+  def setLargeMaxRows(a: Long): StatementIO[Unit] =
+    F.liftFC(SetLargeMaxRows(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def setMaxFieldSize(a: Int): StatementIO[Unit] =
     F.liftFC(SetMaxFieldSize(a))
 
@@ -528,83 +748,10 @@ object statement {
   * Natural transformation from `StatementOp` to `Kleisli` for the given `M`, consuming a `java.sql.Statement`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: StatementOp ~> ({type l[a] = Kleisli[M, Statement, a]})#l =
-   new (StatementOp ~> ({type l[a] = Kleisli[M, Statement, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: Statement => A): Kleisli[M, Statement, A] =
-       Kleisli(s => L.apply(f(s)))
-
-     def apply[A](op: StatementOp[A]): Kleisli[M, Statement, A] = 
-       op match {
-
-        // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case AddBatch(a) => primitive(_.addBatch(a))
-        case Cancel => primitive(_.cancel)
-        case ClearBatch => primitive(_.clearBatch)
-        case ClearWarnings => primitive(_.clearWarnings)
-        case Close => primitive(_.close)
-        case Execute(a, b) => primitive(_.execute(a, b))
-        case Execute1(a) => primitive(_.execute(a))
-        case Execute2(a, b) => primitive(_.execute(a, b))
-        case Execute3(a, b) => primitive(_.execute(a, b))
-        case ExecuteBatch => primitive(_.executeBatch)
-        case ExecuteQuery(a) => primitive(_.executeQuery(a))
-        case ExecuteUpdate(a, b) => primitive(_.executeUpdate(a, b))
-        case ExecuteUpdate1(a) => primitive(_.executeUpdate(a))
-        case ExecuteUpdate2(a, b) => primitive(_.executeUpdate(a, b))
-        case ExecuteUpdate3(a, b) => primitive(_.executeUpdate(a, b))
-        case GetConnection => primitive(_.getConnection)
-        case GetFetchDirection => primitive(_.getFetchDirection)
-        case GetFetchSize => primitive(_.getFetchSize)
-        case GetGeneratedKeys => primitive(_.getGeneratedKeys)
-        case GetMaxFieldSize => primitive(_.getMaxFieldSize)
-        case GetMaxRows => primitive(_.getMaxRows)
-        case GetMoreResults(a) => primitive(_.getMoreResults(a))
-        case GetMoreResults1 => primitive(_.getMoreResults)
-        case GetQueryTimeout => primitive(_.getQueryTimeout)
-        case GetResultSet => primitive(_.getResultSet)
-        case GetResultSetConcurrency => primitive(_.getResultSetConcurrency)
-        case GetResultSetHoldability => primitive(_.getResultSetHoldability)
-        case GetResultSetType => primitive(_.getResultSetType)
-        case GetUpdateCount => primitive(_.getUpdateCount)
-        case GetWarnings => primitive(_.getWarnings)
-        case IsClosed => primitive(_.isClosed)
-        case IsPoolable => primitive(_.isPoolable)
-        case IsWrapperFor(a) => primitive(_.isWrapperFor(a))
-        case SetCursorName(a) => primitive(_.setCursorName(a))
-        case SetEscapeProcessing(a) => primitive(_.setEscapeProcessing(a))
-        case SetFetchDirection(a) => primitive(_.setFetchDirection(a))
-        case SetFetchSize(a) => primitive(_.setFetchSize(a))
-        case SetMaxFieldSize(a) => primitive(_.setMaxFieldSize(a))
-        case SetMaxRows(a) => primitive(_.setMaxRows(a))
-        case SetPoolable(a) => primitive(_.setPoolable(a))
-        case SetQueryTimeout(a) => primitive(_.setQueryTimeout(a))
-        case Unwrap(a) => primitive(_.unwrap(a))
-  
-      }
-  
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: StatementOp ~> Kleisli[M, Statement, ?] =
+    new (StatementOp ~> Kleisli[M, Statement, ?]) {
+      def apply[A](op: StatementOp[A]): Kleisli[M, Statement, A] =
+        op.defaultTransK[M]
     }
 
   /**
@@ -613,7 +760,7 @@ object statement {
    */
   implicit class StatementIOOps[A](ma: StatementIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Statement, A] =
-      F.runFC[StatementOp,({type l[a]=Kleisli[M,Statement,a]})#l,A](ma)(kleisliTrans[M])
+      F.runFC[StatementOp, Kleisli[M, Statement, ?], A](ma)(kleisliTrans[M])
   }
 
 }

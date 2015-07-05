@@ -73,7 +73,11 @@ object clob {
    * Sum type of primitive operations over a `java.sql.Clob`.
    * @group Algebra 
    */
-  sealed trait ClobOp[A]
+  sealed trait ClobOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: Clob => A): Kleisli[M, Clob, A] = 
+      Kleisli((s: Clob) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Clob, A]
+  }
 
   /** 
    * Module of constructors for `ClobOp`. These are rarely useful outside of the implementation;
@@ -83,38 +87,99 @@ object clob {
   object ClobOp {
     
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends ClobOp[A]
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends ClobOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends ClobOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends ClobOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends ClobOp[A]
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends ClobOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends ClobOp[A]
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends ClobOp[A]
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends ClobOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends ClobOp[A]
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends ClobOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends ClobOp[A]
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends ClobOp[A]
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: ClobIO[A]) extends ClobOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends ClobOp[A]
+    case class Attempt[A](action: ClobIO[A]) extends ClobOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].attempt(action.transK[M])
+    }
+    case class Pure[A](a: () => A) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: Clob => A) extends ClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case object Free extends ClobOp[Unit]
-    case object GetAsciiStream extends ClobOp[InputStream]
-    case class  GetCharacterStream(a: Long, b: Long) extends ClobOp[Reader]
-    case object GetCharacterStream1 extends ClobOp[Reader]
-    case class  GetSubString(a: Long, b: Int) extends ClobOp[String]
-    case object Length extends ClobOp[Long]
-    case class  Position(a: String, b: Long) extends ClobOp[Long]
-    case class  Position1(a: Clob, b: Long) extends ClobOp[Long]
-    case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream]
-    case class  SetCharacterStream(a: Long) extends ClobOp[Writer]
-    case class  SetString(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int]
-    case class  SetString1(a: Long, b: String) extends ClobOp[Int]
-    case class  Truncate(a: Long) extends ClobOp[Unit]
+    case object Free extends ClobOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
+    }
+    case object GetAsciiStream extends ClobOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
+    }
+    case class  GetCharacterStream(a: Long, b: Long) extends ClobOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
+    }
+    case object GetCharacterStream1 extends ClobOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
+    }
+    case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
+    }
+    case object Length extends ClobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
+    }
+    case class  Position(a: String, b: Long) extends ClobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+    }
+    case class  Position1(a: Clob, b: Long) extends ClobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+    }
+    case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a))
+    }
+    case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
+    }
+    case class  SetString(a: Long, b: String) extends ClobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+    }
+    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
+    }
+    case class  Truncate(a: Long) extends ClobOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
+    }
 
   }
   import ClobOp._ // We use these immediately
@@ -244,6 +309,13 @@ object clob {
   def delay[A](a: => A): ClobIO[A] =
     F.liftFC(Pure(a _))
 
+  /**
+   * Backdoor for arbitrary computations on the underlying Clob.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: Clob => A): ClobIO[A] =
+    F.liftFC(Raw(f))
+
   /** 
    * @group Constructors (Primitives)
    */
@@ -307,14 +379,14 @@ object clob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String, c: Int, d: Int): ClobIO[Int] =
-    F.liftFC(SetString(a, b, c, d))
+  def setString(a: Long, b: String): ClobIO[Int] =
+    F.liftFC(SetString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String): ClobIO[Int] =
-    F.liftFC(SetString1(a, b))
+  def setString(a: Long, b: String, c: Int, d: Int): ClobIO[Int] =
+    F.liftFC(SetString1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
@@ -326,54 +398,10 @@ object clob {
   * Natural transformation from `ClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Clob`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: ClobOp ~> ({type l[a] = Kleisli[M, Clob, a]})#l =
-   new (ClobOp ~> ({type l[a] = Kleisli[M, Clob, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: Clob => A): Kleisli[M, Clob, A] =
-       Kleisli(s => L.apply(f(s)))
-
-     def apply[A](op: ClobOp[A]): Kleisli[M, Clob, A] = 
-       op match {
-
-        // Lifting
-        case LiftBlobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case Free => primitive(_.free)
-        case GetAsciiStream => primitive(_.getAsciiStream)
-        case GetCharacterStream(a, b) => primitive(_.getCharacterStream(a, b))
-        case GetCharacterStream1 => primitive(_.getCharacterStream)
-        case GetSubString(a, b) => primitive(_.getSubString(a, b))
-        case Length => primitive(_.length)
-        case Position(a, b) => primitive(_.position(a, b))
-        case Position1(a, b) => primitive(_.position(a, b))
-        case SetAsciiStream(a) => primitive(_.setAsciiStream(a))
-        case SetCharacterStream(a) => primitive(_.setCharacterStream(a))
-        case SetString(a, b, c, d) => primitive(_.setString(a, b, c, d))
-        case SetString1(a, b) => primitive(_.setString(a, b))
-        case Truncate(a) => primitive(_.truncate(a))
-  
-      }
-  
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, Clob, ?] =
+    new (ClobOp ~> Kleisli[M, Clob, ?]) {
+      def apply[A](op: ClobOp[A]): Kleisli[M, Clob, A] =
+        op.defaultTransK[M]
     }
 
   /**
@@ -382,7 +410,7 @@ object clob {
    */
   implicit class ClobIOOps[A](ma: ClobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Clob, A] =
-      F.runFC[ClobOp,({type l[a]=Kleisli[M,Clob,a]})#l,A](ma)(kleisliTrans[M])
+      F.runFC[ClobOp, Kleisli[M, Clob, ?], A](ma)(kleisliTrans[M])
   }
 
 }

@@ -70,7 +70,11 @@ object blob {
    * Sum type of primitive operations over a `java.sql.Blob`.
    * @group Algebra 
    */
-  sealed trait BlobOp[A]
+  sealed trait BlobOp[A] {
+    protected def primitive[M[_]: Monad: Capture](f: Blob => A): Kleisli[M, Blob, A] = 
+      Kleisli((s: Blob) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A]
+  }
 
   /** 
    * Module of constructors for `BlobOp`. These are rarely useful outside of the implementation;
@@ -80,36 +84,93 @@ object blob {
   object BlobOp {
     
     // Lifting
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends BlobOp[A]
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends BlobOp[A]
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends BlobOp[A]
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends BlobOp[A]
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends BlobOp[A]
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends BlobOp[A]
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends BlobOp[A]
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends BlobOp[A]
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends BlobOp[A]
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends BlobOp[A]
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends BlobOp[A]
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends BlobOp[A]
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends BlobOp[A]
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
 
     // Combinators
-    case class Attempt[A](action: BlobIO[A]) extends BlobOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends BlobOp[A]
+    case class Attempt[A](action: BlobIO[A]) extends BlobOp[Throwable \/ A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, Blob, ?]]].attempt(action.transK[M])
+    }
+    case class Pure[A](a: () => A) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    }
+    case class Raw[A](f: Blob => A) extends BlobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    }
 
     // Primitive Operations
-    case object Free extends BlobOp[Unit]
-    case class  GetBinaryStream(a: Long, b: Long) extends BlobOp[InputStream]
-    case object GetBinaryStream1 extends BlobOp[InputStream]
-    case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]]
-    case object Length extends BlobOp[Long]
-    case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long]
-    case class  Position1(a: Blob, b: Long) extends BlobOp[Long]
-    case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream]
-    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int]
-    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int]
-    case class  Truncate(a: Long) extends BlobOp[Unit]
+    case object Free extends BlobOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
+    }
+    case class  GetBinaryStream(a: Long, b: Long) extends BlobOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
+    }
+    case object GetBinaryStream1 extends BlobOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
+    }
+    case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a, b))
+    }
+    case object Length extends BlobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
+    }
+    case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+    }
+    case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+    }
+    case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
+    }
+    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
+    }
+    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+    }
+    case class  Truncate(a: Long) extends BlobOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
+    }
 
   }
   import BlobOp._ // We use these immediately
@@ -239,6 +300,13 @@ object blob {
   def delay[A](a: => A): BlobIO[A] =
     F.liftFC(Pure(a _))
 
+  /**
+   * Backdoor for arbitrary computations on the underlying Blob.
+   * @group Constructors (Lifting)
+   */
+  def raw[A](f: Blob => A): BlobIO[A] =
+    F.liftFC(Raw(f))
+
   /** 
    * @group Constructors (Primitives)
    */
@@ -309,52 +377,10 @@ object blob {
   * Natural transformation from `BlobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Blob`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: BlobOp ~> ({type l[a] = Kleisli[M, Blob, a]})#l =
-   new (BlobOp ~> ({type l[a] = Kleisli[M, Blob, a]})#l) {
-     import scalaz.syntax.catchable._
-
-     val L = Predef.implicitly[Capture[M]]
-
-     def primitive[A](f: Blob => A): Kleisli[M, Blob, A] =
-       Kleisli(s => L.apply(f(s)))
-
-     def apply[A](op: BlobOp[A]): Kleisli[M, Blob, A] = 
-       op match {
-
-        // Lifting
-        case LiftCallableStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftConnectionIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDatabaseMetaDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftDriverIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftNClobIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftPreparedStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftRefIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftResultSetIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLDataIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLInputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftSQLOutputIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftStatementIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
-  
-        // Primitive Operations
-        case Free => primitive(_.free)
-        case GetBinaryStream(a, b) => primitive(_.getBinaryStream(a, b))
-        case GetBinaryStream1 => primitive(_.getBinaryStream)
-        case GetBytes(a, b) => primitive(_.getBytes(a, b))
-        case Length => primitive(_.length)
-        case Position(a, b) => primitive(_.position(a, b))
-        case Position1(a, b) => primitive(_.position(a, b))
-        case SetBinaryStream(a) => primitive(_.setBinaryStream(a))
-        case SetBytes(a, b, c, d) => primitive(_.setBytes(a, b, c, d))
-        case SetBytes1(a, b) => primitive(_.setBytes(a, b))
-        case Truncate(a) => primitive(_.truncate(a))
-  
-      }
-  
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: BlobOp ~> Kleisli[M, Blob, ?] =
+    new (BlobOp ~> Kleisli[M, Blob, ?]) {
+      def apply[A](op: BlobOp[A]): Kleisli[M, Blob, A] =
+        op.defaultTransK[M]
     }
 
   /**
@@ -363,7 +389,7 @@ object blob {
    */
   implicit class BlobIOOps[A](ma: BlobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A] =
-      F.runFC[BlobOp,({type l[a]=Kleisli[M,Blob,a]})#l,A](ma)(kleisliTrans[M])
+      F.runFC[BlobOp, Kleisli[M, Blob, ?], A](ma)(kleisliTrans[M])
   }
 
 }
