@@ -149,7 +149,7 @@ object pgtypes {
   // problem to *read* NULL, we just can't write it.
   private def enumPartialMeta(name: String): Meta[String] =
     Meta.basic1[String](jdbctype.Other, Nil,
-      n => FRS.getString(n),
+      (rs, n) => rs.getString(n),
       (n, a) => FPS.setObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))),
       (n, a) => FRS.updateObject(n, new PGobject <| (_.setValue(a.toString)) <| (_.setType(name))))
 

@@ -26,10 +26,10 @@ object trace {
 
   object ConsoleFirehose {
     import Predef.augmentString
-    def apply[M[_]: Monad: Catchable](implicit delay: Capture[M]): Trace[M] =
-      new Trace[M] {
+    def apply[F[_]: Functor](implicit delay: Capture[F]): Trace[F] =
+      new Trace[F] {
         var indent = 1
-        def log[A](op: Op[A]): M[Throwable \/ A => M[Unit]] =
+        def log[A](op: Op[A]): F[Throwable \/ A => F[Unit]] =
           delay { 
             Console.println(" " * indent + op)
             indent += 1 

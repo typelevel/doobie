@@ -62,31 +62,6 @@ object bench {
       .run
   }
 
-  // Reading with a custom row reader
-  def doobieBenchProto(n: Int): Int = {
-    import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
-    val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-    val sql = "select a.name, b.name, c.name from country a, country b, country c limit ?"
-    val read = FRS.raw { rs =>
-      val a = rs.getString(1) ; rs.wasNull
-      val b = rs.getString(2) ; rs.wasNull
-      val c = rs.getString(3) ; rs.wasNull
-      (a, b, c)
-    }
-    def unroll[A](a: FRS.ResultSetIO[A]): FRS.ResultSetIO[List[A]] = {
-      def go(as: List[A]): FRS.ResultSetIO[List[A]] = 
-        FRS.next flatMap { b =>
-          if (b) a.flatMap { a => go(a :: as) }
-          else as.point[FRS.ResultSetIO]
-        }
-      go(Nil).map(_.reverse)
-    }
-    HC.prepareStatement(sql)(FPS.setInt(1, n) >> HPS.executeQuery(unroll(read)))
-      .transact(xa)
-      .map(_.length)
-      .run
-  }
-
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
     def test[A](n: Int)(f: Int => A): Double = {
       var h = 0
@@ -135,8 +110,7 @@ object bench {
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
       bench.Case("process", doobieBenchP),
-      bench.Case("list", doobieBench),
-      bench.Case("proto",  doobieBenchProto)
+      bench.Case("list", doobieBench)
     )
     bench.run(baseline, cases)
   }
@@ -144,20 +118,20 @@ object bench {
 }
 
 
-// Original from 0.2.0/1 master
-
-//  * jdbc |     6    -- |     6    -- |     9    -- |    23    -- |   195    -- |  1740    --
-// process |    14   212 |    25   393 |   100  1092 |   445  1940 |  3153  1615 | 30281  1741
-
-// Current
-
-//  * jdbc |     6    -- |     7    -- |     8    -- |    18    -- |   114    -- |  1352    --
-// process |    14   217 |    25   367 |    35   434 |    99   560 |  1003   882 | 12708   940
-//    list |     7   110 |     9   136 |    17   203 |    53   297 |   791   695 |  6799   503
-//   proto |     9   151 |    10   137 |     9   110 |    23   130 |   281   247 |  2705   200
-
-// 4.5x speedip wihout proto, 11x speedup with
-
-
-
+// > bench/run
+// [info] Compiling 1 Scala source to /Users/rnorris/Scala/doobie/core/target/scala-2.11/classes...
+// [info] Running doobie.bench.bench 
+//     * jdbc |     9    -- |     8    -- |    11    -- |    18    -- |   117    -- |  1560    --
+//    process |    16   191 |    45   557 |    87   776 |   116   648 |  1058   904 | 12161   779
+//       list |     6    75 |     8    96 |    11   102 |    51   286 |   542   463 |  6288   403
+//      proto |     6    75 |     7    81 |     9    81 |    22   124 |   201   172 |  2619   168
+// [success] Total time: 247 s, completed Jul 5, 2015 1:07:40 PM
+// > bench/run
+// [info] Compiling 1 Scala source to /Users/rnorris/Scala/doobie/core/target/scala-2.11/classes...
+// [info] Running doobie.bench.bench 
+//     * jdbc |     8    -- |     9    -- |    10    -- |    25    -- |   147    -- |  1357    --
+//    process |    13   160 |    31   359 |    35   354 |    97   382 |   944   640 | 10006   737
+//       list |     8   100 |     7    82 |    14   146 |    53   207 |   562   381 |  6429   474
+//      proto |     6    76 |     7    84 |    10   103 |    23    89 |   204   138 |  2524   186
+// [success] Total time: 227 s, completed Jul 5, 2015 1:12:18 PM
 
