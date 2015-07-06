@@ -3,12 +3,13 @@ package doobie.util
 import doobie.hi.{ ConnectionIO, PreparedStatementIO }
 import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
 import doobie.hi.preparedstatement.{ set, executeQuery }
-import doobie.hi.resultset.{ getUnique, getOption, list => rlist }
+import doobie.hi.resultset.{ getUnique, getOption, list => rlist, accumulate => raccumulate }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.syntax.process._
 
-import scalaz.{ Profunctor, Contravariant, Functor, Monad, OptionT }
+import scalaz.{ Profunctor, Contravariant, Functor, Monad, MonadPlus, OptionT }
+import scalaz.std.vector._
 import scalaz.syntax.monad._
 import scalaz.stream.Process
 
@@ -29,8 +30,9 @@ object query {
 
     def list(a: A): ConnectionIO[List[B]]
 
-    def vector(a: A): ConnectionIO[Vector[B]] =
-      list(a).map(_.toVector)
+    def vector(a: A): ConnectionIO[Vector[B]]
+
+    def accumulate[G[_]: MonadPlus](a: A): ConnectionIO[G[B]]
 
     def sink(a: A)(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       process(a).sink(f)
@@ -51,6 +53,8 @@ object query {
         def unique(a: A) = q.unique(a).map(f)
         def option(a: A) = q.option(a).map(_.map(f))
         def list(a: A) = q.list(a).map(_.map(f))
+        def vector(a: A) = q.vector(a).map(_.map(f))
+        def accumulate[G[_]: MonadPlus](a: A) = q.accumulate[G](a).map(_.map(f))
       }
 
     def contramap[C](f: C => A): Query[C, B] =
@@ -62,6 +66,8 @@ object query {
         def unique(c: C) = q.unique(f(c))
         def option(c: C) = q.option(f(c))
         def list(c: C)   = q.list(f(c))
+        def vector(c: C) = q.vector(f(c))
+        def accumulate[G[_]: MonadPlus](c: C) = q.accumulate(f(c))
       }
 
     def toQuery0(a: A): Query0[B] =
@@ -73,6 +79,8 @@ object query {
         def unique = q.unique(a)
         def option = q.option(a)
         def list   = q.list(a)
+        def vector = q.vector(a)
+        def accumulate[G[_]: MonadPlus] = q.accumulate[G](a)
     }
 
   }
@@ -89,6 +97,8 @@ object query {
         def unique(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getUnique[B]))
         def option(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getOption[B]))
         def list(a: A)   = prepareStatement(sql)(set(a) >> executeQuery(rlist[B]))
+        def vector(a: A) = accumulate[Vector](a)
+        def accumulate[G[_]: MonadPlus](a: A) = prepareStatement(sql)(set(a) >> executeQuery(raccumulate[G, B]))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -112,8 +122,9 @@ object query {
 
     def list: ConnectionIO[List[B]]
 
-    def vector: ConnectionIO[Vector[B]] =
-      list.map(_.toVector)
+    def vector: ConnectionIO[Vector[B]]
+
+    def accumulate[G[_]: MonadPlus]: ConnectionIO[G[B]]
 
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       process.sink(f)
@@ -134,6 +145,8 @@ object query {
         def unique = q.unique.map(f)
         def option = q.option.map(_.map(f))
         def list = q.list.map(_.map(f))
+        def vector = q.vector.map(_.map(f))
+        def accumulate[G[_]: MonadPlus] = q.accumulate[G].map(_.map(f))
       }
 
   }
@@ -150,6 +163,8 @@ object query {
         def unique = prepareStatement(sql)(executeQuery(getUnique[B]))
         def option = prepareStatement(sql)(executeQuery(getOption[B]))
         def list   = prepareStatement(sql)(executeQuery(rlist[B]))
+        def vector = accumulate[Vector]
+        def accumulate[G[_]: MonadPlus] = prepareStatement(sql)(executeQuery(raccumulate[G, B]))
       }
 
     implicit val query0Covariant: Functor[Query0] =
