@@ -62,6 +62,17 @@ object bench {
       .run
   }
 
+
+  // Reading via .vector, which uses a lower-level collector
+  def doobieBenchV(n: Int): Int = {
+    val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+    sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
+      .query[(String,String,String)]
+      .vector
+      .transact(xa)
+      .map(_.length)
+      .run
+  }
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
     def test[A](n: Int)(f: Int => A): Double = {
       var h = 0
@@ -98,7 +109,6 @@ object bench {
       }
     }
     def run(baseline: Case[_], tests: List[Case[_]]): Unit = {
-      // println(f"${""}%10s" ++ ns.map(n => f"$n%7d   ").mkString)
       val bs = baseline.run(None)
       tests.foreach(_.run(Some(bs)))
     }
@@ -110,7 +120,8 @@ object bench {
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
       bench.Case("process", doobieBenchP),
-      bench.Case("list", doobieBench)
+      bench.Case("list", doobieBench),
+      bench.Case("vector", doobieBenchV)
     )
     bench.run(baseline, cases)
   }

@@ -3,10 +3,12 @@ package doobie.util
 import doobie.hi.{ ConnectionIO, PreparedStatementIO }
 import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
 import doobie.hi.preparedstatement.{ set, executeQuery }
-import doobie.hi.resultset.{ getUnique, getOption, list => rlist, accumulate => raccumulate }
+import doobie.hi.resultset.{ getUnique, getOption, list => rlist, accumulate => raccumulate, vector => rvector }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.syntax.process._
+
+import scala.collection.generic.CanBuildFrom
 
 import scalaz.{ Profunctor, Contravariant, Functor, Monad, MonadPlus, OptionT }
 import scalaz.std.vector._
@@ -97,7 +99,7 @@ object query {
         def unique(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getUnique[B]))
         def option(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getOption[B]))
         def list(a: A)   = prepareStatement(sql)(set(a) >> executeQuery(rlist[B]))
-        def vector(a: A) = accumulate[Vector](a)
+        def vector(a: A) = prepareStatement(sql)(set(a) >> executeQuery(rvector[B]))
         def accumulate[G[_]: MonadPlus](a: A) = prepareStatement(sql)(set(a) >> executeQuery(raccumulate[G, B]))
       }
 
@@ -163,7 +165,7 @@ object query {
         def unique = prepareStatement(sql)(executeQuery(getUnique[B]))
         def option = prepareStatement(sql)(executeQuery(getOption[B]))
         def list   = prepareStatement(sql)(executeQuery(rlist[B]))
-        def vector = accumulate[Vector]
+        def vector = prepareStatement(sql)(executeQuery(rvector[B]))
         def accumulate[G[_]: MonadPlus] = prepareStatement(sql)(executeQuery(raccumulate[G, B]))
       }
 

@@ -102,6 +102,14 @@ object resultset {
 
   /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * accumulating them in a `Vector`.
+   * @group Results 
+   */
+  def vector[A: Composite]: ResultSetIO[Vector[A]] = 
+    to[Vector, A]
+
+  /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
    * accumulating them in a standard library collection via `CanBuildFrom`.
    * @group Results
    */
