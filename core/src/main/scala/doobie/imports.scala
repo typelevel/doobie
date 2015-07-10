@@ -74,7 +74,7 @@ object imports {
     new doobie.syntax.catchsql.DoobieCatchSqlOps(ma)
 
   /** @group Syntax */
-  implicit def toProcessOps[F[_]: Monad: Catchable, A](fa: Process[F, A]) =
+  implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]) =
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
