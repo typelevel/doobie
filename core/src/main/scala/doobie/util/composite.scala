@@ -29,14 +29,15 @@ object composite {
   trait Composite[A] { c =>
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
     val update: (Int, A) => RS.ResultSetIO[Unit]
-    val get: (ResultSet, Int) => A
+    val get: Int => RS.ResultSetIO[A] = n => RS.raw(rs => unsafeGet(rs, n))
+    val unsafeGet: (ResultSet, Int) => A
     val length: Int
     val meta: List[(Meta[_], NullabilityKnown)]
     final def xmap[B](f: A => B, g: B => A): Composite[B] =
       new Composite[B] {
         val set    = (n: Int, b: B) => c.set(n, g(b))
         val update = (n: Int, b: B) => c.update(n, g(b))
-        val get    = (r: ResultSet, n: Int) => f(c.get(r,n))
+        val unsafeGet    = (r: ResultSet, n: Int) => f(c.unsafeGet(r,n))
         val length = c.length
         val meta   = c.meta
       }
@@ -56,7 +57,7 @@ object composite {
       new Composite[A] {
         val set = A.set
         val update = A.update
-        val get = A.get
+        val unsafeGet = A.unsafeGet
         val length = 1
         val meta = List(A.meta)
       }
@@ -74,7 +75,7 @@ object composite {
         new Composite[H :: T] {
           val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
           val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
-          val get = (r: ResultSet, i: Int) => H.get(r, i) :: T.get(r, i + H.length)
+          val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
           val length = H.length + T.length
           val meta = H.meta ++ T.meta
         }
@@ -83,7 +84,7 @@ object composite {
         new Composite[HNil] {
           val set = (_: Int, _: HNil) => ().point[PS.PreparedStatementIO]
           val update = (_: Int, _: HNil) => ().point[RS.ResultSetIO]
-          val get = (_: ResultSet, _: Int) => (HNil : HNil)
+          val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
           val length = 0
           val meta = Nil
         }

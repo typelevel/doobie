@@ -82,14 +82,14 @@ object resultset {
    * @group Results 
    */
   def get[A](n: Int)(implicit A: Composite[A]): ResultSetIO[A] =
-    RS.raw(rs => A.get(rs, n))
+    A.get(n)
 
   /** 
    * Read a value of type `A` starting at column 1.
    * @group Results 
    */
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
-    RS.raw(rs => A.get(rs, 1))
+    get(1)
 
   /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
@@ -100,7 +100,7 @@ object resultset {
     RS.raw { rs =>
       var as = IList.empty[A]
       while (rs.next)
-        as ::= A.get(rs, 1)
+        as ::= A.unsafeGet(rs, 1)
       as.reverse
     }
 
@@ -113,7 +113,7 @@ object resultset {
     RS.raw { rs =>
       val b = C()
       while (rs.next)
-        b += A.get(rs, 1)
+        b += A.unsafeGet(rs, 1)
       b.result()
     }
 

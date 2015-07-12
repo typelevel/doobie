@@ -21,14 +21,14 @@ object bench {
         ps.setInt(1, n)
         val rs = ps.executeQuery
         try {
-          var accum = List.empty[(String,String,String)]
+          val accum = List.newBuilder[(String,String,String)]
           while (rs.next) {
             val a = rs.getString(1) ; rs.wasNull
             val b = rs.getString(2) ; rs.wasNull
             val c = rs.getString(3) ; rs.wasNull
-            accum = (a, b, c) :: accum
+            accum += ((a, b, c))
           }
-          accum.reverse.length
+          accum.result().length
         } finally {
           rs.close
         }
@@ -122,13 +122,14 @@ object bench {
 
 
   def main(args: Array[String]): Unit = {
-    val bench    = Bench(2, 5, List(10, 100, 1000, 10000)) //, 100000, 1000000))
+    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000, 1000000))
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
-      bench.Case("process", doobieBenchP) //,
-      // bench.Case("list",    doobieBench),
-      // bench.Case("vector",  doobieBenchV),
-      // bench.Case("ilist",   doobieBenchI)
+      bench.Case("process", doobieBenchP),
+      bench.Case("list",    doobieBench),
+      bench.Case("vector",  doobieBenchV),
+      bench.Case("ilist",   doobieBenchI),
+      bench.Case("jdbc",    jdbcBench)
     )
     bench.run(baseline, cases)
   }

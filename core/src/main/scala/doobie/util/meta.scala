@@ -39,8 +39,11 @@ object meta {
     /** Switch on the flavor of this `Meta`. */
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B
 
+    /** Unsafe direct JDBC `get` operation for optimized reads. */
+    val unsafeGet: (ResultSet, Int) => A
+
     /** Constructor for a `getXXX` operation for type `A` at a given index. */
-    val get: (ResultSet, Int) => A
+    val get: Int => RS.ResultSetIO[A] = n => RS.raw(rs => unsafeGet(rs, n))
 
     /** Constructor for a `setXXX` operation for a given `A` at a given index. */
     val set: (Int, A) => PS.PreparedStatementIO[Unit] 
@@ -192,9 +195,9 @@ object meta {
         val jdbcSource = jdbcSource0
         val jdbcSourceSecondary = jdbcSourceSecondary0
         def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B) = f(this)
-        val (get, set, update) = (get0, set0, update0)
+        val (unsafeGet, set, update) = (get0, set0, update0)
         def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] = 
-          basic[B](jdbcTarget, jdbcSource, jdbcSourceSecondary, (r, n) => f(get(r, n)),
+          basic[B](jdbcTarget, jdbcSource, jdbcSourceSecondary, (r, n) => f(unsafeGet(r, n)),
             (n, b) => set(n, g(b)), (n, b) => update(n, g(b)))
       } <| reg
 
@@ -228,9 +231,9 @@ object meta {
         val jdbcSource = jdbcTypes
         val schemaTypes = schemaTypes0
         def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B) = g(this)
-        val (get, set, update) = (get0, set0, update0)
+        val (unsafeGet, set, update) = (get0, set0, update0)
         def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] = 
-          advanced[B](jdbcTypes, schemaTypes, (r, n) => f(get(r, n)), (n, b) => set(n, g(b)), 
+          advanced[B](jdbcTypes, schemaTypes, (r, n) => f(unsafeGet(r, n)), (n, b) => set(n, g(b)), 
             (n, b) => update(n, g(b)))
       } <| reg
 

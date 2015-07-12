@@ -1,7 +1,7 @@
 package doobie.util
 
 import doobie.free.preparedstatement.{ PreparedStatementIO, setNull }
-import doobie.free.resultset.{ ResultSetIO, wasNull, updateNull }
+import doobie.free.resultset.{ ResultSetIO, wasNull, updateNull, raw }
 import doobie.enum.nullability._
 import doobie.util.meta._
 import doobie.util.invariant._
@@ -25,13 +25,14 @@ object atom {
   sealed trait Atom[A] { outer =>
     val set: (Int, A) => PreparedStatementIO[Unit]
     val update: (Int, A) => ResultSetIO[Unit]
-    val get: (ResultSet, Int) => A
+    val get: Int => ResultSetIO[A] = n => raw(rs => unsafeGet(rs, n))
+    val unsafeGet: (ResultSet, Int) => A
     val meta: (Meta[_], NullabilityKnown)
     def xmap[B](f: A => B, g: B => A): Atom[B] =
       new Atom[B] {
         val set = (n: Int, b: B) => outer.set(n, g(b))
         val update = (n: Int, b: B) => outer.update(n, g(b))
-        val get = (r: ResultSet, n: Int) => f(outer.get(r, n))
+        val unsafeGet = (r: ResultSet, n: Int) => f(outer.unsafeGet(r, n))
         val meta = outer.meta
       }
   }
@@ -41,8 +42,8 @@ object atom {
 
     implicit def fromScalaType[A](implicit A: Meta[A]): Atom[A] =
       new Atom[A] {
-        val get = { (r: ResultSet, n: Int) => 
-          val (a, b) = (A.get(r, n), r.wasNull)
+        val unsafeGet = { (r: ResultSet, n: Int) => 
+          val (a, b) = (A.unsafeGet(r, n), r.wasNull)
           if (b) throw NonNullableColumnRead(n, A.jdbcTarget.head) else a
         }
         val set = (n: Int, a: A) => if (a == null) throw NonNullableParameter(n, A.jdbcTarget.head) else A.set(n, a)
@@ -52,8 +53,8 @@ object atom {
 
     implicit def fromScalaTypeOption[A](implicit A: Meta[A]): Atom[Option[A]] =
       new Atom[Option[A]] {
-        val get = (r: ResultSet, n: Int) => {
-          val (a, b) = (A.get(r, n), r.wasNull)
+        val unsafeGet = (r: ResultSet, n: Int) => {
+          val (a, b) = (A.unsafeGet(r, n), r.wasNull)
           if (!b) Some(a) else None
         }
         val set = (n: Int, a: Option[A]) => a.fold(A.setNull(n))(A.set(n, _))
@@ -63,8 +64,8 @@ object atom {
 
     implicit def fromScalaTypeMaybe[A](implicit A: Meta[A]): Atom[Maybe[A]] =
       new Atom[Maybe[A]] {
-        val get = (r: ResultSet, n: Int) => {
-          val (a, b) = (A.get(r, n), r.wasNull)
+        val unsafeGet = (r: ResultSet, n: Int) => {
+          val (a, b) = (A.unsafeGet(r, n), r.wasNull)
           if (b) Maybe.empty[A] else Maybe.just(a)
         }
         val set = (n: Int, a: Maybe[A]) => a.cata(A.set(n, _), A.setNull(n))
