@@ -126,7 +126,7 @@ lazy val postgres = project.in(file("contrib/postgresql"))
   .settings(
     libraryDependencies ++= Seq(
       "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41",
-      "org.postgis"    %  "postgis-jdbc" % "1.3.3"
+      "org.postgis"    %  "postgis-jdbc" % "1.3.3" exclude("postgres", "postgres")
     )
   )
   .settings(
