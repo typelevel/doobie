@@ -118,6 +118,21 @@ object resultset {
     }
 
   /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `A`, mapping to
+   * `B`, and accumulating them in a standard library collection via `CanBuildFrom`. This unusual
+   * constructor is a workaround for the CanBuildFrom not having a sensible contravariant functor
+   * instance.
+   * @group Results
+   */
+  def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Composite[A]): ResultSetIO[F[B]] =
+    RS.raw { rs =>
+      val b = C()
+      while (rs.next)
+        b += f(A.unsafeGet(rs, 1))
+      b.result()
+    }
+
+  /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
    * accumulating them in a `Vector`.
    * @group Results 

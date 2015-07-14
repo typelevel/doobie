@@ -140,17 +140,11 @@ object bench {
 // > bench/run
 // [info] Compiling 1 Scala source to /Users/rnorris/Scala/doobie/core/target/scala-2.11/classes...
 // [info] Running doobie.bench.bench 
-//     * jdbc |     9    -- |     8    -- |    11    -- |    18    -- |   117    -- |  1560    --
-//    process |    16   191 |    45   557 |    87   776 |   116   648 |  1058   904 | 12161   779
-//       list |     6    75 |     8    96 |    11   102 |    51   286 |   542   463 |  6288   403
-//      proto |     6    75 |     7    81 |     9    81 |    22   124 |   201   172 |  2619   168
-// [success] Total time: 247 s, completed Jul 5, 2015 1:07:40 PM
-// > bench/run
-// [info] Compiling 1 Scala source to /Users/rnorris/Scala/doobie/core/target/scala-2.11/classes...
-// [info] Running doobie.bench.bench 
-//     * jdbc |     8    -- |     9    -- |    10    -- |    25    -- |   147    -- |  1357    --
-//    process |    13   160 |    31   359 |    35   354 |    97   382 |   944   640 | 10006   737
-//       list |     8   100 |     7    82 |    14   146 |    53   207 |   562   381 |  6429   474
-//      proto |     6    76 |     7    84 |    10   103 |    23    89 |   204   138 |  2524   186
-// [success] Total time: 227 s, completed Jul 5, 2015 1:12:18 PM
+//     * jdbc |     6    -- |     6    -- |     8    -- |    23    -- |    96    -- |  1371    --
+//    process |     9   154 |    15   238 |    27   325 |    51   226 |   506   526 |  6018   439
+//       list |     6   100 |     8   132 |     8    95 |    17    77 |   103   107 |  1403   102
+//     vector |     6   100 |     8   133 |     9   105 |    19    85 |   102   106 |  1661   121
+//      ilist |     7   121 |     7   107 |     9   105 |    20    90 |   111   115 |  1534   112
+//       jdbc |     6    98 |     6   103 |     6    78 |    16    70 |   103   107 |  1593   116
+// [success] Total time: 168 s, completed Jul 11, 2015 9:06:41 PM
 
