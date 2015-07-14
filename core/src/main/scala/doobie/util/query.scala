@@ -1,20 +1,5 @@
 package doobie.util
 
-// import doobie.hi.{ ConnectionIO, PreparedStatementIO }
-// import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
-// import doobie.hi.preparedstatement.{ set, executeQuery }
-// import doobie.hi.resultset.{ getUnique, getOption, list => rlist, accumulate => raccumulate, vector => rvector }
-// import doobie.util.composite.Composite
-// import doobie.util.analysis.Analysis
-// import doobie.syntax.process._
-
-// import scala.collection.generic.CanBuildFrom
-
-// import scalaz.{ Profunctor, Contravariant, Functor, Monad, MonadPlus, OptionT }
-// import scalaz.std.vector._
-// import scalaz.syntax.monad._
-// import scalaz.stream.Process
-
 import scala.collection.generic.CanBuildFrom
 
 import doobie.imports._
