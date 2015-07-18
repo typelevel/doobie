@@ -32,6 +32,7 @@ lazy val commonSettings = Seq(
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
       "org.specs2" %% "specs2-core" % "3.6" % "test"
     ),
+    resolvers += "bintray/non" at "http://dl.bintray.com/non/maven",
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
 )
 
