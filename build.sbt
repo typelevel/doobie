@@ -32,11 +32,44 @@ lazy val commonSettings = Seq(
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
       "org.specs2" %% "specs2-core" % "3.6" % "test"
     ),
-    resolvers += "bintray/non" at "http://dl.bintray.com/non/maven",
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
 )
 
-lazy val doobieSettings = buildSettings ++ commonSettings ++ bintrayPublishSettings
+lazy val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  },
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  pomExtra := (
+    <url>https://github.com/tpolecat/doobie</url>
+    <licenses>
+      <license>
+          <name>MIT License</name>
+          <url>http://www.opensource.org/licenses/mit-license.php</url>
+          <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <url>git@github.com:tpolecat/doobie.git</url>
+      <connection>scm:git:git@github.com:tpolecat/doobie.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>tpolecat</id>
+        <name>Rob Norris</name>
+        <url>http://tpolecat.org</url>
+      </developer>
+    </developers>
+  )
+)
+
+lazy val doobieSettings = buildSettings ++ commonSettings
 
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
@@ -49,7 +82,7 @@ lazy val doobie = project.in(file("."))
 lazy val core = project.in(file("core"))
   .settings(name := "doobie-core")
   .settings(description := "Pure functional JDBC layer for Scala.")
-  .settings(doobieSettings)
+  .settings(doobieSettings ++ publishSettings)
   .settings(resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases")
   .settings(
     libraryDependencies ++= Seq(
@@ -122,7 +155,7 @@ lazy val example = project.in(file("example"))
 lazy val postgres = project.in(file("contrib/postgresql"))
   .settings(name := "doobie-contrib-postgresql")
   .settings(description := "PostgreSQL support for doobie.")
-  .settings(doobieSettings)
+  .settings(doobieSettings ++ publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41",
@@ -147,21 +180,21 @@ lazy val postgres = project.in(file("contrib/postgresql"))
 lazy val h2 = project.in(file("contrib/h2"))
   .settings(name := "doobie-contrib-h2")
   .settings(description := "H2 support for doobie.")
-  .settings(doobieSettings)
+  .settings(doobieSettings ++ publishSettings)
   .settings(libraryDependencies += "com.h2database" % "h2"  % "1.3.170")
   .dependsOn(core)
 
 lazy val hikari = project.in(file("contrib/hikari"))
   .settings(name := "doobie-contrib-hikari")
   .settings(description := "Hikari support for doobie.")
-  .settings(doobieSettings)
+  .settings(doobieSettings ++ publishSettings)
   .settings(libraryDependencies += "com.zaxxer" % "HikariCP-java6" % "2.2.5")
   .dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2"))
   .settings(name := "doobie-contrib-specs2")
   .settings(description := "Specs2 support for doobie.")
-  .settings(doobieSettings)
+  .settings(doobieSettings ++ publishSettings)
   .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.6")
   .dependsOn(core)
 
