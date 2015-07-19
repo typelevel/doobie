@@ -4,6 +4,8 @@ import doobie.enum.jdbctype.{ Array => JdbcArray, Boolean => JdbcBoolean, _ }
 import doobie.free.{ connection => C, resultset => RS, preparedstatement => PS, statement => S }
 import doobie.util.invariant._
 
+import java.sql.ResultSet
+
 import scala.annotation.implicitNotFound
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.ClassTag
@@ -37,8 +39,11 @@ object meta {
     /** Switch on the flavor of this `Meta`. */
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B
 
+    /** Unsafe direct JDBC `get` operation for optimized reads. */
+    val unsafeGet: (ResultSet, Int) => A
+
     /** Constructor for a `getXXX` operation for type `A` at a given index. */
-    val get: Int => RS.ResultSetIO[A] 
+    val get: Int => RS.ResultSetIO[A] = n => RS.raw(rs => unsafeGet(rs, n))
 
     /** Constructor for a `setXXX` operation for a given `A` at a given index. */
     val set: (Int, A) => PS.PreparedStatementIO[Unit] 
@@ -180,7 +185,7 @@ object meta {
       jdbcTarget0: NonEmptyList[JdbcType],
       jdbcSource0: NonEmptyList[JdbcType],
       jdbcSourceSecondary0: List[JdbcType],
-      get0: Int => RS.ResultSetIO[A],
+      get0: (ResultSet, Int) => A,
       set0: (Int, A) => PS.PreparedStatementIO[Unit],
       update0: (Int, A) => RS.ResultSetIO[Unit] 
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
@@ -190,9 +195,9 @@ object meta {
         val jdbcSource = jdbcSource0
         val jdbcSourceSecondary = jdbcSourceSecondary0
         def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B) = f(this)
-        val (get, set, update) = (get0, set0, update0)
+        val (unsafeGet, set, update) = (get0, set0, update0)
         def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] = 
-          basic[B](jdbcTarget, jdbcSource, jdbcSourceSecondary, n => get(n).map(f), 
+          basic[B](jdbcTarget, jdbcSource, jdbcSourceSecondary, (r, n) => f(unsafeGet(r, n)),
             (n, b) => set(n, g(b)), (n, b) => update(n, g(b)))
       } <| reg
 
@@ -203,7 +208,7 @@ object meta {
     def basic1[A](
       jdbcType: JdbcType,
       jdbcSourceSecondary0: List[JdbcType],
-      get0: Int => RS.ResultSetIO[A],
+      get0: (ResultSet, Int) => A,
       set0: (Int, A) => PS.PreparedStatementIO[Unit],
       update0: (Int, A) => RS.ResultSetIO[Unit] 
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
@@ -216,7 +221,7 @@ object meta {
     def advanced[A](
       jdbcTypes: NonEmptyList[JdbcType],
       schemaTypes0: NonEmptyList[String],
-      get0: Int => RS.ResultSetIO[A],
+      get0: (ResultSet, Int) => A,
       set0: (Int, A) => PS.PreparedStatementIO[Unit],
       update0: (Int, A) => RS.ResultSetIO[Unit]
     )(implicit ev: TypeTag[A]): AdvancedMeta[A] =
@@ -226,9 +231,9 @@ object meta {
         val jdbcSource = jdbcTypes
         val schemaTypes = schemaTypes0
         def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B) = g(this)
-        val (get, set, update) = (get0, set0, update0)
+        val (unsafeGet, set, update) = (get0, set0, update0)
         def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] = 
-          advanced[B](jdbcTypes, schemaTypes, n => get(n).map(f), (n, b) => set(n, g(b)), 
+          advanced[B](jdbcTypes, schemaTypes, (r, n) => f(unsafeGet(r, n)), (n, b) => set(n, g(b)), 
             (n, b) => update(n, g(b)))
       } <| reg
 
@@ -238,7 +243,10 @@ object meta {
      */
     def array[A >: Null <: AnyRef: TypeTag](elementType: String, schemaH: String, schemaT: String*): AdvancedMeta[Array[A]] =
       advanced[Array[A]](NonEmptyList(JdbcArray), NonEmptyList(schemaH, schemaT : _*),
-        RS.getArray(_: Int).map(a => (if (a == null) null else a.getArray).asInstanceOf[Array[A]]),
+        { (r, n) => 
+          val a = r.getArray(n)
+          (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
+        },
         (n, a) =>
           for {
             conn <- PS.getConnection
@@ -260,7 +268,7 @@ object meta {
      */
     def other[A >: Null <: AnyRef: TypeTag](schemaH: String, schemaT: String*)(implicit A: ClassTag[A]): AdvancedMeta[A] =
       advanced[A](NonEmptyList(Other, JavaObject), NonEmptyList(schemaH, schemaT : _*),
-        RS.getObject(_: Int).map { 
+        _.getObject(_) match { 
           case null => null
           case a    => 
             // force the cast here rather than letting a potentially ill-typed value escape
@@ -297,35 +305,35 @@ object meta {
       TinyInt, 
       List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getByte, PS.setByte, RS.updateByte)
+      _.getByte(_), PS.setByte, RS.updateByte)
 
     /** @group Instances */
     implicit val ShortMeta = Meta.basic1[Short](
       SmallInt, 
       List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getShort, PS.setShort, RS.updateShort)
+      _.getShort(_), PS.setShort, RS.updateShort)
 
     /** @group Instances */
     implicit val IntMeta = Meta.basic1[Int](
       Integer, 
       List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getInt, PS.setInt, RS.updateInt)
+      _.getInt(_), PS.setInt, RS.updateInt)
 
     /** @group Instances */
     implicit val LongMeta = Meta.basic1[Long](
       BigInt, 
       List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getLong, PS.setLong, RS.updateLong)
+      _.getLong(_), PS.setLong, RS.updateLong)
 
     /** @group Instances */
     implicit val FloatMeta = Meta.basic1[Float](
       Real, 
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getFloat, PS.setFloat, RS.updateFloat)
+      _.getFloat(_), PS.setFloat, RS.updateFloat)
 
     /** @group Instances */
     implicit val DoubleMeta = Meta.basic[Double](
@@ -333,7 +341,7 @@ object meta {
       NonEmptyList(Float, Double),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getDouble, PS.setDouble, RS.updateDouble)
+      _.getDouble(_), PS.setDouble, RS.updateDouble)
 
     /** @group Instances */
     implicit val BigDecimalMeta = Meta.basic[java.math.BigDecimal](
@@ -341,7 +349,7 @@ object meta {
       NonEmptyList(Decimal, Numeric), 
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar, 
         LongVarChar),
-      RS.getBigDecimal, PS.setBigDecimal, RS.updateBigDecimal)
+      _.getBigDecimal(_), PS.setBigDecimal, RS.updateBigDecimal)
 
     /** @group Instances */
     implicit val BooleanMeta = Meta.basic[Boolean](
@@ -349,7 +357,7 @@ object meta {
       NonEmptyList(Bit, JdbcBoolean),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar, 
         LongVarChar),
-      RS.getBoolean, PS.setBoolean, RS.updateBoolean)
+      _.getBoolean(_), PS.setBoolean, RS.updateBoolean)
 
     /** @group Instances */
     implicit val StringMeta = Meta.basic[String](
@@ -357,32 +365,32 @@ object meta {
       NonEmptyList(Char, VarChar),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit, 
         LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
-      RS.getString, PS.setString, RS.updateString)
+      _.getString(_), PS.setString, RS.updateString)
   
     /** @group Instances */
     implicit val ByteArrayMeta = Meta.basic[Array[Byte]](
       NonEmptyList(Binary, VarBinary, LongVarBinary),
       NonEmptyList(Binary, VarBinary),
       List(LongVarBinary),
-      RS.getBytes, PS.setBytes, RS.updateBytes)
+      _.getBytes(_), PS.setBytes, RS.updateBytes)
 
     /** @group Instances */
     implicit val DateMeta = Meta.basic1[java.sql.Date](
       Date,
       List(Char, VarChar, LongVarChar, Timestamp),
-      RS.getDate, PS.setDate, RS.updateDate)
+      _.getDate(_), PS.setDate, RS.updateDate)
 
     /** @group Instances */
     implicit val TimeMeta = Meta.basic1[java.sql.Time](
       Time,
       List(Char, VarChar, LongVarChar, Timestamp),
-      RS.getTime, PS.setTime, RS.updateTime)
+      _.getTime(_), PS.setTime, RS.updateTime)
 
     /** @group Instances */
     implicit val TimestampMeta = Meta.basic1[java.sql.Timestamp](
       Timestamp,
       List(Char, VarChar, LongVarChar, Date, Time),
-      RS.getTimestamp, PS.setTimestamp, RS.updateTimestamp)
+      _.getTimestamp(_), PS.setTimestamp, RS.updateTimestamp)
 
     /** @group Instances */
     implicit val ScalaBigDecimalMeta: Meta[BigDecimal] =

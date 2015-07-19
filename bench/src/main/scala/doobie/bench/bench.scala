@@ -8,6 +8,8 @@ import scalaz.concurrent.Task
 /** Rough benchmark based on non/jawn */
 object bench {
 
+  val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+
   // Baseline hand-written JDBC code
   def jdbcBench(n: Int): Int = {
     Class.forName("org.postgresql.Driver")
@@ -19,14 +21,14 @@ object bench {
         ps.setInt(1, n)
         val rs = ps.executeQuery
         try {
-          var accum = List.empty[(String,String,String)]
+          val accum = List.newBuilder[(String,String,String)]
           while (rs.next) {
             val a = rs.getString(1) ; rs.wasNull
             val b = rs.getString(2) ; rs.wasNull
             val c = rs.getString(3) ; rs.wasNull
-            accum = (a, b, c) :: accum
+            accum += ((a, b, c))
           }
-          accum.reverse.length
+          accum.result().length
         } finally {
           rs.close
         }
@@ -40,8 +42,7 @@ object bench {
   }
 
   // Reading via .process, which adds a fair amount of overhead
-  def doobieBenchP(n: Int): Int = {
-    val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  def doobieBenchP(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
       .process
@@ -49,43 +50,34 @@ object bench {
       .transact(xa)
       .map(_.length)
       .run
-  }
 
   // Reading via .list, which uses a lower-level collector
-  def doobieBench(n: Int): Int = {
-    val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  def doobieBench(n: Int): Int = 
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
       .list
       .transact(xa)
       .map(_.length)
       .run
-  }
 
-  // Reading with a custom row reader
-  def doobieBenchProto(n: Int): Int = {
-    import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
-    val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-    val sql = "select a.name, b.name, c.name from country a, country b, country c limit ?"
-    val read = FRS.raw { rs =>
-      val a = rs.getString(1) ; rs.wasNull
-      val b = rs.getString(2) ; rs.wasNull
-      val c = rs.getString(3) ; rs.wasNull
-      (a, b, c)
-    }
-    def unroll[A](a: FRS.ResultSetIO[A]): FRS.ResultSetIO[List[A]] = {
-      def go(as: List[A]): FRS.ResultSetIO[List[A]] = 
-        FRS.next flatMap { b =>
-          if (b) a.flatMap { a => go(a :: as) }
-          else as.point[FRS.ResultSetIO]
-        }
-      go(Nil).map(_.reverse)
-    }
-    HC.prepareStatement(sql)(FPS.setInt(1, n) >> HPS.executeQuery(unroll(read)))
+  // Reading via .vector, which uses a lower-level collector
+  def doobieBenchV(n: Int): Int =
+    sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
+      .query[(String,String,String)]
+      .vector
       .transact(xa)
       .map(_.length)
       .run
-  }
+
+  // Reading via .ilist, which uses a lower-level collector
+  def doobieBenchI(n: Int): Int =
+    HC.prepareStatement(s"select a.name, b.name, c.name from country a, country b, country c limit $n") {
+      HPS.executeQuery {
+        HRS.ilist[(String, String, String)]
+      }
+    } .transact(xa)
+      .map(_.length)
+      .run
 
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
     def test[A](n: Int)(f: Int => A): Double = {
@@ -123,7 +115,6 @@ object bench {
       }
     }
     def run(baseline: Case[_], tests: List[Case[_]]): Unit = {
-      // println(f"${""}%10s" ++ ns.map(n => f"$n%7d   ").mkString)
       val bs = baseline.run(None)
       tests.foreach(_.run(Some(bs)))
     }
@@ -135,8 +126,10 @@ object bench {
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
       bench.Case("process", doobieBenchP),
-      bench.Case("list", doobieBench),
-      bench.Case("proto",  doobieBenchProto)
+      bench.Case("list",    doobieBench),
+      bench.Case("vector",  doobieBenchV),
+      bench.Case("ilist",   doobieBenchI),
+      bench.Case("jdbc",    jdbcBench)
     )
     bench.run(baseline, cases)
   }
@@ -144,20 +137,14 @@ object bench {
 }
 
 
-// Original from 0.2.0/1 master
-
-//  * jdbc |     6    -- |     6    -- |     9    -- |    23    -- |   195    -- |  1740    --
-// process |    14   212 |    25   393 |   100  1092 |   445  1940 |  3153  1615 | 30281  1741
-
-// Current
-
-//  * jdbc |     6    -- |     7    -- |     8    -- |    18    -- |   114    -- |  1352    --
-// process |    14   217 |    25   367 |    35   434 |    99   560 |  1003   882 | 12708   940
-//    list |     7   110 |     9   136 |    17   203 |    53   297 |   791   695 |  6799   503
-//   proto |     9   151 |    10   137 |     9   110 |    23   130 |   281   247 |  2705   200
-
-// 4.5x speedip wihout proto, 11x speedup with
-
-
-
+// > bench/run
+// [info] Compiling 1 Scala source to /Users/rnorris/Scala/doobie/core/target/scala-2.11/classes...
+// [info] Running doobie.bench.bench 
+//     * jdbc |     6    -- |     6    -- |     8    -- |    23    -- |    96    -- |  1371    --
+//    process |     9   154 |    15   238 |    27   325 |    51   226 |   506   526 |  6018   439
+//       list |     6   100 |     8   132 |     8    95 |    17    77 |   103   107 |  1403   102
+//     vector |     6   100 |     8   133 |     9   105 |    19    85 |   102   106 |  1661   121
+//      ilist |     7   121 |     7   107 |     9   105 |    20    90 |   111   115 |  1534   112
+//       jdbc |     6    98 |     6   103 |     6    78 |    16    70 |   103   107 |  1593   116
+// [success] Total time: 168 s, completed Jul 11, 2015 9:06:41 PM
 

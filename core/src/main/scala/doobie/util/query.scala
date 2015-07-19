@@ -1,104 +1,107 @@
 package doobie.util
 
-import doobie.hi.{ ConnectionIO, PreparedStatementIO }
-import doobie.hi.connection.{ prepareStatement, prepareQueryAnalysis, prepareQueryAnalysis0, process => cprocess }
-import doobie.hi.preparedstatement.{ set, executeQuery }
-import doobie.hi.resultset.{ getUnique, getOption, list => rlist, accumulate => raccumulate }
-import doobie.util.composite.Composite
-import doobie.util.analysis.Analysis
-import doobie.syntax.process._
+import scala.collection.generic.CanBuildFrom
 
-import scalaz.{ Profunctor, Contravariant, Functor, Monad, MonadPlus, OptionT }
-import scalaz.std.vector._
-import scalaz.syntax.monad._
+import doobie.imports._
+import doobie.util.analysis.Analysis
+
+import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor }
 import scalaz.stream.Process
+import scalaz.syntax.monad._
 
 /** Module defining queries parameterized by input and output types. */
 object query {
 
-  /** Mixin trait for queries with diagnostic information. */
-  trait QueryDiagnostics {
-    val sql: String
-    val stackFrame: Option[StackTraceElement]
-    def analysis: ConnectionIO[Analysis]
-  }
+  /** 
+   * A `Query` parameterized by some input type `A` yielding values of type `B`. We define here the
+   * core operations that are needed. Additional operations are provided on `Query0` which is the 
+   * risidual query after applying an `A`. This is the type constructed by the `sql` interpreter.
+   */
+  trait Query[A, B] { outer =>
 
-  /** Encapsulates a `ConnectionIO` that prepares and executes a parameterized statement. */
-  trait Query[A, B] extends QueryDiagnostics { q =>
+    // jiggery pokery to support CBF; we're doing the coyoneda trick on B to to avoid a Functor
+    // constraint on the `F` parameter in `to`, and it's just easier to do the contravariant coyo 
+    // trick on A while we're at it.
+    protected type I
+    protected type O
+    protected val ai: A => I
+    protected val ob: O => B
+    protected implicit val ic: Composite[I]
+    protected implicit val oc: Composite[O]
 
-    def process(a: A): Process[ConnectionIO, B]
+    def sql: String
+    
+    def stackFrame: Option[StackTraceElement]
 
-    def list(a: A): ConnectionIO[List[B]]
+    def analysis: ConnectionIO[Analysis] =
+      HC.prepareQueryAnalysis[I, O](sql)
 
-    def vector(a: A): ConnectionIO[Vector[B]]
+    def process(a: A): Process[ConnectionIO, B] = 
+      HC.process[O](sql, HPS.set(ai(a))).map(ob)
 
-    def accumulate[G[_]: MonadPlus](a: A): ConnectionIO[G[B]]
+    def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
 
-    def sink(a: A)(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
-      process(a).sink(f)
+    def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] = 
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
 
-    def unique(a: A): ConnectionIO[B]
+    def unique(a: A): ConnectionIO[B] = 
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getUnique[O])).map(ob)
 
-    def option(a: A): ConnectionIO[Option[B]]
-
-    def optionT(a: A): OptionT[ConnectionIO, B] =
-      OptionT(option(a))
+    def option(a: A): ConnectionIO[Option[B]] = 
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getOption[O])).map(_.map(ob))
 
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
-        val sql = q.sql
-        val stackFrame = q.stackFrame
-        val analysis = q.analysis
-        def process(a: A) = q.process(a).map(f)
-        def unique(a: A) = q.unique(a).map(f)
-        def option(a: A) = q.option(a).map(_.map(f))
-        def list(a: A) = q.list(a).map(_.map(f))
-        def vector(a: A) = q.vector(a).map(_.map(f))
-        def accumulate[G[_]: MonadPlus](a: A) = q.accumulate[G](a).map(_.map(f))
+        type I = outer.I
+        type O = outer.O
+        val ai = outer.ai
+        val ob = outer.ob andThen f
+        val ic: Composite[I] = outer.ic 
+        val oc: Composite[O] = outer.oc
+        def sql = outer.sql
+        def stackFrame = outer.stackFrame
       }
 
     def contramap[C](f: C => A): Query[C, B] =
       new Query[C, B] {
-        val sql = q.sql
-        val stackFrame = q.stackFrame
-        val analysis = q.analysis
-        def process(c: C) = q.process(f(c))
-        def unique(c: C) = q.unique(f(c))
-        def option(c: C) = q.option(f(c))
-        def list(c: C)   = q.list(f(c))
-        def vector(c: C) = q.vector(f(c))
-        def accumulate[G[_]: MonadPlus](c: C) = q.accumulate(f(c))
+        type I = outer.I
+        type O = outer.O
+        val ai = outer.ai compose f
+        val ob = outer.ob
+        val ic: Composite[I] = outer.ic 
+        val oc: Composite[O] = outer.oc
+        def sql = outer.sql
+        def stackFrame = outer.stackFrame
       }
 
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
-        val sql = q.sql
-        val stackFrame = q.stackFrame
-        val analysis = q.analysis
-        def process = q.process(a)
-        def unique = q.unique(a)
-        def option = q.option(a)
-        def list   = q.list(a)
-        def vector = q.vector(a)
-        def accumulate[G[_]: MonadPlus] = q.accumulate[G](a)
-    }
+        def sql = outer.sql
+        def stackFrame = outer.stackFrame
+        def analysis = outer.analysis
+        def process = outer.process(a)
+        def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
+        def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
+        def unique = outer.unique(a)
+        def option = outer.option(a)
+        def map[C](f: B => C): Query0[C] = outer.map(f).toQuery0(a)
+      }
 
   }
 
   object Query {
 
-    /** Construct a `Query` for the given parameter and output types. */
-    def apply[A: Composite, B: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Query[A, B] =
+    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement])(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
       new Query[A, B] {
+        type I = A
+        type O = B
+        val ai: A => I = a => a
+        val ob: O => B = o => o
+        implicit val ic: Composite[I] = A
+        implicit val oc: Composite[O] = B
         val sql = sql0
         val stackFrame = stackFrame0
-        val analysis = prepareQueryAnalysis[A,B](sql)
-        def process(a: A) = cprocess[B](sql, set(a))
-        def unique(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getUnique[B]))
-        def option(a: A) = prepareStatement(sql)(set(a) >> executeQuery(getOption[B]))
-        def list(a: A)   = prepareStatement(sql)(set(a) >> executeQuery(rlist[B]))
-        def vector(a: A) = accumulate[Vector](a)
-        def accumulate[G[_]: MonadPlus](a: A) = prepareStatement(sql)(set(a) >> executeQuery(raccumulate[G, B]))
       }
 
     implicit val queryProfunctor: Profunctor[Query] =
@@ -115,63 +118,31 @@ object query {
 
   }
 
-  /** Encapsulates a `ConnectionIO` that prepares and executes a zero-parameter statement. */
-  trait Query0[B] extends QueryDiagnostics { q =>
+  /** A `Query` applied to its argument. */
+  trait Query0[B] { outer =>
 
-    def process: Process[ConnectionIO, B] 
+    def sql: String  
+    def stackFrame: Option[StackTraceElement]
+    def process: Process[ConnectionIO, B]
+    def analysis: ConnectionIO[Analysis] 
+    def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] 
+    def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]  
+    def unique: ConnectionIO[B]  
+    def option: ConnectionIO[Option[B]]  
+    def map[C](f: B => C): Query0[C] 
 
-    def list: ConnectionIO[List[B]]
-
-    def vector: ConnectionIO[Vector[B]]
-
-    def accumulate[G[_]: MonadPlus]: ConnectionIO[G[B]]
-
-    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
-      process.sink(f)
-
-    def unique: ConnectionIO[B]
-
-    def option: ConnectionIO[Option[B]]
-
-    def optionT: OptionT[ConnectionIO, B] =
-      OptionT(option)
-
-    def map[C](f: B => C): Query0[C] =
-      new Query0[C] {
-        val sql = q.sql
-        val stackFrame = q.stackFrame
-        def analysis = q.analysis
-        def process = q.process.map(f)
-        def unique = q.unique.map(f)
-        def option = q.option.map(_.map(f))
-        def list = q.list.map(_.map(f))
-        def vector = q.vector.map(_.map(f))
-        def accumulate[G[_]: MonadPlus] = q.accumulate[G].map(_.map(f))
-      }
+    // Convenience methods
+    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
+    def list: ConnectionIO[List[B]] = to[List]
+    def vector: ConnectionIO[Vector[B]] = to[Vector]
 
   }
 
   object Query0 {
-
-    /** Construct a `Query0` for the given parameter and output types. */
-    def apply[B: Composite](sql0: String, stackFrame0: Option[StackTraceElement]): Query0[B] =
-      new Query0[B] {
-        val sql = sql0
-        val stackFrame = stackFrame0
-        def analysis = prepareQueryAnalysis0[B](sql)
-        def process = cprocess[B](sql, Monad[PreparedStatementIO].point(()))
-        def unique = prepareStatement(sql)(executeQuery(getUnique[B]))
-        def option = prepareStatement(sql)(executeQuery(getOption[B]))
-        def list   = prepareStatement(sql)(executeQuery(rlist[B]))
-        def vector = accumulate[Vector]
-        def accumulate[G[_]: MonadPlus] = prepareStatement(sql)(executeQuery(raccumulate[G, B]))
-      }
-
-    implicit val query0Covariant: Functor[Query0] =
+    implicit val queryFunctor: Functor[Query0] =
       new Functor[Query0] {
         def map[A, B](fa: Query0[A])(f: A => B) = fa map f
       }
-
   }
 
 }

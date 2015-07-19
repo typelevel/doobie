@@ -18,14 +18,14 @@ import doobie.util.invariant._
 
 import java.net.URL
 import java.util.{ Date, Calendar }
-import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
+import java.sql.{ ParameterMetaData, ResultSet, ResultSetMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
+import scala.collection.generic.CanBuildFrom
 import scala.Predef.intArrayOps
 
-import scalaz.Monad
-import scalaz.MonadPlus
+import scalaz.{ Monad, MonadPlus, IList }
 import scalaz.syntax.id._
 import scalaz.syntax.monadPlus._
 import scalaz.stream.Process
@@ -89,21 +89,64 @@ object resultset {
    * @group Results 
    */
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
-    A.get(1)
+    get(1)
 
   /**
-   * Like `getNext` but loops until the end of the resultset, gathering results in a `List`.
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * accumulating them in an `IList`.
    * @group Results 
    */
-  def list[A: Composite]: ResultSetIO[List[A]] = {
-    val a = get[A]
-    def go(as: List[A]): ResultSetIO[List[A]] = 
-      next flatMap { b =>
-        if (b) a.flatMap { a => go(a :: as) }
-        else as.point[ResultSetIO]
-      }
-    go(Nil).map(_.reverse)
-  }
+  def ilist[A](implicit A: Composite[A]): ResultSetIO[IList[A]] = 
+    RS.raw { rs =>
+      var as = IList.empty[A]
+      while (rs.next)
+        as ::= A.unsafeGet(rs, 1)
+      as.reverse
+    }
+
+  /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * accumulating them in a standard library collection via `CanBuildFrom`.
+   * @group Results
+   */
+  def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Composite[A]): ResultSetIO[F[A]] =
+    RS.raw { rs =>
+      val b = C()
+      while (rs.next)
+        b += A.unsafeGet(rs, 1)
+      b.result()
+    }
+
+  /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `A`, mapping to
+   * `B`, and accumulating them in a standard library collection via `CanBuildFrom`. This unusual
+   * constructor is a workaround for the CanBuildFrom not having a sensible contravariant functor
+   * instance.
+   * @group Results
+   */
+  def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Composite[A]): ResultSetIO[F[B]] =
+    RS.raw { rs =>
+      val b = C()
+      while (rs.next)
+        b += f(A.unsafeGet(rs, 1))
+      b.result()
+    }
+
+  /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * accumulating them in a `Vector`.
+   * @group Results 
+   */
+  def vector[A: Composite]: ResultSetIO[Vector[A]] = 
+    build[Vector, A]
+
+  /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * accumulating them in a `List`.
+   * @group Results 
+   */
+  def list[A: Composite]: ResultSetIO[List[A]] = 
+    build[List, A]
 
   /**
    * Like `getNext` but loops until the end of the resultset, gathering results in a `MonadPlus`.

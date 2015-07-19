@@ -12,8 +12,8 @@ object yolospec extends Specification {
     "compile for Query, Query0, Update, Update0" in {
       lazy val dontRun = {
         val y = new Yolo[Task](null); import y._
-        Query0[Int]("", None).check
-        Query[Int, Int]("", None).check
+        (null : Query0[Int]).check
+        (null : Query[Int, Int]).check
         Update0("", None).check
         Update[Int]("", None).check
       }

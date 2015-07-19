@@ -30,7 +30,8 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.specs2" %% "specs2-core" % "3.6" % "test"
+      "org.scalacheck" %% "scalacheck"  % "1.11.5" % "test",
+      "org.specs2"     %% "specs2-core" % "3.6"    % "test"
     ),
     resolvers += "bintray/non" at "http://dl.bintray.com/non/maven",
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
@@ -99,7 +100,7 @@ lazy val core = project.in(file("core"))
       "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.7.1a",
       "com.chuusai"       %% "shapeless"        % "2.2.2",
-      "org.scalacheck"    %% "scalacheck"       % "1.11.5" % "test"
+      "com.h2database"    %  "h2"               % "1.3.170" % "test"
     )
   )
   .settings(scalacOptions += "-Yno-predef")
