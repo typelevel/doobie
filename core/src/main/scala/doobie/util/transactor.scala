@@ -89,13 +89,24 @@ object transactor {
 
   /** `Transactor` wrapping `java.sql.DriverManager`. */
   object DriverManagerTransactor {
-    import doobie.free.drivermanager.{ delay, getConnection }
-    def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, user: String, pass: String): Transactor[M] =
+    import doobie.free.drivermanager.{ delay, getConnection, DriverManagerIO }
+
+    def create[M[_]: Monad: Catchable: Capture](driver: String, conn: DriverManagerIO[Connection]): Transactor[M] =
       new Transactor[M] {
         val connect: M[Connection] =
-          (delay(Class.forName(driver)) *> getConnection(url, user, pass)).trans[M]      
+          (delay(Class.forName(driver)) *> conn).trans[M]
       }
-    }
+
+    def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String): Transactor[M] =
+      create(driver, getConnection(url))
+
+    def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, user: String, pass: String): Transactor[M] =
+      create(driver, getConnection(url, user, pass))
+
+    def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, info: java.util.Properties): Transactor[M] =
+      create(driver, getConnection(url, info))
+
+  }
 
   /** `Transactor` wrapping an existing `DataSource`. */
   abstract class DataSourceTransactor[M[_]: Monad: Catchable: Capture, D <: DataSource] private extends Transactor[M] {
