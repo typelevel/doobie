@@ -1,8 +1,8 @@
 import UnidocKeys._
 import FreeGen._
+import ReleaseTransformations._
 
 lazy val buildSettings = Seq(
-  version := "0.2.3-SNAPSHOT",
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.11.6",
@@ -46,16 +46,8 @@ lazy val publishSettings = Seq(
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   },
   publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
+  pomIncludeRepository := Function.const(false),
   pomExtra := (
-    <url>https://github.com/tpolecat/doobie</url>
-    <licenses>
-      <license>
-          <name>MIT License</name>
-          <url>http://www.opensource.org/licenses/mit-license.php</url>
-          <distribution>repo</distribution>
-      </license>
-    </licenses>
     <scm>
       <url>git@github.com:tpolecat/doobie.git</url>
       <connection>scm:git:git@github.com:tpolecat/doobie.git</connection>
@@ -67,7 +59,22 @@ lazy val publishSettings = Seq(
         <url>http://tpolecat.org</url>
       </developer>
     </developers>
-  )
+  ),
+  releaseCrossBuild := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    ReleaseStep(action = Command.process("package", _)),
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    ReleaseStep(action = Command.process("publishSigned", _)),
+    setNextVersion,
+    commitNextVersion,
+    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+    pushChanges)
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
