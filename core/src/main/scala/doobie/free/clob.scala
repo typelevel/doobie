@@ -159,10 +159,10 @@ object clob {
     case object Length extends ClobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
-    case class  Position(a: String, b: Long) extends ClobOp[Long] {
+    case class  Position(a: Clob, b: Long) extends ClobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
-    case class  Position1(a: Clob, b: Long) extends ClobOp[Long] {
+    case class  Position1(a: String, b: Long) extends ClobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
@@ -355,13 +355,13 @@ object clob {
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: String, b: Long): ClobIO[Long] =
+  def position(a: Clob, b: Long): ClobIO[Long] =
     F.liftFC(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Clob, b: Long): ClobIO[Long] =
+  def position(a: String, b: Long): ClobIO[Long] =
     F.liftFC(Position1(a, b))
 
   /** 
@@ -398,11 +398,31 @@ object clob {
   * Natural transformation from `ClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Clob`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, Clob, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, Clob, ?] =
     new (ClobOp ~> Kleisli[M, Clob, ?]) {
       def apply[A](op: ClobOp[A]): Kleisli[M, Clob, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `ClobIO` to `Kleisli` for the given `M`, consuming a `java.sql.Clob`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: ClobIO ~> Kleisli[M, Clob, ?] =
+    new (ClobIO ~> Kleisli[M, Clob, ?]) {
+      def apply[A](ma: ClobIO[A]): Kleisli[M, Clob, A] =
+        F.runFC[ClobOp, Kleisli[M, Clob, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `ClobIO` to `M`, given a `java.sql.Clob`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: Clob): ClobIO ~> M =
+   new (ClobIO ~> M) {
+     def apply[A](ma: ClobIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `ClobIO`.
@@ -410,7 +430,7 @@ object clob {
    */
   implicit class ClobIOOps[A](ma: ClobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Clob, A] =
-      F.runFC[ClobOp, Kleisli[M, Clob, ?], A](ma)(kleisliTrans[M])
+      clob.transK[M].apply(ma)
   }
 
 }

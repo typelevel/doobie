@@ -345,11 +345,31 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  * Natural transformation from `${sname}Op` to `Kleisli` for the given `M`, consuming a `${ev.runtimeClass.getName}`. 
     |  * @group Algebra
     |  */
-    |  def kleisliTrans[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
+    |  def interpK[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
     |    new (${sname}Op ~> Kleisli[M, ${sname}, ?]) {
     |      def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] =
     |        op.defaultTransK[M]
     |    }
+    |
+    | /** 
+    |  * Natural transformation from `${sname}IO` to `Kleisli` for the given `M`, consuming a `${ev.runtimeClass.getName}`. 
+    |  * @group Algebra
+    |  */
+    |  def transK[M[_]: Monad: Catchable: Capture]: ${sname}IO ~> Kleisli[M, ${sname}, ?] =
+    |    new (${sname}IO ~> Kleisli[M, ${sname}, ?]) {
+    |      def apply[A](ma: ${sname}IO[A]): Kleisli[M, ${sname}, A] =
+    |        F.runFC[${sname}Op, Kleisli[M, ${sname}, ?], A](ma)(interpK[M])
+    |    }
+    |
+    | /** 
+    |  * Natural transformation from `${sname}IO` to `M`, given a `${ev.runtimeClass.getName}`. 
+    |  * @group Algebra
+    |  */
+    | def trans[M[_]: Monad: Catchable: Capture](c: $sname): ${sname}IO ~> M =
+    |   new (${sname}IO ~> M) {
+    |     def apply[A](ma: ${sname}IO[A]): M[A] = 
+    |       transK[M].apply(ma).run(c)
+    |   }
     |
     |  /**
     |   * Syntax for `${sname}IO`.
@@ -357,7 +377,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   */
     |  implicit class ${sname}IOOps[A](ma: ${sname}IO[A]) {
     |    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A] =
-    |      F.runFC[${sname}Op, Kleisli[M, ${sname}, ?], A](ma)(kleisliTrans[M])
+    |      ${sname.toLowerCase}.transK[M].apply(ma)
     |  }
     |
     |}

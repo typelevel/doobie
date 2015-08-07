@@ -676,11 +676,31 @@ object statement {
   * Natural transformation from `StatementOp` to `Kleisli` for the given `M`, consuming a `java.sql.Statement`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: StatementOp ~> Kleisli[M, Statement, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: StatementOp ~> Kleisli[M, Statement, ?] =
     new (StatementOp ~> Kleisli[M, Statement, ?]) {
       def apply[A](op: StatementOp[A]): Kleisli[M, Statement, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `StatementIO` to `Kleisli` for the given `M`, consuming a `java.sql.Statement`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: StatementIO ~> Kleisli[M, Statement, ?] =
+    new (StatementIO ~> Kleisli[M, Statement, ?]) {
+      def apply[A](ma: StatementIO[A]): Kleisli[M, Statement, A] =
+        F.runFC[StatementOp, Kleisli[M, Statement, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `StatementIO` to `M`, given a `java.sql.Statement`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: Statement): StatementIO ~> M =
+   new (StatementIO ~> M) {
+     def apply[A](ma: StatementIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `StatementIO`.
@@ -688,7 +708,7 @@ object statement {
    */
   implicit class StatementIOOps[A](ma: StatementIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Statement, A] =
-      F.runFC[StatementOp, Kleisli[M, Statement, ?], A](ma)(kleisliTrans[M])
+      statement.transK[M].apply(ma)
   }
 
 }

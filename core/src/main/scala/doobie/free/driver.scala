@@ -343,11 +343,31 @@ object driver {
   * Natural transformation from `DriverOp` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
     new (DriverOp ~> Kleisli[M, Driver, ?]) {
       def apply[A](op: DriverOp[A]): Kleisli[M, Driver, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `DriverIO` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: DriverIO ~> Kleisli[M, Driver, ?] =
+    new (DriverIO ~> Kleisli[M, Driver, ?]) {
+      def apply[A](ma: DriverIO[A]): Kleisli[M, Driver, A] =
+        F.runFC[DriverOp, Kleisli[M, Driver, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `DriverIO` to `M`, given a `java.sql.Driver`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: Driver): DriverIO ~> M =
+   new (DriverIO ~> M) {
+     def apply[A](ma: DriverIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `DriverIO`.
@@ -355,7 +375,7 @@ object driver {
    */
   implicit class DriverIOOps[A](ma: DriverIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A] =
-      F.runFC[DriverOp, Kleisli[M, Driver, ?], A](ma)(kleisliTrans[M])
+      driver.transK[M].apply(ma)
   }
 
 }

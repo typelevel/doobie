@@ -304,11 +304,31 @@ object sqldata {
   * Natural transformation from `SQLDataOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLData`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
     new (SQLDataOp ~> Kleisli[M, SQLData, ?]) {
       def apply[A](op: SQLDataOp[A]): Kleisli[M, SQLData, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `SQLDataIO` to `Kleisli` for the given `M`, consuming a `java.sql.SQLData`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: SQLDataIO ~> Kleisli[M, SQLData, ?] =
+    new (SQLDataIO ~> Kleisli[M, SQLData, ?]) {
+      def apply[A](ma: SQLDataIO[A]): Kleisli[M, SQLData, A] =
+        F.runFC[SQLDataOp, Kleisli[M, SQLData, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `SQLDataIO` to `M`, given a `java.sql.SQLData`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: SQLData): SQLDataIO ~> M =
+   new (SQLDataIO ~> M) {
+     def apply[A](ma: SQLDataIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `SQLDataIO`.
@@ -316,7 +336,7 @@ object sqldata {
    */
   implicit class SQLDataIOOps[A](ma: SQLDataIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLData, A] =
-      F.runFC[SQLDataOp, Kleisli[M, SQLData, ?], A](ma)(kleisliTrans[M])
+      sqldata.transK[M].apply(ma)
   }
 
 }

@@ -115,7 +115,7 @@ List.fill(5)(program3a).sequenceU.transact(xa).run.foreach(println)
 
 All of the **doobie** monads are implemented via `Free` and have no operational semantics; we can only "run" a **doobie** program by transforming `FooIO` (for some carrier type `java.sql.Foo`) to a monad that actually has some meaning. 
 
-Out of the box all of the **doobie** free monads provide a transformation to `Kleisli[M, Foo, A]` given `Monad[M]`, `Catchable[M]`, and `Capture[M]` (we will discuss `Capture` shortly, standby). The `transK` method gives quick access to this transformation.
+Out of the box all of the **doobie** free monads provide a transformation to `Kleisli[M, Foo, ?]` given `Monad[M]`, `Catchable[M]`, and `Capture[M]` (we will discuss `Capture` shortly, standby). The `transK` method gives quick access to this transformation.
 
 ```tut
 val kleisli = program1.transK[Task] 
@@ -124,6 +124,14 @@ task.run // sneaky; program1 never looks at the connection
 ```
 
 So the `Transactor` above simply knows how to construct a `Task[Connection]`, which it can bind through the `Kleisli`, yielding our `Task[Int]`. There is a bit more going on (we add commit/rollback handling and ensure that the connection is closed in all cases) but fundamentally it's just a natural transformation and a bind.
+
+In addition to the `transK` syntax above, **doobie** provides natural transformations on each algebra's module. For example `doobie.free.connection` (aliased as `FC` in `doobie.imports`) provides:
+
+- `trans[M: Monad: Capture: Catchable](c: Connection): ConnectionIO ~> M`
+- `transK[M: Monad: Capture: Catchable]: ConnectionIO ~> Kleisli[M, Connection, ?]`
+
+And analogously for other modules in `doobie.free`.
+
 
 #### The Capture Typeclass
 

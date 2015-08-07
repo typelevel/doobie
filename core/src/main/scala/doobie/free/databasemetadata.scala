@@ -1864,11 +1864,31 @@ object databasemetadata {
   * Natural transformation from `DatabaseMetaDataOp` to `Kleisli` for the given `M`, consuming a `java.sql.DatabaseMetaData`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
     new (DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?]) {
       def apply[A](op: DatabaseMetaDataOp[A]): Kleisli[M, DatabaseMetaData, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `DatabaseMetaDataIO` to `Kleisli` for the given `M`, consuming a `java.sql.DatabaseMetaData`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?] =
+    new (DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?]) {
+      def apply[A](ma: DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] =
+        F.runFC[DatabaseMetaDataOp, Kleisli[M, DatabaseMetaData, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `DatabaseMetaDataIO` to `M`, given a `java.sql.DatabaseMetaData`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
+   new (DatabaseMetaDataIO ~> M) {
+     def apply[A](ma: DatabaseMetaDataIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `DatabaseMetaDataIO`.
@@ -1876,7 +1896,7 @@ object databasemetadata {
    */
   implicit class DatabaseMetaDataIOOps[A](ma: DatabaseMetaDataIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A] =
-      F.runFC[DatabaseMetaDataOp, Kleisli[M, DatabaseMetaData, ?], A](ma)(kleisliTrans[M])
+      databasemetadata.transK[M].apply(ma)
   }
 
 }

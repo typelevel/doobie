@@ -377,11 +377,31 @@ object blob {
   * Natural transformation from `BlobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Blob`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: BlobOp ~> Kleisli[M, Blob, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: BlobOp ~> Kleisli[M, Blob, ?] =
     new (BlobOp ~> Kleisli[M, Blob, ?]) {
       def apply[A](op: BlobOp[A]): Kleisli[M, Blob, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `BlobIO` to `Kleisli` for the given `M`, consuming a `java.sql.Blob`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: BlobIO ~> Kleisli[M, Blob, ?] =
+    new (BlobIO ~> Kleisli[M, Blob, ?]) {
+      def apply[A](ma: BlobIO[A]): Kleisli[M, Blob, A] =
+        F.runFC[BlobOp, Kleisli[M, Blob, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `BlobIO` to `M`, given a `java.sql.Blob`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: Blob): BlobIO ~> M =
+   new (BlobIO ~> M) {
+     def apply[A](ma: BlobIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `BlobIO`.
@@ -389,7 +409,7 @@ object blob {
    */
   implicit class BlobIOOps[A](ma: BlobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A] =
-      F.runFC[BlobOp, Kleisli[M, Blob, ?], A](ma)(kleisliTrans[M])
+      blob.transK[M].apply(ma)
   }
 
 }
