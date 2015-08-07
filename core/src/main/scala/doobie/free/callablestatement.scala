@@ -226,11 +226,11 @@ object callablestatement {
     case class  GetBigDecimal(a: Int) extends CallableStatementOp[BigDecimal] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
     }
-    case class  GetBigDecimal1(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
-    }
-    case class  GetBigDecimal2(a: String) extends CallableStatementOp[BigDecimal] {
+    case class  GetBigDecimal1(a: String) extends CallableStatementOp[BigDecimal] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
+    }
+    case class  GetBigDecimal2(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
     }
     case class  GetBlob(a: String) extends CallableStatementOp[Blob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
@@ -427,11 +427,11 @@ object callablestatement {
     case class  GetTime3(a: String) extends CallableStatementOp[Time] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
     }
-    case class  GetTimestamp(a: Int) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
-    }
-    case class  GetTimestamp1(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
+    case class  GetTimestamp(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
+    }
+    case class  GetTimestamp1(a: Int) extends CallableStatementOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
     }
     case class  GetTimestamp2(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
@@ -484,23 +484,23 @@ object callablestatement {
     case class  SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setArray(a, b))
     }
-    case class  SetAsciiStream(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
-    case class  SetAsciiStream1(a: String, b: InputStream) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream1(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
+    }
+    case class  SetAsciiStream2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b))
     }
-    case class  SetAsciiStream2(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream3(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
-    case class  SetAsciiStream3(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream4(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
-    case class  SetAsciiStream4(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream5(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b))
-    }
-    case class  SetAsciiStream5(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetBigDecimal(a: String, b: BigDecimal) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBigDecimal(a, b))
@@ -517,11 +517,11 @@ object callablestatement {
     case class  SetBinaryStream2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
     }
-    case class  SetBinaryStream3(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
-    }
-    case class  SetBinaryStream4(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetBinaryStream3(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
+    }
+    case class  SetBinaryStream4(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
     }
     case class  SetBinaryStream5(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
@@ -535,14 +535,14 @@ object callablestatement {
     case class  SetBlob2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
-    case class  SetBlob3(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
-    }
-    case class  SetBlob4(a: Int, b: Blob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
-    }
-    case class  SetBlob5(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetBlob3(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
+    }
+    case class  SetBlob4(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
+    }
+    case class  SetBlob5(a: Int, b: Blob) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBoolean(a: String, b: Boolean) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBoolean(a, b))
@@ -562,19 +562,19 @@ object callablestatement {
     case class  SetBytes1(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
-    case class  SetCharacterStream(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetCharacterStream(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
-    case class  SetCharacterStream1(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
-    }
-    case class  SetCharacterStream2(a: String, b: Reader) extends CallableStatementOp[Unit] {
+    case class  SetCharacterStream1(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
     }
-    case class  SetCharacterStream3(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetCharacterStream2(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
-    case class  SetCharacterStream4(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetCharacterStream3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
+    }
+    case class  SetCharacterStream4(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream5(a: Int, b: Reader) extends CallableStatementOp[Unit] {
@@ -700,20 +700,20 @@ object callablestatement {
     case class  SetNull3(a: Int, b: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
     }
-    case class  SetObject(a: String, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
-    }
-    case class  SetObject1(a: String, b: Object) extends CallableStatementOp[Unit] {
+    case class  SetObject(a: String, b: Object) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
+    }
+    case class  SetObject1(a: String, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetObject2(a: String, b: Object, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
-    case class  SetObject3(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
-    }
-    case class  SetObject4(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
+    case class  SetObject3(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
+    }
+    case class  SetObject4(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject5(a: Int, b: Object) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
@@ -757,11 +757,11 @@ object callablestatement {
     case class  SetTime1(a: String, b: Time) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
     }
-    case class  SetTime2(a: Int, b: Time) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
-    }
-    case class  SetTime3(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
+    case class  SetTime2(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
+    }
+    case class  SetTime3(a: Int, b: Time) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
     }
     case class  SetTimestamp(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
@@ -769,11 +769,11 @@ object callablestatement {
     case class  SetTimestamp1(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
     }
-    case class  SetTimestamp2(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
-    }
-    case class  SetTimestamp3(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
+    case class  SetTimestamp2(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
+    }
+    case class  SetTimestamp3(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
     }
     case class  SetURL(a: String, b: URL) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setURL(a, b))
@@ -1073,14 +1073,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def getBigDecimal(a: Int, b: Int): CallableStatementIO[BigDecimal] =
-    F.liftFC(GetBigDecimal1(a, b))
+  def getBigDecimal(a: String): CallableStatementIO[BigDecimal] =
+    F.liftFC(GetBigDecimal1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getBigDecimal(a: String): CallableStatementIO[BigDecimal] =
-    F.liftFC(GetBigDecimal2(a))
+  def getBigDecimal(a: Int, b: Int): CallableStatementIO[BigDecimal] =
+    F.liftFC(GetBigDecimal2(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1475,14 +1475,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def getTimestamp(a: Int): CallableStatementIO[Timestamp] =
-    F.liftFC(GetTimestamp(a))
+  def getTimestamp(a: Int, b: Calendar): CallableStatementIO[Timestamp] =
+    F.liftFC(GetTimestamp(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getTimestamp(a: Int, b: Calendar): CallableStatementIO[Timestamp] =
-    F.liftFC(GetTimestamp1(a, b))
+  def getTimestamp(a: Int): CallableStatementIO[Timestamp] =
+    F.liftFC(GetTimestamp1(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -1589,38 +1589,38 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setAsciiStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
+  def setAsciiStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
     F.liftFC(SetAsciiStream(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
+  def setAsciiStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetAsciiStream1(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def setAsciiStream(a: String, b: InputStream): CallableStatementIO[Unit] =
-    F.liftFC(SetAsciiStream1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setAsciiStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetAsciiStream2(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setAsciiStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetAsciiStream3(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setAsciiStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftFC(SetAsciiStream4(a, b))
+    F.liftFC(SetAsciiStream2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Int, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftFC(SetAsciiStream5(a, b, c))
+    F.liftFC(SetAsciiStream3(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setAsciiStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetAsciiStream4(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setAsciiStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
+    F.liftFC(SetAsciiStream5(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1655,14 +1655,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBinaryStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftFC(SetBinaryStream3(a, b))
+  def setBinaryStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBinaryStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetBinaryStream4(a, b, c))
+  def setBinaryStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream4(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1691,20 +1691,20 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBlob(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftFC(SetBlob3(a, b))
+  def setBlob(a: Int, b: InputStream, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetBlob3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBlob(a: Int, b: Blob): CallableStatementIO[Unit] =
+  def setBlob(a: Int, b: InputStream): CallableStatementIO[Unit] =
     F.liftFC(SetBlob4(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBlob(a: Int, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftFC(SetBlob5(a, b, c))
+  def setBlob(a: Int, b: Blob): CallableStatementIO[Unit] =
+    F.liftFC(SetBlob5(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1745,31 +1745,31 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
+  def setCharacterStream(a: String, b: Reader, c: Int): CallableStatementIO[Unit] =
     F.liftFC(SetCharacterStream(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setCharacterStream(a: String, b: Reader, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream1(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def setCharacterStream(a: String, b: Reader): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream2(a, b))
+    F.liftFC(SetCharacterStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setCharacterStream(a: Int, b: Reader, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetCharacterStream3(a, b, c))
+  def setCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream3(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setCharacterStream(a: Int, b: Reader, c: Int): CallableStatementIO[Unit] =
     F.liftFC(SetCharacterStream4(a, b, c))
 
   /** 
@@ -2021,14 +2021,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setObject(a: String, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetObject(a, b, c, d))
+  def setObject(a: String, b: Object): CallableStatementIO[Unit] =
+    F.liftFC(SetObject(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setObject(a: String, b: Object): CallableStatementIO[Unit] =
-    F.liftFC(SetObject1(a, b))
+  def setObject(a: String, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetObject1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
@@ -2039,14 +2039,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setObject(a: Int, b: Object, c: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetObject3(a, b, c))
+  def setObject(a: Int, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetObject3(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setObject(a: Int, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
-    F.liftFC(SetObject4(a, b, c, d))
+  def setObject(a: Int, b: Object, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetObject4(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
@@ -2135,14 +2135,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setTime(a: Int, b: Time): CallableStatementIO[Unit] =
-    F.liftFC(SetTime2(a, b))
+  def setTime(a: Int, b: Time, c: Calendar): CallableStatementIO[Unit] =
+    F.liftFC(SetTime2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setTime(a: Int, b: Time, c: Calendar): CallableStatementIO[Unit] =
-    F.liftFC(SetTime3(a, b, c))
+  def setTime(a: Int, b: Time): CallableStatementIO[Unit] =
+    F.liftFC(SetTime3(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -2159,14 +2159,14 @@ object callablestatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setTimestamp(a: Int, b: Timestamp): CallableStatementIO[Unit] =
-    F.liftFC(SetTimestamp2(a, b))
+  def setTimestamp(a: Int, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
+    F.liftFC(SetTimestamp2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setTimestamp(a: Int, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
-    F.liftFC(SetTimestamp3(a, b, c))
+  def setTimestamp(a: Int, b: Timestamp): CallableStatementIO[Unit] =
+    F.liftFC(SetTimestamp3(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -2202,11 +2202,31 @@ object callablestatement {
   * Natural transformation from `CallableStatementOp` to `Kleisli` for the given `M`, consuming a `java.sql.CallableStatement`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
     new (CallableStatementOp ~> Kleisli[M, CallableStatement, ?]) {
       def apply[A](op: CallableStatementOp[A]): Kleisli[M, CallableStatement, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `CallableStatementIO` to `Kleisli` for the given `M`, consuming a `java.sql.CallableStatement`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: CallableStatementIO ~> Kleisli[M, CallableStatement, ?] =
+    new (CallableStatementIO ~> Kleisli[M, CallableStatement, ?]) {
+      def apply[A](ma: CallableStatementIO[A]): Kleisli[M, CallableStatement, A] =
+        F.runFC[CallableStatementOp, Kleisli[M, CallableStatement, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `CallableStatementIO` to `M`, given a `java.sql.CallableStatement`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: CallableStatement): CallableStatementIO ~> M =
+   new (CallableStatementIO ~> M) {
+     def apply[A](ma: CallableStatementIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `CallableStatementIO`.
@@ -2214,7 +2234,7 @@ object callablestatement {
    */
   implicit class CallableStatementIOOps[A](ma: CallableStatementIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CallableStatement, A] =
-      F.runFC[CallableStatementOp, Kleisli[M, CallableStatement, ?], A](ma)(kleisliTrans[M])
+      callablestatement.transK[M].apply(ma)
   }
 
 }

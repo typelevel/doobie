@@ -315,11 +315,31 @@ object ref {
   * Natural transformation from `RefOp` to `Kleisli` for the given `M`, consuming a `java.sql.Ref`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: RefOp ~> Kleisli[M, Ref, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: RefOp ~> Kleisli[M, Ref, ?] =
     new (RefOp ~> Kleisli[M, Ref, ?]) {
       def apply[A](op: RefOp[A]): Kleisli[M, Ref, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `RefIO` to `Kleisli` for the given `M`, consuming a `java.sql.Ref`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: RefIO ~> Kleisli[M, Ref, ?] =
+    new (RefIO ~> Kleisli[M, Ref, ?]) {
+      def apply[A](ma: RefIO[A]): Kleisli[M, Ref, A] =
+        F.runFC[RefOp, Kleisli[M, Ref, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `RefIO` to `M`, given a `java.sql.Ref`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: Ref): RefIO ~> M =
+   new (RefIO ~> M) {
+     def apply[A](ma: RefIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `RefIO`.
@@ -327,7 +347,7 @@ object ref {
    */
   implicit class RefIOOps[A](ma: RefIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Ref, A] =
-      F.runFC[RefOp, Kleisli[M, Ref, ?], A](ma)(kleisliTrans[M])
+      ref.transK[M].apply(ma)
   }
 
 }

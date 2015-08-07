@@ -531,11 +531,31 @@ object sqloutput {
   * Natural transformation from `SQLOutputOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLOutput`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: SQLOutputOp ~> Kleisli[M, SQLOutput, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: SQLOutputOp ~> Kleisli[M, SQLOutput, ?] =
     new (SQLOutputOp ~> Kleisli[M, SQLOutput, ?]) {
       def apply[A](op: SQLOutputOp[A]): Kleisli[M, SQLOutput, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `SQLOutputIO` to `Kleisli` for the given `M`, consuming a `java.sql.SQLOutput`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: SQLOutputIO ~> Kleisli[M, SQLOutput, ?] =
+    new (SQLOutputIO ~> Kleisli[M, SQLOutput, ?]) {
+      def apply[A](ma: SQLOutputIO[A]): Kleisli[M, SQLOutput, A] =
+        F.runFC[SQLOutputOp, Kleisli[M, SQLOutput, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `SQLOutputIO` to `M`, given a `java.sql.SQLOutput`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: SQLOutput): SQLOutputIO ~> M =
+   new (SQLOutputIO ~> M) {
+     def apply[A](ma: SQLOutputIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `SQLOutputIO`.
@@ -543,7 +563,7 @@ object sqloutput {
    */
   implicit class SQLOutputIOOps[A](ma: SQLOutputIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLOutput, A] =
-      F.runFC[SQLOutputOp, Kleisli[M, SQLOutput, ?], A](ma)(kleisliTrans[M])
+      sqloutput.transK[M].apply(ma)
   }
 
 }

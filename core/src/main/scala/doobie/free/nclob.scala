@@ -159,10 +159,10 @@ object nclob {
     case object Length extends NClobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
-    case class  Position(a: String, b: Long) extends NClobOp[Long] {
+    case class  Position(a: Clob, b: Long) extends NClobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
-    case class  Position1(a: Clob, b: Long) extends NClobOp[Long] {
+    case class  Position1(a: String, b: Long) extends NClobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
@@ -355,13 +355,13 @@ object nclob {
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: String, b: Long): NClobIO[Long] =
+  def position(a: Clob, b: Long): NClobIO[Long] =
     F.liftFC(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Clob, b: Long): NClobIO[Long] =
+  def position(a: String, b: Long): NClobIO[Long] =
     F.liftFC(Position1(a, b))
 
   /** 
@@ -398,11 +398,31 @@ object nclob {
   * Natural transformation from `NClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.NClob`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: NClobOp ~> Kleisli[M, NClob, ?] =
+  def interpK[M[_]: Monad: Catchable: Capture]: NClobOp ~> Kleisli[M, NClob, ?] =
     new (NClobOp ~> Kleisli[M, NClob, ?]) {
       def apply[A](op: NClobOp[A]): Kleisli[M, NClob, A] =
         op.defaultTransK[M]
     }
+
+ /** 
+  * Natural transformation from `NClobIO` to `Kleisli` for the given `M`, consuming a `java.sql.NClob`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: NClobIO ~> Kleisli[M, NClob, ?] =
+    new (NClobIO ~> Kleisli[M, NClob, ?]) {
+      def apply[A](ma: NClobIO[A]): Kleisli[M, NClob, A] =
+        F.runFC[NClobOp, Kleisli[M, NClob, ?], A](ma)(interpK[M])
+    }
+
+ /** 
+  * Natural transformation from `NClobIO` to `M`, given a `java.sql.NClob`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: NClob): NClobIO ~> M =
+   new (NClobIO ~> M) {
+     def apply[A](ma: NClobIO[A]): M[A] = 
+       transK[M].apply(ma).run(c)
+   }
 
   /**
    * Syntax for `NClobIO`.
@@ -410,7 +430,7 @@ object nclob {
    */
   implicit class NClobIOOps[A](ma: NClobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, NClob, A] =
-      F.runFC[NClobOp, Kleisli[M, NClob, ?], A](ma)(kleisliTrans[M])
+      nclob.transK[M].apply(ma)
   }
 
 }
