@@ -63,7 +63,7 @@ Yikes, there are quite a few problems, in several categories. In this case **doo
 
 - a parameter coercion that should always work but is not required to be supported by compliant drivers;
 - two column coercions that **are** supported by JDBC but are not recommended and can fail in some cases;
-- a column nullability mismatch, where a column is read into a non-`Option` type;
+- a column nullability mismatch, where a column that is *provably* nullable is read into a non-`Option` type;
 - and an unused column.
 
 Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like **doobie**'s enumerated `JdbcType`.  Currently this is based on instantiated `Meta` instances, which is not ideal; hopefully in the next release the tooling will improve to support all instances in scope.
@@ -94,7 +94,7 @@ The way this works is that a `Query` value has enough type information to descri
 
 - SQL validity. The query must compile, which means it must be consistent with the schema.
 - Parameter and column arity. All query inputs and outputs must map 1:1 with parameters and columns.
-- Nullability. Nullable schema types must be mapped to Scala `Option` types, and non-nullable schema types should not.
+- Nullability. A parameter or column that is *provably* nullable must be mapped to a Scala `Option`. Note that this is a weak guarantee; columns introduced by an outer join might be nullable but JDBC will tend to report them as "might not be nullable" which isn't useful information.
 - Coercibility of types. Mapping of Scala types to JDBC types and JDBC types to vendor types, is asymmetric with respect to reading and writing, and the specification is quite terrible. **doobie** encodes the JDBC spec and combines this with vendor-specific metadata to determine whether a given asserted mapping is sensible or not, and if not, will suggest a fix via changing the Scala type, and another via changing the schema type.
 
 
