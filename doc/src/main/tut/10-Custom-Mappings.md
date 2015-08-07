@@ -17,14 +17,19 @@ libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4" // as of date of p
 In our REPL we have the same setup as before, plus a few extra imports.
 
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, java.awt.Point
+import argonaut._, Argonaut._
+import doobie.imports._
+import java.awt.Point
+import org.postgresql.util.PGobject
+import scala.reflect.runtime.universe.TypeTag
+import scalaz._, Scalaz._
+import scalaz.concurrent.Task
+
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
+
 import xa.yolo._
-import argonaut._, Argonaut._
-import scala.reflect.runtime.universe.TypeTag
-import org.postgresql.util.PGobject
 ```
 
 ### Meta, Atom, and Composite
@@ -59,6 +64,7 @@ Let's say we have a structured value that's represented by a single string in a 
 case class PersonId(department: String, number: Int) {
   def toLegacy = department + ":" + number
 }
+
 object PersonId {
 
   def fromLegacy(s: String): Option[PersonId] =
@@ -71,6 +77,7 @@ object PersonId {
     fromLegacy(s).getOrElse(throw new RuntimeException("Invalid format: " + s))
 
 }
+
 val pid = PersonId.unsafeFromLegacy("sales:42")
 ```
 

@@ -33,12 +33,13 @@ See the previous chapter on **SQL Arrays** for usage examples.
 
 ### H2 Connection Pool
 
-**doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is an effect.
+**doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `Task`).
 
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
-
 import doobie.contrib.h2.h2transactor._
+import doobie.imports._
+import scalaz._, Scalaz._
+import scalaz.concurrent.Task
 
 val q = sql"select 42".query[Int].unique
 

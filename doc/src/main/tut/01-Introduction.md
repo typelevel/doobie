@@ -89,7 +89,8 @@ If you are not using PostgreSQL you can omit `doobie-contrib-postgresql` and wil
 Each page begins with some imports, like this.
 
 ```tut:silent
-import scalaz._, Scalaz._, doobie.imports._
+import scalaz._, Scalaz._
+import doobie.imports._
 ```
 
 After that there is text interspersed with code examples. Sometimes definitions will stand alone.
