@@ -66,8 +66,9 @@ object analysis {
   case class NullabilityMisalignment(index: Int, name: String, st: Meta[_], jdk: NullabilityKnown, jdbc: NullabilityKnown) extends AlignmentError {
     val tag = "C"
     def msg = this match {
-      case NullabilityMisalignment(i, name, st, NoNulls, Nullable) => 
-        s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
+      // https://github.com/tpolecat/doobie/issues/164 ... NoNulls means "maybe no nulls"  :-\
+      // case NullabilityMisalignment(i, name, st, NoNulls, Nullable) =>
+      //   s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
       case NullabilityMisalignment(i, name, st, Nullable, NoNulls) => 
         s"""|Reading a NULL value into ${typeName(st, NoNulls)} will result in a runtime failure. 
             |Fix this by making the schema type ${formatNullability(NoNulls)} or by changing the 
@@ -152,7 +153,8 @@ object analysis {
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
       columnAlignment.zipWithIndex.collect {
-        case (Both((st, Nullable), ColumnMeta(_, _, NoNulls, col)), n) => NullabilityMisalignment(n + 1, col, st, NoNulls, Nullable)
+        // We can't do anything helpful with NoNulls .. it means "might not be nullable"
+        // case (Both((st, Nullable), ColumnMeta(_, _, NoNulls, col)), n) => NullabilityMisalignment(n + 1, col, st, NoNulls, Nullable)
         case (Both((st, NoNulls), ColumnMeta(_, _, Nullable, col)), n) => NullabilityMisalignment(n + 1, col, st, Nullable, NoNulls)
         // N.B. if we had a warning mechanism we could issue a warning for NullableUnknown
       }
