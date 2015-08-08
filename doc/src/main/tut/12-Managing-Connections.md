@@ -4,10 +4,16 @@ number: 12
 title: Managing Connections
 ---
 
+<div class="alert alert-warning" role="alert">
+<b>Note:</b> The <code>Transactor</code> type is being generalized for <b>doobie</b> 0.3.0 and there will be minor API changes as a result. In particular transactors will be configurable generically, which will make custom implementations less common.
+</div>
+
 In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
 
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._
+import scalaz._, Scalaz._
+import scalaz.concurrent.Task
 ```
 
 ### About Transactors

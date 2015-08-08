@@ -11,10 +11,15 @@ In this chapter we examine operations that modify data in the database, and ways
 Again we set up a transactor and pull in YOLO mode, but this time we're not using the world database.
 
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task, scalaz.stream.Process
+import doobie.imports._
+import scalaz._, Scalaz._
+import scalaz.concurrent.Task
+import scalaz.stream.Process
+
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
+
 import xa.yolo._
 ```
 

@@ -9,10 +9,14 @@ In this chapter we examine a set of combinators that allow us to construct progr
 ### Setting Up
 
 ```tut:silent
-import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+import doobie.imports._
+import scalaz._, Scalaz._
+import scalaz.concurrent.Task
+
 val xa = DriverManagerTransactor[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
+
 import xa.yolo._
 ```
 
@@ -80,14 +84,12 @@ Alright, let's define a `Person` data type and a way to insert instances.
 
 
 ```tut:silent
-
 case class Person(id: Int, name: String)
 
 def insert(s: String): ConnectionIO[Person] = {
   sql"insert into person (name) values ($s)"
     .update.withUniqueGeneratedKeys("id", "name")
 }
-
 ```
 
 The first insert will work.

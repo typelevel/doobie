@@ -10,16 +10,12 @@ In this chapter we start from the beginning. First we write a program that conne
 
 ### Our First Program
 
-Before we can use **doobie** we need to import some symbols. We will use the `doobie.imports` module here as a convenience; it exposes the most commonly-used symbols when working with the high-level API.
+Before we can use **doobie** we need to import some symbols. We will use the `doobie.imports` module here as a convenience; it exposes the most commonly-used symbols when working with the high-level API. We will also import the [scalaz](https://github.com/scalaz/scalaz) core, as well as `Task` from scalaz-concurrent.
 
 ```tut:silent
 import doobie.imports._
-```
-
-We will also import the [scalaz](https://github.com/scalaz/scalaz) core, as well as `Task` from scalaz-concurrent.
-
-```tut:silent
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+import scalaz._, Scalaz._
+import scalaz.concurrent.Task
 ```
 
 In the **doobie** high level API the most common types we will deal with have the form `ConnectionIO[A]`, specifying computations that take place in a context where a `java.sql.Connection` is available, ultimately producing a value of type `A`.
