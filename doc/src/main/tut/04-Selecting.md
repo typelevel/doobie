@@ -102,12 +102,25 @@ We can select multiple columns, of course, and map them to a tuple. The `gnp` co
   .query[(String, String, Int, Option[Double])]
   .process.take(5).quick.run)
 ```
-**doobie** automatically supports row mappings for atomic column types, as well as options, tuples, `HList`s and case classes thereof. So let's try the same query with an `HList`:
+**doobie** automatically supports row mappings for atomic column types, as well as options, tuples, `HList`s, shapeless records, and case classes thereof. So let's try the same query with an `HList`:
 
 ```tut
 import shapeless._
+
 (sql"select code, name, population, gnp from country"
   .query[String :: String :: Int :: Option[Double] :: HNil]
+  .process.take(5).quick.run)
+```
+
+And with a shapeless record:
+
+```tut
+import shapeless.record.Record
+
+type Rec = Record.`'code -> String, 'name -> String, 'pop -> Int, 'gnp -> Option[Double]`.T
+
+(sql"select code, name, population, gnp from country"
+  .query[Rec]
   .process.take(5).quick.run)
 ```
 
@@ -123,7 +136,7 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
   .process.take(5).quick.run)
 ```
 
-You can also nest case classes, `HList`s, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
+You can also nest case classes, `HList`s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
 
 ```tut:silent
 case class Code(code: String)

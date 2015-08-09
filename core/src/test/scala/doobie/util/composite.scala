@@ -1,6 +1,6 @@
 package doobie.util
 
-import shapeless._, shapeless.test._
+import shapeless._, shapeless.test._, shapeless.record._
 import doobie.imports._
 import org.specs2.mutable.Specification
 
@@ -30,6 +30,17 @@ object compositespec extends Specification {
       Composite[(Woozle, String)]
       Composite[(Int, Woozle :: Woozle :: String :: HNil)]
 
+      true
+    }
+
+    "exist for shapeless record types" in {
+
+      type DL = (Double, Long)
+      type A = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
+      
+      Composite[A]
+      Composite[(A, A)]
+      
       true
     }
 

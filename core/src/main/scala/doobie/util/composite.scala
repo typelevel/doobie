@@ -17,6 +17,7 @@ import scala.annotation.implicitNotFound
 
 import scalaz._, Scalaz._
 import shapeless._
+import shapeless.labelled.{ field, FieldType }
 
 import java.sql.ParameterMetaData
 
@@ -61,6 +62,17 @@ object composite {
         val length = 1
         val meta = List(A.meta)
       }
+
+    // Composite for shapeless record types
+    implicit def recordComposite[K <: Symbol, H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[FieldType[K, H] :: T] =
+      new Composite[FieldType[K, H] :: T] {
+        val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
+        val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
+        val unsafeGet = (r: ResultSet, i: Int) => field[K](H.unsafeGet(r, i)) :: T.unsafeGet(r, i + H.length)
+        val length = H.length + T.length
+        val meta = H.meta ++ T.meta
+      }
+
   }
 
   // N.B. we're separating this out in order to make the atom ~> composite derivation higher
@@ -92,5 +104,7 @@ object composite {
       def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =
         instance.xmap(from, to)
     }
+
   }
+
 }
