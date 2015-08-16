@@ -1,10 +1,9 @@
 package doobie.free
 
-import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
-import doobie.free.kleislitrans._
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -49,7 +48,7 @@ import resultset.ResultSetIO
  *
  * `NClobIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `NClobOp` to another monad via
- * `Free#foldMap`.
+ * `Free.runFC`. 
  *
  * The library provides a natural transformation to `Kleisli[M, NClob, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -87,20 +86,45 @@ object nclob {
    */
   object NClobOp {
     
-    // This algebra has a default interpreter
-    implicit val NClobKleisliTrans: KleisliTrans.Aux[NClobOp, NClob] =
-      new KleisliTrans[NClobOp] {
-        type J = NClob
-        def interpK[M[_]: Monad: Catchable: Capture]: NClobOp ~> Kleisli[M, NClob, ?] =
-          new (NClobOp ~> Kleisli[M, NClob, ?]) {
-            def apply[A](op: NClobOp[A]): Kleisli[M, NClob, A] =
-              op.defaultTransK[M]
-          }
-      }
-
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends NClobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends NClobOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
     }
 
     // Combinators
@@ -165,7 +189,14 @@ object nclob {
    * a `java.sql.NClob` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type NClobIO[A] = F[NClobOp, A]
+  type NClobIO[A] = F.FreeC[NClobOp, A]
+
+  /**
+   * Monad instance for [[NClobIO]] (can't be inferred).
+   * @group Typeclass Instances 
+   */
+  implicit val MonadNClobIO: Monad[NClobIO] = 
+    F.freeMonad[({type λ[α] = Coyoneda[NClobOp, α]})#λ]
 
   /**
    * Catchable instance for [[NClobIO]].
@@ -187,131 +218,191 @@ object nclob {
     }
 
   /**
-   * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): NClobIO[A] =
-    F.liftF(Lift(j, action, mod))
+  def liftBlob[A](s: Blob, k: BlobIO[A]): NClobIO[A] =
+    F.liftFC(LiftBlobIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftCallableStatement[A](s: CallableStatement, k: CallableStatementIO[A]): NClobIO[A] =
+    F.liftFC(LiftCallableStatementIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftClob[A](s: Clob, k: ClobIO[A]): NClobIO[A] =
+    F.liftFC(LiftClobIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftConnection[A](s: Connection, k: ConnectionIO[A]): NClobIO[A] =
+    F.liftFC(LiftConnectionIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftDatabaseMetaData[A](s: DatabaseMetaData, k: DatabaseMetaDataIO[A]): NClobIO[A] =
+    F.liftFC(LiftDatabaseMetaDataIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftDriver[A](s: Driver, k: DriverIO[A]): NClobIO[A] =
+    F.liftFC(LiftDriverIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftPreparedStatement[A](s: PreparedStatement, k: PreparedStatementIO[A]): NClobIO[A] =
+    F.liftFC(LiftPreparedStatementIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftRef[A](s: Ref, k: RefIO[A]): NClobIO[A] =
+    F.liftFC(LiftRefIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftResultSet[A](s: ResultSet, k: ResultSetIO[A]): NClobIO[A] =
+    F.liftFC(LiftResultSetIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftSQLData[A](s: SQLData, k: SQLDataIO[A]): NClobIO[A] =
+    F.liftFC(LiftSQLDataIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftSQLInput[A](s: SQLInput, k: SQLInputIO[A]): NClobIO[A] =
+    F.liftFC(LiftSQLInputIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftSQLOutput[A](s: SQLOutput, k: SQLOutputIO[A]): NClobIO[A] =
+    F.liftFC(LiftSQLOutputIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftStatement[A](s: Statement, k: StatementIO[A]): NClobIO[A] =
+    F.liftFC(LiftStatementIO(s, k))
 
   /** 
    * Lift a NClobIO[A] into an exception-capturing NClobIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: NClobIO[A]): NClobIO[Throwable \/ A] =
-    F.liftF[NClobOp, Throwable \/ A](Attempt(a))
+    F.liftFC[NClobOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): NClobIO[A] =
-    F.liftF(Pure(a _))
+    F.liftFC(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying NClob.
    * @group Constructors (Lifting)
    */
   def raw[A](f: NClob => A): NClobIO[A] =
-    F.liftF(Raw(f))
+    F.liftFC(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val free: NClobIO[Unit] =
-    F.liftF(Free)
+    F.liftFC(Free)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getAsciiStream: NClobIO[InputStream] =
-    F.liftF(GetAsciiStream)
+    F.liftFC(GetAsciiStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCharacterStream: NClobIO[Reader] =
-    F.liftF(GetCharacterStream)
+    F.liftFC(GetCharacterStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getCharacterStream(a: Long, b: Long): NClobIO[Reader] =
-    F.liftF(GetCharacterStream1(a, b))
+    F.liftFC(GetCharacterStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSubString(a: Long, b: Int): NClobIO[String] =
-    F.liftF(GetSubString(a, b))
+    F.liftFC(GetSubString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val length: NClobIO[Long] =
-    F.liftF(Length)
+    F.liftFC(Length)
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: Clob, b: Long): NClobIO[Long] =
-    F.liftF(Position(a, b))
+    F.liftFC(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: String, b: Long): NClobIO[Long] =
-    F.liftF(Position1(a, b))
+    F.liftFC(Position1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Long): NClobIO[OutputStream] =
-    F.liftF(SetAsciiStream(a))
+    F.liftFC(SetAsciiStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Long): NClobIO[Writer] =
-    F.liftF(SetCharacterStream(a))
+    F.liftFC(SetCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
-    F.liftF(SetString(a, b, c, d))
+    F.liftFC(SetString(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: Long, b: String): NClobIO[Int] =
-    F.liftF(SetString1(a, b))
+    F.liftFC(SetString1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def truncate(a: Long): NClobIO[Unit] =
-    F.liftF(Truncate(a))
+    F.liftFC(Truncate(a))
 
  /** 
   * Natural transformation from `NClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.NClob`. 
   * @group Algebra
   */
-  def interpK[M[_]: Monad: Catchable: Capture]: NClobOp ~> Kleisli[M, NClob, ?] =
-   NClobOp.NClobKleisliTrans.interpK
-
- /** 
-  * Natural transformation from `NClobIO` to `Kleisli` for the given `M`, consuming a `java.sql.NClob`. 
-  * @group Algebra
-  */
-  def transK[M[_]: Monad: Catchable: Capture]: NClobIO ~> Kleisli[M, NClob, ?] =
-   NClobOp.NClobKleisliTrans.transK
-
- /** 
-  * Natural transformation from `NClobIO` to `M`, given a `java.sql.NClob`. 
-  * @group Algebra
-  */
- def trans[M[_]: Monad: Catchable: Capture](c: NClob): NClobIO ~> M =
-   NClobOp.NClobKleisliTrans.trans[M](c)
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: NClobOp ~> Kleisli[M, NClob, ?] =
+    new (NClobOp ~> Kleisli[M, NClob, ?]) {
+      def apply[A](op: NClobOp[A]): Kleisli[M, NClob, A] =
+        op.defaultTransK[M]
+    }
 
   /**
    * Syntax for `NClobIO`.
@@ -319,7 +410,7 @@ object nclob {
    */
   implicit class NClobIOOps[A](ma: NClobIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, NClob, A] =
-      NClobOp.NClobKleisliTrans.transK[M].apply(ma)
+      F.runFC[NClobOp, Kleisli[M, NClob, ?], A](ma)(kleisliTrans[M])
   }
 
 }

@@ -1,10 +1,9 @@
 package doobie.free
 
-import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
-import doobie.free.kleislitrans._
 
 import java.io.InputStream
 import java.io.Reader
@@ -62,7 +61,7 @@ import resultset.ResultSetIO
  *
  * `CallableStatementIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `CallableStatementOp` to another monad via
- * `Free#foldMap`.
+ * `Free.runFC`. 
  *
  * The library provides a natural transformation to `Kleisli[M, CallableStatement, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -100,20 +99,45 @@ object callablestatement {
    */
   object CallableStatementOp {
     
-    // This algebra has a default interpreter
-    implicit val CallableStatementKleisliTrans: KleisliTrans.Aux[CallableStatementOp, CallableStatement] =
-      new KleisliTrans[CallableStatementOp] {
-        type J = CallableStatement
-        def interpK[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
-          new (CallableStatementOp ~> Kleisli[M, CallableStatement, ?]) {
-            def apply[A](op: CallableStatementOp[A]): Kleisli[M, CallableStatement, A] =
-              op.defaultTransK[M]
-          }
-      }
-
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends CallableStatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    }
+    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends CallableStatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
     }
 
     // Combinators
@@ -157,10 +181,10 @@ object callablestatement {
     case object Execute extends CallableStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute())
     }
-    case class  Execute1(a: String, b: Array[Int]) extends CallableStatementOp[Boolean] {
+    case class  Execute1(a: String, b: Int) extends CallableStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute2(a: String, b: Int) extends CallableStatementOp[Boolean] {
+    case class  Execute2(a: String, b: Array[Int]) extends CallableStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case class  Execute3(a: String) extends CallableStatementOp[Boolean] {
@@ -181,37 +205,37 @@ object callablestatement {
     case object ExecuteUpdate extends CallableStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate())
     }
-    case class  ExecuteUpdate1(a: String) extends CallableStatementOp[Int] {
+    case class  ExecuteUpdate1(a: String, b: Int) extends CallableStatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate4(a: String) extends CallableStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
     }
-    case class  ExecuteUpdate2(a: String, b: Array[String]) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
-    }
-    case class  ExecuteUpdate3(a: String, b: Array[Int]) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
-    }
-    case class  ExecuteUpdate4(a: String, b: Int) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
-    }
-    case class  GetArray(a: Int) extends CallableStatementOp[SqlArray] {
+    case class  GetArray(a: String) extends CallableStatementOp[SqlArray] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
     }
-    case class  GetArray1(a: String) extends CallableStatementOp[SqlArray] {
+    case class  GetArray1(a: Int) extends CallableStatementOp[SqlArray] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
     }
-    case class  GetBigDecimal(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
+    case class  GetBigDecimal(a: Int) extends CallableStatementOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
     }
     case class  GetBigDecimal1(a: String) extends CallableStatementOp[BigDecimal] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
     }
-    case class  GetBigDecimal2(a: Int) extends CallableStatementOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
+    case class  GetBigDecimal2(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
     }
-    case class  GetBlob(a: Int) extends CallableStatementOp[Blob] {
+    case class  GetBlob(a: String) extends CallableStatementOp[Blob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
     }
-    case class  GetBlob1(a: String) extends CallableStatementOp[Blob] {
+    case class  GetBlob1(a: Int) extends CallableStatementOp[Blob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
     }
     case class  GetBoolean(a: String) extends CallableStatementOp[Boolean] {
@@ -226,32 +250,32 @@ object callablestatement {
     case class  GetByte1(a: String) extends CallableStatementOp[Byte] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
     }
-    case class  GetBytes(a: String) extends CallableStatementOp[Array[Byte]] {
+    case class  GetBytes(a: Int) extends CallableStatementOp[Array[Byte]] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
     }
-    case class  GetBytes1(a: Int) extends CallableStatementOp[Array[Byte]] {
+    case class  GetBytes1(a: String) extends CallableStatementOp[Array[Byte]] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
     }
-    case class  GetCharacterStream(a: String) extends CallableStatementOp[Reader] {
+    case class  GetCharacterStream(a: Int) extends CallableStatementOp[Reader] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
     }
-    case class  GetCharacterStream1(a: Int) extends CallableStatementOp[Reader] {
+    case class  GetCharacterStream1(a: String) extends CallableStatementOp[Reader] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
     }
-    case class  GetClob(a: String) extends CallableStatementOp[Clob] {
+    case class  GetClob(a: Int) extends CallableStatementOp[Clob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
     }
-    case class  GetClob1(a: Int) extends CallableStatementOp[Clob] {
+    case class  GetClob1(a: String) extends CallableStatementOp[Clob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
     }
     case object GetConnection extends CallableStatementOp[Connection] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
     }
-    case class  GetDate(a: Int, b: Calendar) extends CallableStatementOp[Date] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
-    }
-    case class  GetDate1(a: Int) extends CallableStatementOp[Date] {
+    case class  GetDate(a: Int) extends CallableStatementOp[Date] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
+    }
+    case class  GetDate1(a: Int, b: Calendar) extends CallableStatementOp[Date] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
     }
     case class  GetDate2(a: String) extends CallableStatementOp[Date] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
@@ -259,10 +283,10 @@ object callablestatement {
     case class  GetDate3(a: String, b: Calendar) extends CallableStatementOp[Date] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
     }
-    case class  GetDouble(a: Int) extends CallableStatementOp[Double] {
+    case class  GetDouble(a: String) extends CallableStatementOp[Double] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
     }
-    case class  GetDouble1(a: String) extends CallableStatementOp[Double] {
+    case class  GetDouble1(a: Int) extends CallableStatementOp[Double] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
     }
     case object GetFetchDirection extends CallableStatementOp[Int] {
@@ -271,10 +295,10 @@ object callablestatement {
     case object GetFetchSize extends CallableStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchSize())
     }
-    case class  GetFloat(a: String) extends CallableStatementOp[Float] {
+    case class  GetFloat(a: Int) extends CallableStatementOp[Float] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
     }
-    case class  GetFloat1(a: Int) extends CallableStatementOp[Float] {
+    case class  GetFloat1(a: String) extends CallableStatementOp[Float] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
     }
     case object GetGeneratedKeys extends CallableStatementOp[ResultSet] {
@@ -286,10 +310,10 @@ object callablestatement {
     case class  GetInt1(a: String) extends CallableStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
     }
-    case class  GetLong(a: Int) extends CallableStatementOp[Long] {
+    case class  GetLong(a: String) extends CallableStatementOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
     }
-    case class  GetLong1(a: String) extends CallableStatementOp[Long] {
+    case class  GetLong1(a: Int) extends CallableStatementOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
     }
     case object GetMaxFieldSize extends CallableStatementOp[Int] {
@@ -307,16 +331,16 @@ object callablestatement {
     case object GetMoreResults1 extends CallableStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
     }
-    case class  GetNCharacterStream(a: Int) extends CallableStatementOp[Reader] {
+    case class  GetNCharacterStream(a: String) extends CallableStatementOp[Reader] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
     }
-    case class  GetNCharacterStream1(a: String) extends CallableStatementOp[Reader] {
+    case class  GetNCharacterStream1(a: Int) extends CallableStatementOp[Reader] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
     }
-    case class  GetNClob(a: Int) extends CallableStatementOp[NClob] {
+    case class  GetNClob(a: String) extends CallableStatementOp[NClob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
     }
-    case class  GetNClob1(a: String) extends CallableStatementOp[NClob] {
+    case class  GetNClob1(a: Int) extends CallableStatementOp[NClob] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
     }
     case class  GetNString(a: Int) extends CallableStatementOp[String] {
@@ -325,22 +349,22 @@ object callablestatement {
     case class  GetNString1(a: String) extends CallableStatementOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
     }
-    case class  GetObject[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
-    }
-    case class  GetObject1[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
-    }
-    case class  GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
-    }
-    case class  GetObject3(a: String) extends CallableStatementOp[Object] {
+    case class  GetObject(a: String) extends CallableStatementOp[Object] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
-    case class  GetObject4(a: Int) extends CallableStatementOp[Object] {
+    case class  GetObject1(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+    }
+    case class  GetObject2(a: Int) extends CallableStatementOp[Object] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
-    case class  GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[Object] {
+    case class  GetObject3(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+    }
+    case class  GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+    }
+    case class  GetObject5[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
     }
     case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
@@ -367,10 +391,10 @@ object callablestatement {
     case object GetResultSetType extends CallableStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetType())
     }
-    case class  GetRowId(a: String) extends CallableStatementOp[RowId] {
+    case class  GetRowId(a: Int) extends CallableStatementOp[RowId] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
     }
-    case class  GetRowId1(a: Int) extends CallableStatementOp[RowId] {
+    case class  GetRowId1(a: String) extends CallableStatementOp[RowId] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
     }
     case class  GetSQLXML(a: Int) extends CallableStatementOp[SQLXML] {
@@ -379,10 +403,10 @@ object callablestatement {
     case class  GetSQLXML1(a: String) extends CallableStatementOp[SQLXML] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
     }
-    case class  GetShort(a: Int) extends CallableStatementOp[Short] {
+    case class  GetShort(a: String) extends CallableStatementOp[Short] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
     }
-    case class  GetShort1(a: String) extends CallableStatementOp[Short] {
+    case class  GetShort1(a: Int) extends CallableStatementOp[Short] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
     }
     case class  GetString(a: String) extends CallableStatementOp[String] {
@@ -391,29 +415,29 @@ object callablestatement {
     case class  GetString1(a: Int) extends CallableStatementOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
     }
-    case class  GetTime(a: String) extends CallableStatementOp[Time] {
+    case class  GetTime(a: Int) extends CallableStatementOp[Time] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
     }
-    case class  GetTime1(a: Int) extends CallableStatementOp[Time] {
+    case class  GetTime1(a: String, b: Calendar) extends CallableStatementOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
+    }
+    case class  GetTime2(a: Int, b: Calendar) extends CallableStatementOp[Time] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
+    }
+    case class  GetTime3(a: String) extends CallableStatementOp[Time] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
     }
-    case class  GetTime2(a: String, b: Calendar) extends CallableStatementOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
-    }
-    case class  GetTime3(a: Int, b: Calendar) extends CallableStatementOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
-    }
-    case class  GetTimestamp(a: String) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
-    }
-    case class  GetTimestamp1(a: Int) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
-    }
-    case class  GetTimestamp2(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
+    case class  GetTimestamp(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
     }
-    case class  GetTimestamp3(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
+    case class  GetTimestamp1(a: String) extends CallableStatementOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
+    }
+    case class  GetTimestamp2(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
+    }
+    case class  GetTimestamp3(a: Int) extends CallableStatementOp[Timestamp] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
     }
     case class  GetURL(a: String) extends CallableStatementOp[URL] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
@@ -439,31 +463,31 @@ object callablestatement {
     case class  IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
     }
-    case class  RegisterOutParameter(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
+    case class  RegisterOutParameter(a: String, b: Int, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter1(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
-    case class  RegisterOutParameter2(a: String, b: Int, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
-    }
-    case class  RegisterOutParameter3(a: String, b: Int) extends CallableStatementOp[Unit] {
+    case class  RegisterOutParameter2(a: Int, b: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b))
     }
-    case class  RegisterOutParameter4(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit] {
+    case class  RegisterOutParameter3(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
-    case class  RegisterOutParameter5(a: Int, b: Int) extends CallableStatementOp[Unit] {
+    case class  RegisterOutParameter4(a: String, b: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b))
+    }
+    case class  RegisterOutParameter5(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setArray(a, b))
     }
-    case class  SetAsciiStream(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
-    case class  SetAsciiStream1(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetAsciiStream1(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
@@ -484,38 +508,38 @@ object callablestatement {
     case class  SetBigDecimal1(a: Int, b: BigDecimal) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBigDecimal(a, b))
     }
-    case class  SetBinaryStream(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
+    case class  SetBinaryStream(a: String, b: InputStream) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
     }
     case class  SetBinaryStream1(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
-    case class  SetBinaryStream2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
-    }
-    case class  SetBinaryStream3(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetBinaryStream2(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
-    case class  SetBinaryStream4(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+    case class  SetBinaryStream3(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
+    }
+    case class  SetBinaryStream4(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream5(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
-    case class  SetBlob(a: String, b: Blob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
-    }
-    case class  SetBlob1(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetBlob(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
     }
-    case class  SetBlob2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
+    case class  SetBlob1(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
-    case class  SetBlob3(a: Int, b: Blob) extends CallableStatementOp[Unit] {
+    case class  SetBlob2(a: String, b: Blob) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
-    case class  SetBlob4(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetBlob3(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
+    }
+    case class  SetBlob4(a: Int, b: Blob) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob5(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
@@ -538,41 +562,41 @@ object callablestatement {
     case class  SetBytes1(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
-    case class  SetCharacterStream(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
+    case class  SetCharacterStream(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
-    case class  SetCharacterStream2(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
-    }
-    case class  SetCharacterStream3(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+    case class  SetCharacterStream2(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
+    }
+    case class  SetCharacterStream3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream4(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
-    case class  SetCharacterStream5(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
+    case class  SetCharacterStream5(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
     }
-    case class  SetClob(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
-    }
-    case class  SetClob1(a: String, b: Clob) extends CallableStatementOp[Unit] {
+    case class  SetClob(a: String, b: Clob) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+    }
+    case class  SetClob1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
     }
     case class  SetClob2(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
-    case class  SetClob3(a: Int, b: Clob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+    case class  SetClob3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
     }
     case class  SetClob4(a: Int, b: Reader) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
-    case class  SetClob5(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
+    case class  SetClob5(a: Int, b: Clob) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
     case class  SetCursorName(a: String) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCursorName(a))
@@ -583,11 +607,11 @@ object callablestatement {
     case class  SetDate1(a: String, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b, c))
     }
-    case class  SetDate2(a: Int, b: Date) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b))
-    }
-    case class  SetDate3(a: Int, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
+    case class  SetDate2(a: Int, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b, c))
+    }
+    case class  SetDate3(a: Int, b: Date) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b))
     }
     case class  SetDouble(a: String, b: Double) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDouble(a, b))
@@ -628,11 +652,11 @@ object callablestatement {
     case class  SetMaxRows(a: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxRows(a))
     }
-    case class  SetNCharacterStream(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
-    }
-    case class  SetNCharacterStream1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetNCharacterStream(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
+    }
+    case class  SetNCharacterStream1(a: String, b: Reader) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
     }
     case class  SetNCharacterStream2(a: Int, b: Reader) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
@@ -640,22 +664,22 @@ object callablestatement {
     case class  SetNCharacterStream3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
     }
-    case class  SetNClob(a: String, b: Reader) extends CallableStatementOp[Unit] {
+    case class  SetNClob(a: String, b: NClob) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
-    case class  SetNClob1(a: String, b: NClob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
-    }
-    case class  SetNClob2(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    case class  SetNClob1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
     }
-    case class  SetNClob3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
-    }
-    case class  SetNClob4(a: Int, b: NClob) extends CallableStatementOp[Unit] {
+    case class  SetNClob2(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
-    case class  SetNClob5(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+    case class  SetNClob3(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
+    }
+    case class  SetNClob4(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
+    }
+    case class  SetNClob5(a: Int, b: NClob) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
     case class  SetNString(a: String, b: String) extends CallableStatementOp[Unit] {
@@ -664,35 +688,35 @@ object callablestatement {
     case class  SetNString1(a: Int, b: String) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNString(a, b))
     }
-    case class  SetNull(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
-    }
-    case class  SetNull1(a: String, b: Int) extends CallableStatementOp[Unit] {
+    case class  SetNull(a: String, b: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
     }
-    case class  SetNull2(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
-    }
-    case class  SetNull3(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
+    case class  SetNull1(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
     }
-    case class  SetObject(a: String, b: Object, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
+    case class  SetNull2(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
     }
-    case class  SetObject1(a: String, b: Object) extends CallableStatementOp[Unit] {
+    case class  SetNull3(a: Int, b: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
+    }
+    case class  SetObject(a: String, b: Object) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
+    }
+    case class  SetObject1(a: String, b: Object, c: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject2(a: String, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
     }
-    case class  SetObject3(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
-    }
-    case class  SetObject4(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit] {
+    case class  SetObject3(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
-    case class  SetObject5(a: Int, b: Object) extends CallableStatementOp[Unit] {
+    case class  SetObject4(a: Int, b: Object) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
+    }
+    case class  SetObject5(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetPoolable(a: Boolean) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setPoolable(a))
@@ -727,23 +751,23 @@ object callablestatement {
     case class  SetString1(a: Int, b: String) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
     }
-    case class  SetTime(a: String, b: Time) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
-    }
-    case class  SetTime1(a: String, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
+    case class  SetTime(a: String, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
     }
-    case class  SetTime2(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
-    }
-    case class  SetTime3(a: Int, b: Time) extends CallableStatementOp[Unit] {
+    case class  SetTime1(a: String, b: Time) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
     }
-    case class  SetTimestamp(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
+    case class  SetTime2(a: Int, b: Time) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
     }
-    case class  SetTimestamp1(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
+    case class  SetTime3(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
+    }
+    case class  SetTimestamp(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
+    }
+    case class  SetTimestamp1(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
     }
     case class  SetTimestamp2(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
@@ -775,7 +799,14 @@ object callablestatement {
    * a `java.sql.CallableStatement` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type CallableStatementIO[A] = F[CallableStatementOp, A]
+  type CallableStatementIO[A] = F.FreeC[CallableStatementOp, A]
+
+  /**
+   * Monad instance for [[CallableStatementIO]] (can't be inferred).
+   * @group Typeclass Instances 
+   */
+  implicit val MonadCallableStatementIO: Monad[CallableStatementIO] = 
+    F.freeMonad[({type λ[α] = Coyoneda[CallableStatementOp, α]})#λ]
 
   /**
    * Catchable instance for [[CallableStatementIO]].
@@ -797,1325 +828,1385 @@ object callablestatement {
     }
 
   /**
-   * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): CallableStatementIO[A] =
-    F.liftF(Lift(j, action, mod))
+  def liftBlob[A](s: Blob, k: BlobIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftBlobIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftClob[A](s: Clob, k: ClobIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftClobIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftConnection[A](s: Connection, k: ConnectionIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftConnectionIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftDatabaseMetaData[A](s: DatabaseMetaData, k: DatabaseMetaDataIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftDatabaseMetaDataIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftDriver[A](s: Driver, k: DriverIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftDriverIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftNClob[A](s: NClob, k: NClobIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftNClobIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftPreparedStatement[A](s: PreparedStatement, k: PreparedStatementIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftPreparedStatementIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftRef[A](s: Ref, k: RefIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftRefIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftResultSet[A](s: ResultSet, k: ResultSetIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftResultSetIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftSQLData[A](s: SQLData, k: SQLDataIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftSQLDataIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftSQLInput[A](s: SQLInput, k: SQLInputIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftSQLInputIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftSQLOutput[A](s: SQLOutput, k: SQLOutputIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftSQLOutputIO(s, k))
+
+  /**
+   * @group Constructors (Lifting)
+   */
+  def liftStatement[A](s: Statement, k: StatementIO[A]): CallableStatementIO[A] =
+    F.liftFC(LiftStatementIO(s, k))
 
   /** 
    * Lift a CallableStatementIO[A] into an exception-capturing CallableStatementIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] =
-    F.liftF[CallableStatementOp, Throwable \/ A](Attempt(a))
+    F.liftFC[CallableStatementOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): CallableStatementIO[A] =
-    F.liftF(Pure(a _))
+    F.liftFC(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying CallableStatement.
    * @group Constructors (Lifting)
    */
   def raw[A](f: CallableStatement => A): CallableStatementIO[A] =
-    F.liftF(Raw(f))
+    F.liftFC(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val addBatch: CallableStatementIO[Unit] =
-    F.liftF(AddBatch)
+    F.liftFC(AddBatch)
 
   /** 
    * @group Constructors (Primitives)
    */
   def addBatch(a: String): CallableStatementIO[Unit] =
-    F.liftF(AddBatch1(a))
+    F.liftFC(AddBatch1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val cancel: CallableStatementIO[Unit] =
-    F.liftF(Cancel)
+    F.liftFC(Cancel)
 
   /** 
    * @group Constructors (Primitives)
    */
   val clearBatch: CallableStatementIO[Unit] =
-    F.liftF(ClearBatch)
+    F.liftFC(ClearBatch)
 
   /** 
    * @group Constructors (Primitives)
    */
   val clearParameters: CallableStatementIO[Unit] =
-    F.liftF(ClearParameters)
+    F.liftFC(ClearParameters)
 
   /** 
    * @group Constructors (Primitives)
    */
   val clearWarnings: CallableStatementIO[Unit] =
-    F.liftF(ClearWarnings)
+    F.liftFC(ClearWarnings)
 
   /** 
    * @group Constructors (Primitives)
    */
   val close: CallableStatementIO[Unit] =
-    F.liftF(Close)
+    F.liftFC(Close)
 
   /** 
    * @group Constructors (Primitives)
    */
   val closeOnCompletion: CallableStatementIO[Unit] =
-    F.liftF(CloseOnCompletion)
+    F.liftFC(CloseOnCompletion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val execute: CallableStatementIO[Boolean] =
-    F.liftF(Execute)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def execute(a: String, b: Array[Int]): CallableStatementIO[Boolean] =
-    F.liftF(Execute1(a, b))
+    F.liftFC(Execute)
 
   /** 
    * @group Constructors (Primitives)
    */
   def execute(a: String, b: Int): CallableStatementIO[Boolean] =
-    F.liftF(Execute2(a, b))
+    F.liftFC(Execute1(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def execute(a: String, b: Array[Int]): CallableStatementIO[Boolean] =
+    F.liftFC(Execute2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def execute(a: String): CallableStatementIO[Boolean] =
-    F.liftF(Execute3(a))
+    F.liftFC(Execute3(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def execute(a: String, b: Array[String]): CallableStatementIO[Boolean] =
-    F.liftF(Execute4(a, b))
+    F.liftFC(Execute4(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val executeBatch: CallableStatementIO[Array[Int]] =
-    F.liftF(ExecuteBatch)
+    F.liftFC(ExecuteBatch)
 
   /** 
    * @group Constructors (Primitives)
    */
   val executeQuery: CallableStatementIO[ResultSet] =
-    F.liftF(ExecuteQuery)
+    F.liftFC(ExecuteQuery)
 
   /** 
    * @group Constructors (Primitives)
    */
   def executeQuery(a: String): CallableStatementIO[ResultSet] =
-    F.liftF(ExecuteQuery1(a))
+    F.liftFC(ExecuteQuery1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val executeUpdate: CallableStatementIO[Int] =
-    F.liftF(ExecuteUpdate)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeUpdate(a: String): CallableStatementIO[Int] =
-    F.liftF(ExecuteUpdate1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeUpdate(a: String, b: Array[String]): CallableStatementIO[Int] =
-    F.liftF(ExecuteUpdate2(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeUpdate(a: String, b: Array[Int]): CallableStatementIO[Int] =
-    F.liftF(ExecuteUpdate3(a, b))
+    F.liftFC(ExecuteUpdate)
 
   /** 
    * @group Constructors (Primitives)
    */
   def executeUpdate(a: String, b: Int): CallableStatementIO[Int] =
-    F.liftF(ExecuteUpdate4(a, b))
+    F.liftFC(ExecuteUpdate1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getArray(a: Int): CallableStatementIO[SqlArray] =
-    F.liftF(GetArray(a))
+  def executeUpdate(a: String, b: Array[Int]): CallableStatementIO[Int] =
+    F.liftFC(ExecuteUpdate2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeUpdate(a: String, b: Array[String]): CallableStatementIO[Int] =
+    F.liftFC(ExecuteUpdate3(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeUpdate(a: String): CallableStatementIO[Int] =
+    F.liftFC(ExecuteUpdate4(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getArray(a: String): CallableStatementIO[SqlArray] =
-    F.liftF(GetArray1(a))
+    F.liftFC(GetArray(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getBigDecimal(a: Int, b: Int): CallableStatementIO[BigDecimal] =
-    F.liftF(GetBigDecimal(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getBigDecimal(a: String): CallableStatementIO[BigDecimal] =
-    F.liftF(GetBigDecimal1(a))
+  def getArray(a: Int): CallableStatementIO[SqlArray] =
+    F.liftFC(GetArray1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBigDecimal(a: Int): CallableStatementIO[BigDecimal] =
-    F.liftF(GetBigDecimal2(a))
+    F.liftFC(GetBigDecimal(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getBlob(a: Int): CallableStatementIO[Blob] =
-    F.liftF(GetBlob(a))
+  def getBigDecimal(a: String): CallableStatementIO[BigDecimal] =
+    F.liftFC(GetBigDecimal1(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getBigDecimal(a: Int, b: Int): CallableStatementIO[BigDecimal] =
+    F.liftFC(GetBigDecimal2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBlob(a: String): CallableStatementIO[Blob] =
-    F.liftF(GetBlob1(a))
+    F.liftFC(GetBlob(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getBlob(a: Int): CallableStatementIO[Blob] =
+    F.liftFC(GetBlob1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBoolean(a: String): CallableStatementIO[Boolean] =
-    F.liftF(GetBoolean(a))
+    F.liftFC(GetBoolean(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBoolean(a: Int): CallableStatementIO[Boolean] =
-    F.liftF(GetBoolean1(a))
+    F.liftFC(GetBoolean1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getByte(a: Int): CallableStatementIO[Byte] =
-    F.liftF(GetByte(a))
+    F.liftFC(GetByte(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getByte(a: String): CallableStatementIO[Byte] =
-    F.liftF(GetByte1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getBytes(a: String): CallableStatementIO[Array[Byte]] =
-    F.liftF(GetBytes(a))
+    F.liftFC(GetByte1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBytes(a: Int): CallableStatementIO[Array[Byte]] =
-    F.liftF(GetBytes1(a))
+    F.liftFC(GetBytes(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getCharacterStream(a: String): CallableStatementIO[Reader] =
-    F.liftF(GetCharacterStream(a))
+  def getBytes(a: String): CallableStatementIO[Array[Byte]] =
+    F.liftFC(GetBytes1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getCharacterStream(a: Int): CallableStatementIO[Reader] =
-    F.liftF(GetCharacterStream1(a))
+    F.liftFC(GetCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getClob(a: String): CallableStatementIO[Clob] =
-    F.liftF(GetClob(a))
+  def getCharacterStream(a: String): CallableStatementIO[Reader] =
+    F.liftFC(GetCharacterStream1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getClob(a: Int): CallableStatementIO[Clob] =
-    F.liftF(GetClob1(a))
+    F.liftFC(GetClob(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getClob(a: String): CallableStatementIO[Clob] =
+    F.liftFC(GetClob1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getConnection: CallableStatementIO[Connection] =
-    F.liftF(GetConnection)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getDate(a: Int, b: Calendar): CallableStatementIO[Date] =
-    F.liftF(GetDate(a, b))
+    F.liftFC(GetConnection)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getDate(a: Int): CallableStatementIO[Date] =
-    F.liftF(GetDate1(a))
+    F.liftFC(GetDate(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getDate(a: Int, b: Calendar): CallableStatementIO[Date] =
+    F.liftFC(GetDate1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getDate(a: String): CallableStatementIO[Date] =
-    F.liftF(GetDate2(a))
+    F.liftFC(GetDate2(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getDate(a: String, b: Calendar): CallableStatementIO[Date] =
-    F.liftF(GetDate3(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getDouble(a: Int): CallableStatementIO[Double] =
-    F.liftF(GetDouble(a))
+    F.liftFC(GetDate3(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getDouble(a: String): CallableStatementIO[Double] =
-    F.liftF(GetDouble1(a))
+    F.liftFC(GetDouble(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getDouble(a: Int): CallableStatementIO[Double] =
+    F.liftFC(GetDouble1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getFetchDirection: CallableStatementIO[Int] =
-    F.liftF(GetFetchDirection)
+    F.liftFC(GetFetchDirection)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getFetchSize: CallableStatementIO[Int] =
-    F.liftF(GetFetchSize)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getFloat(a: String): CallableStatementIO[Float] =
-    F.liftF(GetFloat(a))
+    F.liftFC(GetFetchSize)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getFloat(a: Int): CallableStatementIO[Float] =
-    F.liftF(GetFloat1(a))
+    F.liftFC(GetFloat(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getFloat(a: String): CallableStatementIO[Float] =
+    F.liftFC(GetFloat1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getGeneratedKeys: CallableStatementIO[ResultSet] =
-    F.liftF(GetGeneratedKeys)
+    F.liftFC(GetGeneratedKeys)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getInt(a: Int): CallableStatementIO[Int] =
-    F.liftF(GetInt(a))
+    F.liftFC(GetInt(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getInt(a: String): CallableStatementIO[Int] =
-    F.liftF(GetInt1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getLong(a: Int): CallableStatementIO[Long] =
-    F.liftF(GetLong(a))
+    F.liftFC(GetInt1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getLong(a: String): CallableStatementIO[Long] =
-    F.liftF(GetLong1(a))
+    F.liftFC(GetLong(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getLong(a: Int): CallableStatementIO[Long] =
+    F.liftFC(GetLong1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxFieldSize: CallableStatementIO[Int] =
-    F.liftF(GetMaxFieldSize)
+    F.liftFC(GetMaxFieldSize)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxRows: CallableStatementIO[Int] =
-    F.liftF(GetMaxRows)
+    F.liftFC(GetMaxRows)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMetaData: CallableStatementIO[ResultSetMetaData] =
-    F.liftF(GetMetaData)
+    F.liftFC(GetMetaData)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getMoreResults(a: Int): CallableStatementIO[Boolean] =
-    F.liftF(GetMoreResults(a))
+    F.liftFC(GetMoreResults(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMoreResults: CallableStatementIO[Boolean] =
-    F.liftF(GetMoreResults1)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getNCharacterStream(a: Int): CallableStatementIO[Reader] =
-    F.liftF(GetNCharacterStream(a))
+    F.liftFC(GetMoreResults1)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getNCharacterStream(a: String): CallableStatementIO[Reader] =
-    F.liftF(GetNCharacterStream1(a))
+    F.liftFC(GetNCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getNClob(a: Int): CallableStatementIO[NClob] =
-    F.liftF(GetNClob(a))
+  def getNCharacterStream(a: Int): CallableStatementIO[Reader] =
+    F.liftFC(GetNCharacterStream1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getNClob(a: String): CallableStatementIO[NClob] =
-    F.liftF(GetNClob1(a))
+    F.liftFC(GetNClob(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getNClob(a: Int): CallableStatementIO[NClob] =
+    F.liftFC(GetNClob1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getNString(a: Int): CallableStatementIO[String] =
-    F.liftF(GetNString(a))
+    F.liftFC(GetNString(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getNString(a: String): CallableStatementIO[String] =
-    F.liftF(GetNString1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getObject[T](a: Int, b: Class[T]): CallableStatementIO[T] =
-    F.liftF(GetObject(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getObject[T](a: String, b: Class[T]): CallableStatementIO[T] =
-    F.liftF(GetObject1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getObject(a: Int, b: Map[String, Class[_]]): CallableStatementIO[Object] =
-    F.liftF(GetObject2(a, b))
+    F.liftFC(GetNString1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getObject(a: String): CallableStatementIO[Object] =
-    F.liftF(GetObject3(a))
+    F.liftFC(GetObject(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getObject(a: Int, b: Map[String, Class[_]]): CallableStatementIO[Object] =
+    F.liftFC(GetObject1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getObject(a: Int): CallableStatementIO[Object] =
-    F.liftF(GetObject4(a))
+    F.liftFC(GetObject2(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getObject(a: String, b: Map[String, Class[_]]): CallableStatementIO[Object] =
-    F.liftF(GetObject5(a, b))
+    F.liftFC(GetObject3(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getObject[T](a: String, b: Class[T]): CallableStatementIO[T] =
+    F.liftFC(GetObject4(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getObject[T](a: Int, b: Class[T]): CallableStatementIO[T] =
+    F.liftFC(GetObject5(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getParameterMetaData: CallableStatementIO[ParameterMetaData] =
-    F.liftF(GetParameterMetaData)
+    F.liftFC(GetParameterMetaData)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getQueryTimeout: CallableStatementIO[Int] =
-    F.liftF(GetQueryTimeout)
+    F.liftFC(GetQueryTimeout)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getRef(a: String): CallableStatementIO[Ref] =
-    F.liftF(GetRef(a))
+    F.liftFC(GetRef(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getRef(a: Int): CallableStatementIO[Ref] =
-    F.liftF(GetRef1(a))
+    F.liftFC(GetRef1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getResultSet: CallableStatementIO[ResultSet] =
-    F.liftF(GetResultSet)
+    F.liftFC(GetResultSet)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getResultSetConcurrency: CallableStatementIO[Int] =
-    F.liftF(GetResultSetConcurrency)
+    F.liftFC(GetResultSetConcurrency)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getResultSetHoldability: CallableStatementIO[Int] =
-    F.liftF(GetResultSetHoldability)
+    F.liftFC(GetResultSetHoldability)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getResultSetType: CallableStatementIO[Int] =
-    F.liftF(GetResultSetType)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getRowId(a: String): CallableStatementIO[RowId] =
-    F.liftF(GetRowId(a))
+    F.liftFC(GetResultSetType)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getRowId(a: Int): CallableStatementIO[RowId] =
-    F.liftF(GetRowId1(a))
+    F.liftFC(GetRowId(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getRowId(a: String): CallableStatementIO[RowId] =
+    F.liftFC(GetRowId1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSQLXML(a: Int): CallableStatementIO[SQLXML] =
-    F.liftF(GetSQLXML(a))
+    F.liftFC(GetSQLXML(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSQLXML(a: String): CallableStatementIO[SQLXML] =
-    F.liftF(GetSQLXML1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getShort(a: Int): CallableStatementIO[Short] =
-    F.liftF(GetShort(a))
+    F.liftFC(GetSQLXML1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getShort(a: String): CallableStatementIO[Short] =
-    F.liftF(GetShort1(a))
+    F.liftFC(GetShort(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getShort(a: Int): CallableStatementIO[Short] =
+    F.liftFC(GetShort1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getString(a: String): CallableStatementIO[String] =
-    F.liftF(GetString(a))
+    F.liftFC(GetString(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getString(a: Int): CallableStatementIO[String] =
-    F.liftF(GetString1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getTime(a: String): CallableStatementIO[Time] =
-    F.liftF(GetTime(a))
+    F.liftFC(GetString1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTime(a: Int): CallableStatementIO[Time] =
-    F.liftF(GetTime1(a))
+    F.liftFC(GetTime(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTime(a: String, b: Calendar): CallableStatementIO[Time] =
-    F.liftF(GetTime2(a, b))
+    F.liftFC(GetTime1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTime(a: Int, b: Calendar): CallableStatementIO[Time] =
-    F.liftF(GetTime3(a, b))
+    F.liftFC(GetTime2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getTimestamp(a: String): CallableStatementIO[Timestamp] =
-    F.liftF(GetTimestamp(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getTimestamp(a: Int): CallableStatementIO[Timestamp] =
-    F.liftF(GetTimestamp1(a))
+  def getTime(a: String): CallableStatementIO[Time] =
+    F.liftFC(GetTime3(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTimestamp(a: Int, b: Calendar): CallableStatementIO[Timestamp] =
-    F.liftF(GetTimestamp2(a, b))
+    F.liftFC(GetTimestamp(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getTimestamp(a: String): CallableStatementIO[Timestamp] =
+    F.liftFC(GetTimestamp1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTimestamp(a: String, b: Calendar): CallableStatementIO[Timestamp] =
-    F.liftF(GetTimestamp3(a, b))
+    F.liftFC(GetTimestamp2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getTimestamp(a: Int): CallableStatementIO[Timestamp] =
+    F.liftFC(GetTimestamp3(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getURL(a: String): CallableStatementIO[URL] =
-    F.liftF(GetURL(a))
+    F.liftFC(GetURL(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getURL(a: Int): CallableStatementIO[URL] =
-    F.liftF(GetURL1(a))
+    F.liftFC(GetURL1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getUpdateCount: CallableStatementIO[Int] =
-    F.liftF(GetUpdateCount)
+    F.liftFC(GetUpdateCount)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getWarnings: CallableStatementIO[SQLWarning] =
-    F.liftF(GetWarnings)
+    F.liftFC(GetWarnings)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isCloseOnCompletion: CallableStatementIO[Boolean] =
-    F.liftF(IsCloseOnCompletion)
+    F.liftFC(IsCloseOnCompletion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isClosed: CallableStatementIO[Boolean] =
-    F.liftF(IsClosed)
+    F.liftFC(IsClosed)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isPoolable: CallableStatementIO[Boolean] =
-    F.liftF(IsPoolable)
+    F.liftFC(IsPoolable)
 
   /** 
    * @group Constructors (Primitives)
    */
   def isWrapperFor(a: Class[_]): CallableStatementIO[Boolean] =
-    F.liftF(IsWrapperFor(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def registerOutParameter(a: Int, b: Int, c: String): CallableStatementIO[Unit] =
-    F.liftF(RegisterOutParameter(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def registerOutParameter(a: String, b: Int, c: String): CallableStatementIO[Unit] =
-    F.liftF(RegisterOutParameter1(a, b, c))
+    F.liftFC(IsWrapperFor(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def registerOutParameter(a: String, b: Int, c: Int): CallableStatementIO[Unit] =
-    F.liftF(RegisterOutParameter2(a, b, c))
+    F.liftFC(RegisterOutParameter(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def registerOutParameter(a: String, b: Int): CallableStatementIO[Unit] =
-    F.liftF(RegisterOutParameter3(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def registerOutParameter(a: Int, b: Int, c: Int): CallableStatementIO[Unit] =
-    F.liftF(RegisterOutParameter4(a, b, c))
+  def registerOutParameter(a: String, b: Int, c: String): CallableStatementIO[Unit] =
+    F.liftFC(RegisterOutParameter1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def registerOutParameter(a: Int, b: Int): CallableStatementIO[Unit] =
-    F.liftF(RegisterOutParameter5(a, b))
+    F.liftFC(RegisterOutParameter2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def registerOutParameter(a: Int, b: Int, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(RegisterOutParameter3(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def registerOutParameter(a: String, b: Int): CallableStatementIO[Unit] =
+    F.liftFC(RegisterOutParameter4(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def registerOutParameter(a: Int, b: Int, c: String): CallableStatementIO[Unit] =
+    F.liftFC(RegisterOutParameter5(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setArray(a: Int, b: SqlArray): CallableStatementIO[Unit] =
-    F.liftF(SetArray(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setAsciiStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetAsciiStream(a, b, c))
+    F.liftFC(SetArray(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetAsciiStream1(a, b, c))
+    F.liftFC(SetAsciiStream(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setAsciiStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetAsciiStream1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: String, b: InputStream): CallableStatementIO[Unit] =
-    F.liftF(SetAsciiStream2(a, b))
+    F.liftFC(SetAsciiStream2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Int, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetAsciiStream3(a, b, c))
+    F.liftFC(SetAsciiStream3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetAsciiStream4(a, b, c))
+    F.liftFC(SetAsciiStream4(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftF(SetAsciiStream5(a, b))
+    F.liftFC(SetAsciiStream5(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBigDecimal(a: String, b: BigDecimal): CallableStatementIO[Unit] =
-    F.liftF(SetBigDecimal(a, b))
+    F.liftFC(SetBigDecimal(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBigDecimal(a: Int, b: BigDecimal): CallableStatementIO[Unit] =
-    F.liftF(SetBigDecimal1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setBinaryStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetBinaryStream(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setBinaryStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetBinaryStream1(a, b, c))
+    F.liftFC(SetBigDecimal1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBinaryStream(a: String, b: InputStream): CallableStatementIO[Unit] =
-    F.liftF(SetBinaryStream2(a, b))
+    F.liftFC(SetBinaryStream(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBinaryStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetBinaryStream3(a, b, c))
+  def setBinaryStream(a: String, b: InputStream, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream1(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setBinaryStream(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBinaryStream(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftF(SetBinaryStream4(a, b))
+    F.liftFC(SetBinaryStream3(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setBinaryStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetBinaryStream4(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBinaryStream(a: Int, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetBinaryStream5(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setBlob(a: String, b: Blob): CallableStatementIO[Unit] =
-    F.liftF(SetBlob(a, b))
+    F.liftFC(SetBinaryStream5(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBlob(a: String, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetBlob1(a, b, c))
+    F.liftFC(SetBlob(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBlob(a: String, b: InputStream): CallableStatementIO[Unit] =
-    F.liftF(SetBlob2(a, b))
+    F.liftFC(SetBlob1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBlob(a: Int, b: Blob): CallableStatementIO[Unit] =
-    F.liftF(SetBlob3(a, b))
+  def setBlob(a: String, b: Blob): CallableStatementIO[Unit] =
+    F.liftFC(SetBlob2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBlob(a: Int, b: InputStream, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetBlob4(a, b, c))
+    F.liftFC(SetBlob3(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setBlob(a: Int, b: Blob): CallableStatementIO[Unit] =
+    F.liftFC(SetBlob4(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBlob(a: Int, b: InputStream): CallableStatementIO[Unit] =
-    F.liftF(SetBlob5(a, b))
+    F.liftFC(SetBlob5(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBoolean(a: String, b: Boolean): CallableStatementIO[Unit] =
-    F.liftF(SetBoolean(a, b))
+    F.liftFC(SetBoolean(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBoolean(a: Int, b: Boolean): CallableStatementIO[Unit] =
-    F.liftF(SetBoolean1(a, b))
+    F.liftFC(SetBoolean1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setByte(a: String, b: Byte): CallableStatementIO[Unit] =
-    F.liftF(SetByte(a, b))
+    F.liftFC(SetByte(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setByte(a: Int, b: Byte): CallableStatementIO[Unit] =
-    F.liftF(SetByte1(a, b))
+    F.liftFC(SetByte1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBytes(a: String, b: Array[Byte]): CallableStatementIO[Unit] =
-    F.liftF(SetBytes(a, b))
+    F.liftFC(SetBytes(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBytes(a: Int, b: Array[Byte]): CallableStatementIO[Unit] =
-    F.liftF(SetBytes1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setCharacterStream(a: String, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetCharacterStream(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetCharacterStream1(a, b, c))
+    F.liftFC(SetBytes1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: String, b: Reader, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetCharacterStream2(a, b, c))
+    F.liftFC(SetCharacterStream(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setCharacterStream(a: Int, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetCharacterStream3(a, b))
+  def setCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setCharacterStream(a: Int, b: Reader, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetCharacterStream4(a, b, c))
+  def setCharacterStream(a: String, b: Reader): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetCharacterStream5(a, b, c))
+    F.liftFC(SetCharacterStream3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setClob(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetClob(a, b, c))
+  def setCharacterStream(a: Int, b: Reader, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream4(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setCharacterStream(a: Int, b: Reader): CallableStatementIO[Unit] =
+    F.liftFC(SetCharacterStream5(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setClob(a: String, b: Clob): CallableStatementIO[Unit] =
-    F.liftF(SetClob1(a, b))
+    F.liftFC(SetClob(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setClob(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetClob1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setClob(a: String, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetClob2(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setClob(a: Int, b: Clob): CallableStatementIO[Unit] =
-    F.liftF(SetClob3(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setClob(a: Int, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetClob4(a, b))
+    F.liftFC(SetClob2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setClob(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetClob5(a, b, c))
+    F.liftFC(SetClob3(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setClob(a: Int, b: Reader): CallableStatementIO[Unit] =
+    F.liftFC(SetClob4(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setClob(a: Int, b: Clob): CallableStatementIO[Unit] =
+    F.liftFC(SetClob5(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCursorName(a: String): CallableStatementIO[Unit] =
-    F.liftF(SetCursorName(a))
+    F.liftFC(SetCursorName(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setDate(a: String, b: Date): CallableStatementIO[Unit] =
-    F.liftF(SetDate(a, b))
+    F.liftFC(SetDate(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setDate(a: String, b: Date, c: Calendar): CallableStatementIO[Unit] =
-    F.liftF(SetDate1(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setDate(a: Int, b: Date): CallableStatementIO[Unit] =
-    F.liftF(SetDate2(a, b))
+    F.liftFC(SetDate1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setDate(a: Int, b: Date, c: Calendar): CallableStatementIO[Unit] =
-    F.liftF(SetDate3(a, b, c))
+    F.liftFC(SetDate2(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setDate(a: Int, b: Date): CallableStatementIO[Unit] =
+    F.liftFC(SetDate3(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setDouble(a: String, b: Double): CallableStatementIO[Unit] =
-    F.liftF(SetDouble(a, b))
+    F.liftFC(SetDouble(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setDouble(a: Int, b: Double): CallableStatementIO[Unit] =
-    F.liftF(SetDouble1(a, b))
+    F.liftFC(SetDouble1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setEscapeProcessing(a: Boolean): CallableStatementIO[Unit] =
-    F.liftF(SetEscapeProcessing(a))
+    F.liftFC(SetEscapeProcessing(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setFetchDirection(a: Int): CallableStatementIO[Unit] =
-    F.liftF(SetFetchDirection(a))
+    F.liftFC(SetFetchDirection(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setFetchSize(a: Int): CallableStatementIO[Unit] =
-    F.liftF(SetFetchSize(a))
+    F.liftFC(SetFetchSize(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setFloat(a: String, b: Float): CallableStatementIO[Unit] =
-    F.liftF(SetFloat(a, b))
+    F.liftFC(SetFloat(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setFloat(a: Int, b: Float): CallableStatementIO[Unit] =
-    F.liftF(SetFloat1(a, b))
+    F.liftFC(SetFloat1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setInt(a: String, b: Int): CallableStatementIO[Unit] =
-    F.liftF(SetInt(a, b))
+    F.liftFC(SetInt(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setInt(a: Int, b: Int): CallableStatementIO[Unit] =
-    F.liftF(SetInt1(a, b))
+    F.liftFC(SetInt1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setLong(a: String, b: Long): CallableStatementIO[Unit] =
-    F.liftF(SetLong(a, b))
+    F.liftFC(SetLong(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setLong(a: Int, b: Long): CallableStatementIO[Unit] =
-    F.liftF(SetLong1(a, b))
+    F.liftFC(SetLong1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setMaxFieldSize(a: Int): CallableStatementIO[Unit] =
-    F.liftF(SetMaxFieldSize(a))
+    F.liftFC(SetMaxFieldSize(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setMaxRows(a: Int): CallableStatementIO[Unit] =
-    F.liftF(SetMaxRows(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setNCharacterStream(a: String, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetNCharacterStream(a, b))
+    F.liftFC(SetMaxRows(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNCharacterStream(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetNCharacterStream1(a, b, c))
+    F.liftFC(SetNCharacterStream(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setNCharacterStream(a: String, b: Reader): CallableStatementIO[Unit] =
+    F.liftFC(SetNCharacterStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNCharacterStream(a: Int, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetNCharacterStream2(a, b))
+    F.liftFC(SetNCharacterStream2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNCharacterStream(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetNCharacterStream3(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setNClob(a: String, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetNClob(a, b))
+    F.liftFC(SetNCharacterStream3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNClob(a: String, b: NClob): CallableStatementIO[Unit] =
-    F.liftF(SetNClob1(a, b))
+    F.liftFC(SetNClob(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNClob(a: String, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetNClob2(a, b, c))
+    F.liftFC(SetNClob1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setNClob(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
-    F.liftF(SetNClob3(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setNClob(a: Int, b: NClob): CallableStatementIO[Unit] =
-    F.liftF(SetNClob4(a, b))
+  def setNClob(a: String, b: Reader): CallableStatementIO[Unit] =
+    F.liftFC(SetNClob2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNClob(a: Int, b: Reader): CallableStatementIO[Unit] =
-    F.liftF(SetNClob5(a, b))
+    F.liftFC(SetNClob3(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setNClob(a: Int, b: Reader, c: Long): CallableStatementIO[Unit] =
+    F.liftFC(SetNClob4(a, b, c))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setNClob(a: Int, b: NClob): CallableStatementIO[Unit] =
+    F.liftFC(SetNClob5(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNString(a: String, b: String): CallableStatementIO[Unit] =
-    F.liftF(SetNString(a, b))
+    F.liftFC(SetNString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNString(a: Int, b: String): CallableStatementIO[Unit] =
-    F.liftF(SetNString1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setNull(a: String, b: Int, c: String): CallableStatementIO[Unit] =
-    F.liftF(SetNull(a, b, c))
+    F.liftFC(SetNString1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNull(a: String, b: Int): CallableStatementIO[Unit] =
-    F.liftF(SetNull1(a, b))
+    F.liftFC(SetNull(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setNull(a: Int, b: Int): CallableStatementIO[Unit] =
-    F.liftF(SetNull2(a, b))
+  def setNull(a: String, b: Int, c: String): CallableStatementIO[Unit] =
+    F.liftFC(SetNull1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNull(a: Int, b: Int, c: String): CallableStatementIO[Unit] =
-    F.liftF(SetNull3(a, b, c))
+    F.liftFC(SetNull2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setObject(a: String, b: Object, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetObject(a, b, c))
+  def setNull(a: Int, b: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetNull3(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setObject(a: String, b: Object): CallableStatementIO[Unit] =
-    F.liftF(SetObject1(a, b))
+    F.liftFC(SetObject(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setObject(a: String, b: Object, c: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetObject1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setObject(a: String, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
-    F.liftF(SetObject2(a, b, c, d))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setObject(a: Int, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
-    F.liftF(SetObject3(a, b, c, d))
+    F.liftFC(SetObject2(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setObject(a: Int, b: Object, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetObject4(a, b, c))
+    F.liftFC(SetObject3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setObject(a: Int, b: Object): CallableStatementIO[Unit] =
-    F.liftF(SetObject5(a, b))
+    F.liftFC(SetObject4(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setObject(a: Int, b: Object, c: Int, d: Int): CallableStatementIO[Unit] =
+    F.liftFC(SetObject5(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setPoolable(a: Boolean): CallableStatementIO[Unit] =
-    F.liftF(SetPoolable(a))
+    F.liftFC(SetPoolable(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setQueryTimeout(a: Int): CallableStatementIO[Unit] =
-    F.liftF(SetQueryTimeout(a))
+    F.liftFC(SetQueryTimeout(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setRef(a: Int, b: Ref): CallableStatementIO[Unit] =
-    F.liftF(SetRef(a, b))
+    F.liftFC(SetRef(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setRowId(a: String, b: RowId): CallableStatementIO[Unit] =
-    F.liftF(SetRowId(a, b))
+    F.liftFC(SetRowId(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setRowId(a: Int, b: RowId): CallableStatementIO[Unit] =
-    F.liftF(SetRowId1(a, b))
+    F.liftFC(SetRowId1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setSQLXML(a: String, b: SQLXML): CallableStatementIO[Unit] =
-    F.liftF(SetSQLXML(a, b))
+    F.liftFC(SetSQLXML(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setSQLXML(a: Int, b: SQLXML): CallableStatementIO[Unit] =
-    F.liftF(SetSQLXML1(a, b))
+    F.liftFC(SetSQLXML1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setShort(a: String, b: Short): CallableStatementIO[Unit] =
-    F.liftF(SetShort(a, b))
+    F.liftFC(SetShort(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setShort(a: Int, b: Short): CallableStatementIO[Unit] =
-    F.liftF(SetShort1(a, b))
+    F.liftFC(SetShort1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: String, b: String): CallableStatementIO[Unit] =
-    F.liftF(SetString(a, b))
+    F.liftFC(SetString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: Int, b: String): CallableStatementIO[Unit] =
-    F.liftF(SetString1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setTime(a: String, b: Time): CallableStatementIO[Unit] =
-    F.liftF(SetTime(a, b))
+    F.liftFC(SetString1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTime(a: String, b: Time, c: Calendar): CallableStatementIO[Unit] =
-    F.liftF(SetTime1(a, b, c))
+    F.liftFC(SetTime(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setTime(a: Int, b: Time, c: Calendar): CallableStatementIO[Unit] =
-    F.liftF(SetTime2(a, b, c))
+  def setTime(a: String, b: Time): CallableStatementIO[Unit] =
+    F.liftFC(SetTime1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTime(a: Int, b: Time): CallableStatementIO[Unit] =
-    F.liftF(SetTime3(a, b))
+    F.liftFC(SetTime2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setTimestamp(a: String, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
-    F.liftF(SetTimestamp(a, b, c))
+  def setTime(a: Int, b: Time, c: Calendar): CallableStatementIO[Unit] =
+    F.liftFC(SetTime3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTimestamp(a: String, b: Timestamp): CallableStatementIO[Unit] =
-    F.liftF(SetTimestamp1(a, b))
+    F.liftFC(SetTimestamp(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setTimestamp(a: String, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
+    F.liftFC(SetTimestamp1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTimestamp(a: Int, b: Timestamp): CallableStatementIO[Unit] =
-    F.liftF(SetTimestamp2(a, b))
+    F.liftFC(SetTimestamp2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTimestamp(a: Int, b: Timestamp, c: Calendar): CallableStatementIO[Unit] =
-    F.liftF(SetTimestamp3(a, b, c))
+    F.liftFC(SetTimestamp3(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setURL(a: String, b: URL): CallableStatementIO[Unit] =
-    F.liftF(SetURL(a, b))
+    F.liftFC(SetURL(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setURL(a: Int, b: URL): CallableStatementIO[Unit] =
-    F.liftF(SetURL1(a, b))
+    F.liftFC(SetURL1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setUnicodeStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] =
-    F.liftF(SetUnicodeStream(a, b, c))
+    F.liftFC(SetUnicodeStream(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def unwrap[T](a: Class[T]): CallableStatementIO[T] =
-    F.liftF(Unwrap(a))
+    F.liftFC(Unwrap(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val wasNull: CallableStatementIO[Boolean] =
-    F.liftF(WasNull)
+    F.liftFC(WasNull)
 
  /** 
   * Natural transformation from `CallableStatementOp` to `Kleisli` for the given `M`, consuming a `java.sql.CallableStatement`. 
   * @group Algebra
   */
-  def interpK[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
-   CallableStatementOp.CallableStatementKleisliTrans.interpK
-
- /** 
-  * Natural transformation from `CallableStatementIO` to `Kleisli` for the given `M`, consuming a `java.sql.CallableStatement`. 
-  * @group Algebra
-  */
-  def transK[M[_]: Monad: Catchable: Capture]: CallableStatementIO ~> Kleisli[M, CallableStatement, ?] =
-   CallableStatementOp.CallableStatementKleisliTrans.transK
-
- /** 
-  * Natural transformation from `CallableStatementIO` to `M`, given a `java.sql.CallableStatement`. 
-  * @group Algebra
-  */
- def trans[M[_]: Monad: Catchable: Capture](c: CallableStatement): CallableStatementIO ~> M =
-   CallableStatementOp.CallableStatementKleisliTrans.trans[M](c)
+  def kleisliTrans[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
+    new (CallableStatementOp ~> Kleisli[M, CallableStatement, ?]) {
+      def apply[A](op: CallableStatementOp[A]): Kleisli[M, CallableStatement, A] =
+        op.defaultTransK[M]
+    }
 
   /**
    * Syntax for `CallableStatementIO`.
@@ -2123,7 +2214,7 @@ object callablestatement {
    */
   implicit class CallableStatementIOOps[A](ma: CallableStatementIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CallableStatement, A] =
-      CallableStatementOp.CallableStatementKleisliTrans.transK[M].apply(ma)
+      F.runFC[CallableStatementOp, Kleisli[M, CallableStatement, ?], A](ma)(kleisliTrans[M])
   }
 
 }
