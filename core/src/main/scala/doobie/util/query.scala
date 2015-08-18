@@ -15,7 +15,7 @@ object query {
   /** 
    * A `Query` parameterized by some input type `A` yielding values of type `B`. We define here the
    * core operations that are needed. Additional operations are provided on `Query0` which is the 
-   * risidual query after applying an `A`. This is the type constructed by the `sql` interpreter.
+   * residual query after applying an `A`. This is the type constructed by the `sql` interpolator.
    */
   trait Query[A, B] { outer =>
 
@@ -75,6 +75,10 @@ object query {
         def stackFrame = outer.stackFrame
       }
 
+    /** 
+     * Apply an argument, yielding a residual nullary `Query0`. Note that this is the typical (and
+     * the only provided) way to construct a `Query0`.
+     */
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
         def sql = outer.sql
@@ -110,10 +114,10 @@ object query {
         def mapsnd[A, B, C](fab: Query[A,B])(f: B => C) = fab map f
       }
 
-    implicit def queryCovariant[A]: Functor[({ type l[b] = Query[A, b]})#l] =
+    implicit def queryCovariant[A]: Functor[Query[A, ?]] =
       queryProfunctor.covariantInstance[A]
 
-    implicit def queryContravariant[B]: Contravariant[({ type l[a] = Query[a, B]})#l] =
+    implicit def queryContravariant[B]: Contravariant[Query[?, B]] =
       queryProfunctor.contravariantInstance[B]
 
   }
