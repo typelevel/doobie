@@ -27,7 +27,7 @@ object connectionio {
 
     final class Helper[M[_]] {
       def apply[T](t: T)(implicit ev1: Transactor[M, T]): M[A] =
-        Connector.trans(t).apply(Transactor.safe(t)(ma))
+        Transactor.safeTrans(t).apply(ma)
     }
 
     /** 
