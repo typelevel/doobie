@@ -23,20 +23,16 @@ object transactor {
 
   object Transactor {
 
-    /** A default instance, given constraints on M. */
-    def instance[M[_]: Monad: Capture: Catchable, A](lens: A @> LiftXA, f: A => M[Connection]): Transactor[M, A] =
+    /** A default instance, given some constraints on M. */
+    def instance[M[_]: Monad: Capture: Catchable, A](lens: A @> LiftXA, f: A => M[Connection]): Transactor[M, A] = {
+      val c = Connector.instance[M, A](f)
       new Transactor[M, A] {
         def liftXA = lens
-        def connect(a: A): M[Connection] = f(a)
-        def trans(a: A): ConnectionIO ~> M =
-          new (ConnectionIO ~> M) {        
-            def apply[B](ma: ConnectionIO[B]) = connect(a) >>= ma.transK[M]      
-          }
-        def transP(a: A): Process[ConnectionIO, ?] ~> Process[M, ?] =
-          new (Process[ConnectionIO, ?] ~> Process[M, ?]) {
-            def apply[B](pa: Process[ConnectionIO, B]) = eval(connect(a)) >>= pa.trans[M]    
-          }
+        def connect(a: A): M[Connection] = c.connect(a)
+        def trans(a: A): ConnectionIO ~> M = c.trans(a)
+        def transP(a: A): Process[ConnectionIO, ?] ~> Process[M, ?] = c.transP(a)
       }
+    }
 
     /** Retrieve the `liftXA` lens. */
     def liftXA[M[_], T](implicit ev: Transactor[M, T]): T @> LiftXA = 
@@ -49,6 +45,20 @@ object transactor {
     /** Wrap a `Process[ConnectionIO, ?]` in before/after/oops/always logic. */
     def safeP[M[_], T, A](t: T)(pa: Process[ConnectionIO, A])(implicit ev: Transactor[M, T]): Process[ConnectionIO, A] =
       liftXA.get(t).safeP(pa)
+
+    /** Safe natural transformation to target monad `M`. */
+    def safeTrans[M[_], T](t: T)(implicit ev: Transactor[M, T]): (ConnectionIO ~> M) =
+      new (ConnectionIO ~> M) {
+        def apply[A](ma: ConnectionIO[A]): M[A] =
+          Connector.trans[M, T](t).apply(safe(t)(ma))
+      }
+
+    /** Safe natural transformation to an equivalent process over target monad `M`. */
+    def safeTransP[M[_], T](t: T)(implicit ev: Transactor[M, T]): (Process[ConnectionIO, ?] ~> Process[M, ?]) =
+      new  (Process[ConnectionIO, ?] ~> Process[M, ?]) {
+        def apply[A](ma: Process[ConnectionIO, A]): Process[M, A] =
+          Connector.transP[M, T](t).apply(safeP(t)(ma))
+      }
 
   }
   
