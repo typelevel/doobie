@@ -51,29 +51,6 @@ object connector {
           }
       }
 
-    /** A raw `DataSource` is a `Connector`. */
-    implicit def dataSourceConnector[M[_]: Monad: Capture: Catchable]: Connector[M, javax.sql.DataSource] =
-      instance(ds => Capture[M].apply(ds.getConnection))
-
-    /** A raw `Connection` is a `Connector`. */
-    implicit def connectionConnector[M[_]: Monad: Capture: Catchable]: Connector[M, Connection] =
-      instance(_.point[M])
-
-  }
-
-  implicit class ConnectionIOConnectorOps[A](ma: ConnectionIO[A]) {
-
-    class Helper[M[_]] {
-      def apply[T](t: T)(implicit ev1: Connector[M, T]): M[A] =
-        Connector.trans(t).apply(ma)
-    }
-
-    /** 
-     * Interpret this program unmodified, into effect-capturing target monad `M`, running on a 
-     * dedicated `Connection`.
-     */
-    def connect[M[_]] = new Helper[M]
-
   }
 
 }

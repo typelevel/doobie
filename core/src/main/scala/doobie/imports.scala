@@ -78,11 +78,11 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
 
   /** @group Syntax */
   implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
-    new doobie.util.connector.ConnectionIOConnectorOps(ma)
+    new doobie.syntax.connectionio.ConnectionIOConnectorOps(ma)
 
   /** @group Syntax */
   implicit def toEvenMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
-    new doobie.util.transactor.ConnectionIOTransactorOps(ma)
+    new doobie.syntax.connectionio.ConnectionIOTransactorOps(ma)
 
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
