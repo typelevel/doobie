@@ -14,25 +14,48 @@ import scalaz.stream.Process
 
 import shapeless._
 
-/** String interpolator for SQL literals. */
+/** Module defining the `sql` string interpolator. */
 object string {
 
-  implicit class SqlInterpolator(val sc: StringContext) {
+  /** 
+   * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
+   * interpolated values of type `A` and `B` (which must have `Atom` instances) yields a value of 
+   * type `Builder[(A, B)]`.
+   */
+  implicit class SqlInterpolator(private val sc: StringContext) {
 
-    val stackFrame = {
+    private val stackFrame = {
       import Predef._
       Thread.currentThread.getStackTrace.lift(3)
     }
 
-    val rawSql = sc.parts.mkString("?")
-
-    class Builder[A: Composite](a: A) {
-      def query[O: Composite]: Query0[O] = Query[A, O](rawSql, stackFrame).toQuery0(a)
-      def update: Update0 = Update[A](rawSql, stackFrame).toUpdate0(a)
-    }
-
+    /** 
+     * Arity-abstracted method accepting a sequence of values along with `Atom` witnesses, yielding
+     * a `Builder[...]` parameterized over the product of the types of the passed arguments. This 
+     * method uses the `ProductArgs` macro from Shapeless and has no meaningful internal structure.
+     */
     object sql extends ProductArgs {
-      def applyProduct[A: Composite](a: A): Builder[A] = new Builder(a)
+      def applyProduct[A: Composite](a: A): Builder[A] = 
+        new Builder(a, sc.parts.mkString("?"), stackFrame)
     }
+
   }
+
+  /** 
+   * Type computed by the `sql` interpolator, parameterized over the composite of the types of
+   * interpolated arguments. This type captures the sql string and parameter types, which can
+   * subsequently transformed into a `Query0` or `Update0` (see the associated methods).
+   */
+  final class Builder[A: Composite] private[string] (a: A, rawSql: String, stackFrame: Option[StackTraceElement]) {
+
+    /** Construct a `Query0` from this `Builder`, parameterized over a composite output type. */
+    def query[O: Composite]: Query0[O] =
+      Query[A, O](rawSql, stackFrame).toQuery0(a)
+
+    /** Construct an `Update0` from this `Builder`. */
+    def update: Update0 =
+      Update[A](rawSql, stackFrame).toUpdate0(a)
+
+  }
+
 }

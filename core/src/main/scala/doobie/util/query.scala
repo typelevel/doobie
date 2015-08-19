@@ -29,28 +29,68 @@ object query {
     protected implicit val ic: Composite[I]
     protected implicit val oc: Composite[O]
 
+    /** 
+     * The SQL string. 
+     * @group Diagnostics
+     */
     def sql: String
     
+    /** 
+     * An optional `StackTraceElement` indicating the source location where this `Query` was 
+     * constructed. This is used only for diagnostic purposes. 
+     * @group Diagnostics
+     */
     def stackFrame: Option[StackTraceElement]
 
+    /**
+     * Program to construct an analysis of this query's SQL statement and asserted parameter and
+     * column types.
+     * @group Diagnostics
+     */
     def analysis: ConnectionIO[Analysis] =
       HC.prepareQueryAnalysis[I, O](sql)
 
+    /**
+     * Apply the argument `a` to construct a `Process` with effect type `ConnectionIO` yielding
+     * elements of type `B`.
+     * @group Results
+     */
     def process(a: A): Process[ConnectionIO, B] = 
       HC.process[O](sql, HPS.set(ai(a))).map(ob)
 
+    /**
+     * Apply the argument `a` to construct a program in `ConnectionIO` yielding an `F[B]` accumulated
+     * via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
+     * @group Results
+     */
     def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
 
+    /**
+     * Apply the argument `a` to construct a program in `ConnectionIO` yielding an `F[B]` accumulated
+     * via `MonadPlus` append. This method is more general but less efficient than `to`.
+     * @group Results
+     */
     def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] = 
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
 
+    /**
+     * Apply the argument `a` to construct a program in `ConnectionIO` yielding a unique `B` and
+     * raising an exception if the resultset does not have exactly one row. See also `option`.
+     * @group Results
+     */
     def unique(a: A): ConnectionIO[B] = 
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getUnique[O])).map(ob)
 
+    /**
+     * Apply the argument `a` to construct a program in `ConnectionIO` yielding an optional `B` and
+     * raising an exception if the resultset has more than one row. See also `unique`.
+     * @group Results
+     */
     def option(a: A): ConnectionIO[Option[B]] = 
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getOption[O])).map(_.map(ob))
 
+    /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
         type I = outer.I
@@ -63,6 +103,7 @@ object query {
         def stackFrame = outer.stackFrame
       }
 
+    /** @group Transformations */
     def contramap[C](f: C => A): Query[C, B] =
       new Query[C, B] {
         type I = outer.I
@@ -76,8 +117,9 @@ object query {
       }
 
     /** 
-     * Apply an argument, yielding a residual nullary `Query0`. Note that this is the typical (and
-     * the only provided) way to construct a `Query0`.
+     * Apply an argument, yielding a residual `Query0`. Note that this is the typical (and the only
+     * provided) way to construct a `Query0`.
+     * @group Transformations
      */
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
@@ -96,7 +138,13 @@ object query {
 
   object Query {
 
-    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement])(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
+    /**
+     * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
+     * purposes, and composite type arguments for input and output types. The most common way to
+     * construct a `Query` is via the `sql` interpolator.
+     * @group Constructors
+     */
+    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
       new Query[A, B] {
         type I = A
         type O = B
@@ -108,45 +156,115 @@ object query {
         val stackFrame = stackFrame0
       }
 
+    /** @group Typeclass Instances */
     implicit val queryProfunctor: Profunctor[Query] =
       new Profunctor[Query] {
         def mapfst[A, B, C](fab: Query[A,B])(f: C => A) = fab contramap f
         def mapsnd[A, B, C](fab: Query[A,B])(f: B => C) = fab map f
       }
 
+    /** @group Typeclass Instances */
     implicit def queryCovariant[A]: Functor[Query[A, ?]] =
       queryProfunctor.covariantInstance[A]
 
+    /** @group Typeclass Instances */
     implicit def queryContravariant[B]: Contravariant[Query[?, B]] =
       queryProfunctor.contravariantInstance[B]
 
   }
 
-  /** A `Query` applied to its argument. */
+  /** 
+   * An abstract query closed over its input arguments and yielding values of type `B`, without a
+   * specified disposition. Methods provided on `Query0` allow the query to be interpreted as a
+   * stream or program in `CollectionIO`.
+   */
   trait Query0[B] { outer =>
 
+    /** 
+     * The SQL string. 
+     * @group Diagnostics
+     */
     def sql: String  
+
+    /** 
+     * An optional `StackTraceElement` indicating the source location where this `Query` was 
+     * constructed. This is used only for diagnostic purposes. 
+     * @group Diagnostics
+     */
     def stackFrame: Option[StackTraceElement]
-    def process: Process[ConnectionIO, B]
+
+    /**
+     * Program to construct an analysis of this query's SQL statement and asserted parameter and
+     * column types.
+     * @group Diagnostics
+     */
     def analysis: ConnectionIO[Analysis] 
-    def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] 
-    def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]  
+
+    /** 
+     * `Process` with effect type `ConnectionIO` yielding elements of type `B`. 
+     * @group Results
+     */
+    def process: Process[ConnectionIO, B]
+
+    /**
+     * Program in `ConnectionIO` yielding an `F[B]` accumulated via the provided `CanBuildFrom`.
+     * This is the fastest way to accumulate a collection.
+     * @group Results
+     */
+    def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]]
+
+    /**
+     * Program in `ConnectionIO` yielding an `F[B]` accumulated via `MonadPlus` append. This 
+     * method is more general but less efficient than `to`.
+     * @group Results
+     */
+    def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]
+
+    /**
+     * Program in `ConnectionIO` yielding a unique `B` and raising an exception if the resultset
+     * does not have exactly one row. See also `option`.
+     * @group Results
+     */
     def unique: ConnectionIO[B]  
+
+    /**
+     * Program in `ConnectionIO` yielding an optional `B` and raising an exception if the resultset
+     * has more than one row. See also `unique`.
+     * @group Results
+     */    
     def option: ConnectionIO[Option[B]]  
+
+    /** @group Transformations */    
     def map[C](f: B => C): Query0[C] 
 
-    // Convenience methods
+    /** 
+     * Convenience method; equivalent to `process.sink(f)` 
+     * @group Results
+     */
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
+
+    /** 
+     * Convenience method; equivalent to `to[List]` 
+     * @group Results
+     */
     def list: ConnectionIO[List[B]] = to[List]
+
+    /** 
+     * Convenience method; equivalent to `to[Vector]` 
+     * @group Results
+     */
     def vector: ConnectionIO[Vector[B]] = to[Vector]
 
   }
 
   object Query0 {
+
+    /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =
       new Functor[Query0] {
         def map[A, B](fa: Query0[A])(f: A => B) = fa map f
       }
+
   }
 
 }
