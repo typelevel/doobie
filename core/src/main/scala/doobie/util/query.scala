@@ -13,8 +13,8 @@ import scalaz.syntax.monad._
 object query {
 
   /** 
-   * A `Query` parameterized by some input type `A` yielding values of type `B`. We define here the
-   * core operations that are needed. Additional operations are provided on `Query0` which is the 
+   * A query parameterized by some input type `A` yielding values of type `B`. We define here the
+   * core operations that are needed. Additional operations are provided on `[[Query0]]` which is the 
    * residual query after applying an `A`. This is the type constructed by the `sql` interpolator.
    */
   trait Query[A, B] { outer =>
@@ -36,7 +36,7 @@ object query {
     def sql: String
     
     /** 
-     * An optional `StackTraceElement` indicating the source location where this `Query` was 
+     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was 
      * constructed. This is used only for diagnostic purposes. 
      * @group Diagnostics
      */
@@ -51,15 +51,16 @@ object query {
       HC.prepareQueryAnalysis[I, O](sql)
 
     /**
-     * Apply the argument `a` to construct a `Process` with effect type `ConnectionIO` yielding
-     * elements of type `B`.
+     * Apply the argument `a` to construct a `Process` with effect type 
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
      * @group Results
      */
     def process(a: A): Process[ConnectionIO, B] = 
       HC.process[O](sql, HPS.set(ai(a))).map(ob)
 
     /**
-     * Apply the argument `a` to construct a program in `ConnectionIO` yielding an `F[B]` accumulated
+     * Apply the argument `a` to construct a program in 
+     *`[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
      * via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
      * @group Results
      */
@@ -67,7 +68,8 @@ object query {
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
 
     /**
-     * Apply the argument `a` to construct a program in `ConnectionIO` yielding an `F[B]` accumulated
+     * Apply the argument `a` to construct a program in 
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
      * via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
@@ -75,7 +77,8 @@ object query {
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
 
     /**
-     * Apply the argument `a` to construct a program in `ConnectionIO` yielding a unique `B` and
+     * Apply the argument `a` to construct a program in 
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and
      * raising an exception if the resultset does not have exactly one row. See also `option`.
      * @group Results
      */
@@ -83,7 +86,8 @@ object query {
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getUnique[O])).map(ob)
 
     /**
-     * Apply the argument `a` to construct a program in `ConnectionIO` yielding an optional `B` and
+     * Apply the argument `a` to construct a program in 
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` and
      * raising an exception if the resultset has more than one row. See also `unique`.
      * @group Results
      */
@@ -117,8 +121,8 @@ object query {
       }
 
     /** 
-     * Apply an argument, yielding a residual `Query0`. Note that this is the typical (and the only
-     * provided) way to construct a `Query0`.
+     * Apply an argument, yielding a residual `[[Query0]]`. Note that this is the typical (and the 
+     * only provided) way to construct a `[[Query0]]`.
      * @group Transformations
      */
     def toQuery0(a: A): Query0[B] =
@@ -175,7 +179,7 @@ object query {
 
   /** 
    * An abstract query closed over its input arguments and yielding values of type `B`, without a
-   * specified disposition. Methods provided on `Query0` allow the query to be interpreted as a
+   * specified disposition. Methods provided on `[[Query0]]` allow the query to be interpreted as a
    * stream or program in `CollectionIO`.
    */
   trait Query0[B] { outer =>
@@ -201,35 +205,37 @@ object query {
     def analysis: ConnectionIO[Analysis] 
 
     /** 
-     * `Process` with effect type `ConnectionIO` yielding elements of type `B`. 
+     * `Process` with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding 
+     * elements of type `B`. 
      * @group Results
      */
     def process: Process[ConnectionIO, B]
 
     /**
-     * Program in `ConnectionIO` yielding an `F[B]` accumulated via the provided `CanBuildFrom`.
-     * This is the fastest way to accumulate a collection.
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
+     * accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a 
+     * collection.
      * @group Results
      */
     def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]]
 
     /**
-     * Program in `ConnectionIO` yielding an `F[B]` accumulated via `MonadPlus` append. This 
-     * method is more general but less efficient than `to`.
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
+     * accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
     def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]
 
     /**
-     * Program in `ConnectionIO` yielding a unique `B` and raising an exception if the resultset
-     * does not have exactly one row. See also `option`.
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and 
+     * raising an exception if the resultset does not have exactly one row. See also `option`.
      * @group Results
      */
     def unique: ConnectionIO[B]  
 
     /**
-     * Program in `ConnectionIO` yielding an optional `B` and raising an exception if the resultset
-     * has more than one row. See also `unique`.
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` 
+     * and raising an exception if the resultset has more than one row. See also `unique`.
      * @group Results
      */    
     def option: ConnectionIO[Option[B]]  

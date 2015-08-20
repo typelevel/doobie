@@ -19,8 +19,8 @@ object string {
 
   /** 
    * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
-   * interpolated values of type `A` and `B` (which must have `Atom` instances) yields a value of 
-   * type `Builder[(A, B)]`.
+   * interpolated values of type `A` and `B` (which must have `[[doobie.util.atom.Atom Atom]]` 
+   * instances) yields a value of type `[[Builder]]``[(A, B)]`.
    */
   implicit class SqlInterpolator(private val sc: StringContext) {
 
@@ -30,9 +30,10 @@ object string {
     }
 
     /** 
-     * Arity-abstracted method accepting a sequence of values along with `Atom` witnesses, yielding
-     * a `Builder[...]` parameterized over the product of the types of the passed arguments. This 
-     * method uses the `ProductArgs` macro from Shapeless and has no meaningful internal structure.
+     * Arity-abstracted method accepting a sequence of values along with `[[doobie.util.atom.Atom Atom]]` 
+     * witnesses, yielding a `[[Builder]]``[...]` parameterized over the product of the types of the 
+     * passed arguments. This method uses the `ProductArgs` macro from Shapeless and has no
+     * meaningful internal structure.
      */
     object sql extends ProductArgs {
       def applyProduct[A: Composite](a: A): Builder[A] = 
@@ -44,15 +45,19 @@ object string {
   /** 
    * Type computed by the `sql` interpolator, parameterized over the composite of the types of
    * interpolated arguments. This type captures the sql string and parameter types, which can
-   * subsequently transformed into a `Query0` or `Update0` (see the associated methods).
+   * subsequently transformed into a `[[doobie.util.query.Query0 Query0]]` or 
+   * `[[doobie.util.update.Update0 Update0]]` (see the associated methods).
    */
   final class Builder[A: Composite] private[string] (a: A, rawSql: String, stackFrame: Option[StackTraceElement]) {
 
-    /** Construct a `Query0` from this `Builder`, parameterized over a composite output type. */
+    /** 
+     * Construct a `[[doobie.util.query.Query0 Query0]]` from this `[[Builder]]`, parameterized over a
+     * composite output type. 
+     */
     def query[O: Composite]: Query0[O] =
       Query[A, O](rawSql, stackFrame).toQuery0(a)
 
-    /** Construct an `Update0` from this `Builder`. */
+    /** Construct an `[[doobie.util.update.Update0 Update0]]` from this `[[Builder]]`. */
     def update: Update0 =
       Update[A](rawSql, stackFrame).toUpdate0(a)
 
