@@ -2,6 +2,35 @@
 
 This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
 
+### <a name="0.2.3"></a>New and Noteworthy for Version 0.2.3
+
+This release includes more performance work and some usability improvements, as well as documentation improvements here and there. This release should be source-compatible for most users, but is not binary compatible with any prior release. Let me know if you run into source compatibilty problems. Special thanks to **@mdmoss** for build improvements, **@fommil** and **@d6** for help with Sonatype, and everyone else for your continued interest and contributions!
+
+Improvements:
+
+- **doobie** is now published on Sonatype and no longer requires a Bintray resolver.
+- The `free` modules now provide natural transformations of the form `FooIO ~> Kleisli[M, Foo, ?]` and `Foo => FooIO ~> M`, which should make life easier when using **doobie** with existing JDBC resources (your own `Connection` for example).
+- New optimized column-vector reads and accumulators for `IList` and standard library collections via `CanBuildFrom` yield performance generally indistinguishable from raw JDBC. The `Query/Query0` operations `to`, `list`, and `vector` are now very fast. Result handling via `Process` benefits to a lesser extent.
+
+> image here
+
+- `Composite` instances are now available for shapeless record types.
+- `DriverManagerTransactor` now includes constructors corresponding to all `getConnection` methods on `DriverManager`.
+- `free` algebras and interpreters have been re-implemented to use method dispatch rather than large `match` expressions, resulting in minor performance improvements throughout. This completes the work started in 0.2.2.
+
+Big Fixes:
+
+- The PostGIS dependency was pulling in an old version of the PostgreSQL JDBC driver. This has been fixed.
+
+Upgrades:
+
+- Updated to Scala 2.10.7
+- Updated to shapeless 2.2.2
+- Updated to scalaz-stream 0.7.1a
+- Updated to specs2-core 3.6
+- Updated to tut 0.4.0 (build-time dependency only)
+- Updated to sbt 0.13.8 (build-time dependency only)
+
 ### <a name="0.2.2"></a>New and Noteworthy for Version 0.2.2
 
 This is another minor release that adds yet more support PostgreSQL-specific features, updates dependencies, and improves performance for resultset processing. Thanks everyone for your continued interest and contributions!
