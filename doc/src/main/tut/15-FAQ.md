@@ -1,7 +1,7 @@
 ---
 layout: book
-number: 14
-title: Extensions for H2
+number: 15
+title: Frequently-Asked Questions
 ---
 
 In this chapter we address some frequently-asked questions. Setup is the same as most prior chapters.
@@ -20,7 +20,7 @@ import xa.yolo._
 
 ### How do I handle outer joins?
 
-With an outer join you end up with set of nullable columns, which you typically want to map to a single `Option` of some composite type. The most straightforward way do this is by using the `map` method on `Query0` to transform the result type, using applicative composition to combine the optional values:
+With an outer join you end up with set of nullable columns, which you typically want to map to a single `Option` of some composite type. The most straightforward way do this is to select the `Option` columns directly, then use the `map` method on `Query0` to transform the result type using applicative composition to combine the optional values:
 
 ```tut:silent
 case class Country(name: String, code: String)
@@ -43,3 +43,8 @@ Some examples, filtered for size.
 ```tut
 join.process.filter(_._1.name.startsWith("United")).quick.run
 ```
+
+### How do I do `IN` clauses?
+
+### How do I do several things in the same transaction?
+
