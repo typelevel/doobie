@@ -112,11 +112,14 @@ object imports {
   /** @group Type Aliases */      type SqlState = doobie.enum.sqlstate.SqlState
   /** @group Companion Aliases */ val  SqlState = doobie.enum.sqlstate.SqlState
 
+  /** @group Type Aliases */      type Param[A] = doobie.syntax.string.Param[A]
+  /** @group Companion Aliases */ val  Param    = doobie.syntax.string.Param
 
   /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
 
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
   /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
+
 
   /** @group Typeclass Instances */
   implicit val NameCatchable = doobie.util.name.NameCatchable

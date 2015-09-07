@@ -90,7 +90,7 @@ A common irritant when dealing with SQL literals is the desire to inline a *sequ
 
 ```tut:silent
 def populationIn(range: Range, codes: NonEmptyList[String]) = {
-  implicit val codesParam = doobie.syntax.string.Param.many(codes)
+  implicit val codesParam = Param.many(codes)
   sql"""
     select code, name, population, gnp 
     from country
