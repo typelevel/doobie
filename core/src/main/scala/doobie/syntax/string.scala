@@ -16,9 +16,6 @@ import shapeless._
 /** Module defining the `sql` string interpolator. */
 object string {
 
-  /** 
-   * Typeclass for an `Atom` or singleton `NonEmptyList` of some atomic type.
-   */
   sealed trait Param[A] {
     val composite: Composite[A]
     val placeholders: List[Int]
