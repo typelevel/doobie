@@ -8,14 +8,59 @@ import doobie.syntax.process._
 
 import doobie.hi._
 
-import scalaz.Monad
-import scalaz.syntax.monad._
+import scalaz._, Scalaz._
 import scalaz.stream.Process
 
 import shapeless._
 
 /** Module defining the `sql` string interpolator. */
 object string {
+
+  /** 
+   * Typeclass for an `Atom` or singleton `NonEmptyList` of some atomic type.
+   */
+  sealed trait Param[A] {
+    val composite: Composite[A]
+    val placeholders: List[Int]
+  }
+
+  object Param {
+
+    implicit def fromAtom[A](implicit ev: Atom[A]): Param[A] =
+      new Param[A] {
+        val composite = Composite.fromAtom(ev)
+        val placeholders = List(1)
+      }
+
+    implicit val ParamHNil: Param[HNil] =
+      new Param[HNil] {
+        val composite = Composite.typeClass.emptyProduct
+        val placeholders = Nil
+      }
+
+    implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]) =
+      new Param[H :: T] {
+        val composite = Composite.typeClass.product[H,T](ph.composite, pt.composite)
+        val placeholders = ph.placeholders ++ pt.placeholders
+      }
+
+    def many[A](t: NonEmptyList[A])(implicit ev: Atom[A]): Param[t.type] =
+      new Param[t.type] {
+        val composite = new Composite[t.type] {
+          val length    = t.size
+          val set       = (n: Int, in: t.type) => 
+            t.foldLeft((n, ().point[PreparedStatementIO])) { case ((n, psio), a) =>
+              (n + 1, psio *> ev.set(n, a))
+            } ._2
+          val meta      = List.fill(length)(ev.meta)
+          val unsafeGet = (_: java.sql.ResultSet, _: Int) => fail
+          val update    = (_: Int, _: t.type) => fail
+          def fail      = sys.error("singleton `IN` composite does not support get or update")
+        }
+      val placeholders = List(t.size)
+    }
+  
+  }
 
   /** 
    * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
@@ -29,6 +74,9 @@ object string {
       Thread.currentThread.getStackTrace.lift(3)
     }
 
+    def placeholders(n: Int): String =
+      List.fill(n)("?").mkString(", ")
+
     /** 
      * Arity-abstracted method accepting a sequence of values along with `[[doobie.util.atom.Atom Atom]]` 
      * witnesses, yielding a `[[Builder]]``[...]` parameterized over the product of the types of the 
@@ -36,8 +84,10 @@ object string {
      * meaningful internal structure.
      */
     object sql extends ProductArgs {
-      def applyProduct[A: Composite](a: A): Builder[A] = 
-        new Builder(a, sc.parts.mkString("?"), stackFrame)
+      def applyProduct[A <: HList](a: A)(implicit ev: Param[A]) = {
+        val sql = sc.parts.toList.fzipWith(ev.placeholders.map(placeholders) ++ List(""))(_ + _).suml
+        new Builder(a, sql, stackFrame)(ev.composite)
+      }
     }
 
   }
