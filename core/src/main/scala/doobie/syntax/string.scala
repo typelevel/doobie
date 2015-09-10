@@ -54,11 +54,11 @@ object string {
         val placeholders = ph.placeholders ++ pt.placeholders
       }
 
-    /** A `Param` for a *singleton* `NonEmptyList`, used exclusively to support `IN` clauses. */
-    def many[A](t: NonEmptyList[A])(implicit ev: Atom[A]): Param[t.type] =
+    /** A `Param` for a *singleton* `Foldable1`, used exclusively to support `IN` clauses. */
+    def many[F[_] <: AnyRef : Foldable1, A](t: F[A])(implicit ev: Atom[A]): Param[t.type] =
       new Param[t.type] {
         val composite = new Composite[t.type] {
-          val length    = t.size
+          val length    = t.count
           val set       = (n: Int, in: t.type) => 
             t.foldLeft((n, ().point[PreparedStatementIO])) { case ((n, psio), a) =>
               (n + 1, psio *> ev.set(n, a))
@@ -68,7 +68,7 @@ object string {
           val update    = (_: Int, _: t.type) => fail
           def fail      = sys.error("singleton `IN` composite does not support get or update")
         }
-      val placeholders = List(t.size)
+      val placeholders = List(t.count)
     }
   
   }

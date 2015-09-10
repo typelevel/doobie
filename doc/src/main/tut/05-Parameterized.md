@@ -104,7 +104,7 @@ def populationIn(range: Range, codes: NonEmptyList[String]) = {
 There are a few things to notice here:
 
 - The `IN` clause must be non-empty, so `codes` is a `NonEmptyList`.
-- We must derive a `Param` instance for the *singleton type* of `codes`, which we do via `Param.many`. This derivation is legal for any `NonEmptyList[A]` given `Atom[A]`. You can have any number of `IN` arguments but each must have its own derived `Param` instance.
+- We must derive a `Param` instance for the *singleton type* of `codes`, which we do via `Param.many`. This derivation is legal for any `F[A]` given `Foldable1[F]` and `Atom[A]`. You can have any number of `IN` arguments but each must have its own derived `Param` instance.
 - When interpolating `codes` we must explicitly ascribe its singleton type `codes.type`.
 
 Running this query gives us the desired result.
