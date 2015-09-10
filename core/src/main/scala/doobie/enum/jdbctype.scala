@@ -52,6 +52,9 @@ object jdbctype {
   /** @group Values */ case object VarBinary     extends JdbcType(VARBINARY)
   /** @group Values */ case object VarChar       extends JdbcType(VARCHAR)
 
+  /** @group Values (MS-SQL Specific) */ case object MsSqlDateTimeOffset extends JdbcType(-155)
+  /** @group Values (MS-SQL Specific) */ case object MsSqlVariant extends JdbcType(-150)
+
   /** @group Implementation */
   object JdbcType {
 
@@ -94,9 +97,13 @@ object jdbctype {
         case VarBinary.toInt     => VarBinary     
         case VarChar.toInt       => VarChar       
 
-        // Gets a little iffy here. Some databases (H2 and allegedly SQL Server) report NVarChar as 
-        // -10 rather than -9 ... no idea. It's definitely not in the spec. So let's just accept it 
-        // here and call it good. What's the worst thing that could happen? heh-heh
+        // MS-SQL Specific values, sigh
+        case MsSqlDateTimeOffset.toInt => MsSqlDateTimeOffset
+        case MsSqlVariant.toInt        => MsSqlVariant
+
+        // Gets a little iffy here. H2 reports NVarChar as -10 rather than -9 ... no idea. It's
+        // definitely not in the spec. So let's just accept it here and call it good. What's the
+        // worst thing that could happen? heh-heh
         case -10                 => NVarChar
 
       }
