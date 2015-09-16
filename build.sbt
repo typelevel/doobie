@@ -46,6 +46,7 @@ lazy val publishSettings = Seq(
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   },
   publishArtifact in Test := false,
+  homepage := Some(url("https://github.com/tpolecat/doobie")),
   pomIncludeRepository := Function.const(false),
   pomExtra := (
     <scm>
