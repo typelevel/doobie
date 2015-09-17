@@ -89,7 +89,7 @@ Composite[PersonId].length
 
 However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires an `Atom` instance), it doesn't compile.
 
-```tut:nofail
+```tut:fail
 sql"select * from person where id = $pid"
 ```
 
