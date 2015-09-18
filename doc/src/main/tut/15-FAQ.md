@@ -46,37 +46,10 @@ join.process.filter(_._1.name.startsWith("United")).quick.run
 
 ### How do I do an `IN` clause?
 
-The `sql` interpolator cannot currently expand a sequence parameter `IN ($x)` to `IN (?, ?, ...)`, but we can define some machinery that gets the job done.
-
-TODO: IN and non-IN params
-
-```tut:silent
-def placeholders(n: Int): String =
-  List.fill(n)("?").mkString(",")
-
-// SQL string with explicit placeholders
-def mkSql(codes: List[String]): String =
-  s"""
-    SELECT name, code, population 
-    FROM country 
-    WHERE code IN (${placeholders(codes)})
-  """
-
-// TODO: abstract over List and String
-def mkSet(codes: List[String]): PreparedStatementIO[Unit] =
-  codes.zipWithIndex.foldRight(().point[PreparedStatementIO]) { case ((s, i), p) =>
-    HPS.set(i + 1, s) *> p
-  }
-
-val codes = List("USA", "FRA")
-
-val proc = HC.process[(String, String, BigDecimal)](mkSql(codes), mkSet(codes))
-```
-
-```tut
-proc.quick.run
-```
-
+This used to be very irritating, but as of 0.2.3 is only moderately irritating. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html).
 
 ### How do I do several things in the same transaction?
+
+### How do I turn an arbitrary SQL string into a `Query/Query0`?
+
 
