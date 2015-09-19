@@ -8,6 +8,8 @@ import doobie.syntax.process._
 
 import doobie.hi._
 
+import scala.annotation.implicitNotFound
+
 import scalaz._, Scalaz._
 import scalaz.stream.Process
 
@@ -21,6 +23,10 @@ object string {
    * generalization to product types. Each element expands to some nonzero number of `?`
    * placeholders in the SQL literal, and the param vector itself has a `Composite` instance.
    */
+  @implicitNotFound("""Could not find or construct Param[${A}].
+Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
+have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom 
+instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.""")
   sealed trait Param[A] {
     val composite: Composite[A]
     val placeholders: List[Int]
@@ -32,6 +38,8 @@ object string {
    * derived with the `many` constructor.
    */
   object Param {
+
+    def apply[A](implicit ev: Param[A]): Param[A] = ev
 
     /** Each `Atom` gives rise to a `Param`. */
     implicit def fromAtom[A](implicit ev: Atom[A]): Param[A] =

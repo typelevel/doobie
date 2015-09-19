@@ -26,7 +26,11 @@ import java.sql.ParameterMetaData
  */
 object composite {
 
-  @implicitNotFound("Could not find or construct Composite[${A}].")
+  @implicitNotFound("""Could not find or construct Composite[${A}]. 
+Ensure that this type has a Composite instance in scope; or is a Product type whose members have 
+Composite instances in scope; or is an atomic type with an Atom instance in scope. You can usually 
+diagnose this problem by trying to summon the Composite instance for each element in the REPL. See 
+the FAQ in the Book of Doobie for more hints.""")
   trait Composite[A] { c =>
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
     val update: (Int, A) => RS.ResultSetIO[Unit]
