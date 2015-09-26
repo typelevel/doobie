@@ -49,6 +49,9 @@ object analysisspec {
     def check[A](q: Query0[A])(implicit A: TypeTag[A]) =
       checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
 
+    def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]) =
+      checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.outputAnalysis)
+
     def check[A](q: Update[A])(implicit A: TypeTag[A]) =
       checkAnalysis(s"Update[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
 
