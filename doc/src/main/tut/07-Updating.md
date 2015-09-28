@@ -107,7 +107,23 @@ def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
 insert2("Jimmy", Some(42)).quick.run
 ```
 
-This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor). A nicer way to do this is in one shot by returning specified columns from the inserted row. Not all databases support this feature, but PostgreSQL does.
+This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor).
+
+Some database (like H2) allow you to return [only] the inserted id, allowing the above operation to be reduced to two statements (see below for an explanation of `withUniqueGeneratedKeys`).
+
+```tut:silent
+def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
+  for {
+    id <- sql"insert into person (name, age) values ($name, $age)".update.withUniqueGeneratedKeys[Int]("id")
+    p  <- sql"select id, name, age from person where id = $id".query[Person].unique
+  } yield p
+```
+
+```tut
+insert2_H2("Ramone", Some(42)).quick.run
+```
+
+Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.
 
 ```tut:silent
 def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
