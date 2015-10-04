@@ -73,8 +73,8 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.2/00-index.htm
 
 Listed newest first. If you have given a presentation or have written a blog post on **doobie**, let me know and I'll add it to this list.
 
+- [Programs as Values: JDBC Programming with doobie](https://www.youtube.com/watch?v=M5MF6M7FHPo) Scala by the Bay, 2015 ([slides](http://tpolecat.github.io/assets/sbtb-slides.pdf))
 - [Typechecking SQL in Slick and doobie](http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html) by Richard Dallaway
-- [Programs as Values: Pure Functional Database Access in Scala](http://tpolecat.github.io/presos.html) by Rob Norris
 - [DB to JSON with a Microservice](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) by Da Terry (code [here](https://bitbucket.org/da_terry/scalasyd-doobie-http4s)).
 
 
