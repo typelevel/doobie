@@ -36,7 +36,13 @@ object yolo {
         q.sink(a => out(a.toString)).transact(xa)
 
       def check: M[Unit] =
-        (delay(showSql(q.sql)) >> q.analysis.attempt.flatMap {
+        doCheck(q.analysis)
+
+      def checkOutput: M[Unit] =
+        doCheck(q.outputAnalysis)
+
+      private def doCheck(a: ConnectionIO[Analysis]): M[Unit] =
+        (delay(showSql(q.sql)) >> a.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)
@@ -53,7 +59,13 @@ object yolo {
         q.toQuery0(i).quick
 
       def check: M[Unit] =
-        (delay(showSql(q.sql)) >> q.analysis.attempt.flatMap {
+        doCheck(q.analysis)
+
+      def checkOutput: M[Unit] =
+        doCheck(q.outputAnalysis)
+
+      private def doCheck(a: ConnectionIO[Analysis]): M[Unit] =
+        (delay(showSql(q.sql)) >> a.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)

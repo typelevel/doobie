@@ -49,6 +49,12 @@ object query {
      */
     def analysis: ConnectionIO[Analysis] =
       HC.prepareQueryAnalysis[I, O](sql)
+    /**
+     * Program to construct an analysis of this query's SQL statement and result set column types.
+     * @group Diagnostics
+     */
+    def outputAnalysis: ConnectionIO[Analysis] =
+      HC.prepareQueryAnalysis0[O](sql)
 
     /**
      * Apply the argument `a` to construct a `Process` with effect type 
@@ -130,6 +136,7 @@ object query {
         def sql = outer.sql
         def stackFrame = outer.stackFrame
         def analysis = outer.analysis
+        def outputAnalysis = outer.outputAnalysis
         def process = outer.process(a)
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
@@ -205,6 +212,12 @@ object query {
     def analysis: ConnectionIO[Analysis] 
 
     /** 
+     * Program to construct an analysis of this query's SQL statement and result set column types.
+     * @group Diagnostics
+     */
+    def outputAnalysis: ConnectionIO[Analysis]
+
+    /**
      * `Process` with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding 
      * elements of type `B`. 
      * @group Results

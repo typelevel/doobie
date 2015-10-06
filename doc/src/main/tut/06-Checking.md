@@ -90,6 +90,18 @@ biggerThan(0).check.run
 
 **doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `contrib-specs2` package, which allows checking to become part of your unit test suite. We will investigate this in the chapter on testing.
 
+### Working Around Bad Metadata
+
+Some drivers do not implement the JDBC metadata specification very well, which limits the usefulness of the query checking feature. MySQL and MS-SQL do a particularly rotten job in this department. In some cases queries simply cannot be checked because no metadata is available for the prepared statement (manifested as an exception) or the returned metadata is obviously inaccurate.
+
+However a common case is that *parameter* metadata is unavailable but *output column* metadata is. And in these cases there is a workaround: use `checkOutput` rather than `check`. This instructs **doobie** to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.
+
+```tut:plain
+biggerThan(0).checkOutput.run
+```
+
+This option is also available in the `contrib-specs2` package.
+
 ### Diving Deeper
 
 The `check` logic requires both a database connection and concrete `Meta` instances that define column-level JDBC mappings. This could in principle happen at compile-time, but it's not clear that this is what you always want and it's potentially hairy to implement. So for now checking happens at unit-test time.
