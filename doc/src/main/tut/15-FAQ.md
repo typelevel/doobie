@@ -25,6 +25,16 @@ import xa.yolo._
 
 This used to be very irritating, but as of 0.2.3 is only moderately irritating. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html).
 
+### How do I ascribe a SQL type to an interpolated parameter?
+
+Interpolated parameters are replaced with `?` placeholders, so if you need to ascribe a SQL type you can use vendor-specific syntax in conjunction with the interpolated value. For example, in PostgreSQL you use `:: type`:
+
+```tut
+val s = "foo"
+sql"select $s".query[String].check.run
+sql"select $s :: char".query[String].check.run
+```
+
 ### How do I do several things in the same transaction?
 
 You can use a `for` comprehension to compose any number of `ConnectionIO` programs, and then call `.transact(xa)` on the result. All of the composed programs will run in the same transaction. For this reason it's useful for your APIs to expose values in `ConnectionIO`, so higher-level code can place transaction boundaries as needed. 
