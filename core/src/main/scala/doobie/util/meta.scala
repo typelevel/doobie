@@ -311,11 +311,11 @@ object meta {
       // head (H) and tail (T) type of representation (L)
       c: IsHCons.Aux[L, H, T],
       // Meta instance for the head (the only element in representation)
-      hmeta: Meta[H],
+      hmeta: Lazy[Meta[H]],
       // provide evidence that representation (L) and singleton hlist with
       // the only element of type H are the same type
       ev: =:=[H :: HNil, L]
-    ): Meta[A] = hmeta.xmap(
+    ): Meta[A] = hmeta.value.xmap(
       // `from` converts representation L to A, but there is only H here,
       // but provided evidence `=:=[H :: HNil, L]` we can construct L from H
       // and A from L (using `from`)
