@@ -5,8 +5,10 @@ import doobie.imports._
 import org.specs2.mutable.Specification
 
 object metaspec extends Specification {
-  case class X(i: Int)
-  case class Y(s: String) extends AnyVal
+  case class X(x: Int)
+  case class Y(x: String) extends AnyVal
+  case class P(x: Int) extends AnyVal
+  case class Q(x: String)
 
   case class Z(i: Int, s: String)
   object S
@@ -23,6 +25,8 @@ object metaspec extends Specification {
     "be derived for unary products" in {
       Meta[X]
       Meta[Y]
+      Meta[P]
+      Meta[Q]
 
       true
     }
