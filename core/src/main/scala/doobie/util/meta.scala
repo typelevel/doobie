@@ -305,9 +305,7 @@ object meta {
       * T - type of the tail of L (unused)
       * @group Instances
       */
-
-    // def nxmap[B >: Null : TypeTag](f: A => B, g: B => A)(implicit ev: Null <:< A): Meta[B] =
-    implicit def unaryProductMeta[A >: Null : TypeTag, L <: HList, H, T <: HList](
+    implicit def unaryProductMeta[A : TypeTag, L <: HList, H, T <: HList](
       // representation (L) for type A
       implicit gen: Generic.Aux[A, L],
       // head (H) and tail (T) type of representation (L)
@@ -316,9 +314,8 @@ object meta {
       hmeta: Lazy[Meta[H]],
       // provide evidence that representation (L) and singleton hlist with
       // the only element of type H are the same type
-      ev: =:=[H :: HNil, L],
-      ev2: Null <:< H
-    ): Meta[A] = hmeta.value.nxmap(
+      ev: =:=[H :: HNil, L]
+    ): Meta[A] = hmeta.value.xmap[A](
       // `from` converts representation L to A, but there is only H here,
       // but provided evidence `=:=[H :: HNil, L]` we can construct L from H
       // and A from L (using `from`)
