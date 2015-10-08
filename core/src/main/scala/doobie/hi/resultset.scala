@@ -4,7 +4,7 @@ import doobie.enum.holdability._
 import doobie.enum.transactionisolation._
 import doobie.enum.fetchdirection._
 
-import doobie.syntax.catchable._
+import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }

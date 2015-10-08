@@ -1,10 +1,13 @@
 package doobie
 
+import doobie.syntax.catchsql.ToDoobieCatchSqlOps
+import doobie.syntax.catchable.ToDoobieCatchableOps
+
 import scalaz.{ Monad, Catchable, Unapply, Leibniz, Free, Functor }
 import scalaz.stream.Process
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
-object imports {
+object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
 
   /**
    * Alias for `doobie.free.connection`.
@@ -64,14 +67,6 @@ object imports {
   /** @group Type Aliases */ type StatementIO[A]         = doobie.free.statement.StatementIO[A]
   /** @group Type Aliases */ type PreparedStatementIO[A] = doobie.free.preparedstatement.PreparedStatementIO[A]
   /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
-
-  /** @group Syntax */
-  implicit def toDoobieCatchableOps[M[_]: Monad: Catchable, A](ma: M[A]) =
-    new doobie.syntax.catchable.DoobieCatchableOps(ma)
-
-  /** @group Syntax */
-  implicit def toDoobieCatchSqlOps[M[_]: Monad: Catchable, A](ma: M[A]) =
-    new doobie.syntax.catchsql.DoobieCatchSqlOps(ma)
 
   /** @group Syntax */
   implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]) =

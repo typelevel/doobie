@@ -6,7 +6,7 @@ import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
 
-import doobie.syntax.catchable._
+import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }

@@ -3,7 +3,7 @@ package doobie.util
 import scalaz._
 import scalaz.concurrent._
 import Scalaz._
-import doobie.syntax.catchable._
+import doobie.imports._
 import org.specs2.mutable.Specification
 
 object catchablespec extends Specification {

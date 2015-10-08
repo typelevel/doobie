@@ -3,8 +3,7 @@ package doobie.util
 import scalaz._
 import scalaz.concurrent._
 import Scalaz._
-import doobie.syntax.catchsql._
-import doobie.enum.sqlstate._
+import doobie.imports._
 import org.specs2.mutable.Specification
 import java.sql.SQLException
 

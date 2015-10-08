@@ -1,6 +1,6 @@
 package doobie.syntax
 
-import scalaz.{ Monad, Catchable, \/, -\/, \/- }
+import scalaz.{ Monad, Catchable, \/, -\/, \/-, Unapply }
 import doobie.util.{ catchsql => C }
 import doobie.enum.sqlstate.SqlState
 import java.sql.SQLException
@@ -8,7 +8,7 @@ import java.sql.SQLException
 /** Syntax for `Catchable` combinators defined in `util.catchsql`. */
 object catchsql {
 
-  implicit class DoobieCatchSqlOps[M[_]: Monad: Catchable, A](self: M[A]) {
+  class DoobieCatchSqlOps[M[_]: Monad: Catchable, A](self: M[A]) {
 
     def attemptSql: M[SQLException \/ A] =
       C.attemptSql(self)
@@ -31,6 +31,25 @@ object catchsql {
     def onSqlException[B](action: M[B]): M[A] =
       C.onSqlException(self)(action)
     
+  }
+
+  trait ToDoobieCatchSqlOps0 {
+
+    /** @group Syntax */
+    implicit def toDoobieCatchSqlOpsUnapply[MA](ma: MA)(
+      implicit M0: Unapply[Monad, MA],
+               C0: Unapply[Catchable, MA]
+    ): DoobieCatchSqlOps[M0.M, M0.A] =
+      new DoobieCatchSqlOps[M0.M, M0.A](M0(ma))(M0.TC, C0.TC.asInstanceOf[Catchable[M0.M]])
+  
+  }
+
+  trait ToDoobieCatchSqlOps extends ToDoobieCatchSqlOps0 {
+  
+    /** @group Syntax */
+    implicit def toDoobieCatchSqlOps[M[_]: Monad: Catchable, A](ma: M[A]): DoobieCatchSqlOps[M, A] =
+      new DoobieCatchSqlOps(ma)
+  
   }
 
 }
