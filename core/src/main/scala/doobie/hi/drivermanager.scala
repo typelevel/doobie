@@ -3,7 +3,7 @@ package doobie.hi
 import doobie.enum.holdability._
 import doobie.enum.transactionisolation._
 
-import doobie.syntax.catchable._
+import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import doobie.free.{ connection => C }
 import doobie.free.{ drivermanager => DM }

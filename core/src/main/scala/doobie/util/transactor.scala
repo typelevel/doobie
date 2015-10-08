@@ -3,7 +3,7 @@ package doobie.util
           
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
 import doobie.hi.connection.ProcessConnectionIOOps
-import doobie.syntax.catchable._
+import doobie.syntax.catchable.ToDoobieCatchableOps._
 import doobie.syntax.process._
 import doobie.util.capture._
 import doobie.util.query._

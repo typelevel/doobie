@@ -1,12 +1,12 @@
 package doobie.syntax
 
-import scalaz.{ Monad, Catchable, \/, -\/, \/- }
+import scalaz.{ Monad, Catchable, \/, -\/, \/-, Unapply }
 import doobie.util.{ catchable => C }
 
 /** Syntax for `Catchable` combinators defined in `util.catchable`. */
 object catchable {
 
-  implicit class DoobieCatchableOps[M[_]: Monad: Catchable, A](self: M[A]) {
+  class DoobieCatchableOps[M[_]: Monad: Catchable, A](self: M[A]) {
 
     def attemptSome[B](handler: PartialFunction[Throwable, B]): M[B \/ A] =
       C.attemptSome(self)(handler)
@@ -24,5 +24,26 @@ object catchable {
       C.ensuring(self)(sequel)
 
   }
+
+  trait ToDoobieCatchableOps0 {
+
+    /** @group Syntax */
+    implicit def toDoobieCatchableOpsUnapply[MA](ma: MA)(
+      implicit M0: Unapply[Monad, MA],
+               C0: Unapply[Catchable, MA]
+    ): DoobieCatchableOps[M0.M, M0.A] =
+      new DoobieCatchableOps[M0.M, M0.A](M0(ma))(M0.TC, C0.TC.asInstanceOf[Catchable[M0.M]])
+
+  }
+
+  trait ToDoobieCatchableOps extends ToDoobieCatchableOps0 {
+
+    /** @group Syntax */
+    implicit def toDoobieCatchableOps[M[_]: Monad: Catchable, A](ma: M[A]): DoobieCatchableOps[M, A] =
+      new DoobieCatchableOps(ma)
+
+  }
+
+  object ToDoobieCatchableOps extends ToDoobieCatchableOps
 
 }
