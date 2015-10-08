@@ -1,6 +1,6 @@
 package doobie.util
 
-import shapeless._, shapeless.test._, shapeless.record._
+import shapeless._, shapeless.test._
 import doobie.imports._
 import org.specs2.mutable.Specification
 
