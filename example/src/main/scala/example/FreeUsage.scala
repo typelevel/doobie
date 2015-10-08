@@ -10,7 +10,7 @@ import doobie.free.{ drivermanager => DM }
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
-import doobie.syntax.catchable._
+import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 // JDBC program using the low-level API
 object FreeUsage {
