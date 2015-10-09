@@ -12,6 +12,8 @@ import scala.reflect.ClassTag
 import scala.Predef._
 
 import scalaz._, Scalaz._
+import shapeless._
+import shapeless.ops.hlist.IsHCons
 
 /** Module defining the lowest level of column mapping. */
 object meta {
@@ -155,7 +157,7 @@ object meta {
         b => -\/((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
         a => \/-((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
   
-  } with MetaInstances {
+  } with LowPriorityImplicits with MetaInstances {
 
     // sorry
     private def reg(m: Meta[_]): Unit = 
@@ -295,6 +297,47 @@ object meta {
     implicit def ArrayTypeAsVectorMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[Vector[A]] =
       ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
 
+    /**
+      * Derive Meta for nullable unary product types.
+      * A - type for which instance is derived
+      * L - HList representation of type A
+      * H - type of the head of L (this is the only type in L)
+      * T - type of the tail of L (unused)
+      * @group Instances
+      */
+    implicit def unaryProductMetaNullable[A >: Null : TypeTag, L <: HList, H >: Null, T <: HList](
+      // representation (L) for type A
+      implicit gen: Generic.Aux[A, L],
+      // head (H) and tail (T) type of representation (L)
+      c: IsHCons.Aux[L, H, T],
+      // Meta instance for the head (the only element in representation)
+      hmeta: Lazy[Meta[H]],
+      // provide evidence that representation (L) and singleton hlist with
+      // the only element of type H are the same type
+      ev: =:=[H :: HNil, L]
+    ): Meta[A] = hmeta.value.nxmap[A](
+      // `from` converts representation L to A, but there is only H here,
+      // but provided evidence `=:=[H :: HNil, L]` we can construct L from H
+      // and A from L (using `from`)
+      h => gen.from(h :: HNil),
+      // `to` converts A to representation L, it's Meta[H], so H is required.
+      // H is just a head of representation
+      a => gen.to(a).head
+    )
+
+  }
+
+  trait LowPriorityImplicits {
+    /**
+      * Same as `unaryProductMetaNullable` for non-nullable unary products
+      * @group Instances
+      */
+    implicit def unaryProductMetaNonNullable[A : TypeTag, L <: HList, H, T <: HList](
+      implicit gen: Generic.Aux[A, L],
+      c: IsHCons.Aux[L, H, T],
+      hmeta: Lazy[Meta[H]],
+      ev: =:=[H :: HNil, L]
+    ): Meta[A] = hmeta.value.xmap[A](h => gen.from(h :: HNil), a => gen.to(a).head)
   }
 
   // Instances for basic types, according to the JDBC spec
