@@ -67,7 +67,14 @@ biggerThan(150000000).quick.run // Let's see them all
 
 So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a proper parameterized `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
 
-**doobie** allows you to interpolate any JVM type that has a target mapping defined by the JDBC spec, plus vendor-specific types and custom column types that you define. We will discuss custom type mappings in a later chapter.
+**doobie** allows you to interpolate values of any type with a `Atom` instance, which includes
+
+- any JVM type that has a target mapping defined by the JDBC specification,
+- vendor-specific types defined by extension packages,
+- custom column types that you define, and
+- single-member products (case classes, typically) of any of the above.
+
+We will discuss custom type mappings in a later chapter.
 
 ### Multiple Parameters
 

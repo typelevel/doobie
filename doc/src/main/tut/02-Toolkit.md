@@ -8,6 +8,12 @@ Before we get into writing **doobie** programs it's worth spending a moment to e
 
 > **doobie** programs are values. You can compose small programs to build larger programs. Once you have constructed a program you wish to run, you interpret it into an effectful target monad of your choice (`Task` or `IO` for example) and drop it into your main application wherever you like.
 
+If you want a slightly longer explanation in video form, you might enjoy this lecture from Scala by the Bay 2015 by the ever-photogenic @tpolecat.
+
+<p class="text-center" style="padding-top: 12pt">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/M5MF6M7FHPo" frameborder="0" allowfullscreen></iframe>
+</p>
+
 ### Nested Programs
 
 **doobie** is a monadic API that provides a number of data types that all work the same way but describe computations in different contexts. For example `ConnectionIO` describes computations that take place in a context where a `java.sql.Connection` is available. Similar data types exist for each major type in `java.sql`. Programs written in these contexts compose naturally via lifting, mirroring the lifecycles of each contexts's carrier type.

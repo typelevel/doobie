@@ -20,7 +20,7 @@ val xa = DriverManagerTransactor[Task](
 )
 ```
 
-We will be playing with the `country` table, shown here for reference.
+We will be playing with the `country` table, shown here for reference. If you don't have the `world` database set up, go back to the [Introduction](01-Introduction.html) for instructions.
 
 ```sql
 CREATE TABLE country (
@@ -48,7 +48,13 @@ For our first query let's aim low and select some country names into a `List`, t
 Let's break this down a bit.
 
 - `sql"select name from country".query[String]` defines a `Query0[String]`, which is a one-column query that maps each returned row to a `String`. We will get to more interesting row types soon.
-- `.list` is a convenience method that streams the results, accumulating them in a `List`, in this case yielding a `ConnectionIO[List[String]]`.
+- `.list` is a convenience method that streams the results, accumulating them in a `List`, in this case yielding a `ConnectionIO[List[String]]`. Similar methods are:
+  - `.vector`, which accumulates to a `Vector`
+  - `.to[Coll]`, which accumulates to a type `Coll`, given an implicit `CanBuildFrom`. This works with Scala standard library collections.
+  - `.accumulate[M[_]: MonadPlus]` which accumulates to a universally quantified monoid `M`. This works with many scalaz collections, as well as standard library collections with `MonadPlus` instances.
+  - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
+  - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
+  - See the Scaladoc for `Query0` for more information on these and other methods.
 - The rest is familar; `transact(xa)` yields a `Task[List[String]]` which we run, giving us a normal Scala `List[String]` that we print out.
 
 This is ok, but there's not much point reading all the results from the database when we only want the first few rows. So let's try a different approach.
@@ -66,7 +72,7 @@ This is ok, but there's not much point reading all the results from the database
 
 The difference here is that `process` gives us a `scalaz.stream.Process[ConnectionIO, String]` which emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
-Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool. For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) site, which has a good list of learning resources. 
+Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool. For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) repo, which has a good list of learning resources. 
 
 
 ### YOLO Mode

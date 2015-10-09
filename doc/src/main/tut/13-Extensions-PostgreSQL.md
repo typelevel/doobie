@@ -231,7 +231,7 @@ val prog: ConnectionIO[Long] =
   pgGetCopyAPI(copyOut(q, Console.out)) // return value is the row count
 ```
 
-See the links above and the source (sorry) for more information on this specialized API.
+See the links above and sample code in the `examples/` project in the **doobie** GitHub repo for more information on this specialized API.
 
 ### Fastpath
 
