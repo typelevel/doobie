@@ -15,12 +15,14 @@ This book is organized cookbook-style: we demonstrate a common task and then exp
 
 This library is designed for people who are interested in typed, pure functional programming. If you are not a [scalaz](https://github.com/scalaz/scalaz) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
-Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) or `#scala` (FreeNode IRC) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book will be updated continuously** to address problems and omissions.
+Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) or `#scala` (FreeNode IRC) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book will is updated for each release** to address problems and omissions.
+
+> Please take a moment to check the banner in the upper-right corner to ensure that you are reading the right version of this book! If not, use the **versions** menu above to select the one you want.
 
 
 ### The Setup
 
-This book is compiled as part of the build using the [tut](https://github.com/tpolecat/tut) tutorial generator, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own; if you copy and paste code samples starting from the top, it will work in your REPL as long as you have the proper setup, described here.
+This book is compiled as part of the build using the [tut](https://github.com/tpolecat/tut) tutorial generator, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own: if you copy and paste code samples starting from the top, it will work in your REPL as long as you have the proper setup, described here.
 
 #### Sample Database Setup
 
@@ -31,8 +33,8 @@ $ curl -O https://raw.githubusercontent.com/tpolecat/doobie/master/world.sql
 $ psql -c 'create user postgres createdb'
 $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
-$ psql -d world -c "create extension postgis" -U postgres
 $ psql -d world -c "create type myenum as enum ('foo', 'bar')" -U postgres
+$ psql -d world -c "create extension postgis" -U postgres
 ```
 
 Skip the last statement if you don't have PostGIS installed. Note that the final `ANALYZE` comand in the import will emit a few errors for system tables. This is expected and is fine. Try a query or two to double-check your setup:
@@ -66,19 +68,14 @@ You can of course change this setup if you like, but you will need to adjust you
 On the Scala side you just need a console with the proper dependencies. A minimal `build.sbt` would look something like this.
 
 ```scala
-scalaVersion := "2.11.4" // also works with 2.10
+scalaVersion := "2.11.7" // also works with 2.10
 
-resolvers ++= Seq(
-  "tpolecat" at "http://dl.bintray.com/tpolecat/maven",
-  "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
-)
-
-lazy val doobieVersion = "0.2.2"
+lazy val doobieVersion = "0.2.3"
 
 libraryDependencies ++= Seq(
-  "org.tpolecat"   %% "doobie-core"               % doobieVersion,
-  "org.tpolecat"   %% "doobie-contrib-postgresql" % doobieVersion,
-  "org.tpolecat"   %% "doobie-contrib-specs2"     % doobieVersion
+  "org.tpolecat" %% "doobie-core"               % doobieVersion,
+  "org.tpolecat" %% "doobie-contrib-postgresql" % doobieVersion,
+  "org.tpolecat" %% "doobie-contrib-specs2"     % doobieVersion
 )
 ```
 
@@ -116,5 +113,5 @@ woozle(nel) // doesn't compile
 
 ### Feedback and Contributions
 
-Feedback of all kinds (especially negative) on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or find and chat with **tpolecat** as mentioned above.
+Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or find and chat with **tpolecat** as mentioned above.
 

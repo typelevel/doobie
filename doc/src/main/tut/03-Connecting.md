@@ -101,7 +101,7 @@ program3a.transact(xa).run
 And of course this composition can continue indefinitely.
 
 ```tut
-List.fill(5)(program3a).sequenceU.transact(xa).run.foreach(println)
+program3a.replicateM(5).transact(xa).run.foreach(println)
 ```
 
 
@@ -135,5 +135,5 @@ Currently scalaz has no typeclass for monads with **effect-capturing unit**, so 
 
 **doobie** provides instances for `Task` and `IO`, and the implementations are simply `delay` and `apply`, respectively.
 
-
+> Note that `scala.concurrent.Future` does **not** have an effect-capturing constructor and thus cannot be used as a target type for **doobie** programs. Although `Future` is very commonly used for side-effecting operations, doing so is not referentially transparent. *`Future` has nothing at all to say about side-effects. It is well-behaved in a functional sense only for pure computations.*
 
