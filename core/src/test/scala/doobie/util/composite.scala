@@ -73,6 +73,33 @@ object compositespec extends Specification {
       true
     }
 
+    "work for specific example from #217" in {
+      trait LocalDateTime
+      implicit val MetaLocalDateTime: Meta[LocalDateTime] = null
+      Composite[
+        Option[String] :: Option[String] :: Option[String] :: Option[LocalDateTime] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] :: 
+        Option[String] :: Option[String] :: Option[LocalDateTime] :: Option[LocalDateTime] :: 
+        Option[LocalDateTime] :: Option[LocalDateTime] :: Option[String] :: Option[String] :: 
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[BigDecimal] :: 
+        Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+        Option[String] :: Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
+        Option[String] :: HNil]
+      true
+    }
+
   }
 
 }
