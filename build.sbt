@@ -33,8 +33,7 @@ lazy val commonSettings = Seq(
       "org.scalacheck" %% "scalacheck"  % "1.11.5" % "test",
       "org.specs2"     %% "specs2-core" % "3.6"    % "test"
     ),
-    resolvers += "bintray/non" at "http://dl.bintray.com/non/maven",
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.5.2")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
 )
 
 lazy val publishSettings = Seq(

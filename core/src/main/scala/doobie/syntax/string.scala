@@ -51,14 +51,14 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =
       new Param[HNil] {
-        val composite = Composite.typeClass.emptyProduct
+        val composite = Composite.emptyProduct
         val placeholders = Nil
       }
 
     /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
     implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]) =
       new Param[H :: T] {
-        val composite = Composite.typeClass.product[H,T](ph.composite, pt.composite)
+        val composite = Composite.product[H,T](ph.composite, pt.composite)
         val placeholders = ph.placeholders ++ pt.placeholders
       }
 

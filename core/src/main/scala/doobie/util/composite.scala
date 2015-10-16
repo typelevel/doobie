@@ -82,32 +82,34 @@ the FAQ in the Book of Doobie for more hints.""")
   // N.B. we're separating this out in order to make the atom ~> composite derivation higher
   // priority than the product ~> composite derivation. So this means if we have an product mapped
   // to a single column, we will get only the atomic mapping, not the multi-column one.
-  trait LowerPriorityComposite extends ProductTypeClassCompanion[Composite] {
+  trait LowerPriorityComposite {
 
-    /** @group Typeclass Instances */
-    object typeClass extends ProductTypeClass[Composite] {
+    implicit def product[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
+      new Composite[H :: T] {
+        val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
+        val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
+        val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
+        val length = H.length + T.length
+        val meta = H.meta ++ T.meta
+      }
 
-      def product[H, T <: HList](H: Composite[H], T: Composite[T]): Composite[H :: T] =
-        new Composite[H :: T] {
-          val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
-          val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
-          val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
-          val length = H.length + T.length
-          val meta = H.meta ++ T.meta
-        }
+    implicit def emptyProduct: Composite[HNil] =
+      new Composite[HNil] {
+        val set = (_: Int, _: HNil) => ().point[PS.PreparedStatementIO]
+        val update = (_: Int, _: HNil) => ().point[RS.ResultSetIO]
+        val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
+        val length = 0
+        val meta = Nil
+      }
 
-      def emptyProduct: Composite[HNil] =
-        new Composite[HNil] {
-          val set = (_: Int, _: HNil) => ().point[PS.PreparedStatementIO]
-          val update = (_: Int, _: HNil) => ().point[RS.ResultSetIO]
-          val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
-          val length = 0
-          val meta = Nil
-        }
-
-      def project[F, G](instance: => Composite[G], to: F => G, from: G => F): Composite[F] =
-        instance.xmap(from, to)
-    }
+    implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] = 
+      new Composite[F] {
+        val set: (Int, F) => PS.PreparedStatementIO[Unit] = (n, f) => G.value.set(n, gen.to(f))
+        val update: (Int, F) => RS.ResultSetIO[Unit] = (n, f) => G.value.update(n, gen.to(f))
+        val unsafeGet: (ResultSet, Int) => F = (rs, n) => gen.from(G.value.unsafeGet(rs, n))
+        val length: Int = G.value.length
+        val meta: List[(Meta[_], NullabilityKnown)] = G.value.meta
+      }
 
   }
 

@@ -52,6 +52,27 @@ object compositespec extends Specification {
       Composite[LenStr2].length must_== 1
     }
 
+    "work for products of ludicrous size (128)" in {
+      Composite[
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: HNil]
+      true
+    }
+
   }
 
 }
