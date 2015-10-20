@@ -208,7 +208,7 @@ PostgreSQL provides a facility for storing very large objects (up to 4TB each) i
 
 **doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.contrib.postgresql.free` package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The `example` project contains a brief usage example.
 
-Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat/doobie) channel if you need to use this API; it will evaolve as use cases demand.
+Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat/doobie) channel if you need to use this API; it will evolve as use cases demand.
 
 ### Copy Manager
 
