@@ -97,7 +97,7 @@ lazy val core = project.in(file("core"))
       "org.scalaz"        %% "scalaz-core"      % "7.1.1",
       "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.7.2a",
-      "com.chuusai"       %% "shapeless"        % "2.2.2",
+      "com.chuusai"       %% "shapeless"        % "2.2.5",
       "com.h2database"    %  "h2"               % "1.3.170" % "test"
     )
   )
