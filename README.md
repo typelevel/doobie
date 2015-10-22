@@ -32,7 +32,7 @@ The current release is **0.2.3**, which works on Scala **2.10.5** and **2.11** w
 
 - scalaz 7.1
 - scalaz-stream 0.7.2a
-- shapeless 2.2.2
+- shapeless 2.2
 
 You should expect minor breaking changes for at least the next few versions, although these will be documented and kept to a minimum. To use **doobie** you need to add the following to your `build.sbt`.
 
