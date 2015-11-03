@@ -54,7 +54,7 @@ Composite[(String,Int)].set(1, ("foo", 42))
 
 **doobie** can derive `Composite` instances for primitive column types, plus tuples, `HList`s, shapeless records, and case classes whose elements have `Composite` instances. These primitive column types are identified by `Atom` instances, which describe `null`-safe column mappings. These `Atom` instances are almost always derived from lower-level `null`-unsafe mappings specified by the `Meta` typeclass.
 
-So our strategy for mapping custom types is to construct a new `Meta` instance (given `Meta[A]` you get `Atom[A]` and `Atom[Option[A]]` for free); and our strategy for multi-column mappings is to construct a new `Composite` instance. We consider both case below.
+So our strategy for mapping custom types is to construct a new `Meta` instance (given `Meta[A]` you get `Atom[A]` and `Atom[Option[A]]` for free); and our strategy for multi-column mappings is to construct a new `Composite` instance. We consider both cases below.
 
 ### Meta by Invariant Map
 
@@ -87,13 +87,19 @@ Because `PersonId` is a case class of primitive column values, we can already ma
 Composite[PersonId].length
 ```
 
-However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires an `Atom` instance), it doesn't compile.
+However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires an `Param` instance), it doesn't compile.
 
-```tut:fail
+```tut:fail:plain
 sql"select * from person where id = $pid"
 ```
 
-According to the error message we need a `Meta[PersonId]` instance. So how do we get one? The simplest way is by basing it on an existing instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
+According to the error message we need a `Param[PersonId :: HNil]` instance which requires a `Meta` instance for each member, which means we need a `Meta[Person]`. 
+
+```tut:fail
+Meta[Person]
+```
+
+... and we don't have one. So how do we get one? The simplest way is by basing it on an existing `Meta` instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
 
 ```tut:silent
 implicit val PersonIdMeta: Meta[PersonId] = 
@@ -126,10 +132,10 @@ implicit val JsonMeta: Meta[Json] =
   )
 ```
 
-Given this mapping to and from `Json` we can construct a *further* mapping to any type that has a `CodecJson` instance. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : CodecJson: TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
+Given this mapping to and from `Json` we can construct a *further* mapping to any type that has a `EncodeJson` and `DecodeJson` instances. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : EncodeJson : DecodeJson : TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
 
 ```tut:silent
-def codecMeta[A >: Null : CodecJson: TypeTag]: Meta[A] =
+def codecMeta[A >: Null : EncodeJson : DecodeJson : TypeTag]: Meta[A] =
   Meta[Json].nxmap[A](
     _.as[A].result.fold(p => sys.error(p._1), identity), 
     _.asJson
