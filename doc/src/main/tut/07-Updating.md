@@ -170,12 +170,32 @@ sql"... $a $b ..."
 Update[(Int, String)]("... ? ? ...").run((a, b))
 ```
 
-By using an `Update` directly we can apply *many* sets of arguments to the same statement, and execute it as a single batch operation, returning the updated rows:
+By using an `Update` directly we can apply *many* sets of arguments to the same statement, and execute it as a single batch operation.
 
 ```tut:silent
 type PersonInfo = (String, Option[Short])
 
-def insertMany(ps: List[PersonInfo]): Process[ConnectionIO, Person] = {
+def insertMany(ps: List[PersonInfo]): ConnectionIO[Int] = {
+  val sql = "insert into person (name, age) values (?, ?)"
+  Update[PersonInfo](sql).updateMany(ps)
+}
+
+// Some rows to insert
+val data = List[PersonInfo](
+  ("Frank", Some(12)), 
+  ("Daddy", None))
+```
+
+Running this program yields the number of updated rows.
+
+```tut
+insertMany(data).quick.run
+```
+
+For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
+
+```tut:silent
+def insertMany2(ps: List[PersonInfo]): Process[ConnectionIO, Person] = {
   val sql = "insert into person (name, age) values (?, ?)"
   Update[PersonInfo](sql).updateManyWithGeneratedKeys[Person]("id", "name", "age")(ps)
 }
@@ -190,9 +210,5 @@ val data = List[PersonInfo](
 Running this program yields the updated instances.
 
 ```tut
-insertMany(data).quick.run
+insertMany2(data).quick.run
 ```
-
-If updated rows are not needed or are unsupported by your database, the `updateMany` operation contstructs a `ConnectionIO[Int]` that performs updates in the same way but simply returns the total number of updated rows.
-
-
