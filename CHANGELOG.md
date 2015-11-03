@@ -31,6 +31,7 @@ Upgrades:
 - Updated to specs2-core 3.6
 - Updated to tut 0.4.0 (build-time dependency only)
 - Updated to sbt 0.13.8 (build-time dependency only)
+- Updated to kind-projector 0.7.1 (build-time dependency only)
 
 ### <a name="0.2.2"></a>New and Noteworthy for Version 0.2.2
 
