@@ -25,7 +25,7 @@ Big Fixes:
 
 Upgrades:
 
-- Updated to Scala 2.10.7
+- Updated to Scala 2.11.7
 - Updated to shapeless 2.2.5
 - Updated to scalaz-stream 0.7.2a
 - Updated to specs2-core 3.6
