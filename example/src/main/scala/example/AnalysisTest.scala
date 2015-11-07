@@ -27,7 +27,7 @@ object AnalysisTest {
 
   def arrayTest = 
     sql"""
-      SELECT ARRAY[1, 2, NULL] test -- should fail
+      SELECT ARRAY[1, 2, NULL] test
     """.query[Option[List[String]]]
 
   def arrayTest2 = 
