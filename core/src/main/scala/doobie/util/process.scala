@@ -4,7 +4,7 @@ import scalaz.{ Applicative, Functor }
 import scalaz.syntax.applicative._
 
 import scalaz.stream.{ Process, Sink, Cause }
-import scalaz.stream.Process.{ await, halt, emit, eval, repeatEval, eval_ }
+import scalaz.stream.Process.{ bracket, repeatEval, eval_ }
 
 /** Additional functions for manipulating `Process` values. */
 object process {
@@ -15,8 +15,8 @@ object process {
 
   /** Generalized `resource` combinator. */
   def resource[F[_]: Functor,R,O](acquire: F[R])(release: R => F[Unit])(step: R => F[Option[O]]): Process[F,O] = 
-    eval(acquire).flatMap { r =>
-      repeatEval(step(r).map(_.getOrElse(throw Cause.Terminated(Cause.End)))).onComplete(eval_(release(r))) 
-    }
+    bracket(acquire)(r => eval_(release(r))) {
+      r => repeatEval(step(r).map(_.getOrElse(throw Cause.Terminated(Cause.End))))
+    } onHalt { _.asHalt }
 
 }

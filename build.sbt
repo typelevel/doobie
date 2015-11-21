@@ -32,7 +32,7 @@ lazy val commonSettings = Seq(
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
       "org.scalacheck" %% "scalacheck"  % "1.11.5" % "test",
-      "org.specs2"     %% "specs2-core" % "3.6"    % "test"
+      "org.specs2"     %% "specs2-core" % "3.6.5"  % "test"
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
 )
@@ -100,9 +100,9 @@ lazy val core = project.in(file("core"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
-      "org.scalaz"        %% "scalaz-core"      % "7.1.1",
-      "org.scalaz"        %% "scalaz-effect"    % "7.1.1",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.7.2a",
+      "org.scalaz"        %% "scalaz-core"      % "7.1.4",
+      "org.scalaz"        %% "scalaz-effect"    % "7.1.4",
+      "org.scalaz.stream" %% "scalaz-stream"    % "0.8",
       "com.chuusai"       %% "shapeless"        % "2.2.5",
       "com.h2database"    %  "h2"               % "1.3.170" % "test"
     )
@@ -212,7 +212,7 @@ lazy val specs2 = project.in(file("contrib/specs2"))
   .settings(name := "doobie-contrib-specs2")
   .settings(description := "Specs2 support for doobie.")
   .settings(doobieSettings ++ publishSettings)
-  .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.6")
+  .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.6.5")
   .dependsOn(core)
 
 lazy val docs = project.in(file("doc"))
