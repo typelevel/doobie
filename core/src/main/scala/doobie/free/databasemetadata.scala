@@ -4,6 +4,7 @@ import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.free.kleislitrans._
 
 import java.lang.Class
 import java.lang.Object
@@ -85,45 +86,20 @@ object databasemetadata {
    */
   object DatabaseMetaDataOp {
     
+    // This algebra has a default interpreter
+    implicit val DatabaseMetaDataKleisliTrans: KleisliTrans.Aux[DatabaseMetaDataOp, DatabaseMetaData] =
+      new KleisliTrans[DatabaseMetaDataOp] {
+        type J = DatabaseMetaData
+        def interpK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
+          new (DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?]) {
+            def apply[A](op: DatabaseMetaDataOp[A]): Kleisli[M, DatabaseMetaData, A] =
+              op.defaultTransK[M]
+          }
+      }
+
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DatabaseMetaDataOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
@@ -491,11 +467,11 @@ object databasemetadata {
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
     }
-    case class  SupportsConvert(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
-    }
-    case object SupportsConvert1 extends DatabaseMetaDataOp[Boolean] {
+    case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
+    }
+    case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
@@ -706,82 +682,11 @@ object databasemetadata {
     }
 
   /**
+   * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def liftBlob[A](s: Blob, k: BlobIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftBlobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCallableStatement[A](s: CallableStatement, k: CallableStatementIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftCallableStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftClob[A](s: Clob, k: ClobIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftConnection[A](s: Connection, k: ConnectionIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftConnectionIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftDriver[A](s: Driver, k: DriverIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftDriverIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftNClob[A](s: NClob, k: NClobIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftNClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftPreparedStatement[A](s: PreparedStatement, k: PreparedStatementIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftPreparedStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftRef[A](s: Ref, k: RefIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftRefIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftResultSet[A](s: ResultSet, k: ResultSetIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftResultSetIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLData[A](s: SQLData, k: SQLDataIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftSQLDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLInput[A](s: SQLInput, k: SQLInputIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftSQLInputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLOutput[A](s: SQLOutput, k: SQLOutputIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftSQLOutputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftStatement[A](s: Statement, k: StatementIO[A]): DatabaseMetaDataIO[A] =
-    F.liftFC(LiftStatementIO(s, k))
+  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DatabaseMetaDataIO[A] =
+    F.liftFC(Lift(j, action, mod))
 
   /** 
    * Lift a DatabaseMetaDataIO[A] into an exception-capturing DatabaseMetaDataIO[Throwable \/ A].
@@ -1509,14 +1414,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsConvert(a, b))
+  val supportsConvert: DatabaseMetaDataIO[Boolean] =
+    F.liftFC(SupportsConvert)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val supportsConvert: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsConvert1)
+  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
+    F.liftFC(SupportsConvert1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1865,30 +1770,21 @@ object databasemetadata {
   * @group Algebra
   */
   def interpK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
-    new (DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?]) {
-      def apply[A](op: DatabaseMetaDataOp[A]): Kleisli[M, DatabaseMetaData, A] =
-        op.defaultTransK[M]
-    }
+   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.interpK
 
  /** 
   * Natural transformation from `DatabaseMetaDataIO` to `Kleisli` for the given `M`, consuming a `java.sql.DatabaseMetaData`. 
   * @group Algebra
   */
   def transK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?] =
-    new (DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?]) {
-      def apply[A](ma: DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] =
-        F.runFC[DatabaseMetaDataOp, Kleisli[M, DatabaseMetaData, ?], A](ma)(interpK[M])
-    }
+   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK
 
  /** 
   * Natural transformation from `DatabaseMetaDataIO` to `M`, given a `java.sql.DatabaseMetaData`. 
   * @group Algebra
   */
  def trans[M[_]: Monad: Catchable: Capture](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
-   new (DatabaseMetaDataIO ~> M) {
-     def apply[A](ma: DatabaseMetaDataIO[A]): M[A] = 
-       transK[M].apply(ma).run(c)
-   }
+   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `DatabaseMetaDataIO`.
@@ -1896,7 +1792,7 @@ object databasemetadata {
    */
   implicit class DatabaseMetaDataIOOps[A](ma: DatabaseMetaDataIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A] =
-      databasemetadata.transK[M].apply(ma)
+      DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
   }
 
 }

@@ -24,7 +24,7 @@ object FreeUsage {
     for {
       _ <- DM.delay(Class.forName("org.h2.Driver"))
       c <- DM.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-      a <- DM.liftConnection(c, examples ensuring C.close).except(t => t.toString.point[DM.DriverManagerIO])
+      a <- DM.lift(c, examples ensuring C.close).except(t => t.toString.point[DM.DriverManagerIO])
       _ <- DM.delay(Console.println(a))
     } yield ()
 
@@ -39,13 +39,13 @@ object FreeUsage {
   def loadDatabase(f: File): C.ConnectionIO[Unit] =
     for {
       ps <- C.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")
-      _  <- C.liftPreparedStatement(ps, (PS.setString(1, f.getName) >> PS.execute) ensuring PS.close)
+      _  <- C.lift(ps, (PS.setString(1, f.getName) >> PS.execute) ensuring PS.close)
     } yield ()
 
   def speakerQuery(s: String, p: Double): C.ConnectionIO[List[CountryCode]] =
     for {
       ps <- C.prepareStatement("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?")
-      l  <- C.liftPreparedStatement(ps, speakerPS(s, p) ensuring PS.close)
+      l  <- C.lift(ps, speakerPS(s, p) ensuring PS.close)
     } yield l
 
   def speakerPS(s: String, p: Double): PS.PreparedStatementIO[List[CountryCode]] =
@@ -53,7 +53,7 @@ object FreeUsage {
       _  <- PS.setString(1, s)
       _  <- PS.setDouble(2, p)
       rs <- PS.executeQuery
-      l  <- PS.liftResultSet(rs, unroll(RS.getString(1).map(CountryCode(_))) ensuring RS.close)
+      l  <- PS.lift(rs, unroll(RS.getString(1).map(CountryCode(_))) ensuring RS.close)
     } yield l
 
   def unroll[A](a: RS.ResultSetIO[A]): RS.ResultSetIO[List[A]] = {

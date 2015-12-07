@@ -36,21 +36,21 @@ object drivermanager {
 
   /** @group Connections */
   def getConnection[A](url: String)(k: ConnectionIO[A]): DriverManagerIO[A] =
-    DM.getConnection(url).flatMap(s => DM.liftConnection(s, k ensuring C.close))
+    DM.getConnection(url).flatMap(s => DM.lift(s, k ensuring C.close))
 
   /** @group Connections */
   def getConnection[A](url: String, user: String, password: String)(k: ConnectionIO[A]): DriverManagerIO[A] =
-    DM.getConnection(url, user, password).flatMap(s => DM.liftConnection(s, k ensuring C.close))
+    DM.getConnection(url, user, password).flatMap(s => DM.lift(s, k ensuring C.close))
 
   /** @group Connections */
   def getConnection[A](url: String, props: Map[String, String])(k: ConnectionIO[A]): DriverManagerIO[A] = {
     val props0 = new java.util.Properties <| (_.putAll(props.asJava))
-    DM.getConnection(url, props0).flatMap(s => DM.liftConnection(s, k ensuring C.close))
+    DM.getConnection(url, props0).flatMap(s => DM.lift(s, k ensuring C.close))
   }
 
   /** @group Drivers */
   def getDriver[A](a: String)(k: DriverIO[A]): DriverManagerIO[A] =
-    DM.getDriver(a).flatMap(s => DM.liftDriver(s, k))
+    DM.getDriver(a).flatMap(s => DM.lift(s, k))
 
   /** @group Drivers */
   def getDrivers[A](k: DriverIO[A]): DriverManagerIO[List[A]] = {
@@ -62,7 +62,7 @@ object drivermanager {
         }
       go(e, Nil)
     }
-    DM.getDrivers.flatMap(ds => enumToList(ds).traverse(DM.liftDriver(_, k)))
+    DM.getDrivers.flatMap(ds => enumToList(ds).traverse(DM.lift(_, k)))
   }
 
   /** @group Properties */

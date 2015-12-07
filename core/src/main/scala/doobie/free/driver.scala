@@ -4,6 +4,7 @@ import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.free.kleislitrans._
 
 import java.lang.String
 import java.sql.Blob
@@ -85,45 +86,20 @@ object driver {
    */
   object DriverOp {
     
+    // This algebra has a default interpreter
+    implicit val DriverKleisliTrans: KleisliTrans.Aux[DriverOp, Driver] =
+      new KleisliTrans[DriverOp] {
+        type J = Driver
+        def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
+          new (DriverOp ~> Kleisli[M, Driver, ?]) {
+            def apply[A](op: DriverOp[A]): Kleisli[M, Driver, A] =
+              op.defaultTransK[M]
+          }
+      }
+
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
@@ -199,82 +175,11 @@ object driver {
     }
 
   /**
+   * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def liftBlob[A](s: Blob, k: BlobIO[A]): DriverIO[A] =
-    F.liftFC(LiftBlobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCallableStatement[A](s: CallableStatement, k: CallableStatementIO[A]): DriverIO[A] =
-    F.liftFC(LiftCallableStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftClob[A](s: Clob, k: ClobIO[A]): DriverIO[A] =
-    F.liftFC(LiftClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftConnection[A](s: Connection, k: ConnectionIO[A]): DriverIO[A] =
-    F.liftFC(LiftConnectionIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftDatabaseMetaData[A](s: DatabaseMetaData, k: DatabaseMetaDataIO[A]): DriverIO[A] =
-    F.liftFC(LiftDatabaseMetaDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftNClob[A](s: NClob, k: NClobIO[A]): DriverIO[A] =
-    F.liftFC(LiftNClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftPreparedStatement[A](s: PreparedStatement, k: PreparedStatementIO[A]): DriverIO[A] =
-    F.liftFC(LiftPreparedStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftRef[A](s: Ref, k: RefIO[A]): DriverIO[A] =
-    F.liftFC(LiftRefIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftResultSet[A](s: ResultSet, k: ResultSetIO[A]): DriverIO[A] =
-    F.liftFC(LiftResultSetIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLData[A](s: SQLData, k: SQLDataIO[A]): DriverIO[A] =
-    F.liftFC(LiftSQLDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLInput[A](s: SQLInput, k: SQLInputIO[A]): DriverIO[A] =
-    F.liftFC(LiftSQLInputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLOutput[A](s: SQLOutput, k: SQLOutputIO[A]): DriverIO[A] =
-    F.liftFC(LiftSQLOutputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftStatement[A](s: Statement, k: StatementIO[A]): DriverIO[A] =
-    F.liftFC(LiftStatementIO(s, k))
+  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverIO[A] =
+    F.liftFC(Lift(j, action, mod))
 
   /** 
    * Lift a DriverIO[A] into an exception-capturing DriverIO[Throwable \/ A].
@@ -344,30 +249,21 @@ object driver {
   * @group Algebra
   */
   def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
-    new (DriverOp ~> Kleisli[M, Driver, ?]) {
-      def apply[A](op: DriverOp[A]): Kleisli[M, Driver, A] =
-        op.defaultTransK[M]
-    }
+   DriverOp.DriverKleisliTrans.interpK
 
  /** 
   * Natural transformation from `DriverIO` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
   * @group Algebra
   */
   def transK[M[_]: Monad: Catchable: Capture]: DriverIO ~> Kleisli[M, Driver, ?] =
-    new (DriverIO ~> Kleisli[M, Driver, ?]) {
-      def apply[A](ma: DriverIO[A]): Kleisli[M, Driver, A] =
-        F.runFC[DriverOp, Kleisli[M, Driver, ?], A](ma)(interpK[M])
-    }
+   DriverOp.DriverKleisliTrans.transK
 
  /** 
   * Natural transformation from `DriverIO` to `M`, given a `java.sql.Driver`. 
   * @group Algebra
   */
  def trans[M[_]: Monad: Catchable: Capture](c: Driver): DriverIO ~> M =
-   new (DriverIO ~> M) {
-     def apply[A](ma: DriverIO[A]): M[A] = 
-       transK[M].apply(ma).run(c)
-   }
+   DriverOp.DriverKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `DriverIO`.
@@ -375,7 +271,7 @@ object driver {
    */
   implicit class DriverIOOps[A](ma: DriverIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A] =
-      driver.transK[M].apply(ma)
+      DriverOp.DriverKleisliTrans.transK[M].apply(ma)
   }
 
 }

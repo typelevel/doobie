@@ -4,6 +4,7 @@ import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.free.kleislitrans._
 
 import java.lang.Class
 import java.lang.Object
@@ -85,45 +86,20 @@ object statement {
    */
   object StatementOp {
     
+    // This algebra has a default interpreter
+    implicit val StatementKleisliTrans: KleisliTrans.Aux[StatementOp, Statement] =
+      new KleisliTrans[StatementOp] {
+        type J = Statement
+        def interpK[M[_]: Monad: Catchable: Capture]: StatementOp ~> Kleisli[M, Statement, ?] =
+          new (StatementOp ~> Kleisli[M, Statement, ?]) {
+            def apply[A](op: StatementOp[A]): Kleisli[M, Statement, A] =
+              op.defaultTransK[M]
+          }
+      }
+
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftConnectionIO[A](s: Connection, action: ConnectionIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends StatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends StatementOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
@@ -158,14 +134,14 @@ object statement {
     case object CloseOnCompletion extends StatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.closeOnCompletion())
     }
-    case class  Execute(a: String) extends StatementOp[Boolean] {
+    case class  Execute(a: String, b: Array[Int]) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    }
+    case class  Execute1(a: String, b: Int) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    }
+    case class  Execute2(a: String) extends StatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
-    }
-    case class  Execute1(a: String, b: Array[Int]) extends StatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
-    }
-    case class  Execute2(a: String, b: Int) extends StatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case class  Execute3(a: String, b: Array[String]) extends StatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
@@ -206,11 +182,11 @@ object statement {
     case object GetMaxRows extends StatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRows())
     }
-    case object GetMoreResults extends StatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
-    }
-    case class  GetMoreResults1(a: Int) extends StatementOp[Boolean] {
+    case class  GetMoreResults(a: Int) extends StatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults(a))
+    }
+    case object GetMoreResults1 extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
     }
     case object GetQueryTimeout extends StatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getQueryTimeout())
@@ -310,82 +286,11 @@ object statement {
     }
 
   /**
+   * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def liftBlob[A](s: Blob, k: BlobIO[A]): StatementIO[A] =
-    F.liftFC(LiftBlobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCallableStatement[A](s: CallableStatement, k: CallableStatementIO[A]): StatementIO[A] =
-    F.liftFC(LiftCallableStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftClob[A](s: Clob, k: ClobIO[A]): StatementIO[A] =
-    F.liftFC(LiftClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftConnection[A](s: Connection, k: ConnectionIO[A]): StatementIO[A] =
-    F.liftFC(LiftConnectionIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftDatabaseMetaData[A](s: DatabaseMetaData, k: DatabaseMetaDataIO[A]): StatementIO[A] =
-    F.liftFC(LiftDatabaseMetaDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftDriver[A](s: Driver, k: DriverIO[A]): StatementIO[A] =
-    F.liftFC(LiftDriverIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftNClob[A](s: NClob, k: NClobIO[A]): StatementIO[A] =
-    F.liftFC(LiftNClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftPreparedStatement[A](s: PreparedStatement, k: PreparedStatementIO[A]): StatementIO[A] =
-    F.liftFC(LiftPreparedStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftRef[A](s: Ref, k: RefIO[A]): StatementIO[A] =
-    F.liftFC(LiftRefIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftResultSet[A](s: ResultSet, k: ResultSetIO[A]): StatementIO[A] =
-    F.liftFC(LiftResultSetIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLData[A](s: SQLData, k: SQLDataIO[A]): StatementIO[A] =
-    F.liftFC(LiftSQLDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLInput[A](s: SQLInput, k: SQLInputIO[A]): StatementIO[A] =
-    F.liftFC(LiftSQLInputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLOutput[A](s: SQLOutput, k: SQLOutputIO[A]): StatementIO[A] =
-    F.liftFC(LiftSQLOutputIO(s, k))
+  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): StatementIO[A] =
+    F.liftFC(Lift(j, action, mod))
 
   /** 
    * Lift a StatementIO[A] into an exception-capturing StatementIO[Throwable \/ A].
@@ -447,20 +352,20 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String): StatementIO[Boolean] =
-    F.liftFC(Execute(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
-    F.liftFC(Execute1(a, b))
+    F.liftFC(Execute(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def execute(a: String, b: Int): StatementIO[Boolean] =
-    F.liftFC(Execute2(a, b))
+    F.liftFC(Execute1(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def execute(a: String): StatementIO[Boolean] =
+    F.liftFC(Execute2(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -543,14 +448,14 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  val getMoreResults: StatementIO[Boolean] =
-    F.liftFC(GetMoreResults)
+  def getMoreResults(a: Int): StatementIO[Boolean] =
+    F.liftFC(GetMoreResults(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getMoreResults(a: Int): StatementIO[Boolean] =
-    F.liftFC(GetMoreResults1(a))
+  val getMoreResults: StatementIO[Boolean] =
+    F.liftFC(GetMoreResults1)
 
   /** 
    * @group Constructors (Primitives)
@@ -677,30 +582,21 @@ object statement {
   * @group Algebra
   */
   def interpK[M[_]: Monad: Catchable: Capture]: StatementOp ~> Kleisli[M, Statement, ?] =
-    new (StatementOp ~> Kleisli[M, Statement, ?]) {
-      def apply[A](op: StatementOp[A]): Kleisli[M, Statement, A] =
-        op.defaultTransK[M]
-    }
+   StatementOp.StatementKleisliTrans.interpK
 
  /** 
   * Natural transformation from `StatementIO` to `Kleisli` for the given `M`, consuming a `java.sql.Statement`. 
   * @group Algebra
   */
   def transK[M[_]: Monad: Catchable: Capture]: StatementIO ~> Kleisli[M, Statement, ?] =
-    new (StatementIO ~> Kleisli[M, Statement, ?]) {
-      def apply[A](ma: StatementIO[A]): Kleisli[M, Statement, A] =
-        F.runFC[StatementOp, Kleisli[M, Statement, ?], A](ma)(interpK[M])
-    }
+   StatementOp.StatementKleisliTrans.transK
 
  /** 
   * Natural transformation from `StatementIO` to `M`, given a `java.sql.Statement`. 
   * @group Algebra
   */
  def trans[M[_]: Monad: Catchable: Capture](c: Statement): StatementIO ~> M =
-   new (StatementIO ~> M) {
-     def apply[A](ma: StatementIO[A]): M[A] = 
-       transK[M].apply(ma).run(c)
-   }
+   StatementOp.StatementKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `StatementIO`.
@@ -708,7 +604,7 @@ object statement {
    */
   implicit class StatementIOOps[A](ma: StatementIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Statement, A] =
-      statement.transK[M].apply(ma)
+      StatementOp.StatementKleisliTrans.transK[M].apply(ma)
   }
 
 }
