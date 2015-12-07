@@ -4,8 +4,8 @@
 # Author: Paul Phillips <paulp@improving.org>
 
 # todo - make this dynamic
-declare -r sbt_release_version="0.13.7"
-declare -r sbt_unreleased_version="0.13.8-M1"
+declare -r sbt_release_version="0.13.9"
+declare -r sbt_unreleased_version="0.13.9"
 declare -r buildProps="project/build.properties"
 
 declare sbt_jar sbt_dir sbt_create sbt_version
@@ -101,12 +101,13 @@ init_default_option_file () {
 
 declare -r cms_opts="-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
 declare -r jit_opts="-XX:ReservedCodeCacheSize=256m -XX:+TieredCompilation"
-declare -r default_jvm_opts_common="-Xms512m -Xmx3g -Xss4m $jit_opts $cms_opts"
+declare -r default_jvm_opts_common="-Xms512m -Xmx1536m -Xss2m $jit_opts $cms_opts"
 declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory=project/.boot -Dsbt.ivy.home=project/.ivy"
 declare -r latest_28="2.8.2"
 declare -r latest_29="2.9.3"
-declare -r latest_210="2.10.4"
-declare -r latest_211="2.11.5"
+declare -r latest_210="2.10.5"
+declare -r latest_211="2.11.7"
+declare -r latest_212="2.12.0-M3"
 
 declare -r script_path="$(get_script_path "$BASH_SOURCE")"
 declare -r script_name="${script_path##*/}"
@@ -115,7 +116,7 @@ declare -r script_name="${script_path##*/}"
 declare java_cmd="java"
 declare sbt_opts_file="$(init_default_option_file SBT_OPTS .sbtopts)"
 declare jvm_opts_file="$(init_default_option_file JVM_OPTS .jvmopts)"
-declare sbt_launch_repo="http://typesafe.artifactoryonline.com/typesafe/ivy-releases"
+declare sbt_launch_repo="http://repo.typesafe.com/typesafe/ivy-releases"
 
 # pull -J and -D options to give to java.
 declare -a residual_args
@@ -128,11 +129,11 @@ declare -a extra_jvm_opts extra_sbt_opts
 
 addJava () {
   vlog "[addJava] arg = '$1'"
-  java_args=( "${java_args[@]}" "$1" )
+  java_args+=("$1")
 }
 addSbt () {
   vlog "[addSbt] arg = '$1'"
-  sbt_commands=( "${sbt_commands[@]}" "$1" )
+  sbt_commands+=("$1")
 }
 setThisBuild () {
   vlog "[addBuild] args = '$@'"
@@ -141,11 +142,11 @@ setThisBuild () {
 }
 addScalac () {
   vlog "[addScalac] arg = '$1'"
-  scalac_args=( "${scalac_args[@]}" "$1" )
+  scalac_args+=("$1")
 }
 addResidual () {
   vlog "[residual] arg = '$1'"
-  residual_args=( "${residual_args[@]}" "$1" )
+  residual_args+=("$1")
 }
 addResolver () {
   addSbt "set resolvers += $1"
@@ -166,11 +167,9 @@ setJavaHome () {
   export PATH="$JAVA_HOME/bin:$PATH"
 }
 setJavaHomeQuietly () {
-  java_cmd="$1/bin/java"
-  addSbt ";warn ;set javaHome in ThisBuild := Some(file(\"$1\")) ;info"
-  export JAVA_HOME="$1"
-  export JDK_HOME="$1"
-  export PATH="$JAVA_HOME/bin:$PATH"
+  addSbt warn
+  setJavaHome "$1"
+  addSbt info
 }
 
 # if set, use JDK_HOME/JAVA_HOME over java found in path
@@ -186,7 +185,7 @@ declare sbt_launch_dir="$HOME/.sbt/launchers"
 [[ -w "$sbt_launch_dir" ]] || sbt_launch_dir="$(mktemp -d -t sbt_extras_launchers.XXXXXX)"
 
 java_version () {
-  local version=$("$java_cmd" -version 2>&1 | grep -e 'java version' | awk '{ print $3 }' | tr -d \")
+  local version=$("$java_cmd" -version 2>&1 | grep -E -e '(java|openjdk) version' | awk '{ print $3 }' | tr -d \")
   vlog "Detected Java version: $version"
   echo "${version:2:1}"
 }
@@ -246,7 +245,7 @@ download_url () {
 
   mkdir -p "${jar%/*}" && {
     if which curl >/dev/null; then
-      curl --fail --silent "$url" --output "$jar"
+      curl --fail --silent --location "$url" --output "$jar"
     elif which wget >/dev/null; then
       wget --quiet -O "$jar" "$url"
     fi
@@ -305,6 +304,7 @@ runner with the -x option.
   -29                       use $latest_29
   -210                      use $latest_210
   -211                      use $latest_211
+  -212                      use $latest_212
   -scala-home <path>        use the scala build at the specified directory
   -scala-version <version>  use the specified version of scala
   -binary-version <version> use the specified scala version when searching for dependencies
@@ -383,6 +383,7 @@ process_args ()
                -29) setScalaVersion "$latest_29" && shift ;;
               -210) setScalaVersion "$latest_210" && shift ;;
               -211) setScalaVersion "$latest_211" && shift ;;
+              -212) setScalaVersion "$latest_212" && shift ;;
 
            --debug) addSbt debug && addResidual "$1" && shift ;;
             --warn) addSbt warn  && addResidual "$1" && shift ;;
