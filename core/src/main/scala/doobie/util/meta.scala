@@ -252,14 +252,14 @@ object meta {
         (n, a) =>
           for {
             conn <- PS.getConnection
-            arr  <- PS.liftConnection(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
+            arr  <- PS.lift(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
             _    <- PS.setArray(n, arr)
           } yield (),
         (n, a) => 
           for {
             stmt <- RS.getStatement // somewhat irritating; no getConnection on ResultSet
-            conn <- RS.liftStatement(stmt, S.getConnection)
-            arr  <- RS.liftConnection(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
+            conn <- RS.lift(stmt, S.getConnection)
+            arr  <- RS.lift(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
             _    <- RS.updateArray(n, arr)
           } yield ()
         )

@@ -60,8 +60,8 @@ object preparedstatement {
   /** @group Execution */
   def process[A: Composite]: Process[PreparedStatementIO, A] =
     resource(PS.executeQuery)(rs =>
-             PS.liftResultSet(rs, RS.close))(rs => 
-             PS.liftResultSet(rs, resultset.getNext[A]))
+             PS.lift(rs, RS.close))(rs => 
+             PS.lift(rs, resultset.getNext[A]))
 
   /**
    * Non-strict unit for capturing effects.
@@ -94,7 +94,7 @@ object preparedstatement {
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.executeQuery.flatMap(s => PS.liftResultSet(s, k ensuring RS.close))
+    PS.executeQuery.flatMap(s => PS.lift(s, k ensuring RS.close))
 
   /** @group Execution */
   val executeUpdate: PreparedStatementIO[Int] =
@@ -107,8 +107,8 @@ object preparedstatement {
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite]: Process[PreparedStatementIO, A] =
     resource(PS.executeUpdate.flatMap(_ => PS.getGeneratedKeys) : PreparedStatementIO[java.sql.ResultSet])(rs =>
-             PS.liftResultSet(rs, RS.close))(rs =>
-             PS.liftResultSet(rs, resultset.getNext[A]))
+             PS.lift(rs, RS.close))(rs =>
+             PS.lift(rs, resultset.getNext[A]))
 
   /** 
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
@@ -143,7 +143,7 @@ object preparedstatement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.getGeneratedKeys.flatMap(s => PS.liftResultSet(s, k ensuring RS.close))
+    PS.getGeneratedKeys.flatMap(s => PS.lift(s, k ensuring RS.close))
 
   /** @group Results */
   def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =

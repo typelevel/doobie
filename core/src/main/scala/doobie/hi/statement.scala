@@ -53,7 +53,7 @@ object statement {
 
   /** @group Execution */
   def executeQuery[A](sql: String)(k: ResultSetIO[A]): StatementIO[A] =
-    S.executeQuery(sql).flatMap(s => S.liftResultSet(s, k ensuring RS.close))
+    S.executeQuery(sql).flatMap(s => S.lift(s, k ensuring RS.close))
 
   /** @group Execution */
   def executeUpdate(sql: String): StatementIO[Int] =
@@ -69,7 +69,7 @@ object statement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): StatementIO[A] =
-    S.getGeneratedKeys.flatMap(s => S.liftResultSet(s, k ensuring RS.close))
+    S.getGeneratedKeys.flatMap(s => S.lift(s, k ensuring RS.close))
 
   /** @group Properties */
   val getMaxFieldSize: StatementIO[Int] =
@@ -93,7 +93,7 @@ object statement {
 
   /** @group Batching */
   def getResultSet[A](k: ResultSetIO[A]): StatementIO[A] =
-    S.getResultSet.flatMap(s => S.liftResultSet(s, k))
+    S.getResultSet.flatMap(s => S.lift(s, k))
 
   /** @group Properties */
   val getResultSetConcurrency: StatementIO[ResultSetConcurrency] =

@@ -4,6 +4,7 @@ import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.free.kleislitrans._
 
 import java.io.PrintStream
 import java.io.PrintWriter
@@ -35,8 +36,7 @@ object drivermanager {
   object DriverManagerOp {
     
     // Lifting
-    case class LiftConnection[A](s: Connection, a: ConnectionIO[A]) extends DriverManagerOp[A]
-    case class LiftDriver[A](s: Driver, a: DriverIO[A]) extends DriverManagerOp[A]
+    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverManagerOp[A]
 
     // Combinators
     case class Attempt[A](action: DriverManagerIO[A]) extends DriverManagerOp[Throwable \/ A]
@@ -85,11 +85,12 @@ object drivermanager {
       def fail[A](err: Throwable): DriverManagerIO[A] = drivermanager.delay(throw err)
     }
 
-  def liftConnection[A](s: Connection, a: ConnectionIO[A]): DriverManagerIO[A] =
-    F.liftFC(LiftConnection(s, a))
-
-  def liftDriver[A](s: Driver, a: DriverIO[A]): DriverManagerIO[A] =
-    F.liftFC(LiftDriver(s, a))
+  /**
+   * Lift a different type of program that has a default Kleisli interpreter.
+   * @group Constructors (Lifting)
+   */
+  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverManagerIO[A] =
+    F.liftFC(Lift(j, action, mod))
 
   /** 
    * Lift a DriverManagerIO[A] into an exception-capturing DriverManagerIO[Throwable \/ A].
@@ -203,8 +204,7 @@ object drivermanager {
        op match {
 
         // Lifting
-        case LiftConnection(s, a) => a.transK[M].run(s)
-        case LiftDriver(s, a) => a.transK[M].run(s)
+        case Lift(s, a, mod) => mod.transK[M].apply(a).run(s)
 
         // Combinators
         case Pure(a) => L.apply(a())
