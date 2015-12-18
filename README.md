@@ -26,6 +26,8 @@ scala> find("France").transact(xa).unsafePerformIO
 res0: Option[Country] = Some(Country(FRA,France,59225700))
 ```
 
+**doobie** is a [Typelevel](http://typelevel.org/) project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Typelevel [Code of Conduct](http://typelevel.org/conduct.html).
+
 ## Quick Start
 
 The current release is **0.2.3**, which works on Scala **2.10.5** and **2.11** with
