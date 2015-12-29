@@ -1,9 +1,12 @@
 package doobie.free
 
 import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.syntax.catchable._
+import scalaz.syntax.monad._
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.util.trace.{ Trace, TraceOp }
 import doobie.free.kleislitrans._
 
 import java.lang.String
@@ -73,10 +76,23 @@ object driver {
    * Sum type of primitive operations over a `java.sql.Driver`.
    * @group Algebra 
    */
-  sealed trait DriverOp[A] {
+  sealed trait DriverOp[A] extends TraceOp[Driver, A] {
+ 
     protected def primitive[M[_]: Monad: Capture](f: Driver => A): Kleisli[M, Driver, A] = 
       Kleisli((s: Driver) => Capture[M].apply(f(s)))
+
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A]
+
+    def defaultTransKL[M[_]: Monad: Catchable: Capture]: Kleisli[M, (Trace[M], Driver), A] =
+      Kleisli { case (log, c) =>
+        for {
+          k <- log.log(c, this)
+          x <- defaultTransK[M].attempt.run(c)
+          _ <- k(x)
+          a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+        } yield a
+      }
+
   }
 
   /** 
@@ -90,24 +106,63 @@ object driver {
     implicit val DriverKleisliTrans: KleisliTrans.Aux[DriverOp, Driver] =
       new KleisliTrans[DriverOp] {
         type J = Driver
+
         def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
           new (DriverOp ~> Kleisli[M, Driver, ?]) {
             def apply[A](op: DriverOp[A]): Kleisli[M, Driver, A] =
               op.defaultTransK[M]
           }
+
+        def interpKL[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, (Trace[M], Driver), ?] =
+          new (DriverOp ~> Kleisli[M, (Trace[M], Driver), ?]) {
+            def apply[A](op: DriverOp[A]): Kleisli[M, (Trace[M], Driver), A] =
+              op.defaultTransKL[M]
+          }
+
       }
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+  
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Kleisli(_ => mod.transK[M].apply(action).run(j))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- mod.transKL[M].apply(action).attempt.run((log, j))
+            _ <- k(x)
+            a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+          } yield a
+        }
+
     }
 
     // Combinators
     case class Attempt[A](action: DriverIO[A]) extends DriverOp[Throwable \/ A] {
       import scalaz._, Scalaz._
+
       def defaultTransK[M[_]: Monad: Catchable: Capture] = 
-        Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
+        Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].attempt(DriverKleisliTrans.transK[M].apply(action))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- Predef.implicitly[Catchable[Kleisli[M, (Trace[M], Driver), ?]]].attempt(DriverKleisliTrans.transKL[M].apply(action)).run((log, c))
+            _ <- k(\/-(x))
+         } yield x
+       }
+
     }
+
+    case class Fail[A](t: Throwable) extends DriverOp[A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].fail[A](t)
+    }
+
     case class Pure[A](a: () => A) extends DriverOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
@@ -162,7 +217,7 @@ object driver {
   implicit val CatchableDriverIO: Catchable[DriverIO] =
     new Catchable[DriverIO] {
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
-      def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
+      def fail[A](err: Throwable): DriverIO[A] = driver.fail(err)
     }
 
   /**
@@ -187,6 +242,9 @@ object driver {
    */
   def attempt[A](a: DriverIO[A]): DriverIO[Throwable \/ A] =
     F.liftFC[DriverOp, Throwable \/ A](Attempt(a))
+ 
+  def fail[A](t: Throwable): DriverIO[A] =
+    F.liftFC(Fail(t))
  
   /**
    * Non-strict unit for capturing effects.
@@ -243,36 +301,6 @@ object driver {
    */
   val jdbcCompliant: DriverIO[Boolean] =
     F.liftFC(JdbcCompliant)
-
- /** 
-  * Natural transformation from `DriverOp` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
-  * @group Algebra
-  */
-  def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
-   DriverOp.DriverKleisliTrans.interpK
-
- /** 
-  * Natural transformation from `DriverIO` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
-  * @group Algebra
-  */
-  def transK[M[_]: Monad: Catchable: Capture]: DriverIO ~> Kleisli[M, Driver, ?] =
-   DriverOp.DriverKleisliTrans.transK
-
- /** 
-  * Natural transformation from `DriverIO` to `M`, given a `java.sql.Driver`. 
-  * @group Algebra
-  */
- def trans[M[_]: Monad: Catchable: Capture](c: Driver): DriverIO ~> M =
-   DriverOp.DriverKleisliTrans.trans[M](c)
-
-  /**
-   * Syntax for `DriverIO`.
-   * @group Algebra
-   */
-  implicit class DriverIOOps[A](ma: DriverIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A] =
-      DriverOp.DriverKleisliTrans.transK[M].apply(ma)
-  }
 
 }
 

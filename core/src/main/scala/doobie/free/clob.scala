@@ -1,9 +1,12 @@
 package doobie.free
 
 import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.syntax.catchable._
+import scalaz.syntax.monad._
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.util.trace.{ Trace, TraceOp }
 import doobie.free.kleislitrans._
 
 import java.io.InputStream
@@ -74,10 +77,23 @@ object clob {
    * Sum type of primitive operations over a `java.sql.Clob`.
    * @group Algebra 
    */
-  sealed trait ClobOp[A] {
+  sealed trait ClobOp[A] extends TraceOp[Clob, A] {
+ 
     protected def primitive[M[_]: Monad: Capture](f: Clob => A): Kleisli[M, Clob, A] = 
       Kleisli((s: Clob) => Capture[M].apply(f(s)))
+
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Clob, A]
+
+    def defaultTransKL[M[_]: Monad: Catchable: Capture]: Kleisli[M, (Trace[M], Clob), A] =
+      Kleisli { case (log, c) =>
+        for {
+          k <- log.log(c, this)
+          x <- defaultTransK[M].attempt.run(c)
+          _ <- k(x)
+          a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+        } yield a
+      }
+
   }
 
   /** 
@@ -91,24 +107,63 @@ object clob {
     implicit val ClobKleisliTrans: KleisliTrans.Aux[ClobOp, Clob] =
       new KleisliTrans[ClobOp] {
         type J = Clob
+
         def interpK[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, Clob, ?] =
           new (ClobOp ~> Kleisli[M, Clob, ?]) {
             def apply[A](op: ClobOp[A]): Kleisli[M, Clob, A] =
               op.defaultTransK[M]
           }
+
+        def interpKL[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, (Trace[M], Clob), ?] =
+          new (ClobOp ~> Kleisli[M, (Trace[M], Clob), ?]) {
+            def apply[A](op: ClobOp[A]): Kleisli[M, (Trace[M], Clob), A] =
+              op.defaultTransKL[M]
+          }
+
       }
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ClobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+  
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Kleisli(_ => mod.transK[M].apply(action).run(j))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- mod.transKL[M].apply(action).attempt.run((log, j))
+            _ <- k(x)
+            a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+          } yield a
+        }
+
     }
 
     // Combinators
     case class Attempt[A](action: ClobIO[A]) extends ClobOp[Throwable \/ A] {
       import scalaz._, Scalaz._
+
       def defaultTransK[M[_]: Monad: Catchable: Capture] = 
-        Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].attempt(action.transK[M])
+        Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].attempt(ClobKleisliTrans.transK[M].apply(action))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- Predef.implicitly[Catchable[Kleisli[M, (Trace[M], Clob), ?]]].attempt(ClobKleisliTrans.transKL[M].apply(action)).run((log, c))
+            _ <- k(\/-(x))
+         } yield x
+       }
+
     }
+
+    case class Fail[A](t: Throwable) extends ClobOp[A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].fail[A](t)
+    }
+
     case class Pure[A](a: () => A) extends ClobOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
@@ -181,7 +236,7 @@ object clob {
   implicit val CatchableClobIO: Catchable[ClobIO] =
     new Catchable[ClobIO] {
       def attempt[A](f: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(f)
-      def fail[A](err: Throwable): ClobIO[A] = clob.delay(throw err)
+      def fail[A](err: Throwable): ClobIO[A] = clob.fail(err)
     }
 
   /**
@@ -206,6 +261,9 @@ object clob {
    */
   def attempt[A](a: ClobIO[A]): ClobIO[Throwable \/ A] =
     F.liftFC[ClobOp, Throwable \/ A](Attempt(a))
+ 
+  def fail[A](t: Throwable): ClobIO[A] =
+    F.liftFC(Fail(t))
  
   /**
    * Non-strict unit for capturing effects.
@@ -298,36 +356,6 @@ object clob {
    */
   def truncate(a: Long): ClobIO[Unit] =
     F.liftFC(Truncate(a))
-
- /** 
-  * Natural transformation from `ClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Clob`. 
-  * @group Algebra
-  */
-  def interpK[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, Clob, ?] =
-   ClobOp.ClobKleisliTrans.interpK
-
- /** 
-  * Natural transformation from `ClobIO` to `Kleisli` for the given `M`, consuming a `java.sql.Clob`. 
-  * @group Algebra
-  */
-  def transK[M[_]: Monad: Catchable: Capture]: ClobIO ~> Kleisli[M, Clob, ?] =
-   ClobOp.ClobKleisliTrans.transK
-
- /** 
-  * Natural transformation from `ClobIO` to `M`, given a `java.sql.Clob`. 
-  * @group Algebra
-  */
- def trans[M[_]: Monad: Catchable: Capture](c: Clob): ClobIO ~> M =
-   ClobOp.ClobKleisliTrans.trans[M](c)
-
-  /**
-   * Syntax for `ClobIO`.
-   * @group Algebra
-   */
-  implicit class ClobIOOps[A](ma: ClobIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Clob, A] =
-      ClobOp.ClobKleisliTrans.transK[M].apply(ma)
-  }
 
 }
 

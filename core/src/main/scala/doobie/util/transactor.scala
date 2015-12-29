@@ -8,7 +8,9 @@ import doobie.syntax.process._
 import doobie.util.capture._
 import doobie.util.query._
 import doobie.util.update._
+import doobie.util.trace._
 import doobie.util.yolo._
+import doobie.free.kleislitrans._
 
 import scalaz.syntax.monad._
 import scalaz.stream.Process
@@ -65,9 +67,21 @@ object transactor {
         (before *> ma <* after) onException oops ensuring always
 
       def apply[A](ma: ConnectionIO[A]) = 
-        connect >>= safe(ma).transK[M]
+        connect >>= safe(ma).newTransK[M]
 
     }
+
+    /** Natural transformation to target monad `M`. */
+    def transL(t: Trace[M]): ConnectionIO ~> M =
+      new (ConnectionIO ~> M) {
+  
+        private def safe[A](ma: ConnectionIO[A]): ConnectionIO[A] =
+          (before *> ma <* after) onException oops ensuring always
+
+        def apply[A](ma: ConnectionIO[A]) = 
+          connect >>= (c => safe(ma).newTransKL[M].apply((t, c)))
+
+      }
 
     /** Natural transformation to an equivalent process over target monad `M`. */
     object transP extends (({ type l[a] = Process[ConnectionIO, a] })#l ~> ({ type l[a] = Process[M, a] })#l) {

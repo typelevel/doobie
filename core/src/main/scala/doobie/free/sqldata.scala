@@ -1,9 +1,12 @@
 package doobie.free
 
 import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.syntax.catchable._
+import scalaz.syntax.monad._
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.util.trace.{ Trace, TraceOp }
 import doobie.free.kleislitrans._
 
 import java.lang.String
@@ -70,10 +73,23 @@ object sqldata {
    * Sum type of primitive operations over a `java.sql.SQLData`.
    * @group Algebra 
    */
-  sealed trait SQLDataOp[A] {
+  sealed trait SQLDataOp[A] extends TraceOp[SQLData, A] {
+ 
     protected def primitive[M[_]: Monad: Capture](f: SQLData => A): Kleisli[M, SQLData, A] = 
       Kleisli((s: SQLData) => Capture[M].apply(f(s)))
+
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLData, A]
+
+    def defaultTransKL[M[_]: Monad: Catchable: Capture]: Kleisli[M, (Trace[M], SQLData), A] =
+      Kleisli { case (log, c) =>
+        for {
+          k <- log.log(c, this)
+          x <- defaultTransK[M].attempt.run(c)
+          _ <- k(x)
+          a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+        } yield a
+      }
+
   }
 
   /** 
@@ -87,24 +103,63 @@ object sqldata {
     implicit val SQLDataKleisliTrans: KleisliTrans.Aux[SQLDataOp, SQLData] =
       new KleisliTrans[SQLDataOp] {
         type J = SQLData
+
         def interpK[M[_]: Monad: Catchable: Capture]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
           new (SQLDataOp ~> Kleisli[M, SQLData, ?]) {
             def apply[A](op: SQLDataOp[A]): Kleisli[M, SQLData, A] =
               op.defaultTransK[M]
           }
+
+        def interpKL[M[_]: Monad: Catchable: Capture]: SQLDataOp ~> Kleisli[M, (Trace[M], SQLData), ?] =
+          new (SQLDataOp ~> Kleisli[M, (Trace[M], SQLData), ?]) {
+            def apply[A](op: SQLDataOp[A]): Kleisli[M, (Trace[M], SQLData), A] =
+              op.defaultTransKL[M]
+          }
+
       }
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+  
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Kleisli(_ => mod.transK[M].apply(action).run(j))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- mod.transKL[M].apply(action).attempt.run((log, j))
+            _ <- k(x)
+            a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+          } yield a
+        }
+
     }
 
     // Combinators
     case class Attempt[A](action: SQLDataIO[A]) extends SQLDataOp[Throwable \/ A] {
       import scalaz._, Scalaz._
+
       def defaultTransK[M[_]: Monad: Catchable: Capture] = 
-        Predef.implicitly[Catchable[Kleisli[M, SQLData, ?]]].attempt(action.transK[M])
+        Predef.implicitly[Catchable[Kleisli[M, SQLData, ?]]].attempt(SQLDataKleisliTrans.transK[M].apply(action))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- Predef.implicitly[Catchable[Kleisli[M, (Trace[M], SQLData), ?]]].attempt(SQLDataKleisliTrans.transKL[M].apply(action)).run((log, c))
+            _ <- k(\/-(x))
+         } yield x
+       }
+
     }
+
+    case class Fail[A](t: Throwable) extends SQLDataOp[A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, SQLData, ?]]].fail[A](t)
+    }
+
     case class Pure[A](a: () => A) extends SQLDataOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
@@ -147,7 +202,7 @@ object sqldata {
   implicit val CatchableSQLDataIO: Catchable[SQLDataIO] =
     new Catchable[SQLDataIO] {
       def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
-      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.delay(throw err)
+      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.fail(err)
     }
 
   /**
@@ -172,6 +227,9 @@ object sqldata {
    */
   def attempt[A](a: SQLDataIO[A]): SQLDataIO[Throwable \/ A] =
     F.liftFC[SQLDataOp, Throwable \/ A](Attempt(a))
+ 
+  def fail[A](t: Throwable): SQLDataIO[A] =
+    F.liftFC(Fail(t))
  
   /**
    * Non-strict unit for capturing effects.
@@ -204,36 +262,6 @@ object sqldata {
    */
   def writeSQL(a: SQLOutput): SQLDataIO[Unit] =
     F.liftFC(WriteSQL(a))
-
- /** 
-  * Natural transformation from `SQLDataOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLData`. 
-  * @group Algebra
-  */
-  def interpK[M[_]: Monad: Catchable: Capture]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
-   SQLDataOp.SQLDataKleisliTrans.interpK
-
- /** 
-  * Natural transformation from `SQLDataIO` to `Kleisli` for the given `M`, consuming a `java.sql.SQLData`. 
-  * @group Algebra
-  */
-  def transK[M[_]: Monad: Catchable: Capture]: SQLDataIO ~> Kleisli[M, SQLData, ?] =
-   SQLDataOp.SQLDataKleisliTrans.transK
-
- /** 
-  * Natural transformation from `SQLDataIO` to `M`, given a `java.sql.SQLData`. 
-  * @group Algebra
-  */
- def trans[M[_]: Monad: Catchable: Capture](c: SQLData): SQLDataIO ~> M =
-   SQLDataOp.SQLDataKleisliTrans.trans[M](c)
-
-  /**
-   * Syntax for `SQLDataIO`.
-   * @group Algebra
-   */
-  implicit class SQLDataIOOps[A](ma: SQLDataIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLData, A] =
-      SQLDataOp.SQLDataKleisliTrans.transK[M].apply(ma)
-  }
 
 }
 
