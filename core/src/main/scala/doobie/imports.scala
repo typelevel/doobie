@@ -126,7 +126,7 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
    * Free monad derivation with correct shape to derive an instance for `Free[Coyoneda[F, ?], ?]`.
    * @group Hacks
    */
-  implicit def freeMonadC[FT[_[_], _], F[_]](implicit ev: Functor[FT[F, ?]]) =
+  implicit def freeMonadC[FT[_[_], _], F[_]](implicit ev: Functor[FT[F, ?]]): Monad[Free[FT[F,?], ?]] =
     Free.freeMonad[FT[F,?]]
 
   /**
