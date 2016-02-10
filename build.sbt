@@ -40,6 +40,7 @@ lazy val commonSettings = Seq(
 lazy val publishSettings = osgiSettings ++ Seq(
   exportPackage := Seq("doobie.*"),
   privatePackage := Seq(),
+  dynamicImportPackage := Seq("*"),
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
