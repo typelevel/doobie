@@ -1,6 +1,7 @@
 import UnidocKeys._
 import FreeGen._
 import ReleaseTransformations._
+import OsgiKeys._
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
@@ -36,7 +37,10 @@ lazy val commonSettings = Seq(
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
 )
 
-lazy val publishSettings = Seq(
+lazy val publishSettings = osgiSettings ++ Seq(
+  exportPackage := Seq("doobie.*"),
+  privatePackage := Seq(),
+  dynamicImportPackage := Seq("*"),
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -89,6 +93,7 @@ lazy val doobie = project.in(file("."))
   .aggregate(core, example, postgres, h2, hikari, specs2, docs, bench)
 
 lazy val core = project.in(file("core"))
+  .enablePlugins(SbtOsgi)
   .settings(name := "doobie-core")
   .settings(description := "Pure functional JDBC layer for Scala.")
   .settings(doobieSettings ++ publishSettings)
@@ -161,6 +166,7 @@ lazy val example = project.in(file("example"))
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val postgres = project.in(file("contrib/postgresql"))
+  .enablePlugins(SbtOsgi)
   .settings(name := "doobie-contrib-postgresql")
   .settings(description := "PostgreSQL support for doobie.")
   .settings(doobieSettings ++ publishSettings)
@@ -186,6 +192,7 @@ lazy val postgres = project.in(file("contrib/postgresql"))
   .dependsOn(core)
 
 lazy val h2 = project.in(file("contrib/h2"))
+  .enablePlugins(SbtOsgi)
   .settings(name := "doobie-contrib-h2")
   .settings(description := "H2 support for doobie.")
   .settings(doobieSettings ++ publishSettings)
@@ -193,6 +200,7 @@ lazy val h2 = project.in(file("contrib/h2"))
   .dependsOn(core)
 
 lazy val hikari = project.in(file("contrib/hikari"))
+  .enablePlugins(SbtOsgi)
   .settings(name := "doobie-contrib-hikari")
   .settings(description := "Hikari support for doobie.")
   .settings(doobieSettings ++ publishSettings)
@@ -200,6 +208,7 @@ lazy val hikari = project.in(file("contrib/hikari"))
   .dependsOn(core)
 
 lazy val specs2 = project.in(file("contrib/specs2"))
+  .enablePlugins(SbtOsgi)
   .settings(name := "doobie-contrib-specs2")
   .settings(description := "Specs2 support for doobie.")
   .settings(doobieSettings ++ publishSettings)
