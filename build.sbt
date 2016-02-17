@@ -240,14 +240,7 @@ lazy val docs = project.in(file("doc"))
       }
     }
   )
-  .settings(
-    // Temporarily depends on argonaut snapshot to compile tut
-    resolvers += Resolver.sonatypeRepo("snapshots"),
-    libraryDependencies ++= Seq(
-      "io.argonaut" %% "argonaut" % "6.2-SNAPSHOT" changing(),
-      "io.argonaut" %% "argonaut-scalaz" % "6.2-SNAPSHOT" changing()
-    )
-  )
+  .settings(libraryDependencies += "io.argonaut" %% "argonaut" % "6.1")
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val bench = project.in(file("bench"))
