@@ -48,7 +48,7 @@ import resultset.ResultSetIO
  *
  * `DriverIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `DriverOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Driver, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 

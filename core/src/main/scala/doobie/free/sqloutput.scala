@@ -8,7 +8,6 @@ import doobie.free.kleislitrans._
 
 import java.io.InputStream
 import java.io.Reader
-import java.lang.Object
 import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
@@ -27,7 +26,6 @@ import java.sql.RowId
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
-import java.sql.SQLType
 import java.sql.SQLXML
 import java.sql.Statement
 import java.sql.Struct
@@ -58,7 +56,7 @@ import resultset.ResultSetIO
  *
  * `SQLOutputIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `SQLOutputOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, SQLOutput, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -179,9 +177,6 @@ object sqloutput {
     }
     case class  WriteObject(a: SQLData) extends SQLOutputOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
-    }
-    case class  WriteObject1(a: Object, b: SQLType) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a, b))
     }
     case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeRef(a))
@@ -375,12 +370,6 @@ object sqloutput {
    */
   def writeObject(a: SQLData): SQLOutputIO[Unit] =
     F.liftF(WriteObject(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def writeObject(a: Object, b: SQLType): SQLOutputIO[Unit] =
-    F.liftF(WriteObject1(a, b))
 
   /** 
    * @group Constructors (Primitives)

@@ -47,7 +47,7 @@ import resultset.ResultSetIO
  *
  * `RefIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `RefOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Ref, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 

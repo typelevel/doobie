@@ -8,7 +8,6 @@ import doobie.free.kleislitrans._
 
 import java.io.InputStream
 import java.io.Reader
-import java.lang.Class
 import java.lang.Object
 import java.lang.String
 import java.math.BigDecimal
@@ -57,7 +56,7 @@ import resultset.ResultSetIO
  *
  * `SQLInputIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `SQLInputOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, SQLInput, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -176,10 +175,7 @@ object sqlinput {
     case object ReadNString extends SQLInputOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNString())
     }
-    case class  ReadObject[T](a: Class[T]) extends SQLInputOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject(a))
-    }
-    case object ReadObject1 extends SQLInputOp[Object] {
+    case object ReadObject extends SQLInputOp[Object] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject())
     }
     case object ReadRef extends SQLInputOp[Ref] {
@@ -372,14 +368,8 @@ object sqlinput {
   /** 
    * @group Constructors (Primitives)
    */
-  def readObject[T](a: Class[T]): SQLInputIO[T] =
-    F.liftF(ReadObject(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   val readObject: SQLInputIO[Object] =
-    F.liftF(ReadObject1)
+    F.liftF(ReadObject)
 
   /** 
    * @group Constructors (Primitives)

@@ -48,7 +48,7 @@ import resultset.ResultSetIO
  *
  * `StatementIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `StatementOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Statement, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -134,41 +134,26 @@ object statement {
     case object CloseOnCompletion extends StatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.closeOnCompletion())
     }
-    case class  Execute(a: String, b: Array[String]) extends StatementOp[Boolean] {
+    case class  Execute(a: String, b: Array[Int]) extends StatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute1(a: String) extends StatementOp[Boolean] {
+    case class  Execute1(a: String, b: Int) extends StatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    }
+    case class  Execute2(a: String) extends StatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
     }
-    case class  Execute2(a: String, b: Array[Int]) extends StatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
-    }
-    case class  Execute3(a: String, b: Int) extends StatementOp[Boolean] {
+    case class  Execute3(a: String, b: Array[String]) extends StatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case object ExecuteBatch extends StatementOp[Array[Int]] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeBatch())
     }
-    case object ExecuteLargeBatch extends StatementOp[Array[Long]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeBatch())
-    }
-    case class  ExecuteLargeUpdate(a: String, b: Int) extends StatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
-    }
-    case class  ExecuteLargeUpdate1(a: String, b: Array[Int]) extends StatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
-    }
-    case class  ExecuteLargeUpdate2(a: String) extends StatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a))
-    }
-    case class  ExecuteLargeUpdate3(a: String, b: Array[String]) extends StatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
-    }
     case class  ExecuteQuery(a: String) extends StatementOp[ResultSet] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery(a))
     }
-    case class  ExecuteUpdate(a: String, b: Int) extends StatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    case class  ExecuteUpdate(a: String) extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
     }
     case class  ExecuteUpdate1(a: String, b: Array[String]) extends StatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
@@ -176,8 +161,8 @@ object statement {
     case class  ExecuteUpdate2(a: String, b: Array[Int]) extends StatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
-    case class  ExecuteUpdate3(a: String) extends StatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
+    case class  ExecuteUpdate3(a: String, b: Int) extends StatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case object GetConnection extends StatementOp[Connection] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
@@ -190,12 +175,6 @@ object statement {
     }
     case object GetGeneratedKeys extends StatementOp[ResultSet] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getGeneratedKeys())
-    }
-    case object GetLargeMaxRows extends StatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLargeMaxRows())
-    }
-    case object GetLargeUpdateCount extends StatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLargeUpdateCount())
     }
     case object GetMaxFieldSize extends StatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxFieldSize())
@@ -253,9 +232,6 @@ object statement {
     }
     case class  SetFetchSize(a: Int) extends StatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchSize(a))
-    }
-    case class  SetLargeMaxRows(a: Long) extends StatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLargeMaxRows(a))
     }
     case class  SetMaxFieldSize(a: Int) extends StatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxFieldSize(a))
@@ -369,25 +345,25 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[String]): StatementIO[Boolean] =
+  def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
     F.liftF(Execute(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String): StatementIO[Boolean] =
-    F.liftF(Execute1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
-    F.liftF(Execute2(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def execute(a: String, b: Int): StatementIO[Boolean] =
+    F.liftF(Execute1(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def execute(a: String): StatementIO[Boolean] =
+    F.liftF(Execute2(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def execute(a: String, b: Array[String]): StatementIO[Boolean] =
     F.liftF(Execute3(a, b))
 
   /** 
@@ -399,44 +375,14 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  val executeLargeBatch: StatementIO[Array[Long]] =
-    F.liftF(ExecuteLargeBatch)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeLargeUpdate(a: String, b: Int): StatementIO[Long] =
-    F.liftF(ExecuteLargeUpdate(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeLargeUpdate(a: String, b: Array[Int]): StatementIO[Long] =
-    F.liftF(ExecuteLargeUpdate1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeLargeUpdate(a: String): StatementIO[Long] =
-    F.liftF(ExecuteLargeUpdate2(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeLargeUpdate(a: String, b: Array[String]): StatementIO[Long] =
-    F.liftF(ExecuteLargeUpdate3(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def executeQuery(a: String): StatementIO[ResultSet] =
     F.liftF(ExecuteQuery(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String, b: Int): StatementIO[Int] =
-    F.liftF(ExecuteUpdate(a, b))
+  def executeUpdate(a: String): StatementIO[Int] =
+    F.liftF(ExecuteUpdate(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -453,8 +399,8 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String): StatementIO[Int] =
-    F.liftF(ExecuteUpdate3(a))
+  def executeUpdate(a: String, b: Int): StatementIO[Int] =
+    F.liftF(ExecuteUpdate3(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -479,18 +425,6 @@ object statement {
    */
   val getGeneratedKeys: StatementIO[ResultSet] =
     F.liftF(GetGeneratedKeys)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  val getLargeMaxRows: StatementIO[Long] =
-    F.liftF(GetLargeMaxRows)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  val getLargeUpdateCount: StatementIO[Long] =
-    F.liftF(GetLargeUpdateCount)
 
   /** 
    * @group Constructors (Primitives)
@@ -605,12 +539,6 @@ object statement {
    */
   def setFetchSize(a: Int): StatementIO[Unit] =
     F.liftF(SetFetchSize(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setLargeMaxRows(a: Long): StatementIO[Unit] =
-    F.liftF(SetLargeMaxRows(a))
 
   /** 
    * @group Constructors (Primitives)
