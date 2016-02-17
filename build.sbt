@@ -7,13 +7,14 @@ lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.5", scalaVersion.value)
+  crossScalaVersions := Seq("2.10.5", scalaVersion.value, "2.12.0-M3")
 )
 
 lazy val commonSettings = Seq(
     scalacOptions ++= Seq(
       "-encoding", "UTF-8", // 2 args
       "-feature",
+      "-deprecation",
       "-language:existentials",
       "-language:higherKinds",
       "-language:implicitConversions",
@@ -218,7 +219,7 @@ lazy val specs2 = project.in(file("contrib/specs2"))
 lazy val docs = project.in(file("doc"))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .settings(tutSettings)
+  // .settings(tutSettings)
   .settings(
     initialCommands := """
       import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
@@ -240,7 +241,8 @@ lazy val docs = project.in(file("doc"))
       }
     }
   )
-  .settings(libraryDependencies += "io.argonaut" %% "argonaut" % "6.1")
+  // TODO wait for argonaut 6.2 milestone
+  // .settings(libraryDependencies += "io.argonaut" %% "argonaut" % "6.1")
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val bench = project.in(file("bench"))
