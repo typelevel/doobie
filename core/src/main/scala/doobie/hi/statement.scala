@@ -34,9 +34,6 @@ import scalaz.syntax.id._
 object statement {
 
   /** @group Typeclass Instances */
-  implicit val MonadStatementIO = S.MonadStatementIO
-
-  /** @group Typeclass Instances */
   implicit val CatchableStatementIO = S.CatchableStatementIO
 
   /** @group Batching */

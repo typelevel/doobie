@@ -52,9 +52,6 @@ import scalaz.\&/
 object preparedstatement {
 
   /** @group Typeclass Instances */
-  implicit val MonadPreparedStatementIO = PS.MonadPreparedStatementIO
-
-  /** @group Typeclass Instances */
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
 
   /** @group Execution */

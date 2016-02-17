@@ -127,14 +127,14 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
             |   * @group Constructors (Primitives)
             |   */
             |  val $mname: ${sname}IO[$ret] =
-            |    F.liftFC(${cname})
+            |    F.liftF(${cname})
          """.trim.stripMargin
       } else {
         s"""|/** 
             |   * @group Constructors (Primitives)
             |   */
             |  def $mname$ctparams(${cargs.mkString(", ")}): ${sname}IO[$ret] =
-            |    F.liftFC(${cname}($args))
+            |    F.liftF(${cname}($args))
          """.trim.stripMargin
       }
 
@@ -179,7 +179,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
    s"""
     |package doobie.free
     |
-    |import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \\/ }
+    |import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \\/ }
     |import scalaz.concurrent.Task
     |
     |import doobie.util.capture._
@@ -197,7 +197,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     | *
     | * `${sname}IO` is a free monad that must be run via an interpreter, most commonly via
     | * natural transformation of its underlying algebra `${sname}Op` to another monad via
-    | * `Free.runFC`. 
+    | * `Free#foldMap`.
     | *
     | * The library provides a natural transformation to `Kleisli[M, ${sname}, A]` for any
     | * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -247,7 +247,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |      }
     |
     |    // Lifting
-    |    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ${sname}Op[A] {
+    |    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ${sname}Op[A] {
     |      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     |    }
     |
@@ -275,14 +275,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * a `${ev.runtimeClass.getName}` and produces a value of type `A`. 
     |   * @group Algebra 
     |   */
-    |  type ${sname}IO[A] = F.FreeC[${sname}Op, A]
-    |
-    |  /**
-    |   * Monad instance for [[${sname}IO]] (can't be inferred).
-    |   * @group Typeclass Instances 
-    |   */
-    |  implicit val Monad${sname}IO: Monad[${sname}IO] = 
-    |    F.freeMonad[({type λ[α] = Coyoneda[${sname}Op, α]})#λ]
+    |  type ${sname}IO[A] = F[${sname}Op, A]
     |
     |  /**
     |   * Catchable instance for [[${sname}IO]].
@@ -307,29 +300,29 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * Lift a different type of program that has a default Kleisli interpreter.
     |   * @group Constructors (Lifting)
     |   */
-    |  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ${sname}IO[A] =
-    |    F.liftFC(Lift(j, action, mod))
+    |  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ${sname}IO[A] =
+    |    F.liftF(Lift(j, action, mod))
     |
     |  /** 
     |   * Lift a ${sname}IO[A] into an exception-capturing ${sname}IO[Throwable \\/ A].
     |   * @group Constructors (Lifting)
     |   */
     |  def attempt[A](a: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] =
-    |    F.liftFC[${sname}Op, Throwable \\/ A](Attempt(a))
+    |    F.liftF[${sname}Op, Throwable \\/ A](Attempt(a))
     | 
     |  /**
     |   * Non-strict unit for capturing effects.
     |   * @group Constructors (Lifting)
     |   */
     |  def delay[A](a: => A): ${sname}IO[A] =
-    |    F.liftFC(Pure(a _))
+    |    F.liftF(Pure(a _))
     |
     |  /**
     |   * Backdoor for arbitrary computations on the underlying ${sname}.
     |   * @group Constructors (Lifting)
     |   */
     |  def raw[A](f: ${sname} => A): ${sname}IO[A] =
-    |    F.liftFC(Raw(f))
+    |    F.liftF(Raw(f))
     |
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n\n  ")}
     |

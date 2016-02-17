@@ -25,9 +25,6 @@ import scalaz.std.list._
 object drivermanager {
 
   /** @group Typeclass Instances */
-  implicit val MonadDriverManagerIO = DM.MonadDriverManagerIO
-
-  /** @group Typeclass Instances */
   implicit val CatchableDriverManagerIO = DM.CatchableDriverManagerIO
 
   /** @group Lifting */

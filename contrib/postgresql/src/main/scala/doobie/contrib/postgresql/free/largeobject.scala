@@ -1,6 +1,6 @@
 package doobie.contrib.postgresql.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -22,7 +22,7 @@ import largeobject.LargeObjectIO
  *
  * `LargeObjectIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `LargeObjectOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`. 
  *
  * The library provides a natural transformation to `Kleisli[M, LargeObject, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -88,14 +88,7 @@ object largeobject {
    * a `org.postgresql.largeobject.LargeObject` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type LargeObjectIO[A] = F.FreeC[LargeObjectOp, A]
-
-  /**
-   * Monad instance for [[LargeObjectIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadLargeObjectIO: Monad[LargeObjectIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[LargeObjectOp, α]})#λ]
+  type LargeObjectIO[A] = F[LargeObjectOp, A]
 
   /**
    * Catchable instance for [[LargeObjectIO]].
@@ -123,104 +116,104 @@ object largeobject {
    * @group Constructors (Lifting)
    */
   def attempt[A](a: LargeObjectIO[A]): LargeObjectIO[Throwable \/ A] =
-    F.liftFC[LargeObjectOp, Throwable \/ A](Attempt(a))
+    F.liftF[LargeObjectOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): LargeObjectIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /** 
    * @group Constructors (Primitives)
    */
   val close: LargeObjectIO[Unit] =
-    F.liftFC(Close)
+    F.liftF(Close)
 
   /** 
    * @group Constructors (Primitives)
    */
   val copy: LargeObjectIO[LargeObject] =
-    F.liftFC(Copy)
+    F.liftF(Copy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getInputStream: LargeObjectIO[InputStream] =
-    F.liftFC(GetInputStream)
+    F.liftF(GetInputStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getLongOID: LargeObjectIO[Long] =
-    F.liftFC(GetLongOID)
+    F.liftF(GetLongOID)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getOID: LargeObjectIO[Int] =
-    F.liftFC(GetOID)
+    F.liftF(GetOID)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getOutputStream: LargeObjectIO[OutputStream] =
-    F.liftFC(GetOutputStream)
+    F.liftF(GetOutputStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   def read(a: Int): LargeObjectIO[Array[Byte]] =
-    F.liftFC(Read(a))
+    F.liftF(Read(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def read(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Int] =
-    F.liftFC(Read1(a, b, c))
+    F.liftF(Read1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def seek(a: Int): LargeObjectIO[Unit] =
-    F.liftFC(Seek(a))
+    F.liftF(Seek(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def seek(a: Int, b: Int): LargeObjectIO[Unit] =
-    F.liftFC(Seek1(a, b))
+    F.liftF(Seek1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val size: LargeObjectIO[Int] =
-    F.liftFC(Size)
+    F.liftF(Size)
 
   /** 
    * @group Constructors (Primitives)
    */
   val tell: LargeObjectIO[Int] =
-    F.liftFC(Tell)
+    F.liftF(Tell)
 
   /** 
    * @group Constructors (Primitives)
    */
   def truncate(a: Int): LargeObjectIO[Unit] =
-    F.liftFC(Truncate(a))
+    F.liftF(Truncate(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] =
-    F.liftFC(Write(a, b, c))
+    F.liftF(Write(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def write(a: Array[Byte]): LargeObjectIO[Unit] =
-    F.liftFC(Write1(a))
+    F.liftF(Write1(a))
 
  /** 
   * Natural transformation from `LargeObjectOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObject`. 
@@ -272,7 +265,7 @@ object largeobject {
    */
   implicit class LargeObjectIOOps[A](ma: LargeObjectIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, LargeObject, A] =
-      F.runFC[LargeObjectOp,({type l[a]=Kleisli[M,LargeObject,a]})#l,A](ma)(kleisliTrans[M])
+      ma.foldMap[Kleisli[M, LargeObject, ?]](kleisliTrans[M])
   }
 
 }

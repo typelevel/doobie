@@ -37,9 +37,6 @@ import scalaz.stream.Process
 object resultset {
 
   /** @group Typeclass Instances */
-  implicit val MonadResultSetIO = RS.MonadResultSetIO
-
-  /** @group Typeclass Instances */
   implicit val CatchableResultSetIO = RS.CatchableResultSetIO
 
   /**

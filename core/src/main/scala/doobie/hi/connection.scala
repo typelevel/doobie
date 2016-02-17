@@ -42,9 +42,6 @@ import scalaz.syntax.monad._
 object connection {
 
   /** @group Typeclass Instances */
-  implicit val MonadConnectionIO = C.MonadConnectionIO
-
-  /** @group Typeclass Instances */
   implicit val CatchableConnectionIO = C.CatchableConnectionIO
 
   /** @group Lifting */

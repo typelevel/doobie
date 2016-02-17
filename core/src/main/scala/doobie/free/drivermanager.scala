@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -36,7 +36,7 @@ object drivermanager {
   object DriverManagerOp {
     
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverManagerOp[A]
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverManagerOp[A]
 
     // Combinators
     case class Attempt[A](action: DriverManagerIO[A]) extends DriverManagerOp[Throwable \/ A]
@@ -66,14 +66,7 @@ object drivermanager {
    * a `java.sql.DriverManager` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type DriverManagerIO[A] = F.FreeC[DriverManagerOp, A]
-
-  /**
-   * Monad instance for [[DriverManagerIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadDriverManagerIO: Monad[DriverManagerIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[DriverManagerOp, α]})#λ]
+  type DriverManagerIO[A] = F[DriverManagerOp, A]
 
   /**
    * Catchable instance for [[DriverManagerIO]].
@@ -89,106 +82,106 @@ object drivermanager {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverManagerIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverManagerIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a DriverManagerIO[A] into an exception-capturing DriverManagerIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: DriverManagerIO[A]): DriverManagerIO[Throwable \/ A] =
-    F.liftFC[DriverManagerOp, Throwable \/ A](Attempt(a))
+    F.liftF[DriverManagerOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): DriverManagerIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /** 
    * @group Constructors (Primitives)
    */
   def deregisterDriver(a: Driver): DriverManagerIO[Unit] =
-    F.liftFC(DeregisterDriver(a))
+    F.liftF(DeregisterDriver(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getConnection(a: String): DriverManagerIO[Connection] =
-    F.liftFC(GetConnection(a))
+    F.liftF(GetConnection(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getConnection(a: String, b: String, c: String): DriverManagerIO[Connection] =
-    F.liftFC(GetConnection1(a, b, c))
+    F.liftF(GetConnection1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getConnection(a: String, b: Properties): DriverManagerIO[Connection] =
-    F.liftFC(GetConnection2(a, b))
+    F.liftF(GetConnection2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getDriver(a: String): DriverManagerIO[Driver] =
-    F.liftFC(GetDriver(a))
+    F.liftF(GetDriver(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDrivers: DriverManagerIO[Enumeration[Driver]] =
-    F.liftFC(GetDrivers)
+    F.liftF(GetDrivers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getLogStream: DriverManagerIO[PrintStream] =
-    F.liftFC(GetLogStream)
+    F.liftF(GetLogStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getLogWriter: DriverManagerIO[PrintWriter] =
-    F.liftFC(GetLogWriter)
+    F.liftF(GetLogWriter)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getLoginTimeout: DriverManagerIO[Int] =
-    F.liftFC(GetLoginTimeout)
+    F.liftF(GetLoginTimeout)
 
   /** 
    * @group Constructors (Primitives)
    */
   def println(a: String): DriverManagerIO[Unit] =
-    F.liftFC(Println(a))
+    F.liftF(Println(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def registerDriver(a: Driver): DriverManagerIO[Unit] =
-    F.liftFC(RegisterDriver(a))
+    F.liftF(RegisterDriver(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setLogStream(a: PrintStream): DriverManagerIO[Unit] =
-    F.liftFC(SetLogStream(a))
+    F.liftF(SetLogStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setLogWriter(a: PrintWriter): DriverManagerIO[Unit] =
-    F.liftFC(SetLogWriter(a))
+    F.liftF(SetLogWriter(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setLoginTimeout(a: Int): DriverManagerIO[Unit] =
-    F.liftFC(SetLoginTimeout(a))
+    F.liftF(SetLoginTimeout(a))
 
  /** 
   * Natural transformation from `DriverManagerOp` to the given `M`. 
@@ -236,7 +229,7 @@ object drivermanager {
    */
   implicit class DriverManagerIOOps[A](ma: DriverManagerIO[A]) {
     def trans[M[_]: Monad: Catchable: Capture]: M[A] =
-      F.runFC(ma)(drivermanager.trans[M])
+      ma.foldMap(drivermanager.trans[M])
   }
 
 }

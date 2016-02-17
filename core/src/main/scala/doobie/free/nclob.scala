@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -99,7 +99,7 @@ object nclob {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends NClobOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends NClobOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -165,14 +165,7 @@ object nclob {
    * a `java.sql.NClob` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type NClobIO[A] = F.FreeC[NClobOp, A]
-
-  /**
-   * Monad instance for [[NClobIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadNClobIO: Monad[NClobIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[NClobOp, α]})#λ]
+  type NClobIO[A] = F[NClobOp, A]
 
   /**
    * Catchable instance for [[NClobIO]].
@@ -197,107 +190,107 @@ object nclob {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): NClobIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): NClobIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a NClobIO[A] into an exception-capturing NClobIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: NClobIO[A]): NClobIO[Throwable \/ A] =
-    F.liftFC[NClobOp, Throwable \/ A](Attempt(a))
+    F.liftF[NClobOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): NClobIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying NClob.
    * @group Constructors (Lifting)
    */
   def raw[A](f: NClob => A): NClobIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val free: NClobIO[Unit] =
-    F.liftFC(Free)
+    F.liftF(Free)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getAsciiStream: NClobIO[InputStream] =
-    F.liftFC(GetAsciiStream)
+    F.liftF(GetAsciiStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getCharacterStream(a: Long, b: Long): NClobIO[Reader] =
-    F.liftFC(GetCharacterStream(a, b))
+    F.liftF(GetCharacterStream(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCharacterStream: NClobIO[Reader] =
-    F.liftFC(GetCharacterStream1)
+    F.liftF(GetCharacterStream1)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSubString(a: Long, b: Int): NClobIO[String] =
-    F.liftFC(GetSubString(a, b))
+    F.liftF(GetSubString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val length: NClobIO[Long] =
-    F.liftFC(Length)
+    F.liftF(Length)
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: Clob, b: Long): NClobIO[Long] =
-    F.liftFC(Position(a, b))
+    F.liftF(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: String, b: Long): NClobIO[Long] =
-    F.liftFC(Position1(a, b))
+    F.liftF(Position1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Long): NClobIO[OutputStream] =
-    F.liftFC(SetAsciiStream(a))
+    F.liftF(SetAsciiStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Long): NClobIO[Writer] =
-    F.liftFC(SetCharacterStream(a))
+    F.liftF(SetCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: Long, b: String): NClobIO[Int] =
-    F.liftFC(SetString(a, b))
+    F.liftF(SetString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
-    F.liftFC(SetString1(a, b, c, d))
+    F.liftF(SetString1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def truncate(a: Long): NClobIO[Unit] =
-    F.liftFC(Truncate(a))
+    F.liftF(Truncate(a))
 
  /** 
   * Natural transformation from `NClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.NClob`. 

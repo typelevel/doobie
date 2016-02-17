@@ -1,6 +1,6 @@
 package doobie.contrib.postgresql.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -22,7 +22,7 @@ import largeobject.LargeObjectIO
  *
  * `LargeObjectManagerIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `LargeObjectManagerOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`. 
  *
  * The library provides a natural transformation to `Kleisli[M, LargeObjectManager, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -79,14 +79,7 @@ object largeobjectmanager {
    * a `org.postgresql.largeobject.LargeObjectManager` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type LargeObjectManagerIO[A] = F.FreeC[LargeObjectManagerOp, A]
-
-  /**
-   * Monad instance for [[LargeObjectManagerIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadLargeObjectManagerIO: Monad[LargeObjectManagerIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[LargeObjectManagerOp, α]})#λ]
+  type LargeObjectManagerIO[A] = F[LargeObjectManagerOp, A]
 
   /**
    * Catchable instance for [[LargeObjectManagerIO]].
@@ -111,57 +104,57 @@ object largeobjectmanager {
    * @group Constructors (Lifting)
    */
   def liftLargeObject[A](s: LargeObject, action: LargeObjectIO[A]): LargeObjectManagerIO[A] =
-    F.liftFC(LiftLargeObjectIO(s, action))
+    F.liftF(LiftLargeObjectIO(s, action))
 
   /** 
    * Lift a LargeObjectManagerIO[A] into an exception-capturing LargeObjectManagerIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: LargeObjectManagerIO[A]): LargeObjectManagerIO[Throwable \/ A] =
-    F.liftFC[LargeObjectManagerOp, Throwable \/ A](Attempt(a))
+    F.liftF[LargeObjectManagerOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): LargeObjectManagerIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /** 
    * @group Constructors (Primitives)
    */
   val createLO: LargeObjectManagerIO[Long] =
-    F.liftFC(CreateLO)
+    F.liftF(CreateLO)
 
   /** 
    * @group Constructors (Primitives)
    */
   def createLO(a: Int): LargeObjectManagerIO[Long] =
-    F.liftFC(CreateLO1(a))
+    F.liftF(CreateLO1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def delete(a: Long): LargeObjectManagerIO[Unit] =
-    F.liftFC(Delete(a))
+    F.liftF(Delete(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def open(a: Long, b: Int): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open(a, b))
+    F.liftF(Open(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def open(a: Long): LargeObjectManagerIO[LargeObject] =
-    F.liftFC(Open1(a))
+    F.liftF(Open1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def unlink(a: Long): LargeObjectManagerIO[Unit] =
-    F.liftFC(Unlink(a))
+    F.liftF(Unlink(a))
 
  /** 
   * Natural transformation from `LargeObjectManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObjectManager`. 
@@ -204,7 +197,7 @@ object largeobjectmanager {
    */
   implicit class LargeObjectManagerIOOps[A](ma: LargeObjectManagerIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, LargeObjectManager, A] =
-      F.runFC[LargeObjectManagerOp,({type l[a]=Kleisli[M,LargeObjectManager,a]})#l,A](ma)(kleisliTrans[M])
+      ma.foldMap[Kleisli[M, LargeObjectManager, ?]](kleisliTrans[M])
   }
 
 }
