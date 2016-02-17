@@ -29,7 +29,7 @@ object PostgresLargeObject {
     }
 
   def main(args: Array[String]): Unit = 
-    task.run
+    task.unsafePerformSync
 
 }
 

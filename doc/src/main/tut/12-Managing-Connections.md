@@ -72,7 +72,7 @@ val p: Task[Int] = for {
 And running this `Task` gives us the desired result.
 
 ```tut
-p.run
+p.unsafePerformSync
 ```
 
 The returned instance is of type `HikariTransactor`, which provides a `shutdown` method, as well as a `configure` method that provides access to the underlying `HikariDataSource` if additional configuration is required.

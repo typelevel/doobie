@@ -42,12 +42,12 @@ Right, so let's do this.
 
 ```tut
 val task = program1.transact(xa)
-task.run
+task.unsafePerformSync
 ```
 
 Hooray! We have computed a constant. It's not very interesting because we never ask the database to perform any work, but it's a first step.
 
-> Keep in mind that all the code in this book is pure *except* the calls to `Task.run`, which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
+> Keep in mind that all the code in this book is pure *except* the calls to `Task.unsafePerformSync`, which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
 
 Right. Now let's try something more interesting.
 
@@ -58,7 +58,7 @@ Let's use the `sql` string interpolator to construct a query that asks the *data
 ```tut
 val program2 = sql"select 42".query[Int].unique
 val task2 = program2.transact(xa)
-task2.run
+task2.unsafePerformSync
 ```
 
 Ok! We have now connected to a database to compute a constant. Considerably more impressive. 
@@ -79,7 +79,7 @@ val program3 =
 And behold!
 
 ```tut
-program3.transact(xa).run
+program3.transact(xa).unsafePerformSync
 ```
 
 The astute among you will note that we don't actually need a monad to do this; an applicative functor is all we need here. So we could also write `program3` as:
@@ -95,13 +95,13 @@ val program3a = {
 And lo, it was good:
 
 ```tut
-program3a.transact(xa).run
+program3a.transact(xa).unsafePerformSync
 ```
 
 And of course this composition can continue indefinitely.
 
 ```tut
-program3a.replicateM(5).transact(xa).run.foreach(println)
+program3a.replicateM(5).transact(xa).unsafePerformSync.foreach(println)
 ```
 
 
@@ -116,7 +116,7 @@ Out of the box all of the **doobie** free monads provide a transformation to `Kl
 ```tut
 val kleisli = program1.transK[Task] 
 val task = Task.delay(null: java.sql.Connection) >>= kleisli
-task.run // sneaky; program1 never looks at the connection
+task.unsafePerformSync // sneaky; program1 never looks at the connection
 ```
 
 So the `Transactor` above simply knows how to construct a `Task[Connection]`, which it can bind through the `Kleisli`, yielding our `Task[Int]`. There is a bit more going on (we add commit/rollback handling and ensure that the connection is closed in all cases) but fundamentally it's just a natural transformation and a bind.

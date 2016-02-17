@@ -54,6 +54,6 @@ object PostgresNotify {
       .sink(s => HC.delay(Console.println(s)))
       .transact(xa)
       .void
-      .run
+      .unsafePerformSync
 
 }

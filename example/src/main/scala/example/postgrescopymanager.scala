@@ -67,7 +67,7 @@ object postgrescopymanager {
       }
 
     def main(args: Array[String]): Unit =
-      task.run
+      task.unsafePerformSync
   }
 
 
@@ -132,7 +132,7 @@ object postgrescopymanager {
       PHC.pgGetCopyAPI(progIn *> progOut).transact(xa)
 
     def main(args: Array[String]): Unit =
-      task.run
+      task.unsafePerformSync
   }
 
 
@@ -169,7 +169,7 @@ object postgrescopymanager {
             .intersperse("\n")
             .map(stringToByteVector)
             .to(copyInSink(copyIn))
-            .run.run // side-effect is re-captured in CopyManagerIO
+            .run.unsafePerformSync // side-effect is re-captured in CopyManagerIO
         }
       }
 
@@ -186,7 +186,7 @@ object postgrescopymanager {
             }
             .map(_.toString)
             .to(io.stdOutLines)
-            .run.run // side-effect is re-captured in CopyManagerIO
+            .run.unsafePerformSync // side-effect is re-captured in CopyManagerIO
         }
       }
 
@@ -194,7 +194,7 @@ object postgrescopymanager {
       PHC.pgGetCopyAPI(progIn *> progOut).transact(xa)
 
     def main(args: Array[String]): Unit =
-      task.run
+      task.unsafePerformSync
   }
 
 }

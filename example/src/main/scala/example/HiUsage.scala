@@ -17,7 +17,7 @@ object HiUsage {
   // Program entry point
   def main(args: Array[String]): Unit = {
     val db = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-    example.transact(db).run
+    example.transact(db).unsafePerformSync
   }
 
   // An example action. Streams results to stdout

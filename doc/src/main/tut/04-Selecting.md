@@ -38,10 +38,10 @@ For our first query let's aim low and select some country names into a `List`, t
 
 ```tut
 (sql"select name from country"
-  .query[String] // Query0[String]
-  .list          // ConnectionIO[List[String]]
-  .transact(xa)  // Task[List[String]]
-  .run           // List[String]
+  .query[String]     // Query0[String]
+  .list              // ConnectionIO[List[String]]
+  .transact(xa)      // Task[List[String]]
+  .unsafePerformSync // List[String]
   .take(5).foreach(println))
 ```
 
@@ -62,12 +62,12 @@ This is ok, but there's not much point reading all the results from the database
 
 ```tut
 (sql"select name from country"
-  .query[String] // Query0[String]
-  .process       // Process[ConnectionIO, String]
-  .take(5)       // Process[ConnectionIO, String]
-  .list          // ConnectionIO[List[String]]
-  .transact(xa)  // Task[List[String]]
-  .run           // List[String]
+  .query[String]     // Query0[String]
+  .process           // Process[ConnectionIO, String]
+  .take(5)           // Process[ConnectionIO, String]
+  .list              // ConnectionIO[List[String]]
+  .transact(xa)      // Task[List[String]]
+  .unsafePerformSync // List[String]
   .foreach(println))
 ```
 

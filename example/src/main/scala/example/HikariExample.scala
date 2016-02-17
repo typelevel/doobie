@@ -15,6 +15,6 @@ object HikariExample {
     } yield ()
 
   def main(args: Array[String]) =
-    tmain.run
+    tmain.unsafePerformSync
 
 }

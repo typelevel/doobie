@@ -48,7 +48,7 @@ val create: Update0 =
 We can compose these and run them together.
 
 ```tut
-(drop.quick *> create.quick).run
+(drop.quick *> create.quick).unsafePerformSync
 ```
 
 

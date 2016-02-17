@@ -60,7 +60,7 @@ def biggerThan(minPop: Short) = sql"""
 Now let's try the `check` method provided by YOLO and see what happens.
 
 ```tut:plain
-biggerThan(0).check.run
+biggerThan(0).check.unsafePerformSync
 ```
 
 Yikes, there are quite a few problems, in several categories. In this case **doobie** found
