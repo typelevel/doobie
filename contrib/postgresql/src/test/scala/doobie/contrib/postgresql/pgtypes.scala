@@ -33,26 +33,26 @@ object pgtypesspec extends Specification {
   def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
     s"Mapping for $col as ${m.scalaType}" >> {
       s"write+read $col as ${m.scalaType}" in {
-        inOut(col, a).transact(xa).attemptRun must_== \/-(a)
+        inOut(col, a).transact(xa).unsafePerformSyncAttempt must_== \/-(a)
       }
       s"write+read $col as Option[${m.scalaType}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(xa).attemptRun must_== \/-(Some(a))
+        inOut[Option[A]](col, Some(a)).transact(xa).unsafePerformSyncAttempt must_== \/-(Some(a))
       }
       s"write+read $col as Option[${m.scalaType}] (None)" in {
-        inOut[Option[A]](col, None).transact(xa).attemptRun must_== \/-(None)
+        inOut[Option[A]](col, None).transact(xa).unsafePerformSyncAttempt must_== \/-(None)
       }
       s"write+read $col as Maybe[${m.scalaType}] (Just)" in {
-        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).attemptRun must_== \/-(Maybe.Just(a))
+        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).unsafePerformSyncAttempt must_== \/-(Maybe.Just(a))
       }
       s"write+read $col as Maybe[${m.scalaType}] (Empty)" in {
-        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).attemptRun must_== \/-(Maybe.Empty())
+        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).unsafePerformSyncAttempt must_== \/-(Maybe.Empty())
       }
     }
 
   def testInOutNN[A](col: String, a: A)(implicit m: Atom[A]) =
     s"Mapping for $col as ${m.meta._1.scalaType}" >> {
       s"write+read $col as ${m.meta._1.scalaType}" in {
-        inOut(col, a).transact(xa).attemptRun must_== \/-(a)
+        inOut(col, a).transact(xa).unsafePerformSyncAttempt must_== \/-(a)
       }
     }
 

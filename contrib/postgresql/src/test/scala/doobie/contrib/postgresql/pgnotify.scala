@@ -21,7 +21,7 @@ object pgnotifyspec extends Specification {
   // Listen on the given channel, notify on another connection
   def listen[A](channel: String, notify: ConnectionIO[A]): Task[List[PGNotification]] = 
     (PHC.pgListen(channel) >> commit >> 
-     Capture[ConnectionIO].apply(notify.transact(xa).run) >>
+     Capture[ConnectionIO].apply(notify.transact(xa).unsafePerformSync) >>
      PHC.pgGetNotifications).transact(xa)
 
   "LISTEN/NOTIFY" should {
@@ -30,7 +30,7 @@ object pgnotifyspec extends Specification {
       val channel = "cha" + System.nanoTime
       val notify  = PHC.pgNotify(channel)
       val test    = listen(channel, notify).map(_.length)
-      test.run must_== 1
+      test.unsafePerformSync must_== 1
     }
 
     "allow cross-connection notification with parameter" in  {
@@ -38,7 +38,7 @@ object pgnotifyspec extends Specification {
       val messages = List("foo", "bar", "baz", "qux")
       val notify   = messages.traverseU(PHC.pgNotify(channel, _))
       val test     = listen(channel, notify).map(_.map(_.getParameter))
-      test.run must_== messages
+      test.unsafePerformSync must_== messages
     }
 
     "collapse identical notifications" in  {
@@ -46,7 +46,7 @@ object pgnotifyspec extends Specification {
       val messages = List("foo", "bar", "bar", "baz", "qux", "foo")
       val notify   = messages.traverseU(PHC.pgNotify(channel, _))
       val test     = listen(channel, notify).map(_.map(_.getParameter))
-      test.run must_== messages.distinct
+      test.unsafePerformSync must_== messages.distinct
     }
   
   }

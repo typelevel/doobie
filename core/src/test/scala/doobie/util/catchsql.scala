@@ -15,17 +15,17 @@ object catchsqlpec extends Specification {
   "attemptSql" should {
 
     "do nothing on success" in {
-      Task.delay(3).attemptSql.run must_== \/-(3)
+      Task.delay(3).attemptSql.unsafePerformSync must_== \/-(3)
     }
 
     "catch SQLException" in {
       val e = new SQLException
-      Task.delay(throw e).attemptSql.run must_== -\/(e)
+      Task.delay(throw e).attemptSql.unsafePerformSync must_== -\/(e)
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay(throw e).attemptSql.run must throwA[IllegalArgumentException]
+      Task.delay(throw e).attemptSql.unsafePerformSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -34,17 +34,17 @@ object catchsqlpec extends Specification {
   "attemptSqlState" should {
 
     "do nothing on success" in {
-      Task.delay(3).attemptSqlState.run must_== \/-(3)
+      Task.delay(3).attemptSqlState.unsafePerformSync must_== \/-(3)
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay(throw e).attemptSqlState.run must_== -\/(SQLSTATE_FOO)
+      Task.delay(throw e).attemptSqlState.unsafePerformSync must_== -\/(SQLSTATE_FOO)
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay(throw e).attemptSqlState.run must throwA[IllegalArgumentException]
+      Task.delay(throw e).attemptSqlState.unsafePerformSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -55,7 +55,7 @@ object catchsqlpec extends Specification {
       Task.delay(3).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.run must_== \/-(3)
+      }.unsafePerformSync must_== \/-(3)
     }
 
     "catch SQLException with matching state (1)" in {
@@ -63,7 +63,7 @@ object catchsqlpec extends Specification {
       Task.delay(throw e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.run must_== -\/(42)
+      }.unsafePerformSync must_== -\/(42)
     }
 
     "catch SQLException with matching state (2)" in {
@@ -71,21 +71,21 @@ object catchsqlpec extends Specification {
       Task.delay(throw e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.run must_== -\/(66)
+      }.unsafePerformSync must_== -\/(66)
     }
 
     "ignore SQLException with non-matching state" in {
       val e = new SQLException("", SQLSTATE_BAR.value)
       Task.delay(throw e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
-      }.run must throwA[SQLException]
+      }.unsafePerformSync must throwA[SQLException]
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
       Task.delay(throw e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
-      }.run must throwA[IllegalArgumentException]
+      }.unsafePerformSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -95,17 +95,17 @@ object catchsqlpec extends Specification {
     val rescue = Task.delay(4)
 
     "do nothing on success" in {
-      Task.delay(3).exceptSql(e => rescue).run must_== 3
+      Task.delay(3).exceptSql(e => rescue).unsafePerformSync must_== 3
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay[Int](throw e).exceptSql(e => rescue).run must_== 4
+      Task.delay[Int](throw e).exceptSql(e => rescue).unsafePerformSync must_== 4
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay[Int](throw e).exceptSql(e => rescue).run must throwA[IllegalArgumentException]
+      Task.delay[Int](throw e).exceptSql(e => rescue).unsafePerformSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -115,17 +115,17 @@ object catchsqlpec extends Specification {
     val rescue = Task.delay(4)
 
     "do nothing on success" in {
-      Task.delay(3).exceptSqlState(e => rescue).run must_== 3
+      Task.delay(3).exceptSqlState(e => rescue).unsafePerformSync must_== 3
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay[Int](throw e).exceptSqlState(e => rescue).run must_== 4
+      Task.delay[Int](throw e).exceptSqlState(e => rescue).unsafePerformSync must_== 4
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay[Int](throw e).exceptSqlState(e => rescue).run must throwA[IllegalArgumentException]
+      Task.delay[Int](throw e).exceptSqlState(e => rescue).unsafePerformSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -135,22 +135,22 @@ object catchsqlpec extends Specification {
     val rescue = Task.delay(4)
 
     "do nothing on success" in {
-      Task.delay(3).exceptSomeSqlState { case _ => rescue }.run must_== 3
+      Task.delay(3).exceptSomeSqlState { case _ => rescue }.unsafePerformSync must_== 3
     }
 
     "catch SQLException with some state" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay[Int](throw e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.run must_== 4
+      Task.delay[Int](throw e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.unsafePerformSync must_== 4
     }
 
     "ignore SQLException with other state" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay[Int](throw e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.run must throwA[SQLException]
+      Task.delay[Int](throw e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.unsafePerformSync must throwA[SQLException]
     }
 
     "ignore non-SQLException" in {      
       val e = new IllegalArgumentException
-      Task.delay[Int](throw e).exceptSomeSqlState { case _ => rescue }.run must throwA[IllegalArgumentException]
+      Task.delay[Int](throw e).exceptSomeSqlState { case _ => rescue }.unsafePerformSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -159,21 +159,21 @@ object catchsqlpec extends Specification {
 
     "do nothing on success" in {
       var a = 1
-      Task.delay(3).onSqlException(Task.delay(a += 1)).attemptRun
+      Task.delay(3).onSqlException(Task.delay(a += 1)).unsafePerformSyncAttempt
       a must_== 1
     }
 
     "perform its effect on SQLException" in {
       var a = 1
       val e = new SQLException("", SQLSTATE_FOO.value)
-      Task.delay[Int](throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
+      Task.delay[Int](throw e).onSqlException(Task.delay(a += 1)).unsafePerformSyncAttempt must_== -\/(e)
       a must_== 2
     }
 
     "ignore its effect on non-SQLException" in {      
       var a = 1
       val e = new IllegalArgumentException
-      Task.delay[Int](throw e).onSqlException(Task.delay(a += 1)).attemptRun must_== -\/(e)
+      Task.delay[Int](throw e).onSqlException(Task.delay(a += 1)).unsafePerformSyncAttempt must_== -\/(e)
       a must_== 1
     }
 
