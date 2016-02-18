@@ -18,114 +18,120 @@ object queryspec extends Specification {
   val q = Query[String,Int]("select 123 where ? = 'foo'", None)
 
   "Query (non-empty)" >> {
-  	"process" in {
-  		q.process("foo").list.transact(xa).run must_=== List(123)
-  	}
-  	"sink" in {
-  		var x = Array(0)
-  		def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)  		
-  		q.process("foo").sink(effect).transact(xa).run
-  		x(0) must_=== 123
-  	}
-  	"to" in {
-  		q.to[List]("foo").transact(xa).run must_=== List(123)
-  	}
-  	"accumulate" in {
-  		q.accumulate[List]("foo").transact(xa).run must_=== List(123)
-  	}
-  	"unique" in {
-  		q.unique("foo").transact(xa).run must_=== 123
-  	}
-  	"option" in {
-  		q.option("foo").transact(xa).run must_=== Some(123)
-  	}
-  	"map" in {
-  		q.map("x" * _).to[List]("foo").transact(xa).run must_=== List("x" * 123)
-  	}
-  	"contramap" in {
-  		q.contramap[Int](n => "foo" * n).to[List](1).transact(xa).run must_=== List(123)
-  	}
+    "process" in {
+      q.process("foo").list.transact(xa).run must_=== List(123)
+    }
+    "sink" in {
+      var x = Array(0)
+      def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
+      q.process("foo").sink(effect).transact(xa).run
+      x(0) must_=== 123
+    }
+    "to" in {
+      q.to[List]("foo").transact(xa).run must_=== List(123)
+    }
+    "accumulate" in {
+      q.accumulate[List]("foo").transact(xa).run must_=== List(123)
+    }
+    "unique" in {
+      q.unique("foo").transact(xa).run must_=== 123
+    }
+    "option" in {
+      q.option("foo").transact(xa).run must_=== Some(123)
+    }
+    "nel" in {
+      q.nel("foo").transact(xa).run must_=== NonEmptyList(123)
+    }
+    "map" in {
+      q.map("x" * _).to[List]("foo").transact(xa).run must_=== List("x" * 123)
+    }
+    "contramap" in {
+      q.contramap[Int](n => "foo" * n).to[List](1).transact(xa).run must_=== List(123)
+    }
   }
 
   "Query (empty)" >> {
-  	"process" in {
-  		q.process("bar").list.transact(xa).run must_=== Nil
-  	}
-  	"sink" in {
-  		var x = Array(0)
-  		def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)  		
-  		q.process("bar").sink(effect).transact(xa).run
-  		x(0) must_=== 0
-  	}
-  	"to" in {
-  		q.to[List]("bar").transact(xa).run must_=== Nil
-  	}
-  	"accumulate" in {
-  		q.accumulate[List]("bar").transact(xa).run must_=== Nil
-  	}
-  	"unique" in {
-  		q.unique("bar").transact(xa).attemptRun must_=== -\/(invariant.UnexpectedEnd)
-  	}
-  	"option" in {
-  		q.option("bar").transact(xa).run must_=== None
-  	}
-  	"map" in {
-  		q.map("x" * _).to[List]("bar").transact(xa).run must_=== Nil
-  	}
-  	"contramap" in {
-  		q.contramap[Int](n => "bar" * n).to[List](1).transact(xa).run must_=== Nil
-  	}
+    "process" in {
+      q.process("bar").list.transact(xa).run must_=== Nil
+    }
+    "sink" in {
+      var x = Array(0)
+      def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
+      q.process("bar").sink(effect).transact(xa).run
+      x(0) must_=== 0
+    }
+    "to" in {
+      q.to[List]("bar").transact(xa).run must_=== Nil
+    }
+    "accumulate" in {
+      q.accumulate[List]("bar").transact(xa).run must_=== Nil
+    }
+    "unique" in {
+      q.unique("bar").transact(xa).attemptRun must_=== -\/(invariant.UnexpectedEnd)
+    }
+    "option" in {
+      q.option("bar").transact(xa).run must_=== None
+    }
+    "nel" in {
+      q.nel("bar").transact(xa).attemptRun must_=== -\/(invariant.UnexpectedEnd)
+    }
+    "map" in {
+      q.map("x" * _).to[List]("bar").transact(xa).run must_=== Nil
+    }
+    "contramap" in {
+      q.contramap[Int](n => "bar" * n).to[List](1).transact(xa).run must_=== Nil
+    }
   }
 
   "Query0 from Query (non-empty)" >> {
-  	"process" in {
-  		q.toQuery0("foo").process.list.transact(xa).run must_=== List(123)
-  	}
-  	"sink" in {
-  		var x = Array(0)
-  		def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)  		
-  		q.toQuery0("foo").process.sink(effect).transact(xa).run
-  		x(0) must_=== 123
-  	}
-  	"to" in {
-  		q.toQuery0("foo").to[List].transact(xa).run must_=== List(123)
-  	}
-  	"accumulate" in {
-  		q.toQuery0("foo").accumulate[List].transact(xa).run must_=== List(123)
-  	}
-  	"unique" in {
-  		q.toQuery0("foo").unique.transact(xa).run must_=== 123
-  	}
-  	"option" in {
-  		q.toQuery0("foo").option.transact(xa).run must_=== Some(123)
-  	}
-  	"map" in {
-  		q.toQuery0("foo").map(_ * 2).list.transact(xa).run must_=== List(246)
-  	}
+    "process" in {
+      q.toQuery0("foo").process.list.transact(xa).run must_=== List(123)
+    }
+    "sink" in {
+      var x = Array(0)
+      def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
+      q.toQuery0("foo").process.sink(effect).transact(xa).run
+      x(0) must_=== 123
+    }
+    "to" in {
+      q.toQuery0("foo").to[List].transact(xa).run must_=== List(123)
+    }
+    "accumulate" in {
+      q.toQuery0("foo").accumulate[List].transact(xa).run must_=== List(123)
+    }
+    "unique" in {
+      q.toQuery0("foo").unique.transact(xa).run must_=== 123
+    }
+    "option" in {
+      q.toQuery0("foo").option.transact(xa).run must_=== Some(123)
+    }
+    "map" in {
+      q.toQuery0("foo").map(_ * 2).list.transact(xa).run must_=== List(246)
+    }
   }
 
   "Query0 from Query (empty)" >> {
-  	"process" in {
-  		q.toQuery0("bar").process.list.transact(xa).run must_=== Nil
-  	}
-  	"sink" in {
-  		var x = Array(0)
-  		def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)  		
-  		q.toQuery0("bar").process.sink(effect).transact(xa).run
-  		x(0) must_=== 0
-  	}
-  	"to" in {
-  		q.toQuery0("bar").to[List].transact(xa).run must_=== Nil
-  	}
-  	"accumulate" in {
-  		q.toQuery0("bar").accumulate[List].transact(xa).run must_=== Nil
-  	}
-  	"unique" in {
-  		q.toQuery0("bar").unique.transact(xa).attemptRun must_=== -\/(invariant.UnexpectedEnd)
-  	}
-  	"option" in {
-  		q.toQuery0("bar").option.transact(xa).run must_=== None
-  	}
+    "process" in {
+      q.toQuery0("bar").process.list.transact(xa).run must_=== Nil
+    }
+    "sink" in {
+      var x = Array(0)
+      def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
+      q.toQuery0("bar").process.sink(effect).transact(xa).run
+      x(0) must_=== 0
+    }
+    "to" in {
+      q.toQuery0("bar").to[List].transact(xa).run must_=== Nil
+    }
+    "accumulate" in {
+      q.toQuery0("bar").accumulate[List].transact(xa).run must_=== Nil
+    }
+    "unique" in {
+      q.toQuery0("bar").unique.transact(xa).attemptRun must_=== -\/(invariant.UnexpectedEnd)
+    }
+    "option" in {
+      q.toQuery0("bar").option.transact(xa).run must_=== None
+    }
     "map" in {
       q.toQuery0("bar").map(_ * 2).list.transact(xa).run must_=== Nil
     }

@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.intArrayOps
 
-import scalaz.{ Monad, MonadPlus, IList }
+import scalaz.{ Monad, MonadPlus, IList, NonEmptyList }
 import scalaz.syntax.id._
 import scalaz.syntax.monadPlus._
 import scalaz.stream.Process
@@ -203,6 +203,17 @@ object resultset {
       case (a @ Some(_), false) => a
       case (Some(a), true)      => throw UnexpectedContinuation
       case (None, _)            => None
+    }
+
+  /**
+    * Consumes the remainder of the resultset, but verifies that there is at least one row remaining.
+    * @throws `UnexpectedEnd` if there is not at least one row remaining
+    * @group Results
+    */
+  def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
+    (getNext[A] |@| list) {
+      case (Some(a), as) => NonEmptyList.nel(a, as)
+      case (None, _)     => throw UnexpectedEnd
     }
 
   /** 
