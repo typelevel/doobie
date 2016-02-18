@@ -107,7 +107,7 @@ object query {
       * @group Results
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getNel[O])).map(_.map(ob))
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.nel[O])).map(_.map(ob))
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =

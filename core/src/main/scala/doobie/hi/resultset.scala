@@ -210,7 +210,7 @@ object resultset {
     * @throws `UnexpectedEnd` if there is not at least one row remaining
     * @group Results
     */
-  def getNel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
+  def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
     (getNext[A] |@| list) {
       case (Some(a), as) => NonEmptyList.nel(a, as)
       case (None, _)     => throw UnexpectedEnd
