@@ -5,7 +5,7 @@ import scala.collection.generic.CanBuildFrom
 import doobie.imports._
 import doobie.util.analysis.Analysis
 
-import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor }
+import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
 
@@ -92,13 +92,22 @@ object query {
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getUnique[O])).map(ob)
 
     /**
-     * Apply the argument `a` to construct a program in 
+     * Apply the argument `a` to construct a program in
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` and
      * raising an exception if the resultset has more than one row. See also `unique`.
      * @group Results
      */
-    def option(a: A): ConnectionIO[Option[B]] = 
+    def option(a: A): ConnectionIO[Option[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getOption[O])).map(_.map(ob))
+
+    /**
+      * Apply the argument `a` to construct a program in
+      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `NonEmptyList[B]` and
+      * raising an exception if the resultset does not have at least one row. See also `unique`.
+      * @group Results
+      */
+    def nel(a: A): ConnectionIO[NonEmptyList[B]] =
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getNel[O])).map(_.map(ob))
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
@@ -142,6 +151,7 @@ object query {
         def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
         def unique = outer.unique(a)
         def option = outer.option(a)
+        def nel = outer.nel(a)
         def map[C](f: B => C): Query0[C] = outer.map(f).toQuery0(a)
       }
 
@@ -244,16 +254,23 @@ object query {
      * raising an exception if the resultset does not have exactly one row. See also `option`.
      * @group Results
      */
-    def unique: ConnectionIO[B]  
+    def unique: ConnectionIO[B]
 
     /**
-     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` 
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B`
      * and raising an exception if the resultset has more than one row. See also `unique`.
      * @group Results
-     */    
-    def option: ConnectionIO[Option[B]]  
+     */
+    def option: ConnectionIO[Option[B]]
 
-    /** @group Transformations */    
+    /**
+      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a `NonEmptyList[B]`
+      * and raising an exception if the resultset does not have at least one row. See also `unique`.
+      * @group Results
+      */
+    def nel: ConnectionIO[NonEmptyList[B]]
+
+    /** @group Transformations */
     def map[C](f: B => C): Query0[C] 
 
     /** 

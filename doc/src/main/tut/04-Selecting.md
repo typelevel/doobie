@@ -54,6 +54,7 @@ Let's break this down a bit.
   - `.accumulate[M[_]: MonadPlus]` which accumulates to a universally quantified monoid `M`. This works with many scalaz collections, as well as standard library collections with `MonadPlus` instances.
   - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
   - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
+  - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
   - See the Scaladoc for `Query0` for more information on these and other methods.
 - The rest is familar; `transact(xa)` yields a `Task[List[String]]` which we run, giving us a normal Scala `List[String]` that we print out.
 

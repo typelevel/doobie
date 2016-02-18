@@ -39,6 +39,9 @@ object queryspec extends Specification {
   	"option" in {
   		q.option("foo").transact(xa).run must_=== Some(123)
   	}
+		"nel" in {
+			q.nel("foo").transact(xa).run must_=== NonEmptyList(123)
+		}
   	"map" in {
   		q.map("x" * _).to[List]("foo").transact(xa).run must_=== List("x" * 123)
   	}
@@ -69,6 +72,9 @@ object queryspec extends Specification {
   	"option" in {
   		q.option("bar").transact(xa).run must_=== None
   	}
+		"nel" in {
+			q.nel("bar").transact(xa).attemptRun must_=== -\/(invariant.UnexpectedEnd)
+		}
   	"map" in {
   		q.map("x" * _).to[List]("bar").transact(xa).run must_=== Nil
   	}
