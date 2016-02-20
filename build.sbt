@@ -210,7 +210,7 @@ lazy val refined = project.in(file("contrib/refined"))
   .settings(name := "doobie-contrib-refined")
   .settings(description := "Refined support for doobie.")
   .settings(doobieSettings ++ publishSettings)
-  .settings(libraryDependencies += "eu.timepit" %% "refined" % "0.3.3")
+  .settings(libraryDependencies += "eu.timepit" %% "refined" % "0.3.5")
   .dependsOn(core)
 
 lazy val docs = project.in(file("doc"))
