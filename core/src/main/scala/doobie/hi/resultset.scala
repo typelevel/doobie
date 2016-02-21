@@ -208,7 +208,7 @@ object resultset {
     * @group Results
     */
   def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
-    (getNext[A] |@| list) {
+    (getNext[A] |@| ilist) {
       case (Some(a), as) => NonEmptyList.nel(a, as)
       case (None, _)     => throw UnexpectedEnd
     }
