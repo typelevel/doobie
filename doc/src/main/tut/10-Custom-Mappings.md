@@ -11,7 +11,7 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 The examples in this chapter require the `contrib-postgresql` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
 
 ```scala
-libraryDependencies += "io.argonaut" %% "argonaut" % "6.1-M4" // as of date of publication
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M1" // as of date of publication
 ```
 
 In our REPL we have the same setup as before, plus a few extra imports.

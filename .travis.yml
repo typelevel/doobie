@@ -8,9 +8,7 @@ scala:
 jdk:
   - oraclejdk8
 
-# TODO re-enable tut when dependency issues are resolved
-# script: sbt ++$TRAVIS_SCALA_VERSION compile core/test h2/test postgres/test tut unidoc
-script: sbt ++$TRAVIS_SCALA_VERSION compile core/test h2/test postgres/test unidoc
+script: sbt ++$TRAVIS_SCALA_VERSION compile core/test h2/test postgres/test tuut unidoc
 
 addons:
   postgresql: "9.3"

@@ -219,7 +219,7 @@ lazy val specs2 = project.in(file("contrib/specs2"))
 lazy val docs = project.in(file("doc"))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  // .settings(tutSettings)
+  .settings(tutSettings)
   .settings(
     initialCommands := """
       import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
@@ -241,14 +241,36 @@ lazy val docs = project.in(file("doc"))
       }
     }
   )
-  // TODO wait for argonaut 6.2 milestone
-  // .settings(libraryDependencies += "io.argonaut" %% "argonaut" % "6.1")
+  .settings(docSkipScala212Settings)
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val bench = project.in(file("bench"))
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .dependsOn(core, postgres)
+
+
+// Workaround to avoid cyclic dependency
+// TODO remove after tut-core and argonaut for Scala 2.12 is released
+lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally skip tut")
+
+// Temporarily skip tut for Scala 2.12
+// TODO remove after tut-core and argonaut for Scala 2.12 is released
+lazy val docSkipScala212Settings = Seq(
+  libraryDependencies := {
+    val ld = libraryDependencies.value
+    if (scalaVersion.value startsWith "2.12")
+      ld.filter(_.name != "tut-core")
+    else
+      ("io.argonaut" %% "argonaut" % "6.2-M1" +: ld)
+  },
+  tuut := Def.taskDyn {
+    if (scalaVersion.value startsWith "2.12")
+      Def.task(Seq.empty[(File, String)])
+    else
+      Def.task(tut.value)
+  }.value
+)
 
 lazy val noPublishSettings = Seq(
   publish := (),
