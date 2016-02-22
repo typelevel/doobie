@@ -10,7 +10,7 @@ import scalaz._, Scalaz._, scalaz.concurrent.Task
 
 object pgnotifyspec extends Specification {
 
-  import FC.commit
+  import FC.{commit, delay}
 
   val xa = DriverManagerTransactor[Task](
     "org.postgresql.Driver",
@@ -19,9 +19,11 @@ object pgnotifyspec extends Specification {
   )
 
   // Listen on the given channel, notify on another connection
-  def listen[A](channel: String, notify: ConnectionIO[A]): Task[List[PGNotification]] = 
-    (PHC.pgListen(channel) >> commit >> 
+  def listen[A](channel: String, notify: ConnectionIO[A]): Task[List[PGNotification]] =
+    (PHC.pgListen(channel) >> commit >>
+     delay { Thread.sleep(50) } >>
      Capture[ConnectionIO].apply(notify.transact(xa).unsafePerformSync) >>
+     delay { Thread.sleep(50) } >>
      PHC.pgGetNotifications).transact(xa)
 
   "LISTEN/NOTIFY" should {
@@ -48,7 +50,7 @@ object pgnotifyspec extends Specification {
       val test     = listen(channel, notify).map(_.map(_.getParameter))
       test.unsafePerformSync must_== messages.distinct
     }
-  
+
   }
 
 }
