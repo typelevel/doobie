@@ -257,12 +257,9 @@ lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally sk
 // Temporarily skip tut for Scala 2.12
 // TODO remove after tut-core and argonaut for Scala 2.12 is released
 lazy val docSkipScala212Settings = Seq(
-  libraryDependencies := {
-    val ld = libraryDependencies.value
-    if (scalaVersion.value startsWith "2.12")
-      ld.filter(_.name != "tut-core")
-    else
-      ("io.argonaut" %% "argonaut" % "6.2-M1" +: ld)
+  libraryDependencies ++= {
+    if (scalaVersion.value startsWith "2.12") Nil
+    else Seq("io.argonaut" %% "argonaut" % "6.2-M1")
   },
   tuut := Def.taskDyn {
     if (scalaVersion.value startsWith "2.12")
