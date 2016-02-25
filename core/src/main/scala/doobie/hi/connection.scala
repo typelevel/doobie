@@ -21,6 +21,7 @@ import doobie.free.{ callablestatement => CS }
 import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
+import doobie.free.kleislitrans._
 
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
@@ -253,7 +254,7 @@ object connection {
     def trans[M[_]: Monad: Catchable: Capture](c: Connection): Process[M, A] =
       pa.translate(new (ConnectionIO ~> M) {
         def apply[B](ma: ConnectionIO[B]): M[B] =
-          ma.transK[M].run(c)
+          ma.newTransK[M].run(c)
       })
   }
 

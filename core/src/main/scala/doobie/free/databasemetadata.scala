@@ -1,9 +1,12 @@
 package doobie.free
 
 import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.syntax.catchable._
+import scalaz.syntax.monad._
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.util.trace.{ Trace, TraceOp }
 import doobie.free.kleislitrans._
 
 import java.lang.Class
@@ -73,10 +76,23 @@ object databasemetadata {
    * Sum type of primitive operations over a `java.sql.DatabaseMetaData`.
    * @group Algebra 
    */
-  sealed trait DatabaseMetaDataOp[A] {
+  sealed trait DatabaseMetaDataOp[A] extends TraceOp[DatabaseMetaData, A] {
+ 
     protected def primitive[M[_]: Monad: Capture](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] = 
       Kleisli((s: DatabaseMetaData) => Capture[M].apply(f(s)))
+
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A]
+
+    def defaultTransKL[M[_]: Monad: Catchable: Capture]: Kleisli[M, (Trace[M], DatabaseMetaData), A] =
+      Kleisli { case (log, c) =>
+        for {
+          k <- log.log(c, this)
+          x <- defaultTransK[M].attempt.run(c)
+          _ <- k(x)
+          a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+        } yield a
+      }
+
   }
 
   /** 
@@ -90,24 +106,63 @@ object databasemetadata {
     implicit val DatabaseMetaDataKleisliTrans: KleisliTrans.Aux[DatabaseMetaDataOp, DatabaseMetaData] =
       new KleisliTrans[DatabaseMetaDataOp] {
         type J = DatabaseMetaData
+
         def interpK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
           new (DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?]) {
             def apply[A](op: DatabaseMetaDataOp[A]): Kleisli[M, DatabaseMetaData, A] =
               op.defaultTransK[M]
           }
+
+        def interpKL[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, (Trace[M], DatabaseMetaData), ?] =
+          new (DatabaseMetaDataOp ~> Kleisli[M, (Trace[M], DatabaseMetaData), ?]) {
+            def apply[A](op: DatabaseMetaDataOp[A]): Kleisli[M, (Trace[M], DatabaseMetaData), A] =
+              op.defaultTransKL[M]
+          }
+
       }
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+  
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Kleisli(_ => mod.transK[M].apply(action).run(j))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- mod.transKL[M].apply(action).attempt.run((log, j))
+            _ <- k(x)
+            a <- x.fold[M[A]](Catchable[M].fail(_), _.point[M])
+          } yield a
+        }
+
     }
 
     // Combinators
     case class Attempt[A](action: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[Throwable \/ A] {
       import scalaz._, Scalaz._
+
       def defaultTransK[M[_]: Monad: Catchable: Capture] = 
-        Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].attempt(action.transK[M])
+        Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].attempt(DatabaseMetaDataKleisliTrans.transK[M].apply(action))
+
+      override def defaultTransKL[M[_]: Monad: Catchable: Capture] =
+        Kleisli { case (log, c) =>
+          for {
+            k <- log.log(c, this)
+            x <- Predef.implicitly[Catchable[Kleisli[M, (Trace[M], DatabaseMetaData), ?]]].attempt(DatabaseMetaDataKleisliTrans.transKL[M].apply(action)).run((log, c))
+            _ <- k(\/-(x))
+         } yield x
+       }
+
     }
+
+    case class Fail[A](t: Throwable) extends DatabaseMetaDataOp[A] {
+      import scalaz._, Scalaz._
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+        Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].fail[A](t)
+    }
+
     case class Pure[A](a: () => A) extends DatabaseMetaDataOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
@@ -467,11 +522,11 @@ object databasemetadata {
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
     }
-    case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
-    }
-    case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+    case class  SupportsConvert(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
+    }
+    case object SupportsConvert1 extends DatabaseMetaDataOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
@@ -669,7 +724,7 @@ object databasemetadata {
   implicit val CatchableDatabaseMetaDataIO: Catchable[DatabaseMetaDataIO] =
     new Catchable[DatabaseMetaDataIO] {
       def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
-      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.delay(throw err)
+      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.fail(err)
     }
 
   /**
@@ -694,6 +749,9 @@ object databasemetadata {
    */
   def attempt[A](a: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] =
     F.liftFC[DatabaseMetaDataOp, Throwable \/ A](Attempt(a))
+ 
+  def fail[A](t: Throwable): DatabaseMetaDataIO[A] =
+    F.liftFC(Fail(t))
  
   /**
    * Non-strict unit for capturing effects.
@@ -1414,14 +1472,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  val supportsConvert: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsConvert)
+  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
+    F.liftFC(SupportsConvert(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsConvert1(a, b))
+  val supportsConvert: DatabaseMetaDataIO[Boolean] =
+    F.liftFC(SupportsConvert1)
 
   /** 
    * @group Constructors (Primitives)
@@ -1764,36 +1822,6 @@ object databasemetadata {
    */
   val usesLocalFiles: DatabaseMetaDataIO[Boolean] =
     F.liftFC(UsesLocalFiles)
-
- /** 
-  * Natural transformation from `DatabaseMetaDataOp` to `Kleisli` for the given `M`, consuming a `java.sql.DatabaseMetaData`. 
-  * @group Algebra
-  */
-  def interpK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
-   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.interpK
-
- /** 
-  * Natural transformation from `DatabaseMetaDataIO` to `Kleisli` for the given `M`, consuming a `java.sql.DatabaseMetaData`. 
-  * @group Algebra
-  */
-  def transK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?] =
-   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK
-
- /** 
-  * Natural transformation from `DatabaseMetaDataIO` to `M`, given a `java.sql.DatabaseMetaData`. 
-  * @group Algebra
-  */
- def trans[M[_]: Monad: Catchable: Capture](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
-   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
-
-  /**
-   * Syntax for `DatabaseMetaDataIO`.
-   * @group Algebra
-   */
-  implicit class DatabaseMetaDataIOOps[A](ma: DatabaseMetaDataIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A] =
-      DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
-  }
 
 }
 
