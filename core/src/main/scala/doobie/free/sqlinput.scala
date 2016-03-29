@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -56,7 +56,7 @@ import resultset.ResultSetIO
  *
  * `SQLInputIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `SQLInputOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, SQLInput, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -106,7 +106,7 @@ object sqlinput {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLInputOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLInputOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -214,14 +214,7 @@ object sqlinput {
    * a `java.sql.SQLInput` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type SQLInputIO[A] = F.FreeC[SQLInputOp, A]
-
-  /**
-   * Monad instance for [[SQLInputIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadSQLInputIO: Monad[SQLInputIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[SQLInputOp, α]})#λ]
+  type SQLInputIO[A] = F[SQLInputOp, A]
 
   /**
    * Catchable instance for [[SQLInputIO]].
@@ -246,191 +239,191 @@ object sqlinput {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLInputIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLInputIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a SQLInputIO[A] into an exception-capturing SQLInputIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: SQLInputIO[A]): SQLInputIO[Throwable \/ A] =
-    F.liftFC[SQLInputOp, Throwable \/ A](Attempt(a))
+    F.liftF[SQLInputOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): SQLInputIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying SQLInput.
    * @group Constructors (Lifting)
    */
   def raw[A](f: SQLInput => A): SQLInputIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val readArray: SQLInputIO[SqlArray] =
-    F.liftFC(ReadArray)
+    F.liftF(ReadArray)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readAsciiStream: SQLInputIO[InputStream] =
-    F.liftFC(ReadAsciiStream)
+    F.liftF(ReadAsciiStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readBigDecimal: SQLInputIO[BigDecimal] =
-    F.liftFC(ReadBigDecimal)
+    F.liftF(ReadBigDecimal)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readBinaryStream: SQLInputIO[InputStream] =
-    F.liftFC(ReadBinaryStream)
+    F.liftF(ReadBinaryStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readBlob: SQLInputIO[Blob] =
-    F.liftFC(ReadBlob)
+    F.liftF(ReadBlob)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readBoolean: SQLInputIO[Boolean] =
-    F.liftFC(ReadBoolean)
+    F.liftF(ReadBoolean)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readByte: SQLInputIO[Byte] =
-    F.liftFC(ReadByte)
+    F.liftF(ReadByte)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readBytes: SQLInputIO[Array[Byte]] =
-    F.liftFC(ReadBytes)
+    F.liftF(ReadBytes)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readCharacterStream: SQLInputIO[Reader] =
-    F.liftFC(ReadCharacterStream)
+    F.liftF(ReadCharacterStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readClob: SQLInputIO[Clob] =
-    F.liftFC(ReadClob)
+    F.liftF(ReadClob)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readDate: SQLInputIO[Date] =
-    F.liftFC(ReadDate)
+    F.liftF(ReadDate)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readDouble: SQLInputIO[Double] =
-    F.liftFC(ReadDouble)
+    F.liftF(ReadDouble)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readFloat: SQLInputIO[Float] =
-    F.liftFC(ReadFloat)
+    F.liftF(ReadFloat)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readInt: SQLInputIO[Int] =
-    F.liftFC(ReadInt)
+    F.liftF(ReadInt)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readLong: SQLInputIO[Long] =
-    F.liftFC(ReadLong)
+    F.liftF(ReadLong)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readNClob: SQLInputIO[NClob] =
-    F.liftFC(ReadNClob)
+    F.liftF(ReadNClob)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readNString: SQLInputIO[String] =
-    F.liftFC(ReadNString)
+    F.liftF(ReadNString)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readObject: SQLInputIO[Object] =
-    F.liftFC(ReadObject)
+    F.liftF(ReadObject)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readRef: SQLInputIO[Ref] =
-    F.liftFC(ReadRef)
+    F.liftF(ReadRef)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readRowId: SQLInputIO[RowId] =
-    F.liftFC(ReadRowId)
+    F.liftF(ReadRowId)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readSQLXML: SQLInputIO[SQLXML] =
-    F.liftFC(ReadSQLXML)
+    F.liftF(ReadSQLXML)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readShort: SQLInputIO[Short] =
-    F.liftFC(ReadShort)
+    F.liftF(ReadShort)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readString: SQLInputIO[String] =
-    F.liftFC(ReadString)
+    F.liftF(ReadString)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readTime: SQLInputIO[Time] =
-    F.liftFC(ReadTime)
+    F.liftF(ReadTime)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readTimestamp: SQLInputIO[Timestamp] =
-    F.liftFC(ReadTimestamp)
+    F.liftF(ReadTimestamp)
 
   /** 
    * @group Constructors (Primitives)
    */
   val readURL: SQLInputIO[URL] =
-    F.liftFC(ReadURL)
+    F.liftF(ReadURL)
 
   /** 
    * @group Constructors (Primitives)
    */
   val wasNull: SQLInputIO[Boolean] =
-    F.liftFC(WasNull)
+    F.liftF(WasNull)
 
  /** 
   * Natural transformation from `SQLInputOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLInput`. 

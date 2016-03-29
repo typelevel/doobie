@@ -1,6 +1,6 @@
 package doobie.contrib.postgresql.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -22,7 +22,7 @@ import fastpath.FastpathIO
  *
  * `FastpathIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `FastpathOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`. 
  *
  * The library provides a natural transformation to `Kleisli[M, Fastpath, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -81,14 +81,7 @@ object fastpath { self =>
    * a `org.postgresql.fastpath.Fastpath` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type FastpathIO[A] = F.FreeC[FastpathOp, A]
-
-  /**
-   * Monad instance for [[FastpathIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadFastpathIO: Monad[FastpathIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[FastpathOp, α]})#λ]
+  type FastpathIO[A] = F[FastpathOp, A]
 
   /**
    * Catchable instance for [[FastpathIO]].
@@ -116,62 +109,62 @@ object fastpath { self =>
    * @group Constructors (Lifting)
    */
   def attempt[A](a: FastpathIO[A]): FastpathIO[Throwable \/ A] =
-    F.liftFC[FastpathOp, Throwable \/ A](Attempt(a))
+    F.liftF[FastpathOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): FastpathIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /** 
    * @group Constructors (Primitives)
    */
   def addFunction(a: String, b: Int): FastpathIO[Unit] =
-    F.liftFC(AddFunction(a, b))
+    F.liftF(AddFunction(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def addFunctions(a: ResultSet): FastpathIO[Unit] =
-    F.liftFC(AddFunctions(a))
+    F.liftF(AddFunctions(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def fastpath(a: String, b: Boolean, c: Array[FastpathArg]): FastpathIO[Object] =
-    F.liftFC(Fastpath(a, b, c))
+    F.liftF(Fastpath(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def fastpath(a: Int, b: Boolean, c: Array[FastpathArg]): FastpathIO[Object] =
-    F.liftFC(Fastpath1(a, b, c))
+    F.liftF(Fastpath1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getData(a: String, b: Array[FastpathArg]): FastpathIO[Array[Byte]] =
-    F.liftFC(GetData(a, b))
+    F.liftF(GetData(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getID(a: String): FastpathIO[Int] =
-    F.liftFC(GetID(a))
+    F.liftF(GetID(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getInteger(a: String, b: Array[FastpathArg]): FastpathIO[Int] =
-    F.liftFC(GetInteger(a, b))
+    F.liftF(GetInteger(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getOID(a: String, b: Array[FastpathArg]): FastpathIO[Long] =
-    F.liftFC(GetOID(a, b))
+    F.liftF(GetOID(a, b))
 
  /** 
   * Natural transformation from `FastpathOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.fastpath.Fastpath`. 
@@ -216,7 +209,7 @@ object fastpath { self =>
    */
   implicit class FastpathIOOps[A](ma: FastpathIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGFastpath, A] =
-      F.runFC[FastpathOp,({type l[a]=Kleisli[M,PGFastpath,a]})#l,A](ma)(kleisliTrans[M])
+      ma.foldMap[Kleisli[M, PGFastpath, ?]](kleisliTrans[M])
   }
 
 }

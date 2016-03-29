@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -47,7 +47,7 @@ import resultset.ResultSetIO
  *
  * `RefIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `RefOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Ref, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -97,7 +97,7 @@ object ref {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends RefOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends RefOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -118,11 +118,11 @@ object ref {
     case object GetBaseTypeName extends RefOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
     }
-    case object GetObject extends RefOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
-    }
-    case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[Object] {
+    case class  GetObject(a: Map[String, Class[_]]) extends RefOp[Object] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+    }
+    case object GetObject1 extends RefOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
     }
     case class  SetObject(a: Object) extends RefOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
@@ -136,14 +136,7 @@ object ref {
    * a `java.sql.Ref` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type RefIO[A] = F.FreeC[RefOp, A]
-
-  /**
-   * Monad instance for [[RefIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadRefIO: Monad[RefIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[RefOp, α]})#λ]
+  type RefIO[A] = F[RefOp, A]
 
   /**
    * Catchable instance for [[RefIO]].
@@ -168,53 +161,53 @@ object ref {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): RefIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): RefIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a RefIO[A] into an exception-capturing RefIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: RefIO[A]): RefIO[Throwable \/ A] =
-    F.liftFC[RefOp, Throwable \/ A](Attempt(a))
+    F.liftF[RefOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): RefIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying Ref.
    * @group Constructors (Lifting)
    */
   def raw[A](f: Ref => A): RefIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getBaseTypeName: RefIO[String] =
-    F.liftFC(GetBaseTypeName)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  val getObject: RefIO[Object] =
-    F.liftFC(GetObject)
+    F.liftF(GetBaseTypeName)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getObject(a: Map[String, Class[_]]): RefIO[Object] =
-    F.liftFC(GetObject1(a))
+    F.liftF(GetObject(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val getObject: RefIO[Object] =
+    F.liftF(GetObject1)
 
   /** 
    * @group Constructors (Primitives)
    */
   def setObject(a: Object): RefIO[Unit] =
-    F.liftFC(SetObject(a))
+    F.liftF(SetObject(a))
 
  /** 
   * Natural transformation from `RefOp` to `Kleisli` for the given `M`, consuming a `java.sql.Ref`. 

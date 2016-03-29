@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -46,7 +46,7 @@ import resultset.ResultSetIO
  *
  * `BlobIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `BlobOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Blob, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -96,7 +96,7 @@ object blob {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends BlobOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends BlobOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -117,11 +117,11 @@ object blob {
     case object Free extends BlobOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
     }
-    case class  GetBinaryStream(a: Long, b: Long) extends BlobOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
-    }
-    case object GetBinaryStream1 extends BlobOp[InputStream] {
+    case object GetBinaryStream extends BlobOp[InputStream] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
+    }
+    case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
     }
     case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a, b))
@@ -129,20 +129,20 @@ object blob {
     case object Length extends BlobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
-    case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
+    case class  Position(a: Blob, b: Long) extends BlobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
-    case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
+    case class  Position1(a: Array[Byte], b: Long) extends BlobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
     }
-    case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
-    }
-    case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
+    }
+    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -156,14 +156,7 @@ object blob {
    * a `java.sql.Blob` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type BlobIO[A] = F.FreeC[BlobOp, A]
-
-  /**
-   * Monad instance for [[BlobIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadBlobIO: Monad[BlobIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[BlobOp, α]})#λ]
+  type BlobIO[A] = F[BlobOp, A]
 
   /**
    * Catchable instance for [[BlobIO]].
@@ -188,95 +181,95 @@ object blob {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): BlobIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): BlobIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a BlobIO[A] into an exception-capturing BlobIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: BlobIO[A]): BlobIO[Throwable \/ A] =
-    F.liftFC[BlobOp, Throwable \/ A](Attempt(a))
+    F.liftF[BlobOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): BlobIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying Blob.
    * @group Constructors (Lifting)
    */
   def raw[A](f: Blob => A): BlobIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val free: BlobIO[Unit] =
-    F.liftFC(Free)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getBinaryStream(a: Long, b: Long): BlobIO[InputStream] =
-    F.liftFC(GetBinaryStream(a, b))
+    F.liftF(Free)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getBinaryStream: BlobIO[InputStream] =
-    F.liftFC(GetBinaryStream1)
+    F.liftF(GetBinaryStream)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getBinaryStream(a: Long, b: Long): BlobIO[InputStream] =
+    F.liftF(GetBinaryStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBytes(a: Long, b: Int): BlobIO[Array[Byte]] =
-    F.liftFC(GetBytes(a, b))
+    F.liftF(GetBytes(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val length: BlobIO[Long] =
-    F.liftFC(Length)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def position(a: Array[Byte], b: Long): BlobIO[Long] =
-    F.liftFC(Position(a, b))
+    F.liftF(Length)
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: Blob, b: Long): BlobIO[Long] =
-    F.liftFC(Position1(a, b))
+    F.liftF(Position(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def position(a: Array[Byte], b: Long): BlobIO[Long] =
+    F.liftF(Position1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBinaryStream(a: Long): BlobIO[OutputStream] =
-    F.liftFC(SetBinaryStream(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
-    F.liftFC(SetBytes(a, b))
+    F.liftF(SetBinaryStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
-    F.liftFC(SetBytes1(a, b, c, d))
+    F.liftF(SetBytes(a, b, c, d))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
+    F.liftF(SetBytes1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def truncate(a: Long): BlobIO[Unit] =
-    F.liftFC(Truncate(a))
+    F.liftF(Truncate(a))
 
  /** 
   * Natural transformation from `BlobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Blob`. 

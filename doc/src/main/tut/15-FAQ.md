@@ -31,8 +31,8 @@ Interpolated parameters are replaced with `?` placeholders, so if you need to as
 
 ```tut
 val s = "foo"
-sql"select $s".query[String].check.run
-sql"select $s :: char".query[String].check.run
+sql"select $s".query[String].check.unsafePerformSync
+sql"select $s :: char".query[String].check.unsafePerformSync
 ```
 
 ### How do I do several things in the same transaction?
@@ -61,14 +61,14 @@ def cities(code: Code, asc: Boolean): Query0[City] = {
 We can check the resulting `Query0` as expected.
 
 ```tut:plain
-cities(Code("USA"), true).check.run
+cities(Code("USA"), true).check.unsafePerformSync
 ```
 
 And it works!
 
 ```tut
-cities(Code("USA"), true).process.take(5).quick.run
-cities(Code("USA"), false).process.take(5).quick.run
+cities(Code("USA"), true).process.take(5).quick.unsafePerformSync
+cities(Code("USA"), false).process.take(5).quick.unsafePerformSync
 ```
 
 ### How do I handle outer joins?
@@ -94,7 +94,7 @@ val join: Query0[(Country, Option[City])] =
 Some examples, filtered for size.
 
 ```tut
-join.process.filter(_._1.name.startsWith("United")).quick.run
+join.process.filter(_._1.name.startsWith("United")).quick.unsafePerformSync
 ```
 
 ### How do I resolve `error: Could not find or construct Param[...]`?

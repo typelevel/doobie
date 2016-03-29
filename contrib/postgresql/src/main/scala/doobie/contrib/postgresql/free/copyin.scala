@@ -1,6 +1,6 @@
 package doobie.contrib.postgresql.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -19,7 +19,7 @@ import copyout.CopyOutIO
  *
  * `CopyInIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `CopyInOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`. 
  *
  * The library provides a natural transformation to `Kleisli[M, CopyIn, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -79,14 +79,7 @@ object copyin {
    * a `org.postgresql.copy.CopyIn` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type CopyInIO[A] = F.FreeC[CopyInOp, A]
-
-  /**
-   * Monad instance for [[CopyInIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadCopyInIO: Monad[CopyInIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[CopyInOp, α]})#λ]
+  type CopyInIO[A] = F[CopyInOp, A]
 
   /**
    * Catchable instance for [[CopyInIO]].
@@ -111,75 +104,75 @@ object copyin {
    * @group Constructors (Lifting)
    */
   def liftCopyOut[A](s: CopyOut, k: CopyOutIO[A]): CopyInIO[A] =
-    F.liftFC(LiftCopyOutIO(s, k))
+    F.liftF(LiftCopyOutIO(s, k))
 
   /** 
    * Lift a CopyInIO[A] into an exception-capturing CopyInIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: CopyInIO[A]): CopyInIO[Throwable \/ A] =
-    F.liftFC[CopyInOp, Throwable \/ A](Attempt(a))
+    F.liftF[CopyInOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): CopyInIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /** 
    * @group Constructors (Primitives)
    */
   val cancelCopy: CopyInIO[Unit] =
-    F.liftFC(CancelCopy)
+    F.liftF(CancelCopy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val endCopy: CopyInIO[Long] =
-    F.liftFC(EndCopy)
+    F.liftF(EndCopy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val flushCopy: CopyInIO[Unit] =
-    F.liftFC(FlushCopy)
+    F.liftF(FlushCopy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getFieldCount: CopyInIO[Int] =
-    F.liftFC(GetFieldCount)
+    F.liftF(GetFieldCount)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getFieldFormat(a: Int): CopyInIO[Int] =
-    F.liftFC(GetFieldFormat(a))
+    F.liftF(GetFieldFormat(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getFormat: CopyInIO[Int] =
-    F.liftFC(GetFormat)
+    F.liftF(GetFormat)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getHandledRowCount: CopyInIO[Long] =
-    F.liftFC(GetHandledRowCount)
+    F.liftF(GetHandledRowCount)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isActive: CopyInIO[Boolean] =
-    F.liftFC(IsActive)
+    F.liftF(IsActive)
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeToCopy(a: Array[Byte], b: Int, c: Int): CopyInIO[Unit] =
-    F.liftFC(WriteToCopy(a, b, c))
+    F.liftF(WriteToCopy(a, b, c))
 
  /** 
   * Natural transformation from `CopyInOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyIn`. 
@@ -225,7 +218,7 @@ object copyin {
    */
   implicit class CopyInIOOps[A](ma: CopyInIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyIn, A] =
-      F.runFC[CopyInOp,({type l[a]=Kleisli[M,CopyIn,a]})#l,A](ma)(kleisliTrans[M])
+      ma.foldMap[Kleisli[M, CopyIn, ?]](kleisliTrans[M])
   }
 
 }

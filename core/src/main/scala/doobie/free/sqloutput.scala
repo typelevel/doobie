@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -56,7 +56,7 @@ import resultset.ResultSetIO
  *
  * `SQLOutputIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `SQLOutputOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, SQLOutput, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -106,7 +106,7 @@ object sqloutput {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLOutputOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLOutputOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -214,14 +214,7 @@ object sqloutput {
    * a `java.sql.SQLOutput` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type SQLOutputIO[A] = F.FreeC[SQLOutputOp, A]
-
-  /**
-   * Monad instance for [[SQLOutputIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadSQLOutputIO: Monad[SQLOutputIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[SQLOutputOp, α]})#λ]
+  type SQLOutputIO[A] = F[SQLOutputOp, A]
 
   /**
    * Catchable instance for [[SQLOutputIO]].
@@ -246,191 +239,191 @@ object sqloutput {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLOutputIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLOutputIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a SQLOutputIO[A] into an exception-capturing SQLOutputIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] =
-    F.liftFC[SQLOutputOp, Throwable \/ A](Attempt(a))
+    F.liftF[SQLOutputOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): SQLOutputIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying SQLOutput.
    * @group Constructors (Lifting)
    */
   def raw[A](f: SQLOutput => A): SQLOutputIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeArray(a: SqlArray): SQLOutputIO[Unit] =
-    F.liftFC(WriteArray(a))
+    F.liftF(WriteArray(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeAsciiStream(a: InputStream): SQLOutputIO[Unit] =
-    F.liftFC(WriteAsciiStream(a))
+    F.liftF(WriteAsciiStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeBigDecimal(a: BigDecimal): SQLOutputIO[Unit] =
-    F.liftFC(WriteBigDecimal(a))
+    F.liftF(WriteBigDecimal(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeBinaryStream(a: InputStream): SQLOutputIO[Unit] =
-    F.liftFC(WriteBinaryStream(a))
+    F.liftF(WriteBinaryStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeBlob(a: Blob): SQLOutputIO[Unit] =
-    F.liftFC(WriteBlob(a))
+    F.liftF(WriteBlob(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeBoolean(a: Boolean): SQLOutputIO[Unit] =
-    F.liftFC(WriteBoolean(a))
+    F.liftF(WriteBoolean(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeByte(a: Byte): SQLOutputIO[Unit] =
-    F.liftFC(WriteByte(a))
+    F.liftF(WriteByte(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeBytes(a: Array[Byte]): SQLOutputIO[Unit] =
-    F.liftFC(WriteBytes(a))
+    F.liftF(WriteBytes(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeCharacterStream(a: Reader): SQLOutputIO[Unit] =
-    F.liftFC(WriteCharacterStream(a))
+    F.liftF(WriteCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeClob(a: Clob): SQLOutputIO[Unit] =
-    F.liftFC(WriteClob(a))
+    F.liftF(WriteClob(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeDate(a: Date): SQLOutputIO[Unit] =
-    F.liftFC(WriteDate(a))
+    F.liftF(WriteDate(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeDouble(a: Double): SQLOutputIO[Unit] =
-    F.liftFC(WriteDouble(a))
+    F.liftF(WriteDouble(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeFloat(a: Float): SQLOutputIO[Unit] =
-    F.liftFC(WriteFloat(a))
+    F.liftF(WriteFloat(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeInt(a: Int): SQLOutputIO[Unit] =
-    F.liftFC(WriteInt(a))
+    F.liftF(WriteInt(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeLong(a: Long): SQLOutputIO[Unit] =
-    F.liftFC(WriteLong(a))
+    F.liftF(WriteLong(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeNClob(a: NClob): SQLOutputIO[Unit] =
-    F.liftFC(WriteNClob(a))
+    F.liftF(WriteNClob(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeNString(a: String): SQLOutputIO[Unit] =
-    F.liftFC(WriteNString(a))
+    F.liftF(WriteNString(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeObject(a: SQLData): SQLOutputIO[Unit] =
-    F.liftFC(WriteObject(a))
+    F.liftF(WriteObject(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeRef(a: Ref): SQLOutputIO[Unit] =
-    F.liftFC(WriteRef(a))
+    F.liftF(WriteRef(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeRowId(a: RowId): SQLOutputIO[Unit] =
-    F.liftFC(WriteRowId(a))
+    F.liftF(WriteRowId(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeSQLXML(a: SQLXML): SQLOutputIO[Unit] =
-    F.liftFC(WriteSQLXML(a))
+    F.liftF(WriteSQLXML(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeShort(a: Short): SQLOutputIO[Unit] =
-    F.liftFC(WriteShort(a))
+    F.liftF(WriteShort(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeString(a: String): SQLOutputIO[Unit] =
-    F.liftFC(WriteString(a))
+    F.liftF(WriteString(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeStruct(a: Struct): SQLOutputIO[Unit] =
-    F.liftFC(WriteStruct(a))
+    F.liftF(WriteStruct(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeTime(a: Time): SQLOutputIO[Unit] =
-    F.liftFC(WriteTime(a))
+    F.liftF(WriteTime(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeTimestamp(a: Timestamp): SQLOutputIO[Unit] =
-    F.liftFC(WriteTimestamp(a))
+    F.liftF(WriteTimestamp(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeURL(a: URL): SQLOutputIO[Unit] =
-    F.liftFC(WriteURL(a))
+    F.liftF(WriteURL(a))
 
  /** 
   * Natural transformation from `SQLOutputOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLOutput`. 

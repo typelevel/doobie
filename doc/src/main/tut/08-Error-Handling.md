@@ -77,7 +77,7 @@ List(sql"""DROP TABLE IF EXISTS person""",
      sql"""CREATE TABLE person (
              id    SERIAL,
              name  VARCHAR NOT NULL UNIQUE
-           )""").traverse(_.update.quick).void.run
+           )""").traverse(_.update.quick).void.unsafePerformSync
 ```
 
 Alright, let's define a `Person` data type and a way to insert instances.
@@ -95,14 +95,14 @@ def insert(s: String): ConnectionIO[Person] = {
 The first insert will work.
 
 ```tut
-insert("bob").quick.run
+insert("bob").quick.unsafePerformSync
 ```
 
 The second will fail with a unique constraint violation.
 
 ```tut
 try {
-  insert("bob").quick.run
+  insert("bob").quick.unsafePerformSync
 } catch {
   case e: java.sql.SQLException => 
     println(e.getMessage)
@@ -126,7 +126,7 @@ Given this definition we can safely attempt to insert duplicate records and get 
 
 
 ```tut
-safeInsert("bob").quick.run
+safeInsert("bob").quick.unsafePerformSync
 
-safeInsert("steve").quick.run
+safeInsert("steve").quick.unsafePerformSync
 ```

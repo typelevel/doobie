@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -48,7 +48,7 @@ import resultset.ResultSetIO
  *
  * `DriverIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `DriverOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Driver, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -98,7 +98,7 @@ object driver {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -146,14 +146,7 @@ object driver {
    * a `java.sql.Driver` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type DriverIO[A] = F.FreeC[DriverOp, A]
-
-  /**
-   * Monad instance for [[DriverIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadDriverIO: Monad[DriverIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[DriverOp, α]})#λ]
+  type DriverIO[A] = F[DriverOp, A]
 
   /**
    * Catchable instance for [[DriverIO]].
@@ -178,71 +171,71 @@ object driver {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a DriverIO[A] into an exception-capturing DriverIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: DriverIO[A]): DriverIO[Throwable \/ A] =
-    F.liftFC[DriverOp, Throwable \/ A](Attempt(a))
+    F.liftF[DriverOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): DriverIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying Driver.
    * @group Constructors (Lifting)
    */
   def raw[A](f: Driver => A): DriverIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   def acceptsURL(a: String): DriverIO[Boolean] =
-    F.liftFC(AcceptsURL(a))
+    F.liftF(AcceptsURL(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def connect(a: String, b: Properties): DriverIO[Connection] =
-    F.liftFC(Connect(a, b))
+    F.liftF(Connect(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMajorVersion: DriverIO[Int] =
-    F.liftFC(GetMajorVersion)
+    F.liftF(GetMajorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMinorVersion: DriverIO[Int] =
-    F.liftFC(GetMinorVersion)
+    F.liftF(GetMinorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getParentLogger: DriverIO[Logger] =
-    F.liftFC(GetParentLogger)
+    F.liftF(GetParentLogger)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getPropertyInfo(a: String, b: Properties): DriverIO[Array[DriverPropertyInfo]] =
-    F.liftFC(GetPropertyInfo(a, b))
+    F.liftF(GetPropertyInfo(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val jdbcCompliant: DriverIO[Boolean] =
-    F.liftFC(JdbcCompliant)
+    F.liftF(JdbcCompliant)
 
  /** 
   * Natural transformation from `DriverOp` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 

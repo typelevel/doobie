@@ -37,9 +37,6 @@ import scalaz.stream.Process
 object resultset {
 
   /** @group Typeclass Instances */
-  implicit val MonadResultSetIO = RS.MonadResultSetIO
-
-  /** @group Typeclass Instances */
   implicit val CatchableResultSetIO = RS.CatchableResultSetIO
 
   /**
@@ -211,7 +208,7 @@ object resultset {
     * @group Results
     */
   def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
-    (getNext[A] |@| list) {
+    (getNext[A] |@| ilist) {
       case (Some(a), as) => NonEmptyList.nel(a, as)
       case (None, _)     => throw UnexpectedEnd
     }

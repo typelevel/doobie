@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -48,7 +48,7 @@ import resultset.ResultSetIO
  *
  * `DatabaseMetaDataIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `DatabaseMetaDataOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, DatabaseMetaData, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -98,7 +98,7 @@ object databasemetadata {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DatabaseMetaDataOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DatabaseMetaDataOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -653,14 +653,7 @@ object databasemetadata {
    * a `java.sql.DatabaseMetaData` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type DatabaseMetaDataIO[A] = F.FreeC[DatabaseMetaDataOp, A]
-
-  /**
-   * Monad instance for [[DatabaseMetaDataIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadDatabaseMetaDataIO: Monad[DatabaseMetaDataIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[DatabaseMetaDataOp, α]})#λ]
+  type DatabaseMetaDataIO[A] = F[DatabaseMetaDataOp, A]
 
   /**
    * Catchable instance for [[DatabaseMetaDataIO]].
@@ -685,1085 +678,1085 @@ object databasemetadata {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DatabaseMetaDataIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DatabaseMetaDataIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a DatabaseMetaDataIO[A] into an exception-capturing DatabaseMetaDataIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] =
-    F.liftFC[DatabaseMetaDataOp, Throwable \/ A](Attempt(a))
+    F.liftF[DatabaseMetaDataOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): DatabaseMetaDataIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying DatabaseMetaData.
    * @group Constructors (Lifting)
    */
   def raw[A](f: DatabaseMetaData => A): DatabaseMetaDataIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val allProceduresAreCallable: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(AllProceduresAreCallable)
+    F.liftF(AllProceduresAreCallable)
 
   /** 
    * @group Constructors (Primitives)
    */
   val allTablesAreSelectable: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(AllTablesAreSelectable)
+    F.liftF(AllTablesAreSelectable)
 
   /** 
    * @group Constructors (Primitives)
    */
   val autoCommitFailureClosesAllResultSets: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(AutoCommitFailureClosesAllResultSets)
+    F.liftF(AutoCommitFailureClosesAllResultSets)
 
   /** 
    * @group Constructors (Primitives)
    */
   val dataDefinitionCausesTransactionCommit: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(DataDefinitionCausesTransactionCommit)
+    F.liftF(DataDefinitionCausesTransactionCommit)
 
   /** 
    * @group Constructors (Primitives)
    */
   val dataDefinitionIgnoredInTransactions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(DataDefinitionIgnoredInTransactions)
+    F.liftF(DataDefinitionIgnoredInTransactions)
 
   /** 
    * @group Constructors (Primitives)
    */
   def deletesAreDetected(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(DeletesAreDetected(a))
+    F.liftF(DeletesAreDetected(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val doesMaxRowSizeIncludeBlobs: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(DoesMaxRowSizeIncludeBlobs)
+    F.liftF(DoesMaxRowSizeIncludeBlobs)
 
   /** 
    * @group Constructors (Primitives)
    */
   val generatedKeyAlwaysReturned: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(GeneratedKeyAlwaysReturned)
+    F.liftF(GeneratedKeyAlwaysReturned)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getAttributes(a: String, b: String, c: String, d: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetAttributes(a, b, c, d))
+    F.liftF(GetAttributes(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getBestRowIdentifier(a: String, b: String, c: String, d: Int, e: Boolean): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetBestRowIdentifier(a, b, c, d, e))
+    F.liftF(GetBestRowIdentifier(a, b, c, d, e))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCatalogSeparator: DatabaseMetaDataIO[String] =
-    F.liftFC(GetCatalogSeparator)
+    F.liftF(GetCatalogSeparator)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCatalogTerm: DatabaseMetaDataIO[String] =
-    F.liftFC(GetCatalogTerm)
+    F.liftF(GetCatalogTerm)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCatalogs: DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetCatalogs)
+    F.liftF(GetCatalogs)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getClientInfoProperties: DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetClientInfoProperties)
+    F.liftF(GetClientInfoProperties)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getColumnPrivileges(a: String, b: String, c: String, d: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetColumnPrivileges(a, b, c, d))
+    F.liftF(GetColumnPrivileges(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getColumns(a: String, b: String, c: String, d: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetColumns(a, b, c, d))
+    F.liftF(GetColumns(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getConnection: DatabaseMetaDataIO[Connection] =
-    F.liftFC(GetConnection)
+    F.liftF(GetConnection)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getCrossReference(a: String, b: String, c: String, d: String, e: String, f: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetCrossReference(a, b, c, d, e, f))
+    F.liftF(GetCrossReference(a, b, c, d, e, f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDatabaseMajorVersion: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetDatabaseMajorVersion)
+    F.liftF(GetDatabaseMajorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDatabaseMinorVersion: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetDatabaseMinorVersion)
+    F.liftF(GetDatabaseMinorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDatabaseProductName: DatabaseMetaDataIO[String] =
-    F.liftFC(GetDatabaseProductName)
+    F.liftF(GetDatabaseProductName)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDatabaseProductVersion: DatabaseMetaDataIO[String] =
-    F.liftFC(GetDatabaseProductVersion)
+    F.liftF(GetDatabaseProductVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDefaultTransactionIsolation: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetDefaultTransactionIsolation)
+    F.liftF(GetDefaultTransactionIsolation)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDriverMajorVersion: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetDriverMajorVersion)
+    F.liftF(GetDriverMajorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDriverMinorVersion: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetDriverMinorVersion)
+    F.liftF(GetDriverMinorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDriverName: DatabaseMetaDataIO[String] =
-    F.liftFC(GetDriverName)
+    F.liftF(GetDriverName)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getDriverVersion: DatabaseMetaDataIO[String] =
-    F.liftFC(GetDriverVersion)
+    F.liftF(GetDriverVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getExportedKeys(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetExportedKeys(a, b, c))
+    F.liftF(GetExportedKeys(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getExtraNameCharacters: DatabaseMetaDataIO[String] =
-    F.liftFC(GetExtraNameCharacters)
+    F.liftF(GetExtraNameCharacters)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getFunctionColumns(a: String, b: String, c: String, d: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetFunctionColumns(a, b, c, d))
+    F.liftF(GetFunctionColumns(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getFunctions(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetFunctions(a, b, c))
+    F.liftF(GetFunctions(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getIdentifierQuoteString: DatabaseMetaDataIO[String] =
-    F.liftFC(GetIdentifierQuoteString)
+    F.liftF(GetIdentifierQuoteString)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getImportedKeys(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetImportedKeys(a, b, c))
+    F.liftF(GetImportedKeys(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getIndexInfo(a: String, b: String, c: String, d: Boolean, e: Boolean): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetIndexInfo(a, b, c, d, e))
+    F.liftF(GetIndexInfo(a, b, c, d, e))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getJDBCMajorVersion: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetJDBCMajorVersion)
+    F.liftF(GetJDBCMajorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getJDBCMinorVersion: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetJDBCMinorVersion)
+    F.liftF(GetJDBCMinorVersion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxBinaryLiteralLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxBinaryLiteralLength)
+    F.liftF(GetMaxBinaryLiteralLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxCatalogNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxCatalogNameLength)
+    F.liftF(GetMaxCatalogNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxCharLiteralLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxCharLiteralLength)
+    F.liftF(GetMaxCharLiteralLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxColumnNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxColumnNameLength)
+    F.liftF(GetMaxColumnNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxColumnsInGroupBy: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxColumnsInGroupBy)
+    F.liftF(GetMaxColumnsInGroupBy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxColumnsInIndex: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxColumnsInIndex)
+    F.liftF(GetMaxColumnsInIndex)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxColumnsInOrderBy: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxColumnsInOrderBy)
+    F.liftF(GetMaxColumnsInOrderBy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxColumnsInSelect: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxColumnsInSelect)
+    F.liftF(GetMaxColumnsInSelect)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxColumnsInTable: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxColumnsInTable)
+    F.liftF(GetMaxColumnsInTable)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxConnections: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxConnections)
+    F.liftF(GetMaxConnections)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxCursorNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxCursorNameLength)
+    F.liftF(GetMaxCursorNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxIndexLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxIndexLength)
+    F.liftF(GetMaxIndexLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxProcedureNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxProcedureNameLength)
+    F.liftF(GetMaxProcedureNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxRowSize: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxRowSize)
+    F.liftF(GetMaxRowSize)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxSchemaNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxSchemaNameLength)
+    F.liftF(GetMaxSchemaNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxStatementLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxStatementLength)
+    F.liftF(GetMaxStatementLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxStatements: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxStatements)
+    F.liftF(GetMaxStatements)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxTableNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxTableNameLength)
+    F.liftF(GetMaxTableNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxTablesInSelect: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxTablesInSelect)
+    F.liftF(GetMaxTablesInSelect)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMaxUserNameLength: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetMaxUserNameLength)
+    F.liftF(GetMaxUserNameLength)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getNumericFunctions: DatabaseMetaDataIO[String] =
-    F.liftFC(GetNumericFunctions)
+    F.liftF(GetNumericFunctions)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getPrimaryKeys(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetPrimaryKeys(a, b, c))
+    F.liftF(GetPrimaryKeys(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getProcedureColumns(a: String, b: String, c: String, d: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetProcedureColumns(a, b, c, d))
+    F.liftF(GetProcedureColumns(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getProcedureTerm: DatabaseMetaDataIO[String] =
-    F.liftFC(GetProcedureTerm)
+    F.liftF(GetProcedureTerm)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getProcedures(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetProcedures(a, b, c))
+    F.liftF(GetProcedures(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getPseudoColumns(a: String, b: String, c: String, d: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetPseudoColumns(a, b, c, d))
+    F.liftF(GetPseudoColumns(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getResultSetHoldability: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetResultSetHoldability)
+    F.liftF(GetResultSetHoldability)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getRowIdLifetime: DatabaseMetaDataIO[RowIdLifetime] =
-    F.liftFC(GetRowIdLifetime)
+    F.liftF(GetRowIdLifetime)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSQLKeywords: DatabaseMetaDataIO[String] =
-    F.liftFC(GetSQLKeywords)
+    F.liftF(GetSQLKeywords)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSQLStateType: DatabaseMetaDataIO[Int] =
-    F.liftFC(GetSQLStateType)
+    F.liftF(GetSQLStateType)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSchemaTerm: DatabaseMetaDataIO[String] =
-    F.liftFC(GetSchemaTerm)
+    F.liftF(GetSchemaTerm)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSchemas: DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetSchemas)
+    F.liftF(GetSchemas)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSchemas(a: String, b: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetSchemas1(a, b))
+    F.liftF(GetSchemas1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSearchStringEscape: DatabaseMetaDataIO[String] =
-    F.liftFC(GetSearchStringEscape)
+    F.liftF(GetSearchStringEscape)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getStringFunctions: DatabaseMetaDataIO[String] =
-    F.liftFC(GetStringFunctions)
+    F.liftF(GetStringFunctions)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSuperTables(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetSuperTables(a, b, c))
+    F.liftF(GetSuperTables(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSuperTypes(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetSuperTypes(a, b, c))
+    F.liftF(GetSuperTypes(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSystemFunctions: DatabaseMetaDataIO[String] =
-    F.liftFC(GetSystemFunctions)
+    F.liftF(GetSystemFunctions)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTablePrivileges(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetTablePrivileges(a, b, c))
+    F.liftF(GetTablePrivileges(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getTableTypes: DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetTableTypes)
+    F.liftF(GetTableTypes)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getTables(a: String, b: String, c: String, d: Array[String]): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetTables(a, b, c, d))
+    F.liftF(GetTables(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getTimeDateFunctions: DatabaseMetaDataIO[String] =
-    F.liftFC(GetTimeDateFunctions)
+    F.liftF(GetTimeDateFunctions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getTypeInfo: DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetTypeInfo)
+    F.liftF(GetTypeInfo)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getUDTs(a: String, b: String, c: String, d: Array[Int]): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetUDTs(a, b, c, d))
+    F.liftF(GetUDTs(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getURL: DatabaseMetaDataIO[String] =
-    F.liftFC(GetURL)
+    F.liftF(GetURL)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getUserName: DatabaseMetaDataIO[String] =
-    F.liftFC(GetUserName)
+    F.liftF(GetUserName)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getVersionColumns(a: String, b: String, c: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftFC(GetVersionColumns(a, b, c))
+    F.liftF(GetVersionColumns(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def insertsAreDetected(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(InsertsAreDetected(a))
+    F.liftF(InsertsAreDetected(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val isCatalogAtStart: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(IsCatalogAtStart)
+    F.liftF(IsCatalogAtStart)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isReadOnly: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(IsReadOnly)
+    F.liftF(IsReadOnly)
 
   /** 
    * @group Constructors (Primitives)
    */
   def isWrapperFor(a: Class[_]): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(IsWrapperFor(a))
+    F.liftF(IsWrapperFor(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val locatorsUpdateCopy: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(LocatorsUpdateCopy)
+    F.liftF(LocatorsUpdateCopy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val nullPlusNonNullIsNull: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(NullPlusNonNullIsNull)
+    F.liftF(NullPlusNonNullIsNull)
 
   /** 
    * @group Constructors (Primitives)
    */
   val nullsAreSortedAtEnd: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(NullsAreSortedAtEnd)
+    F.liftF(NullsAreSortedAtEnd)
 
   /** 
    * @group Constructors (Primitives)
    */
   val nullsAreSortedAtStart: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(NullsAreSortedAtStart)
+    F.liftF(NullsAreSortedAtStart)
 
   /** 
    * @group Constructors (Primitives)
    */
   val nullsAreSortedHigh: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(NullsAreSortedHigh)
+    F.liftF(NullsAreSortedHigh)
 
   /** 
    * @group Constructors (Primitives)
    */
   val nullsAreSortedLow: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(NullsAreSortedLow)
+    F.liftF(NullsAreSortedLow)
 
   /** 
    * @group Constructors (Primitives)
    */
   def othersDeletesAreVisible(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(OthersDeletesAreVisible(a))
+    F.liftF(OthersDeletesAreVisible(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def othersInsertsAreVisible(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(OthersInsertsAreVisible(a))
+    F.liftF(OthersInsertsAreVisible(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def othersUpdatesAreVisible(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(OthersUpdatesAreVisible(a))
+    F.liftF(OthersUpdatesAreVisible(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def ownDeletesAreVisible(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(OwnDeletesAreVisible(a))
+    F.liftF(OwnDeletesAreVisible(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def ownInsertsAreVisible(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(OwnInsertsAreVisible(a))
+    F.liftF(OwnInsertsAreVisible(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def ownUpdatesAreVisible(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(OwnUpdatesAreVisible(a))
+    F.liftF(OwnUpdatesAreVisible(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val storesLowerCaseIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(StoresLowerCaseIdentifiers)
+    F.liftF(StoresLowerCaseIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val storesLowerCaseQuotedIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(StoresLowerCaseQuotedIdentifiers)
+    F.liftF(StoresLowerCaseQuotedIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val storesMixedCaseIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(StoresMixedCaseIdentifiers)
+    F.liftF(StoresMixedCaseIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val storesMixedCaseQuotedIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(StoresMixedCaseQuotedIdentifiers)
+    F.liftF(StoresMixedCaseQuotedIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val storesUpperCaseIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(StoresUpperCaseIdentifiers)
+    F.liftF(StoresUpperCaseIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val storesUpperCaseQuotedIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(StoresUpperCaseQuotedIdentifiers)
+    F.liftF(StoresUpperCaseQuotedIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsANSI92EntryLevelSQL: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsANSI92EntryLevelSQL)
+    F.liftF(SupportsANSI92EntryLevelSQL)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsANSI92FullSQL: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsANSI92FullSQL)
+    F.liftF(SupportsANSI92FullSQL)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsANSI92IntermediateSQL: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsANSI92IntermediateSQL)
+    F.liftF(SupportsANSI92IntermediateSQL)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsAlterTableWithAddColumn: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsAlterTableWithAddColumn)
+    F.liftF(SupportsAlterTableWithAddColumn)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsAlterTableWithDropColumn: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsAlterTableWithDropColumn)
+    F.liftF(SupportsAlterTableWithDropColumn)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsBatchUpdates: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsBatchUpdates)
+    F.liftF(SupportsBatchUpdates)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCatalogsInDataManipulation: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCatalogsInDataManipulation)
+    F.liftF(SupportsCatalogsInDataManipulation)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCatalogsInIndexDefinitions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCatalogsInIndexDefinitions)
+    F.liftF(SupportsCatalogsInIndexDefinitions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCatalogsInPrivilegeDefinitions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCatalogsInPrivilegeDefinitions)
+    F.liftF(SupportsCatalogsInPrivilegeDefinitions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCatalogsInProcedureCalls: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCatalogsInProcedureCalls)
+    F.liftF(SupportsCatalogsInProcedureCalls)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCatalogsInTableDefinitions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCatalogsInTableDefinitions)
+    F.liftF(SupportsCatalogsInTableDefinitions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsColumnAliasing: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsColumnAliasing)
+    F.liftF(SupportsColumnAliasing)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsConvert: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsConvert)
+    F.liftF(SupportsConvert)
 
   /** 
    * @group Constructors (Primitives)
    */
   def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsConvert1(a, b))
+    F.liftF(SupportsConvert1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCoreSQLGrammar: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCoreSQLGrammar)
+    F.liftF(SupportsCoreSQLGrammar)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsCorrelatedSubqueries: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsCorrelatedSubqueries)
+    F.liftF(SupportsCorrelatedSubqueries)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsDataDefinitionAndDataManipulationTransactions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsDataDefinitionAndDataManipulationTransactions)
+    F.liftF(SupportsDataDefinitionAndDataManipulationTransactions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsDataManipulationTransactionsOnly: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsDataManipulationTransactionsOnly)
+    F.liftF(SupportsDataManipulationTransactionsOnly)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsDifferentTableCorrelationNames: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsDifferentTableCorrelationNames)
+    F.liftF(SupportsDifferentTableCorrelationNames)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsExpressionsInOrderBy: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsExpressionsInOrderBy)
+    F.liftF(SupportsExpressionsInOrderBy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsExtendedSQLGrammar: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsExtendedSQLGrammar)
+    F.liftF(SupportsExtendedSQLGrammar)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsFullOuterJoins: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsFullOuterJoins)
+    F.liftF(SupportsFullOuterJoins)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsGetGeneratedKeys: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsGetGeneratedKeys)
+    F.liftF(SupportsGetGeneratedKeys)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsGroupBy: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsGroupBy)
+    F.liftF(SupportsGroupBy)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsGroupByBeyondSelect: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsGroupByBeyondSelect)
+    F.liftF(SupportsGroupByBeyondSelect)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsGroupByUnrelated: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsGroupByUnrelated)
+    F.liftF(SupportsGroupByUnrelated)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsIntegrityEnhancementFacility: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsIntegrityEnhancementFacility)
+    F.liftF(SupportsIntegrityEnhancementFacility)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsLikeEscapeClause: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsLikeEscapeClause)
+    F.liftF(SupportsLikeEscapeClause)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsLimitedOuterJoins: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsLimitedOuterJoins)
+    F.liftF(SupportsLimitedOuterJoins)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsMinimumSQLGrammar: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsMinimumSQLGrammar)
+    F.liftF(SupportsMinimumSQLGrammar)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsMixedCaseIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsMixedCaseIdentifiers)
+    F.liftF(SupportsMixedCaseIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsMixedCaseQuotedIdentifiers: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsMixedCaseQuotedIdentifiers)
+    F.liftF(SupportsMixedCaseQuotedIdentifiers)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsMultipleOpenResults: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsMultipleOpenResults)
+    F.liftF(SupportsMultipleOpenResults)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsMultipleResultSets: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsMultipleResultSets)
+    F.liftF(SupportsMultipleResultSets)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsMultipleTransactions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsMultipleTransactions)
+    F.liftF(SupportsMultipleTransactions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsNamedParameters: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsNamedParameters)
+    F.liftF(SupportsNamedParameters)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsNonNullableColumns: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsNonNullableColumns)
+    F.liftF(SupportsNonNullableColumns)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsOpenCursorsAcrossCommit: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsOpenCursorsAcrossCommit)
+    F.liftF(SupportsOpenCursorsAcrossCommit)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsOpenCursorsAcrossRollback: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsOpenCursorsAcrossRollback)
+    F.liftF(SupportsOpenCursorsAcrossRollback)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsOpenStatementsAcrossCommit: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsOpenStatementsAcrossCommit)
+    F.liftF(SupportsOpenStatementsAcrossCommit)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsOpenStatementsAcrossRollback: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsOpenStatementsAcrossRollback)
+    F.liftF(SupportsOpenStatementsAcrossRollback)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsOrderByUnrelated: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsOrderByUnrelated)
+    F.liftF(SupportsOrderByUnrelated)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsOuterJoins: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsOuterJoins)
+    F.liftF(SupportsOuterJoins)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsPositionedDelete: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsPositionedDelete)
+    F.liftF(SupportsPositionedDelete)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsPositionedUpdate: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsPositionedUpdate)
+    F.liftF(SupportsPositionedUpdate)
 
   /** 
    * @group Constructors (Primitives)
    */
   def supportsResultSetConcurrency(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsResultSetConcurrency(a, b))
+    F.liftF(SupportsResultSetConcurrency(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def supportsResultSetHoldability(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsResultSetHoldability(a))
+    F.liftF(SupportsResultSetHoldability(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def supportsResultSetType(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsResultSetType(a))
+    F.liftF(SupportsResultSetType(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSavepoints: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSavepoints)
+    F.liftF(SupportsSavepoints)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSchemasInDataManipulation: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSchemasInDataManipulation)
+    F.liftF(SupportsSchemasInDataManipulation)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSchemasInIndexDefinitions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSchemasInIndexDefinitions)
+    F.liftF(SupportsSchemasInIndexDefinitions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSchemasInPrivilegeDefinitions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSchemasInPrivilegeDefinitions)
+    F.liftF(SupportsSchemasInPrivilegeDefinitions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSchemasInProcedureCalls: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSchemasInProcedureCalls)
+    F.liftF(SupportsSchemasInProcedureCalls)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSchemasInTableDefinitions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSchemasInTableDefinitions)
+    F.liftF(SupportsSchemasInTableDefinitions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSelectForUpdate: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSelectForUpdate)
+    F.liftF(SupportsSelectForUpdate)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsStatementPooling: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsStatementPooling)
+    F.liftF(SupportsStatementPooling)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsStoredFunctionsUsingCallSyntax: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsStoredFunctionsUsingCallSyntax)
+    F.liftF(SupportsStoredFunctionsUsingCallSyntax)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsStoredProcedures: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsStoredProcedures)
+    F.liftF(SupportsStoredProcedures)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSubqueriesInComparisons: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSubqueriesInComparisons)
+    F.liftF(SupportsSubqueriesInComparisons)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSubqueriesInExists: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSubqueriesInExists)
+    F.liftF(SupportsSubqueriesInExists)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSubqueriesInIns: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSubqueriesInIns)
+    F.liftF(SupportsSubqueriesInIns)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsSubqueriesInQuantifieds: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsSubqueriesInQuantifieds)
+    F.liftF(SupportsSubqueriesInQuantifieds)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsTableCorrelationNames: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsTableCorrelationNames)
+    F.liftF(SupportsTableCorrelationNames)
 
   /** 
    * @group Constructors (Primitives)
    */
   def supportsTransactionIsolationLevel(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsTransactionIsolationLevel(a))
+    F.liftF(SupportsTransactionIsolationLevel(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsTransactions: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsTransactions)
+    F.liftF(SupportsTransactions)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsUnion: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsUnion)
+    F.liftF(SupportsUnion)
 
   /** 
    * @group Constructors (Primitives)
    */
   val supportsUnionAll: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(SupportsUnionAll)
+    F.liftF(SupportsUnionAll)
 
   /** 
    * @group Constructors (Primitives)
    */
   def unwrap[T](a: Class[T]): DatabaseMetaDataIO[T] =
-    F.liftFC(Unwrap(a))
+    F.liftF(Unwrap(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def updatesAreDetected(a: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftFC(UpdatesAreDetected(a))
+    F.liftF(UpdatesAreDetected(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val usesLocalFilePerTable: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(UsesLocalFilePerTable)
+    F.liftF(UsesLocalFilePerTable)
 
   /** 
    * @group Constructors (Primitives)
    */
   val usesLocalFiles: DatabaseMetaDataIO[Boolean] =
-    F.liftFC(UsesLocalFiles)
+    F.liftF(UsesLocalFiles)
 
  /** 
   * Natural transformation from `DatabaseMetaDataOp` to `Kleisli` for the given `M`, consuming a `java.sql.DatabaseMetaData`. 

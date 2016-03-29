@@ -49,7 +49,7 @@ object bench {
       .list
       .transact(xa)
       .map(_.length)
-      .run
+      .unsafePerformSync
 
   // Reading via .list, which uses a lower-level collector
   def doobieBench(n: Int): Int = 
@@ -58,7 +58,7 @@ object bench {
       .list
       .transact(xa)
       .map(_.length)
-      .run
+      .unsafePerformSync
 
   // Reading via .vector, which uses a lower-level collector
   def doobieBenchV(n: Int): Int =
@@ -67,7 +67,7 @@ object bench {
       .vector
       .transact(xa)
       .map(_.length)
-      .run
+      .unsafePerformSync
 
   // Reading via .ilist, which uses a lower-level collector
   def doobieBenchI(n: Int): Int =
@@ -77,7 +77,7 @@ object bench {
       }
     } .transact(xa)
       .map(_.length)
-      .run
+      .unsafePerformSync
 
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
     def test[A](n: Int)(f: Int => A): Double = {

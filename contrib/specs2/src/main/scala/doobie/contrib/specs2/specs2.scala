@@ -60,7 +60,7 @@ object analysisspec {
 
     private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]) =
       s"$typeName defined at ${loc(stackFrame)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
-        transactor.transact(analysis).attemptRun match {
+        transactor.trans(analysis).unsafePerformSyncAttempt match {
           case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
           case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
             Fragments.foreach(a.paramDescriptions)  { case (s, es) => s in assertEmpty(es, stackFrame) }

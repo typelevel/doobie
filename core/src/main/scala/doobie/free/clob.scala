@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -49,7 +49,7 @@ import resultset.ResultSetIO
  *
  * `ClobIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `ClobOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Clob, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -99,7 +99,7 @@ object clob {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ClobOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ClobOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -123,11 +123,11 @@ object clob {
     case object GetAsciiStream extends ClobOp[InputStream] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
     }
-    case class  GetCharacterStream(a: Long, b: Long) extends ClobOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
-    }
-    case object GetCharacterStream1 extends ClobOp[Reader] {
+    case object GetCharacterStream extends ClobOp[Reader] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
+    }
+    case class  GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
     }
     case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
@@ -147,11 +147,11 @@ object clob {
     case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
     }
-    case class  SetString(a: Long, b: String) extends ClobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
-    }
-    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
+    case class  SetString(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
+    }
+    case class  SetString1(a: Long, b: String) extends ClobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
     }
     case class  Truncate(a: Long) extends ClobOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -165,14 +165,7 @@ object clob {
    * a `java.sql.Clob` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type ClobIO[A] = F.FreeC[ClobOp, A]
-
-  /**
-   * Monad instance for [[ClobIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadClobIO: Monad[ClobIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[ClobOp, α]})#λ]
+  type ClobIO[A] = F[ClobOp, A]
 
   /**
    * Catchable instance for [[ClobIO]].
@@ -197,107 +190,107 @@ object clob {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ClobIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ClobIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a ClobIO[A] into an exception-capturing ClobIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: ClobIO[A]): ClobIO[Throwable \/ A] =
-    F.liftFC[ClobOp, Throwable \/ A](Attempt(a))
+    F.liftF[ClobOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): ClobIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying Clob.
    * @group Constructors (Lifting)
    */
   def raw[A](f: Clob => A): ClobIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val free: ClobIO[Unit] =
-    F.liftFC(Free)
+    F.liftF(Free)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getAsciiStream: ClobIO[InputStream] =
-    F.liftFC(GetAsciiStream)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def getCharacterStream(a: Long, b: Long): ClobIO[Reader] =
-    F.liftFC(GetCharacterStream(a, b))
+    F.liftF(GetAsciiStream)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCharacterStream: ClobIO[Reader] =
-    F.liftFC(GetCharacterStream1)
+    F.liftF(GetCharacterStream)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def getCharacterStream(a: Long, b: Long): ClobIO[Reader] =
+    F.liftF(GetCharacterStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def getSubString(a: Long, b: Int): ClobIO[String] =
-    F.liftFC(GetSubString(a, b))
+    F.liftF(GetSubString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val length: ClobIO[Long] =
-    F.liftFC(Length)
+    F.liftF(Length)
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: Clob, b: Long): ClobIO[Long] =
-    F.liftFC(Position(a, b))
+    F.liftF(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def position(a: String, b: Long): ClobIO[Long] =
-    F.liftFC(Position1(a, b))
+    F.liftF(Position1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAsciiStream(a: Long): ClobIO[OutputStream] =
-    F.liftFC(SetAsciiStream(a))
+    F.liftF(SetAsciiStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCharacterStream(a: Long): ClobIO[Writer] =
-    F.liftFC(SetCharacterStream(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def setString(a: Long, b: String): ClobIO[Int] =
-    F.liftFC(SetString(a, b))
+    F.liftF(SetCharacterStream(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setString(a: Long, b: String, c: Int, d: Int): ClobIO[Int] =
-    F.liftFC(SetString1(a, b, c, d))
+    F.liftF(SetString(a, b, c, d))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setString(a: Long, b: String): ClobIO[Int] =
+    F.liftF(SetString1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def truncate(a: Long): ClobIO[Unit] =
-    F.liftFC(Truncate(a))
+    F.liftF(Truncate(a))
 
  /** 
   * Natural transformation from `ClobOp` to `Kleisli` for the given `M`, consuming a `java.sql.Clob`. 

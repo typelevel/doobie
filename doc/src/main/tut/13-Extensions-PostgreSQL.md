@@ -70,7 +70,7 @@ implicit val MyEnumAtom = pgEnum(MyEnum, "myenum")
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.run
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafePerformSync
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -116,7 +116,7 @@ implicit val FoobarAtom: Atom[FooBar] =
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[FooBar].unique.quick.run
+sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafePerformSync
 ```
 
 
@@ -173,17 +173,17 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```tut
-p.attempt.quick.run // attempt provided by Catchable instance
+p.attempt.quick.unsafePerformSync // attempt provided by Catchable instance
 
-p.attemptSqlState.quick.run // this catches only SQL exceptions
+p.attemptSqlState.quick.unsafePerformSync // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.run // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafePerformSync // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.run // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafePerformSync // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".point[ConnectionIO] } .quick.run // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".point[ConnectionIO] } .quick.unsafePerformSync // recover
 
-p.onSyntaxError("caught!".point[ConnectionIO]).quick.run // using recovery combinator
+p.onSyntaxError("caught!".point[ConnectionIO]).quick.unsafePerformSync // using recovery combinator
 ```
 
 

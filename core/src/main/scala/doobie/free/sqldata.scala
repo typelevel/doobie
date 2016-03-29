@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -45,7 +45,7 @@ import resultset.ResultSetIO
  *
  * `SQLDataIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `SQLDataOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, SQLData, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -95,7 +95,7 @@ object sqldata {
       }
 
     // Lifting
-    case class Lift[Op[_], A, J](j: J, action: F.FreeC[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLDataOp[A] {
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLDataOp[A] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
@@ -131,14 +131,7 @@ object sqldata {
    * a `java.sql.SQLData` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type SQLDataIO[A] = F.FreeC[SQLDataOp, A]
-
-  /**
-   * Monad instance for [[SQLDataIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadSQLDataIO: Monad[SQLDataIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[SQLDataOp, α]})#λ]
+  type SQLDataIO[A] = F[SQLDataOp, A]
 
   /**
    * Catchable instance for [[SQLDataIO]].
@@ -163,47 +156,47 @@ object sqldata {
    * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def lift[Op[_], A, J](j: J, action: F.FreeC[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLDataIO[A] =
-    F.liftFC(Lift(j, action, mod))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLDataIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a SQLDataIO[A] into an exception-capturing SQLDataIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: SQLDataIO[A]): SQLDataIO[Throwable \/ A] =
-    F.liftFC[SQLDataOp, Throwable \/ A](Attempt(a))
+    F.liftF[SQLDataOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): SQLDataIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying SQLData.
    * @group Constructors (Lifting)
    */
   def raw[A](f: SQLData => A): SQLDataIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSQLTypeName: SQLDataIO[String] =
-    F.liftFC(GetSQLTypeName)
+    F.liftF(GetSQLTypeName)
 
   /** 
    * @group Constructors (Primitives)
    */
   def readSQL(a: SQLInput, b: String): SQLDataIO[Unit] =
-    F.liftFC(ReadSQL(a, b))
+    F.liftF(ReadSQL(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def writeSQL(a: SQLOutput): SQLDataIO[Unit] =
-    F.liftFC(WriteSQL(a))
+    F.liftF(WriteSQL(a))
 
  /** 
   * Natural transformation from `SQLDataOp` to `Kleisli` for the given `M`, consuming a `java.sql.SQLData`. 

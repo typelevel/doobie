@@ -1,6 +1,6 @@
 package doobie.contrib.postgresql.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -26,7 +26,7 @@ import largeobjectmanager.LargeObjectManagerIO
  *
  * `PGConnectionIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `PGConnectionOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, PGConnection, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -88,14 +88,7 @@ object pgconnection {
    * a `org.postgresql.PGConnection` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type PGConnectionIO[A] = F.FreeC[PGConnectionOp, A]
-
-  /**
-   * Monad instance for [[PGConnectionIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadPGConnectionIO: Monad[PGConnectionIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[PGConnectionOp, α]})#λ]
+  type PGConnectionIO[A] = F[PGConnectionOp, A]
 
   /**
    * Catchable instance for [[PGConnectionIO]].
@@ -120,87 +113,87 @@ object pgconnection {
    * @group Constructors (Lifting)
    */
   def liftCopyManager[A](s: CopyManager, action: CopyManagerIO[A]): PGConnectionIO[A] =
-    F.liftFC(LiftCopyManagerIO(s, action))
+    F.liftF(LiftCopyManagerIO(s, action))
 
   /**
    * @group Constructors (Lifting)
    */
   def liftFastpath[A](s: Fastpath, action: FastpathIO[A]): PGConnectionIO[A] =
-    F.liftFC(LiftFastpathIO(s, action))
+    F.liftF(LiftFastpathIO(s, action))
 
   /**
    * @group Constructors (Lifting)
    */
   def liftLargeObjectManager[A](s: LargeObjectManager, action: LargeObjectManagerIO[A]): PGConnectionIO[A] =
-    F.liftFC(LiftLargeObjectManagerIO(s, action))
+    F.liftF(LiftLargeObjectManagerIO(s, action))
 
   /** 
    * Lift a PGConnectionIO[A] into an exception-capturing PGConnectionIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] =
-    F.liftFC[PGConnectionOp, Throwable \/ A](Attempt(a))
+    F.liftF[PGConnectionOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): PGConnectionIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /** 
    * @group Constructors (Primitives)
    */
   def addDataType(a: String, b: String): PGConnectionIO[Unit] =
-    F.liftFC(AddDataType(a, b))
+    F.liftF(AddDataType(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def addDataType(a: String, b: Class[_]): PGConnectionIO[Unit] =
-    F.liftFC(AddDataType1(a, b))
+    F.liftF(AddDataType1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getBackendPID: PGConnectionIO[Int] =
-    F.liftFC(GetBackendPID)
+    F.liftF(GetBackendPID)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCopyAPI: PGConnectionIO[CopyManager] =
-    F.liftFC(GetCopyAPI)
+    F.liftF(GetCopyAPI)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getFastpathAPI: PGConnectionIO[Fastpath] =
-    F.liftFC(GetFastpathAPI)
+    F.liftF(GetFastpathAPI)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] =
-    F.liftFC(GetLargeObjectAPI)
+    F.liftF(GetLargeObjectAPI)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getNotifications: PGConnectionIO[Array[PGNotification]] =
-    F.liftFC(GetNotifications)
+    F.liftF(GetNotifications)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getPrepareThreshold: PGConnectionIO[Int] =
-    F.liftFC(GetPrepareThreshold)
+    F.liftF(GetPrepareThreshold)
 
   /** 
    * @group Constructors (Primitives)
    */
   def setPrepareThreshold(a: Int): PGConnectionIO[Unit] =
-    F.liftFC(SetPrepareThreshold(a))
+    F.liftF(SetPrepareThreshold(a))
 
  /** 
   * Natural transformation from `PGConnectionOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.PGConnection`. 
@@ -248,7 +241,7 @@ object pgconnection {
    */
   implicit class PGConnectionIOOps[A](ma: PGConnectionIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGConnection, A] =
-      F.runFC[PGConnectionOp,({type l[a]=Kleisli[M,PGConnection,a]})#l,A](ma)(kleisliTrans[M])
+      ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
   }
 
 }

@@ -26,7 +26,7 @@ object pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
         PHLOM.createFileFromLO(1024 * 16, oid, out) >> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).run
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformSync
       filesEqual(in, out)
     }
 

@@ -1,14 +1,16 @@
+sudo: false
+
 language: scala
 
 scala:
-  - 2.11.7
-  - 2.10.5
+  - 2.12.0-M3
+  - 2.11.8
+  - 2.10.6
 
 jdk:
-  - oraclejdk7
   - oraclejdk8
 
-script: sbt ++$TRAVIS_SCALA_VERSION compile core/test h2/test postgres/test tut unidoc
+script: sbt ++$TRAVIS_SCALA_VERSION compile core/test h2/test postgres/test tuut unidoc
 
 addons:
   postgresql: "9.3"

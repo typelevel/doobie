@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
@@ -17,7 +17,7 @@ object kleislitrans {
     type J
 
     /** Free monad over the free functor of `Op`. */
-    type OpIO[A] = F.FreeC[Op, A]
+    type OpIO[A] = F[Op, A]
 
     /** 
      * Natural transformation from `Op` to `Kleisli` for the given `M`, consuming a `J`. 
@@ -32,7 +32,7 @@ object kleislitrans {
     def transK[M[_]: Monad: Catchable: Capture]: OpIO ~> Kleisli[M, J, ?] =
       new (OpIO ~> Kleisli[M, J, ?]) {
         def apply[A](ma: OpIO[A]): Kleisli[M, J, A] =
-          F.runFC[Op, Kleisli[M, J, ?], A](ma)(interpK[M])
+          ma.foldMap[Kleisli[M, J, ?]](interpK[M])
       }
 
     /** 
