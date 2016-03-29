@@ -90,8 +90,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   .settings(unidocSettings)
   .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, example, postgres, h2, hikari, specs2, docs, bench)
-  .aggregate(core, example, postgres, h2, hikari, specs2, docs, bench)
+  .dependsOn(core, example, postgres, db_driver_stubs, informix, h2, hikari, specs2, docs, bench)
+  .aggregate(core, example, postgres, db_driver_stubs, informix, h2, hikari, specs2, docs, bench)
 
 lazy val core = project.in(file("core"))
   .enablePlugins(SbtOsgi)
@@ -164,7 +164,7 @@ lazy val example = project.in(file("example"))
   )
   .settings(scalacOptions += "-deprecation")
   .settings(noPublishSettings)
-  .dependsOn(core, postgres, specs2, hikari, h2)
+  .dependsOn(core, postgres, informix, specs2, hikari, h2)
 
 lazy val postgres = project.in(file("contrib/postgresql"))
   .enablePlugins(SbtOsgi)
@@ -191,6 +191,24 @@ lazy val postgres = project.in(file("contrib/postgresql"))
       """
   )
   .dependsOn(core)
+
+lazy val informix = project.in(file("contrib/informix"))
+  .settings(name := "doobie-contrib-informix")
+  .settings(description := "Informix support for doobie.")
+  .settings(doobieSettings ++ publishSettings)
+  .settings(
+    initialCommands := """
+      import scalaz._,Scalaz._
+      import scalaz.concurrent.Task
+      import doobie.imports._
+      """
+  )
+  .dependsOn(core, db_driver_stubs % "provided")
+
+lazy val db_driver_stubs = project.in(file("contrib/db-driver-stubs"))
+  .settings(name := "doobie-contrib-db-driver-stubs")
+  .settings(description := "Stubs for jdbc drivers not publicly available")
+  .settings(doobieSettings ++ publishSettings)
 
 lazy val h2 = project.in(file("contrib/h2"))
   .enablePlugins(SbtOsgi)
