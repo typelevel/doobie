@@ -1,6 +1,6 @@
 # doobie
 
-[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=master)](https://travis-ci.org/tpolecat/doobie)
+[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=series/0.3.x)](https://travis-ci.org/tpolecat/doobie)
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.11)
 
@@ -30,16 +30,16 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-The current release is **0.2.3**, which works on Scala **2.10.5** and **2.11** with
+This branch is available as **0.3.0-SNAPSHOT**, which works on Scala **2.10.5**, **2.11**, and **2.12.0-M3** with
 
-- scalaz 7.1
-- scalaz-stream 0.7.2a ← **important:** later versions are *not* compatible (yet)
-- shapeless 2.2
+- scalaz 7.2
+- scalaz-stream 0.8a
+- shapeless 2.3
 
 You should expect minor breaking changes for at least the next few versions, although these will be documented and kept to a minimum. To use **doobie** you need to add the following to your `build.sbt`.
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.3"
+libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.3.0-SNAPSHOT"
 ```
 
 If you are using Scala 2.10.5 you must also add the paradise compiler plugin.
