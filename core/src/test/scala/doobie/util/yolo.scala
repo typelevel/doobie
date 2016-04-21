@@ -11,7 +11,7 @@ object yolospec extends Specification {
   "YOLO checks" should {
     "compile for Query, Query0, Update, Update0" in {
       lazy val dontRun = {
-        val y = new Yolo[Task](null); import y._
+        val y = new Yolo[Task, DriverManagerTransactor](null); import y._
         (null : Query0[Int]).check
         (null : Query[Int, Int]).check
         Update0("", None).check

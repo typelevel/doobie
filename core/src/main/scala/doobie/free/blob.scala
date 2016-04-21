@@ -117,11 +117,11 @@ object blob {
     case object Free extends BlobOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
     }
-    case object GetBinaryStream extends BlobOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
-    }
-    case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
+    case class  GetBinaryStream(a: Long, b: Long) extends BlobOp[InputStream] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
+    }
+    case object GetBinaryStream1 extends BlobOp[InputStream] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
     }
     case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a, b))
@@ -129,20 +129,20 @@ object blob {
     case object Length extends BlobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
-    case class  Position(a: Blob, b: Long) extends BlobOp[Long] {
+    case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
-    case class  Position1(a: Array[Byte], b: Long) extends BlobOp[Long] {
+    case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
     }
-    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
-    }
-    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+    case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+    }
+    case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -214,14 +214,14 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  val getBinaryStream: BlobIO[InputStream] =
-    F.liftF(GetBinaryStream)
+  def getBinaryStream(a: Long, b: Long): BlobIO[InputStream] =
+    F.liftF(GetBinaryStream(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getBinaryStream(a: Long, b: Long): BlobIO[InputStream] =
-    F.liftF(GetBinaryStream1(a, b))
+  val getBinaryStream: BlobIO[InputStream] =
+    F.liftF(GetBinaryStream1)
 
   /** 
    * @group Constructors (Primitives)
@@ -238,13 +238,13 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Blob, b: Long): BlobIO[Long] =
+  def position(a: Array[Byte], b: Long): BlobIO[Long] =
     F.liftF(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Array[Byte], b: Long): BlobIO[Long] =
+  def position(a: Blob, b: Long): BlobIO[Long] =
     F.liftF(Position1(a, b))
 
   /** 
@@ -256,14 +256,14 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
-    F.liftF(SetBytes(a, b, c, d))
+  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
+    F.liftF(SetBytes(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
-    F.liftF(SetBytes1(a, b))
+  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
+    F.liftF(SetBytes1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)

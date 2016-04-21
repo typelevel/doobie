@@ -30,6 +30,7 @@ import java.sql.RowId
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
+import java.sql.SQLType
 import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Statement
@@ -156,20 +157,38 @@ object preparedstatement {
     case object Execute extends PreparedStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute())
     }
-    case class  Execute1(a: String, b: Array[Int]) extends PreparedStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+    case class  Execute1(a: String) extends PreparedStatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
     }
     case class  Execute2(a: String, b: Int) extends PreparedStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute3(a: String) extends PreparedStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
+    case class  Execute3(a: String, b: Array[String]) extends PreparedStatementOp[Boolean] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute4(a: String, b: Array[String]) extends PreparedStatementOp[Boolean] {
+    case class  Execute4(a: String, b: Array[Int]) extends PreparedStatementOp[Boolean] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case object ExecuteBatch extends PreparedStatementOp[Array[Int]] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeBatch())
+    }
+    case object ExecuteLargeBatch extends PreparedStatementOp[Array[Long]] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeBatch())
+    }
+    case object ExecuteLargeUpdate extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate())
+    }
+    case class  ExecuteLargeUpdate1(a: String, b: Int) extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
+    }
+    case class  ExecuteLargeUpdate2(a: String) extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a))
+    }
+    case class  ExecuteLargeUpdate3(a: String, b: Array[Int]) extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
+    }
+    case class  ExecuteLargeUpdate4(a: String, b: Array[String]) extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
     }
     case object ExecuteQuery extends PreparedStatementOp[ResultSet] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery())
@@ -180,17 +199,17 @@ object preparedstatement {
     case object ExecuteUpdate extends PreparedStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate())
     }
-    case class  ExecuteUpdate1(a: String) extends PreparedStatementOp[Int] {
+    case class  ExecuteUpdate1(a: String, b: Int) extends PreparedStatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate2(a: String, b: Array[Int]) extends PreparedStatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate3(a: String, b: Array[String]) extends PreparedStatementOp[Int] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    }
+    case class  ExecuteUpdate4(a: String) extends PreparedStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
-    }
-    case class  ExecuteUpdate2(a: String, b: Array[String]) extends PreparedStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
-    }
-    case class  ExecuteUpdate3(a: String, b: Array[Int]) extends PreparedStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
-    }
-    case class  ExecuteUpdate4(a: String, b: Int) extends PreparedStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case object GetConnection extends PreparedStatementOp[Connection] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
@@ -203,6 +222,12 @@ object preparedstatement {
     }
     case object GetGeneratedKeys extends PreparedStatementOp[ResultSet] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getGeneratedKeys())
+    }
+    case object GetLargeMaxRows extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLargeMaxRows())
+    }
+    case object GetLargeUpdateCount extends PreparedStatementOp[Long] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLargeUpdateCount())
     }
     case object GetMaxFieldSize extends PreparedStatementOp[Int] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxFieldSize())
@@ -258,10 +283,10 @@ object preparedstatement {
     case class  SetArray(a: Int, b: SqlArray) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setArray(a, b))
     }
-    case class  SetAsciiStream(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
+    case class  SetAsciiStream(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
-    case class  SetAsciiStream1(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
+    case class  SetAsciiStream1(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream2(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
@@ -273,19 +298,19 @@ object preparedstatement {
     case class  SetBinaryStream(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
-    case class  SetBinaryStream1(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
-    }
-    case class  SetBinaryStream2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
+    case class  SetBinaryStream1(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
-    case class  SetBlob(a: Int, b: Blob) extends PreparedStatementOp[Unit] {
+    case class  SetBinaryStream2(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
+    }
+    case class  SetBlob(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob1(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
     }
-    case class  SetBlob2(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
+    case class  SetBlob2(a: Int, b: Blob) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBoolean(a: Int, b: Boolean) extends PreparedStatementOp[Unit] {
@@ -306,14 +331,14 @@ object preparedstatement {
     case class  SetCharacterStream2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
-    case class  SetClob(a: Int, b: Clob) extends PreparedStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
-    }
-    case class  SetClob1(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
-    }
-    case class  SetClob2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
+    case class  SetClob(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
+    }
+    case class  SetClob1(a: Int, b: Clob) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+    }
+    case class  SetClob2(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
     case class  SetCursorName(a: String) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCursorName(a))
@@ -342,6 +367,9 @@ object preparedstatement {
     case class  SetInt(a: Int, b: Int) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setInt(a, b))
     }
+    case class  SetLargeMaxRows(a: Long) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLargeMaxRows(a))
+    }
     case class  SetLong(a: Int, b: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLong(a, b))
     }
@@ -357,32 +385,38 @@ object preparedstatement {
     case class  SetNCharacterStream1(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
     }
-    case class  SetNClob(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
+    case class  SetNClob(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob1(a: Int, b: NClob) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
-    case class  SetNClob2(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
+    case class  SetNClob2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
     }
     case class  SetNString(a: Int, b: String) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNString(a, b))
     }
-    case class  SetNull(a: Int, b: Int) extends PreparedStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
-    }
-    case class  SetNull1(a: Int, b: Int, c: String) extends PreparedStatementOp[Unit] {
+    case class  SetNull(a: Int, b: Int, c: String) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
+    }
+    case class  SetNull1(a: Int, b: Int) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
     }
     case class  SetObject(a: Int, b: Object, c: Int, d: Int) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
     }
-    case class  SetObject1(a: Int, b: Object, c: Int) extends PreparedStatementOp[Unit] {
+    case class  SetObject1(a: Int, b: Object, c: SQLType) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject2(a: Int, b: Object) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
+    }
+    case class  SetObject3(a: Int, b: Object, c: SQLType, d: Int) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
+    }
+    case class  SetObject4(a: Int, b: Object, c: Int) extends PreparedStatementOp[Unit] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
     case class  SetPoolable(a: Boolean) extends PreparedStatementOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setPoolable(a))
@@ -541,8 +575,8 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[Int]): PreparedStatementIO[Boolean] =
-    F.liftF(Execute1(a, b))
+  def execute(a: String): PreparedStatementIO[Boolean] =
+    F.liftF(Execute1(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -553,13 +587,13 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String): PreparedStatementIO[Boolean] =
-    F.liftF(Execute3(a))
+  def execute(a: String, b: Array[String]): PreparedStatementIO[Boolean] =
+    F.liftF(Execute3(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[String]): PreparedStatementIO[Boolean] =
+  def execute(a: String, b: Array[Int]): PreparedStatementIO[Boolean] =
     F.liftF(Execute4(a, b))
 
   /** 
@@ -567,6 +601,42 @@ object preparedstatement {
    */
   val executeBatch: PreparedStatementIO[Array[Int]] =
     F.liftF(ExecuteBatch)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val executeLargeBatch: PreparedStatementIO[Array[Long]] =
+    F.liftF(ExecuteLargeBatch)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val executeLargeUpdate: PreparedStatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String, b: Int): PreparedStatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate1(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String): PreparedStatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate2(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String, b: Array[Int]): PreparedStatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate3(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeLargeUpdate(a: String, b: Array[String]): PreparedStatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate4(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -589,26 +659,26 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String): PreparedStatementIO[Int] =
-    F.liftF(ExecuteUpdate1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def executeUpdate(a: String, b: Array[String]): PreparedStatementIO[Int] =
-    F.liftF(ExecuteUpdate2(a, b))
+  def executeUpdate(a: String, b: Int): PreparedStatementIO[Int] =
+    F.liftF(ExecuteUpdate1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def executeUpdate(a: String, b: Array[Int]): PreparedStatementIO[Int] =
+    F.liftF(ExecuteUpdate2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def executeUpdate(a: String, b: Array[String]): PreparedStatementIO[Int] =
     F.liftF(ExecuteUpdate3(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String, b: Int): PreparedStatementIO[Int] =
-    F.liftF(ExecuteUpdate4(a, b))
+  def executeUpdate(a: String): PreparedStatementIO[Int] =
+    F.liftF(ExecuteUpdate4(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -633,6 +703,18 @@ object preparedstatement {
    */
   val getGeneratedKeys: PreparedStatementIO[ResultSet] =
     F.liftF(GetGeneratedKeys)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val getLargeMaxRows: PreparedStatementIO[Long] =
+    F.liftF(GetLargeMaxRows)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val getLargeUpdateCount: PreparedStatementIO[Long] =
+    F.liftF(GetLargeUpdateCount)
 
   /** 
    * @group Constructors (Primitives)
@@ -745,13 +827,13 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setAsciiStream(a: Int, b: InputStream, c: Long): PreparedStatementIO[Unit] =
+  def setAsciiStream(a: Int, b: InputStream, c: Int): PreparedStatementIO[Unit] =
     F.liftF(SetAsciiStream(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setAsciiStream(a: Int, b: InputStream, c: Int): PreparedStatementIO[Unit] =
+  def setAsciiStream(a: Int, b: InputStream, c: Long): PreparedStatementIO[Unit] =
     F.liftF(SetAsciiStream1(a, b, c))
 
   /** 
@@ -775,19 +857,19 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBinaryStream(a: Int, b: InputStream): PreparedStatementIO[Unit] =
-    F.liftF(SetBinaryStream1(a, b))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
   def setBinaryStream(a: Int, b: InputStream, c: Long): PreparedStatementIO[Unit] =
-    F.liftF(SetBinaryStream2(a, b, c))
+    F.liftF(SetBinaryStream1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBlob(a: Int, b: Blob): PreparedStatementIO[Unit] =
+  def setBinaryStream(a: Int, b: InputStream): PreparedStatementIO[Unit] =
+    F.liftF(SetBinaryStream2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setBlob(a: Int, b: InputStream): PreparedStatementIO[Unit] =
     F.liftF(SetBlob(a, b))
 
   /** 
@@ -799,7 +881,7 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBlob(a: Int, b: InputStream): PreparedStatementIO[Unit] =
+  def setBlob(a: Int, b: Blob): PreparedStatementIO[Unit] =
     F.liftF(SetBlob2(a, b))
 
   /** 
@@ -841,20 +923,20 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setClob(a: Int, b: Clob): PreparedStatementIO[Unit] =
-    F.liftF(SetClob(a, b))
+  def setClob(a: Int, b: Reader, c: Long): PreparedStatementIO[Unit] =
+    F.liftF(SetClob(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setClob(a: Int, b: Reader): PreparedStatementIO[Unit] =
+  def setClob(a: Int, b: Clob): PreparedStatementIO[Unit] =
     F.liftF(SetClob1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setClob(a: Int, b: Reader, c: Long): PreparedStatementIO[Unit] =
-    F.liftF(SetClob2(a, b, c))
+  def setClob(a: Int, b: Reader): PreparedStatementIO[Unit] =
+    F.liftF(SetClob2(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -913,6 +995,12 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
+  def setLargeMaxRows(a: Long): PreparedStatementIO[Unit] =
+    F.liftF(SetLargeMaxRows(a))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def setLong(a: Int, b: Long): PreparedStatementIO[Unit] =
     F.liftF(SetLong(a, b))
 
@@ -943,8 +1031,8 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setNClob(a: Int, b: Reader, c: Long): PreparedStatementIO[Unit] =
-    F.liftF(SetNClob(a, b, c))
+  def setNClob(a: Int, b: Reader): PreparedStatementIO[Unit] =
+    F.liftF(SetNClob(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -955,8 +1043,8 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setNClob(a: Int, b: Reader): PreparedStatementIO[Unit] =
-    F.liftF(SetNClob2(a, b))
+  def setNClob(a: Int, b: Reader, c: Long): PreparedStatementIO[Unit] =
+    F.liftF(SetNClob2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
@@ -967,14 +1055,14 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setNull(a: Int, b: Int): PreparedStatementIO[Unit] =
-    F.liftF(SetNull(a, b))
+  def setNull(a: Int, b: Int, c: String): PreparedStatementIO[Unit] =
+    F.liftF(SetNull(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setNull(a: Int, b: Int, c: String): PreparedStatementIO[Unit] =
-    F.liftF(SetNull1(a, b, c))
+  def setNull(a: Int, b: Int): PreparedStatementIO[Unit] =
+    F.liftF(SetNull1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -985,7 +1073,7 @@ object preparedstatement {
   /** 
    * @group Constructors (Primitives)
    */
-  def setObject(a: Int, b: Object, c: Int): PreparedStatementIO[Unit] =
+  def setObject(a: Int, b: Object, c: SQLType): PreparedStatementIO[Unit] =
     F.liftF(SetObject1(a, b, c))
 
   /** 
@@ -993,6 +1081,18 @@ object preparedstatement {
    */
   def setObject(a: Int, b: Object): PreparedStatementIO[Unit] =
     F.liftF(SetObject2(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setObject(a: Int, b: Object, c: SQLType, d: Int): PreparedStatementIO[Unit] =
+    F.liftF(SetObject3(a, b, c, d))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def setObject(a: Int, b: Object, c: Int): PreparedStatementIO[Unit] =
+    F.liftF(SetObject4(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
