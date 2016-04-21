@@ -118,11 +118,11 @@ object ref {
     case object GetBaseTypeName extends RefOp[String] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
     }
-    case class  GetObject(a: Map[String, Class[_]]) extends RefOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
-    }
-    case object GetObject1 extends RefOp[Object] {
+    case object GetObject extends RefOp[Object] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
+    }
+    case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[Object] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
     case class  SetObject(a: Object) extends RefOp[Unit] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
@@ -194,14 +194,14 @@ object ref {
   /** 
    * @group Constructors (Primitives)
    */
-  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
-    F.liftF(GetObject(a))
+  val getObject: RefIO[Object] =
+    F.liftF(GetObject)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getObject: RefIO[Object] =
-    F.liftF(GetObject1)
+  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
+    F.liftF(GetObject1(a))
 
   /** 
    * @group Constructors (Primitives)

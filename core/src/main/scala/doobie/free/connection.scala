@@ -1,9 +1,10 @@
 package doobie.free
 
-import scalaz.{ Catchable, Coyoneda, Free => F, Kleisli, Monad, ~>, \/ }
+import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.concurrent.Task
 
 import doobie.util.capture._
+import doobie.free.kleislitrans._
 
 import java.lang.Class
 import java.lang.Object
@@ -54,7 +55,7 @@ import resultset.ResultSetIO
  *
  * `ConnectionIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `ConnectionOp` to another monad via
- * `Free.runFC`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Connection, A]` for any
  * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
@@ -92,45 +93,20 @@ object connection {
    */
   object ConnectionOp {
     
+    // This algebra has a default interpreter
+    implicit val ConnectionKleisliTrans: KleisliTrans.Aux[ConnectionOp, Connection] =
+      new KleisliTrans[ConnectionOp] {
+        type J = Connection
+        def interpK[M[_]: Monad: Catchable: Capture]: ConnectionOp ~> Kleisli[M, Connection, ?] =
+          new (ConnectionOp ~> Kleisli[M, Connection, ?]) {
+            def apply[A](op: ConnectionOp[A]): Kleisli[M, Connection, A] =
+              op.defaultTransK[M]
+          }
+      }
+
     // Lifting
-    case class LiftBlobIO[A](s: Blob, action: BlobIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftCallableStatementIO[A](s: CallableStatement, action: CallableStatementIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftClobIO[A](s: Clob, action: ClobIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftDatabaseMetaDataIO[A](s: DatabaseMetaData, action: DatabaseMetaDataIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftDriverIO[A](s: Driver, action: DriverIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftNClobIO[A](s: NClob, action: NClobIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftPreparedStatementIO[A](s: PreparedStatement, action: PreparedStatementIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftRefIO[A](s: Ref, action: RefIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftResultSetIO[A](s: ResultSet, action: ResultSetIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLDataIO[A](s: SQLData, action: SQLDataIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLInputIO[A](s: SQLInput, action: SQLInputIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftSQLOutputIO[A](s: SQLOutput, action: SQLOutputIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
-    }
-    case class LiftStatementIO[A](s: Statement, action: StatementIO[A]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => action.transK[M].run(s))
+    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ConnectionOp[A] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
@@ -174,14 +150,14 @@ object connection {
     case object CreateSQLXML extends ConnectionOp[SQLXML] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createSQLXML())
     }
-    case class  CreateStatement(a: Int, b: Int) extends ConnectionOp[Statement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b))
-    }
-    case class  CreateStatement1(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
+    case class  CreateStatement(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b, c))
     }
-    case object CreateStatement2 extends ConnectionOp[Statement] {
+    case object CreateStatement1 extends ConnectionOp[Statement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement())
+    }
+    case class  CreateStatement2(a: Int, b: Int) extends ConnectionOp[Statement] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b))
     }
     case class  CreateStruct(a: String, b: Array[Object]) extends ConnectionOp[Struct] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStruct(a, b))
@@ -243,20 +219,20 @@ object connection {
     case class  PrepareCall2(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c, d))
     }
-    case class  PrepareStatement(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
+    case class  PrepareStatement(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
+    }
+    case class  PrepareStatement1(a: String, b: Int) extends ConnectionOp[PreparedStatement] {
+      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
+    }
+    case class  PrepareStatement2(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c, d))
     }
-    case class  PrepareStatement1(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
+    case class  PrepareStatement3(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
     }
-    case class  PrepareStatement2(a: String, b: Int) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
-    }
-    case class  PrepareStatement3(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
+    case class  PrepareStatement4(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c))
-    }
-    case class  PrepareStatement4(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement5(a: String) extends ConnectionOp[PreparedStatement] {
       def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a))
@@ -318,14 +294,7 @@ object connection {
    * a `java.sql.Connection` and produces a value of type `A`. 
    * @group Algebra 
    */
-  type ConnectionIO[A] = F.FreeC[ConnectionOp, A]
-
-  /**
-   * Monad instance for [[ConnectionIO]] (can't be inferred).
-   * @group Typeclass Instances 
-   */
-  implicit val MonadConnectionIO: Monad[ConnectionIO] = 
-    F.freeMonad[({type λ[α] = Coyoneda[ConnectionOp, α]})#λ]
+  type ConnectionIO[A] = F[ConnectionOp, A]
 
   /**
    * Catchable instance for [[ConnectionIO]].
@@ -347,437 +316,377 @@ object connection {
     }
 
   /**
+   * Lift a different type of program that has a default Kleisli interpreter.
    * @group Constructors (Lifting)
    */
-  def liftBlob[A](s: Blob, k: BlobIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftBlobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCallableStatement[A](s: CallableStatement, k: CallableStatementIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftCallableStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftClob[A](s: Clob, k: ClobIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftDatabaseMetaData[A](s: DatabaseMetaData, k: DatabaseMetaDataIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftDatabaseMetaDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftDriver[A](s: Driver, k: DriverIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftDriverIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftNClob[A](s: NClob, k: NClobIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftNClobIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftPreparedStatement[A](s: PreparedStatement, k: PreparedStatementIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftPreparedStatementIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftRef[A](s: Ref, k: RefIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftRefIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftResultSet[A](s: ResultSet, k: ResultSetIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftResultSetIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLData[A](s: SQLData, k: SQLDataIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftSQLDataIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLInput[A](s: SQLInput, k: SQLInputIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftSQLInputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftSQLOutput[A](s: SQLOutput, k: SQLOutputIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftSQLOutputIO(s, k))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftStatement[A](s: Statement, k: StatementIO[A]): ConnectionIO[A] =
-    F.liftFC(LiftStatementIO(s, k))
+  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ConnectionIO[A] =
+    F.liftF(Lift(j, action, mod))
 
   /** 
    * Lift a ConnectionIO[A] into an exception-capturing ConnectionIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: ConnectionIO[A]): ConnectionIO[Throwable \/ A] =
-    F.liftFC[ConnectionOp, Throwable \/ A](Attempt(a))
+    F.liftF[ConnectionOp, Throwable \/ A](Attempt(a))
  
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): ConnectionIO[A] =
-    F.liftFC(Pure(a _))
+    F.liftF(Pure(a _))
 
   /**
    * Backdoor for arbitrary computations on the underlying Connection.
    * @group Constructors (Lifting)
    */
   def raw[A](f: Connection => A): ConnectionIO[A] =
-    F.liftFC(Raw(f))
+    F.liftF(Raw(f))
 
   /** 
    * @group Constructors (Primitives)
    */
   def abort(a: Executor): ConnectionIO[Unit] =
-    F.liftFC(Abort(a))
+    F.liftF(Abort(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val clearWarnings: ConnectionIO[Unit] =
-    F.liftFC(ClearWarnings)
+    F.liftF(ClearWarnings)
 
   /** 
    * @group Constructors (Primitives)
    */
   val close: ConnectionIO[Unit] =
-    F.liftFC(Close)
+    F.liftF(Close)
 
   /** 
    * @group Constructors (Primitives)
    */
   val commit: ConnectionIO[Unit] =
-    F.liftFC(Commit)
+    F.liftF(Commit)
 
   /** 
    * @group Constructors (Primitives)
    */
   def createArrayOf(a: String, b: Array[Object]): ConnectionIO[SqlArray] =
-    F.liftFC(CreateArrayOf(a, b))
+    F.liftF(CreateArrayOf(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val createBlob: ConnectionIO[Blob] =
-    F.liftFC(CreateBlob)
+    F.liftF(CreateBlob)
 
   /** 
    * @group Constructors (Primitives)
    */
   val createClob: ConnectionIO[Clob] =
-    F.liftFC(CreateClob)
+    F.liftF(CreateClob)
 
   /** 
    * @group Constructors (Primitives)
    */
   val createNClob: ConnectionIO[NClob] =
-    F.liftFC(CreateNClob)
+    F.liftF(CreateNClob)
 
   /** 
    * @group Constructors (Primitives)
    */
   val createSQLXML: ConnectionIO[SQLXML] =
-    F.liftFC(CreateSQLXML)
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def createStatement(a: Int, b: Int): ConnectionIO[Statement] =
-    F.liftFC(CreateStatement(a, b))
+    F.liftF(CreateSQLXML)
 
   /** 
    * @group Constructors (Primitives)
    */
   def createStatement(a: Int, b: Int, c: Int): ConnectionIO[Statement] =
-    F.liftFC(CreateStatement1(a, b, c))
+    F.liftF(CreateStatement(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   val createStatement: ConnectionIO[Statement] =
-    F.liftFC(CreateStatement2)
+    F.liftF(CreateStatement1)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def createStatement(a: Int, b: Int): ConnectionIO[Statement] =
+    F.liftF(CreateStatement2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def createStruct(a: String, b: Array[Object]): ConnectionIO[Struct] =
-    F.liftFC(CreateStruct(a, b))
+    F.liftF(CreateStruct(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getAutoCommit: ConnectionIO[Boolean] =
-    F.liftFC(GetAutoCommit)
+    F.liftF(GetAutoCommit)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getCatalog: ConnectionIO[String] =
-    F.liftFC(GetCatalog)
+    F.liftF(GetCatalog)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getClientInfo: ConnectionIO[Properties] =
-    F.liftFC(GetClientInfo)
+    F.liftF(GetClientInfo)
 
   /** 
    * @group Constructors (Primitives)
    */
   def getClientInfo(a: String): ConnectionIO[String] =
-    F.liftFC(GetClientInfo1(a))
+    F.liftF(GetClientInfo1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val getHoldability: ConnectionIO[Int] =
-    F.liftFC(GetHoldability)
+    F.liftF(GetHoldability)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getMetaData: ConnectionIO[DatabaseMetaData] =
-    F.liftFC(GetMetaData)
+    F.liftF(GetMetaData)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getNetworkTimeout: ConnectionIO[Int] =
-    F.liftFC(GetNetworkTimeout)
+    F.liftF(GetNetworkTimeout)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getSchema: ConnectionIO[String] =
-    F.liftFC(GetSchema)
+    F.liftF(GetSchema)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getTransactionIsolation: ConnectionIO[Int] =
-    F.liftFC(GetTransactionIsolation)
+    F.liftF(GetTransactionIsolation)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getTypeMap: ConnectionIO[Map[String, Class[_]]] =
-    F.liftFC(GetTypeMap)
+    F.liftF(GetTypeMap)
 
   /** 
    * @group Constructors (Primitives)
    */
   val getWarnings: ConnectionIO[SQLWarning] =
-    F.liftFC(GetWarnings)
+    F.liftF(GetWarnings)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isClosed: ConnectionIO[Boolean] =
-    F.liftFC(IsClosed)
+    F.liftF(IsClosed)
 
   /** 
    * @group Constructors (Primitives)
    */
   val isReadOnly: ConnectionIO[Boolean] =
-    F.liftFC(IsReadOnly)
+    F.liftF(IsReadOnly)
 
   /** 
    * @group Constructors (Primitives)
    */
   def isValid(a: Int): ConnectionIO[Boolean] =
-    F.liftFC(IsValid(a))
+    F.liftF(IsValid(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def isWrapperFor(a: Class[_]): ConnectionIO[Boolean] =
-    F.liftFC(IsWrapperFor(a))
+    F.liftF(IsWrapperFor(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def nativeSQL(a: String): ConnectionIO[String] =
-    F.liftFC(NativeSQL(a))
+    F.liftF(NativeSQL(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareCall(a: String): ConnectionIO[CallableStatement] =
-    F.liftFC(PrepareCall(a))
+    F.liftF(PrepareCall(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareCall(a: String, b: Int, c: Int): ConnectionIO[CallableStatement] =
-    F.liftFC(PrepareCall1(a, b, c))
+    F.liftF(PrepareCall1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareCall(a: String, b: Int, c: Int, d: Int): ConnectionIO[CallableStatement] =
-    F.liftFC(PrepareCall2(a, b, c, d))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def prepareStatement(a: String, b: Int, c: Int, d: Int): ConnectionIO[PreparedStatement] =
-    F.liftFC(PrepareStatement(a, b, c, d))
+    F.liftF(PrepareCall2(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareStatement(a: String, b: Array[Int]): ConnectionIO[PreparedStatement] =
-    F.liftFC(PrepareStatement1(a, b))
+    F.liftF(PrepareStatement(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareStatement(a: String, b: Int): ConnectionIO[PreparedStatement] =
-    F.liftFC(PrepareStatement2(a, b))
+    F.liftF(PrepareStatement1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def prepareStatement(a: String, b: Int, c: Int): ConnectionIO[PreparedStatement] =
-    F.liftFC(PrepareStatement3(a, b, c))
+  def prepareStatement(a: String, b: Int, c: Int, d: Int): ConnectionIO[PreparedStatement] =
+    F.liftF(PrepareStatement2(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareStatement(a: String, b: Array[String]): ConnectionIO[PreparedStatement] =
-    F.liftFC(PrepareStatement4(a, b))
+    F.liftF(PrepareStatement3(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  def prepareStatement(a: String, b: Int, c: Int): ConnectionIO[PreparedStatement] =
+    F.liftF(PrepareStatement4(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareStatement(a: String): ConnectionIO[PreparedStatement] =
-    F.liftFC(PrepareStatement5(a))
+    F.liftF(PrepareStatement5(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def releaseSavepoint(a: Savepoint): ConnectionIO[Unit] =
-    F.liftFC(ReleaseSavepoint(a))
+    F.liftF(ReleaseSavepoint(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val rollback: ConnectionIO[Unit] =
-    F.liftFC(Rollback)
+    F.liftF(Rollback)
 
   /** 
    * @group Constructors (Primitives)
    */
   def rollback(a: Savepoint): ConnectionIO[Unit] =
-    F.liftFC(Rollback1(a))
+    F.liftF(Rollback1(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setAutoCommit(a: Boolean): ConnectionIO[Unit] =
-    F.liftFC(SetAutoCommit(a))
+    F.liftF(SetAutoCommit(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setCatalog(a: String): ConnectionIO[Unit] =
-    F.liftFC(SetCatalog(a))
+    F.liftF(SetCatalog(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setClientInfo(a: Properties): ConnectionIO[Unit] =
-    F.liftFC(SetClientInfo(a))
+    F.liftF(SetClientInfo(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setClientInfo(a: String, b: String): ConnectionIO[Unit] =
-    F.liftFC(SetClientInfo1(a, b))
+    F.liftF(SetClientInfo1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setHoldability(a: Int): ConnectionIO[Unit] =
-    F.liftFC(SetHoldability(a))
+    F.liftF(SetHoldability(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setNetworkTimeout(a: Executor, b: Int): ConnectionIO[Unit] =
-    F.liftFC(SetNetworkTimeout(a, b))
+    F.liftF(SetNetworkTimeout(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setReadOnly(a: Boolean): ConnectionIO[Unit] =
-    F.liftFC(SetReadOnly(a))
+    F.liftF(SetReadOnly(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setSavepoint(a: String): ConnectionIO[Savepoint] =
-    F.liftFC(SetSavepoint(a))
+    F.liftF(SetSavepoint(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   val setSavepoint: ConnectionIO[Savepoint] =
-    F.liftFC(SetSavepoint1)
+    F.liftF(SetSavepoint1)
 
   /** 
    * @group Constructors (Primitives)
    */
   def setSchema(a: String): ConnectionIO[Unit] =
-    F.liftFC(SetSchema(a))
+    F.liftF(SetSchema(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTransactionIsolation(a: Int): ConnectionIO[Unit] =
-    F.liftFC(SetTransactionIsolation(a))
+    F.liftF(SetTransactionIsolation(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] =
-    F.liftFC(SetTypeMap(a))
+    F.liftF(SetTypeMap(a))
 
   /** 
    * @group Constructors (Primitives)
    */
   def unwrap[T](a: Class[T]): ConnectionIO[T] =
-    F.liftFC(Unwrap(a))
+    F.liftF(Unwrap(a))
 
  /** 
   * Natural transformation from `ConnectionOp` to `Kleisli` for the given `M`, consuming a `java.sql.Connection`. 
   * @group Algebra
   */
-  def kleisliTrans[M[_]: Monad: Catchable: Capture]: ConnectionOp ~> Kleisli[M, Connection, ?] =
-    new (ConnectionOp ~> Kleisli[M, Connection, ?]) {
-      def apply[A](op: ConnectionOp[A]): Kleisli[M, Connection, A] =
-        op.defaultTransK[M]
-    }
+  def interpK[M[_]: Monad: Catchable: Capture]: ConnectionOp ~> Kleisli[M, Connection, ?] =
+   ConnectionOp.ConnectionKleisliTrans.interpK
+
+ /** 
+  * Natural transformation from `ConnectionIO` to `Kleisli` for the given `M`, consuming a `java.sql.Connection`. 
+  * @group Algebra
+  */
+  def transK[M[_]: Monad: Catchable: Capture]: ConnectionIO ~> Kleisli[M, Connection, ?] =
+   ConnectionOp.ConnectionKleisliTrans.transK
+
+ /** 
+  * Natural transformation from `ConnectionIO` to `M`, given a `java.sql.Connection`. 
+  * @group Algebra
+  */
+ def trans[M[_]: Monad: Catchable: Capture](c: Connection): ConnectionIO ~> M =
+   ConnectionOp.ConnectionKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `ConnectionIO`.
@@ -785,7 +694,7 @@ object connection {
    */
   implicit class ConnectionIOOps[A](ma: ConnectionIO[A]) {
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Connection, A] =
-      F.runFC[ConnectionOp, Kleisli[M, Connection, ?], A](ma)(kleisliTrans[M])
+      ConnectionOp.ConnectionKleisliTrans.transK[M].apply(ma)
   }
 
 }
