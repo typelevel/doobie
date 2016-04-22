@@ -57,8 +57,5 @@ object AnalysisTest {
       UPDATE COUNTRY SET NAME = 'foo' WHERE CODE = 'bkah'
     """.update
 
-  val xa: Transactor[Task] = 
-    DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-
 }
 
