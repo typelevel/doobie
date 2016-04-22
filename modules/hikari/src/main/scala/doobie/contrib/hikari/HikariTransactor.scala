@@ -3,41 +3,33 @@ package doobie.contrib.hikari
 import com.zaxxer.hikari.HikariDataSource
 import doobie.imports._
 
-import scalaz.{ Catchable, Monad }
+import scalaz.{ Catchable, Monad, Lens }
 import scalaz.syntax.monad._
 
 object hikaritransactor {
 
-  /** A `Transactor` backed by a `HikariDataSource`. */
-  final class HikariTransactor[M[_]: Monad : Catchable : Capture] private (ds: HikariDataSource) extends Transactor[M] {
+  final class HikariXA private (private val xa: LiftXA, private val ds: HikariDataSource) {
     
-    protected val connect = Capture[M].apply(ds.getConnection)
-
-    /** A program that shuts down this `HikariTransactor`. */
-    val shutdown: M[Unit] = Capture[M].apply(ds.shutdown)
+    /** A program that shuts down this `HikariXA`. */
+    def shutdown[M[_]: Capture]: M[Unit] = Capture[M].apply(ds.shutdown)
 
     /** Constructs a program that configures the underlying `HikariDataSource`. */
-    def configure(f: HikariDataSource => M[Unit]): M[Unit] = f(ds)
+    def configure[M[_]: Capture](f: HikariDataSource => M[Unit]): M[Unit] = f(ds)
 
   }
 
-  object HikariTransactor {
+  object HikariXA {
     
-    /** Constructs a program that yields an unconfigured `HikariTransactor`. */
-    def initial[M[_]: Monad : Catchable: Capture]: M[HikariTransactor[M]] = 
-      Capture[M].apply(new HikariTransactor(new HikariDataSource))
-
-    /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
+    /** Constructs a `HikariTransactor` from an existing `HikariDatasource`. */
     def apply[M[_]: Monad : Catchable: Capture](hikariDataSource : HikariDataSource): HikariTransactor[M] = 
-      new HikariTransactor(hikariDataSource)
+      new HikariTransactor(LiftXA.default, hikariDataSource)
 
-    /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
-    @deprecated("doesn't load driver properly; will go away in 0.2.2; use 4-arg version", "0.2.1")
-    def apply[M[_]: Monad : Catchable : Capture](url: String, user: String, pass: String): M[HikariTransactor[M]] =
-      apply("java.lang.String", url, user, pass)
+    /** Constructs a program that yields an unconfigured `HikariXA`. */
+    def initial[M[_]: Monad : Catchable: Capture]: M[HikariXA] = 
+      Capture[M].apply(new HikariXA(LiftXA.default, new HikariDataSource))
 
-    /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
-    def apply[M[_]: Monad : Catchable : Capture](driverClassName: String, url: String, user: String, pass: String): M[HikariTransactor[M]] =
+    /** Constructs a program that yields a `HikariXA` configured with the given info. */
+    def apply[M[_]: Monad : Catchable : Capture](driverClassName: String, url: String, user: String, pass: String): M[HikariXA] =
       for {
         _ <- Capture[M].apply(Class.forName(driverClassName))
         t <- initial[M]
@@ -48,6 +40,18 @@ object hikaritransactor {
         })
       } yield t
 
+    /* HikariXA is a Transactor for any effect-capturing M. */
+    implicit def jdbcConnectionPool[M[_]: Monad: Catchable](implicit c: Capture[M]): Transactor[M, HikariXA] =
+      Transactor.instance[M, HikariXA](Lens.lensu((a, b) => new HikariXA(b, a.ds), _.xa), h2 => c(h2.ds.getConnection))
+
   }
 
+  /* JdbcConnectionPool is a Connector for any effect-capturing M. */
+  implicit def hikariDataSourceConnector[M[_]: Monad: Catchable: Capture]: Connector[M, HikariDataSource] =
+    Connector.instance(ds => Capture[M].apply(ds.getConnection))
+
+  @deprecated("Use HikariXA instead.", "0.3.0") type HikariTransactor = HikariXA
+  @deprecated("Use HikariXA instead.", "0.3.0") val  HikariTransactor = HikariXA
+
 }
+
