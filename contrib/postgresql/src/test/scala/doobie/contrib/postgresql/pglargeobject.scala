@@ -12,7 +12,7 @@ import scalaz._, Scalaz._, scalaz.concurrent.Task
 
 object pglargeobjectspec extends Specification with FileEquality {
 
-  val xa = DriverManagerTransactor[Task](
+  val xa = DriverManagerTransactor(
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -26,7 +26,7 @@ object pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
         PHLOM.createFileFromLO(1024 * 16, oid, out) >> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformSync
+      PHC.pgGetLargeObjectAPI(prog).transact[Task](xa).unsafePerformSync
       filesEqual(in, out)
     }
 

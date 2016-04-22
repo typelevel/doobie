@@ -11,7 +11,7 @@ import scalaz._, Scalaz._, scalaz.concurrent.Task
 
 object pgcopyspec extends Specification {
 
-  val xa = DriverManagerTransactor[Task](
+  val xa = DriverManagerTransactor(
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -46,7 +46,7 @@ object pgcopyspec extends Specification {
           _   <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
         } yield new String(out.toByteArray, "UTF-8")
 
-      prog.transact(xa).unsafePerformSync must_== fixture
+      prog.transact[Task](xa).unsafePerformSync must_== fixture
 
     }
     
