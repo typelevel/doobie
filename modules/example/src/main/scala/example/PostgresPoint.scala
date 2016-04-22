@@ -10,7 +10,7 @@ import scalaz.concurrent.Task
 
 object PostgresPoint extends App {
 
-  val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // A custom Point type with a Meta instance xmapped from the PostgreSQL native type (which
   // would be weird to use directly in a data model). Note that the presence of this `Meta`
@@ -22,8 +22,8 @@ object PostgresPoint extends App {
   }
 
   // Point is now a perfectly cromulent input/output type
-  val q = sql"select '(1, 2)'::point".query[Point]
-  val a = q.list.transact(xa).unsafePerformSync
+  def q = sql"select '(1, 2)'::point".query[Point]
+  val a = q.list.transact[Task](xa).unsafePerformSync
   Console.println(a) // List(Point(1.0,2.0))
 
   // Just to be clear; the Composite instance has width 1, not 2

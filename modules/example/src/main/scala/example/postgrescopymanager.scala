@@ -39,7 +39,7 @@ object postgrescopymanager {
     ).intercalate("|")
 
 
-  lazy val xa: Transactor[Task] =
+  lazy val xa =
     DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   object inputstream {
@@ -62,7 +62,7 @@ object postgrescopymanager {
       )
 
     val task: Task[Unit] =
-      PHC.pgGetCopyAPI(prog(citiesProcess)).transact(xa) >>= { count =>
+      PHC.pgGetCopyAPI(prog(citiesProcess)).transact[Task](xa) >>= { count =>
         Task.delay(Console.println(s"$count records inserted"))
       }
 
@@ -129,7 +129,7 @@ object postgrescopymanager {
       }
 
     val task: Task[Unit] =
-      PHC.pgGetCopyAPI(progIn *> progOut).transact(xa)
+      PHC.pgGetCopyAPI(progIn *> progOut).transact[Task](xa)
 
     def main(args: Array[String]): Unit =
       task.unsafePerformSync
@@ -191,7 +191,7 @@ object postgrescopymanager {
       }
 
     val task: Task[Unit] =
-      PHC.pgGetCopyAPI(progIn *> progOut).transact(xa)
+      PHC.pgGetCopyAPI(progIn *> progOut).transact[Task](xa)
 
     def main(args: Array[String]): Unit =
       task.unsafePerformSync
