@@ -114,10 +114,17 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type Param[A] = doobie.syntax.string.Param[A]
   /** @group Companion Aliases */ val  Param    = doobie.syntax.string.Param
 
-  /** @group Type Aliases */ type Transactor[M[_], A] = doobie.util.transactor.Transactor[M, A]
+  /** @group Type Aliases */      type Transactor[M[_], A] = doobie.util.transactor.Transactor[M, A]
+  /** @group Companion Aliases */ val  Transactor = doobie.util.transactor.Transactor
 
-  /** @group Type Aliases */ type DriverManagerTransactor = doobie.util.drivermanager.DriverManagerXA
-  /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.drivermanager.DriverManagerXA
+  /** @group Type Aliases */      type Connector[M[_], A] = doobie.util.connector.Connector[M, A]
+  /** @group Companion Aliases */ val  Connector = doobie.util.connector.Connector
+
+  /** @group Type Aliases */      type DriverManagerTransactor = doobie.util.drivermanager.DriverManagerXA
+  /** @group Companion Aliases */ val  DriverManagerTransactor = doobie.util.drivermanager.DriverManagerXA
+
+  /** @group Type Aliases */      type LiftXA = doobie.util.liftxa.LiftXA
+  /** @group Companion Aliases */ val  LiftXA = doobie.util.liftxa.LiftXA
 
   // /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
 

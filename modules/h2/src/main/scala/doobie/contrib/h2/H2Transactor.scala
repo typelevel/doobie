@@ -5,43 +5,50 @@ import doobie.imports._
 import org.h2.jdbcx.JdbcConnectionPool
 
 import scalaz.{ Catchable, Monad }
-import scalaz.syntax.id._
-import scalaz.syntax.monad._
+import scalaz.Lens
 
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
 object h2transactor {
 
-  /** A `Transactor` backed by an H2 `JdbcConnectionPool`. */
-  final class H2Transactor[M[_]: Monad : Catchable : Capture] private (ds: JdbcConnectionPool) extends Transactor[M] {
-    
-    protected val connect = Capture[M].apply(ds.getConnection)
+  final class H2XA private (private val xa: LiftXA, private val ds: JdbcConnectionPool) {
 
     /** A program that shuts down this `H2Transactor`. */
-    val dispose: M[Unit] = Capture[M].apply(ds.dispose)
+    def dispose[M[_]: Capture]: M[Unit] = Capture[M].apply(ds.dispose)
 
     /** Returns the number of active (open) connections of the underlying `JdbcConnectionPool`. */
-    val getActiveConnections: M[Int] = Capture[M].apply(ds.getActiveConnections)
+    def getActiveConnections[M[_]: Capture]: M[Int] = Capture[M].apply(ds.getActiveConnections)
 
     /** Gets the maximum time in seconds to wait for a free connection. */
-    val getLoginTimeout: M[Int] = Capture[M].apply(ds.getLoginTimeout)
+    def getLoginTimeout[M[_]: Capture]: M[Int] = Capture[M].apply(ds.getLoginTimeout)
 
     /** Gets the maximum number of connections to use. */
-    val getMaxConnections: M[Int] = Capture[M].apply(ds.getMaxConnections)
+    def getMaxConnections[M[_]: Capture]: M[Int] = Capture[M].apply(ds.getMaxConnections)
 
     /** Sets the maximum time in seconds to wait for a free connection. */
-    def setLoginTimeout(seconds: Int): M[Unit] = Capture[M].apply(ds.setLoginTimeout(seconds))
+    def setLoginTimeout[M[_]: Capture](seconds: Int): M[Unit] = Capture[M].apply(ds.setLoginTimeout(seconds))
 
     /** Sets the maximum number of connections to use from now on. */
-    def setMaxConnections(max: Int): M[Unit] = Capture[M].apply(ds.setMaxConnections(max))
+    def setMaxConnections[M[_]: Capture](max: Int): M[Unit] = Capture[M].apply(ds.setMaxConnections(max))
 
   }
-
-  object H2Transactor {
-    
+  
+  object H2XA {
+  
     /** Constructs a program that yields a `H2Transactor` configured with the given info. */
-    def apply[M[_]: Monad : Catchable : Capture](url: String, user: String, pass: String): M[H2Transactor[M]] =
-      Capture[M].apply(new H2Transactor(JdbcConnectionPool.create(url, user, pass)))
+    def apply[M[_]: Capture](url: String, user: String, pass: String): M[H2XA] =
+      Capture[M].apply(new H2XA(LiftXA.default, JdbcConnectionPool.create(url, user, pass)))
+
+    /* H2XA is a Transactor for any effect-capturing M. */
+    implicit def jdbcConnectionPool[M[_]: Monad: Catchable](implicit c: Capture[M]): Transactor[M, H2XA] =
+      Transactor.instance[M, H2XA](Lens.lensu((a, b) => new H2XA(b, a.ds), _.xa), h2 => c(h2.ds.getConnection))
 
   }
 
-}
+  /* JdbcConnectionPool is a Connector for any effect-capturing M. */
+  implicit def jdbcConnectionPool[M[_]: Monad: Catchable: Capture]: Connector[M, JdbcConnectionPool] =
+    Connector.instance(ds => Capture[M].apply(ds.getConnection))
+
+  @deprecated("Use H2XA instead.", "0.3.0") type H2Transactor = H2XA
+  @deprecated("Use H2XA instead.", "0.3.0") val  H2Transactor = H2XA
+
+} 
