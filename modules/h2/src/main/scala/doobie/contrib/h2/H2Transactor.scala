@@ -4,8 +4,7 @@ import doobie.imports._
 
 import org.h2.jdbcx.JdbcConnectionPool
 
-import scalaz.{ Catchable, Monad }
-import scalaz.Lens
+import scalaz.{ Catchable, Monad, Lens }
 
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
 object h2transactor {
@@ -45,7 +44,7 @@ object h2transactor {
   }
 
   /* JdbcConnectionPool is a Connector for any effect-capturing M. */
-  implicit def jdbcConnectionPool[M[_]: Monad: Catchable: Capture]: Connector[M, JdbcConnectionPool] =
+  implicit def jdbcConnectionPoolConnector[M[_]: Monad: Catchable: Capture]: Connector[M, JdbcConnectionPool] =
     Connector.instance(ds => Capture[M].apply(ds.getConnection))
 
   @deprecated("Use H2XA instead.", "0.3.0") type H2Transactor = H2XA
