@@ -25,7 +25,7 @@ import Predef._
 /** Module for implicit syntax useful in REPL session. */
 object yolo {
 
-  class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
+  class Yolo[M[_], T](xa: T)(implicit ev: Transactor[M, T]) {
 
     private def out(s: String): ConnectionIO[Unit] =
       delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
@@ -33,7 +33,7 @@ object yolo {
     implicit class Query0YoloOps[A](q: Query0[A]) {
 
       def quick: M[Unit] =
-        q.sink(a => out(a.toString)).transact(xa)
+        q.sink(a => out(a.toString)).transact[M](xa)
 
       def check: M[Unit] =
         doCheck(q.analysis)

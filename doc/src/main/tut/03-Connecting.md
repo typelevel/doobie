@@ -29,7 +29,7 @@ val program1 = 42.point[ConnectionIO]
 This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
 ```tut:silent
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
@@ -41,7 +41,7 @@ The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` t
 Right, so let's do this.
 
 ```tut
-val task = program1.transact(xa)
+val task = program1.transact[Task](xa)
 task.unsafePerformSync
 ```
 
@@ -57,7 +57,7 @@ Let's use the `sql` string interpolator to construct a query that asks the *data
 
 ```tut
 val program2 = sql"select 42".query[Int].unique
-val task2 = program2.transact(xa)
+val task2 = program2.transact[Task](xa)
 task2.unsafePerformSync
 ```
 
@@ -79,7 +79,7 @@ val program3 =
 And behold!
 
 ```tut
-program3.transact(xa).unsafePerformSync
+program3.transact[Task](xa).unsafePerformSync
 ```
 
 The astute among you will note that we don't actually need a monad to do this; an applicative functor is all we need here. So we could also write `program3` as:
@@ -95,13 +95,13 @@ val program3a = {
 And lo, it was good:
 
 ```tut
-program3a.transact(xa).unsafePerformSync
+program3a.transact[Task](xa).unsafePerformSync
 ```
 
 And of course this composition can continue indefinitely.
 
 ```tut
-program3a.replicateM(5).transact(xa).unsafePerformSync.foreach(println)
+program3a.replicateM(5).transact[Task](xa).unsafePerformSync.foreach(println)
 ```
 
 

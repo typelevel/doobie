@@ -24,8 +24,16 @@ object process {
     def sink(f: A => F[Unit]): F[Unit] =     
       fa.to(doobie.util.process.sink(f)).run
 
-    def transact[M[_]](xa: Transactor[M])(implicit ev: Process[F, A] =:= Process[ConnectionIO, A]): Process[M, A] =
-      xa.transP(fa)
+    def transact[M[_]]: TransactPartiallyApplied[M] =
+      new TransactPartiallyApplied[M]
+
+    class TransactPartiallyApplied[M[_]] {
+      def apply[T](t: T)(
+        implicit ev0: Process[F, A] =:= Process[ConnectionIO, A],
+                 ev1: Transactor[M, T]
+      ): Process[M, A] =
+        Transactor.safeTransP(t).apply(fa)
+    }
 
   }
 

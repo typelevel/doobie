@@ -2,6 +2,22 @@
 
 This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
 
+### <a name="0.3.0-M1"></a>New and Noteworthy for Version 0.3.0-M1
+
+This will be a **major release** with **breaking changes** to come. 
+
+Special thanks to **@guersam** for updating the build and all the dependencies; this was nontrivial.
+
+- **doobie** artifacts now include OSGi headers.
+- Added `.nel` handlers for reading result sets that are expected to be non-empty.
+
+Upgrades:
+
+- Updated to Scala 2.11.8 and 2.12.0-M3
+- Updated to shapeless 2.3.0
+- Updated to scalaz 7.2.0
+- Updated to scalaz-stream 0.8a
+
 ### <a name="0.2.3"></a>New and Noteworthy for Version 0.2.3
 
 This release includes more performance work and some usability improvements, as well as documentation improvements here and there. This release should be source-compatible for most users, but is **not** binary compatible with 0.2.2 or any other release. Let me know if you run into source compatibilty problems. Special thanks to **@mdmoss** for build improvements, **@fommil** and **@non** for help with Sonatype, and everyone else for your continued interest and contributions!
