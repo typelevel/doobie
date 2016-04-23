@@ -84,6 +84,10 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   implicit def toEvenMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
     new doobie.syntax.connectionio.ConnectionIOTransactorOps(ma)
 
+  /** @group Syntax */
+  implicit def toTransactorOps[A](a: A) =
+    new doobie.syntax.transactor.TransactorOps(a)
+
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
 
@@ -126,7 +130,8 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type LiftXA = doobie.util.liftxa.LiftXA
   /** @group Companion Aliases */ val  LiftXA = doobie.util.liftxa.LiftXA
 
-  // /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
+  /** @group Type Aliases */      type DataSourceTransactor = doobie.util.datasource.DataSourceTransactor
+  /** @group Companion Aliases */ val  DataSourceTransactor = doobie.util.datasource.DataSourceTransactor
 
 
   /** @group Typeclass Instances */

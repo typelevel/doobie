@@ -23,6 +23,9 @@ object transactor {
 
   object Transactor {
 
+    def apply[M[_], A](implicit ev: Transactor[M, A]): Transactor[M, A] =
+      ev
+
     /** A default instance, given some constraints on M. */
     def instance[M[_]: Monad: Capture: Catchable, A](lens: A @> LiftXA, f: A => M[Connection]): Transactor[M, A] = {
       val c = Connector.instance[M, A](f)

@@ -21,11 +21,11 @@ import doobie.imports._
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
 
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-import xa.yolo._
+val y = xa.yolo[Task]; import y._
 ```
 
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings are provided in the `pgtypes` module.

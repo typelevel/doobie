@@ -15,11 +15,11 @@ import doobie.imports._
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
 
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-import xa.yolo._
+val y = xa.yolo[Task]; import y._
 ```
 
 We're still playing with the `country` table, shown here for reference.

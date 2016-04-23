@@ -11,7 +11,11 @@ import javax.sql.DataSource
 
 object datasource {
 
-  final case class DataSourceXA(xa: LiftXA, ds: DataSource)
+  final case class DataSourceXA(xa: LiftXA, ds: DataSource) {
+    def configure[M[_]](f: DataSource => M[Unit]) =
+      f(ds)
+  }
+
   object DataSourceXA {
 
     def apply(ds: DataSource): DataSourceXA =
@@ -24,5 +28,9 @@ object datasource {
 
   implicit def dataSourceConnector[M[_]: Monad: Capture: Catchable]: Connector[M, DataSource] =
     Connector.instance(ds => Capture[M].apply(ds.getConnection))
+
+  @deprecated("Use DataSourceXA", "0.3.0") type DataSourceTransactor = DataSourceXA
+  @deprecated("Use DataSourceXA", "0.3.0") val  DataSourceTransactor = DataSourceXA
+
 
 }
