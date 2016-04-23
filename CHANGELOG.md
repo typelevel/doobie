@@ -9,7 +9,7 @@ This will be a **major release** with **breaking changes** to come.
 Special thanks to **@guersam** for updating the build and all the dependencies; this was nontrivial.
 
 - **doobie** artifacts now include OSGi headers.
-- Added `.nel` handlers for reading result sets that are expected to be no-empty.
+- Added `.nel` handlers for reading result sets that are expected to be non-empty.
 
 Upgrades:
 
