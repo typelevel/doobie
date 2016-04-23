@@ -15,7 +15,7 @@ import doobie.imports._
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
 
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
@@ -38,10 +38,10 @@ For our first query let's aim low and select some country names into a `List`, t
 
 ```tut
 (sql"select name from country"
-  .query[String]     // Query0[String]
-  .list              // ConnectionIO[List[String]]
-  .transact(xa)      // Task[List[String]]
-  .unsafePerformSync // List[String]
+  .query[String]      // Query0[String]
+  .list               // ConnectionIO[List[String]]
+  .transact[Task](xa) // Task[List[String]]
+  .unsafePerformSync  // List[String]
   .take(5).foreach(println))
 ```
 
@@ -62,12 +62,12 @@ This is ok, but there's not much point reading all the results from the database
 
 ```tut
 (sql"select name from country"
-  .query[String]     // Query0[String]
-  .process           // Process[ConnectionIO, String]
-  .take(5)           // Process[ConnectionIO, String]
-  .list              // ConnectionIO[List[String]]
-  .transact(xa)      // Task[List[String]]
-  .unsafePerformSync // List[String]
+  .query[String]      // Query0[String]
+  .process            // Process[ConnectionIO, String]
+  .take(5)            // Process[ConnectionIO, String]
+  .list               // ConnectionIO[List[String]]
+  .transact[Task](xa) // Task[List[String]]
+  .unsafePerformSync  // List[String]
   .foreach(println))
 ```
 
@@ -81,7 +81,7 @@ Of course a server-side `LIMIT` would be an even better way to do this (for data
 The API we have seen so far is ok, but it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So **just for REPL exploration** there is a module of extra syntax provided on `Transactor` that you can import, and it gives you some shortcuts.
 
 ```tut:silent
-import xa.yolo._
+val y = xa.yolo[Task]; import y._
 ```
 
 We can now run our previous query in an abbreviated form.
@@ -176,9 +176,9 @@ However in some cases a stream is what we want as our "top level" type. For exam
 ```tut
 val p = {
   sql"select name, population, gnp from country"
-    .query[Country]  // Query0[Country]
-    .process         // Process[ConnectionIO, Country]
-    .transact(xa)    // Process[Task, Country]
+    .query[Country]     // Query0[Country]
+    .process            // Process[ConnectionIO, Country]
+    .transact[Task](xa) // Process[Task, Country]
  }
 
 p.take(5).runLog.run.foreach(println)
