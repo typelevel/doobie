@@ -6,7 +6,7 @@ This file summarizes **notable** changes for each release, but does not describe
 
 This will be a **major release** with **breaking changes** to come. 
 
-Special thanks to **@guerasm** for updating the build and all the dependencies; this was nontrivial.
+Special thanks to **@guersam** for updating the build and all the dependencies; this was nontrivial.
 
 - **doobie** artifacts now include OSGi headers.
 - Added `.nel` handlers for reading result sets that are expected to be no-empty.
