@@ -4,6 +4,8 @@
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.11)
 
+> **NOTE** this is an active development branch. Document is not necessarily up to date and unannounced breaking changes should be expected. For stable releases please switch to `series/0.2.x`.
+
 **doobie** is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level libraries) that use JDBC. **doobie** introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here.
 
 For common use cases **doobie** provides a minimal but expressive high-level API:
@@ -11,7 +13,7 @@ For common use cases **doobie** provides a minimal but expressive high-level API
 ```scala
 import doobie.imports._, scalaz.effect.IO
 
-val xa = DriverManagerTransactor[IO](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
@@ -22,7 +24,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
 
 // And then
 
-scala> find("France").transact(xa).unsafePerformIO
+scala> find("France").transact[IO](xa).unsafePerformIO
 res0: Option[Country] = Some(Country(FRA,France,59225700))
 ```
 
@@ -30,16 +32,16 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-The current release is **0.2.3**, which works on Scala **2.10.5** and **2.11** with
+The current milestone is **0.3.0-M1**, which works on Scala **2.10.5**, **2.11**, and **2.12** with
 
-- scalaz 7.1
-- scalaz-stream 0.7.2a ← **important:** later versions are *not* compatible (yet)
-- shapeless 2.2
+- scalaz 7.2
+- scalaz-stream 0.8a
+- shapeless 2.3
 
 You should expect minor breaking changes for at least the next few versions, although these will be documented and kept to a minimum. To use **doobie** you need to add the following to your `build.sbt`.
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.3"
+libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.3.0-M1"
 ```
 
 If you are using Scala 2.10.5 you must also add the paradise compiler plugin.
@@ -59,7 +61,7 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.htm
 
 ## Documentation and Support
 
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/master/CHANGELOG.md#0.2.3) for an overview of changes in this and previous versions.
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/master/CHANGELOG.md#0.3.0-M1) for an overview of changes in this and previous versions.
 - Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) ← start here
 - The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.3/api/index.html) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
@@ -68,11 +70,12 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.htm
 
 ## Presentations, Blog Posts, etc.
 
-Listed newest first. If you have given a presentation or have written a blog post on **doobie**, let me know and I'll add it to this list.
+Listed newest first. If you have given a presentation or have written a blog post that includes **doobie**, let me know and I'll add it to this list.
 
-- [Programs as Values: JDBC Programming with doobie](https://www.youtube.com/watch?v=M5MF6M7FHPo) Scala by the Bay, 2015 ([slides](http://tpolecat.github.io/assets/sbtb-slides.pdf))
+- [The Functional Web Stack](https://t.co/rYH42gs2AU) by Gary Coady - Dublin Scala Users Group, April 2016
+- [End to End and On The Level](https://www.youtube.com/watch?v=lMW_yMkxX4Q&list=PL_5uJkfWNxdkQd7FbN1whrTOsJPMgHgLg&index=2) by Dave Gurnell - Typelevel Summit, Philadelphia, March 2016
+- [Programs as Values: JDBC Programming with doobie](https://www.youtube.com/watch?v=M5MF6M7FHPo) by Rob Norris - Scala by the Bay, 2015 - [slides](http://tpolecat.github.io/assets/sbtb-slides.pdf)
 - [Typechecking SQL in Slick and doobie](http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html) by Richard Dallaway
-- [DB to JSON with a Microservice](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) by Da Terry (code [here](https://bitbucket.org/da_terry/scalasyd-doobie-http4s)).
-
+- [DB to JSON with a Microservice](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) by Da Terry - [code](https://bitbucket.org/da_terry/scalasyd-doobie-http4s)
 
 
