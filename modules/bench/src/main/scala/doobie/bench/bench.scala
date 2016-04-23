@@ -8,7 +8,7 @@ import scalaz.concurrent.Task
 /** Rough benchmark based on non/jawn */
 object bench {
 
-  val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // Baseline hand-written JDBC code
   def jdbcBench(n: Int): Int = {
@@ -47,7 +47,7 @@ object bench {
       .query[(String,String,String)]
       .process
       .list
-      .transact(xa)
+      .transact[Task](xa)
       .map(_.length)
       .unsafePerformSync
 
@@ -56,7 +56,7 @@ object bench {
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
       .list
-      .transact(xa)
+      .transact[Task](xa)
       .map(_.length)
       .unsafePerformSync
 
@@ -65,7 +65,7 @@ object bench {
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
       .vector
-      .transact(xa)
+      .transact[Task](xa)
       .map(_.length)
       .unsafePerformSync
 
@@ -75,7 +75,7 @@ object bench {
       HPS.executeQuery {
         HRS.ilist[(String, String, String)]
       }
-    } .transact(xa)
+    } .transact[Task](xa)
       .map(_.length)
       .unsafePerformSync
 
