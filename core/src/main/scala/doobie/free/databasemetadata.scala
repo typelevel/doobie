@@ -99,550 +99,550 @@ object databasemetadata {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: DatabaseMetaData => A) extends DatabaseMetaDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object AllProceduresAreCallable extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.allProceduresAreCallable())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.allProceduresAreCallable())
     }
     case object AllTablesAreSelectable extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.allTablesAreSelectable())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.allTablesAreSelectable())
     }
     case object AutoCommitFailureClosesAllResultSets extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.autoCommitFailureClosesAllResultSets())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.autoCommitFailureClosesAllResultSets())
     }
     case object DataDefinitionCausesTransactionCommit extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.dataDefinitionCausesTransactionCommit())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.dataDefinitionCausesTransactionCommit())
     }
     case object DataDefinitionIgnoredInTransactions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.dataDefinitionIgnoredInTransactions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.dataDefinitionIgnoredInTransactions())
     }
     case class  DeletesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.deletesAreDetected(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.deletesAreDetected(a))
     }
     case object DoesMaxRowSizeIncludeBlobs extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.doesMaxRowSizeIncludeBlobs())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.doesMaxRowSizeIncludeBlobs())
     }
     case object GeneratedKeyAlwaysReturned extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.generatedKeyAlwaysReturned())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.generatedKeyAlwaysReturned())
     }
     case class  GetAttributes(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAttributes(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAttributes(a, b, c, d))
     }
     case class  GetBestRowIdentifier(a: String, b: String, c: String, d: Int, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBestRowIdentifier(a, b, c, d, e))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBestRowIdentifier(a, b, c, d, e))
     }
     case object GetCatalogSeparator extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalogSeparator())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalogSeparator())
     }
     case object GetCatalogTerm extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalogTerm())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalogTerm())
     }
     case object GetCatalogs extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalogs())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalogs())
     }
     case object GetClientInfoProperties extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfoProperties())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfoProperties())
     }
     case class  GetColumnPrivileges(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getColumnPrivileges(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getColumnPrivileges(a, b, c, d))
     }
     case class  GetColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getColumns(a, b, c, d))
     }
     case object GetConnection extends DatabaseMetaDataOp[Connection] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
     }
     case class  GetCrossReference(a: String, b: String, c: String, d: String, e: String, f: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCrossReference(a, b, c, d, e, f))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCrossReference(a, b, c, d, e, f))
     }
     case object GetDatabaseMajorVersion extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseMajorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseMajorVersion())
     }
     case object GetDatabaseMinorVersion extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseMinorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseMinorVersion())
     }
     case object GetDatabaseProductName extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseProductName())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseProductName())
     }
     case object GetDatabaseProductVersion extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseProductVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDatabaseProductVersion())
     }
     case object GetDefaultTransactionIsolation extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDefaultTransactionIsolation())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDefaultTransactionIsolation())
     }
     case object GetDriverMajorVersion extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverMajorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverMajorVersion())
     }
     case object GetDriverMinorVersion extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverMinorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverMinorVersion())
     }
     case object GetDriverName extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverName())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverName())
     }
     case object GetDriverVersion extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDriverVersion())
     }
     case class  GetExportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getExportedKeys(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getExportedKeys(a, b, c))
     }
     case object GetExtraNameCharacters extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getExtraNameCharacters())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getExtraNameCharacters())
     }
     case class  GetFunctionColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFunctionColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFunctionColumns(a, b, c, d))
     }
     case class  GetFunctions(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFunctions(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFunctions(a, b, c))
     }
     case object GetIdentifierQuoteString extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getIdentifierQuoteString())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getIdentifierQuoteString())
     }
     case class  GetImportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getImportedKeys(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getImportedKeys(a, b, c))
     }
     case class  GetIndexInfo(a: String, b: String, c: String, d: Boolean, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getIndexInfo(a, b, c, d, e))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getIndexInfo(a, b, c, d, e))
     }
     case object GetJDBCMajorVersion extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getJDBCMajorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getJDBCMajorVersion())
     }
     case object GetJDBCMinorVersion extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getJDBCMinorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getJDBCMinorVersion())
     }
     case object GetMaxBinaryLiteralLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxBinaryLiteralLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxBinaryLiteralLength())
     }
     case object GetMaxCatalogNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxCatalogNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxCatalogNameLength())
     }
     case object GetMaxCharLiteralLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxCharLiteralLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxCharLiteralLength())
     }
     case object GetMaxColumnNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnNameLength())
     }
     case object GetMaxColumnsInGroupBy extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInGroupBy())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInGroupBy())
     }
     case object GetMaxColumnsInIndex extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInIndex())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInIndex())
     }
     case object GetMaxColumnsInOrderBy extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInOrderBy())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInOrderBy())
     }
     case object GetMaxColumnsInSelect extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInSelect())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInSelect())
     }
     case object GetMaxColumnsInTable extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInTable())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxColumnsInTable())
     }
     case object GetMaxConnections extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxConnections())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxConnections())
     }
     case object GetMaxCursorNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxCursorNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxCursorNameLength())
     }
     case object GetMaxIndexLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxIndexLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxIndexLength())
     }
     case object GetMaxProcedureNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxProcedureNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxProcedureNameLength())
     }
     case object GetMaxRowSize extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRowSize())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRowSize())
     }
     case object GetMaxSchemaNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxSchemaNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxSchemaNameLength())
     }
     case object GetMaxStatementLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxStatementLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxStatementLength())
     }
     case object GetMaxStatements extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxStatements())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxStatements())
     }
     case object GetMaxTableNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxTableNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxTableNameLength())
     }
     case object GetMaxTablesInSelect extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxTablesInSelect())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxTablesInSelect())
     }
     case object GetMaxUserNameLength extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxUserNameLength())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxUserNameLength())
     }
     case object GetNumericFunctions extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNumericFunctions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNumericFunctions())
     }
     case class  GetPrimaryKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getPrimaryKeys(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getPrimaryKeys(a, b, c))
     }
     case class  GetProcedureColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getProcedureColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getProcedureColumns(a, b, c, d))
     }
     case object GetProcedureTerm extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getProcedureTerm())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getProcedureTerm())
     }
     case class  GetProcedures(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getProcedures(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getProcedures(a, b, c))
     }
     case class  GetPseudoColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getPseudoColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getPseudoColumns(a, b, c, d))
     }
     case object GetResultSetHoldability extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetHoldability())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetHoldability())
     }
     case object GetRowIdLifetime extends DatabaseMetaDataOp[RowIdLifetime] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowIdLifetime())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowIdLifetime())
     }
     case object GetSQLKeywords extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLKeywords())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLKeywords())
     }
     case object GetSQLStateType extends DatabaseMetaDataOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLStateType())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLStateType())
     }
     case object GetSchemaTerm extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemaTerm())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemaTerm())
     }
     case object GetSchemas extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas())
     }
     case class  GetSchemas1(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas(a, b))
     }
     case object GetSearchStringEscape extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSearchStringEscape())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSearchStringEscape())
     }
     case object GetStringFunctions extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getStringFunctions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getStringFunctions())
     }
     case class  GetSuperTables(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSuperTables(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSuperTables(a, b, c))
     }
     case class  GetSuperTypes(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSuperTypes(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSuperTypes(a, b, c))
     }
     case object GetSystemFunctions extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSystemFunctions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSystemFunctions())
     }
     case class  GetTablePrivileges(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTablePrivileges(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTablePrivileges(a, b, c))
     }
     case object GetTableTypes extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTableTypes())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTableTypes())
     }
     case class  GetTables(a: String, b: String, c: String, d: Array[String]) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTables(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTables(a, b, c, d))
     }
     case object GetTimeDateFunctions extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimeDateFunctions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimeDateFunctions())
     }
     case object GetTypeInfo extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTypeInfo())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTypeInfo())
     }
     case class  GetUDTs(a: String, b: String, c: String, d: Array[Int]) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUDTs(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUDTs(a, b, c, d))
     }
     case object GetURL extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL())
     }
     case object GetUserName extends DatabaseMetaDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUserName())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUserName())
     }
     case class  GetVersionColumns(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getVersionColumns(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getVersionColumns(a, b, c))
     }
     case class  InsertsAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.insertsAreDetected(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.insertsAreDetected(a))
     }
     case object IsCatalogAtStart extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isCatalogAtStart())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isCatalogAtStart())
     }
     case object IsReadOnly extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isReadOnly())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isReadOnly())
     }
     case class  IsWrapperFor(a: Class[_]) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
     }
     case object LocatorsUpdateCopy extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.locatorsUpdateCopy())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.locatorsUpdateCopy())
     }
     case object NullPlusNonNullIsNull extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullPlusNonNullIsNull())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullPlusNonNullIsNull())
     }
     case object NullsAreSortedAtEnd extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedAtEnd())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedAtEnd())
     }
     case object NullsAreSortedAtStart extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedAtStart())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedAtStart())
     }
     case object NullsAreSortedHigh extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedHigh())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedHigh())
     }
     case object NullsAreSortedLow extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedLow())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nullsAreSortedLow())
     }
     case class  OthersDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.othersDeletesAreVisible(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.othersDeletesAreVisible(a))
     }
     case class  OthersInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.othersInsertsAreVisible(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.othersInsertsAreVisible(a))
     }
     case class  OthersUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.othersUpdatesAreVisible(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.othersUpdatesAreVisible(a))
     }
     case class  OwnDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.ownDeletesAreVisible(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.ownDeletesAreVisible(a))
     }
     case class  OwnInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.ownInsertsAreVisible(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.ownInsertsAreVisible(a))
     }
     case class  OwnUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.ownUpdatesAreVisible(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.ownUpdatesAreVisible(a))
     }
     case object StoresLowerCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesLowerCaseIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesLowerCaseIdentifiers())
     }
     case object StoresLowerCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesLowerCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesLowerCaseQuotedIdentifiers())
     }
     case object StoresMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesMixedCaseIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesMixedCaseIdentifiers())
     }
     case object StoresMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesMixedCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesMixedCaseQuotedIdentifiers())
     }
     case object StoresUpperCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesUpperCaseIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesUpperCaseIdentifiers())
     }
     case object StoresUpperCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesUpperCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.storesUpperCaseQuotedIdentifiers())
     }
     case object SupportsANSI92EntryLevelSQL extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsANSI92EntryLevelSQL())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsANSI92EntryLevelSQL())
     }
     case object SupportsANSI92FullSQL extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsANSI92FullSQL())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsANSI92FullSQL())
     }
     case object SupportsANSI92IntermediateSQL extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsANSI92IntermediateSQL())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsANSI92IntermediateSQL())
     }
     case object SupportsAlterTableWithAddColumn extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsAlterTableWithAddColumn())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsAlterTableWithAddColumn())
     }
     case object SupportsAlterTableWithDropColumn extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsAlterTableWithDropColumn())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsAlterTableWithDropColumn())
     }
     case object SupportsBatchUpdates extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsBatchUpdates())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsBatchUpdates())
     }
     case object SupportsCatalogsInDataManipulation extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInDataManipulation())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInDataManipulation())
     }
     case object SupportsCatalogsInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInIndexDefinitions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInIndexDefinitions())
     }
     case object SupportsCatalogsInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInPrivilegeDefinitions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInPrivilegeDefinitions())
     }
     case object SupportsCatalogsInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInProcedureCalls())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInProcedureCalls())
     }
     case object SupportsCatalogsInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInTableDefinitions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCatalogsInTableDefinitions())
     }
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
     }
     case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
     }
     case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
     }
     case object SupportsCorrelatedSubqueries extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCorrelatedSubqueries())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCorrelatedSubqueries())
     }
     case object SupportsDataDefinitionAndDataManipulationTransactions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsDataDefinitionAndDataManipulationTransactions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsDataDefinitionAndDataManipulationTransactions())
     }
     case object SupportsDataManipulationTransactionsOnly extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsDataManipulationTransactionsOnly())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsDataManipulationTransactionsOnly())
     }
     case object SupportsDifferentTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsDifferentTableCorrelationNames())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsDifferentTableCorrelationNames())
     }
     case object SupportsExpressionsInOrderBy extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsExpressionsInOrderBy())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsExpressionsInOrderBy())
     }
     case object SupportsExtendedSQLGrammar extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsExtendedSQLGrammar())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsExtendedSQLGrammar())
     }
     case object SupportsFullOuterJoins extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsFullOuterJoins())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsFullOuterJoins())
     }
     case object SupportsGetGeneratedKeys extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGetGeneratedKeys())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGetGeneratedKeys())
     }
     case object SupportsGroupBy extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGroupBy())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGroupBy())
     }
     case object SupportsGroupByBeyondSelect extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGroupByBeyondSelect())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGroupByBeyondSelect())
     }
     case object SupportsGroupByUnrelated extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGroupByUnrelated())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsGroupByUnrelated())
     }
     case object SupportsIntegrityEnhancementFacility extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsIntegrityEnhancementFacility())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsIntegrityEnhancementFacility())
     }
     case object SupportsLikeEscapeClause extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsLikeEscapeClause())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsLikeEscapeClause())
     }
     case object SupportsLimitedOuterJoins extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsLimitedOuterJoins())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsLimitedOuterJoins())
     }
     case object SupportsMinimumSQLGrammar extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMinimumSQLGrammar())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMinimumSQLGrammar())
     }
     case object SupportsMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMixedCaseIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMixedCaseIdentifiers())
     }
     case object SupportsMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMixedCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMixedCaseQuotedIdentifiers())
     }
     case object SupportsMultipleOpenResults extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMultipleOpenResults())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMultipleOpenResults())
     }
     case object SupportsMultipleResultSets extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMultipleResultSets())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMultipleResultSets())
     }
     case object SupportsMultipleTransactions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMultipleTransactions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsMultipleTransactions())
     }
     case object SupportsNamedParameters extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsNamedParameters())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsNamedParameters())
     }
     case object SupportsNonNullableColumns extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsNonNullableColumns())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsNonNullableColumns())
     }
     case object SupportsOpenCursorsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenCursorsAcrossCommit())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenCursorsAcrossCommit())
     }
     case object SupportsOpenCursorsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenCursorsAcrossRollback())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenCursorsAcrossRollback())
     }
     case object SupportsOpenStatementsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenStatementsAcrossCommit())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenStatementsAcrossCommit())
     }
     case object SupportsOpenStatementsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenStatementsAcrossRollback())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOpenStatementsAcrossRollback())
     }
     case object SupportsOrderByUnrelated extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOrderByUnrelated())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOrderByUnrelated())
     }
     case object SupportsOuterJoins extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOuterJoins())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsOuterJoins())
     }
     case object SupportsPositionedDelete extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsPositionedDelete())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsPositionedDelete())
     }
     case object SupportsPositionedUpdate extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsPositionedUpdate())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsPositionedUpdate())
     }
     case class  SupportsResultSetConcurrency(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetConcurrency(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetConcurrency(a, b))
     }
     case class  SupportsResultSetHoldability(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetHoldability(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetHoldability(a))
     }
     case class  SupportsResultSetType(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetType(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetType(a))
     }
     case object SupportsSavepoints extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSavepoints())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSavepoints())
     }
     case object SupportsSchemasInDataManipulation extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInDataManipulation())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInDataManipulation())
     }
     case object SupportsSchemasInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInIndexDefinitions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInIndexDefinitions())
     }
     case object SupportsSchemasInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInPrivilegeDefinitions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInPrivilegeDefinitions())
     }
     case object SupportsSchemasInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInProcedureCalls())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInProcedureCalls())
     }
     case object SupportsSchemasInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInTableDefinitions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSchemasInTableDefinitions())
     }
     case object SupportsSelectForUpdate extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSelectForUpdate())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSelectForUpdate())
     }
     case object SupportsStatementPooling extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsStatementPooling())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsStatementPooling())
     }
     case object SupportsStoredFunctionsUsingCallSyntax extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsStoredFunctionsUsingCallSyntax())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsStoredFunctionsUsingCallSyntax())
     }
     case object SupportsStoredProcedures extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsStoredProcedures())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsStoredProcedures())
     }
     case object SupportsSubqueriesInComparisons extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInComparisons())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInComparisons())
     }
     case object SupportsSubqueriesInExists extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInExists())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInExists())
     }
     case object SupportsSubqueriesInIns extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInIns())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInIns())
     }
     case object SupportsSubqueriesInQuantifieds extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInQuantifieds())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsSubqueriesInQuantifieds())
     }
     case object SupportsTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsTableCorrelationNames())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsTableCorrelationNames())
     }
     case class  SupportsTransactionIsolationLevel(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsTransactionIsolationLevel(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsTransactionIsolationLevel(a))
     }
     case object SupportsTransactions extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsTransactions())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsTransactions())
     }
     case object SupportsUnion extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsUnion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsUnion())
     }
     case object SupportsUnionAll extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsUnionAll())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsUnionAll())
     }
     case class  Unwrap[T](a: Class[T]) extends DatabaseMetaDataOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
     }
     case class  UpdatesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updatesAreDetected(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.updatesAreDetected(a))
     }
     case object UsesLocalFilePerTable extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.usesLocalFilePerTable())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.usesLocalFilePerTable())
     }
     case object UsesLocalFiles extends DatabaseMetaDataOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.usesLocalFiles())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.usesLocalFiles())
     }
 
   }

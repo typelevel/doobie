@@ -149,7 +149,7 @@ object meta {
   object Meta extends {
 
     // See note on trait Meta above
-    private var instances: ISet[Meta[_]] = ISet.empty
+    private var instances: ISet[Meta[_]] = ISet.empty // scalastyle:ignore
 
     /** @group Typeclass Instances */
     implicit val MetaOrder: Order[Meta[_]] =

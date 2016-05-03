@@ -69,15 +69,15 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
 
   /** @group Syntax */
-  implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]) =
+  implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
-  implicit def toSqlInterpolator(sc: StringContext) =
+  implicit def toSqlInterpolator(sc: StringContext): doobie.syntax.string.SqlInterpolator =
     new doobie.syntax.string.SqlInterpolator(sc)
 
   /** @group Syntax */
-  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
+  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.MoreConnectionIOOps[A] =
     new doobie.syntax.connectionio.MoreConnectionIOOps(ma)
 
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]

@@ -32,7 +32,7 @@ object update {
     // N.B. this what we want to implement, but updateManyWithGeneratedKeys is what we want to call
     protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]): Process[ConnectionIO, K]
 
-    def updateManyWithGeneratedKeys[K](columns: String*) =
+    def updateManyWithGeneratedKeys[K](columns: String*): Update.UpdateManyWithGeneratedKeysBuilder[A, K] =
       new Update.UpdateManyWithGeneratedKeysBuilder[A, K] {
         def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
           updateManyWithGeneratedKeysA[F,K](columns: _*)(as)

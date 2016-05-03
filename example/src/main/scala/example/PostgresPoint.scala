@@ -22,7 +22,7 @@ object PostgresPoint extends App {
   }
 
   // Point is now a perfectly cromulent input/output type
-  def q = sql"select '(1, 2)'::point".query[Point]
+  val q = sql"select '(1, 2)'::point".query[Point]
   val a = q.list.transact(xa).unsafePerformSync
   Console.println(a) // List(Point(1.0,2.0))
 

@@ -97,55 +97,55 @@ object blob {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends BlobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: BlobIO[A]) extends BlobOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, Blob, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends BlobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: Blob => A) extends BlobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object Free extends BlobOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
     }
     case object GetBinaryStream extends BlobOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
     }
     case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
     }
     case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a, b))
     }
     case object Length extends BlobOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
     case class  Position(a: Blob, b: Long) extends BlobOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  Position1(a: Array[Byte], b: Long) extends BlobOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
     }
     case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
     }
     case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
     }
 
   }

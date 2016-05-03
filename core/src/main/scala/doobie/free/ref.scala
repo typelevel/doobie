@@ -98,34 +98,34 @@ object ref {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends RefOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: RefIO[A]) extends RefOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, Ref, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends RefOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: Ref => A) extends RefOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object GetBaseTypeName extends RefOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
     }
     case class  GetObject(a: Map[String, Class[_]]) extends RefOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
     case object GetObject1 extends RefOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
     }
     case class  SetObject(a: Object) extends RefOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
     }
 
   }

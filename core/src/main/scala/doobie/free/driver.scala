@@ -99,43 +99,43 @@ object driver {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: DriverIO[A]) extends DriverOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: Driver => A) extends DriverOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.acceptsURL(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.acceptsURL(a))
     }
     case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.connect(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.connect(a, b))
     }
     case object GetMajorVersion extends DriverOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMajorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMajorVersion())
     }
     case object GetMinorVersion extends DriverOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMinorVersion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMinorVersion())
     }
     case object GetParentLogger extends DriverOp[Logger] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getParentLogger())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getParentLogger())
     }
     case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getPropertyInfo(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getPropertyInfo(a, b))
     }
     case object JdbcCompliant extends DriverOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.jdbcCompliant())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.jdbcCompliant())
     }
 
   }

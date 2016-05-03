@@ -12,47 +12,47 @@ object AnalysisTest {
 
   case class Country(name: String, indepYear: Int)
 
-  def speakerQuery(lang: String, pct: Double) =
+  def speakerQuery(lang: String, pct: Double): Query0[Country] =
     sql"""
       SELECT C.NAME, C.INDEPYEAR, C.CODE FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
       WHERE LANGUAGE = $lang AND PERCENTAGE > $pct
     """.query[Country]
 
-  def speakerQuery2 =
+  val speakerQuery2 =
     sql"""
       SELECT C.NAME, C.INDEPYEAR, C.CODE FROM COUNTRYLANGUAGE CL
       JOIN COUNTRY C ON CL.COUNTRYCODE = C.CODE
     """.query[(String, Option[Short], String)]
 
-  def arrayTest = 
+  val arrayTest =
     sql"""
       SELECT ARRAY[1, 2, NULL] test
     """.query[Option[List[String]]]
 
-  def arrayTest2 = 
+  val arrayTest2 =
     sql"""
       SELECT ARRAY[1, 2, NULL] test
     """.query[String]
 
-  def pointTest =
+  val pointTest =
     sql"""
       SELECT '(1, 2)'::point test
     """.query[PGpoint]
 
-  def pointTest2 = {
+  val pointTest2 = {
     Meta[PostgresPoint.Point] // why not? ... irritating that it must be instantiated. what to do?
     sql"""
       SELECT '(1, 2)'::point test
     """.query[PGcircle]
   }
 
-  def update(code: String, name: Int) = 
+  def update(code: String, name: Int): Update0 = 
     sql"""
       UPDATE COUNTRY SET NAME = $name WHERE CODE = $code
     """.update
 
-  def update2 = 
+  val update2 = 
     sql"""
       UPDATE COUNTRY SET NAME = 'foo' WHERE CODE = 'bkah'
     """.update

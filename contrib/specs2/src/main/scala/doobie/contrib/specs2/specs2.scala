@@ -43,22 +43,22 @@ object analysisspec {
 
     def transactor: Transactor[Task]
 
-    def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]) =
+    def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
       checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.stackFrame, q.sql, q.analysis)
 
-    def check[A](q: Query0[A])(implicit A: TypeTag[A]) =
+    def check[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
 
-    def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]) =
+    def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.outputAnalysis)
 
-    def check[A](q: Update[A])(implicit A: TypeTag[A]) =
+    def check[A](q: Update[A])(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Update[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
 
-    def check[A](q: Update0)(implicit A: TypeTag[A]) =
+    def check[A](q: Update0)(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Update0", q.stackFrame, q.sql, q.analysis)
 
-    private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]) =
+    private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
       s"$typeName defined at ${loc(stackFrame)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
         transactor.trans(analysis).unsafePerformSyncAttempt match {
           case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))

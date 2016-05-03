@@ -64,7 +64,7 @@ object transactor {
       private def safe[A](ma: ConnectionIO[A]): ConnectionIO[A] =
         (before *> ma <* after) onException oops ensuring always
 
-      def apply[A](ma: ConnectionIO[A]) = 
+      def apply[A](ma: ConnectionIO[A]): M[A] = 
         connect >>= safe(ma).transK[M]
 
     }
@@ -80,7 +80,7 @@ object transactor {
       private def safe[A](pa: Process[ConnectionIO, A]): Process[ConnectionIO, A] =
         (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
 
-      def apply[A](pa: Process[ConnectionIO, A]) = 
+      def apply[A](pa: Process[ConnectionIO, A]): Process[M, A] = 
         eval(connect) >>= safe(pa).trans[M]
 
     }
@@ -126,7 +126,8 @@ object transactor {
     }
 
     /** Type-curried constructor: construct a new instance via `DataSourceTransactor[M](ds)`. */
-    def apply[M[_]] = new DataSourceTransactorCtor[M]
+    def apply[M[_]]: DataSourceTransactorCtor[M] =
+      new DataSourceTransactorCtor[M]
 
   }
 

@@ -96,31 +96,31 @@ object sqldata {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: SQLDataIO[A]) extends SQLDataOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, SQLData, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends SQLDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: SQLData => A) extends SQLDataOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object GetSQLTypeName extends SQLDataOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLTypeName())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLTypeName())
     }
     case class  ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readSQL(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readSQL(a, b))
     }
     case class  WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeSQL(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeSQL(a))
     }
 
   }

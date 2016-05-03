@@ -56,7 +56,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
       }
 
     /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
-    implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]) =
+    implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]): Param[H :: T] =
       new Param[H :: T] {
         val composite = Composite.product[H,T](ph.composite, pt.composite)
         val placeholders = ph.placeholders ++ pt.placeholders
@@ -103,7 +103,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
      * meaningful internal structure.
      */
     object sql extends ProductArgs {
-      def applyProduct[A <: HList](a: A)(implicit ev: Param[A]) = {
+      def applyProduct[A <: HList](a: A)(implicit ev: Param[A]) = { // scalastyle:ignore
         val sql = sc.parts.toList.fzipWith(ev.placeholders.map(placeholders) ++ List(""))(_ + _).suml
         new Builder(a, sql, stackFrame)(ev.composite)
       }
