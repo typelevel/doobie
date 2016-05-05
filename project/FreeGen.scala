@@ -99,7 +99,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
         case Nil => s"object $cname" 
         case ps  => s"class  $cname$ctparams(${cargs.mkString(", ")})"
       }) + s""" extends ${sname}Op[$ret] {
-        |      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.$mname($args))
+        |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.$mname($args))
         |    }""").trim.stripMargin
 
     // Argument list: a, b, c, ... up to the proper arity
@@ -248,20 +248,20 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |
     |    // Lifting
     |    case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ${sname}Op[A] {
-    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+    |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     |    }
     |
     |    // Combinators
     |    case class Attempt[A](action: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A] {
     |      import scalaz._, Scalaz._
-    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+    |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
     |        Predef.implicitly[Catchable[Kleisli[M, ${sname}, ?]]].attempt(action.transK[M])
     |    }
     |    case class Pure[A](a: () => A) extends ${sname}Op[A] {
-    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+    |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     |    }
     |    case class Raw[A](f: ${sname} => A) extends ${sname}Op[A] {
-    |      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+    |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     |    }
     |
     |    // Primitive Operations

@@ -14,7 +14,7 @@ object HikariExample {
       _  <- xa.shutdown
     } yield ()
 
-  def main(args: Array[String]) =
+  def main(args: Array[String]): Unit =
     tmain.unsafePerformSync
 
 }

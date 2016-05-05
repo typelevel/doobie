@@ -103,7 +103,7 @@ object preparedstatement {
     PS.executeUpdate
 
   /** @group Execution */
-  def executeUpdateWithUniqueGeneratedKeys[A: Composite] =
+  def executeUpdateWithUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
  /** @group Execution */

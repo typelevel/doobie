@@ -107,103 +107,103 @@ object sqloutput {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLOutputOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: SQLOutputIO[A]) extends SQLOutputOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, SQLOutput, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends SQLOutputOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: SQLOutput => A) extends SQLOutputOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case class  WriteArray(a: SqlArray) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeArray(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeArray(a))
     }
     case class  WriteAsciiStream(a: InputStream) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeAsciiStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeAsciiStream(a))
     }
     case class  WriteBigDecimal(a: BigDecimal) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBigDecimal(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBigDecimal(a))
     }
     case class  WriteBinaryStream(a: InputStream) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBinaryStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBinaryStream(a))
     }
     case class  WriteBlob(a: Blob) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBlob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBlob(a))
     }
     case class  WriteBoolean(a: Boolean) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBoolean(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBoolean(a))
     }
     case class  WriteByte(a: Byte) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeByte(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeByte(a))
     }
     case class  WriteBytes(a: Array[Byte]) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBytes(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeBytes(a))
     }
     case class  WriteCharacterStream(a: Reader) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeCharacterStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeCharacterStream(a))
     }
     case class  WriteClob(a: Clob) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeClob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeClob(a))
     }
     case class  WriteDate(a: Date) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeDate(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeDate(a))
     }
     case class  WriteDouble(a: Double) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeDouble(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeDouble(a))
     }
     case class  WriteFloat(a: Float) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeFloat(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeFloat(a))
     }
     case class  WriteInt(a: Int) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeInt(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeInt(a))
     }
     case class  WriteLong(a: Long) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeLong(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeLong(a))
     }
     case class  WriteNClob(a: NClob) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNClob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNClob(a))
     }
     case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNString(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNString(a))
     }
     case class  WriteObject(a: SQLData) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
     }
     case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeRef(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeRef(a))
     }
     case class  WriteRowId(a: RowId) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeRowId(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeRowId(a))
     }
     case class  WriteSQLXML(a: SQLXML) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeSQLXML(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeSQLXML(a))
     }
     case class  WriteShort(a: Short) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeShort(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeShort(a))
     }
     case class  WriteString(a: String) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeString(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeString(a))
     }
     case class  WriteStruct(a: Struct) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeStruct(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeStruct(a))
     }
     case class  WriteTime(a: Time) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeTime(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeTime(a))
     }
     case class  WriteTimestamp(a: Timestamp) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeTimestamp(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeTimestamp(a))
     }
     case class  WriteURL(a: URL) extends SQLOutputOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeURL(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeURL(a))
     }
 
   }

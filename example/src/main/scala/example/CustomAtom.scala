@@ -30,7 +30,7 @@ object CustomAtom {
   Composite[(Option[PosixTime], Int, String)]
 
   // You can now use PosixTime as a column or parameter type (both demonstrated here)
-  def query(lpt: PosixTime) = 
+  def query(lpt: PosixTime): Query0[(String, PosixTime)] = 
     sql"SELECT NAME, DATE FROM FOO WHERE DATE > $lpt".query[(String, PosixTime)] 
 
 }

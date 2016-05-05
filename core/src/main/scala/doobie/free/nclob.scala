@@ -100,61 +100,61 @@ object nclob {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends NClobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: NClobIO[A]) extends NClobOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, NClob, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends NClobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: NClob => A) extends NClobOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object Free extends NClobOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
     }
     case object GetAsciiStream extends NClobOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
     }
     case object GetCharacterStream extends NClobOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
     }
     case class  GetCharacterStream1(a: Long, b: Long) extends NClobOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
     }
     case class  GetSubString(a: Long, b: Int) extends NClobOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
     }
     case object Length extends NClobOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
     case class  Position(a: Clob, b: Long) extends NClobOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  Position1(a: String, b: Long) extends NClobOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a))
     }
     case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
     }
     case class  SetString(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
     }
     case class  SetString1(a: Long, b: String) extends NClobOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
     }
     case class  Truncate(a: Long) extends NClobOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
     }
 
   }

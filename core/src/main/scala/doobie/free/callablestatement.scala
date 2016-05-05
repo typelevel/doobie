@@ -113,658 +113,658 @@ object callablestatement {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends CallableStatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: CallableStatementIO[A]) extends CallableStatementOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, CallableStatement, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends CallableStatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: CallableStatement => A) extends CallableStatementOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object AddBatch extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.addBatch())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.addBatch())
     }
     case class  AddBatch1(a: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.addBatch(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.addBatch(a))
     }
     case object Cancel extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.cancel())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.cancel())
     }
     case object ClearBatch extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearBatch())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearBatch())
     }
     case object ClearParameters extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearParameters())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearParameters())
     }
     case object ClearWarnings extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearWarnings())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearWarnings())
     }
     case object Close extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.close())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.close())
     }
     case object CloseOnCompletion extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.closeOnCompletion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.closeOnCompletion())
     }
     case object Execute extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute())
     }
     case class  Execute1(a: String, b: Array[Int]) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case class  Execute2(a: String, b: Int) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case class  Execute3(a: String) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
     }
     case class  Execute4(a: String, b: Array[String]) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case object ExecuteBatch extends CallableStatementOp[Array[Int]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeBatch())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeBatch())
     }
     case object ExecuteQuery extends CallableStatementOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery())
     }
     case class  ExecuteQuery1(a: String) extends CallableStatementOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery(a))
     }
     case object ExecuteUpdate extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate())
     }
     case class  ExecuteUpdate1(a: String) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
     }
     case class  ExecuteUpdate2(a: String, b: Array[String]) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case class  ExecuteUpdate3(a: String, b: Array[Int]) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case class  ExecuteUpdate4(a: String, b: Int) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case class  GetArray(a: Int) extends CallableStatementOp[SqlArray] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
     }
     case class  GetArray1(a: String) extends CallableStatementOp[SqlArray] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getArray(a))
     }
     case class  GetBigDecimal(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a, b))
     }
     case class  GetBigDecimal1(a: String) extends CallableStatementOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
     }
     case class  GetBigDecimal2(a: Int) extends CallableStatementOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBigDecimal(a))
     }
     case class  GetBlob(a: Int) extends CallableStatementOp[Blob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
     }
     case class  GetBlob1(a: String) extends CallableStatementOp[Blob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBlob(a))
     }
     case class  GetBoolean(a: String) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBoolean(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBoolean(a))
     }
     case class  GetBoolean1(a: Int) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBoolean(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBoolean(a))
     }
     case class  GetByte(a: Int) extends CallableStatementOp[Byte] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
     }
     case class  GetByte1(a: String) extends CallableStatementOp[Byte] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getByte(a))
     }
     case class  GetBytes(a: String) extends CallableStatementOp[Array[Byte]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
     }
     case class  GetBytes1(a: Int) extends CallableStatementOp[Array[Byte]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a))
     }
     case class  GetCharacterStream(a: String) extends CallableStatementOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
     }
     case class  GetCharacterStream1(a: Int) extends CallableStatementOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a))
     }
     case class  GetClob(a: String) extends CallableStatementOp[Clob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
     }
     case class  GetClob1(a: Int) extends CallableStatementOp[Clob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClob(a))
     }
     case object GetConnection extends CallableStatementOp[Connection] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getConnection())
     }
     case class  GetDate(a: Int, b: Calendar) extends CallableStatementOp[Date] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
     }
     case class  GetDate1(a: Int) extends CallableStatementOp[Date] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
     }
     case class  GetDate2(a: String) extends CallableStatementOp[Date] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a))
     }
     case class  GetDate3(a: String, b: Calendar) extends CallableStatementOp[Date] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDate(a, b))
     }
     case class  GetDouble(a: Int) extends CallableStatementOp[Double] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
     }
     case class  GetDouble1(a: String) extends CallableStatementOp[Double] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getDouble(a))
     }
     case object GetFetchDirection extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchDirection())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchDirection())
     }
     case object GetFetchSize extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchSize())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFetchSize())
     }
     case class  GetFloat(a: String) extends CallableStatementOp[Float] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
     }
     case class  GetFloat1(a: Int) extends CallableStatementOp[Float] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getFloat(a))
     }
     case object GetGeneratedKeys extends CallableStatementOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getGeneratedKeys())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getGeneratedKeys())
     }
     case class  GetInt(a: Int) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
     }
     case class  GetInt1(a: String) extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getInt(a))
     }
     case class  GetLong(a: Int) extends CallableStatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
     }
     case class  GetLong1(a: String) extends CallableStatementOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getLong(a))
     }
     case object GetMaxFieldSize extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxFieldSize())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxFieldSize())
     }
     case object GetMaxRows extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRows())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRows())
     }
     case object GetMetaData extends CallableStatementOp[ResultSetMetaData] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMetaData())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMetaData())
     }
     case class  GetMoreResults(a: Int) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults(a))
     }
     case object GetMoreResults1 extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
     }
     case class  GetNCharacterStream(a: Int) extends CallableStatementOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
     }
     case class  GetNCharacterStream1(a: String) extends CallableStatementOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNCharacterStream(a))
     }
     case class  GetNClob(a: Int) extends CallableStatementOp[NClob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
     }
     case class  GetNClob1(a: String) extends CallableStatementOp[NClob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNClob(a))
     }
     case class  GetNString(a: Int) extends CallableStatementOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
     }
     case class  GetNString1(a: String) extends CallableStatementOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNString(a))
     }
     case class  GetObject[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
     }
     case class  GetObject1[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
     }
     case class  GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
     }
     case class  GetObject3(a: String) extends CallableStatementOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
     case class  GetObject4(a: Int) extends CallableStatementOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
     case class  GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a, b))
     }
     case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getParameterMetaData())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getParameterMetaData())
     }
     case object GetQueryTimeout extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getQueryTimeout())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getQueryTimeout())
     }
     case class  GetRef(a: String) extends CallableStatementOp[Ref] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRef(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRef(a))
     }
     case class  GetRef1(a: Int) extends CallableStatementOp[Ref] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRef(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRef(a))
     }
     case object GetResultSet extends CallableStatementOp[ResultSet] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSet())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSet())
     }
     case object GetResultSetConcurrency extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetConcurrency())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetConcurrency())
     }
     case object GetResultSetHoldability extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetHoldability())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetHoldability())
     }
     case object GetResultSetType extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetType())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getResultSetType())
     }
     case class  GetRowId(a: String) extends CallableStatementOp[RowId] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
     }
     case class  GetRowId1(a: Int) extends CallableStatementOp[RowId] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getRowId(a))
     }
     case class  GetSQLXML(a: Int) extends CallableStatementOp[SQLXML] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
     }
     case class  GetSQLXML1(a: String) extends CallableStatementOp[SQLXML] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSQLXML(a))
     }
     case class  GetShort(a: Int) extends CallableStatementOp[Short] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
     }
     case class  GetShort1(a: String) extends CallableStatementOp[Short] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getShort(a))
     }
     case class  GetString(a: String) extends CallableStatementOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
     }
     case class  GetString1(a: Int) extends CallableStatementOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getString(a))
     }
     case class  GetTime(a: String) extends CallableStatementOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
     }
     case class  GetTime1(a: Int) extends CallableStatementOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a))
     }
     case class  GetTime2(a: String, b: Calendar) extends CallableStatementOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
     }
     case class  GetTime3(a: Int, b: Calendar) extends CallableStatementOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTime(a, b))
     }
     case class  GetTimestamp(a: String) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
     }
     case class  GetTimestamp1(a: Int) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a))
     }
     case class  GetTimestamp2(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
     }
     case class  GetTimestamp3(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTimestamp(a, b))
     }
     case class  GetURL(a: String) extends CallableStatementOp[URL] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
     }
     case class  GetURL1(a: Int) extends CallableStatementOp[URL] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getURL(a))
     }
     case object GetUpdateCount extends CallableStatementOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUpdateCount())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getUpdateCount())
     }
     case object GetWarnings extends CallableStatementOp[SQLWarning] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getWarnings())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getWarnings())
     }
     case object IsCloseOnCompletion extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isCloseOnCompletion())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isCloseOnCompletion())
     }
     case object IsClosed extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isClosed())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isClosed())
     }
     case object IsPoolable extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isPoolable())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isPoolable())
     }
     case class  IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
     }
     case class  RegisterOutParameter(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter1(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter2(a: String, b: Int, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter3(a: String, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b))
     }
     case class  RegisterOutParameter4(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter5(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.registerOutParameter(a, b))
     }
     case class  SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setArray(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setArray(a, b))
     }
     case class  SetAsciiStream(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream1(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b))
     }
     case class  SetAsciiStream3(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream4(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream5(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAsciiStream(a, b))
     }
     case class  SetBigDecimal(a: String, b: BigDecimal) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBigDecimal(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBigDecimal(a, b))
     }
     case class  SetBigDecimal1(a: Int, b: BigDecimal) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBigDecimal(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBigDecimal(a, b))
     }
     case class  SetBinaryStream(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream1(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
     }
     case class  SetBinaryStream3(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream4(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b))
     }
     case class  SetBinaryStream5(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBlob(a: String, b: Blob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob1(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
     }
     case class  SetBlob2(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob3(a: Int, b: Blob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob4(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b, c))
     }
     case class  SetBlob5(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBlob(a, b))
     }
     case class  SetBoolean(a: String, b: Boolean) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBoolean(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBoolean(a, b))
     }
     case class  SetBoolean1(a: Int, b: Boolean) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBoolean(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBoolean(a, b))
     }
     case class  SetByte(a: String, b: Byte) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setByte(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setByte(a, b))
     }
     case class  SetByte1(a: Int, b: Byte) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setByte(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setByte(a, b))
     }
     case class  SetBytes(a: String, b: Array[Byte]) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
     case class  SetBytes1(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
     case class  SetCharacterStream(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
     }
     case class  SetCharacterStream1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream2(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream3(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b))
     }
     case class  SetCharacterStream4(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream5(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetClob(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
     }
     case class  SetClob1(a: String, b: Clob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
     case class  SetClob2(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
     case class  SetClob3(a: Int, b: Clob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
     case class  SetClob4(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b))
     }
     case class  SetClob5(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClob(a, b, c))
     }
     case class  SetCursorName(a: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCursorName(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCursorName(a))
     }
     case class  SetDate(a: String, b: Date) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b))
     }
     case class  SetDate1(a: String, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b, c))
     }
     case class  SetDate2(a: Int, b: Date) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b))
     }
     case class  SetDate3(a: Int, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDate(a, b, c))
     }
     case class  SetDouble(a: String, b: Double) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDouble(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDouble(a, b))
     }
     case class  SetDouble1(a: Int, b: Double) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDouble(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setDouble(a, b))
     }
     case class  SetEscapeProcessing(a: Boolean) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setEscapeProcessing(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setEscapeProcessing(a))
     }
     case class  SetFetchDirection(a: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchDirection(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchDirection(a))
     }
     case class  SetFetchSize(a: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchSize(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFetchSize(a))
     }
     case class  SetFloat(a: String, b: Float) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFloat(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFloat(a, b))
     }
     case class  SetFloat1(a: Int, b: Float) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFloat(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setFloat(a, b))
     }
     case class  SetInt(a: String, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setInt(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setInt(a, b))
     }
     case class  SetInt1(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setInt(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setInt(a, b))
     }
     case class  SetLong(a: String, b: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLong(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLong(a, b))
     }
     case class  SetLong1(a: Int, b: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLong(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setLong(a, b))
     }
     case class  SetMaxFieldSize(a: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxFieldSize(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxFieldSize(a))
     }
     case class  SetMaxRows(a: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxRows(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setMaxRows(a))
     }
     case class  SetNCharacterStream(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
     }
     case class  SetNCharacterStream1(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
     }
     case class  SetNCharacterStream2(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b))
     }
     case class  SetNCharacterStream3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNCharacterStream(a, b, c))
     }
     case class  SetNClob(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob1(a: String, b: NClob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob2(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
     }
     case class  SetNClob3(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b, c))
     }
     case class  SetNClob4(a: Int, b: NClob) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob5(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNClob(a, b))
     }
     case class  SetNString(a: String, b: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNString(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNString(a, b))
     }
     case class  SetNString1(a: Int, b: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNString(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNString(a, b))
     }
     case class  SetNull(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
     }
     case class  SetNull1(a: String, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
     }
     case class  SetNull2(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b))
     }
     case class  SetNull3(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNull(a, b, c))
     }
     case class  SetObject(a: String, b: Object, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject1(a: String, b: Object) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
     }
     case class  SetObject2(a: String, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetObject3(a: Int, b: Object, c: Int, d: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetObject4(a: Int, b: Object, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject5(a: Int, b: Object) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a, b))
     }
     case class  SetPoolable(a: Boolean) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setPoolable(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setPoolable(a))
     }
     case class  SetQueryTimeout(a: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setQueryTimeout(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setQueryTimeout(a))
     }
     case class  SetRef(a: Int, b: Ref) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setRef(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setRef(a, b))
     }
     case class  SetRowId(a: String, b: RowId) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setRowId(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setRowId(a, b))
     }
     case class  SetRowId1(a: Int, b: RowId) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setRowId(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setRowId(a, b))
     }
     case class  SetSQLXML(a: String, b: SQLXML) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSQLXML(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSQLXML(a, b))
     }
     case class  SetSQLXML1(a: Int, b: SQLXML) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSQLXML(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSQLXML(a, b))
     }
     case class  SetShort(a: String, b: Short) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setShort(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setShort(a, b))
     }
     case class  SetShort1(a: Int, b: Short) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setShort(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setShort(a, b))
     }
     case class  SetString(a: String, b: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
     }
     case class  SetString1(a: Int, b: String) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
     }
     case class  SetTime(a: String, b: Time) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
     }
     case class  SetTime1(a: String, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
     }
     case class  SetTime2(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b, c))
     }
     case class  SetTime3(a: Int, b: Time) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTime(a, b))
     }
     case class  SetTimestamp(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
     }
     case class  SetTimestamp1(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
     }
     case class  SetTimestamp2(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b))
     }
     case class  SetTimestamp3(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTimestamp(a, b, c))
     }
     case class  SetURL(a: String, b: URL) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setURL(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setURL(a, b))
     }
     case class  SetURL1(a: Int, b: URL) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setURL(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setURL(a, b))
     }
     case class  SetUnicodeStream(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setUnicodeStream(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setUnicodeStream(a, b, c))
     }
     case class  Unwrap[T](a: Class[T]) extends CallableStatementOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
     }
     case object WasNull extends CallableStatementOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.wasNull())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.wasNull())
     }
 
   }

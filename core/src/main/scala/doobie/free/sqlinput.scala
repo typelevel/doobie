@@ -107,103 +107,103 @@ object sqlinput {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends SQLInputOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: SQLInputIO[A]) extends SQLInputOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, SQLInput, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends SQLInputOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: SQLInput => A) extends SQLInputOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case object ReadArray extends SQLInputOp[SqlArray] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readArray())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readArray())
     }
     case object ReadAsciiStream extends SQLInputOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readAsciiStream())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readAsciiStream())
     }
     case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBigDecimal())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBigDecimal())
     }
     case object ReadBinaryStream extends SQLInputOp[InputStream] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBinaryStream())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBinaryStream())
     }
     case object ReadBlob extends SQLInputOp[Blob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBlob())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBlob())
     }
     case object ReadBoolean extends SQLInputOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBoolean())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBoolean())
     }
     case object ReadByte extends SQLInputOp[Byte] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readByte())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readByte())
     }
     case object ReadBytes extends SQLInputOp[Array[Byte]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBytes())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readBytes())
     }
     case object ReadCharacterStream extends SQLInputOp[Reader] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readCharacterStream())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readCharacterStream())
     }
     case object ReadClob extends SQLInputOp[Clob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readClob())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readClob())
     }
     case object ReadDate extends SQLInputOp[Date] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readDate())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readDate())
     }
     case object ReadDouble extends SQLInputOp[Double] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readDouble())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readDouble())
     }
     case object ReadFloat extends SQLInputOp[Float] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readFloat())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readFloat())
     }
     case object ReadInt extends SQLInputOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readInt())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readInt())
     }
     case object ReadLong extends SQLInputOp[Long] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readLong())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readLong())
     }
     case object ReadNClob extends SQLInputOp[NClob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNClob())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNClob())
     }
     case object ReadNString extends SQLInputOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNString())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNString())
     }
     case object ReadObject extends SQLInputOp[Object] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject())
     }
     case object ReadRef extends SQLInputOp[Ref] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readRef())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readRef())
     }
     case object ReadRowId extends SQLInputOp[RowId] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readRowId())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readRowId())
     }
     case object ReadSQLXML extends SQLInputOp[SQLXML] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readSQLXML())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readSQLXML())
     }
     case object ReadShort extends SQLInputOp[Short] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readShort())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readShort())
     }
     case object ReadString extends SQLInputOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readString())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readString())
     }
     case object ReadTime extends SQLInputOp[Time] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readTime())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readTime())
     }
     case object ReadTimestamp extends SQLInputOp[Timestamp] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readTimestamp())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readTimestamp())
     }
     case object ReadURL extends SQLInputOp[URL] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readURL())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readURL())
     }
     case object WasNull extends SQLInputOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.wasNull())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.wasNull())
     }
 
   }

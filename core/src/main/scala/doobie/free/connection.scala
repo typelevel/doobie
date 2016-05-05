@@ -106,184 +106,184 @@ object connection {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     }
 
     // Combinators
     case class Attempt[A](action: ConnectionIO[A]) extends ConnectionOp[Throwable \/ A] {
       import scalaz._, Scalaz._
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, Connection, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     }
     case class Raw[A](f: Connection => A) extends ConnectionOp[A] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     }
 
     // Primitive Operations
     case class  Abort(a: Executor) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.abort(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.abort(a))
     }
     case object ClearWarnings extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearWarnings())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.clearWarnings())
     }
     case object Close extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.close())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.close())
     }
     case object Commit extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.commit())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.commit())
     }
     case class  CreateArrayOf(a: String, b: Array[Object]) extends ConnectionOp[SqlArray] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createArrayOf(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createArrayOf(a, b))
     }
     case object CreateBlob extends ConnectionOp[Blob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createBlob())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createBlob())
     }
     case object CreateClob extends ConnectionOp[Clob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createClob())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createClob())
     }
     case object CreateNClob extends ConnectionOp[NClob] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createNClob())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createNClob())
     }
     case object CreateSQLXML extends ConnectionOp[SQLXML] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createSQLXML())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createSQLXML())
     }
     case class  CreateStatement(a: Int, b: Int) extends ConnectionOp[Statement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b))
     }
     case object CreateStatement1 extends ConnectionOp[Statement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement())
     }
     case class  CreateStatement2(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b, c))
     }
     case class  CreateStruct(a: String, b: Array[Object]) extends ConnectionOp[Struct] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStruct(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStruct(a, b))
     }
     case object GetAutoCommit extends ConnectionOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAutoCommit())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAutoCommit())
     }
     case object GetCatalog extends ConnectionOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalog())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalog())
     }
     case class  GetClientInfo(a: String) extends ConnectionOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo(a))
     }
     case object GetClientInfo1 extends ConnectionOp[Properties] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo())
     }
     case object GetHoldability extends ConnectionOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getHoldability())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getHoldability())
     }
     case object GetMetaData extends ConnectionOp[DatabaseMetaData] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMetaData())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMetaData())
     }
     case object GetNetworkTimeout extends ConnectionOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNetworkTimeout())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getNetworkTimeout())
     }
     case object GetSchema extends ConnectionOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchema())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchema())
     }
     case object GetTransactionIsolation extends ConnectionOp[Int] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTransactionIsolation())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTransactionIsolation())
     }
     case object GetTypeMap extends ConnectionOp[Map[String, Class[_]]] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTypeMap())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getTypeMap())
     }
     case object GetWarnings extends ConnectionOp[SQLWarning] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getWarnings())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getWarnings())
     }
     case object IsClosed extends ConnectionOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isClosed())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isClosed())
     }
     case object IsReadOnly extends ConnectionOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isReadOnly())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isReadOnly())
     }
     case class  IsValid(a: Int) extends ConnectionOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isValid(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isValid(a))
     }
     case class  IsWrapperFor(a: Class[_]) extends ConnectionOp[Boolean] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.isWrapperFor(a))
     }
     case class  NativeSQL(a: String) extends ConnectionOp[String] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nativeSQL(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nativeSQL(a))
     }
     case class  PrepareCall(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c, d))
     }
     case class  PrepareCall1(a: String, b: Int, c: Int) extends ConnectionOp[CallableStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c))
     }
     case class  PrepareCall2(a: String) extends ConnectionOp[CallableStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a))
     }
     case class  PrepareStatement(a: String, b: Int) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement1(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c, d))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c, d))
     }
     case class  PrepareStatement2(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement3(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement4(a: String) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a))
     }
     case class  PrepareStatement5(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c))
     }
     case class  ReleaseSavepoint(a: Savepoint) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.releaseSavepoint(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.releaseSavepoint(a))
     }
     case object Rollback extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback())
     }
     case class  Rollback1(a: Savepoint) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback(a))
     }
     case class  SetAutoCommit(a: Boolean) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAutoCommit(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAutoCommit(a))
     }
     case class  SetCatalog(a: String) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCatalog(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCatalog(a))
     }
     case class  SetClientInfo(a: Properties) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClientInfo(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClientInfo(a))
     }
     case class  SetClientInfo1(a: String, b: String) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClientInfo(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setClientInfo(a, b))
     }
     case class  SetHoldability(a: Int) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setHoldability(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setHoldability(a))
     }
     case class  SetNetworkTimeout(a: Executor, b: Int) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNetworkTimeout(a, b))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setNetworkTimeout(a, b))
     }
     case class  SetReadOnly(a: Boolean) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setReadOnly(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setReadOnly(a))
     }
     case class  SetSavepoint(a: String) extends ConnectionOp[Savepoint] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSavepoint(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSavepoint(a))
     }
     case object SetSavepoint1 extends ConnectionOp[Savepoint] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSavepoint())
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSavepoint())
     }
     case class  SetSchema(a: String) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSchema(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setSchema(a))
     }
     case class  SetTransactionIsolation(a: Int) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTransactionIsolation(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTransactionIsolation(a))
     }
     case class  SetTypeMap(a: Map[String, Class[_]]) extends ConnectionOp[Unit] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTypeMap(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setTypeMap(a))
     }
     case class  Unwrap[T](a: Class[T]) extends ConnectionOp[T] {
-      def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.unwrap(a))
     }
 
   }

@@ -31,7 +31,7 @@ object analysis {
 
   case class ParameterMisalignment(index: Int, alignment: (Meta[_], NullabilityKnown) \/ ParameterMeta) extends AlignmentError {
     val tag = "P"
-    def msg = this match {
+    override def msg = this match {
       case ParameterMisalignment(i, -\/((st, n))) => 
         s"""|Interpolated value has no corresponding SQL parameter and likely appears inside a
             |comment or quoted string. This will result in a runtime failure; fix this by removing
@@ -43,8 +43,8 @@ object analysis {
   }
 
   case class ParameterTypeError(index: Int, scalaType: Meta[_], n: NullabilityKnown, jdbcType: JdbcType, vendorTypeName: String, nativeMap: Map[String, JdbcType]) extends AlignmentError {
-    val tag = "P"
-    def msg = 
+    override val tag = "P"
+    override def msg = 
       s"""|${typeName(scalaType, n)} is not coercible to ${jdbcType.toString.toUpperCase}
           |(${vendorTypeName})
           |according to the JDBC specification.
@@ -53,8 +53,8 @@ object analysis {
   }
   
   case class ColumnMisalignment(index: Int, alignment: (Meta[_], NullabilityKnown) \/ ColumnMeta) extends AlignmentError {
-    val tag = "C"
-    def msg = this match {
+    override val tag = "C"
+    override def msg = this match {
       case ColumnMisalignment(i, -\/((j, n))) => 
         s"""|Too few columns are selected, which will result in a runtime failure. Add a column or 
             |remove mapped ${typeName(j, n)} from the result type.""".stripMargin.lines.mkString(" ")
@@ -64,8 +64,8 @@ object analysis {
   }
 
   case class NullabilityMisalignment(index: Int, name: String, st: Meta[_], jdk: NullabilityKnown, jdbc: NullabilityKnown) extends AlignmentError {
-    val tag = "C"
-    def msg = this match {
+    override val tag = "C"
+    override def msg = this match {
       // https://github.com/tpolecat/doobie/issues/164 ... NoNulls means "maybe no nulls"  :-\
       // case NullabilityMisalignment(i, name, st, NoNulls, Nullable) =>
       //   s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
@@ -77,8 +77,8 @@ object analysis {
   }
 
   case class ColumnTypeError(index: Int, jdk: Meta[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
-    val tag = "C"
-    def msg =
+    override val tag = "C"
+    override def msg =
       Meta.readersOf(schema.jdbcType, schema.vendorTypeName).toList.map(typeName(_, n)) match {
         case Nil =>
           s"""|${schema.jdbcType.toString.toUpperCase} (${schema.vendorTypeName}) is not 
@@ -101,8 +101,8 @@ object analysis {
   }
 
   case class ColumnTypeWarning(index: Int, jdk: Meta[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
-    val tag = "C"
-    def msg =
+    override val tag = "C"
+    override def msg =
       s"""|${schema.jdbcType.toString.toUpperCase} (${schema.vendorTypeName}) is ostensibly 
           |coercible to ${typeName(jdk, n)}
           |according to the JDBC specification but is not a recommended target type. Fix this by 
@@ -165,7 +165,7 @@ object analysis {
     lazy val columnAlignmentErrors = 
       columnMisalignments ++ columnTypeErrors ++ columnTypeWarnings ++ nullabilityMisalignments
 
-    def alignmentErrors = 
+    lazy val alignmentErrors = 
       (parameterAlignmentErrors).sortBy(m => (m.index, m.msg)) ++ 
       (columnAlignmentErrors).sortBy(m => (m.index, m.msg))
 
