@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie.imports._
 
 import scalaz.{ Catchable, Monad }
-import scalaz.syntax.id._
 import scalaz.syntax.monad._
 
 object hikaritransactor {
@@ -27,6 +26,10 @@ object hikaritransactor {
     /** Constructs a program that yields an unconfigured `HikariTransactor`. */
     def initial[M[_]: Monad : Catchable: Capture]: M[HikariTransactor[M]] = 
       Capture[M].apply(new HikariTransactor(new HikariDataSource))
+
+    /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
+    def apply[M[_]: Monad : Catchable: Capture](hikariDataSource : HikariDataSource): HikariTransactor[M] = 
+      new HikariTransactor(hikariDataSource)
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
     @deprecated("doesn't load driver properly; will go away in 0.2.2; use 4-arg version", "0.2.1")
