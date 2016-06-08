@@ -28,8 +28,8 @@ object hikaritransactor {
       Capture[M].apply(new HikariTransactor(new HikariDataSource))
 
     /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
-    def apply[M[_]: Monad : Catchable: Capture](hikariDataSource : HikariDataSource): M[HikariTransactor[M]] = 
-      Capture[M].apply(new HikariTransactor(hikariDataSource))
+    def apply[M[_]: Monad : Catchable: Capture](hikariDataSource : HikariDataSource): HikariTransactor[M] = 
+      new HikariTransactor(hikariDataSource)
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
     @deprecated("doesn't load driver properly; will go away in 0.2.2; use 4-arg version", "0.2.1")
