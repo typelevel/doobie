@@ -62,7 +62,7 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.4/00-index.htm
 
 ## Documentation and Support
 
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/master/CHANGELOG.md#0.2.4) for an overview of changes in this and previous versions.
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.2.x/CHANGELOG.md#0.2.4) for an overview of changes in this and previous versions.
 - Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.4/00-index.html) ← start here
 - The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.4/api/index.html) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
