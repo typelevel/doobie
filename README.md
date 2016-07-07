@@ -30,19 +30,22 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-The current release is **0.2.3**, which works on Scala **2.10.5** and **2.11** with
+Supported releases and dependencies are shown below.
 
-- scalaz 7.1
-- scalaz-stream 0.7.2a ← **important:** later versions are *not* compatible (yet)
-- shapeless 2.2
+| doobie | status |  jdk | scala            | scalaz | scalaz-stream | shapeless |
+|:------:|:------:|:----:|------------------|:------:|:-------------:|:---------:|
+|  0.2.4 | stable | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      |    2.2    |
+|  0.2.3 |   eol  | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      |    2.2    |
 
-You should expect minor breaking changes for at least the next few versions, although these will be documented and kept to a minimum. To use **doobie** you need to add the following to your `build.sbt`.
+Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible. Nontrivial breaking changes will be introduced through a deprecation cycle of at least one minor (0.x) release.
+
+To use **doobie** you need to add the following to your `build.sbt`.
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.3"
+libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.2.4" // or any supported release above
 ```
 
-If you are using Scala 2.10.5 you must also add the paradise compiler plugin.
+If you are using Scala 2.10 you must also add the paradise compiler plugin.
 
 ```scala
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
@@ -55,13 +58,13 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 * `doobie-contrib-postgresql` for [PostgreSQL](http://postgresql.org)-specific type mappings.
 * `doobie-contrib-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 
-See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) for more information on these add-ons.
+See the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.4/00-index.html) for more information on these add-ons.
 
 ## Documentation and Support
 
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/master/CHANGELOG.md#0.2.3) for an overview of changes in this and previous versions.
-- Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) ← start here
-- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.3/api/index.html) will be handy once you get your feet wet.
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/master/CHANGELOG.md#0.2.4) for an overview of changes in this and previous versions.
+- Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.4/00-index.html) ← start here
+- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.2.4/api/index.html) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
 - Find **tpolecat** on the FreeNode `#scala` channel, or join the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).
