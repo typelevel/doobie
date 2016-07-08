@@ -70,7 +70,7 @@ On the Scala side you just need a console with the proper dependencies. A minima
 ```scala
 scalaVersion := "2.11.7" // also works with 2.10
 
-lazy val doobieVersion = "0.2.3"
+lazy val doobieVersion = "0.3.0"
 
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core"               % doobieVersion,
