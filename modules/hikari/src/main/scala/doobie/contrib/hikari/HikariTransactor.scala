@@ -21,8 +21,8 @@ object hikaritransactor {
   object HikariXA {
     
     /** Constructs a `HikariTransactor` from an existing `HikariDatasource`. */
-    def apply[M[_]: Monad : Catchable: Capture](hikariDataSource : HikariDataSource): HikariTransactor[M] = 
-      new HikariTransactor(LiftXA.default, hikariDataSource)
+    def apply(hikariDataSource : HikariDataSource): HikariXA = 
+      new HikariXA(LiftXA.default, hikariDataSource)
 
     /** Constructs a program that yields an unconfigured `HikariXA`. */
     def initial[M[_]: Monad : Catchable: Capture]: M[HikariXA] = 
