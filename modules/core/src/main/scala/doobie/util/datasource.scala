@@ -12,7 +12,7 @@ import javax.sql.DataSource
 object datasource {
 
   final case class DataSourceXA(xa: LiftXA, ds: DataSource) {
-    def configure[M[_]](f: DataSource => M[Unit]) =
+    def configure[M[_]](f: DataSource => M[Unit]): M[Unit] =
       f(ds)
   }
 

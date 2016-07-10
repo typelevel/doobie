@@ -77,15 +77,15 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
     new doobie.syntax.string.SqlInterpolator(sc)
 
   /** @group Syntax */
-  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
+  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.ConnectionIOConnectorOps[A] =
     new doobie.syntax.connectionio.ConnectionIOConnectorOps(ma)
 
   /** @group Syntax */
-  implicit def toEvenMoreConnectionIOOps[A](ma: ConnectionIO[A]) =
+  implicit def toEvenMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.ConnectionIOTransactorOps[A] =
     new doobie.syntax.connectionio.ConnectionIOTransactorOps(ma)
 
   /** @group Syntax */
-  implicit def toTransactorOps[A](a: A) =
+  implicit def toTransactorOps[A](a: A): doobie.syntax.transactor.TransactorOps[A] =
     new doobie.syntax.transactor.TransactorOps(a)
 
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]

@@ -17,7 +17,7 @@ object connectionio {
      * Interpret this program unmodified, into effect-capturing target monad `M`, running on a 
      * dedicated `Connection`.
      */
-    def connect[M[_]] = new Helper[M]
+    def connect[M[_]]: Helper[M] = new Helper[M]
 
   }
 
@@ -34,7 +34,7 @@ object connectionio {
      * Interpret this program configured with transaction logic as defined by the `Transactor`'s
      * `LiftXA`, into effect-capturing target monad `M`, running on a dedicated `Connection`. 
      */
-    def transact[M[_]] = new Helper[M]
+    def transact[M[_]]: Helper[M] = new Helper[M]
 
   }
 
