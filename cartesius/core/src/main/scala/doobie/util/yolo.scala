@@ -2,9 +2,11 @@ package doobie.util
 
 
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
+#+scalaz
 import doobie.hi.connection.ProcessConnectionIOOps
-import doobie.syntax.catchable._
 import doobie.syntax.process._
+#-scalaz
+import doobie.syntax.catchable._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
 import doobie.util.capture._
@@ -15,15 +17,23 @@ import doobie.util.pretty.wrap
 
 import scala.reflect.runtime.universe.TypeTag
 
+#+scalaz
 import scalaz._,Scalaz._
 import scalaz.stream.Process
 import scalaz.stream.Process. { eval, eval_, halt }
+#-scalaz
+#+cats
+import doobie.util.catchable._
+import cats.Monad
+import cats.data.Xor.{ Left => -\/, Right => \/- }
+import cats.implicits._
+#-cats
 
 import java.sql.Connection
 import Predef._
 
 /** Module for implicit syntax useful in REPL session. */
-object yolo {
+object yolo extends ToDoobieCatchableOps0 {
 
   class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 
@@ -33,7 +43,12 @@ object yolo {
     implicit class Query0YoloOps[A](q: Query0[A]) {
 
       def quick: M[Unit] =
+#+scalaz
         q.sink(a => out(a.toString)).transact(xa)
+#-scalaz        
+#+cats
+        q.list.flatMap(_.traverse_(a => out(a.toString))).transact(xa)
+#-cats
 
       def check: M[Unit] =
         doCheck(q.analysis)
@@ -42,7 +57,7 @@ object yolo {
         doCheck(q.outputAnalysis)
 
       private def doCheck(a: ConnectionIO[Analysis]): M[Unit] =
-        (delay(showSql(q.sql)) >> a.attempt.flatMap {
+        (delay(showSql(q.sql)) *> a.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)
@@ -65,7 +80,7 @@ object yolo {
         doCheck(q.outputAnalysis)
 
       private def doCheck(a: ConnectionIO[Analysis]): M[Unit] =
-        (delay(showSql(q.sql)) >> a.attempt.flatMap {
+        (delay(showSql(q.sql)) *> a.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)
@@ -82,7 +97,7 @@ object yolo {
         u.run.flatMap(a => out(s"$a row(s) updated")).transact(xa)
 
       def check: M[Unit] =
-        (delay(showSql(u.sql)) >> u.analysis.attempt.flatMap {
+        (delay(showSql(u.sql)) *> u.analysis.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)
@@ -98,7 +113,7 @@ object yolo {
         u.toUpdate0(i).quick
 
       def check: M[Unit] =
-        (delay(showSql(u.sql)) >> u.analysis.attempt.flatMap {
+        (delay(showSql(u.sql)) *> u.analysis.attempt.flatMap {
           case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
           case \/-(a) => delay {
             success("SQL Compiles and Typechecks", None)
@@ -111,9 +126,11 @@ object yolo {
       def quick: M[Unit] = ca.flatMap(a => out(a.toString)).transact(xa)
     }
 
+#+scalaz
     implicit class ProcessYoloOps[A](pa: Process[ConnectionIO, A]) {
       def quick: M[Unit] = pa.sink(a => out(a.toString)).transact(xa)
     }
+#-scalaz
 
     private def assertEmpty(name: String, es: List[AlignmentError]) =
       if (es.isEmpty) success(name, None)

@@ -2,21 +2,32 @@ package doobie.util
 
           
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
+#+scalaz
 import doobie.hi.connection.ProcessConnectionIOOps
+#-scalaz
 import doobie.syntax.catchable.ToDoobieCatchableOps._
+#+scalaz
 import doobie.syntax.process._
+#-scalaz
 import doobie.util.capture._
 import doobie.util.query._
 import doobie.util.update._
-import doobie.util.yolo._
+#+cats
+import doobie.util.catchable._
+#-cats
+// import doobie.util.yolo._
 
+#+scalaz
 import scalaz.syntax.monad._
 import scalaz.stream.Process
 import scalaz.stream.Process. { eval, eval_, halt }
-
 import scalaz.{ Monad, Catchable, Kleisli, ~> }
 import scalaz.stream.Process
-
+#-scalaz
+#+cats
+import cats.{ Monad, ~> }
+import cats.implicits._
+#-cats
 import java.sql.Connection
 
 import javax.sql.DataSource
@@ -49,14 +60,16 @@ object transactor {
     @deprecated("will go away in 0.2.2; use trans", "0.2.1")
     def transact[A](ma: ConnectionIO[A]): M[A] = trans(ma)
 
+#+scalaz
     @deprecated("will go away in 0.2.2; use transP", "0.2.1")
     def transact[A](pa: Process[ConnectionIO, A]): Process[M, A] = transP(pa)
+#-scalaz
 
     /** Minimal implementation must provide a connection. */
     protected def connect: M[Connection] 
 
     /** Unethical syntax for use in the REPL. */
-    lazy val yolo = new Yolo(this)
+    // lazy val yolo = new Yolo(this)
 
     /** Natural transformation to target monad `M`. */
     object trans extends (ConnectionIO ~> M) {
@@ -65,10 +78,11 @@ object transactor {
         (before *> ma <* after) onException oops ensuring always
 
       def apply[A](ma: ConnectionIO[A]): M[A] = 
-        connect >>= safe(ma).transK[M]
+        connect.flatMap(c => safe(ma).transK[M].run(c))
 
     }
 
+#+scalaz
     /** Natural transformation to an equivalent process over target monad `M`. */
     object transP extends (({ type l[a] = Process[ConnectionIO, a] })#l ~> ({ type l[a] = Process[M, a] })#l) {
 
@@ -84,6 +98,7 @@ object transactor {
         eval(connect) >>= safe(pa).trans[M]
 
     }
+#-scalaz
 
   }
 

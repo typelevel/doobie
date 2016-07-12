@@ -2,12 +2,27 @@ package doobie.util
 
 import scala.collection.generic.CanBuildFrom
 
-import doobie.imports._
+import doobie.free.connection.ConnectionIO
+import doobie.hi.{ connection => HC }
+import doobie.hi.{ preparedstatement => HPS }
+import doobie.hi.{ resultset => HRS }
+
+import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
+
+#+scalaz
+import doobie.syntax.process._
 
 import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
+#-scalaz
+#+cats
+import cats.implicits._
+import cats.Functor
+import cats.functor.{ Contravariant, Profunctor }
+import cats.data.NonEmptyList
+#-cats
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -56,6 +71,7 @@ object query {
     def outputAnalysis: ConnectionIO[Analysis] =
       HC.prepareQueryAnalysis0[O](sql)
 
+#+scalaz
     /**
      * Apply the argument `a` to construct a `Process` with effect type 
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
@@ -63,6 +79,7 @@ object query {
      */
     def process(a: A): Process[ConnectionIO, B] = 
       HC.process[O](sql, HPS.set(ai(a))).map(ob)
+#-scalaz      
 
     /**
      * Apply the argument `a` to construct a program in 
@@ -73,6 +90,7 @@ object query {
     def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
 
+#+scalaz
     /**
      * Apply the argument `a` to construct a program in 
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
@@ -81,6 +99,7 @@ object query {
      */
     def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] = 
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
+#-scalaz
 
     /**
      * Apply the argument `a` to construct a program in 
@@ -146,9 +165,11 @@ object query {
         def stackFrame = outer.stackFrame
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
+#+scalaz
         def process = outer.process(a)
-        def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
+#-scalaz
+        def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
         def option = outer.option(a)
         def nel = outer.nel(a)
@@ -180,17 +201,39 @@ object query {
     /** @group Typeclass Instances */
     implicit val queryProfunctor: Profunctor[Query] =
       new Profunctor[Query] {
+#+scalaz
         def mapfst[A, B, C](fab: Query[A,B])(f: C => A) = fab contramap f
         def mapsnd[A, B, C](fab: Query[A,B])(f: B => C) = fab map f
+#-scalaz
+#+cats
+        def dimap[A, B, C, D](fab: Query[A,B])(f: C => A)(g: B => D): Query[C,D] =
+          fab.contramap(f).map(g)
+#-cats
       }
 
     /** @group Typeclass Instances */
     implicit def queryCovariant[A]: Functor[Query[A, ?]] =
+#+scalaz
       queryProfunctor.covariantInstance[A]
+#-scalaz
+#+cats
+      new Functor[Query[A, ?]] {
+        def map[B, C](fa: Query[A, B])(f: B => C): Query[A, C] =
+          fa.map(f)
+      }
+#-cats
 
     /** @group Typeclass Instances */
     implicit def queryContravariant[B]: Contravariant[Query[?, B]] =
+#+scalaz
       queryProfunctor.contravariantInstance[B]
+#-scalaz
+#+cats
+      new Contravariant[Query[?, B]] {
+        def contramap[A, C](fa: Query[A, B])(f: C => A): Query[C, B] =
+          fa.contramap(f)
+      }
+#-cats
 
   }
 
@@ -227,12 +270,14 @@ object query {
      */
     def outputAnalysis: ConnectionIO[Analysis]
 
+#+scalaz
     /**
      * `Process` with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding 
      * elements of type `B`. 
      * @group Results
      */
     def process: Process[ConnectionIO, B]
+#-scalaz
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
@@ -242,12 +287,14 @@ object query {
      */
     def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]]
 
+#+scalaz
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
      * accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
     def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]
+#-scalaz
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and 
@@ -273,11 +320,13 @@ object query {
     /** @group Transformations */
     def map[C](f: B => C): Query0[C] 
 
+#+scalaz
     /** 
      * Convenience method; equivalent to `process.sink(f)` 
      * @group Results
      */
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
+#-scalaz
 
     /** 
      * Convenience method; equivalent to `to[List]` 
