@@ -166,7 +166,8 @@ lazy val core_cats = project.in(file("modules/core-cats"))
     cartesius(file("cartesius/core"), "cats"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats" % "0.6.0"
+      "org.typelevel" %% "cats" % "0.6.0",
+      "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41"
     )
   )
 

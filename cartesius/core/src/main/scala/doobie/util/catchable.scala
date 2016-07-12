@@ -24,7 +24,13 @@ object catchable {
   }
 
   object Catchable {
-    implicit def catsKleisliCatchable[M[_], E]: Catchable[Kleisli[M, E, ?]] = null // TODO
+    implicit def catsKleisliCatchable[M[_], E](implicit c: Catchable[M]): Catchable[Kleisli[M, E, ?]] =
+      new Catchable[Kleisli[M, E, ?]] {
+        def attempt[A](ma: Kleisli[M, E, A]): Kleisli[M, E, Throwable \/ A] =
+          Kleisli(e => c.attempt(ma.run(e)))
+        def fail[A](t: Throwable): Kleisli[M, E, A] =
+          Kleisli(e => c.fail(t))
+      }
   }
 #-cats
 

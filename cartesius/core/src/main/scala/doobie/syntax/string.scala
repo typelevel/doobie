@@ -4,14 +4,14 @@ import doobie.util.atom._
 import doobie.util.composite._
 import doobie.util.query._
 import doobie.util.update._
-import doobie.syntax.process._
 
 import doobie.hi._
 
 import scala.annotation.implicitNotFound
 
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.stream.Process
+#-scalaz
 
 import shapeless._
 
@@ -62,6 +62,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
         val placeholders = ph.placeholders ++ pt.placeholders
       }
 
+#+scalaz
     /** A `Param` for a *singleton* `Foldable1`, used exclusively to support `IN` clauses. */
     def many[F[_] <: AnyRef : Foldable1, A](t: F[A])(implicit ev: Atom[A]): Param[t.type] =
       new Param[t.type] {
@@ -78,7 +79,8 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
         }
       val placeholders = List(t.count)
     }
-  
+#-scalaz
+
   }
 
   /** 
@@ -104,7 +106,8 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
      */
     object sql extends ProductArgs {
       def applyProduct[A <: HList](a: A)(implicit ev: Param[A]) = { // scalastyle:ignore
-        val sql = sc.parts.toList.fzipWith(ev.placeholders.map(placeholders) ++ List(""))(_ + _).suml
+        import Predef._
+        val sql = (sc.parts.toList, (ev.placeholders.map(placeholders) ++ List(""))).zipped.map(_ + _).mkString
         new Builder(a, sql, stackFrame)(ev.composite)
       }
     }

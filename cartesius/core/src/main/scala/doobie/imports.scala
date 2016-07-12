@@ -3,8 +3,14 @@ package doobie
 import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
 
+#+scalaz
 import scalaz.{ Monad, Catchable, Unapply, Leibniz, Free, Functor }
 import scalaz.stream.Process
+#-scalaz
+#+cats
+import cats.{ Monad, Functor, Unapply }
+import cats.free.Free
+#-cats
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
 object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
@@ -68,9 +74,11 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */ type PreparedStatementIO[A] = doobie.free.preparedstatement.PreparedStatementIO[A]
   /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
 
+#+scalaz
   /** @group Syntax */
   implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
     new doobie.syntax.process.ProcessOps(fa)
+#-scalaz
 
   /** @group Syntax */
   implicit def toSqlInterpolator(sc: StringContext): doobie.syntax.string.SqlInterpolator =
@@ -115,12 +123,13 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
   /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
 
-
+#+scalaz
   /** @group Typeclass Instances */
   implicit val NameCatchable = doobie.util.name.NameCatchable
 
   /** @group Typeclass Instances */
   implicit val NameCapture   = doobie.util.name.NameCapture
+#-scalaz
 
   /**
    * Free monad derivation with correct shape to derive an instance for `Free[Coyoneda[F, ?], ?]`.
@@ -142,7 +151,12 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
         type M[X] = M0[M1[F0,?], X]
         type A = A0
         def TC = TC0
+#+scalaz        
         def leibniz = Leibniz.refl
+#-scalaz
+#+cats
+        def subst = ma => ma.asInstanceOf[M[A]] // for now
+#-cats
       }
 
 }

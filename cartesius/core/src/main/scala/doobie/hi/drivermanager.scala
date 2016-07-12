@@ -14,9 +14,14 @@ import java.sql.Savepoint
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
 
-import scalaz.syntax.id._
+#+scalaz
 import scalaz.syntax.traverse._
 import scalaz.std.list._
+#-scalaz
+#+cats
+import cats.syntax.traverse._
+import cats.std.list._
+#-cats
 
 /**
  * Module of high-level constructors for `DriverManagerIO` actions. 
@@ -41,7 +46,7 @@ object drivermanager {
 
   /** @group Connections */
   def getConnection[A](url: String, props: Map[String, String])(k: ConnectionIO[A]): DriverManagerIO[A] = {
-    val props0 = new java.util.Properties <| (_.putAll(props.asJava))
+    val props0 = new java.util.Properties; props0.putAll(props.asJava)
     DM.getConnection(url, props0).flatMap(s => DM.lift(s, k ensuring C.close))
   }
 

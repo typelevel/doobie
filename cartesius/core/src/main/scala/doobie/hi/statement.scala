@@ -25,8 +25,6 @@ import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
 import scala.Predef.intArrayOps
 
-import scalaz.syntax.id._
-
 /**
  * Module of high-level constructors for `StatementIO` actions.
  * @group Modules
