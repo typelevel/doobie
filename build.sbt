@@ -88,166 +88,176 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .settings(unidocSettings)
-  .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, example, postgres, h2, hikari, specs2, docs, bench)
-  .aggregate(core, example, postgres, h2, hikari, specs2, docs, bench)
+  // .settings(unidocSettings)
+  // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
+  .dependsOn(core, core_cats) //, example, postgres, h2, hikari, specs2, docs, bench)
+  .aggregate(core, core_cats) //, example, postgres, h2, hikari, specs2, docs, bench)
+
+def coreSettings(mod: String) = Seq(
+  name := "doobie-" + mod,
+  description := "Pure functional JDBC layer for Scala.",
+  libraryDependencies ++= Seq(
+    "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
+    "com.chuusai"       %% "shapeless"        % "2.3.0"
+  ),
+  scalacOptions += "-Yno-predef",
+  freeGenDir := (scalaSource in Compile).value / "doobie" / "free",
+  freeGenClasses := {
+    import java.sql._
+    List[Class[_]](
+      classOf[java.sql.NClob],
+      classOf[java.sql.Blob],
+      classOf[java.sql.Clob],
+      classOf[java.sql.DatabaseMetaData],
+      classOf[java.sql.Driver],
+      classOf[java.sql.Ref],
+      classOf[java.sql.SQLData],
+      classOf[java.sql.SQLInput],
+      classOf[java.sql.SQLOutput],
+      classOf[java.sql.Connection],
+      classOf[java.sql.Statement],
+      classOf[java.sql.PreparedStatement],
+      classOf[java.sql.CallableStatement],
+      classOf[java.sql.ResultSet]
+    )
+  },
+  sourceGenerators in Compile += Def.task {
+    val outDir = (sourceManaged in Compile).value / "doobie"
+    val outFile = new File(outDir, "buildinfo.scala")
+    outDir.mkdirs
+    val v = version.value
+    val t = System.currentTimeMillis
+    IO.write(outFile,
+      s"""|package doobie
+          |
+          |/** Auto-generated build information. */
+          |object buildinfo {
+          |  /** Current version of doobie ($v). */
+          |  val version = "$v"
+          |  /** Build date (${new java.util.Date(t)}). */
+          |  val date    = new java.util.Date(${t}L)
+          |}
+          |""".stripMargin)
+    Seq(outFile)
+  }.taskValue
+) ++ doobieSettings ++ publishSettings ++ freeGenSettings
 
 lazy val core = project.in(file("modules/core"))
   .enablePlugins(SbtOsgi)
-  .settings(name := "doobie-core")
-  .settings(description := "Pure functional JDBC layer for Scala.")
-  .settings(doobieSettings ++ publishSettings)
   .settings(
+    cartesius(file("cartesius/core"), "scalaz"),
+    coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
       "org.scalaz"        %% "scalaz-core"      % "7.2.0",
       "org.scalaz"        %% "scalaz-effect"    % "7.2.0",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.8a",
-      "com.chuusai"       %% "shapeless"        % "2.3.0",
       "com.h2database"    %  "h2"               % "1.3.170" % "test"
     )
   )
-  .settings(scalacOptions += "-Yno-predef")
-  .settings(freeGenSettings)
-  .settings(freeGenDir := (scalaSource in Compile).value / "doobie" / "free")
-  .settings(
-    freeGenClasses := {
-      import java.sql._
-      List[Class[_]](
-        classOf[java.sql.NClob],
-        classOf[java.sql.Blob],
-        classOf[java.sql.Clob],
-        classOf[java.sql.DatabaseMetaData],
-        classOf[java.sql.Driver],
-        classOf[java.sql.Ref],
-        classOf[java.sql.SQLData],
-        classOf[java.sql.SQLInput],
-        classOf[java.sql.SQLOutput],
-        classOf[java.sql.Connection],
-        classOf[java.sql.Statement],
-        classOf[java.sql.PreparedStatement],
-        classOf[java.sql.CallableStatement],
-        classOf[java.sql.ResultSet]
-      )
-    }
-  )
-  .settings(
-    sourceGenerators in Compile += Def.task {
-      val outDir = (sourceManaged in Compile).value / "doobie"
-      val outFile = new File(outDir, "buildinfo.scala")
-      outDir.mkdirs
-      val v = version.value
-      val t = System.currentTimeMillis
-      IO.write(outFile,
-        s"""|package doobie
-            |
-            |/** Auto-generated build information. */
-            |object buildinfo {
-            |  /** Current version of doobie ($v). */
-            |  val version = "$v"
-            |  /** Build date (${new java.util.Date(t)}). */
-            |  val date    = new java.util.Date(${t}L)
-            |}
-            |""".stripMargin)
-      Seq(outFile)
-    }.taskValue
-  )
 
-
-lazy val example = project.in(file("modules/example"))
-  .settings(doobieSettings)
-  .settings(libraryDependencies ++= Seq(
-      "com.h2database" %  "h2"         % "1.3.170",
-      "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
-    )
-  )
-  .settings(scalacOptions += "-deprecation")
-  .settings(noPublishSettings)
-  .dependsOn(core, postgres, specs2, hikari, h2)
-
-lazy val postgres = project.in(file("modules/postgresql"))
+lazy val core_cats = project.in(file("modules/core-cats"))
   .enablePlugins(SbtOsgi)
-  .settings(name := "doobie-contrib-postgresql")
-  .settings(description := "PostgreSQL support for doobie.")
-  .settings(doobieSettings ++ publishSettings)
   .settings(
+    cartesius(file("cartesius/core"), "cats"),
+    coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41",
-      "org.postgis"    %  "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
+      "org.typelevel" %% "cats" % "0.6.0"
     )
   )
-  .settings(
-    initialCommands := """
-      import scalaz._,Scalaz._
-      import scalaz.concurrent.Task
-      import doobie.imports._
-      import doobie.contrib.postgresql.pgtypes._
-      val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-      import xa.yolo._
-      import org.postgis._
-      import org.postgresql.util._
-      import org.postgresql.geometric._
-      """
-  )
-  .dependsOn(core)
 
-lazy val h2 = project.in(file("modules/h2"))
-  .enablePlugins(SbtOsgi)
-  .settings(name := "doobie-contrib-h2")
-  .settings(description := "H2 support for doobie.")
-  .settings(doobieSettings ++ publishSettings)
-  .settings(libraryDependencies += "com.h2database" % "h2"  % "1.3.170")
-  .dependsOn(core)
+// lazy val example = project.in(file("modules/example"))
+//   .settings(doobieSettings)
+//   .settings(libraryDependencies ++= Seq(
+//       "com.h2database" %  "h2"         % "1.3.170",
+//       "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
+//     )
+//   )
+//   .settings(scalacOptions += "-deprecation")
+//   .settings(noPublishSettings)
+//   .dependsOn(core, postgres, specs2, hikari, h2)
 
-lazy val hikari = project.in(file("modules/hikari"))
-  .enablePlugins(SbtOsgi)
-  .settings(name := "doobie-contrib-hikari")
-  .settings(description := "Hikari support for doobie.")
-  .settings(doobieSettings ++ publishSettings)
-  .settings(libraryDependencies += "com.zaxxer" % "HikariCP-java6" % "2.2.5")
-  .dependsOn(core)
+// lazy val postgres = project.in(file("modules/postgresql"))
+//   .enablePlugins(SbtOsgi)
+//   .settings(name := "doobie-contrib-postgresql")
+//   .settings(description := "PostgreSQL support for doobie.")
+//   .settings(doobieSettings ++ publishSettings)
+//   .settings(
+//     libraryDependencies ++= Seq(
+//       "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41",
+//       "org.postgis"    %  "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
+//     )
+//   )
+//   .settings(
+//     initialCommands := """
+//       import scalaz._,Scalaz._
+//       import scalaz.concurrent.Task
+//       import doobie.imports._
+//       import doobie.contrib.postgresql.pgtypes._
+//       val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+//       import xa.yolo._
+//       import org.postgis._
+//       import org.postgresql.util._
+//       import org.postgresql.geometric._
+//       """
+//   )
+//   .dependsOn(core)
 
-lazy val specs2 = project.in(file("modules/specs2"))
-  .enablePlugins(SbtOsgi)
-  .settings(name := "doobie-contrib-specs2")
-  .settings(description := "Specs2 support for doobie.")
-  .settings(doobieSettings ++ publishSettings)
-  .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.7.1")
-  .dependsOn(core)
+// lazy val h2 = project.in(file("modules/h2"))
+//   .enablePlugins(SbtOsgi)
+//   .settings(name := "doobie-contrib-h2")
+//   .settings(description := "H2 support for doobie.")
+//   .settings(doobieSettings ++ publishSettings)
+//   .settings(libraryDependencies += "com.h2database" % "h2"  % "1.3.170")
+//   .dependsOn(core)
 
-lazy val docs = project.in(file("modules/doc"))
-  .settings(doobieSettings)
-  .settings(noPublishSettings)
-  .settings(tutSettings)
-  .settings(
-    initialCommands := """
-      import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
-      val xa = DriverManagerTransactor[Task](
-        "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
-      )
-      """,
-    ctut := {
-      val src = crossTarget.value / "tut"
-      val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
-      if (!src.isDirectory) {
-        println("Input directory " + src + " not found.")
-      } else if (!dst.isDirectory) {
-        println("Output directory " + dst + " not found.")
-      } else {
-        println("Copying to " + dst.getPath)
-        val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
-        IO.copy(map, overwrite = true, preserveLastModified = false)
-      }
-    }
-  )
-  .settings(docSkipScala212Settings)
-  .dependsOn(core, postgres, specs2, hikari, h2)
+// lazy val hikari = project.in(file("modules/hikari"))
+//   .enablePlugins(SbtOsgi)
+//   .settings(name := "doobie-contrib-hikari")
+//   .settings(description := "Hikari support for doobie.")
+//   .settings(doobieSettings ++ publishSettings)
+//   .settings(libraryDependencies += "com.zaxxer" % "HikariCP-java6" % "2.2.5")
+//   .dependsOn(core)
 
-lazy val bench = project.in(file("modules/bench"))
-  .settings(doobieSettings)
-  .settings(noPublishSettings)
-  .dependsOn(core, postgres)
+// lazy val specs2 = project.in(file("modules/specs2"))
+//   .enablePlugins(SbtOsgi)
+//   .settings(name := "doobie-contrib-specs2")
+//   .settings(description := "Specs2 support for doobie.")
+//   .settings(doobieSettings ++ publishSettings)
+//   .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.7.1")
+//   .dependsOn(core)
+
+// lazy val docs = project.in(file("modules/doc"))
+//   .settings(doobieSettings)
+//   .settings(noPublishSettings)
+//   .settings(tutSettings)
+//   .settings(
+//     initialCommands := """
+//       import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+//       val xa = DriverManagerTransactor[Task](
+//         "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+//       )
+//       """,
+//     ctut := {
+//       val src = crossTarget.value / "tut"
+//       val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
+//       if (!src.isDirectory) {
+//         println("Input directory " + src + " not found.")
+//       } else if (!dst.isDirectory) {
+//         println("Output directory " + dst + " not found.")
+//       } else {
+//         println("Copying to " + dst.getPath)
+//         val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
+//         IO.copy(map, overwrite = true, preserveLastModified = false)
+//       }
+//     }
+//   )
+//   .settings(docSkipScala212Settings)
+//   .dependsOn(core, postgres, specs2, hikari, h2)
+
+// lazy val bench = project.in(file("modules/bench"))
+//   .settings(doobieSettings)
+//   .settings(noPublishSettings)
+//   .dependsOn(core, postgres)
 
 
 // Workaround to avoid cyclic dependency

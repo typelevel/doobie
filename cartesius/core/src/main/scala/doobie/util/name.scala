@@ -1,3 +1,4 @@
+#+scalaz
 package doobie.util
 
 import doobie.util.capture.Capture
@@ -20,4 +21,4 @@ object name {
     }
 
 }
-
+#-scalaz

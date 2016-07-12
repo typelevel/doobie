@@ -1,14 +1,18 @@
 package doobie.enum
 
 import doobie.util.invariant._
-import doobie.util.atom._
-import doobie.util.meta.Meta
 
 import java.sql.ResultSet._
 import java.sql.Types._
 
+#+scalaz
 import scalaz.Order
 import scalaz.std.anyVal.intInstance
+#-scalaz
+#+cats
+import cats.kernel.Order
+import cats.kernel.std.int._
+#-cats
 
 object jdbctype {
 
@@ -112,10 +116,12 @@ object jdbctype {
       fromInt(n).getOrElse(throw InvalidOrdinal[JdbcType](n))
 
     implicit val OrderJdbcType: Order[JdbcType] =
+#+scalaz
       Order.orderBy(_.toInt)
-
-    implicit lazy val JdbcTypeMeta: Meta[JdbcType] =
-      Meta[Int].xmap(unsafeFromInt, _.toInt)
+#-scalaz
+#+cats
+      Order.by(_.toInt)
+#-cats
 
   }
 

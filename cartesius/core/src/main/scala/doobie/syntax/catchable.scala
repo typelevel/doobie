@@ -1,7 +1,14 @@
 package doobie.syntax
 
-import scalaz.{ Monad, Catchable, \/, -\/, \/-, Unapply }
+#+scalaz
+import scalaz.{ Monad, Catchable, \/, Unapply }
+#-scalaz
 import doobie.util.{ catchable => C }
+#+cats
+import cats.{ Monad, Unapply }
+import cats.data.{ Xor => \/ }
+import C.Catchable
+#-cats
 
 /** Syntax for `Catchable` combinators defined in `util.catchable`. */
 object catchable {
@@ -32,7 +39,12 @@ object catchable {
       implicit M0: Unapply[Monad, MA],
                C0: Unapply[Catchable, MA]
     ): DoobieCatchableOps[M0.M, M0.A] =
-      new DoobieCatchableOps[M0.M, M0.A](M0(ma))(M0.TC, C0.TC.asInstanceOf[Catchable[M0.M]])
+#+scalaz
+      new DoobieCatchableOps[M0.M, M0.A](M0.apply(ma))(M0.TC, C0.TC.asInstanceOf[Catchable[M0.M]])
+#-scalaz
+#+cats
+      new DoobieCatchableOps[M0.M, M0.A](M0.subst(ma))(M0.TC, C0.TC.asInstanceOf[Catchable[M0.M]])
+#-cats
 
   }
 

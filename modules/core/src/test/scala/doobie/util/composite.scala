@@ -52,53 +52,53 @@ object compositespec extends Specification {
       Composite[LenStr2].length must_== 1
     }
 
-    "work for products of ludicrous size (128)" in {
-      Composite[
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-        Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: HNil]
-      true
-    }
+    // "work for products of ludicrous size (128)" in {
+    //   Composite[
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: HNil]
+    //   true
+    // }
 
-    "work for specific example from #217" in {
-      trait LocalDateTime
-      implicit val MetaLocalDateTime: Meta[LocalDateTime] = null
-      Composite[
-        Option[String] :: Option[String] :: Option[String] :: Option[LocalDateTime] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] :: 
-        Option[String] :: Option[String] :: Option[LocalDateTime] :: Option[LocalDateTime] :: 
-        Option[LocalDateTime] :: Option[LocalDateTime] :: Option[String] :: Option[String] :: 
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[BigDecimal] :: 
-        Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-        Option[String] :: Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
-        Option[String] :: HNil]
-      true
-    }
+    // "work for specific example from #217" in {
+    //   trait LocalDateTime
+    //   implicit val MetaLocalDateTime: Meta[LocalDateTime] = null
+    //   Composite[
+    //     Option[String] :: Option[String] :: Option[String] :: Option[LocalDateTime] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] :: 
+    //     Option[String] :: Option[String] :: Option[LocalDateTime] :: Option[LocalDateTime] :: 
+    //     Option[LocalDateTime] :: Option[LocalDateTime] :: Option[String] :: Option[String] :: 
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[BigDecimal] :: 
+    //     Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
+    //     Option[String] :: HNil]
+    //   true
+    // }
 
   }
 

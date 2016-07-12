@@ -4,8 +4,14 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
+#+scalaz
 import scalaz.Equal
 import scalaz.std.anyVal.intInstance
+#-scalaz
+#+cats
+import cats.kernel.Eq
+import cats.kernel.std.int._
+#-cats
 
 object resultsetconcurrency {
 
@@ -27,8 +33,15 @@ object resultsetconcurrency {
     def unsafeFromInt(n: Int): ResultSetConcurrency =
       fromInt(n).getOrElse(throw InvalidOrdinal[ResultSetConcurrency](n))
 
+#+scalaz
     implicit val EqualResultSetConcurrency: Equal[ResultSetConcurrency] =
       Equal.equalBy(_.toInt)
+#-scalaz
+#+cats
+    implicit val EqResultSetConcurrency: Eq[ResultSetConcurrency] =
+      Eq.by(_.toInt)
+#-cats
+
 
   }
 
