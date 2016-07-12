@@ -1,7 +1,15 @@
 package doobie.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import cats.{ Monad, ~> }
+import cats.data.{ Kleisli, Xor => \/ }
+import cats.free.{ Free => F }
+import cats.implicits._
+import doobie.util.catchable.Catchable
+#-cats
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -187,9 +195,8 @@ object drivermanager {
   * Natural transformation from `DriverManagerOp` to the given `M`. 
   * @group Algebra
   */
- def trans[M[_]: Monad: Catchable: Capture]: DriverManagerOp ~> M =
+ def trans[M[_]: Monad: Capture](implicit c: Catchable[M]): DriverManagerOp ~> M =
    new (DriverManagerOp ~>  M) {
-     import scalaz.syntax.catchable._
 
      val L = Predef.implicitly[Capture[M]]
 
@@ -201,7 +208,7 @@ object drivermanager {
 
         // Combinators
         case Pure(a) => L.apply(a())
-        case Attempt(a) => a.trans[M].attempt
+        case Attempt(a) => c.attempt(a.trans[M])  
   
         // Primitive Operations
         case DeregisterDriver(a) => L.apply(DriverManager.deregisterDriver(a))

@@ -1,7 +1,14 @@
 package doobie.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import doobie.util.catchable.Catchable
+import cats.{ Monad, ~> }
+import cats.data.{ Kleisli, Xor => \/ }
+import cats.free.{ Free => F }
+#-cats
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -103,7 +110,9 @@ object ref {
 
     // Combinators
     case class Attempt[A](action: RefIO[A]) extends RefOp[Throwable \/ A] {
+#+scalaz
       import scalaz._, Scalaz._
+#-scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, Ref, ?]]].attempt(action.transK[M])
     }
@@ -118,11 +127,11 @@ object ref {
     case object GetBaseTypeName extends RefOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
     }
-    case class  GetObject(a: Map[String, Class[_]]) extends RefOp[Object] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
-    }
-    case object GetObject1 extends RefOp[Object] {
+    case object GetObject extends RefOp[Object] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
+    }
+    case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[Object] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
     }
     case class  SetObject(a: Object) extends RefOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
@@ -194,14 +203,14 @@ object ref {
   /** 
    * @group Constructors (Primitives)
    */
-  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
-    F.liftF(GetObject(a))
+  val getObject: RefIO[Object] =
+    F.liftF(GetObject)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getObject: RefIO[Object] =
-    F.liftF(GetObject1)
+  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
+    F.liftF(GetObject1(a))
 
   /** 
    * @group Constructors (Primitives)

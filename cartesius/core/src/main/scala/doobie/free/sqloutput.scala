@@ -1,13 +1,21 @@
 package doobie.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import doobie.util.catchable.Catchable
+import cats.{ Monad, ~> }
+import cats.data.{ Kleisli, Xor => \/ }
+import cats.free.{ Free => F }
+#-cats
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
 
 import java.io.InputStream
 import java.io.Reader
+import java.lang.Object
 import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
@@ -26,6 +34,7 @@ import java.sql.RowId
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
+import java.sql.SQLType
 import java.sql.SQLXML
 import java.sql.Statement
 import java.sql.Struct
@@ -112,7 +121,9 @@ object sqloutput {
 
     // Combinators
     case class Attempt[A](action: SQLOutputIO[A]) extends SQLOutputOp[Throwable \/ A] {
+#+scalaz
       import scalaz._, Scalaz._
+#-scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, SQLOutput, ?]]].attempt(action.transK[M])
     }
@@ -175,7 +186,10 @@ object sqloutput {
     case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNString(a))
     }
-    case class  WriteObject(a: SQLData) extends SQLOutputOp[Unit] {
+    case class  WriteObject(a: Object, b: SQLType) extends SQLOutputOp[Unit] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a, b))
+    }
+    case class  WriteObject1(a: SQLData) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
     }
     case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
@@ -368,8 +382,14 @@ object sqloutput {
   /** 
    * @group Constructors (Primitives)
    */
+  def writeObject(a: Object, b: SQLType): SQLOutputIO[Unit] =
+    F.liftF(WriteObject(a, b))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def writeObject(a: SQLData): SQLOutputIO[Unit] =
-    F.liftF(WriteObject(a))
+    F.liftF(WriteObject1(a))
 
   /** 
    * @group Constructors (Primitives)
