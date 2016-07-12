@@ -179,8 +179,15 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
    s"""
     |package doobie.free
     |
+    |#+scalaz
     |import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \\/ }
-    |import scalaz.concurrent.Task
+    |#-scalaz
+    |#+cats
+    |import doobie.util.catchable.Catchable
+    |import cats.{ Monad, ~> }
+    |import cats.data.{ Kleisli, Xor => \\/ }
+    |import cats.free.{ Free => F }
+    |#-cats
     |
     |import doobie.util.capture._
     |import doobie.free.kleislitrans._
@@ -253,7 +260,9 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |
     |    // Combinators
     |    case class Attempt[A](action: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A] {
+    |#+scalaz
     |      import scalaz._, Scalaz._
+    |#-scalaz
     |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
     |        Predef.implicitly[Catchable[Kleisli[M, ${sname}, ?]]].attempt(action.transK[M])
     |    }

@@ -1,7 +1,14 @@
 package doobie.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import doobie.util.catchable.Catchable
+import cats.{ Monad, ~> }
+import cats.data.{ Kleisli, Xor => \/ }
+import cats.free.{ Free => F }
+#-cats
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -105,7 +112,9 @@ object clob {
 
     // Combinators
     case class Attempt[A](action: ClobIO[A]) extends ClobOp[Throwable \/ A] {
+#+scalaz
       import scalaz._, Scalaz._
+#-scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].attempt(action.transK[M])
     }
@@ -123,11 +132,11 @@ object clob {
     case object GetAsciiStream extends ClobOp[InputStream] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
     }
-    case object GetCharacterStream extends ClobOp[Reader] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
-    }
-    case class  GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
+    case class  GetCharacterStream(a: Long, b: Long) extends ClobOp[Reader] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
+    }
+    case object GetCharacterStream1 extends ClobOp[Reader] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
     }
     case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
@@ -147,11 +156,11 @@ object clob {
     case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
     }
-    case class  SetString(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
-    }
-    case class  SetString1(a: Long, b: String) extends ClobOp[Int] {
+    case class  SetString(a: Long, b: String) extends ClobOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+    }
+    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
     }
     case class  Truncate(a: Long) extends ClobOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -229,14 +238,14 @@ object clob {
   /** 
    * @group Constructors (Primitives)
    */
-  val getCharacterStream: ClobIO[Reader] =
-    F.liftF(GetCharacterStream)
+  def getCharacterStream(a: Long, b: Long): ClobIO[Reader] =
+    F.liftF(GetCharacterStream(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getCharacterStream(a: Long, b: Long): ClobIO[Reader] =
-    F.liftF(GetCharacterStream1(a, b))
+  val getCharacterStream: ClobIO[Reader] =
+    F.liftF(GetCharacterStream1)
 
   /** 
    * @group Constructors (Primitives)
@@ -277,14 +286,14 @@ object clob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String, c: Int, d: Int): ClobIO[Int] =
-    F.liftF(SetString(a, b, c, d))
+  def setString(a: Long, b: String): ClobIO[Int] =
+    F.liftF(SetString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String): ClobIO[Int] =
-    F.liftF(SetString1(a, b))
+  def setString(a: Long, b: String, c: Int, d: Int): ClobIO[Int] =
+    F.liftF(SetString1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)

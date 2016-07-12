@@ -7,7 +7,7 @@ import scalaz.syntax.monad._
 #-scalaz
 #+cats
 import cats.Monad
-import cats.data.{ Xor => \/ }
+import cats.data.{ Kleisli, Xor => \/ }
 import cats.implicits._
 #-cats
 
@@ -21,6 +21,10 @@ object catchable {
   trait Catchable[M[_]] {
     def attempt[A](ma: M[A]): M[Throwable \/ A]
     def fail[A](t: Throwable): M[A]
+  }
+
+  object Catchable {
+    implicit def catsKleisliCatchable[M[_], E]: Catchable[Kleisli[M, E, ?]] = null // TODO
   }
 #-cats
 

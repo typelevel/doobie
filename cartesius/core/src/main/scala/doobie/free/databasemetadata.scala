@@ -1,7 +1,14 @@
 package doobie.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import doobie.util.catchable.Catchable
+import cats.{ Monad, ~> }
+import cats.data.{ Kleisli, Xor => \/ }
+import cats.free.{ Free => F }
+#-cats
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -104,7 +111,9 @@ object databasemetadata {
 
     // Combinators
     case class Attempt[A](action: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[Throwable \/ A] {
+#+scalaz
       import scalaz._, Scalaz._
+#-scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
         Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].attempt(action.transK[M])
     }
@@ -260,6 +269,9 @@ object databasemetadata {
     case object GetMaxIndexLength extends DatabaseMetaDataOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxIndexLength())
     }
+    case object GetMaxLogicalLobSize extends DatabaseMetaDataOp[Long] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxLogicalLobSize())
+    }
     case object GetMaxProcedureNameLength extends DatabaseMetaDataOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxProcedureNameLength())
     }
@@ -317,11 +329,11 @@ object databasemetadata {
     case object GetSchemaTerm extends DatabaseMetaDataOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemaTerm())
     }
-    case object GetSchemas extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas())
-    }
-    case class  GetSchemas1(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
+    case class  GetSchemas(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas(a, b))
+    }
+    case object GetSchemas1 extends DatabaseMetaDataOp[ResultSet] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas())
     }
     case object GetSearchStringEscape extends DatabaseMetaDataOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSearchStringEscape())
@@ -467,11 +479,11 @@ object databasemetadata {
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
     }
-    case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
-    }
-    case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+    case class  SupportsConvert(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
+    }
+    case object SupportsConvert1 extends DatabaseMetaDataOp[Boolean] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
@@ -565,6 +577,9 @@ object databasemetadata {
     }
     case object SupportsPositionedUpdate extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsPositionedUpdate())
+    }
+    case object SupportsRefCursors extends DatabaseMetaDataOp[Boolean] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsRefCursors())
     }
     case class  SupportsResultSetConcurrency(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsResultSetConcurrency(a, b))
@@ -993,6 +1008,12 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
+  val getMaxLogicalLobSize: DatabaseMetaDataIO[Long] =
+    F.liftF(GetMaxLogicalLobSize)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   val getMaxProcedureNameLength: DatabaseMetaDataIO[Int] =
     F.liftF(GetMaxProcedureNameLength)
 
@@ -1107,14 +1128,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  val getSchemas: DatabaseMetaDataIO[ResultSet] =
-    F.liftF(GetSchemas)
+  def getSchemas(a: String, b: String): DatabaseMetaDataIO[ResultSet] =
+    F.liftF(GetSchemas(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getSchemas(a: String, b: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftF(GetSchemas1(a, b))
+  val getSchemas: DatabaseMetaDataIO[ResultSet] =
+    F.liftF(GetSchemas1)
 
   /** 
    * @group Constructors (Primitives)
@@ -1407,14 +1428,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  val supportsConvert: DatabaseMetaDataIO[Boolean] =
-    F.liftF(SupportsConvert)
+  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsConvert(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftF(SupportsConvert1(a, b))
+  val supportsConvert: DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsConvert1)
 
   /** 
    * @group Constructors (Primitives)
@@ -1601,6 +1622,12 @@ object databasemetadata {
    */
   val supportsPositionedUpdate: DatabaseMetaDataIO[Boolean] =
     F.liftF(SupportsPositionedUpdate)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
+  val supportsRefCursors: DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsRefCursors)
 
   /** 
    * @group Constructors (Primitives)
