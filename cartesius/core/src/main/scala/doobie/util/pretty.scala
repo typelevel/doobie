@@ -1,8 +1,6 @@
 package doobie.util
 
 import Predef._
-import scalaz._, Scalaz._
-
 
 /** Some functions for pretty-printing. */
 object pretty {
@@ -24,7 +22,7 @@ object pretty {
 
     def leftOfP(other: Block, padding: String): Block = {
       val h  = height max other.height
-      Block(lines.map(_.padTo(width, ' ')).padTo(h, " " * width).fzipWith(other.lines.padTo(h, ""))(_ + padding + _))
+      Block((lines.map(_.padTo(width, ' ')).padTo(h, " " * width), (other.lines.padTo(h, ""))).zipped.map(_ + padding + _))
     }
 
     def above(other: Block): Block =
@@ -60,7 +58,5 @@ object pretty {
 
 
 }
-
-//  (Block(List("foo", "banana")) leftOf2 Block(List("1", "two", "seven"))).lines.foreach(println)
 
 

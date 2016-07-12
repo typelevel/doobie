@@ -12,6 +12,7 @@ import scala.reflect.ClassTag
 import scala.Predef._
 
 import scalaz._, Scalaz._
+
 import shapeless._
 import shapeless.ops.hlist.IsHCons
 
@@ -162,6 +163,9 @@ object meta {
     // sorry
     private def reg(m: Meta[_]): Unit = 
       synchronized { instances = instances.insert(m) }
+
+    implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
+      Meta[Int].xmap(doobie.enum.jdbctype.JdbcType.unsafeFromInt, _.toInt)
 
     def apply[A](implicit A: Meta[A]): Meta[A] = A
 

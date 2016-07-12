@@ -4,8 +4,14 @@ import doobie.util.invariant._
 
 import java.sql.Connection._
 
+#+scalaz
 import scalaz.Equal
 import scalaz.std.anyVal.intInstance
+#-scalaz
+#+cats
+import cats.kernel.Eq
+import cats.kernel.std.int._
+#-cats
 
 object transactionisolation {
 
@@ -33,8 +39,14 @@ object transactionisolation {
     def unsafeFromInt(n: Int): TransactionIsolation =
       fromInt(n).getOrElse(throw InvalidOrdinal[TransactionIsolation](n))
 
+#+scalaz
     implicit val EqualTransactionIsolation: Equal[TransactionIsolation] =
       Equal.equalBy(_.toInt)
+#-scalaz
+#+cats
+    implicit val EqTransactionIsolation: Eq[TransactionIsolation] =
+      Eq.by(_.toInt)
+#-cats
 
   }
 

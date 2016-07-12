@@ -1,3 +1,4 @@
+#+scalaz
 package doobie.syntax
 
 import doobie.util.transactor.Transactor
@@ -30,3 +31,4 @@ object process {
   }
 
 }
+#-scalaz

@@ -1,3 +1,4 @@
+#+scalaz
 package doobie.util
 
 import scalaz._, Scalaz._
@@ -48,7 +49,4 @@ object namespec extends Specification {
 
 
 }
-
-
-
-
+#-scalaz

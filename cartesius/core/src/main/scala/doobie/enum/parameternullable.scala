@@ -5,8 +5,14 @@ import doobie.enum.{ nullability => N }
 
 import java.sql.ParameterMetaData._
 
+#+scalaz
 import scalaz.Equal
 import scalaz.std.anyVal.intInstance
+#-scalaz
+#+cats
+import cats.kernel.Eq
+import cats.kernel.std.int._
+#-cats
 
 object parameternullable {
 
@@ -40,8 +46,14 @@ object parameternullable {
     def unsafeFromInt(n: Int): ParameterNullable =
       fromInt(n).getOrElse(throw InvalidOrdinal[ParameterNullable](n))
 
+#+scalaz
     implicit val EqualParameterNullable: Equal[ParameterNullable] =
       Equal.equalBy(_.toInt)
+#-scalaz
+#+cats
+    implicit val EqParameterNullable: Eq[ParameterNullable] =
+      Eq.by(_.toInt)
+#-cats
 
   }
 

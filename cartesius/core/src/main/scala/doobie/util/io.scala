@@ -1,3 +1,4 @@
+#+scalaz
 package doobie.util
 
 import doobie.imports._
@@ -83,4 +84,4 @@ object io {
   }
 
 }
-
+#-scalaz

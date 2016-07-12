@@ -1,3 +1,4 @@
+#+scalaz
 package doobie.util
 
 import scalaz.{ Applicative, Functor }
@@ -20,3 +21,4 @@ object process {
     } onHalt { _.asHalt }
 
 }
+#-scalaz
