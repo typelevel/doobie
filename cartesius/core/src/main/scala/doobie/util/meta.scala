@@ -11,14 +11,20 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.ClassTag
 import scala.Predef._
 
+#+scalaz
 import scalaz._, Scalaz._
+#-scalaz
+#+cats
+import cats._, cats.data.{ NonEmptyList, Xor => \/ }, cats.data.Xor.{ Left => -\/, Right => \/- }, cats.implicits._
+#-cats
 
 import shapeless._
 import shapeless.ops.hlist.IsHCons
 
 /** Module defining the lowest level of column mapping. */
 object meta {
-
+  type ISet[A] = Set[A]
+  val ISet = Set
   /** 
    * Metadata defining the column-level mapping to and from Scala type `A`. A given Scala type might
    * be read from or written to columns with a variety of JDBC and/or vendor-specific types,
@@ -152,20 +158,25 @@ object meta {
     // See note on trait Meta above
     private var instances: ISet[Meta[_]] = ISet.empty // scalastyle:ignore
 
-    /** @group Typeclass Instances */
-    implicit val MetaOrder: Order[Meta[_]] =
-      Order.orderBy(_.fold(
-        b => -\/((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
-        a => \/-((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
+//     /** @group Typeclass Instances */
+//     implicit val MetaOrder: Order[Meta[_]] =
+// #+scalaz
+//       Order.orderBy(_.fold(
+// #-scalaz        
+// #+cats
+//       Order.by(_.fold(
+// #-cats      
+//         b => -\/((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
+//         a => \/-((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
   
   } with LowPriorityImplicits with MetaInstances {
 
     // sorry
     private def reg(m: Meta[_]): Unit = 
-      synchronized { instances = instances.insert(m) }
+      synchronized { instances = instances + m }
 
     implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
-      Meta[Int].xmap(doobie.enum.jdbctype.JdbcType.unsafeFromInt, _.toInt)
+      IntMeta.xmap(doobie.enum.jdbctype.JdbcType.unsafeFromInt, _.toInt)
 
     def apply[A](implicit A: Meta[A]): Meta[A] = A
 
