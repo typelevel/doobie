@@ -1,8 +1,9 @@
 package doobie.syntax
 
-import scalaz._, Scalaz._
+import scalaz.syntax.monad._
+import scalaz.syntax.catchable._
+
 import doobie.imports._
-import shapeless.test.illTyped
 import org.specs2.mutable.Specification
 
 object catchablespec extends Specification {

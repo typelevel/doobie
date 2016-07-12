@@ -13,7 +13,12 @@ import C.Catchable
 /** Syntax for `Catchable` combinators defined in `util.catchable`. */
 object catchable {
 
-  class DoobieCatchableOps[M[_]: Monad: Catchable, A](self: M[A]) {
+  class DoobieCatchableOps[M[_]: Monad, A](self: M[A])(implicit c: Catchable[M]) {
+
+#+cats
+    def attempt: M[Throwable \/ A] =
+      c.attempt(self)
+#-cats
 
     def attemptSome[B](handler: PartialFunction[Throwable, B]): M[B \/ A] =
       C.attemptSome(self)(handler)
