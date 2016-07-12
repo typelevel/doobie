@@ -25,10 +25,17 @@ import scala.collection.JavaConverters._
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.intArrayOps
 
+#+scalaz
 import scalaz.{ Monad, MonadPlus, IList, NonEmptyList }
 import scalaz.syntax.id._
 import scalaz.syntax.monadPlus._
 import scalaz.stream.Process
+#-scalaz
+#+cats
+import cats.{ Monad, MonoidK => MonadPlus }
+import cats.data.NonEmptyList
+import cats.implicits._
+#-cats
 
 /**
  * Module of high-level constructors for `ResultSetIO` actions.
@@ -88,6 +95,7 @@ object resultset {
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
     get(1)
 
+#+scalaz
   /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
    * accumulating them in an `IList`.
@@ -100,6 +108,7 @@ object resultset {
         as ::= A.unsafeGet(rs, 1)
       as.reverse
     }
+#-scalaz
 
   /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
@@ -145,12 +154,14 @@ object resultset {
   def list[A: Composite]: ResultSetIO[List[A]] = 
     build[List, A]
 
+#+scalaz
   /**
    * Like `getNext` but loops until the end of the resultset, gathering results in a `MonadPlus`.
    * @group Results
    */
   def accumulate[G[_]: MonadPlus, A: Composite]: ResultSetIO[G[A]] =
     get[A].whileM(next)
+#-scalaz
 
   /** 
    * Updates a value of type `A` starting at column `n`.
@@ -175,7 +186,7 @@ object resultset {
   def getNext[A: Composite]: ResultSetIO[Option[A]] =
     next >>= {
       case true  => get[A].map(Some(_))
-      case false => Monad[ResultSetIO].point(None)
+      case false => Monad[ResultSetIO].pure(None)
     }
     
   /** 
@@ -184,7 +195,12 @@ object resultset {
    * @group Results 
    */
   def getUnique[A: Composite]: ResultSetIO[A] =
+#+scalaz
     (getNext[A] |@| next) {
+#-scalaz      
+#+cats
+    (getNext[A] |@| next) map {
+#-cats      
       case (Some(a), false) => a
       case (Some(a), true)  => throw UnexpectedContinuation
       case (None, _)        => throw UnexpectedEnd
@@ -196,7 +212,12 @@ object resultset {
    * @group Results
    */
   def getOption[A: Composite]: ResultSetIO[Option[A]] =
+#+scalaz
     (getNext[A] |@| next) {
+#-scalaz      
+#+cats
+    (getNext[A] |@| next) map {
+#-cats      
       case (a @ Some(_), false) => a
       case (Some(a), true)      => throw UnexpectedContinuation
       case (None, _)            => None
@@ -208,11 +229,20 @@ object resultset {
     * @group Results
     */
   def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
+#+scalaz
     (getNext[A] |@| ilist) {
       case (Some(a), as) => NonEmptyList.nel(a, as)
       case (None, _)     => throw UnexpectedEnd
     }
+#-scalaz
+#+cats
+    (getNext[A] |@| list) map {
+      case (Some(a), as) => NonEmptyList(a, as)
+      case (None, _)     => throw UnexpectedEnd
+    }
+#-cats
 
+#+scalaz
   /** 
    * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
@@ -220,6 +250,7 @@ object resultset {
    */
   def process[A: Composite]: Process[ResultSetIO, A] = 
     Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
+#-scalaz
 
   /** @group Properties */
   val getFetchDirection: ResultSetIO[FetchDirection] =

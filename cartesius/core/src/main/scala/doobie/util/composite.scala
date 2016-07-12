@@ -15,7 +15,15 @@ import java.sql.ResultSet
 
 import scala.annotation.implicitNotFound
 
-import scalaz._, Scalaz._
+#+scalaz
+import scalaz.InvariantFunctor
+import scalaz.syntax.applicative._
+#-scalaz
+#+cats
+import cats.functor.{ Invariant => InvariantFunctor }
+import cats.implicits._
+#-cats
+
 import shapeless._
 import shapeless.labelled.{ field, FieldType }
 
@@ -38,7 +46,12 @@ the FAQ in the Book of Doobie for more hints.""")
     val unsafeGet: (ResultSet, Int) => A
     val length: Int
     val meta: List[(Meta[_], NullabilityKnown)]
-    final def xmap[B](f: A => B, g: B => A): Composite[B] =
+#+scalaz
+    def xmap[B](f: A => B, g: B => A): Composite[B] =
+#-scalaz
+#+cats
+    def imap[B](f: A => B)(g: B => A): Composite[B] =
+#-cats
       new Composite[B] {
         val set    = (n: Int, b: B) => c.set(n, g(b))
         val update = (n: Int, b: B) => c.update(n, g(b))
@@ -54,8 +67,14 @@ the FAQ in the Book of Doobie for more hints.""")
 
     implicit val compositeInvariantFunctor: InvariantFunctor[Composite] =
       new InvariantFunctor[Composite] {
+#+scalaz        
         def xmap[A, B](ma: Composite[A], f: A => B, g: B => A): Composite[B] =
           ma.xmap(f, g)
+#-scalaz        
+#+cats        
+        def imap[A, B](ma: Composite[A])(f: A => B)(g: B => A): Composite[B] =
+          ma.imap(f)(g)
+#-cats              
       }
 
     implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
@@ -70,8 +89,8 @@ the FAQ in the Book of Doobie for more hints.""")
     // Composite for shapeless record types
     implicit def recordComposite[K <: Symbol, H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[FieldType[K, H] :: T] =
       new Composite[FieldType[K, H] :: T] {
-        val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
-        val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
+        val set = (i: Int, l: H :: T) => H.set(i, l.head) *> T.set(i + H.length, l.tail)
+        val update = (i: Int, l: H :: T) => H.update(i, l.head) *> T.update(i + H.length, l.tail)
         val unsafeGet = (r: ResultSet, i: Int) => field[K](H.unsafeGet(r, i)) :: T.unsafeGet(r, i + H.length)
         val length = H.length + T.length
         val meta = H.meta ++ T.meta
@@ -86,8 +105,8 @@ the FAQ in the Book of Doobie for more hints.""")
 
     implicit def product[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
       new Composite[H :: T] {
-        val set = (i: Int, l: H :: T) => H.set(i, l.head) >> T.set(i + H.length, l.tail)
-        val update = (i: Int, l: H :: T) => H.update(i, l.head) >> T.update(i + H.length, l.tail)
+        val set = (i: Int, l: H :: T) => H.set(i, l.head) *> T.set(i + H.length, l.tail)
+        val update = (i: Int, l: H :: T) => H.update(i, l.head) *> T.update(i + H.length, l.tail)
         val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
         val length = H.length + T.length
         val meta = H.meta ++ T.meta
@@ -95,8 +114,8 @@ the FAQ in the Book of Doobie for more hints.""")
 
     implicit def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
-        val set = (_: Int, _: HNil) => ().point[PS.PreparedStatementIO]
-        val update = (_: Int, _: HNil) => ().point[RS.ResultSetIO]
+        val set = (_: Int, _: HNil) => ().pure[PS.PreparedStatementIO]
+        val update = (_: Int, _: HNil) => ().pure[RS.ResultSetIO]
         val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
         val length = 0
         val meta = Nil

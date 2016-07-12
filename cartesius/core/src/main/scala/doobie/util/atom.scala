@@ -8,9 +8,12 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet
 
+#+scalaz
 import scalaz.{ InvariantFunctor, Maybe }
-import scalaz.syntax.applicative._
-import scalaz.syntax.std.boolean._
+#-scalaz
+#+cats
+import cats.functor.{ Invariant => InvariantFunctor }
+#-cats
 
 import scala.annotation.implicitNotFound
 
@@ -28,7 +31,12 @@ object atom {
     val get: Int => ResultSetIO[A] = n => raw(rs => unsafeGet(rs, n))
     val unsafeGet: (ResultSet, Int) => A
     val meta: (Meta[_], NullabilityKnown)
+#+scalaz
     def xmap[B](f: A => B, g: B => A): Atom[B] =
+#-scalaz
+#+cats
+    def imap[B](f: A => B)(g: B => A): Atom[B] =
+#-cats
       new Atom[B] {
         val set = (n: Int, b: B) => outer.set(n, g(b))
         val update = (n: Int, b: B) => outer.update(n, g(b))
@@ -62,6 +70,7 @@ object atom {
         val meta = (A, Nullable)
       }
 
+#+scalaz
     implicit def fromScalaTypeMaybe[A](implicit A: Meta[A]): Atom[Maybe[A]] =
       new Atom[Maybe[A]] {
         val unsafeGet = (r: ResultSet, n: Int) => {
@@ -72,11 +81,18 @@ object atom {
         val update = (n: Int, a: Maybe[A]) => a.cata(A.update(n, _), updateNull(n))
         val meta = (A, Nullable)
       }
+#-scalaz
 
     implicit val atomInvariantFunctor: InvariantFunctor[Atom] =
       new InvariantFunctor[Atom] {
+#+scalaz        
         def xmap[A, B](ma: Atom[A], f: A => B, g: B => A): Atom[B] =
           ma.xmap(f, g)
+#-scalaz        
+#+cats        
+        def imap[A, B](ma: Atom[A])(f: A => B)(g: B => A): Atom[B] =
+          ma.imap(f)(g)
+#-cats        
       }
 
   }

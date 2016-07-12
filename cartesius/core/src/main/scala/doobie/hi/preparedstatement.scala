@@ -23,7 +23,9 @@ import doobie.free.{ databasemetadata => DMD }
 
 import doobie.util.analysis._
 import doobie.util.composite._
+#+scalaz
 import doobie.util.process.resource
+#-scalaz
 
 import java.net.URL
 import java.util.{ Date, Calendar }
@@ -33,6 +35,7 @@ import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
 import scala.Predef.{ intArrayOps, intWrapper }
 
+#+scalaz
 import scalaz.stream.Process
 import scalaz.syntax.id._
 import scalaz.syntax.enum._
@@ -43,6 +46,13 @@ import scalaz.std.anyVal._
 import scalaz.std.list._
 import scalaz.Foldable
 import scalaz.\&/
+#-scalaz
+#+cats
+import cats.Foldable
+import cats.implicits._
+import doobie.util.these._
+import doobie.util.these.\&/._
+#-cats
 
 /**
  * Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not
@@ -54,11 +64,13 @@ object preparedstatement {
   /** @group Typeclass Instances */
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
 
+#+scalaz
   /** @group Execution */
   def process[A: Composite]: Process[PreparedStatementIO, A] =
     resource(PS.executeQuery)(rs =>
              PS.lift(rs, RS.close))(rs => 
              PS.lift(rs, resultset.getNext[A]))
+#-scalaz
 
   /**
    * Non-strict unit for capturing effects.
@@ -85,14 +97,14 @@ object preparedstatement {
    * @group Batching
    */
   def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
-    fa.foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b).map(_.sum)
+    fa.toList.foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b).map(_.sum)
 
   /**
    * Add many sets of parameters.
    * @group Batching
    */
   def addBatches[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Unit] =
-    fa.foldRight(().point[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
+    fa.toList.foldRight(().pure[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
@@ -106,11 +118,13 @@ object preparedstatement {
   def executeUpdateWithUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
+#+scalaz
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite]: Process[PreparedStatementIO, A] =
     resource(PS.executeUpdate.flatMap(_ => PS.getGeneratedKeys) : PreparedStatementIO[java.sql.ResultSet])(rs =>
              PS.lift(rs, RS.close))(rs =>
              PS.lift(rs, resultset.getNext[A]))
+#-scalaz
 
   /** 
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.

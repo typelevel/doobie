@@ -11,8 +11,17 @@ import doobie.util.meta._
 import scala.Predef._ // TODO: minimize
 import scala.reflect.runtime.universe.TypeTag
 
+#+scalaz
 import scalaz._, Scalaz._
 import scalaz.\&/._
+#-scalaz
+#+cats
+import cats.data.{ Xor => \/ }
+import cats.data.Xor.{ Left => -\/, Right => \/- }
+import cats.implicits._
+import doobie.util.these.\&/
+import doobie.util.these.\&/._
+#-cats
 
 /** Module defining a type for analyzing the type alignment of prepared statements. */
 object analysis {
@@ -185,7 +194,6 @@ object analysis {
     /** Description of each parameter, paird with its errors. */
     lazy val columnDescriptions: List[(String, List[AlignmentError])] = {
       import pretty._
-      import scalaz._, Scalaz._
       val cols: Block = 
         columnAlignment.zipWithIndex.map { 
           case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", typeName(j1, n1))            
