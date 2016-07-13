@@ -63,8 +63,17 @@ object yax {
     walk(src, sourceManaged.value, flags.toSet)
   }
 
+  // all non-hidden files
+  private def closure(src: File): List[File] =
+    if (src.isFile) {
+      if (src.isHidden) Nil else List(src)
+    } else {
+      src.listFiles.toList.flatMap(closure)
+    }
+
   def apply(root: File, flags: String*): Seq[Setting[_]] =
     inConfig(Compile)(Seq(sourceGenerators += foo(root / "/src/main/scala", flags: _*).taskValue)) ++
-    inConfig(Test   )(Seq(sourceGenerators += foo(root / "/src/test/scala", flags: _*).taskValue))
+    inConfig(Test   )(Seq(sourceGenerators += foo(root / "/src/test/scala", flags: _*).taskValue)) ++
+    Seq(watchSources := watchSources.value ++ closure(root))
 
 }
