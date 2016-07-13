@@ -1,7 +1,7 @@
-package doobie.contrib.postgresql.hi
+package doobie.postgres.hi
 
 import doobie.imports._
-import doobie.contrib.postgresql.imports._
+import doobie.postgres.imports._
 
 import java.io.File
 

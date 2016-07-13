@@ -1,76 +1,76 @@
-package doobie.contrib.postgresql
+package doobie.postgres
 
 /** 
  * Module of aliases for commonly-used PostgreSQL types and syntax; use as 
- * `import doobie.contrib.postgresql.imports._` 
+ * `import doobie.postgres.imports._` 
  */
 object imports {
 
   /**
-   * Alias for `doobie.contrib.postgresql.free.copyin`
+   * Alias for `doobie.postgres.free.copyin`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFCI = doobie.contrib.postgresql.free.copyin
+  val PFCI = doobie.postgres.free.copyin
   
   /**
-   * Alias for `doobie.contrib.postgresql.free.copymanager`
+   * Alias for `doobie.postgres.free.copymanager`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFCM = doobie.contrib.postgresql.free.copymanager
+  val PFCM = doobie.postgres.free.copymanager
   
   /**
-   * Alias for `doobie.contrib.postgresql.free.copyout`
+   * Alias for `doobie.postgres.free.copyout`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFCO = doobie.contrib.postgresql.free.copyout
+  val PFCO = doobie.postgres.free.copyout
   
   /**
-   * Alias for `doobie.contrib.postgresql.free.fastpath`
+   * Alias for `doobie.postgres.free.fastpath`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFFP = doobie.contrib.postgresql.free.fastpath
+  val PFFP = doobie.postgres.free.fastpath
   
   /**
-   * Alias for `doobie.contrib.postgresql.free.largeobject`
+   * Alias for `doobie.postgres.free.largeobject`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFLO = doobie.contrib.postgresql.free.largeobject
+  val PFLO = doobie.postgres.free.largeobject
   
   /**
-   * Alias for `doobie.contrib.postgresql.free.largeobjectmanager`
+   * Alias for `doobie.postgres.free.largeobjectmanager`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFLOM = doobie.contrib.postgresql.free.largeobjectmanager
+  val PFLOM = doobie.postgres.free.largeobjectmanager
   
   /**
-   * Alias for `doobie.contrib.postgresql.free.pgconnection`
+   * Alias for `doobie.postgres.free.pgconnection`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFPC = doobie.contrib.postgresql.free.pgconnection
+  val PFPC = doobie.postgres.free.pgconnection
 
   /**
-   * Alias for `doobie.contrib.postgresql.hi.pgconnection`
+   * Alias for `doobie.postgres.hi.pgconnection`
    * @group PostgreSQL Hi Module Aliases
    */
-  val PHPC = doobie.contrib.postgresql.hi.pgconnection
+  val PHPC = doobie.postgres.hi.pgconnection
 
   /**
-   * Alias for `doobie.contrib.postgresql.hi.connection`
+   * Alias for `doobie.postgres.hi.connection`
    * @group PostgreSQL Hi Module Aliases
    */
-  val PHC = doobie.contrib.postgresql.hi.connection
+  val PHC = doobie.postgres.hi.connection
 
   /**
-   * Alias for `doobie.contrib.postgresql.hi.largeobject`
+   * Alias for `doobie.postgres.hi.largeobject`
    * @group PostgreSQL Hi Module Aliases
    */
-  val PHLO = doobie.contrib.postgresql.hi.largeobject
+  val PHLO = doobie.postgres.hi.largeobject
 
   /**
-   * Alias for `doobie.contrib.postgresql.hi.largeobjectmanager`
+   * Alias for `doobie.postgres.hi.largeobjectmanager`
    * @group PostgreSQL Hi Module Aliases
    */
-  val PHLOM = doobie.contrib.postgresql.hi.largeobjectmanager
+  val PHLOM = doobie.postgres.hi.largeobjectmanager
 
   /** @group Type Aliass */ type CopyInIO[A]             = PFCI.CopyInIO[A]
   /** @group Type Aliass */ type CopyManagerIO[A]        = PFCM.CopyManagerIO[A]

@@ -1,7 +1,7 @@
-package doobie.contrib.postgresql
+package doobie.postgres
 
 import doobie.imports._
-import doobie.contrib.postgresql.imports._
+import doobie.postgres.imports._
 import doobie.util.iolite.IOLite
 
 import java.io.File
