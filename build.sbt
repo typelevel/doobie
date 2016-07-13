@@ -90,11 +90,11 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats) //, example, postgres, h2, hikari, specs2, docs, bench)
-  .aggregate(core, core_cats) //, example, postgres, h2, hikari, specs2, docs, bench)
+  .dependsOn(core, core_cats, h2) //, example, postgres, hikari, specs2, docs, bench)
+  .aggregate(core, core_cats, h2) //, example, postgres, hikari, specs2, docs, bench)
   .settings(freeGenSettings)
   .settings(
-    freeGenDir := file("cartesius/core/src/main/scala/doobie/free"),
+    freeGenDir := file("yax/core/src/main/scala/doobie/free"),
     freeGenClasses := {
       import java.sql._
       List[Class[_]](
@@ -150,7 +150,7 @@ def coreSettings(mod: String) =
 lazy val core = project.in(file("modules/core"))
   .enablePlugins(SbtOsgi)
   .settings(
-    cartesius(file("cartesius/core"), "scalaz"),
+    yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
       "org.scalaz"        %% "scalaz-core"      % "7.2.4",
@@ -163,11 +163,11 @@ lazy val core = project.in(file("modules/core"))
 lazy val core_cats = project.in(file("modules/core-cats"))
   .enablePlugins(SbtOsgi)
   .settings(
-    cartesius(file("cartesius/core"), "cats"),
+    yax(file("yax/core"), "cats"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats" % "0.6.0",
-      "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41"
+      "org.typelevel"  %% "cats" % "0.6.0",
+      "com.h2database" %  "h2"     % "1.3.170" % "test"
     )
   )
 
@@ -208,13 +208,29 @@ lazy val core_cats = project.in(file("modules/core-cats"))
 //   )
 //   .dependsOn(core)
 
-// lazy val h2 = project.in(file("modules/h2"))
-//   .enablePlugins(SbtOsgi)
-//   .settings(name := "doobie-contrib-h2")
-//   .settings(description := "H2 support for doobie.")
-//   .settings(doobieSettings ++ publishSettings)
-//   .settings(libraryDependencies += "com.h2database" % "h2"  % "1.3.170")
-//   .dependsOn(core)
+def h2Settings(mod: String): Seq[Setting[_]] =
+  doobieSettings  ++
+  publishSettings ++ Seq(
+    name  := "doobie-" + mod,
+    description := "H2 support for doobie.",
+    libraryDependencies += "com.h2database" % "h2"  % "1.3.170"
+  )
+
+lazy val h2 = project.in(file("modules/h2"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/h2"), "scalaz"),
+    h2Settings("h2")
+  )
+  .dependsOn(core)
+
+lazy val h2_cats = project.in(file("modules/h2-cats"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/h2"), "cats"),
+    h2Settings("h2-cats")
+  )
+  .dependsOn(core_cats)
 
 // lazy val hikari = project.in(file("modules/hikari"))
 //   .enablePlugins(SbtOsgi)
