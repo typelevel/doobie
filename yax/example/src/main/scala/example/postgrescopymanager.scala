@@ -1,7 +1,11 @@
+#+cats
+// relies on whenM, etc. so no cats for now
+#-cats
+#+scalaz
 package doobie.example
 
 import doobie.imports._
-import doobie.contrib.postgresql.imports._
+import doobie.postgres.imports._
 
 import java.io.File
 
@@ -198,3 +202,4 @@ object postgrescopymanager {
   }
 
 }
+#-scalaz

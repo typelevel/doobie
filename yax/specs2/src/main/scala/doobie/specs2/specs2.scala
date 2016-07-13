@@ -1,4 +1,4 @@
-package doobie.contrib.specs2
+package doobie.specs2
 
 import doobie.free.connection.ConnectionIO
 

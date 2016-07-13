@@ -1,3 +1,7 @@
+#+cats
+// relies on streaming, so no cats for now
+#-cats
+#+scalaz
 package doobie.example
 
 import scalaz._, Scalaz._
@@ -136,3 +140,4 @@ object FirstExample extends SafeApp {
     FC.delay(println(s))
 
 }
+#-scalaz

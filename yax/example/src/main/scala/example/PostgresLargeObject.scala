@@ -1,11 +1,14 @@
+#+cats
+// relies on whenM, etc. so no cats for now
+#-cats
+#+scalaz
 package doobie.example
 
 import doobie.imports._
-import doobie.contrib.postgresql.imports._
+import doobie.postgres.imports._
+import doobie.util.iolite._
 
 import java.io.File
-
-import scalaz._, Scalaz._, scalaz.concurrent.Task
 
 /** 
  * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the 
@@ -13,7 +16,7 @@ import scalaz._, Scalaz._, scalaz.concurrent.Task
  */
 object PostgresLargeObject {
 
-  val xa: Transactor[Task] = 
+  val xa: Transactor[IOLite] = 
     DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   val prog: LargeObjectManagerIO[Long] =
@@ -23,13 +26,14 @@ object PostgresLargeObject {
       _   <- PHLOM.delete(oid)
     } yield oid
 
-  val task: Task[Unit] =
-    PHC.pgGetLargeObjectAPI(prog).transact(xa) >>= { oid => 
-      Task.delay(Console.println("oid was " + oid))
+  val task: IOLite[Unit] =
+
+    PHC.pgGetLargeObjectAPI(prog).transact(xa).flatMap { oid => 
+      IOLite.primitive(Console.println("oid was " + oid))
     }
 
   def main(args: Array[String]): Unit = 
-    task.unsafePerformSync
+    task.unsafePerformIO
 
 }
-
+#-scalaz
