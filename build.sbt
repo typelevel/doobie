@@ -283,17 +283,37 @@ lazy val hikari_cats = project.in(file("modules-cats/hikari"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/hikari"), "cats"),
-    hikariSettings("hikari")
+    hikariSettings("hikari-cats")
   )
   .dependsOn(core_cats)
 
-// lazy val specs2 = project.in(file("modules/specs2"))
-//   .enablePlugins(SbtOsgi)
-//   .settings(name := "doobie-contrib-specs2")
-//   .settings(description := "Specs2 support for doobie.")
-//   .settings(doobieSettings ++ publishSettings)
-//   .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.7.1")
-//   .dependsOn(core)
+///
+/// SPECS2
+///
+
+def specs2Settings(mod: String): Seq[Setting[_]] =
+  doobieSettings  ++ 
+  publishSettings ++ Seq(
+    name := "doobie-contrib-specs2",
+    description := "Specs2 support for doobie.",
+    libraryDependencies += "org.specs2" %% "specs2-core" % "3.7.1"
+  )
+
+lazy val specs2 = project.in(file("modules/specs2"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/specs2"), "scalaz"),
+    specs2Settings("specs2")
+  )
+  .dependsOn(core)
+
+lazy val specs2_cats = project.in(file("modules-cats/specs2"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/specs2"), "cats"),
+    specs2Settings("specs2")
+  )
+  .dependsOn(core_cats)
 
 // lazy val docs = project.in(file("modules/doc"))
 //   .settings(doobieSettings)
@@ -323,11 +343,19 @@ lazy val hikari_cats = project.in(file("modules-cats/hikari"))
 //   .settings(docSkipScala212Settings)
 //   .dependsOn(core, postgres, specs2, hikari, h2)
 
-// lazy val bench = project.in(file("modules/bench"))
-//   .settings(doobieSettings)
-//   .settings(noPublishSettings)
-//   .dependsOn(core, postgres)
+///
+/// BENCH
+///
 
+lazy val bench = project.in(file("modules/bench"))
+  .settings(doobieSettings ++ noPublishSettings)
+  .settings(yax(file("yax/bench"), "scalaz"))
+  .dependsOn(core, postgres)
+
+lazy val bench_cats = project.in(file("modules-cats/bench"))
+  .settings(doobieSettings ++ noPublishSettings)
+  .settings(yax(file("yax/bench"), "cats"))
+  .dependsOn(core_cats, postgres_cats)
 
 // Workaround to avoid cyclic dependency
 // TODO remove after tut-core and argonaut for Scala 2.12 is released
