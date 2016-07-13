@@ -1,4 +1,4 @@
-package doobie.contrib.postgresql.free
+package doobie.postgres.free
 
 #+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
@@ -30,7 +30,7 @@ import largeobjectmanager.LargeObjectManagerIO
  * Algebra and free monad for primitive operations over a `org.postgresql.PGConnection`. This is
  * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
  * for library developers. End users will prefer a safer, higher-level API such as that provided 
- * in the `doobie.contrib.postgresql.hi` package.
+ * in the `doobie.postgres.hi` package.
  *
  * `PGConnectionIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `PGConnectionOp` to another monad via

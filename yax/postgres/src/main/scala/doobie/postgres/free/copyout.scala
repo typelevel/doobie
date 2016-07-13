@@ -1,4 +1,4 @@
-package doobie.contrib.postgresql.free
+package doobie.postgres.free
 
 #+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }

@@ -1,13 +1,13 @@
-package doobie.contrib.postgresql.hi
+package doobie.postgres.hi
 
 import org.postgresql.{ PGConnection, PGNotification }
 import org.postgresql.fastpath.Fastpath
 
-import doobie.contrib.postgresql.free.{ pgconnection => PGC }
-import doobie.contrib.postgresql.free.pgconnection.PGConnectionIO
-import doobie.contrib.postgresql.free.copymanager.CopyManagerIO
-import doobie.contrib.postgresql.free.fastpath.FastpathIO
-import doobie.contrib.postgresql.free.largeobjectmanager.LargeObjectManagerIO
+import doobie.postgres.free.{ pgconnection => PGC }
+import doobie.postgres.free.pgconnection.PGConnectionIO
+import doobie.postgres.free.copymanager.CopyManagerIO
+import doobie.postgres.free.fastpath.FastpathIO
+import doobie.postgres.free.largeobjectmanager.LargeObjectManagerIO
 
 import doobie.imports._
 
