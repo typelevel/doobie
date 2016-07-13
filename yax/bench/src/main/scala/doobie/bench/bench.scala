@@ -1,14 +1,13 @@
 package doobie.bench
 
 import doobie.imports._
+import doobie.util.iolite._
 import java.sql.DriverManager
-import scalaz._, Scalaz._
-import scalaz.concurrent.Task
 
 /** Rough benchmark based on non/jawn */
 object bench {
 
-  val xa = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // Baseline hand-written JDBC code
   def jdbcBench(n: Int): Int = {
@@ -41,6 +40,7 @@ object bench {
     }
   }
 
+#+scalaz
   // Reading via .process, which adds a fair amount of overhead
   def doobieBenchP(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
@@ -49,7 +49,8 @@ object bench {
       .list
       .transact(xa)
       .map(_.length)
-      .unsafePerformSync
+      .unsafePerformIO
+#-scalaz
 
   // Reading via .list, which uses a lower-level collector
   def doobieBench(n: Int): Int = 
@@ -58,7 +59,7 @@ object bench {
       .list
       .transact(xa)
       .map(_.length)
-      .unsafePerformSync
+      .unsafePerformIO
 
   // Reading via .vector, which uses a lower-level collector
   def doobieBenchV(n: Int): Int =
@@ -67,8 +68,9 @@ object bench {
       .vector
       .transact(xa)
       .map(_.length)
-      .unsafePerformSync
+      .unsafePerformIO
 
+#+scalaz
   // Reading via .ilist, which uses a lower-level collector
   def doobieBenchI(n: Int): Int =
     HC.prepareStatement(s"select a.name, b.name, c.name from country a, country b, country c limit $n") {
@@ -77,7 +79,8 @@ object bench {
       }
     } .transact(xa)
       .map(_.length)
-      .unsafePerformSync
+      .unsafePerformIO
+#-scalaz
 
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
     def test[A](n: Int)(f: Int => A): Double = {
@@ -122,13 +125,15 @@ object bench {
 
 
   def main(args: Array[String]): Unit = {
-    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000, 1000000))
+    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000))
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
+#+scalaz      
       bench.Case("process", doobieBenchP),
+      bench.Case("ilist",   doobieBenchI),
+#-scalaz      
       bench.Case("list",    doobieBench),
       bench.Case("vector",  doobieBenchV),
-      bench.Case("ilist",   doobieBenchI),
       bench.Case("jdbc",    jdbcBench)
     )
     bench.run(baseline, cases)

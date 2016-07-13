@@ -7,6 +7,7 @@ import doobie.util.query._
 import doobie.util.update._
 import doobie.util.analysis._
 import doobie.util.pretty._
+import doobie.util.iolite._
 
 import org.specs2.mutable.Specification
 import org.specs2.execute.Failure
@@ -14,8 +15,12 @@ import org.specs2.specification.core.Fragments
 
 import scala.reflect.runtime.universe.TypeTag
 
-import scalaz.concurrent.Task
-import scalaz._, Scalaz._
+#+scalaz
+import scalaz.{ -\/, \/- }
+#-scalaz
+#+cats
+import cats.data.Xor.{ Left => -\/, Right => \/- }
+#-cats
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -24,7 +29,7 @@ import scalaz._, Scalaz._
  * object AnalysisTestSpec extends Specification with AnalysisSpec {
  *
  *   // The transactor to use for the tests.
- *   val transactor = DriverManagerTransactor[Task](
+ *   val transactor = DriverManagerTransactor[IOLite](
  *     "org.postgresql.Driver", 
  *     "jdbc:postgresql:world", 
  *     "postgres", ""
@@ -41,7 +46,7 @@ object analysisspec {
 
   trait AnalysisSpec { this: Specification =>
 
-    def transactor: Transactor[Task]
+    def transactor: Transactor[IOLite]
 
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
       checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.stackFrame, q.sql, q.analysis)
@@ -60,7 +65,7 @@ object analysisspec {
 
     private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
       s"$typeName defined at ${loc(stackFrame)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
-        transactor.trans(analysis).unsafePerformSyncAttempt match {
+        transactor.trans(analysis).attempt.unsafePerformIO match {
           case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
           case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
             Fragments.foreach(a.paramDescriptions)  { case (s, es) => s in assertEmpty(es, stackFrame) }
