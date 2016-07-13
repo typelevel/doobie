@@ -2,16 +2,19 @@ package doobie.contrib.postgresql
 
 import doobie.imports._
 import doobie.contrib.postgresql.imports._
+import doobie.util.iolite._
 
 import java.io.ByteArrayOutputStream
 
 import org.specs2.mutable.Specification
 
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+#+scalaz
+import scalaz._, Scalaz._
+#-scalaz
 
 object pgcopyspec extends Specification {
 
-  val xa = DriverManagerTransactor[Task](
+  val xa = DriverManagerTransactor[IOLite](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -46,7 +49,7 @@ object pgcopyspec extends Specification {
           _   <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
         } yield new String(out.toByteArray, "UTF-8")
 
-      prog.transact(xa).unsafePerformSync must_== fixture
+      prog.transact(xa).unsafePerformIO must_== fixture
 
     }
     

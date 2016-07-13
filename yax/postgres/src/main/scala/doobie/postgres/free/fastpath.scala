@@ -1,7 +1,15 @@
 package doobie.contrib.postgresql.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+import scalaz.syntax.catchable._
+#-scalaz
+#+cats
+import cats.{ Monad, ~> }
+import cats.free.{ Free => F } 
+import cats.data.{ Kleisli, Xor => \/ }
+import doobie.util.catchable._
+#-cats
 
 import doobie.util.capture._
 
@@ -172,7 +180,6 @@ object fastpath { self =>
   */
  def kleisliTrans[M[_]: Monad: Catchable: Capture]: FastpathOp ~> ({type l[a] = Kleisli[M, PGFastpath, a]})#l =
    new (FastpathOp ~> ({type l[a] = Kleisli[M, PGFastpath, a]})#l) {
-     import scalaz.syntax.catchable._
 
      val L = Predef.implicitly[Capture[M]]
 
@@ -187,7 +194,12 @@ object fastpath { self =>
   
         // Combinators
         case Pure(a) => primitive(_ => a())
+#+scalaz
         case Attempt(a) => a.transK[M].attempt
+#-scalaz
+#+cats
+        case Attempt(a) => Catchable.catsKleisliCatchable[M, PGFastpath].attempt(a.transK[M])
+#-cats
   
         // Primitive Operations
         case AddFunction(a, b) => primitive(_.addFunction(a, b))

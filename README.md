@@ -61,6 +61,16 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) for more information on these add-ons.
 
+## Development Snapshots
+
+The development version is **0.3.1-SNAPSHOT**. It is updated continuously and without warning, so feel free to experiment but don't depend on it. So far differs from **0.3.0** in at least the following important ways:
+
+- The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
+- The `posgresql` segment and package name has been shortened to `postgres`.
+- Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries.
+
+**Note** that the appearance of a feature in a pre-release version is not a promise that it will appear in the final release. The `yax` preprocessor (and therefore Cats support) is *very* experimental.
+
 ## Documentation and Support
 
 - See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.3.x/CHANGELOG.md#0.3.0) for an overview of changes in this and previous versions.

@@ -2,22 +2,26 @@ package doobie.contrib.postgresql
 
 import doobie.imports._
 import doobie.contrib.postgresql.imports._
+import doobie.util.iolite.IOLite
 
 import java.io.File
 
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 
-import scalaz._, Scalaz._, scalaz.concurrent.Task
+#+scalaz
+import scalaz._, Scalaz._
+#-scalaz
 
 object pglargeobjectspec extends Specification with FileEquality {
 
-  val xa = DriverManagerTransactor[Task](
+  val xa = DriverManagerTransactor[IOLite](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
   )
 
+#+scalaz
   "large object support" should {
 
     "allow round-trip from file to large object and back" in  {
@@ -26,11 +30,12 @@ object pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
         PHLOM.createFileFromLO(1024 * 16, oid, out) >> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformSync
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformIO
       filesEqual(in, out)
     }
 
   }
+#-scalaz
 
 }
 

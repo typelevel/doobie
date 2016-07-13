@@ -11,8 +11,6 @@ import doobie.contrib.postgresql.hi.{ pgconnection => HPGC }
 
 import doobie.imports._
 
-import scalaz.syntax.functor._
-
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {
 
@@ -20,7 +18,7 @@ object connection {
     pgGetConnection(HPGC.getBackendPID)
 
   def pgGetConnection[A](k: PGConnectionIO[A]): ConnectionIO[A] =
-    FC.unwrap(classOf[PGConnection]) >>= k.transK[ConnectionIO]
+    FC.unwrap(classOf[PGConnection]).flatMap(k.transK[ConnectionIO].run)
 
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(HPGC.getCopyAPI(k))
@@ -75,6 +73,6 @@ object connection {
 
   // a helper
   private def execVoid(sql: String): ConnectionIO[Unit] =
-    HC.prepareStatement(sql)(HPS.executeUpdate).void
+    HC.prepareStatement(sql)(HPS.executeUpdate).map(_ => ())
 
 }
