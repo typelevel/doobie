@@ -157,8 +157,8 @@ def coreSettings(mod: String) =
     name := "doobie-" + mod,
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
-      "com.chuusai"       %% "shapeless"        % "2.3.1"
+      "org.scala-lang" %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
+      "com.chuusai"    %% "shapeless"     % "2.3.1"
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {
@@ -202,7 +202,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats" % "0.6.0",
-      "com.h2database" %  "h2"     % "1.3.170" % "test"
+      "com.h2database" %  "h2"   % "1.3.170" % "test"
     )
   )
 
@@ -215,7 +215,7 @@ lazy val example = project.in(file("modules/example"))
   .settings(yax(file("yax/example"), "scalaz"))
   .dependsOn(core, postgres, specs2, hikari, h2)
 
-lazy val example_cats = project.in(file("modules_cats/example"))
+lazy val example_cats = project.in(file("modules-cats/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(yax(file("yax/example"), "cats"))
   .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
@@ -230,8 +230,8 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" %  "postgresql"   % "9.4-1201-jdbc41",
-      "org.postgis"    %  "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
+      "org.postgresql" % "postgresql"   % "9.4-1201-jdbc41",
+      "org.postgis"    % "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
     ),
     initialCommands := """
       import doobie.imports._
