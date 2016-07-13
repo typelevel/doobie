@@ -90,8 +90,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats) //, example, postgres, specs2, docs, bench)
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats) //, example, postgres, specs2, docs, bench)
+  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
+  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
   .settings(freeGenSettings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
@@ -115,6 +115,37 @@ lazy val doobie = project.in(file("."))
       )
     }
   )
+
+// Workaround to avoid cyclic dependency
+// TODO remove after tut-core and argonaut for Scala 2.12 is released
+lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally skip tut")
+
+// Temporarily skip tut for Scala 2.12
+// TODO remove after tut-core and argonaut for Scala 2.12 is released
+lazy val docSkipScala212Settings = Seq(
+  libraryDependencies ++= {
+    if (scalaVersion.value startsWith "2.12") Nil
+    else Seq("io.argonaut" %% "argonaut" % "6.2-M1")
+  },
+  tuut := Def.taskDyn {
+    if (scalaVersion.value startsWith "2.12")
+      Def.task(Seq.empty[(File, String)])
+    else
+      Def.task(tut.value)
+  }.value
+)
+
+lazy val noPublishSettings = Seq(
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false
+)
+
+def macroParadise(v: String): List[ModuleID] =
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  else Nil
+
+lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
 
 ///
 /// CORE
@@ -179,16 +210,15 @@ lazy val core_cats = project.in(file("modules-cats/core"))
 /// EXAMPLE
 ///
 
-// lazy val example = project.in(file("modules/example"))
-//   .settings(doobieSettings)
-//   .settings(libraryDependencies ++= Seq(
-//       "com.h2database" %  "h2"         % "1.3.170",
-//       "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
-//     )
-//   )
-//   .settings(scalacOptions += "-deprecation")
-//   .settings(noPublishSettings)
-//   .dependsOn(core, postgres, specs2, hikari, h2)
+lazy val example = project.in(file("modules/example"))
+  .settings(doobieSettings ++ noPublishSettings)
+  .settings(yax(file("yax/example"), "scalaz"))
+  .dependsOn(core, postgres, specs2, hikari, h2)
+
+lazy val example_cats = project.in(file("modules_cats/example"))
+  .settings(doobieSettings ++ noPublishSettings)
+  .settings(yax(file("yax/example"), "cats"))
+  .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
 
 ///
 /// POSTGRES
@@ -315,6 +345,24 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   )
   .dependsOn(core_cats)
 
+///
+/// BENCH
+///
+
+lazy val bench = project.in(file("modules/bench"))
+  .settings(doobieSettings ++ noPublishSettings)
+  .settings(yax(file("yax/bench"), "scalaz"))
+  .dependsOn(core, postgres)
+
+lazy val bench_cats = project.in(file("modules-cats/bench"))
+  .settings(doobieSettings ++ noPublishSettings)
+  .settings(yax(file("yax/bench"), "cats"))
+  .dependsOn(core_cats, postgres_cats)
+
+///
+/// DOCS
+///
+
 // lazy val docs = project.in(file("modules/doc"))
 //   .settings(doobieSettings)
 //   .settings(noPublishSettings)
@@ -342,49 +390,4 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
 //   )
 //   .settings(docSkipScala212Settings)
 //   .dependsOn(core, postgres, specs2, hikari, h2)
-
-///
-/// BENCH
-///
-
-lazy val bench = project.in(file("modules/bench"))
-  .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/bench"), "scalaz"))
-  .dependsOn(core, postgres)
-
-lazy val bench_cats = project.in(file("modules-cats/bench"))
-  .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/bench"), "cats"))
-  .dependsOn(core_cats, postgres_cats)
-
-// Workaround to avoid cyclic dependency
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally skip tut")
-
-// Temporarily skip tut for Scala 2.12
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val docSkipScala212Settings = Seq(
-  libraryDependencies ++= {
-    if (scalaVersion.value startsWith "2.12") Nil
-    else Seq("io.argonaut" %% "argonaut" % "6.2-M1")
-  },
-  tuut := Def.taskDyn {
-    if (scalaVersion.value startsWith "2.12")
-      Def.task(Seq.empty[(File, String)])
-    else
-      Def.task(tut.value)
-  }.value
-)
-
-lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false
-)
-
-def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
-  else Nil
-
-lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
 

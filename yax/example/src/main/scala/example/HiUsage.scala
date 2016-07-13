@@ -1,12 +1,15 @@
+#+cats
+// relies on streaming, so no cats for now
+#-cats
+#+scalaz
 package doobie.example
 
 import java.io.File
 
-import scalaz.concurrent.Task
 import scalaz.stream.Process
-import scalaz.syntax.monad._
 
 import doobie.imports._
+import doobie.util.iolite._
 
 // JDBC program using the high-level API
 object HiUsage {
@@ -16,8 +19,8 @@ object HiUsage {
   
   // Program entry point
   def main(args: Array[String]): Unit = {
-    val db = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-    example.transact(db).unsafePerformSync
+    val db = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+    example.transact(db).unsafePerformIO
   }
 
   // An example action. Streams results to stdout
@@ -30,4 +33,4 @@ object HiUsage {
     sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".query[CountryCode].process
 
 }
-
+#-scalaz

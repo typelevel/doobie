@@ -1,9 +1,7 @@
 package doobie.example
 
-import scalaz.concurrent.Task
-
 import doobie.imports._
-import doobie.contrib.postgresql.pgtypes._
+import doobie.postgres.pgtypes._
 
 import org.postgresql.geometric._
 
@@ -56,9 +54,6 @@ object AnalysisTest {
     sql"""
       UPDATE COUNTRY SET NAME = 'foo' WHERE CODE = 'bkah'
     """.update
-
-  val xa: Transactor[Task] = 
-    DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
 }
 

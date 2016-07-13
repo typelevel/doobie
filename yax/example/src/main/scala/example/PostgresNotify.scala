@@ -1,7 +1,11 @@
+#+cats
+// relies on streaming, so no cats for now
+#-cats
+#+scalaz
 package doobie.example
 
 import doobie.imports._
-import doobie.contrib.postgresql.hi.connection._
+import doobie.postgres.hi.connection._
 
 import org.postgresql._
 
@@ -57,3 +61,4 @@ object PostgresNotify {
       .unsafePerformSync
 
 }
+#-scalaz
