@@ -1,9 +1,17 @@
-#+scalaz
 package doobie.util
 
 import doobie.imports._
 import java.io.{ Console => _, _ }
-import scalaz._, Scalaz._
+
+#+scalaz
+import scalaz.{ Monad, Catchable }
+import scalaz.syntax.monad._
+#-scalaz
+#+cats
+import doobie.util.catchable._
+import cats.Monad
+import cats.implicits._
+#-cats
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {
@@ -32,12 +40,13 @@ object io {
     def putStrLn(s: String): M[Unit] =
       delay(Console.out.println(s))
 
+#+scalaz
     /** 
      * Copy a block from `is` to `os` using naked buffer `buf`, which will be clobbered. 
      * @group Stream Operations
      */
     def copyBlock(buf: Array[Byte])(is: InputStream, os: OutputStream): M[Int] =
-      delay(is.read(buf)) >>= { n => delay(os.write(buf, 0, n)).whenM(n >= 0).as(n) }
+      delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenM(n >= 0).as(n) }
 
     /** 
      * Copy the contents of `file` to a `os` in blocks of size `bufSize`. 
@@ -59,20 +68,21 @@ object io {
      */
     def copyStream(buf: Array[Byte])(is: InputStream, os: OutputStream): M[Unit] =
       copyBlock(buf)(is, os).iterateUntil(_ < 0).void
+#-scalaz
 
     /** 
      * Perform an operation with a `FileInputStream`, which will be closed afterward. 
      * @group File Operations
      */
     def withFileInputStream[A](file: File)(f: FileInputStream => M[A]): M[A] =
-      delay(new FileInputStream(file)) >>= { i => f(i) ensuring delay(i.close) }
+      delay(new FileInputStream(file)) flatMap { i => f(i) ensuring delay(i.close) }
 
     /** 
      * Perform an operation with a `FileOutputStream`, which will be closed afterward. 
      * @group File Operations
      */
     def withFileOutputStream[A](file: File)(f: FileOutputStream => M[A]): M[A] =
-      delay(new FileOutputStream(file)) >>= { i => f(i) ensuring delay(i.close) }
+      delay(new FileOutputStream(file)) flatMap { i => f(i) ensuring delay(i.close) }
 
     /** 
      * Flush `os`. 
@@ -84,4 +94,3 @@ object io {
   }
 
 }
-#-scalaz

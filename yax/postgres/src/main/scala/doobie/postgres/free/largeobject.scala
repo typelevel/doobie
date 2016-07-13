@@ -1,7 +1,16 @@
 package doobie.contrib.postgresql.free
 
+#+scalaz
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.concurrent.Task
+import scalaz.syntax.catchable._
+#-scalaz
+#+cats
+import cats.{ Monad, ~> }
+import cats.free.{ Free => F } 
+import cats.data.{ Kleisli, Xor => \/ }
+import doobie.util.catchable._
+#-cats
+
 
 import doobie.util.capture._
 
@@ -221,7 +230,6 @@ object largeobject {
   */
  def kleisliTrans[M[_]: Monad: Catchable: Capture]: LargeObjectOp ~> ({type l[a] = Kleisli[M, LargeObject, a]})#l =
    new (LargeObjectOp ~> ({type l[a] = Kleisli[M, LargeObject, a]})#l) {
-     import scalaz.syntax.catchable._
 
      val L = Predef.implicitly[Capture[M]]
 
@@ -236,7 +244,12 @@ object largeobject {
   
         // Combinators
         case Pure(a) => primitive(_ => a())
+#+scalaz
         case Attempt(a) => a.transK[M].attempt
+#-scalaz
+#+cats
+        case Attempt(a) => Catchable.catsKleisliCatchable[M, LargeObject].attempt(a.transK[M])
+#-cats
   
         // Primitive Operations
         case Close => primitive(_.close)

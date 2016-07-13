@@ -6,16 +6,20 @@ import doobie.contrib.postgresql.imports._
 
 import java.io.File
 
-import scalaz.syntax.monad._
+#+scalaz
+import scalaz.syntax.apply._
+#-scalaz
 
 object largeobject {
 
   lazy val io = new IOActions[LargeObjectIO]
 
+#+scalaz
   def copyFromFile(blockSize: Int, file: File): LargeObjectIO[Unit] =
-    PFLO.getOutputStream >>= { os => io.copyFileToStream(blockSize, file, os) *> io.flush(os) }
+    PFLO.getOutputStream.flatMap { os => io.copyFileToStream(blockSize, file, os) *> io.flush(os) }
 
   def copyToFile(blockSize: Int, file: File): LargeObjectIO[Unit] =
-    PFLO.getInputStream >>= { is => io.copyStreamToFile(blockSize, file, is) }
+    PFLO.getInputStream.flatMap { is => io.copyStreamToFile(blockSize, file, is) }
+#-scalaz
 
 }
