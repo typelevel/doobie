@@ -58,7 +58,7 @@ val xa = DriverManagerTransactor[Task](
 The `doobie-contrib-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
 ```tut:silent
-import doobie.contrib.hikari.hikaritransactor._
+import doobie.hikari.hikaritransactor._
 
 val q = sql"select 42".query[Int].unique
 

@@ -12,7 +12,7 @@ Again we set up a transactor and pull in YOLO mode. We also need an import to ge
 
 ```tut:silent
 import doobie.imports._
-import doobie.contrib.postgresql.pgtypes._
+import doobie.postgres.pgtypes._
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
 

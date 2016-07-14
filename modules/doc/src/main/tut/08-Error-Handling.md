@@ -114,7 +114,7 @@ So let's change our method to return a `String \/ Person` by using the `attemptS
 
 
 ```tut:silent
-import doobie.contrib.postgresql.sqlstate.class23.UNIQUE_VIOLATION
+import doobie.postgres.sqlstate.class23.UNIQUE_VIOLATION
 
 def safeInsert(s: String): ConnectionIO[String \/ Person] =
   insert(s).attemptSomeSqlState {

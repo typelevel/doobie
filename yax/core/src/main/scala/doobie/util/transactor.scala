@@ -15,7 +15,7 @@ import doobie.util.update._
 #+cats
 import doobie.util.catchable._
 #-cats
-// import doobie.util.yolo._
+import doobie.util.yolo._
 
 #+scalaz
 import scalaz.syntax.monad._
@@ -69,7 +69,7 @@ object transactor {
     protected def connect: M[Connection] 
 
     /** Unethical syntax for use in the REPL. */
-    // lazy val yolo = new Yolo(this)
+    lazy val yolo = new Yolo(this)
 
     /** Natural transformation to target monad `M`. */
     object trans extends (ConnectionIO ~> M) {
