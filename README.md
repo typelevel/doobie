@@ -65,9 +65,9 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.htm
 
 The development version is **0.3.1-SNAPSHOT**. It is updated continuously and without warning, so feel free to experiment but don't depend on it. So far differs from **0.3.0** in at least the following important ways:
 
+- Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. Note that there is no streaming support for the cats version yet; I haven't switched to [fs2](https://github.com/functional-streams-for-scala/fs2) yet.
 - The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
 - The `posgresql` segment and package name has been shortened to `postgres`.
-- Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries.
 
 **Note** that the appearance of a feature in a pre-release version is not a promise that it will appear in the final release. The `yax` preprocessor (and therefore Cats support) is *very* experimental.
 
