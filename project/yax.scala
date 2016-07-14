@@ -37,7 +37,7 @@ object yax {
     go(lines.zipWithIndex, Nil, Nil)
   }
 
-  private def walk(src: File, destDir: File, flags: Set[String]): List[File] =
+  def walk(src: File, destDir: File, flags: Set[String]): List[File] =
     if (src.isFile) {
       if (src.isHidden) Nil
       else {
