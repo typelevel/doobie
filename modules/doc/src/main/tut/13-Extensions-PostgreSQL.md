@@ -31,7 +31,7 @@ import xa.yolo._
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings are provided in the `pgtypes` module.
 
 ```tut:silent
-import doobie.contrib.postgresql.pgtypes._
+import doobie.postgres.pgtypes._
 ```
 
 ### Array Types
@@ -161,11 +161,11 @@ In addition to the general types above, **doobie** provides mappings for the fol
 
 ### Extended Error Handling
 
-A complete table of SQLSTATE values is provided in the `doobie.contrib.postgresql.sqlstate` module. Recovery combinators for each of these states (`onUniqueViolation` for example) are provided in `doobie.contrib.postgresql.syntax`.
+A complete table of SQLSTATE values is provided in the `doobie.postgres.sqlstate` module. Recovery combinators for each of these states (`onUniqueViolation` for example) are provided in `doobie.postgres.syntax`.
 
 ```tut:silent
-import doobie.contrib.postgresql.sqlstate
-import doobie.contrib.postgresql.syntax._
+import doobie.postgres.sqlstate
+import doobie.postgres.syntax._
 
 val p = sql"oops".query[String].unique // this won't work
 ```
@@ -191,8 +191,8 @@ p.onSyntaxError("caught!".point[ConnectionIO]).quick.unsafePerformSync // using 
 
 PostgreSQL supports server-side caching of prepared statements after a certain number of executions, which can have desirable performance consequences for statements that only need to be planned once. Note that this caching happens only for `PreparedStatement` instances that are re-used within a single connection lifetime. **doobie** supports programmatic configuration of the prepare threshold:
 
-- For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.contrib.postgresql.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
-- For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.contrib.postgresql.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
+- For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.postgres.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
+- For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.postgres.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 
 See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93/server-prepare.html) for more information.
 
@@ -200,13 +200,13 @@ See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93
 
 PostgreSQL provides a simple transactional message queue that can be used to notify a connection that something interesting has happened. Such notifications can be tied to database triggers, which provides a way to notify clients that data has changed. Which is cool.
 
-**doobie** provides `ConnectionIO` constructors for SQL `LISTEN`, `UNLISTEN`, and `NOTIFY` in the `doobie.contrib.postgresql.hi.connection` module. New notifications are retrieved (synchronously, sadly, that's all the driver provides) via `pgGetNotifications`. Note that all of the "listening" operations apply to the **current connection**, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must `setAutoCommit(false)` on this connection or `commit` between each call in order to retrieve messages. The `examples` project includes a program that demonstrates how to present a channel as a `Process[Task, PGNotification]`.
+**doobie** provides `ConnectionIO` constructors for SQL `LISTEN`, `UNLISTEN`, and `NOTIFY` in the `doobie.postgres.hi.connection` module. New notifications are retrieved (synchronously, sadly, that's all the driver provides) via `pgGetNotifications`. Note that all of the "listening" operations apply to the **current connection**, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must `setAutoCommit(false)` on this connection or `commit` between each call in order to retrieve messages. The `examples` project includes a program that demonstrates how to present a channel as a `Process[Task, PGNotification]`.
 
 ### Large Objects
 
 PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via fast byte-block transfer. Note that "normal" large object columns types such as `bytea` and `text` can store values as large as 1GB each, so the large object API is rarely used. However there are cases where the size and/or efficiency of large objects justifies the use of this API.
 
-**doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.contrib.postgresql.free` package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The `example` project contains a brief usage example.
+**doobie** provides an algebra and free monads for the driver's `LargeObjectManager` and `LargeObject` types in the `doobie.postgres.free` package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The `example` project contains a brief usage example.
 
 Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat/doobie) channel if you need to use this API; it will evolve as use cases demand.
 
@@ -215,8 +215,8 @@ Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat
 The PostgreSQL JDBC driver's [CopyManager](https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html) API provides a pass-through for the SQL [`COPY`](http://www.postgresql.org/docs/9.3/static/sql-copy.html) statement, allowing very fast data transfer via `java.io` streams. Here we construct a program that dumps a table to `Console.out` in CSV format, with quoted values.
 
 ```tut:silent
-import doobie.contrib.postgresql.free.copymanager.copyOut
-import doobie.contrib.postgresql.hi.connection.pgGetCopyAPI
+import doobie.postgres.free.copymanager.copyOut
+import doobie.postgres.hi.connection.pgGetCopyAPI
 
 val q = """
   copy country (name, code, population) 

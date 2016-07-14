@@ -363,31 +363,32 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
-// lazy val docs = project.in(file("modules/doc"))
-//   .settings(doobieSettings)
-//   .settings(noPublishSettings)
-//   .settings(tutSettings)
-//   .settings(
-//     initialCommands := """
-//       import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
-//       val xa = DriverManagerTransactor[Task](
-//         "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
-//       )
-//       """,
-//     ctut := {
-//       val src = crossTarget.value / "tut"
-//       val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
-//       if (!src.isDirectory) {
-//         println("Input directory " + src + " not found.")
-//       } else if (!dst.isDirectory) {
-//         println("Output directory " + dst + " not found.")
-//       } else {
-//         println("Copying to " + dst.getPath)
-//         val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
-//         IO.copy(map, overwrite = true, preserveLastModified = false)
-//       }
-//     }
-//   )
-//   .settings(docSkipScala212Settings)
-//   .dependsOn(core, postgres, specs2, hikari, h2)
+lazy val docs = project.in(file("modules/doc"))
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
+  .settings(tutSettings)
+  .settings(yax(file("yax/docs"), "scalaz"))
+  .settings(
+    initialCommands := """
+      import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
+      val xa = DriverManagerTransactor[Task](
+        "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+      )
+      """,
+    ctut := {
+      val src = crossTarget.value / "tut"
+      val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
+      if (!src.isDirectory) {
+        println("Input directory " + src + " not found.")
+      } else if (!dst.isDirectory) {
+        println("Output directory " + dst + " not found.")
+      } else {
+        println("Copying to " + dst.getPath)
+        val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
+        IO.copy(map, overwrite = true, preserveLastModified = false)
+      }
+    }
+  )
+  .settings(docSkipScala212Settings)
+  .dependsOn(core, postgres, specs2, hikari, h2)
 

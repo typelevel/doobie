@@ -56,8 +56,13 @@ object yax {
         }
         List(f)
       }
-    } else
-      src.listFiles.toList.flatMap(f => walk(f, new File(destDir, src.getName), flags))
+    } else {
+      try {
+        src.listFiles.toList.flatMap(f => walk(f, new File(destDir, src.getName), flags))
+      } catch {
+        case n: NullPointerException => Nil
+      }
+    }
 
   private def foo(src: File, flags: String*) = Def.task {
     walk(src, sourceManaged.value, flags.toSet)
