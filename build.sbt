@@ -363,18 +363,11 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
-lazy val docs = project.in(file("modules/doc"))
-  .settings(doobieSettings)
-  .settings(noPublishSettings)
-  .settings(tutSettings)
-  .settings(yax(file("yax/docs"), "scalaz"))
-  .settings(
-    initialCommands := """
-      import doobie.imports._, scalaz._, Scalaz._, scalaz.concurrent.Task
-      val xa = DriverManagerTransactor[Task](
-        "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
-      )
-      """,
+def docsSettings(tokens: String*): Seq[Setting[_]] =
+  doobieSettings          ++
+  noPublishSettings       ++
+  tutSettings             ++ 
+  docSkipScala212Settings ++ Seq(
     ctut := {
       val src = crossTarget.value / "tut"
       val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
@@ -387,8 +380,20 @@ lazy val docs = project.in(file("modules/doc"))
         val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
         IO.copy(map, overwrite = true, preserveLastModified = false)
       }
+    },
+    tutSourceDirectory := sourceManaged.value / "main" / "tut",
+    tutPluginJars := {
+      // piggyback on a task tut depends on, so yax runs first
+      yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet)
+      tutPluginJars.value
     }
   )
-  .settings(docSkipScala212Settings)
+
+lazy val docs = project.in(file("modules/docs"))
+  .settings(docsSettings("scalaz"))
   .dependsOn(core, postgres, specs2, hikari, h2)
 
+
+lazy val docs_cats = project.in(file("modules-cats/docs"))
+  .settings(docsSettings("cats"))
+  .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)

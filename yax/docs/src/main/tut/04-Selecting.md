@@ -12,10 +12,15 @@ First let's get our imports out of the way and set up a `Transactor` as we did b
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
-
 val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+val xa = DriverManagerTransactor[IOLite](
+#-cats
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
@@ -40,8 +45,14 @@ For our first query let's aim low and select some country names into a `List`, t
 (sql"select name from country"
   .query[String]     // Query0[String]
   .list              // ConnectionIO[List[String]]
+#+scalaz
   .transact(xa)      // Task[List[String]]
   .unsafePerformSync // List[String]
+#-scalaz
+#+cats
+  .transact(xa)      // IOLite[List[String]]
+  .unsafePerformIO   // List[String]
+#-cats
   .take(5).foreach(println))
 ```
 
@@ -51,7 +62,9 @@ Let's break this down a bit.
 - `.list` is a convenience method that streams the results, accumulating them in a `List`, in this case yielding a `ConnectionIO[List[String]]`. Similar methods are:
   - `.vector`, which accumulates to a `Vector`
   - `.to[Coll]`, which accumulates to a type `Coll`, given an implicit `CanBuildFrom`. This works with Scala standard library collections.
+  #+scalaz
   - `.accumulate[M[_]: MonadPlus]` which accumulates to a universally quantified monoid `M`. This works with many scalaz collections, as well as standard library collections with `MonadPlus` instances.
+  #-scalaz
   - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
   - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
   - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.

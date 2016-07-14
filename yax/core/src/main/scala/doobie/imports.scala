@@ -123,6 +123,9 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
   /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
 
+  /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
+  /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
+
 #+scalaz
   /** @group Typeclass Instances */
   implicit val NameCatchable = doobie.util.name.NameCatchable
