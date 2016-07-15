@@ -2,7 +2,7 @@ package doobie.postgres
 
 import doobie.imports._
 import doobie.postgres.imports._
-import doobie.util.iolite._
+
 
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification

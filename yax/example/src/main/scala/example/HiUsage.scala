@@ -9,7 +9,7 @@ import java.io.File
 import scalaz.stream.Process
 
 import doobie.imports._
-import doobie.util.iolite._
+
 
 // JDBC program using the high-level API
 object HiUsage {

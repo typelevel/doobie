@@ -2,7 +2,7 @@ package doobie.util
 
 import doobie.imports._
 import doobie.util.yolo._
-import doobie.util.iolite._
+
 import org.specs2.mutable.Specification
 
 object yolospec extends Specification {

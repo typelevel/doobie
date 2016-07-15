@@ -6,7 +6,7 @@ package doobie.example
 
 import doobie.imports._
 import doobie.postgres.imports._
-import doobie.util.iolite._
+
 
 import java.io.File
 

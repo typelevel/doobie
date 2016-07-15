@@ -7,7 +7,7 @@ import doobie.util.query._
 import doobie.util.update._
 import doobie.util.analysis._
 import doobie.util.pretty._
-import doobie.util.iolite._
+import doobie.util.iolite.IOLite
 
 import org.specs2.mutable.Specification
 import org.specs2.execute.Failure
