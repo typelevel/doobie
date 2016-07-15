@@ -2,7 +2,7 @@ package doobie.postgres
 
 import doobie.imports._
 import doobie.postgres.pgtypes._
-import doobie.util.iolite._
+
 
 import java.net.InetAddress
 import java.util.UUID

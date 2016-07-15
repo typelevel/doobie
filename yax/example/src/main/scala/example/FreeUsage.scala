@@ -2,7 +2,7 @@ package doobie.example
 
 import java.io.File
 
-import doobie.util.iolite._
+import doobie.util.iolite.IOLite
 import doobie.free.{ drivermanager => DM }
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }

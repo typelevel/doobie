@@ -1,7 +1,7 @@
 package doobie.bench
 
 import doobie.imports._
-import doobie.util.iolite._
+
 import java.sql.DriverManager
 
 /** Rough benchmark based on non/jawn */

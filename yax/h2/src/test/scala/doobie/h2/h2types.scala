@@ -2,7 +2,7 @@ package doobie.h2
 
 import doobie.h2.h2types._
 import doobie.imports._
-import doobie.util.iolite._
+
 
 import java.net.InetAddress
 import java.util.UUID

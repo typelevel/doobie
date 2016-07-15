@@ -1,6 +1,6 @@
 package doobie.example
 
-import doobie.util.iolite._
+
 import doobie.imports._
 import doobie.hikari.hikaritransactor._
 

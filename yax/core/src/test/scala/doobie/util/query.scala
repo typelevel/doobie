@@ -11,7 +11,7 @@ import cats.data.Xor.{ Left => -\/, Right => \/- }
 import doobie.imports._
 import org.specs2.mutable.Specification
 import Predef._
-import doobie.util.iolite._
+
 
 object queryspec extends Specification {
 
