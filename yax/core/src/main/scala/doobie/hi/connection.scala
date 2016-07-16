@@ -40,8 +40,13 @@ import scalaz.{ Monad, ~>, Catchable, Foldable }
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
+import cats.Foldable
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.{ Stream => Process }
+import fs2.Stream.{ eval, emit, empty, bracket, suspend }
+#-fs2
 
 /**
  * Module of high-level constructors for `ConnectionIO` actions. 
@@ -82,6 +87,39 @@ object connection {
     } yield a
 
   }
+#-scalaz
+#+fs2
+  private def liftProcess[A: Composite](
+    create: ConnectionIO[PreparedStatement],
+    prep:   PreparedStatementIO[Unit], 
+    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
+    
+    // Why isn't this a builtin?
+    def unroll[F[_], T](f: F[Option[T]]): Process[F,T] = {
+      def go: Process[F, T] =
+        eval(f).flatMap {
+          case Some(a) => emit(a) ++ go
+          case None    => empty
+        }
+      suspend(go)
+    }
+
+    def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
+      eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
+
+    def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
+      unroll(C.lift(rs, resultset.getNext[A]))
+
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+      bracket(create)(prepared, C.lift(_, PS.close))
+
+    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+      bracket(C.lift(ps, exec))(unrolled, C.lift(_, RS.close))
+
+    preparedStatement.flatMap(results)
+
+  }
+#-fs2
 
   /**
    * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
@@ -104,7 +142,6 @@ object connection {
   /** @group Prepared Statements */
   def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A]): Process[ConnectionIO, B] =
     liftProcess[B](C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
-#-scalaz
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =

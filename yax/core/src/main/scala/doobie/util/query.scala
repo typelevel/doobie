@@ -23,6 +23,9 @@ import cats.Functor
 import cats.functor.{ Contravariant, Profunctor }
 import cats.data.NonEmptyList
 #-cats
+#+fs2
+import fs2.{ Stream => Process }
+#-fs2
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -71,7 +74,6 @@ object query {
     def outputAnalysis: ConnectionIO[Analysis] =
       HC.prepareQueryAnalysis0[O](sql)
 
-#+scalaz
     /**
      * Apply the argument `a` to construct a `Process` with effect type 
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
@@ -79,7 +81,6 @@ object query {
      */
     def process(a: A): Process[ConnectionIO, B] = 
       HC.process[O](sql, HPS.set(ai(a))).map(ob)
-#-scalaz      
 
     /**
      * Apply the argument `a` to construct a program in 
@@ -165,8 +166,8 @@ object query {
         def stackFrame = outer.stackFrame
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
-#+scalaz
         def process = outer.process(a)
+#+scalaz
         def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
 #-scalaz
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
@@ -270,14 +271,12 @@ object query {
      */
     def outputAnalysis: ConnectionIO[Analysis]
 
-#+scalaz
     /**
      * `Process` with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding 
      * elements of type `B`. 
      * @group Results
      */
     def process: Process[ConnectionIO, B]
-#-scalaz
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
