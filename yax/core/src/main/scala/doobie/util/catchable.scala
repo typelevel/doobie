@@ -24,6 +24,7 @@ object catchable {
   }
 
   object Catchable {
+
     implicit def catsKleisliCatchable[M[_], E](implicit c: Catchable[M]): Catchable[Kleisli[M, E, ?]] =
       new Catchable[Kleisli[M, E, ?]] {
         def attempt[A](ma: Kleisli[M, E, A]): Kleisli[M, E, Throwable \/ A] =
@@ -31,6 +32,17 @@ object catchable {
         def fail[A](t: Throwable): Kleisli[M, E, A] =
           Kleisli(e => c.fail(t))
       }
+
+#+fs2
+    implicit def doobieCatchableToFs2Catchable[M[_]: Monad](implicit c: Catchable[M]): fs2.util.Catchable[M] =
+      new fs2.util.Catchable[M] {
+        def flatMap[A, B](a: M[A])(f: A => M[B]) = a.flatMap(f)
+        def pure[A](a: A) = a.pure[M]
+        def attempt[A](ma: M[A]) = c.attempt(ma).map(_.toEither)
+        def fail[A](t: Throwable) = c.fail(t)
+      }
+#-fs2    
+
   }
 #-cats
 

@@ -198,11 +198,12 @@ lazy val core = project.in(file("modules/core"))
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
-    yax(file("yax/core"), "cats"),
+    yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "org.typelevel"  %% "cats" % "0.6.0",
-      "com.h2database" %  "h2"   % "1.3.170" % "test"
+      "org.typelevel"  %% "cats"     % "0.6.0",
+      "co.fs2"         %% "fs2-core" % "0.9.0-M5",
+      "com.h2database" %  "h2"       % "1.3.170" % "test"
     )
   )
 
@@ -235,9 +236,8 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     ),
     initialCommands := """
       import doobie.imports._
-      import doobie.contrib.postgresql.pgtypes._
-      import doobie.util.iolite._
-      val xa: Transactor[IOLite] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+      import doobie.postgres.pgtypes._
+      val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       import xa.yolo._
       import org.postgis._
       import org.postgresql.util._
