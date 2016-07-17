@@ -93,10 +93,10 @@ However if we try to use this type for a *single* column value (i.e., as a query
 sql"select * from person where id = $pid"
 ```
 
-According to the error message we need a `Param[PersonId :: HNil]` instance which requires a `Meta` instance for each member, which means we need a `Meta[Person]`. 
+According to the error message we need a `Param[PersonId :: HNil]` instance which requires a `Meta` instance for each member, which means we need a `Meta[PersonId]`. 
 
 ```tut:fail
-Meta[Person]
+Meta[PersonId]
 ```
 
 ... and we don't have one. So how do we get one? The simplest way is by basing it on an existing `Meta` instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
