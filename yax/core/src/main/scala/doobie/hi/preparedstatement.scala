@@ -53,6 +53,11 @@ import cats.implicits._
 import doobie.util.these._
 import doobie.util.these.\&/._
 #-cats
+#+fs2
+import fs2.{ Stream => Process }
+import fs2.pipe.unNoneTerminate
+import fs2.Stream.{ bracket, repeatEval }
+#-fs2
 
 /**
  * Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not
@@ -71,6 +76,17 @@ object preparedstatement {
              PS.lift(rs, RS.close))(rs => 
              PS.lift(rs, resultset.getNext[A]))
 #-scalaz
+#+fs2
+  /** @group Execution */
+  def process[A: Composite]: Process[PreparedStatementIO, A] = {
+
+    def unrolled(rs: java.sql.ResultSet): Process[PreparedStatementIO, A] =
+      repeatEval(PS.lift(rs, resultset.getNext[A])).through(unNoneTerminate)
+
+    bracket(PS.executeQuery)(unrolled, PS.lift(_, RS.close))
+
+ }
+#-fs2
 
   /**
    * Non-strict unit for capturing effects.

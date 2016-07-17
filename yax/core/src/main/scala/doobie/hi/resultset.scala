@@ -36,6 +36,11 @@ import cats.{ Monad, MonoidK => MonadPlus }
 import cats.data.NonEmptyList
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.{ Stream => Process }
+import fs2.Stream.{ eval, repeatEval }
+import fs2.pipe.unNoneTerminate
+#-fs2
 
 /**
  * Module of high-level constructors for `ResultSetIO` actions.
@@ -242,15 +247,18 @@ object resultset {
     }
 #-cats
 
-#+scalaz
   /** 
    * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
    * @group Results 
    */
   def process[A: Composite]: Process[ResultSetIO, A] = 
+#+scalaz
     Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
 #-scalaz
+#+fs2
+    repeatEval(getNext[A]).through(unNoneTerminate)
+#-fs2
 
   /** @group Properties */
   val getFetchDirection: ResultSetIO[FetchDirection] =

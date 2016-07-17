@@ -2,10 +2,7 @@ package doobie.util
 
 
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
-#+scalaz
-import doobie.hi.connection.ProcessConnectionIOOps
 import doobie.syntax.process._
-#-scalaz
 import doobie.syntax.catchable._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
@@ -28,6 +25,9 @@ import cats.Monad
 import cats.data.Xor.{ Left => -\/, Right => \/- }
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.{ Stream => Process }
+#-fs2
 
 import java.sql.Connection
 import Predef._
@@ -43,12 +43,7 @@ object yolo extends ToDoobieCatchableOps0 {
     implicit class Query0YoloOps[A](q: Query0[A]) {
 
       def quick: M[Unit] =
-#+scalaz
         q.sink(a => out(a.toString)).transact(xa)
-#-scalaz        
-#+cats
-        q.list.flatMap(_.traverse_(a => out(a.toString))).transact(xa)
-#-cats
 
       def check: M[Unit] =
         doCheck(q.analysis)
@@ -126,11 +121,9 @@ object yolo extends ToDoobieCatchableOps0 {
       def quick: M[Unit] = ca.flatMap(a => out(a.toString)).transact(xa)
     }
 
-#+scalaz
     implicit class ProcessYoloOps[A](pa: Process[ConnectionIO, A]) {
       def quick: M[Unit] = pa.sink(a => out(a.toString)).transact(xa)
     }
-#-scalaz
 
     private def assertEmpty(name: String, es: List[AlignmentError]) =
       if (es.isEmpty) success(name, None)
