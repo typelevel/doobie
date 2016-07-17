@@ -7,7 +7,7 @@ lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", scalaVersion.value) //, "2.12.0-M3")
+  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M3")
 )
 
 lazy val commonSettings = Seq(
@@ -203,6 +203,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats"     % "0.6.0",
       "co.fs2"         %% "fs2-core" % "0.9.0-M5",
+      // "co.fs2"         %% "fs2-cats" % "0.1.0-M6",
       "com.h2database" %  "h2"       % "1.3.170" % "test"
     )
   )

@@ -2,6 +2,7 @@ import sbt._
 import sbt.Keys._
 import java.io._
 import scala.io.Source
+import xsbti.Position
 
 object yax {
 
@@ -16,14 +17,14 @@ object yax {
 
         // Push a token.
         case (s, _) :: ss if s.startsWith("#+") =>
-          go(ss, out, s.drop(2).trim :: stack)
+          go(ss, "" :: out, s.drop(2).trim :: stack)
 
         // Pop a token.
         case (s, n) :: ss if s.startsWith("#-") => 
           val tok  = s.drop(2).trim
           val line = n + 1
           stack match {
-            case `tok` :: ts => go(ss, out, ts)
+            case `tok` :: ts => go(ss, "" :: out, ts)
             case t :: _      => sys.error(s"$file: $line: expected #-$t, found #-$tok")
             case _           => sys.error(s"$file: $line: unexpected #-$tok")
           }
@@ -31,7 +32,7 @@ object yax {
         // Add a line, or not, depending on tokens.
         case (s, _) :: ss => 
           if (stack.forall(flags)) go(ss, s :: out, stack)
-          else                     go(ss,      out, stack)
+          else                     go(ss, "" :: out, stack)
 
       }
     go(lines.zipWithIndex, Nil, Nil)
@@ -79,6 +80,27 @@ object yax {
   def apply(root: File, flags: String*): Seq[Setting[_]] =
     inConfig(Compile)(Seq(sourceGenerators += foo(root / "/src/main/scala", flags: _*).taskValue)) ++
     inConfig(Test   )(Seq(sourceGenerators += foo(root / "/src/test/scala", flags: _*).taskValue)) ++
-    Seq(watchSources := watchSources.value ++ closure(root))
+    Seq(
+      watchSources := watchSources.value ++ closure(root),
+      sourcePositionMappers += positionMapper(root, sourceManaged.value) _
+    )
 
+  def positionMapper(root: File, managed: File)(position: Position): Option[Position] = {
+    position.sourceFile collect {
+      case file if file.toPath.startsWith(managed.toPath) => {
+        new xsbti.Position {
+          val line = position.line
+          val lineContent = position.lineContent
+          val offset = position.offset
+          val pointer = position.pointer
+          val pointerSpace = position.pointerSpace
+          val sourceFile = xsbti.Maybe.just {
+            val rel = managed.toPath.relativize(file.toPath)
+            root.toPath.resolve("src").resolve(rel).toFile
+          }
+          val sourcePath = xsbti.Maybe.just(sourceFile.get.getCanonicalPath)
+        }
+      }
+    }
+  }
 }

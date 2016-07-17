@@ -10,9 +10,9 @@ import doobie.hi.{ resultset => HRS }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 
-#+scalaz
 import doobie.syntax.process._
 
+#+scalaz
 import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
@@ -319,13 +319,11 @@ object query {
     /** @group Transformations */
     def map[C](f: B => C): Query0[C] 
 
-#+scalaz
     /** 
      * Convenience method; equivalent to `process.sink(f)` 
      * @group Results
      */
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
-#-scalaz
 
     /** 
      * Convenience method; equivalent to `to[List]` 
