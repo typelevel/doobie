@@ -12,13 +12,17 @@ Same as last chapter, so if you're still set up you can skip this section. Other
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
-
 val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+val xa = DriverManagerTransactor[IOLite](
+#-cats
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-
 import xa.yolo._
 ```
 
@@ -44,7 +48,12 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 
 ```tut
 (sql"select code, name, population, gnp from country"
+#+scalaz
   .query[Country].process.take(5).quick.unsafePerformSync)
+#-scalaz
+#+cats
+  .query[Country].process.take(5).quick.unsafePerformIO)
+#-cats
 ```
 
 Still works. Ok. 
@@ -62,7 +71,12 @@ def biggerThan(minPop: Int) = sql"""
 And when we run the query ... surprise, it works!
 
 ```tut
+#+scalaz
 biggerThan(150000000).quick.unsafePerformSync // Let's see them all
+#-scalaz
+#+cats
+biggerThan(150000000).quick.unsafePerformIO // Let's see them all
+#-cats
 ```
 
 So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a proper parameterized `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
@@ -88,7 +102,12 @@ def populationIn(range: Range) = sql"""
   and   population < ${range.max}
 """.query[Country]
 
-populationIn(150000000 to 200000000).quick.run 
+#+scalaz
+populationIn(150000000 to 200000000).quick.unsafePerformSync
+#-scalaz
+#+cats
+populationIn(150000000 to 200000000).quick.unsafePerformIO
+#-cats
 ```
 
 ### Dealing with `IN` Clauses
@@ -117,7 +136,12 @@ There are a few things to notice here:
 Running this query gives us the desired result.
 
 ```tut
-populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).quick.run 
+#+scalaz
+populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).quick.unsafePerformSync 
+#-scalaz
+#+scalaz
+populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).quick.unsafePerformIO
+#-scalaz
 ```
 
 ### Diving Deeper
