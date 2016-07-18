@@ -396,5 +396,5 @@ lazy val docs = project.in(file("modules/docs"))
 
 
 lazy val docs_cats = project.in(file("modules-cats/docs"))
-  .settings(docsSettings("cats"))
+  .settings(docsSettings("cats", "fs2"))
   .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)

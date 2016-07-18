@@ -20,6 +20,9 @@ import cats.Foldable
 import cats.functor.Contravariant
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.{ Stream => Process }
+#-fs2
 
 /** Module defining updates parameterized by input type. */
 object update {
@@ -35,15 +38,12 @@ object update {
 
     def run(a: A): ConnectionIO[Int]
 
-#+scalaz
     def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K]
-#-scalaz
 
     def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K]
 
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int]
 
-#+scalaz
     // N.B. this what we want to implement, but updateManyWithGeneratedKeys is what we want to call
     protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]): Process[ConnectionIO, K]
 
@@ -52,7 +52,6 @@ object update {
         def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
           updateManyWithGeneratedKeysA[F,K](columns: _*)(as)
       }
-#-scalaz
 
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
@@ -61,12 +60,10 @@ object update {
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
         def updateMany[F[_]: Foldable](fa: F[C]) = u.updateMany(fa.toList.map(f))
-#+scalaz
         protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(cs: F[C]): Process[ConnectionIO, K] =
           u.updateManyWithGeneratedKeys(columns: _*)(cs.toList map f)
         def withGeneratedKeys[K: Composite](columns: String*)(c: C) =
           u.withGeneratedKeys(columns: _*)(f(c))
-#-scalaz          
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(c: C) =
           u.withUniqueGeneratedKeys(columns: _*)(f(c))
       }
@@ -77,10 +74,8 @@ object update {
         val stackFrame = u.stackFrame
         def analysis = u.analysis
         def run = u.run(a)
-#+scalaz        
         def withGeneratedKeys[K: Composite](columns: String*) = 
           u.withGeneratedKeys(columns: _*)(a)
-#-scalaz          
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
           u.withUniqueGeneratedKeys(columns: _*)(a)
       }
@@ -89,7 +84,6 @@ object update {
 
   object Update {
 
-#+scalaz        
     /** 
      * Partial application hack to allow calling updateManyWithGeneratedKeys without passing the 
      * F[_] type argument explicitly.
@@ -97,7 +91,6 @@ object update {
     trait UpdateManyWithGeneratedKeysBuilder[A, K] {
       def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K]
     }
-#-scalaz        
 
     def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement] = None): Update[A] =
       new Update[A] {
@@ -107,12 +100,10 @@ object update {
         def run(a: A) = HC.prepareStatement(sql)(HPS.set(a) *> HPS.executeUpdate)
         def updateMany[F[_]: Foldable](fa: F[A]) =
           HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa))
-#+scalaz        
         protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]) =
-          HC.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().point[PreparedStatementIO], as)
+          HC.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().pure[PreparedStatementIO], as)
         def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
           HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a))
-#-scalaz        
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A) =
           HC.prepareStatementS(sql0, columns.toList)(HPS.set(a) *> HPS.executeUpdateWithUniqueGeneratedKeys)
       }
@@ -126,9 +117,7 @@ object update {
 
   trait Update0 extends UpdateDiagnostics {
     def run: ConnectionIO[Int]
-#+scalaz        
     def withGeneratedKeys[K: Composite](columns: String*): Process[ConnectionIO, K]
-#-scalaz        
     def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
   }
 
@@ -140,10 +129,8 @@ object update {
         val stackFrame = stackFrame0
         def analysis: ConnectionIO[Analysis] = HC.prepareUpdateAnalysis0(sql)
         def run = HC.prepareStatement(sql)(HPS.executeUpdate)
-#+scalaz        
         def withGeneratedKeys[K: Composite](columns: String*) =
-          HC.updateWithGeneratedKeys(columns.toList)(sql, ().point[PreparedStatementIO])
-#-scalaz        
+          HC.updateWithGeneratedKeys(columns.toList)(sql, ().pure[PreparedStatementIO])
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
           HC.prepareStatementS(sql0, columns.toList)(HPS.executeUpdateWithUniqueGeneratedKeys)
       }

@@ -2,13 +2,9 @@ package doobie.util
 
           
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
-#+scalaz
 import doobie.hi.connection.ProcessConnectionIOOps
-#-scalaz
 import doobie.syntax.catchable.ToDoobieCatchableOps._
-#+scalaz
 import doobie.syntax.process._
-#-scalaz
 import doobie.util.capture._
 import doobie.util.query._
 import doobie.util.update._
@@ -28,8 +24,12 @@ import scalaz.stream.Process
 import cats.{ Monad, ~> }
 import cats.implicits._
 #-cats
-import java.sql.Connection
+#+fs2
+import fs2.{ Stream => Process }
+import fs2.Stream.{ eval, eval_ }
+#-fs2
 
+import java.sql.Connection
 import javax.sql.DataSource
 
 /**
@@ -60,10 +60,8 @@ object transactor {
     @deprecated("will go away in 0.2.2; use trans", "0.2.1")
     def transact[A](ma: ConnectionIO[A]): M[A] = trans(ma)
 
-#+scalaz
     @deprecated("will go away in 0.2.2; use transP", "0.2.1")
     def transact[A](pa: Process[ConnectionIO, A]): Process[M, A] = transP(pa)
-#-scalaz
 
     /** Minimal implementation must provide a connection. */
     protected def connect: M[Connection] 
@@ -82,23 +80,26 @@ object transactor {
 
     }
 
-#+scalaz
     /** Natural transformation to an equivalent process over target monad `M`. */
     object transP extends (({ type l[a] = Process[ConnectionIO, a] })#l ~> ({ type l[a] = Process[M, a] })#l) {
 
       // Convert a ConnectionIO[Unit] to an empty effectful process
       private implicit class VoidProcessOps(ma: ConnectionIO[Unit]) {
-        def p: Process[ConnectionIO, Nothing] = eval(ma) *> halt
+        def p: Process[ConnectionIO, Nothing] = eval_(ma)
       }
 
       private def safe[A](pa: Process[ConnectionIO, A]): Process[ConnectionIO, A] =
+#+scalaz      
         (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
+#-scalaz
+#+fs2
+        (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
+#-fs2        
 
       def apply[A](pa: Process[ConnectionIO, A]): Process[M, A] = 
-        eval(connect) >>= safe(pa).trans[M]
+        eval(connect).flatMap(safe(pa).trans[M](_))
 
     }
-#-scalaz
 
   }
 
