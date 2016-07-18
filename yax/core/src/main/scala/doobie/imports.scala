@@ -13,6 +13,7 @@ import cats.free.Free
 #-cats
 #+fs2
 import doobie.util.catchable.Catchable
+import fs2.{ Stream => Process }
 #-fs2
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
@@ -77,11 +78,9 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */ type PreparedStatementIO[A] = doobie.free.preparedstatement.PreparedStatementIO[A]
   /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
 
-#+scalaz
   /** @group Syntax */
   implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
     new doobie.syntax.process.ProcessOps(fa)
-#-scalaz
 
   /** @group Syntax */
   implicit def toSqlInterpolator(sc: StringContext): doobie.syntax.string.SqlInterpolator =

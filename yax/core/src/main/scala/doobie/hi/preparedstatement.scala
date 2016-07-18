@@ -77,15 +77,13 @@ object preparedstatement {
              PS.lift(rs, resultset.getNext[A]))
 #-scalaz
 #+fs2
-  /** @group Execution */
-  def process[A: Composite]: Process[PreparedStatementIO, A] = {
-
-    def unrolled(rs: java.sql.ResultSet): Process[PreparedStatementIO, A] =
+  // fs2 handler, not public
+  private def unrolled[A: Composite](rs: java.sql.ResultSet): Process[PreparedStatementIO, A] =
       repeatEval(PS.lift(rs, resultset.getNext[A])).through(unNoneTerminate)
 
-    bracket(PS.executeQuery)(unrolled, PS.lift(_, RS.close))
-
- }
+  /** @group Execution */
+  def process[A: Composite]: Process[PreparedStatementIO, A] =
+    bracket(PS.executeQuery)(unrolled[A](_), PS.lift(_, RS.close))
 #-fs2
 
   /**
@@ -134,14 +132,16 @@ object preparedstatement {
   def executeUpdateWithUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
-#+scalaz
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite]: Process[PreparedStatementIO, A] =
-    resource(PS.executeUpdate.flatMap(_ => PS.getGeneratedKeys) : PreparedStatementIO[java.sql.ResultSet])(rs =>
+#+scalaz
+    resource(PS.executeUpdate *> PS.getGeneratedKeys)(rs =>
              PS.lift(rs, RS.close))(rs =>
              PS.lift(rs, resultset.getNext[A]))
 #-scalaz
-
+#+fs2
+    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_), PS.lift(_, RS.close))
+#-fs2
   /** 
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata 
