@@ -19,7 +19,7 @@ import scalaz.syntax.monad._
 #-scalaz
 #+cats
 import cats.implicits._
-import cats.Functor
+import cats.{ Functor, MonadCombine => MonadPlus }
 import cats.functor.{ Contravariant, Profunctor }
 import cats.data.NonEmptyList
 #-cats
@@ -91,7 +91,6 @@ object query {
     def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
 
-#+scalaz
     /**
      * Apply the argument `a` to construct a program in 
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
@@ -100,7 +99,6 @@ object query {
      */
     def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] = 
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
-#-scalaz
 
     /**
      * Apply the argument `a` to construct a program in 
@@ -167,9 +165,7 @@ object query {
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
         def process = outer.process(a)
-#+scalaz
         def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
-#-scalaz
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
         def option = outer.option(a)
@@ -286,14 +282,12 @@ object query {
      */
     def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]]
 
-#+scalaz
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
      * accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
     def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]
-#-scalaz
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and 

@@ -12,6 +12,9 @@ import org.specs2.mutable.Specification
 #+scalaz
 import scalaz._, Scalaz._
 #-scalaz
+#+cats
+import cats.implicits._
+#-cats
 
 object pglargeobjectspec extends Specification with FileEquality {
 
@@ -21,21 +24,19 @@ object pglargeobjectspec extends Specification with FileEquality {
     "postgres", ""
   )
 
-#+scalaz
   "large object support" should {
 
     "allow round-trip from file to large object and back" in  {
       val in   = new File("world.sql")
       val out  = File.createTempFile("doobie", "tst")
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
-        PHLOM.createFileFromLO(1024 * 16, oid, out) >> PHLOM.delete(oid)
+        PHLOM.createFileFromLO(1024 * 16, oid, out) *> PHLOM.delete(oid)
       }
       PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformIO
       filesEqual(in, out)
     }
 
   }
-#-scalaz
 
 }
 

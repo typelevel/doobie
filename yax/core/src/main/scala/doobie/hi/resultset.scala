@@ -32,9 +32,10 @@ import scalaz.syntax.monadPlus._
 import scalaz.stream.Process
 #-scalaz
 #+cats
-import cats.{ Monad, MonoidK => MonadPlus }
+import cats.{ Monad, MonadCombine => MonadPlus }
 import cats.data.NonEmptyList
 import cats.implicits._
+import doobie.util.compat.cats.monad._
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
@@ -159,14 +160,12 @@ object resultset {
   def list[A: Composite]: ResultSetIO[List[A]] = 
     build[List, A]
 
-#+scalaz
   /**
    * Like `getNext` but loops until the end of the resultset, gathering results in a `MonadPlus`.
    * @group Results
    */
   def accumulate[G[_]: MonadPlus, A: Composite]: ResultSetIO[G[A]] =
     get[A].whileM(next)
-#-scalaz
 
   /** 
    * Updates a value of type `A` starting at column `n`.

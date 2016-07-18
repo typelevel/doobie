@@ -32,12 +32,10 @@ object largeobjectmanager {
   def unlink(a: Long): LargeObjectManagerIO[Unit] =
     PFLOM.unlink(a)
 
-#+scalaz
   def createLOFromFile(blockSize: Int, file: File): LargeObjectManagerIO[Long] =
     createLO >>= { oid => open(oid)(PHLO.copyFromFile(blockSize, file)).as(oid) }
 
   def createFileFromLO(blockSize: Int, oid: Long, file: File): LargeObjectManagerIO[Unit] =
     open(oid)(PHLO.copyToFile(blockSize, file))
-#-scalaz
 
 }

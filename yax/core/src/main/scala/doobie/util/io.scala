@@ -9,6 +9,7 @@ import scalaz.syntax.monad._
 #-scalaz
 #+cats
 import doobie.util.catchable._
+import doobie.util.compat.cats.monad._
 import cats.Monad
 import cats.implicits._
 #-cats
@@ -40,13 +41,17 @@ object io {
     def putStrLn(s: String): M[Unit] =
       delay(Console.out.println(s))
 
-#+scalaz
     /** 
      * Copy a block from `is` to `os` using naked buffer `buf`, which will be clobbered. 
      * @group Stream Operations
      */
     def copyBlock(buf: Array[Byte])(is: InputStream, os: OutputStream): M[Int] =
+#+scalaz
       delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenM(n >= 0).as(n) }
+#-scalaz      
+#+cats
+      delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenA(n >= 0).as(n) }
+#-cats      
 
     /** 
      * Copy the contents of `file` to a `os` in blocks of size `bufSize`. 
@@ -68,7 +73,6 @@ object io {
      */
     def copyStream(buf: Array[Byte])(is: InputStream, os: OutputStream): M[Unit] =
       copyBlock(buf)(is, os).iterateUntil(_ < 0).void
-#-scalaz
 
     /** 
      * Perform an operation with a `FileInputStream`, which will be closed afterward. 
