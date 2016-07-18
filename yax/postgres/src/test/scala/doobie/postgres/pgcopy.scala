@@ -8,10 +8,6 @@ import java.io.ByteArrayOutputStream
 
 import org.specs2.mutable.Specification
 
-#+scalaz
-import scalaz._, Scalaz._
-#-scalaz
-
 object pgcopyspec extends Specification {
 
   val xa = DriverManagerTransactor[IOLite](
