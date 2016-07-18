@@ -12,6 +12,10 @@ import scala.annotation.implicitNotFound
 #+scalaz
 import scalaz._, Scalaz._
 #-scalaz
+#+cats
+import cats.Reducible
+import cats.implicits._
+#-cats
 
 import shapeless._
 
@@ -65,11 +69,21 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 #+scalaz
     /** A `Param` for a *singleton* `Foldable1`, used exclusively to support `IN` clauses. */
     def many[F[_] <: AnyRef : Foldable1, A](t: F[A])(implicit ev: Atom[A]): Param[t.type] =
+#-scalaz
+#+cats
+    /** A `Param` for a *singleton* `Reducible`, used exclusively to support `IN` clauses. */
+    def many[F[_] <: AnyRef : Reducible, A](t: F[A])(implicit ev: Atom[A]): Param[t.type] =
+#-cats
       new Param[t.type] {
         val composite = new Composite[t.type] {
+#+scalaz          
           val length    = t.count
+#-scalaz          
+#+cats          
+          val length    = t.foldMap(_ => 1)
+#-cats          
           val set       = (n: Int, in: t.type) => 
-            t.foldLeft((n, ().point[PreparedStatementIO])) { case ((n, psio), a) =>
+            t.foldLeft((n, ().pure[PreparedStatementIO])) { case ((n, psio), a) =>
               (n + 1, psio *> ev.set(n, a))
             } ._2
           val meta      = List.fill(length)(ev.meta)
@@ -77,9 +91,13 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
           val update    = (_: Int, _: t.type) => fail
           def fail      = sys.error("singleton `IN` composite does not support get or update")
         }
-      val placeholders = List(t.count)
+#+scalaz          
+          val placeholders = List(t.count)
+#-scalaz          
+#+cats          
+          val placeholders = List(t.foldMap(_ => 1))
+#-cats          
     }
-#-scalaz
 
   }
 
