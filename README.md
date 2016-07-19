@@ -80,4 +80,6 @@ Listed newest first. If you have given a presentation or have written a blog pos
 - [Typechecking SQL in Slick and doobie](http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html) by Richard Dallaway
 - [DB to JSON with a Microservice](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) by Da Terry - [code](https://bitbucket.org/da_terry/scalasyd-doobie-http4s)
 
+## Testing
 
+If you want to build and run the tests for yourself, you'll need a local postgresql database. Tests are run as the default **postgres** user, which should have no password for access in the local environment. You can see the `before_script` section of the [.travis.yml](./.travis.yml) file for an up-to-date list of steps for preparing the test database.
