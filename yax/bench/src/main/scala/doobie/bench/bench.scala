@@ -40,7 +40,6 @@ object bench {
     }
   }
 
-#+scalaz
   // Reading via .process, which adds a fair amount of overhead
   def doobieBenchP(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
@@ -50,7 +49,6 @@ object bench {
       .transact(xa)
       .map(_.length)
       .unsafePerformIO
-#-scalaz
 
   // Reading via .list, which uses a lower-level collector
   def doobieBench(n: Int): Int = 
@@ -125,11 +123,11 @@ object bench {
 
 
   def main(args: Array[String]): Unit = {
-    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000))
+    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000, 1000000))
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
-#+scalaz      
       bench.Case("process", doobieBenchP),
+#+scalaz      
       bench.Case("ilist",   doobieBenchI),
 #-scalaz      
       bench.Case("list",    doobieBench),
