@@ -13,13 +13,15 @@ Again we set up a transactor and pull in YOLO mode. We also need an import to ge
 ```tut:silent
 import doobie.imports._
 import doobie.postgres.pgtypes._
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
-
-val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-
 import xa.yolo._
 ```
 
@@ -41,7 +43,7 @@ val create =
 ```
 
 ```tut
-(drop *> create).run
+(drop *> create).unsafePerformIO
 ```
 
 **doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default. No special handling is required, other than importing the vendor-specific array support above.
@@ -58,8 +60,8 @@ def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
 Insert works fine, as does reading the result. No surprises.
 
 ```tut
-insert("Bob", List("Nixon", "Slappy")).quick.run
-insert("Alice", Nil).quick.run
+insert("Bob", List("Nixon", "Slappy")).quick.unsafePerformIO
+insert("Alice", Nil).quick.unsafePerformIO
 ```
 
 ### Lamentations of `NULL`
@@ -71,12 +73,13 @@ However there is another axis of variation here: the *array cells* themselves ma
 So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a `NULL` cell would result in a `NullableCellRead` exception.
 
 ```tut
-sql"select array['foo','bar','baz']".query[List[String]].quick.run
-sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.run
-sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.run
-sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.run
+sql"select array['foo','bar','baz']".query[List[String]].quick.unsafePerformIO
+sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafePerformIO
+sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafePerformIO
+sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafePerformIO
 ```
 
+#+scalaz
 ### Diving Deep
 
 We can easily add support for other sequence types like `scalaz.IList` by invariant mapping. The `nxmap` method is a variant of `xmap` that ensures null values read from the database are never observed. The `TypeTag` is required to provide better feedback when type mismatches are detected.
@@ -91,8 +94,8 @@ implicit def IListMeta[A: TypeTag](implicit ev: Meta[List[A]]): Meta[IList[A]] =
 Once this mapping is in scope we can map columns directly to `IList`.
 
 ```tut
-sql"select pets from person where name = 'Bob'".query[IList[String]].quick.run
+sql"select pets from person where name = 'Bob'".query[IList[String]].quick.unsafePerformIO
 ```
-
+#-scalaz
 
 

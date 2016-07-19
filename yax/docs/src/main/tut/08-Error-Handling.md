@@ -10,13 +10,15 @@ In this chapter we examine a set of combinators that allow us to construct progr
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
-
-val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-
 import xa.yolo._
 ```
 
@@ -32,15 +34,20 @@ There are three main types of exceptions that are likely to arise:
 
 ### The `Catchable` Typeclass and Derived Combinators
 
-All **doobie** monads have associated instances of the `scalaz.Catchable` typeclass, and the provided interpreter requires all target monads to have an instance as well. `Catchable` provides two operations:
+All **doobie** monads have associated instances of the `Catchable` typeclass, and the provided interpreter requires all target monads to have an instance as well. `Catchable` provides two operations:
 
+#+scalaz
 - `attempt` converts `M[A]` into `M[Throwable \/ A]`
+#-scalaz
+#+cats
+- `attempt` converts `M[A]` into `M[Throwable Xor A]`
+#-cats
 - `fail` constructs an `M[A]` that fails with a provided `Throwable`
 
 So any **doobie** program can be lifted into a disjunction simply by adding `.attempt`.
 
 ```tut
-val p = 42.point[ConnectionIO]
+val p = 42.pure[ConnectionIO]
 p.attempt
 ```
 
@@ -61,7 +68,12 @@ From these we can derive combinators that only pay attention to `SQLException`:
 
 And finally we have a set of combinators that focus on `SQLState`s.
 
+#+scalaz
 - `attemptSqlState` is like `attemptSql` but yields `M[SQLState \/ A]`.     
+#-scalaz
+#+cats
+- `attemptSqlState` is like `attemptSql` but yields `M[SQLState Xor A]`.     
+#-cats
 - `attemptSomeSqlState` traps only specified `SQLState`s.
 - `exceptSqlState` recovers from a `SQLState` with a new action.
 - `exceptSomeSqlState`  recovers from specified `SQLState`s with a new action.
@@ -77,7 +89,7 @@ List(sql"""DROP TABLE IF EXISTS person""",
      sql"""CREATE TABLE person (
              id    SERIAL,
              name  VARCHAR NOT NULL UNIQUE
-           )""").traverse(_.update.quick).void.unsafePerformSync
+           )""").traverse(_.update.quick).void.unsafePerformIO
 ```
 
 Alright, let's define a `Person` data type and a way to insert instances.
@@ -95,14 +107,14 @@ def insert(s: String): ConnectionIO[Person] = {
 The first insert will work.
 
 ```tut
-insert("bob").quick.unsafePerformSync
+insert("bob").quick.unsafePerformIO
 ```
 
 The second will fail with a unique constraint violation.
 
 ```tut
 try {
-  insert("bob").quick.unsafePerformSync
+  insert("bob").quick.unsafePerformIO
 } catch {
   case e: java.sql.SQLException => 
     println(e.getMessage)
@@ -116,7 +128,12 @@ So let's change our method to return a `String \/ Person` by using the `attemptS
 ```tut:silent
 import doobie.postgres.sqlstate.class23.UNIQUE_VIOLATION
 
+#+scalaz
 def safeInsert(s: String): ConnectionIO[String \/ Person] =
+#-scalaz
+#+cats
+def safeInsert(s: String): ConnectionIO[String Xor Person] =
+#-cats
   insert(s).attemptSomeSqlState {
     case UNIQUE_VIOLATION => "Oops!"
   }
@@ -126,7 +143,7 @@ Given this definition we can safely attempt to insert duplicate records and get 
 
 
 ```tut
-safeInsert("bob").quick.unsafePerformSync
+safeInsert("bob").quick.unsafePerformIO
 
-safeInsert("steve").quick.unsafePerformSync
+safeInsert("steve").quick.unsafePerformIO
 ```
