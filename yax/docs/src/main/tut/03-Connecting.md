@@ -22,9 +22,9 @@ Before we can use **doobie** we need to import some symbols. We will use the `do
 import doobie.imports._
 #+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
 #-scalaz
 #+cats
+import doobie.util.compat.cats.monad._ // todo: make this automatic
 import cats._, cats.data._, cats.implicits._
 #-cats
 ```
@@ -40,35 +40,14 @@ val program1 = 42.pure[ConnectionIO]
 This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
 ```tut:silent
-#+scalaz
-val xa = DriverManagerTransactor[Task](
-#-scalaz
-#+cats
 val xa = DriverManagerTransactor[IOLite](
-#-cats
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
 
-A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform
-#+scalaz
-`ConnectionIO ~> Task`, 
-#-scalaz
-#+cats
-`ConnectionIO ~> IOLite`, 
-#-cats
-which gives us something we can run. Specifically it gives us 
-#+scalaz
-a `Task` 
-#-scalaz
-#+cats
-an `IOLIte`
-#-cats
-that, when run, will connect to the database and run our program in a single transaction.
+A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IOLite`, which gives us something we can run. Specifically it gives us an `IOLIte` that, when run, will connect to the database and run our program in a single transaction.
 
-#+cats
-> Cats does not provide an IO type of its own, so the examples in this book use the simple `IOLite` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. You can use any effect-capturing type like `monix.Task` if you provide `Catchable` and `Capture` instances.
-#-cats
+> Scala does not have a standard IO, so the examples in this book use the simple `IOLite` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar types like `scalaz.effect.IO`, `scalaz.concurrent.Task`, `fs2.Task`, and `monix.Task` also work fine.
 
 The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.
 
@@ -76,24 +55,12 @@ Right, so let's do this.
 
 ```tut
 val task = program1.transact(xa)
-#+scalaz
-task.unsafePerformSync
-#-scalaz
-#+cats
 task.unsafePerformIO
-#-cats
 ```
 
 Hooray! We have computed a constant. It's not very interesting because we never ask the database to perform any work, but it's a first step.
 
-> Keep in mind that all the code in this book is pure *except* the calls to 
-#+scalaz
-> `Task.unsafePerformSync`, 
-#-scalaz
-#+cats
-> `IOLite.unsafePerformIO`, 
-#-cats
-> which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
+> Keep in mind that all the code in this book is pure *except* the calls to `IOLite.unsafePerformIO`, which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
 
 Right. Now let's try something more interesting.
 
@@ -104,12 +71,7 @@ Let's use the `sql` string interpolator to construct a query that asks the *data
 ```tut
 val program2 = sql"select 42".query[Int].unique
 val task2 = program2.transact(xa)
-#+scalaz
-task2.unsafePerformSync
-#-scalaz
-#+cats
 task2.unsafePerformIO
-#-cats
 ```
 
 Ok! We have now connected to a database to compute a constant. Considerably more impressive. 
@@ -130,12 +92,7 @@ val program3 =
 And behold!
 
 ```tut
-#+scalaz
-program3.transact(xa).unsafePerformSync
-#-scalaz
-#+cats
 program3.transact(xa).unsafePerformIO
-#-cats
 ```
 
 The astute among you will note that we don't actually need a monad to do this; an applicative functor is all we need here. So we could also write `program3` as:
@@ -151,21 +108,21 @@ val program3a = {
 And lo, it was good:
 
 ```tut
-#+scalaz
-program3a.transact(xa).unsafePerformSync
-#-scalaz
-#+cats
 program3a.transact(xa).unsafePerformIO
-#-cats
 ```
 
 And of course this composition can continue indefinitely.
 
 #+scalaz
 ```tut
-program3a.replicateM(5).transact(xa).unsafePerformSync.foreach(println)
+program3a.replicateM(5).transact(xa).unsafePerformIO.foreach(println)
 ```
 #-scalaz
+#+cats
+```tut
+program3a.replicateA(5).transact(xa).unsafePerformIO.foreach(println)
+```
+#-cats
 
 ### Diving Deeper
 
@@ -176,32 +133,13 @@ All of the **doobie** monads are implemented via `Free` and have no operational 
 Out of the box all of the **doobie** free monads provide a transformation to `Kleisli[M, Foo, ?]` given `Monad[M]`, `Catchable[M]`, and `Capture[M]` (we will discuss `Capture` shortly, standby). The `transK` method gives quick access to this transformation.
 
 ```tut
-#+scalaz
-val kleisli = program1.transK[Task] 
-val task = Task.delay(null: java.sql.Connection) >>= kleisli
-task.unsafePerformSync // sneaky; program1 never looks at the connection
-#-scalaz
-#+cats
 val kleisli = program1.transK[IOLite] 
 val task = IOLite.primitive(null: java.sql.Connection) >>= kleisli.run
 task.unsafePerformIO // sneaky; program1 never looks at the connection
-#-cats
 ```
 
-So the `Transactor` above simply knows how to construct a 
-#+scalaz
-`Task[Connection]`, 
-#-scalaz
-#+cats
-`IOLite[Connection]`, 
-#-cats
-which it can bind through the `Kleisli`, yielding our 
-#+scalaz
-`Task[Int]`. 
-#-scalaz
-#+cats
-`IOLite[Int]`. 
-#-cats
+So the `Transactor` above simply knows how to construct an `IOLite[Connection]`, which it can bind through the `Kleisli`, yielding our `IOLite[Int]`.
+
 There is a bit more going on (we add commit/rollback handling and ensure that the connection is closed in all cases) but fundamentally it's just a natural transformation and a bind.
 
 In addition to the `transK` syntax above, **doobie** provides natural transformations on each algebra's module. For example `doobie.free.connection` (aliased as `FC` in `doobie.imports`) provides:

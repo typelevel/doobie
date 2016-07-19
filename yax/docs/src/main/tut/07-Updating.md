@@ -12,14 +12,15 @@ Again we set up a transactor and pull in YOLO mode, but this time we're not usin
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
-import scalaz.stream.Process
-
-val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-
 import xa.yolo._
 ```
 
@@ -48,7 +49,7 @@ val create: Update0 =
 We can compose these and run them together.
 
 ```tut
-(drop.quick *> create.quick).unsafePerformSync
+(drop.quick *> create.quick).unsafePerformIO
 ```
 
 
@@ -65,8 +66,8 @@ def insert1(name: String, age: Option[Short]): Update0 =
 Let's insert a few rows.
 
 ```tut
-insert1("Alice", Some(12)).quick.run
-insert1("Bob", None).quick.run
+insert1("Alice", Some(12)).quick.unsafePerformIO
+insert1("Bob", None).quick.unsafePerformIO
 ```
 
 And read them back.
@@ -76,7 +77,7 @@ case class Person(id: Long, name: String, age: Option[Short])
 ```
 
 ```tut
-sql"select id, name, age from person".query[Person].quick.run
+sql"select id, name, age from person".query[Person].quick.unsafePerformIO
 ```
 
 
@@ -86,8 +87,8 @@ sql"select id, name, age from person".query[Person].quick.run
 Updating follows the same pattern. Here we update Alice's age.
 
 ```tut
-sql"update person set age = 15 where name = 'Alice'".update.quick.run
-sql"select id, name, age from person".query[Person].quick.run
+sql"update person set age = 15 where name = 'Alice'".update.quick.unsafePerformIO
+sql"select id, name, age from person".query[Person].quick.unsafePerformIO
 ```
 
 ### Retrieving Results
@@ -104,7 +105,7 @@ def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
 ```
 
 ```tut
-insert2("Jimmy", Some(42)).quick.run
+insert2("Jimmy", Some(42)).quick.unsafePerformIO
 ```
 
 This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor).
@@ -120,7 +121,7 @@ def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
 ```
 
 ```tut
-insert2_H2("Ramone", Some(42)).quick.run
+insert2_H2("Ramone", Some(42)).quick.unsafePerformIO
 ```
 
 Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.
@@ -135,7 +136,7 @@ def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
 The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (otherwise an exception will be thrown), and requires a list of columns to return. This isn't the most beautiful API but it's what JDBC gives us. And it does work.
 
 ```tut
-insert3("Elvis", None).quick.run
+insert3("Elvis", None).quick.unsafePerformIO
 ```
 
 This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit `unique` and get a `Process[ConnectionIO, Person]` back.
@@ -151,8 +152,8 @@ val up = {
 Running this process updates all rows with a non-`NULL` age and returns them.
 
 ```tut
-up.quick.run
-up.quick.run // and again!
+up.quick.unsafePerformIO
+up.quick.unsafePerformIO // and again!
 ```
 
 ### Batch Updates
@@ -189,13 +190,25 @@ val data = List[PersonInfo](
 Running this program yields the number of updated rows.
 
 ```tut
-insertMany(data).quick.run
+insertMany(data).quick.unsafePerformIO
 ```
 
 For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
 
 ```tut:silent
+#+scalaz
+import scalaz.stream.Process
+#-scalaz
+#+fs2
+import fs2.Stream
+#-fs2
+
+#+scalaz
 def insertMany2(ps: List[PersonInfo]): Process[ConnectionIO, Person] = {
+#-scalaz
+#+cats
+def insertMany2(ps: List[PersonInfo]): Stream[ConnectionIO, Person] = {
+#-cats
   val sql = "insert into person (name, age) values (?, ?)"
   Update[PersonInfo](sql).updateManyWithGeneratedKeys[Person]("id", "name", "age")(ps)
 }
@@ -210,5 +223,5 @@ val data = List[PersonInfo](
 Running this program yields the updated instances.
 
 ```tut
-insertMany2(data).quick.run
+insertMany2(data).quick.unsafePerformIO
 ```
