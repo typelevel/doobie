@@ -68,25 +68,42 @@ You can of course change this setup if you like, but you will need to adjust you
 On the Scala side you just need a console with the proper dependencies. A minimal `build.sbt` would look something like this.
 
 ```scala
-scalaVersion := "2.11.7" // also works with 2.10
+scalaVersion := "2.11.8" // no support for 2.10 or 2.12 at the moment
 
-lazy val doobieVersion = "0.3.0"
+lazy val doobieVersion = "0.3.1-SNAPSHOT"
 
+#+scalaz
 libraryDependencies ++= Seq(
-  "org.tpolecat" %% "doobie-core"               % doobieVersion,
-  "org.tpolecat" %% "doobie-contrib-postgresql" % doobieVersion,
-  "org.tpolecat" %% "doobie-contrib-specs2"     % doobieVersion
+  "org.tpolecat" %% "doobie-core"       % doobieVersion,
+  "org.tpolecat" %% "doobie-postgresql" % doobieVersion,
+  "org.tpolecat" %% "doobie-specs2"     % doobieVersion
 )
 ```
 
-If you are not using PostgreSQL you can omit `doobie-contrib-postgresql` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-contrib-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
+If you are not using PostgreSQL you can omit `doobie-postgresql` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
+#-scalaz
+#+cats
+libraryDependencies ++= Seq(
+  "org.tpolecat" %% "doobie-core-cats"       % doobieVersion,
+  "org.tpolecat" %% "doobie-postgresql-cats" % doobieVersion,
+  "org.tpolecat" %% "doobie-specs2-cats"     % doobieVersion
+)
+```
+
+If you are not using PostgreSQL you can omit `doobie-postgresql-cats` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2-cats` add-on if you happen to be using [H2](http://www.h2database.com/).
+#-cats
 
 ### Conventions
 
 Each page begins with some imports, like this.
 
 ```tut:silent
+#+scalaz
 import scalaz._, Scalaz._
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
 import doobie.imports._
 ```
 

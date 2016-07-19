@@ -14,13 +14,11 @@ First let's get our imports out of the way and set up a `Transactor` as we did b
 import doobie.imports._
 #+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
-val xa = DriverManagerTransactor[Task](
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
-val xa = DriverManagerTransactor[IOLite](
 #-cats
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
@@ -45,14 +43,8 @@ For our first query let's aim low and select some country names into a `List`, t
 (sql"select name from country"
   .query[String]     // Query0[String]
   .list              // ConnectionIO[List[String]]
-#+scalaz
-  .transact(xa)      // Task[List[String]]
-  .unsafePerformSync // List[String]
-#-scalaz
-#+cats
   .transact(xa)      // IOLite[List[String]]
   .unsafePerformIO   // List[String]
-#-cats
   .take(5).foreach(println))
 ```
 
@@ -80,16 +72,14 @@ This is ok, but there's not much point reading all the results from the database
   .process           // Process[ConnectionIO, String]
   .take(5)           // Process[ConnectionIO, String]
   .list              // ConnectionIO[List[String]]
-  .transact(xa)      // Task[List[String]]
-  .unsafePerformSync // List[String]
 #-scalaz
 #+fs2
   .process           // Stream[ConnectionIO, String]
   .take(5)           // Stream[ConnectionIO, String]
   .list              // ConnectionIO[List[String]]
+#-fs2
   .transact(xa)      // IOLite[List[String]]
   .unsafePerformIO   // List[String]
-#-fs2
   .foreach(println))
 ```
 
@@ -113,14 +103,8 @@ We can now run our previous query in an abbreviated form.
   .query[String] // Query0[String]
   .process       // Process[ConnectionIO, String]
   .take(5)       // Process[ConnectionIO, String]
-#+scalaz  
-  .quick         // Task[Unit]
-  .run)
-#-scalaz
-#+fs2
   .quick         // Task[Unit]
   .unsafePerformIO)
-#-fs2
 ```
 
 This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around. 
@@ -135,12 +119,7 @@ We can select multiple columns, of course, and map them to a tuple. The `gnp` co
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[(String, String, Int, Option[Double])]
-#+scalaz
-  .process.take(5).quick.run)
-#-scalaz
-#+fs2
   .process.take(5).quick.unsafePerformIO)
-#-fs2
 ```
 **doobie** automatically supports row mappings for atomic column types, as well as options, tuples, `HList`s, shapeless records, and case classes thereof. So let's try the same query with an `HList`:
 
@@ -149,12 +128,7 @@ import shapeless._
 
 (sql"select code, name, population, gnp from country"
   .query[String :: String :: Int :: Option[Double] :: HNil]
-#+scalaz
-  .process.take(5).quick.run)
-#-scalaz
-#+fs2
   .process.take(5).quick.unsafePerformIO)
-#-fs2
 ```
 
 And with a shapeless record:
@@ -166,12 +140,7 @@ type Rec = Record.`'code -> String, 'name -> String, 'pop -> Int, 'gnp -> Option
 
 (sql"select code, name, population, gnp from country"
   .query[Rec]
-#+scalaz
-  .process.take(5).quick.run)
-#-scalaz
-#+fs2
   .process.take(5).quick.unsafePerformIO)
-#-fs2
 ```
 
 And again, mapping rows to a case class.
@@ -183,12 +152,7 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[Country] // Query0[Country]
-#+scalaz
-  .process.take(5).quick.run)
-#-scalaz
-#+fs2
   .process.take(5).quick.unsafePerformIO)
-#-fs2
 ```
 
 You can also nest case classes, `HList`s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
@@ -201,12 +165,7 @@ case class Country(name: String, pop: Int, gnp: Option[Double])
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[(Code, Country)] // Query0[(Code, Country)]
-#+scalaz
-  .process.take(5).quick.run)
-#-scalaz
-#+fs2
   .process.take(5).quick.unsafePerformIO)
-#-fs2
 ```
 
 And just for fun, since the `Code` values are constructed from the primary key, let's turn the results into a `Map`. Trivial but useful.
@@ -217,12 +176,7 @@ And just for fun, since the `Code` values are constructed from the primary key, 
    .process.take(5)        // Process[ConnectionIO, (Code, Country)]
    .list                   // ConnectionIO[List[(Code, Country)]]
    .map(_.toMap)           // ConnectionIO[Map[Code, Country]]
-#+scalaz
-   .quick.run)
-#-scalaz
-#+fs2
    .quick.unsafePerformIO)
-#-fs2
 ```
 
 ### Final Streaming
@@ -239,12 +193,7 @@ val p = {
     .transact(xa)    // Process[Task, Country]
  }
 
-#+scalaz
-p.take(5).runLog.run.foreach(println)
-#-scalaz
-#+fs2
 p.take(5).runLog.unsafePerformIO.foreach(println)
-#-fs2
 ```
 
 
@@ -261,12 +210,7 @@ val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO])
 (proc.take(5)        // Process[ConnectionIO, (Code, Country)]
      .list           // ConnectionIO[List[(Code, Country)]]
      .map(_.toMap)   // ConnectionIO[Map[Code, Country]]
-#+scalaz
-  .quick.run)
-#-scalaz
-#+fs2
   .quick.unsafePerformIO)
-#-fs2
 ```
 
 The `process` combinator is parameterized on the process element type and consumes a sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
