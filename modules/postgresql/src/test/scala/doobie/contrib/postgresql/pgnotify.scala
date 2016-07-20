@@ -12,7 +12,7 @@ object pgnotifyspec extends Specification {
 
   import FC.{commit, delay}
 
-  val xa = DriverManagerTransactor[Task](
+  val xa = DriverManagerTransactor(
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -22,9 +22,9 @@ object pgnotifyspec extends Specification {
   def listen[A](channel: String, notify: ConnectionIO[A]): Task[List[PGNotification]] =
     (PHC.pgListen(channel) >> commit >>
      delay { Thread.sleep(50) } >>
-     Capture[ConnectionIO].apply(notify.transact(xa).unsafePerformSync) >>
+     Capture[ConnectionIO].apply(notify.transact[Task](xa).unsafePerformSync) >>
      delay { Thread.sleep(50) } >>
-     PHC.pgGetNotifications).transact(xa)
+     PHC.pgGetNotifications).transact[Task](xa)
 
   "LISTEN/NOTIFY" should {
 

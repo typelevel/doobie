@@ -40,7 +40,7 @@ object PostgresNotify {
     } yield n).onComplete(eval_(pgUnlisten(channel) *> HC.commit))
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
-  val xa: Transactor[Task] = 
+  val xa = 
     DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   /** 
@@ -52,7 +52,7 @@ object PostgresNotify {
       .map(n => s"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
       .sink(s => HC.delay(Console.println(s)))
-      .transact(xa)
+      .transact[Task](xa)
       .void
       .unsafePerformSync
 

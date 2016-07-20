@@ -45,7 +45,7 @@ However, for experimentation as described in this book (and for situations where
 class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```tut:silent
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", // fully-qualified driver class name
   "jdbc:postgresql:world", // connect URL
   "jimmy",                 // user
@@ -64,8 +64,8 @@ val q = sql"select 42".query[Int].unique
 
 val p: Task[Int] = for {
   xa <- HikariTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-  _  <- xa.configure(hx => Task.delay( /* do something with hx */ ()))
-  a  <- q.transact(xa) ensuring xa.shutdown
+  _  <- xa.configure[Task](hx => Task.delay( /* do something with hx */ ()))
+  a  <- q.transact[Task](xa) ensuring xa.shutdown[Task]
 } yield a
 ```
 
@@ -84,11 +84,11 @@ If your application exposes an existing `javax.sql.DataSource` you can use it di
 ```tut:silent
 val ds: javax.sql.DataSource = null // pretending
 
-val xa = DataSourceTransactor[Task](ds)
+val xa = DataSourceTransactor(ds)
 
 val p: Task[Int] = for {
-  _  <- xa.configure(ds => Task.delay( /* do something with ds */ ()))
-  a  <- q.transact(xa)
+  _  <- xa.configure[Task](ds => Task.delay( /* do something with ds */ ()))
+  a  <- q.transact[Task](xa)
 } yield a
 
 ```

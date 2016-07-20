@@ -77,8 +77,16 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
     new doobie.syntax.string.SqlInterpolator(sc)
 
   /** @group Syntax */
-  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.MoreConnectionIOOps[A] =
-    new doobie.syntax.connectionio.MoreConnectionIOOps(ma)
+  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.ConnectionIOConnectorOps[A] =
+    new doobie.syntax.connectionio.ConnectionIOConnectorOps(ma)
+
+  /** @group Syntax */
+  implicit def toEvenMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.ConnectionIOTransactorOps[A] =
+    new doobie.syntax.connectionio.ConnectionIOTransactorOps(ma)
+
+  /** @group Syntax */
+  implicit def toTransactorOps[A](a: A): doobie.syntax.transactor.TransactorOps[A] =
+    new doobie.syntax.transactor.TransactorOps(a)
 
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
@@ -110,10 +118,20 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type Param[A] = doobie.syntax.string.Param[A]
   /** @group Companion Aliases */ val  Param    = doobie.syntax.string.Param
 
-  /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
+  /** @group Type Aliases */      type Transactor[M[_], A] = doobie.util.transactor.Transactor[M, A]
+  /** @group Companion Aliases */ val  Transactor = doobie.util.transactor.Transactor
 
-  /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
-  /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
+  /** @group Type Aliases */      type Connector[M[_], A] = doobie.util.connector.Connector[M, A]
+  /** @group Companion Aliases */ val  Connector = doobie.util.connector.Connector
+
+  /** @group Type Aliases */      type DriverManagerTransactor = doobie.util.drivermanager.DriverManagerXA
+  /** @group Companion Aliases */ val  DriverManagerTransactor = doobie.util.drivermanager.DriverManagerXA
+
+  /** @group Type Aliases */      type LiftXA = doobie.util.liftxa.LiftXA
+  /** @group Companion Aliases */ val  LiftXA = doobie.util.liftxa.LiftXA
+
+  /** @group Type Aliases */      type DataSourceTransactor = doobie.util.datasource.DataSourceTransactor
+  /** @group Companion Aliases */ val  DataSourceTransactor = doobie.util.datasource.DataSourceTransactor
 
 
   /** @group Typeclass Instances */

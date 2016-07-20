@@ -58,9 +58,9 @@ object FirstExample extends SafeApp {
 
   // Entry point for SafeApp
   override def runc: IO[Unit] = {
-    val db = DriverManagerTransactor[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    val db = DriverManagerTransactor("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
     for {
-      a <- examples.transact(db).attempt
+      a <- examples.transact[IO](db).attempt
       _ <- IO.putStrLn(a.toString)
     } yield ()
   }

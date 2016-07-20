@@ -19,7 +19,7 @@ import doobie.imports._
 import scalaz._, Scalaz._
 import scalaz.concurrent.Task
 
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor(
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
@@ -67,11 +67,13 @@ Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[Task]
 import doobie.contrib.specs2.analysisspec.AnalysisSpec
 import org.specs2.mutable.Specification
 
-object AnalysisTestSpec extends Specification with AnalysisSpec {
+object AnalysisTestSpec extends Specification with AnalysisSpec[DriverManagerTransactor] {
 
-  val transactor = DriverManagerTransactor[Task](
+  val transactor = DriverManagerTransactor(
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
+
+  val ev = Transactor[Task, DriverManagerTransactor]
 
   check(trivial)
   check(biggerThan(0))

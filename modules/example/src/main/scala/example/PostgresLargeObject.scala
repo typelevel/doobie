@@ -13,7 +13,7 @@ import scalaz._, Scalaz._, scalaz.concurrent.Task
  */
 object PostgresLargeObject {
 
-  val xa: Transactor[Task] = 
+  val xa = 
     DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   val prog: LargeObjectManagerIO[Long] =
@@ -24,7 +24,7 @@ object PostgresLargeObject {
     } yield oid
 
   val task: Task[Unit] =
-    PHC.pgGetLargeObjectAPI(prog).transact(xa) >>= { oid => 
+    PHC.pgGetLargeObjectAPI(prog).transact[Task](xa) >>= { oid => 
       Task.delay(Console.println("oid was " + oid))
     }
 

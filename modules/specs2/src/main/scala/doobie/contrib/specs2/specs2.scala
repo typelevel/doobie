@@ -2,9 +2,7 @@ package doobie.contrib.specs2
 
 import doobie.free.connection.ConnectionIO
 
-import doobie.util.transactor._
-import doobie.util.query._
-import doobie.util.update._
+import doobie.imports._
 import doobie.util.analysis._
 import doobie.util.pretty._
 
@@ -21,14 +19,16 @@ import scalaz._, Scalaz._
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
  * {{{
  * // An example specification, taken from the examples project.
- * object AnalysisTestSpec extends Specification with AnalysisSpec {
+ * object AnalysisTestSpec extends Specification with AnalysisSpec[DriverManagerTransactor] {
  *
  *   // The transactor to use for the tests.
- *   val transactor = DriverManagerTransactor[Task](
+ *   val transactor = DriverManagerTransactor(
  *     "org.postgresql.Driver", 
  *     "jdbc:postgresql:world", 
  *     "postgres", ""
  *   )
+ *
+ *   val ev = implicitly
  *
  *   // Now just mention the queries. Arguments are not used.
  *   check(MyDaoModule.findByNameAndAge(null, 0))
@@ -39,9 +39,11 @@ import scalaz._, Scalaz._
  */
 object analysisspec {
 
-  trait AnalysisSpec { this: Specification =>
+  trait AnalysisSpec[T] { this: Specification =>
 
-    def transactor: Transactor[Task]
+    def transactor: T
+
+    implicit def ev: Transactor[Task, T]
 
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
       checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.stackFrame, q.sql, q.analysis)
@@ -60,7 +62,7 @@ object analysisspec {
 
     private def checkAnalysis(typeName: String, stackFrame: Option[StackTraceElement], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
       s"$typeName defined at ${loc(stackFrame)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
-        transactor.trans(analysis).unsafePerformSyncAttempt match {
+        analysis.transact[Task](transactor).unsafePerformSyncAttempt match {
           case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
           case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
             Fragments.foreach(a.paramDescriptions)  { case (s, es) => s in assertEmpty(es, stackFrame) }
