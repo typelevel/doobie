@@ -8,7 +8,10 @@ scala:
 jdk:
   - oraclejdk8
 
-script: sbt ++$TRAVIS_SCALA_VERSION scalastyle compile test:compile test docs/tut docs_cats/tut
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION scalastyle compile test:compile test
+  - sbt ++$TRAVIS_SCALA_VERSION docs/tut
+  - sbt ++$TRAVIS_SCALA_VERSION docs_cats/tut
 
 addons:
   postgresql: "9.3"
