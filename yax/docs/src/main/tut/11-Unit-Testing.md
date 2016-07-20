@@ -16,10 +16,13 @@ As with earlier chapters we set up a `Transactor` and YOLO mode. Note that the c
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
-
-val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```

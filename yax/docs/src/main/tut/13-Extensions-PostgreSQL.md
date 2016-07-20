@@ -18,13 +18,15 @@ The following examples require a few imports.
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
-
-val xa = DriverManagerTransactor[Task](
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-
 import xa.yolo._
 ```
 
@@ -70,7 +72,7 @@ implicit val MyEnumAtom = pgEnum(MyEnum, "myenum")
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafePerformSync
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafePerformIO
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -116,7 +118,7 @@ implicit val FoobarAtom: Atom[FooBar] =
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafePerformSync
+sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafePerformIO
 ```
 
 
@@ -173,17 +175,17 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```tut
-p.attempt.quick.unsafePerformSync // attempt provided by Catchable instance
+p.attempt.quick.unsafePerformIO // attempt provided by Catchable instance
 
-p.attemptSqlState.quick.unsafePerformSync // this catches only SQL exceptions
+p.attemptSqlState.quick.unsafePerformIO // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafePerformSync // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafePerformIO // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafePerformSync // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafePerformIO // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".point[ConnectionIO] } .quick.unsafePerformSync // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .quick.unsafePerformIO // recover
 
-p.onSyntaxError("caught!".point[ConnectionIO]).quick.unsafePerformSync // using recovery combinator
+p.onSyntaxError("caught!".pure[ConnectionIO]).quick.unsafePerformIO // using recovery combinator
 ```
 
 

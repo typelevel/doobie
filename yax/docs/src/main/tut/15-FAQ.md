@@ -10,11 +10,15 @@ In this chapter we address some frequently-asked questions, in no particular ord
 import doobie.imports._
 import java.awt.geom.Point2D
 import java.util.UUID
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
 import shapeless._
 
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
@@ -31,8 +35,8 @@ Interpolated parameters are replaced with `?` placeholders, so if you need to as
 
 ```tut
 val s = "foo"
-sql"select $s".query[String].check.unsafePerformSync
-sql"select $s :: char".query[String].check.unsafePerformSync
+sql"select $s".query[String].check.unsafePerformIO
+sql"select $s :: char".query[String].check.unsafePerformIO
 ```
 
 ### How do I do several things in the same transaction?
@@ -61,14 +65,14 @@ def cities(code: Code, asc: Boolean): Query0[City] = {
 We can check the resulting `Query0` as expected.
 
 ```tut:plain
-cities(Code("USA"), true).check.unsafePerformSync
+cities(Code("USA"), true).check.unsafePerformIO
 ```
 
 And it works!
 
 ```tut
-cities(Code("USA"), true).process.take(5).quick.unsafePerformSync
-cities(Code("USA"), false).process.take(5).quick.unsafePerformSync
+cities(Code("USA"), true).process.take(5).quick.unsafePerformIO
+cities(Code("USA"), false).process.take(5).quick.unsafePerformIO
 ```
 
 ### How do I handle outer joins?
@@ -87,14 +91,19 @@ val join: Query0[(Country, Option[City])] =
     left outer join city k 
     on c.capital = k.id
   """.query[(Country, Option[String], Option[String])].map {
+#+scalaz  
     case (c, n, d) => (c, (n |@| d)(City))
+#-scalaz
+#+cats
+    case (c, n, d) => (c, (n |@| d).map(City))
+#-cats
   }
 ```
 
 Some examples, filtered for size.
 
 ```tut
-join.process.filter(_._1.name.startsWith("United")).quick.unsafePerformSync
+join.process.filter(_._1.name.startsWith("United")).quick.unsafePerformIO
 ```
 
 ### How do I resolve `error: Could not find or construct Param[...]`?
@@ -182,10 +191,18 @@ If this were an atomic type it would be a matter of importing or defining a `Met
 
 ```tut:silent
 implicit val Point2DComposite: Composite[Point2D.Double] = 
+#+scalaz
   Composite[(Double, Double)].xmap(
     (t: (Double, Double)) => new Point2D.Double(t._1, t._2),
     (p: Point2D.Double) => (p.x, p.y)
   )
+#-scalaz
+#+cats
+  Composite[(Double, Double)].imap(
+    (t: (Double, Double)) => new Point2D.Double(t._1, t._2))( 
+    (p: Point2D.Double) => (p.x, p.y)
+  )
+#-cats
 ```
 
 Our derivation now works and the code compiles.
