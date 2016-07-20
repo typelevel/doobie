@@ -11,21 +11,42 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 The examples in this chapter require the `contrib-postgresql` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
 
 ```scala
+#+scalaz
 libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M1" // as of date of publication
+#-scalaz
+#+cats
+val circeVersion = "0.4.1"
+
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
+#-cats
 ```
 
 In our REPL we have the same setup as before, plus a few extra imports.
 
 ```tut:silent
+#+scalaz
 import argonaut._, Argonaut._
+#-scalaz
+#+cats
+import io.circe._, io.circe.jawn._, io.circe.syntax._
+#-cats
 import doobie.imports._
 import java.awt.Point
 import org.postgresql.util.PGobject
 import scala.reflect.runtime.universe.TypeTag
+import scala.util.Try
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import cats._, cats.implicits._
+#-cats
 
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
@@ -69,7 +90,7 @@ object PersonId {
 
   def fromLegacy(s: String): Option[PersonId] =
     s.split(":") match {
-      case Array(dept, num) => num.parseInt.toOption.map(new PersonId(dept, _))
+      case Array(dept, num) => Try(num.toInt).toOption.map(new PersonId(dept, _))
       case _                => None
     }
 
@@ -111,7 +132,7 @@ Now it compiles as a column value and as a `Composite` that maps to a *single* c
 ```tut
 sql"select * from person where id = $pid"
 Composite[PersonId].length
-sql"select 'podiatry:123'".query[PersonId].quick.unsafePerformSync
+sql"select 'podiatry:123'".query[PersonId].quick.unsafePerformIO
 ```
 
 Note that the `Composite` width is now a single column. The rule is: if there exists an instance `Meta[A]` in scope, it will take precedence over any automatic derivation of `Composite[A]`.
@@ -127,28 +148,59 @@ Here we go:
 ```tut:silent
 implicit val JsonMeta: Meta[Json] = 
   Meta.other[PGobject]("json").nxmap[Json](
+#+scalaz
     a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
     a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces))
+#-scalaz
+#+cats
+    a => parse(a.getValue).leftMap[Json](e => throw e).merge, // failure raises an exception
+    a => {
+      val o = new PGobject 
+      o.setType("json")
+      o.setValue(a.noSpaces)
+      o
+    }
+#-cats
   )
+```
+
+```tut
+1 + 1
 ```
 
 Given this mapping to and from `Json` we can construct a *further* mapping to any type that has a `EncodeJson` and `DecodeJson` instances. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : EncodeJson : DecodeJson : TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
 
 ```tut:silent
+#+scalaz
 def codecMeta[A >: Null : EncodeJson : DecodeJson : TypeTag]: Meta[A] =
   Meta[Json].nxmap[A](
     _.as[A].result.fold(p => sys.error(p._1), identity), 
     _.asJson
   )
+#-scalaz
+#+cats
+def codecMeta[A >: Null : Encoder : Decoder : TypeTag]: Meta[A] =
+  Meta[Json].nxmap[A](
+    _.as[A].fold[A](throw _, identity), 
+    _.asJson
+  )
+#-cats
 ```
 
 Let's make sure it works. Here is a simple data type with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
 
 ```tut:silent
 case class Person(name: String, age: Int, things: List[String])
- 
-implicit def PersonCodecJson =
+
+#+scalaz
+implicit val PersonCodecJson =
   casecodec3(Person.apply, Person.unapply)("name", "age", "things")
+#-scalaz
+#+cats
+implicit val (personEncodeJson, personDecodeJson) =
+  (Encoder.forProduct3("name", "age", "things")((p: Person) => (p.name, p.age, p.things)),
+   Decoder.forProduct3("name", "age", "things")((name: String, age: Int, things: List[String]) => Person(name, age, things)))
+#-cats
 
 implicit val PersonMeta = codecMeta[Person]
 ```
@@ -167,13 +219,13 @@ val create =
     )
   """.update.run
 
-(drop *> create).quick.unsafePerformSync
+(drop *> create).quick.unsafePerformIO
 ```
 
 Note that our `check` output now knows about the `Json` and `Person` mappings. This is a side-effect of constructing instance above, which isn't a good design. Will revisit this for 0.3.0; this information is only used for diagnostics so it's not critical.
 
 ```tut:plain
-sql"select owner from pet".query[Int].check.unsafePerformSync
+sql"select owner from pet".query[Int].check.unsafePerformIO
 ```
 
 And we can now use `Person` as a parameter type and as a column type.
@@ -181,13 +233,13 @@ And we can now use `Person` as a parameter type and as a column type.
 ```tut
 val p = Person("Steve", 10, List("Train", "Ball"))
 (sql"insert into pet (name, owner) values ('Bob', $p)"
-  .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.unsafePerformSync
+  .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.unsafePerformIO
 ```
 
 If we ask for the `owner` column as a string value we can see that it is in fact storing JSON data.
 
 ```tut
-sql"select name, owner from pet".query[(String,String)].quick.unsafePerformSync
+sql"select name, owner from pet".query[(String,String)].quick.unsafePerformIO
 ```
 
 ### Composite by Invariant Map
@@ -196,16 +248,24 @@ We get `Composite[A]` for free given `Atom[A]`, or for tuples, `HList`s, shapele
 
 ```tut:silent
 implicit val Point2DComposite: Composite[Point] = 
+#+scalaz
   Composite[(Int, Int)].xmap(
     (t: (Int,Int)) => new Point(t._1, t._2),
     (p: Point) => (p.x, p.y)
   )
+#-scalaz
+#+cats
+  Composite[(Int, Int)].imap(
+    (t: (Int,Int)) => new Point(t._1, t._2))(
+    (p: Point) => (p.x, p.y)
+  )
+#-cats
 ```
 
 And it works!
 
 ```tut
-sql"select 'foo', 12, 42, true".query[(String, Point, Boolean)].unique.quick.unsafePerformSync
+sql"select 'foo', 12, 42, true".query[(String, Point, Boolean)].unique.quick.unsafePerformIO
 ```
 
 

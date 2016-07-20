@@ -12,8 +12,12 @@ In this chapter we discuss several ways to manage connections in applications th
 
 ```tut:silent
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
-import scalaz.concurrent.Task
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.implicits._
+#-cats
 ```
 
 ### About Transactors
@@ -45,7 +49,7 @@ However, for experimentation as described in this book (and for situations where
 class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```tut:silent
-val xa = DriverManagerTransactor[Task](
+val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", // fully-qualified driver class name
   "jdbc:postgresql:world", // connect URL
   "jimmy",                 // user
@@ -62,17 +66,17 @@ import doobie.hikari.hikaritransactor._
 
 val q = sql"select 42".query[Int].unique
 
-val p: Task[Int] = for {
-  xa <- HikariTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-  _  <- xa.configure(hx => Task.delay( /* do something with hx */ ()))
+val p: IOLite[Int] = for {
+  xa <- HikariTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  _  <- xa.configure(hx => IOLite.primitive( /* do something with hx */ ()))
   a  <- q.transact(xa) ensuring xa.shutdown
 } yield a
 ```
 
-And running this `Task` gives us the desired result.
+And running this `IOLite` gives us the desired result.
 
 ```tut
-p.unsafePerformSync
+p.unsafePerformIO
 ```
 
 The returned instance is of type `HikariTransactor`, which provides a `shutdown` method, as well as a `configure` method that provides access to the underlying `HikariDataSource` if additional configuration is required.
@@ -84,10 +88,10 @@ If your application exposes an existing `javax.sql.DataSource` you can use it di
 ```tut:silent
 val ds: javax.sql.DataSource = null // pretending
 
-val xa = DataSourceTransactor[Task](ds)
+val xa = DataSourceTransactor[IOLite](ds)
 
-val p: Task[Int] = for {
-  _  <- xa.configure(ds => Task.delay( /* do something with ds */ ()))
+val p: IOLite[Int] = for {
+  _  <- xa.configure(ds => IOLite.primitive( /* do something with ds */ ()))
   a  <- q.transact(xa)
 } yield a
 
@@ -104,17 +108,17 @@ If the provided `Transactor` implementations don't meet your needs, it is straig
 If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target monad `M` that has `Catchable` and `Capture` instances by running the `Kleisli[M, Connection, A]` provided by the `transK` method.
 
 ```tut:silent
-val conn: java.sql.Connection = null   // Connection (pretending)
-val prog = 42.point[ConnectionIO]      // ConnectionIO[Int]
-val task = prog.transK[Task].run(conn) // Task[Int]
+val conn: java.sql.Connection = null     // Connection (pretending)
+val prog = 42.pure[ConnectionIO]         // ConnectionIO[Int]
+val task = prog.transK[IOLite].run(conn) // IOLite[Int]
 ```
 
 As an aside, this technique works for programs written in *any* of the provided contexts. For example, here we run a program in `ResultSetIO`.
 
 ```tut:silent
-val rs: java.sql.ResultSet = null    // ResultSet (pretending)
-val prog = 42.point[ResultSetIO]     // ResultSetIO[Int]
-val task = prog.transK[Task].run(rs) // Task[Int]
+val rs: java.sql.ResultSet = null      // ResultSet (pretending)
+val prog = 42.pure[ResultSetIO]        // ResultSetIO[Int]
+val task = prog.transK[IOLite].run(rs) // IOLite[Int]
 ```
 
 This facility allows you to mix **doobie** programs into existing JDBC applications in a fine-grained manner if this meets your needs.

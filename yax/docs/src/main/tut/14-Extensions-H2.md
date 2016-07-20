@@ -38,13 +38,11 @@ See the previous chapter on **SQL Arrays** for usage examples.
 ```tut:silent
 import doobie.h2.h2transactor._
 import doobie.imports._
-import scalaz._, Scalaz._
-import scalaz.concurrent.Task
 
 val q = sql"select 42".query[Int].unique
 
 for {
-  xa <- H2Transactor[Task]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  xa <- H2Transactor[IOLite]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   _  <- xa.setMaxConnections(10) // and other ops; see scaladoc or source
   a  <- q.transact(xa)
 } yield a

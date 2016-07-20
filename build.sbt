@@ -125,7 +125,15 @@ lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally sk
 lazy val docSkipScala212Settings = Seq(
   libraryDependencies ++= {
     if (scalaVersion.value startsWith "2.12") Nil
-    else Seq("io.argonaut" %% "argonaut" % "6.2-M1")
+    else {
+      val circeVersion = "0.5.0-M2"
+      Seq(
+        "io.circe" %% "circe-core",
+        "io.circe" %% "circe-generic",
+        "io.circe" %% "circe-parser"
+      ).map(_ % circeVersion) ++
+      Seq("io.argonaut" %% "argonaut" % "6.2-M1")
+    }
   },
   tuut := Def.taskDyn {
     if (scalaVersion.value startsWith "2.12")
