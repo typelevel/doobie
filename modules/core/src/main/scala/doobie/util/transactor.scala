@@ -23,7 +23,7 @@ import javax.sql.DataSource
 
 /**
  * Module defining `Transactor`, which abstracts over connection providers and gives natural 
- * trasformations `ConnectionIO ~> M` and `Process[ConnectionIO, ?] ~> Process[M, ?]` for target 
+ * transformations `ConnectionIO ~> M` and `Process[ConnectionIO, ?] ~> Process[M, ?]` for target 
  * monad `M`. By default the resulting computation will be executed on a new connection with 
  * `autoCommit` off; will be committed on normal completionand rolled back if an exception escapes; 
  * and in all cases the connection will be released properly.
