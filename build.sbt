@@ -335,7 +335,7 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name := "doobie-contrib-specs2",
     description := "Specs2 support for doobie.",
-    libraryDependencies += "org.specs2" %% "specs2-core" % "3.7.1"
+    libraryDependencies += "org.specs2" %% "specs2-core" % "3.8.4"
   )
 
 lazy val specs2 = project.in(file("modules/specs2"))
