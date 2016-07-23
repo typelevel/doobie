@@ -61,6 +61,48 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) for more information on these add-ons.
 
+## Development Snapshots
+
+The development version is **0.3.1-SNAPSHOT**. It is updated continuously and without warning, so feel free to experiment but don't depend on it. So far differs from **0.3.0** in at least the following important ways:
+
+- Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
+- The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
+- The `posgresql` segment and package name has been shortened to `postgres`.
+- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out. 
+
+### Cats Support
+
+The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.6.1](http://typelevel.org/cats/) with [FS2 0.9.0-M6](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
+
+Doc links for Cats artfacts (no unidoc yet, sorry):
+[core](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-core_2.11/0.3.1-SNAPSHOT/doobie-core_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
+• [h2](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-h2_2.11/0.3.1-SNAPSHOT/doobie-h2_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
+• [hikari](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-hikari_2.11/0.3.1-SNAPSHOT/doobie-hikari_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
+• [postgres](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-postgres_2.11/0.3.1-SNAPSHOT/doobie-postgres_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
+• [book of doobie](https://oss.sonatype.org)
+
+The obligatory example:
+
+```scala
+scala> import doobie.imports._
+import doobie.imports._
+
+scala> val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+xa: doobie.util.transactor.Transactor[doobie.imports.IOLite] = doobie.util.transactor$DriverManagerTransactor$$anon$2@9ab5c78
+
+scala> val c = sql"select name, population from country".query[(String, Int)].list
+c: doobie.free.connection.ConnectionIO[List[(String, Int)]] = Gosub(Suspend(PrepareStatement4(select name, population from country)),<function1>)
+
+scala> val c2 = c.map(_.toMap) // lose the type alias so we see it's cats.free.Free!
+c2: cats.free.Free[doobie.free.connection.ConnectionOp,scala.collection.immutable.Map[String,Int]] = Gosub(Gosub(Suspend(PrepareStatement4(select name, population from country)),<function1>),<function1>)
+
+scala> c2.transact(xa).unsafePerformIO
+res2: scala.collection.immutable.Map[String,Int] = Map(Kazakstan -> 16223000, Gibraltar -> 25000, Haiti -> 8222000, Grenada -> 94000, Vanuatu -> 190000, Iraq -> 23115000, Poland -> 38653600, East Timor -> 885000, Saint Helena -> 6000, Montserrat -> 11000, Martinique -> 395000, Jordan -> 5083000, Gabon -> 1226000, Netherlands Antilles -> 217000, United States Minor Outlying Islands -> 0, Philippines -> 75967000, Somalia -> 10097000, Madagascar -> 15942000, Andorra -> 78000, Falkland Islands -> 2000, Algeria -> 31471000, Liechtenstein -> 32300, Norfolk Island -> 2000, Yugoslavia -> 10640000, Kiribati -> 83000, Angola -> 12878000, Croatia -> 4473000, Luxembourg -> 435700, Lebanon -> 3282000, United States -> 278357000, Greece -> 10545700, Eritrea -> 3850000, Bhuta...
+```
+
+It should go without saying, but the appearance of a feature in a pre-release version is not a promise that it will appear in the final release. The `yax` preprocessor (and therefore Cats support) is *very* experimental.
+
+
 ## Documentation and Support
 
 - See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.3.x/CHANGELOG.md#0.3.0) for an overview of changes in this and previous versions.

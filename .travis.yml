@@ -2,17 +2,15 @@ sudo: false
 
 language: scala
 
-scala:
-  - 2.12.0-M4
-  - 2.11.8
-  - 2.10.6
-
 jdk:
   - oraclejdk8
 
 script: 
-  - sbt ++$TRAVIS_SCALA_VERSION scalastyle compile core/test h2/test postgres/test
-  - sbt ++$TRAVIS_SCALA_VERSION tuut unidoc
+  - sbt ++2.11.8 scalastyle compile test:compile test
+  - sbt ++2.11.8 docs/tut
+  - sbt ++2.11.8 docs_cats/tut
+  - sbt ++2.10.6    core/test h2/test hikari/test postgres/test specs2/test
+  - sbt ++2.12.0-M4 core/test h2/test hikari/test postgres/test specs2/test
 
 addons:
   postgresql: "9.3"
