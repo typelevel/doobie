@@ -387,14 +387,14 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
-def docsSettings(tokens: String*): Seq[Setting[_]] =
+def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
   doobieSettings          ++
   noPublishSettings       ++
   tutSettings             ++ 
   docSkipScala212Settings ++ Seq(
     ctut := {
       val src = crossTarget.value / "tut"
-      val dst = file("../tpolecat.github.io/_doobie-" + version.value + "/")
+      val dst = file("../tpolecat.github.io/_doobie-" + token + "-" + version.value + "/")
       if (!src.isDirectory) {
         println("Input directory " + src + " not found.")
       } else if (!dst.isDirectory) {
@@ -408,7 +408,7 @@ def docsSettings(tokens: String*): Seq[Setting[_]] =
     tutSourceDirectory := sourceManaged.value / "main" / "tut",
     tutPluginJars := {
       // piggyback on a task tut depends on, so yax runs first
-      yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet)
+      yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet + token)
       tutPluginJars.value
     }
   )
