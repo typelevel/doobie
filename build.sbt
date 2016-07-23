@@ -3,10 +3,15 @@ import FreeGen._
 import ReleaseTransformations._
 import OsgiKeys._
 
+enablePlugins(CrossPerProjectPlugin)
+
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.11.8"
+)
+
+lazy val scalazCrossSettings = Seq(
   crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M4")
 )
 
@@ -200,7 +205,8 @@ lazy val core = project.in(file("modules/core"))
       "org.scalaz"        %% "scalaz-effect"    % "7.2.4",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.8.2a",
       "com.h2database"    %  "h2"               % "1.3.170" % "test"
-    )
+    ),
+    scalazCrossSettings
   )
 
 lazy val core_cats = project.in(file("modules-cats/core"))
@@ -211,7 +217,6 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats"     % "0.6.0",
       "co.fs2"         %% "fs2-core" % "0.9.0-M5",
-      // "co.fs2"         %% "fs2-cats" % "0.1.0-M6",
       "com.h2database" %  "h2"       % "1.3.170" % "test"
     )
   )
@@ -222,7 +227,10 @@ lazy val core_cats = project.in(file("modules-cats/core"))
 
 lazy val example = project.in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/example"), "scalaz"))
+  .settings(
+    yax(file("yax/example"), "scalaz"),
+    scalazCrossSettings
+  )
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 lazy val example_cats = project.in(file("modules-cats/example"))
@@ -258,7 +266,8 @@ lazy val postgres = project.in(file("modules/postgres"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/postgres"), "scalaz"),
-    postgresSettings("postgres")
+    postgresSettings("postgres"),
+    scalazCrossSettings
   )
   .dependsOn(core)
 
@@ -286,7 +295,8 @@ lazy val h2 = project.in(file("modules/h2"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/h2"), "scalaz"),
-    h2Settings("h2")
+    h2Settings("h2"),
+    scalazCrossSettings
   )
   .dependsOn(core)
 
@@ -314,7 +324,8 @@ lazy val hikari = project.in(file("modules/hikari"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/hikari"), "scalaz"),
-    hikariSettings("hikari")
+    hikariSettings("hikari"),
+    scalazCrossSettings
   )
   .dependsOn(core)
 
@@ -342,7 +353,8 @@ lazy val specs2 = project.in(file("modules/specs2"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/specs2"), "scalaz"),
-    specs2Settings("specs2")
+    specs2Settings("specs2"),
+    scalazCrossSettings
   )
   .dependsOn(core)
 
@@ -360,7 +372,10 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
 
 lazy val bench = project.in(file("modules/bench"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/bench"), "scalaz"))
+  .settings(
+    yax(file("yax/bench"), "scalaz"),
+    scalazCrossSettings
+  )
   .dependsOn(core, postgres)
 
 lazy val bench_cats = project.in(file("modules-cats/bench"))
@@ -399,7 +414,10 @@ def docsSettings(tokens: String*): Seq[Setting[_]] =
   )
 
 lazy val docs = project.in(file("modules/docs"))
-  .settings(docsSettings("scalaz"))
+  .settings(
+    docsSettings("scalaz"),
+    scalazCrossSettings
+  )
   .dependsOn(core, postgres, specs2, hikari, h2)
 
 
