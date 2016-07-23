@@ -68,14 +68,11 @@ The development version is **0.3.1-SNAPSHOT**. It is updated continuously and wi
 - Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
 - The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
 - The `posgresql` segment and package name has been shortened to `postgres`.
+- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out. 
 
 ### Cats Support
 
-The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats](http://typelevel.org/cats/) and it all seems to work perfectly, with the same peformance as the scalaz version. However note the following:
-
-- I haven't switched to [fs2](https://github.com/functional-streams-for-scala/fs2) yet, so there is no streaming support. The **book of doobie** uses streaming all over the place so I haven't ported it to cats yet.
-- There are a few missing combinators on `cats.Monad` that I haven't re-implemented so the `MonadPlus`-based accumulation methods are missing. You probably won't notice; they're not used very often.
-- There is no `IO` or `Task` provided with Cats, so I added an `IOLite` data type that you can use. It's included in `doobie.imports._` and is no-frills but it works fine.
+The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.6.1](http://typelevel.org/cats/) with [FS2 0.9.0-M6](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
 
 The obligatory example:
 
