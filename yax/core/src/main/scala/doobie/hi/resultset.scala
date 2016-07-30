@@ -193,6 +193,17 @@ object resultset {
       case false => Monad[ResultSetIO].pure(None)
     }
     
+  def getNextChunk[A: Composite](n0: Int)(implicit A: Composite[A]): ResultSetIO[Seq[A]] = 
+    RS.raw { rs =>
+      var n = n0
+      val b = Vector.newBuilder[A]
+      while (n > 0 && rs.next) {
+        b += A.unsafeGet(rs, 1)
+        n += 1
+      }
+      b.result()
+    }
+
   /** 
    * Equivalent to `getNext`, but verifies that there is exactly one row remaining.
    * @throws `UnexpectedCursorPosition` if there is not exactly one row remaining

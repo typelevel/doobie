@@ -124,6 +124,7 @@ object bench {
 
   def main(args: Array[String]): Unit = {
     val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000, 1000000))
+    println("Warming up ...")
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
       bench.Case("process", doobieBenchP),

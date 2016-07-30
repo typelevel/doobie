@@ -34,6 +34,7 @@ import scala.collection.JavaConverters._
 
 #+scalaz
 import scalaz.stream.Process
+import scalaz.stream.Process. { emitAll, eval, eval_, halt, bracket }
 import scalaz.{ Monad, ~>, Catchable, Foldable }
 import scalaz.syntax.monad._
 #-scalaz
@@ -46,7 +47,7 @@ import doobie.util.compat.cats.fs2._
 import doobie.util.catchable.Catchable
 import doobie.util.catchable.Catchable.doobieCatchableToFs2Catchable
 import fs2.{ Stream => Process }
-import fs2.Stream.{ eval, repeatEval, bracket }
+import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 import fs2.pipe.unNoneTerminate
 #-fs2
 
@@ -55,6 +56,9 @@ import fs2.pipe.unNoneTerminate
  * @group Modules
  */
 object connection {
+
+  /** Chunk size for stream construction; fixed for now. */
+  val ChunkSize = 512
 
   /** @group Typeclass Instances */
   implicit val CatchableConnectionIO = C.CatchableConnectionIO
@@ -70,23 +74,25 @@ object connection {
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
     
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
-      resource(
-        create)(ps =>
-        C.lift(ps, PS.close))(ps =>
-        Option(ps).point[ConnectionIO]).take(1) // note
-  
-    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
-      resource(
-        C.lift(ps, exec))(rs =>
-        C.lift(rs, RS.close))(rs =>
-        C.lift(rs, resultset.getNext[A]))
+    def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
+      eval(fa) flatMap { s =>
+        if (s.isEmpty) halt
+        else emitAll(s) ++ repeatEvalChunks(fa)
+      }
 
-    for {
-      ps <- preparedStatement
-      _  <- Process.eval(C.lift(ps, prep))
-      a  <- results(ps)
-    } yield a
+    def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
+      eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
+
+    def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
+      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](512)))
+
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+      bracket(create)(ps => eval_(C.lift(ps, PS.close)))(prepared)
+
+    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+      bracket(C.lift(ps, exec))(rs => eval_(C.lift(rs, RS.close)))(unrolled)
+
+    preparedStatement.flatMap(results)
 
   }
 #-scalaz
@@ -96,11 +102,17 @@ object connection {
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
     
+    def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
+      attemptEval(fa) flatMap {
+        case Left(e)    => fail(e)
+        case Right(seq) => if (seq.isEmpty) empty else (emits(seq) ++ repeatEvalChunks(fa))
+      }
+
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
       eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
 
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
-      repeatEval(C.lift(rs, resultset.getNext[A])).through(unNoneTerminate)
+      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](512)))
 
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
       bracket(create)(prepared, C.lift(_, PS.close))
