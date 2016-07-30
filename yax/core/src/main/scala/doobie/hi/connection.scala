@@ -57,9 +57,6 @@ import fs2.pipe.unNoneTerminate
  */
 object connection {
 
-  /** Chunk size for stream construction; fixed for now. */
-  val ChunkSize = 512
-
   /** @group Typeclass Instances */
   implicit val CatchableConnectionIO = C.CatchableConnectionIO
 
@@ -70,6 +67,7 @@ object connection {
 #+scalaz
   // TODO: make this public if the API sticks; still iffy
   private def liftProcess[A: Composite](
+    chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
@@ -84,7 +82,7 @@ object connection {
       eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
 
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
-      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](512)))
+      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
       bracket(create)(ps => eval_(C.lift(ps, PS.close)))(prepared)
@@ -98,6 +96,7 @@ object connection {
 #-scalaz
 #+fs2
   private def liftProcess[A: Composite](
+    chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
@@ -112,7 +111,7 @@ object connection {
       eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
 
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
-      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](512)))
+      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
       bracket(create)(prepared, C.lift(_, PS.close))
@@ -130,8 +129,8 @@ object connection {
    * action, and return results via a `Process`.
    * @group Prepared Statements 
    */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = 
-    liftProcess(C.prepareStatement(sql), prep, PS.executeQuery)
+  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] = 
+    liftProcess(chunkSize, C.prepareStatement(sql), prep, PS.executeQuery)
 
   /**
    * Construct a prepared update statement with the given return columns (and composite destination
@@ -140,12 +139,12 @@ object connection {
    * `Process`.
    * @group Prepared Statements 
    */
-  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
-    liftProcess(C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
+  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
+    liftProcess(chunkSize, C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
 
   /** @group Prepared Statements */
-  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A]): Process[ConnectionIO, B] =
-    liftProcess[B](C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
+  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A], chunkSize: Int): Process[ConnectionIO, B] =
+    liftProcess[B](chunkSize, C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
