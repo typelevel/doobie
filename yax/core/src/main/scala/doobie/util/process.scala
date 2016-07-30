@@ -27,12 +27,4 @@ object process {
     _.flatMap(a => Process.eval(f(a)))
 #-fs2
 
-#+scalaz
-  /** Generalized `resource` combinator. */
-  def resource[F[_]: Functor,R,O](acquire: F[R])(release: R => F[Unit])(step: R => F[Option[O]]): Process[F,O] = 
-    bracket(acquire)(r => eval_(release(r))) {
-      r => repeatEval(step(r).map(_.getOrElse(throw Cause.Terminated(Cause.End))))
-    } onHalt { _.asHalt }
-#-scalaz
-
 }

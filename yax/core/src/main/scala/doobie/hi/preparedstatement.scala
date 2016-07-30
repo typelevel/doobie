@@ -23,9 +23,6 @@ import doobie.free.{ databasemetadata => DMD }
 
 import doobie.util.analysis._
 import doobie.util.composite._
-#+scalaz
-import doobie.util.process.resource
-#-scalaz
 
 import java.net.URL
 import java.util.{ Date, Calendar }
@@ -80,11 +77,6 @@ object preparedstatement {
   def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
     bracket(PS.executeQuery)(rs => eval_(PS.lift(rs, RS.close)))(unrolled[A](_, chunkSize))
 
-  // /** @group Execution */
-  // def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-  //   resource(PS.executeQuery)(rs =>
-  //            PS.lift(rs, RS.close))(rs => 
-  //            PS.lift(rs, resultset.getNext[A]))
 #-scalaz
 #+fs2
 
@@ -146,9 +138,7 @@ object preparedstatement {
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
 #+scalaz
-    resource(PS.executeUpdate *> PS.getGeneratedKeys)(rs =>
-             PS.lift(rs, RS.close))(rs =>
-             PS.lift(rs, resultset.getNext[A]))
+    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(rs => eval_(PS.lift(rs, RS.close)))(unrolled[A](_, chunkSize))
 #-scalaz
 #+fs2
     bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))

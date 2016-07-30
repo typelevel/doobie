@@ -12,9 +12,6 @@ import doobie.syntax.process._
 
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
-#+scalaz
-import doobie.util.process.resource
-#-scalaz
 import doobie.util.capture.Capture
 
 import doobie.free.{ connection => C }
