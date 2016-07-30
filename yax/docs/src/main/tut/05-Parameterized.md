@@ -124,7 +124,7 @@ populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).q
 
 ### Diving Deeper
 
-In the previous chapter's *Diving Deeper* we saw how a query constructed with the `sql` interpolator is just sugar for the `process` constructor defined in the `doobie.hi.connection` module (aliased as `HC`). Here we see that the second parameter, a `PreparedStatementIO` program, is used to set the query parameters.
+In the previous chapter's *Diving Deeper* we saw how a query constructed with the `sql` interpolator is just sugar for the `process` constructor defined in the `doobie.hi.connection` module (aliased as `HC`). Here we see that the second parameter, a `PreparedStatementIO` program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.
 
 ```tut:silent
 #+scalaz
@@ -147,7 +147,7 @@ def proc(range: Range): Process[ConnectionIO, Country] =
 #+fs2
 def proc(range: Range): Stream[ConnectionIO, Country] = 
 #-fs2
-  HC.process[Country](q, HPS.set((range.min, range.max)))
+  HC.process[Country](q, HPS.set((range.min, range.max)), 512)
 ```
 
 Which produces the same output.
