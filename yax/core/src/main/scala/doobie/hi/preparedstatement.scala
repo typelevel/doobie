@@ -71,19 +71,21 @@ object preparedstatement {
 
 #+scalaz
   /** @group Execution */
-  def process[A: Composite]: Process[PreparedStatementIO, A] =
+  // TODO: chunk size not used
+  def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
     resource(PS.executeQuery)(rs =>
              PS.lift(rs, RS.close))(rs => 
              PS.lift(rs, resultset.getNext[A]))
 #-scalaz
 #+fs2
+
   // fs2 handler, not public
-  private def unrolled[A: Composite](rs: java.sql.ResultSet): Process[PreparedStatementIO, A] =
-      repeatEval(PS.lift(rs, resultset.getNext[A])).through(unNoneTerminate)
+  private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Process[PreparedStatementIO, A] =
+      repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
-  def process[A: Composite]: Process[PreparedStatementIO, A] =
-    bracket(PS.executeQuery)(unrolled[A](_), PS.lift(_, RS.close))
+  def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
+    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
 #-fs2
 
   /**
@@ -133,14 +135,14 @@ object preparedstatement {
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
  /** @group Execution */
-  def executeUpdateWithGeneratedKeys[A: Composite]: Process[PreparedStatementIO, A] =
+  def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
 #+scalaz
     resource(PS.executeUpdate *> PS.getGeneratedKeys)(rs =>
              PS.lift(rs, RS.close))(rs =>
              PS.lift(rs, resultset.getNext[A]))
 #-scalaz
 #+fs2
-    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_), PS.lift(_, RS.close))
+    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
 #-fs2
   /** 
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.

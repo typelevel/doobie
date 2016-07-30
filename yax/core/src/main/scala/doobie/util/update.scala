@@ -43,12 +43,9 @@ object update {
     def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize(columns: _*)(a, DefaultChunkSize)
 
-    def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K] =
-      withUniqueGeneratedKeysWithChunkSize(columns: _*)(a, DefaultChunkSize)
+    def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K]
 
     def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Process[ConnectionIO, K]
-
-    def withUniqueGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): ConnectionIO[K]
 
 
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int]
@@ -73,8 +70,8 @@ object update {
           u.updateManyWithGeneratedKeys(columns: _*).withChunkSize(cs.toList map f, chunkSize)
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(c: C, chunkSize: Int) =
           u.withGeneratedKeysWithChunkSize(columns: _*)(f(c), chunkSize)
-        def withUniqueGeneratedKeysWithChunkSize[K: Composite](columns: String*)(c: C, chunkSize: Int) =
-          u.withUniqueGeneratedKeysWithChunkSize(columns: _*)(f(c), chunkSize)
+        def withUniqueGeneratedKeys[K: Composite](columns: String*)(c: C) =
+          u.withUniqueGeneratedKeys(columns: _*)(f(c))
       }
 
     def toUpdate0(a: A): Update0 =
@@ -85,8 +82,8 @@ object update {
         def run = u.run(a)
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) = 
           u.withGeneratedKeysWithChunkSize(columns: _*)(a, chunkSize)
-        def withUniqueGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
-          u.withUniqueGeneratedKeysWithChunkSize(columns: _*)(a, chunkSize)
+        def withUniqueGeneratedKeys[K: Composite](columns: String*) =
+          u.withUniqueGeneratedKeys(columns: _*)(a)
       }
 
   }
@@ -118,8 +115,7 @@ object update {
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int) =
           HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a), chunkSize)
         
-        // TODO: chunk size is unused
-        def withUniqueGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int) =
+        def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A) =
           HC.prepareStatementS(sql0, columns.toList)(HPS.set(a) *> HPS.executeUpdateWithUniqueGeneratedKeys)
       
       }
@@ -137,11 +133,9 @@ object update {
     def withGeneratedKeys[K: Composite](columns: String*): Process[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
 
-    def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K] =
-      withUniqueGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
+    def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
 
     def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): Process[ConnectionIO, K]
-    def withUniqueGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): ConnectionIO[K]
 
   }
 
@@ -157,8 +151,7 @@ object update {
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
           HC.updateWithGeneratedKeys(columns.toList)(sql, ().pure[PreparedStatementIO], chunkSize)
 
-        // TODO: chunk size is unused
-        def withUniqueGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
+        def withUniqueGeneratedKeys[K: Composite](columns: String*) =
           HC.prepareStatementS(sql0, columns.toList)(HPS.executeUpdateWithUniqueGeneratedKeys)
       }
 

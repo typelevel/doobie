@@ -48,7 +48,6 @@ import doobie.util.catchable.Catchable
 import doobie.util.catchable.Catchable.doobieCatchableToFs2Catchable
 import fs2.{ Stream => Process }
 import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
-import fs2.pipe.unNoneTerminate
 #-fs2
 
 /**
@@ -72,12 +71,6 @@ object connection {
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
     
-    def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
-      eval(fa) flatMap { s =>
-        if (s.isEmpty) halt
-        else emitAll(s) ++ repeatEvalChunks(fa)
-      }
-
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
       eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
 
@@ -99,13 +92,7 @@ object connection {
     chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit], 
-    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
-    
-    def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
-      attemptEval(fa) flatMap {
-        case Left(e)    => fail(e)
-        case Right(seq) => if (seq.isEmpty) empty else (emits(seq) ++ repeatEvalChunks(fa))
-      }
+    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {    
 
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
       eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
