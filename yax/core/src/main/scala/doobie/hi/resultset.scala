@@ -262,12 +262,12 @@ object resultset {
    * mechanism for dealing with query results.
    * @group Results 
    */
-  def process[A: Composite]: Process[ResultSetIO, A] = 
+  def process[A: Composite](chunkSize: Int): Process[ResultSetIO, A] = 
 #+scalaz
-    Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
+    repeatEvalChunks(getNextChunk[A](chunkSize))
 #-scalaz
 #+fs2
-    repeatEval(getNext[A]).through(unNoneTerminate)
+    repeatEvalChunks(getNextChunk[A](chunkSize))
 #-fs2
 
   /** @group Properties */

@@ -37,6 +37,7 @@ import scala.Predef.{ intArrayOps, intWrapper }
 
 #+scalaz
 import scalaz.stream.Process
+import scalaz.stream.Process.{ bracket, eval_ }
 import scalaz.syntax.id._
 import scalaz.syntax.enum._
 import scalaz.syntax.foldable._
@@ -70,18 +71,26 @@ object preparedstatement {
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
 
 #+scalaz
+
+  // scalaz handler, not public
+  private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Process[PreparedStatementIO, A] =
+    repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
+
   /** @group Execution */
-  // TODO: chunk size not used
   def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    resource(PS.executeQuery)(rs =>
-             PS.lift(rs, RS.close))(rs => 
-             PS.lift(rs, resultset.getNext[A]))
+    bracket(PS.executeQuery)(rs => eval_(PS.lift(rs, RS.close)))(unrolled[A](_, chunkSize))
+
+  // /** @group Execution */
+  // def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
+  //   resource(PS.executeQuery)(rs =>
+  //            PS.lift(rs, RS.close))(rs => 
+  //            PS.lift(rs, resultset.getNext[A]))
 #-scalaz
 #+fs2
 
   // fs2 handler, not public
   private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Process[PreparedStatementIO, A] =
-      repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
+    repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
   def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
