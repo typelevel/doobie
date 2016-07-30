@@ -14,15 +14,6 @@ import doobie.util.these.\&/
 import doobie.util.these.\&/._
 #-cats
 
-#+scalaz
-import scalaz.stream.Process
-import scalaz.stream.Process. { emitAll, eval, halt }
-#-scalaz
-#+fs2
-import fs2.{ Stream => Process }
-import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
-#-fs2
-
 /** 
  * High-level database API. The constructors here are defined
  * in terms of those in `doobie.free.connection` but differ in the following ways:
@@ -65,22 +56,5 @@ package object hi {
     }
   }
 #-cats
-
-#+scalaz
-  /** Stream constructor for effectful source of chunks. */
-  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
-    eval(fa) flatMap { s =>
-      if (s.isEmpty) halt
-      else emitAll(s) ++ repeatEvalChunks(fa)
-    }
-#-scalaz
-#+fs2
-  /** Stream constructor for effectful source of chunks. */
-  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
-    attemptEval(fa) flatMap {
-      case Left(e)    => fail(e)
-      case Right(seq) => if (seq.isEmpty) empty else (emits(seq) ++ repeatEvalChunks(fa))
-    }
-#-fs2
 
 }

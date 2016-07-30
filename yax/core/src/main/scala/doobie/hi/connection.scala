@@ -13,6 +13,7 @@ import doobie.syntax.process._
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
 import doobie.util.capture.Capture
+import doobie.util.process.repeatEvalChunks
 
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }

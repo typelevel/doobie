@@ -23,6 +23,7 @@ import doobie.free.{ databasemetadata => DMD }
 
 import doobie.util.analysis._
 import doobie.util.composite._
+import doobie.util.process.repeatEvalChunks
 
 import java.net.URL
 import java.util.{ Date, Calendar }
