@@ -37,8 +37,9 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.scalacheck" %% "scalacheck"  % "1.13.1" % "test",
-      "org.specs2"     %% "specs2-core" % "3.8.4"  % "test"
+      "org.scalacheck" %% "scalacheck"        % "1.13.1" % "test",
+      "org.specs2"     %% "specs2-core"       % "3.8.4"  % "test",
+      "org.specs2"     %% "specs2-scalacheck" % "3.8.4"  % "test"
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
 )
