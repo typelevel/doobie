@@ -182,7 +182,6 @@ object resultset {
   def update[A](a: A)(implicit A: Composite[A]): ResultSetIO[Unit] =
     A.update(1, a)
 
-
   /** 
    * Similar to `next >> get` but lifted into `Option`; returns `None` when no more rows are
    * available.
@@ -194,9 +193,16 @@ object resultset {
       case false => Monad[ResultSetIO].pure(None)
     }
     
-  def getNextChunk[A: Composite](n0: Int)(implicit A: Composite[A]): ResultSetIO[Seq[A]] = 
+  /**
+   * Similar to `getNext` but reads `chunkSize` rows at a time (the final chunk in a resultset may
+   * be smaller). A non-positive `chunkSize` yields an empty `Seq` and consumes no rows. This method
+   * yields a `Seq` for easier interoperability with streaming libraries that like to talk in terms
+   * of `Seq`. The concrete type is guaranteed to be `Vector`.
+   * @group Results
+   */
+  def getNextChunk[A: Composite](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Seq[A]] =
     RS.raw { rs =>
-      var n = n0
+      var n = chunkSize
       val b = Vector.newBuilder[A]
       while (n > 0 && rs.next) {
         b += A.unsafeGet(rs, 1)
