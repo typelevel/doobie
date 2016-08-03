@@ -12,10 +12,8 @@ import doobie.syntax.process._
 
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
-#+scalaz
-import doobie.util.process.resource
-#-scalaz
 import doobie.util.capture.Capture
+import doobie.util.process.repeatEvalChunks
 
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
@@ -34,6 +32,7 @@ import scala.collection.JavaConverters._
 
 #+scalaz
 import scalaz.stream.Process
+import scalaz.stream.Process. { emitAll, eval, eval_, halt, bracket }
 import scalaz.{ Monad, ~>, Catchable, Foldable }
 import scalaz.syntax.monad._
 #-scalaz
@@ -46,8 +45,7 @@ import doobie.util.compat.cats.fs2._
 import doobie.util.catchable.Catchable
 import doobie.util.catchable.Catchable.doobieCatchableToFs2Catchable
 import fs2.{ Stream => Process }
-import fs2.Stream.{ eval, repeatEval, bracket }
-import fs2.pipe.unNoneTerminate
+import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 #-fs2
 
 /**
@@ -66,32 +64,7 @@ object connection {
 #+scalaz
   // TODO: make this public if the API sticks; still iffy
   private def liftProcess[A: Composite](
-    create: ConnectionIO[PreparedStatement],
-    prep:   PreparedStatementIO[Unit], 
-    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
-    
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
-      resource(
-        create)(ps =>
-        C.lift(ps, PS.close))(ps =>
-        Option(ps).point[ConnectionIO]).take(1) // note
-  
-    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
-      resource(
-        C.lift(ps, exec))(rs =>
-        C.lift(rs, RS.close))(rs =>
-        C.lift(rs, resultset.getNext[A]))
-
-    for {
-      ps <- preparedStatement
-      _  <- Process.eval(C.lift(ps, prep))
-      a  <- results(ps)
-    } yield a
-
-  }
-#-scalaz
-#+fs2
-  private def liftProcess[A: Composite](
+    chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
@@ -100,7 +73,30 @@ object connection {
       eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
 
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
-      repeatEval(C.lift(rs, resultset.getNext[A])).through(unNoneTerminate)
+      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
+
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+      bracket(create)(ps => eval_(C.lift(ps, PS.close)))(prepared)
+
+    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+      bracket(C.lift(ps, exec))(rs => eval_(C.lift(rs, RS.close)))(unrolled)
+
+    preparedStatement.flatMap(results)
+
+  }
+#-scalaz
+#+fs2
+  private def liftProcess[A: Composite](
+    chunkSize: Int,
+    create: ConnectionIO[PreparedStatement],
+    prep:   PreparedStatementIO[Unit], 
+    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {    
+
+    def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
+      eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
+
+    def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
+      repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
       bracket(create)(prepared, C.lift(_, PS.close))
@@ -118,8 +114,8 @@ object connection {
    * action, and return results via a `Process`.
    * @group Prepared Statements 
    */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] = 
-    liftProcess(C.prepareStatement(sql), prep, PS.executeQuery)
+  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] = 
+    liftProcess(chunkSize, C.prepareStatement(sql), prep, PS.executeQuery)
 
   /**
    * Construct a prepared update statement with the given return columns (and composite destination
@@ -128,12 +124,12 @@ object connection {
    * `Process`.
    * @group Prepared Statements 
    */
-  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit]): Process[ConnectionIO, A] =
-    liftProcess(C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
+  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
+    liftProcess(chunkSize, C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
 
   /** @group Prepared Statements */
-  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A]): Process[ConnectionIO, B] =
-    liftProcess[B](C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
+  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A], chunkSize: Int): Process[ConnectionIO, B] =
+    liftProcess[B](chunkSize, C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =

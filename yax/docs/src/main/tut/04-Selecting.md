@@ -205,7 +205,7 @@ The `sql` interpolator is sugar for constructors defined in the `doobie.hi.conne
 
 val sql = "select code, name, population, gnp from country"
 
-val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO])
+val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO], 512) // chunk size
 
 (proc.take(5)        // Process[ConnectionIO, (Code, Country)]
      .list           // ConnectionIO[List[(Code, Country)]]

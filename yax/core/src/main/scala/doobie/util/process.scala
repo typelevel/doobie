@@ -5,7 +5,7 @@ import scalaz.{ Applicative, Functor }
 import scalaz.syntax.applicative._
 
 import scalaz.stream.{ Process, Sink, Cause }
-import scalaz.stream.Process.{ bracket, repeatEval, eval_ }
+import scalaz.stream.Process.{ bracket, repeatEval, eval_, eval, halt, emitAll }
 #-scalaz
 #+cats
 import cats.{ Applicative, Functor }
@@ -13,6 +13,7 @@ import cats.implicits._
 #-cats
 #+fs2
 import fs2.{ Stream => Process, Sink }
+import fs2.Stream.{ attemptEval, fail, emits, empty }
 #-fs2
 
 /** Additional functions for manipulating `Process` values. */
@@ -27,12 +28,19 @@ object process {
     _.flatMap(a => Process.eval(f(a)))
 #-fs2
 
+  /** Stream constructor for effectful source of chunks. */
+  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
 #+scalaz
-  /** Generalized `resource` combinator. */
-  def resource[F[_]: Functor,R,O](acquire: F[R])(release: R => F[Unit])(step: R => F[Option[O]]): Process[F,O] = 
-    bracket(acquire)(r => eval_(release(r))) {
-      r => repeatEval(step(r).map(_.getOrElse(throw Cause.Terminated(Cause.End))))
-    } onHalt { _.asHalt }
+    eval(fa) flatMap { s =>
+      if (s.isEmpty) halt
+      else emitAll(s) ++ repeatEvalChunks(fa)
+    }
 #-scalaz
+#+fs2
+    attemptEval(fa) flatMap {
+      case Left(e)    => fail(e)
+      case Right(seq) => if (seq.isEmpty) empty else (emits(seq) ++ repeatEvalChunks(fa))
+    }
+#-fs2
 
 }

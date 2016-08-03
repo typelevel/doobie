@@ -27,6 +27,8 @@ import fs2.{ Stream => Process }
 /** Module defining updates parameterized by input type. */
 object update {
 
+  val DefaultChunkSize = query.DefaultChunkSize
+
   /** Mixin trait for queries with diagnostic information. */
   trait UpdateDiagnostics {
     val sql: String
@@ -38,19 +40,23 @@ object update {
 
     def run(a: A): ConnectionIO[Int]
 
-    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K]
+    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K] =
+      withGeneratedKeysWithChunkSize(columns: _*)(a, DefaultChunkSize)
 
     def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K]
+
+    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Process[ConnectionIO, K]
+
 
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int]
 
     // N.B. this what we want to implement, but updateManyWithGeneratedKeys is what we want to call
-    protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]): Process[ConnectionIO, K]
+    protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A], chunkSize: Int): Process[ConnectionIO, K]
 
     def updateManyWithGeneratedKeys[K](columns: String*): Update.UpdateManyWithGeneratedKeysBuilder[A, K] =
       new Update.UpdateManyWithGeneratedKeysBuilder[A, K] {
-        def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
-          updateManyWithGeneratedKeysA[F,K](columns: _*)(as)
+        def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
+          updateManyWithGeneratedKeysA[F,K](columns: _*)(as, chunkSize)
       }
 
     def contramap[C](f: C => A): Update[C] =
@@ -60,10 +66,10 @@ object update {
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
         def updateMany[F[_]: Foldable](fa: F[C]) = u.updateMany(fa.toList.map(f))
-        protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(cs: F[C]): Process[ConnectionIO, K] =
-          u.updateManyWithGeneratedKeys(columns: _*)(cs.toList map f)
-        def withGeneratedKeys[K: Composite](columns: String*)(c: C) =
-          u.withGeneratedKeys(columns: _*)(f(c))
+        protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(cs: F[C], chunkSize: Int): Process[ConnectionIO, K] =
+          u.updateManyWithGeneratedKeys(columns: _*).withChunkSize(cs.toList map f, chunkSize)
+        def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(c: C, chunkSize: Int) =
+          u.withGeneratedKeysWithChunkSize(columns: _*)(f(c), chunkSize)
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(c: C) =
           u.withUniqueGeneratedKeys(columns: _*)(f(c))
       }
@@ -74,8 +80,8 @@ object update {
         val stackFrame = u.stackFrame
         def analysis = u.analysis
         def run = u.run(a)
-        def withGeneratedKeys[K: Composite](columns: String*) = 
-          u.withGeneratedKeys(columns: _*)(a)
+        def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) = 
+          u.withGeneratedKeysWithChunkSize(columns: _*)(a, chunkSize)
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
           u.withUniqueGeneratedKeys(columns: _*)(a)
       }
@@ -89,7 +95,9 @@ object update {
      * F[_] type argument explicitly.
      */
     trait UpdateManyWithGeneratedKeysBuilder[A, K] {
-      def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K]
+      def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
+        withChunkSize(as, DefaultChunkSize)
+      def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K]
     }
 
     def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement] = None): Update[A] =
@@ -100,12 +108,16 @@ object update {
         def run(a: A) = HC.prepareStatement(sql)(HPS.set(a) *> HPS.executeUpdate)
         def updateMany[F[_]: Foldable](fa: F[A]) =
           HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa))
-        protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A]) =
-          HC.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().pure[PreparedStatementIO], as)
-        def withGeneratedKeys[K: Composite](columns: String*)(a: A) =
-          HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a))
+
+        protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A], chunkSize: Int) =
+          HC.updateManyWithGeneratedKeys[F,A,K](columns.toList)(sql, ().pure[PreparedStatementIO], as, chunkSize)
+        
+        def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int) =
+          HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a), chunkSize)
+        
         def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A) =
           HC.prepareStatementS(sql0, columns.toList)(HPS.set(a) *> HPS.executeUpdateWithUniqueGeneratedKeys)
+      
       }
 
     implicit val updateContravariant: Contravariant[Update] =
@@ -117,8 +129,14 @@ object update {
 
   trait Update0 extends UpdateDiagnostics {
     def run: ConnectionIO[Int]
-    def withGeneratedKeys[K: Composite](columns: String*): Process[ConnectionIO, K]
+
+    def withGeneratedKeys[K: Composite](columns: String*): Process[ConnectionIO, K] =
+      withGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
+
     def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
+
+    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): Process[ConnectionIO, K]
+
   }
 
   object Update0 {
@@ -129,8 +147,10 @@ object update {
         val stackFrame = stackFrame0
         def analysis: ConnectionIO[Analysis] = HC.prepareUpdateAnalysis0(sql)
         def run = HC.prepareStatement(sql)(HPS.executeUpdate)
-        def withGeneratedKeys[K: Composite](columns: String*) =
-          HC.updateWithGeneratedKeys(columns.toList)(sql, ().pure[PreparedStatementIO])
+
+        def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
+          HC.updateWithGeneratedKeys(columns.toList)(sql, ().pure[PreparedStatementIO], chunkSize)
+
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
           HC.prepareStatementS(sql0, columns.toList)(HPS.executeUpdateWithUniqueGeneratedKeys)
       }

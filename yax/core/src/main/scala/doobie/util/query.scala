@@ -30,6 +30,8 @@ import fs2.{ Stream => Process }
 /** Module defining queries parameterized by input and output types. */
 object query {
 
+  val DefaultChunkSize = 512
+
   /** 
    * A query parameterized by some input type `A` yielding values of type `B`. We define here the
    * core operations that are needed. Additional operations are provided on `[[Query0]]` which is the 
@@ -75,12 +77,22 @@ object query {
       HC.prepareQueryAnalysis0[O](sql)
 
     /**
-     * Apply the argument `a` to construct a `Process` with effect type 
-     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
+     * Apply the argument `a` to construct a `Process` with the given chunking factor, with 
+     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of 
+     * type `B`.
+     * @group Results
+     */
+    def processWithChunkSize(a: A, chunkSize: Int): Process[ConnectionIO, B] = 
+      HC.process[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
+
+    /**
+     * Apply the argument `a` to construct a `Process` with `DefaultChunkSize`, with 
+     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of 
+     * type `B`.
      * @group Results
      */
     def process(a: A): Process[ConnectionIO, B] = 
-      HC.process[O](sql, HPS.set(ai(a))).map(ob)
+      processWithChunkSize(a, DefaultChunkSize)
 
     /**
      * Apply the argument `a` to construct a program in 
@@ -164,7 +176,7 @@ object query {
         def stackFrame = outer.stackFrame
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
-        def process = outer.process(a)
+        def processWithChunkSize(n: Int) = outer.processWithChunkSize(a, n)
         def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
@@ -268,11 +280,19 @@ object query {
     def outputAnalysis: ConnectionIO[Analysis]
 
     /**
-     * `Process` with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding 
-     * elements of type `B`. 
+     * `Process` with default chunk factor, with effect type 
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`. 
      * @group Results
      */
-    def process: Process[ConnectionIO, B]
+    def process: Process[ConnectionIO, B] =
+      processWithChunkSize(DefaultChunkSize)
+
+    /**
+     * `Process` with given chunk factor, with effect type 
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`. 
+     * @group Results
+     */
+    def processWithChunkSize(n: Int): Process[ConnectionIO, B]
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 

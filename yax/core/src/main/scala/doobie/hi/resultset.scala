@@ -15,6 +15,7 @@ import doobie.free.{ databasemetadata => DMD }
 
 import doobie.util.composite._
 import doobie.util.invariant._
+import doobie.util.process.repeatEvalChunks
 
 import java.net.URL
 import java.util.{ Date, Calendar }
@@ -181,7 +182,6 @@ object resultset {
   def update[A](a: A)(implicit A: Composite[A]): ResultSetIO[Unit] =
     A.update(1, a)
 
-
   /** 
    * Similar to `next >> get` but lifted into `Option`; returns `None` when no more rows are
    * available.
@@ -193,6 +193,24 @@ object resultset {
       case false => Monad[ResultSetIO].pure(None)
     }
     
+  /**
+   * Similar to `getNext` but reads `chunkSize` rows at a time (the final chunk in a resultset may
+   * be smaller). A non-positive `chunkSize` yields an empty `Seq` and consumes no rows. This method
+   * yields a `Seq` for easier interoperability with streaming libraries that like to talk in terms
+   * of `Seq`. The concrete type is guaranteed to be `Vector`.
+   * @group Results
+   */
+  def getNextChunk[A: Composite](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Seq[A]] =
+    RS.raw { rs =>
+      var n = chunkSize
+      val b = Vector.newBuilder[A]
+      while (n > 0 && rs.next) {
+        b += A.unsafeGet(rs, 1)
+        n += 1
+      }
+      b.result()
+    }
+
   /** 
    * Equivalent to `getNext`, but verifies that there is exactly one row remaining.
    * @throws `UnexpectedCursorPosition` if there is not exactly one row remaining
@@ -251,12 +269,12 @@ object resultset {
    * mechanism for dealing with query results.
    * @group Results 
    */
-  def process[A: Composite]: Process[ResultSetIO, A] = 
+  def process[A: Composite](chunkSize: Int): Process[ResultSetIO, A] = 
 #+scalaz
-    Process.repeatEval(getNext[A]).takeWhile(_.isDefined).map(_.get)
+    repeatEvalChunks(getNextChunk[A](chunkSize))
 #-scalaz
 #+fs2
-    repeatEval(getNext[A]).through(unNoneTerminate)
+    repeatEvalChunks(getNextChunk[A](chunkSize))
 #-fs2
 
   /** @group Properties */
