@@ -5,21 +5,23 @@ language: scala
 jdk:
   - oraclejdk8
 
-script: 
-  - sbt ++2.11.8 scalastyle compile test:compile test
-  - sbt ++2.11.8 docs/tut
-  - sbt ++2.11.8 docs_cats/tut
-  - sbt ++2.10.6    core/test h2/test hikari/test postgres/test specs2/test
-  - sbt ++2.12.0-M4 core/test h2/test hikari/test postgres/test specs2/test
+scala:
+  - 2.10.6
+  - 2.11.8
+  - 2.12.0-M4
+
+env:
+  global:
+    - MAIN_SCALA_VERSION=2.11.8
 
 addons:
   postgresql: "9.3"
 
 before_script:
-  - psql -c 'create database world;' -U postgres
-  - psql -c '\i world.sql' -d world -U postgres
-  - psql -d world -c "create extension postgis" -U postgres
-  - psql -d world -c "create type myenum as enum ('foo', 'bar')" -U postgres
+  - project/travis-before-build.sh
+
+script:
+  - project/travis-build.sh
 
 notifications:
   webhooks:
@@ -29,3 +31,16 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: false     # default: false
 
+cache:
+  directories:
+  - $HOME/.sbt/0.13
+  - $HOME/.sbt/boot/scala*
+  - $HOME/.sbt/cache
+  - $HOME/.sbt/launchers
+  - $HOME/.ivy2
+
+before_cache:
+  - du -h -d 1 $HOME/.ivy2/
+  - du -h -d 2 $HOME/.sbt/
+  - find $HOME/.sbt -name "*.lock" -type f -delete
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
