@@ -68,9 +68,12 @@ object connection {
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit], 
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
-    
+
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
-      eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
+      eval[ConnectionIO, PreparedStatement] {
+        val fs = PS.setFetchSize(chunkSize)
+        C.lift(ps, fs >> prep).map(_ => ps)
+      }
 
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
       repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
@@ -90,15 +93,18 @@ object connection {
     chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit], 
-    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {    
+    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
 
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
-      eval[ConnectionIO, PreparedStatement](C.lift(ps, prep).map(_ => ps))
+      eval[ConnectionIO, PreparedStatement] {
+        val fs = PS.setFetchSize(chunkSize)
+        C.lift(ps, fs >> prep).map(_ => ps)
+      }
 
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
       repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] =
       bracket(create)(prepared, C.lift(_, PS.close))
 
     def results(ps: PreparedStatement): Process[ConnectionIO, A] =
@@ -114,7 +120,7 @@ object connection {
    * action, and return results via a `Process`.
    * @group Prepared Statements 
    */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] = 
+  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
     liftProcess(chunkSize, C.prepareStatement(sql), prep, PS.executeQuery)
 
   /**
