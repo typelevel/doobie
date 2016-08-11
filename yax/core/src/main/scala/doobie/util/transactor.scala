@@ -27,6 +27,7 @@ import cats.implicits._
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, eval_ }
+import compat.cats.fs2._
 #-fs2
 
 import java.sql.Connection
@@ -93,7 +94,7 @@ object transactor {
         (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
 #-scalaz
 #+fs2
-        (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
+        (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
 #-fs2        
 
       def apply[A](pa: Process[ConnectionIO, A]): Process[M, A] = 
