@@ -143,20 +143,20 @@ object blob {
     case object Length extends BlobOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
-    case class  Position(a: Blob, b: Long) extends BlobOp[Long] {
+    case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
-    case class  Position1(a: Array[Byte], b: Long) extends BlobOp[Long] {
+    case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
     }
-    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
-    }
-    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+    case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
+    }
+    case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -265,13 +265,13 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Blob, b: Long): BlobIO[Long] =
+  def position(a: Array[Byte], b: Long): BlobIO[Long] =
     F.liftF(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Array[Byte], b: Long): BlobIO[Long] =
+  def position(a: Blob, b: Long): BlobIO[Long] =
     F.liftF(Position1(a, b))
 
   /** 
@@ -283,14 +283,14 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
-    F.liftF(SetBytes(a, b, c, d))
+  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
+    F.liftF(SetBytes(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
-    F.liftF(SetBytes1(a, b))
+  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
+    F.liftF(SetBytes1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)

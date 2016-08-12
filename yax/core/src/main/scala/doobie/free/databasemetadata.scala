@@ -484,11 +484,11 @@ object databasemetadata {
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
     }
-    case class  SupportsConvert(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
-    }
-    case object SupportsConvert1 extends DatabaseMetaDataOp[Boolean] {
+    case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
+    }
+    case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
@@ -1446,14 +1446,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftF(SupportsConvert(a, b))
+  val supportsConvert: DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsConvert)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val supportsConvert: DatabaseMetaDataIO[Boolean] =
-    F.liftF(SupportsConvert1)
+  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsConvert1(a, b))
 
   /** 
    * @group Constructors (Primitives)

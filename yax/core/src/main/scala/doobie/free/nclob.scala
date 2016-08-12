@@ -161,11 +161,11 @@ object nclob {
     case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
     }
-    case class  SetString(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
-    }
-    case class  SetString1(a: Long, b: String) extends NClobOp[Int] {
+    case class  SetString(a: Long, b: String) extends NClobOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
+    }
+    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
     }
     case class  Truncate(a: Long) extends NClobOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -304,14 +304,14 @@ object nclob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
-    F.liftF(SetString(a, b, c, d))
+  def setString(a: Long, b: String): NClobIO[Int] =
+    F.liftF(SetString(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String): NClobIO[Int] =
-    F.liftF(SetString1(a, b))
+  def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
+    F.liftF(SetString1(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)

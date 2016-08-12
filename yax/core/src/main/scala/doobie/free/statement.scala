@@ -151,13 +151,13 @@ object statement {
     case class  Execute(a: String) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a))
     }
-    case class  Execute1(a: String, b: Array[String]) extends StatementOp[Boolean] {
+    case class  Execute1(a: String, b: Array[Int]) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute2(a: String, b: Int) extends StatementOp[Boolean] {
+    case class  Execute2(a: String, b: Array[String]) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute3(a: String, b: Array[Int]) extends StatementOp[Boolean] {
+    case class  Execute3(a: String, b: Int) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case object ExecuteBatch extends StatementOp[Array[Int]] {
@@ -166,31 +166,31 @@ object statement {
     case object ExecuteLargeBatch extends StatementOp[Array[Long]] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeBatch())
     }
-    case class  ExecuteLargeUpdate(a: String, b: Array[String]) extends StatementOp[Long] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
+    case class  ExecuteLargeUpdate(a: String) extends StatementOp[Long] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a))
     }
     case class  ExecuteLargeUpdate1(a: String, b: Array[Int]) extends StatementOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
     }
-    case class  ExecuteLargeUpdate2(a: String, b: Int) extends StatementOp[Long] {
+    case class  ExecuteLargeUpdate2(a: String, b: Array[String]) extends StatementOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
     }
-    case class  ExecuteLargeUpdate3(a: String) extends StatementOp[Long] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a))
+    case class  ExecuteLargeUpdate3(a: String, b: Int) extends StatementOp[Long] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeLargeUpdate(a, b))
     }
     case class  ExecuteQuery(a: String) extends StatementOp[ResultSet] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery(a))
     }
-    case class  ExecuteUpdate(a: String, b: Int) extends StatementOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    case class  ExecuteUpdate(a: String) extends StatementOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
     }
     case class  ExecuteUpdate1(a: String, b: Array[Int]) extends StatementOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
-    case class  ExecuteUpdate2(a: String) extends StatementOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
+    case class  ExecuteUpdate2(a: String, b: Array[String]) extends StatementOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
-    case class  ExecuteUpdate3(a: String, b: Array[String]) extends StatementOp[Int] {
+    case class  ExecuteUpdate3(a: String, b: Int) extends StatementOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case object GetConnection extends StatementOp[Connection] {
@@ -402,19 +402,19 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[String]): StatementIO[Boolean] =
+  def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
     F.liftF(Execute1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Int): StatementIO[Boolean] =
+  def execute(a: String, b: Array[String]): StatementIO[Boolean] =
     F.liftF(Execute2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
+  def execute(a: String, b: Int): StatementIO[Boolean] =
     F.liftF(Execute3(a, b))
 
   /** 
@@ -432,8 +432,8 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeLargeUpdate(a: String, b: Array[String]): StatementIO[Long] =
-    F.liftF(ExecuteLargeUpdate(a, b))
+  def executeLargeUpdate(a: String): StatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -444,14 +444,14 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeLargeUpdate(a: String, b: Int): StatementIO[Long] =
+  def executeLargeUpdate(a: String, b: Array[String]): StatementIO[Long] =
     F.liftF(ExecuteLargeUpdate2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def executeLargeUpdate(a: String): StatementIO[Long] =
-    F.liftF(ExecuteLargeUpdate3(a))
+  def executeLargeUpdate(a: String, b: Int): StatementIO[Long] =
+    F.liftF(ExecuteLargeUpdate3(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -462,8 +462,8 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String, b: Int): StatementIO[Int] =
-    F.liftF(ExecuteUpdate(a, b))
+  def executeUpdate(a: String): StatementIO[Int] =
+    F.liftF(ExecuteUpdate(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -474,13 +474,13 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String): StatementIO[Int] =
-    F.liftF(ExecuteUpdate2(a))
+  def executeUpdate(a: String, b: Array[String]): StatementIO[Int] =
+    F.liftF(ExecuteUpdate2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String, b: Array[String]): StatementIO[Int] =
+  def executeUpdate(a: String, b: Int): StatementIO[Int] =
     F.liftF(ExecuteUpdate3(a, b))
 
   /** 

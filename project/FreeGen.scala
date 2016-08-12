@@ -27,6 +27,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
   val ClassLong     = classOf[Long]
   val ClassFloat    = classOf[Float]
   val ClassDouble   = classOf[Double]
+  val ClassObject   = classOf[Object]
   val ClassVoid     = Void.TYPE
 
   val renames: Map[Class[_], String] =
@@ -40,7 +41,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
       case _                    => Nil
     }
 
-  def toScalaType(t: Type): String = 
+  def toScalaType(t: Type): String =
     t match {
       case t: GenericArrayType  => s"Array[${toScalaType(t.getGenericComponentType)}]"
       case t: ParameterizedType => s"${toScalaType(t.getRawType)}${t.getActualTypeArguments.map(toScalaType).mkString("[", ", ", "]")}"
@@ -54,6 +55,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
       case ClassLong            => "Long"
       case ClassFloat           => "Float"
       case ClassDouble          => "Double"
+      case ClassObject          => "AnyRef"
       case x: Class[_] if x.isArray => s"Array[${toScalaType(x.getComponentType)}]"
       case x: Class[_]          => renames.getOrElse(x, x.getSimpleName)
     }
@@ -152,10 +154,10 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
   // Ctor values for all methods in of A plus superclasses, interfaces, etc.
   def ctors[A](implicit ev: ClassTag[A]): List[Ctor] =
     methods(ev.runtimeClass).groupBy(_.getName).toList.flatMap { case (n, ms) =>
-      ms.toList.zipWithIndex.map {
+      ms.toList.sortBy(_.getGenericParameterTypes.map(toScalaType).mkString(",")).zipWithIndex.map {
         case (m, i) => Ctor(m, i)
       }
-    }.sortBy(_.cname)
+    }.sortBy(c => (c.mname, c.index))
 
   // All types referenced by all methods on A, superclasses, interfaces, etc.
   def imports[A](implicit ev: ClassTag[A]): List[String] = 

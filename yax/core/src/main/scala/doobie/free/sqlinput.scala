@@ -190,7 +190,7 @@ object sqlinput {
     case object ReadNString extends SQLInputOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readNString())
     }
-    case object ReadObject extends SQLInputOp[Object] {
+    case object ReadObject extends SQLInputOp[AnyRef] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.readObject())
     }
     case class  ReadObject1[T](a: Class[T]) extends SQLInputOp[T] {
@@ -399,7 +399,7 @@ object sqlinput {
   /** 
    * @group Constructors (Primitives)
    */
-  val readObject: SQLInputIO[Object] =
+  val readObject: SQLInputIO[AnyRef] =
     F.liftF(ReadObject)
 
   /** 

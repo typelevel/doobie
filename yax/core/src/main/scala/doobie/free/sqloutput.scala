@@ -191,7 +191,7 @@ object sqloutput {
     case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNString(a))
     }
-    case class  WriteObject(a: Object, b: SQLType) extends SQLOutputOp[Unit] {
+    case class  WriteObject(a: AnyRef, b: SQLType) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a, b))
     }
     case class  WriteObject1(a: SQLData) extends SQLOutputOp[Unit] {
@@ -400,7 +400,7 @@ object sqloutput {
   /** 
    * @group Constructors (Primitives)
    */
-  def writeObject(a: Object, b: SQLType): SQLOutputIO[Unit] =
+  def writeObject(a: AnyRef, b: SQLType): SQLOutputIO[Unit] =
     F.liftF(WriteObject(a, b))
 
   /** 
