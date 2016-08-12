@@ -12,7 +12,7 @@ import cats.{ Monad, Functor, Unapply }
 import cats.free.Free
 #-cats
 #+fs2
-import doobie.util.catchable.Catchable
+import fs2.util.Catchable
 import fs2.{ Stream => Process }
 #-fs2
 
@@ -89,11 +89,6 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Syntax */
   implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.MoreConnectionIOOps[A] =
     new doobie.syntax.connectionio.MoreConnectionIOOps(ma)
-
-#+fs2
-  implicit def doobieCatchableToFs2Catchable[M[_]: Monad](implicit c: Catchable[M]): fs2.util.Catchable[M] =
-    doobie.util.catchable.Catchable.doobieCatchableToFs2Catchable[M]
-#-fs2
 
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta

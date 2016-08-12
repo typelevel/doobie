@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -149,10 +154,10 @@ object statement {
     case class  Execute1(a: String, b: Array[String]) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute2(a: String, b: Array[Int]) extends StatementOp[Boolean] {
+    case class  Execute2(a: String, b: Int) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
-    case class  Execute3(a: String, b: Int) extends StatementOp[Boolean] {
+    case class  Execute3(a: String, b: Array[Int]) extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.execute(a, b))
     }
     case object ExecuteBatch extends StatementOp[Array[Int]] {
@@ -176,14 +181,14 @@ object statement {
     case class  ExecuteQuery(a: String) extends StatementOp[ResultSet] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeQuery(a))
     }
-    case class  ExecuteUpdate(a: String) extends StatementOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
+    case class  ExecuteUpdate(a: String, b: Int) extends StatementOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
     case class  ExecuteUpdate1(a: String, b: Array[Int]) extends StatementOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
     }
-    case class  ExecuteUpdate2(a: String, b: Int) extends StatementOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
+    case class  ExecuteUpdate2(a: String) extends StatementOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a))
     }
     case class  ExecuteUpdate3(a: String, b: Array[String]) extends StatementOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.executeUpdate(a, b))
@@ -212,11 +217,11 @@ object statement {
     case object GetMaxRows extends StatementOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMaxRows())
     }
-    case class  GetMoreResults(a: Int) extends StatementOp[Boolean] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults(a))
-    }
-    case object GetMoreResults1 extends StatementOp[Boolean] {
+    case object GetMoreResults extends StatementOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults())
+    }
+    case class  GetMoreResults1(a: Int) extends StatementOp[Boolean] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getMoreResults(a))
     }
     case object GetQueryTimeout extends StatementOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getQueryTimeout())
@@ -296,11 +301,24 @@ object statement {
    * Catchable instance for [[StatementIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableStatementIO: Catchable[StatementIO] =
     new Catchable[StatementIO] {
       def attempt[A](f: StatementIO[A]): StatementIO[Throwable \/ A] = statement.attempt(f)
       def fail[A](err: Throwable): StatementIO[A] = statement.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableStatementIO: Catchable[StatementIO] =
+    new Catchable[StatementIO] {
+      def pure[A](a: A): StatementIO[A] = statement.delay(a)
+      def flatMap[A, B](a: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = a.flatMap(f)
+      def attempt[A](f: StatementIO[A]): StatementIO[Throwable \/ A] = statement.attempt(f)
+      def fail[A](err: Throwable): StatementIO[A] = statement.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[StatementIO]].
@@ -390,13 +408,13 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
+  def execute(a: String, b: Int): StatementIO[Boolean] =
     F.liftF(Execute2(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def execute(a: String, b: Int): StatementIO[Boolean] =
+  def execute(a: String, b: Array[Int]): StatementIO[Boolean] =
     F.liftF(Execute3(a, b))
 
   /** 
@@ -444,8 +462,8 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String): StatementIO[Int] =
-    F.liftF(ExecuteUpdate(a))
+  def executeUpdate(a: String, b: Int): StatementIO[Int] =
+    F.liftF(ExecuteUpdate(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -456,8 +474,8 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def executeUpdate(a: String, b: Int): StatementIO[Int] =
-    F.liftF(ExecuteUpdate2(a, b))
+  def executeUpdate(a: String): StatementIO[Int] =
+    F.liftF(ExecuteUpdate2(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -516,14 +534,14 @@ object statement {
   /** 
    * @group Constructors (Primitives)
    */
-  def getMoreResults(a: Int): StatementIO[Boolean] =
-    F.liftF(GetMoreResults(a))
+  val getMoreResults: StatementIO[Boolean] =
+    F.liftF(GetMoreResults)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getMoreResults: StatementIO[Boolean] =
-    F.liftF(GetMoreResults1)
+  def getMoreResults(a: Int): StatementIO[Boolean] =
+    F.liftF(GetMoreResults1(a))
 
   /** 
    * @group Constructors (Primitives)

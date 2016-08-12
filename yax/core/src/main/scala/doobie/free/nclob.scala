@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -132,11 +137,11 @@ object nclob {
     case object GetAsciiStream extends NClobOp[InputStream] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getAsciiStream())
     }
-    case class  GetCharacterStream(a: Long, b: Long) extends NClobOp[Reader] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
-    }
-    case object GetCharacterStream1 extends NClobOp[Reader] {
+    case object GetCharacterStream extends NClobOp[Reader] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream())
+    }
+    case class  GetCharacterStream1(a: Long, b: Long) extends NClobOp[Reader] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCharacterStream(a, b))
     }
     case class  GetSubString(a: Long, b: Int) extends NClobOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSubString(a, b))
@@ -156,11 +161,11 @@ object nclob {
     case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setCharacterStream(a))
     }
-    case class  SetString(a: Long, b: String) extends NClobOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
-    }
-    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
+    case class  SetString(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b, c, d))
+    }
+    case class  SetString1(a: Long, b: String) extends NClobOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setString(a, b))
     }
     case class  Truncate(a: Long) extends NClobOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -180,11 +185,24 @@ object nclob {
    * Catchable instance for [[NClobIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableNClobIO: Catchable[NClobIO] =
     new Catchable[NClobIO] {
       def attempt[A](f: NClobIO[A]): NClobIO[Throwable \/ A] = nclob.attempt(f)
       def fail[A](err: Throwable): NClobIO[A] = nclob.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableNClobIO: Catchable[NClobIO] =
+    new Catchable[NClobIO] {
+      def pure[A](a: A): NClobIO[A] = nclob.delay(a)
+      def flatMap[A, B](a: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = a.flatMap(f)
+      def attempt[A](f: NClobIO[A]): NClobIO[Throwable \/ A] = nclob.attempt(f)
+      def fail[A](err: Throwable): NClobIO[A] = nclob.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[NClobIO]].
@@ -238,14 +256,14 @@ object nclob {
   /** 
    * @group Constructors (Primitives)
    */
-  def getCharacterStream(a: Long, b: Long): NClobIO[Reader] =
-    F.liftF(GetCharacterStream(a, b))
+  val getCharacterStream: NClobIO[Reader] =
+    F.liftF(GetCharacterStream)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getCharacterStream: NClobIO[Reader] =
-    F.liftF(GetCharacterStream1)
+  def getCharacterStream(a: Long, b: Long): NClobIO[Reader] =
+    F.liftF(GetCharacterStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -286,14 +304,14 @@ object nclob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String): NClobIO[Int] =
-    F.liftF(SetString(a, b))
+  def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
+    F.liftF(SetString(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setString(a: Long, b: String, c: Int, d: Int): NClobIO[Int] =
-    F.liftF(SetString1(a, b, c, d))
+  def setString(a: Long, b: String): NClobIO[Int] =
+    F.liftF(SetString1(a, b))
 
   /** 
    * @group Constructors (Primitives)

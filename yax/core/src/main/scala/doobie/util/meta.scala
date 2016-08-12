@@ -15,7 +15,9 @@ import scala.Predef._
 import scalaz._, Scalaz._
 #-scalaz
 #+cats
-import cats._, cats.data.{ NonEmptyList, Xor => \/ }, cats.data.Xor.{ Left => -\/, Right => \/- }, cats.implicits._
+import cats._, cats.data.NonEmptyList
+import cats.implicits._
+import scala.util. { Either => \/, Left => -\/, Right => \/- }
 #-cats
 
 import shapeless._

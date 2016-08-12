@@ -7,11 +7,13 @@ import scalaz.syntax.bifunctor._
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.Monad
-import cats.data.{ Xor => \/ }
 import cats.implicits._
+import scala.util.{ Either => \/ }
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 import doobie.enum.sqlstate.SqlState
 import doobie.syntax.catchable._

@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -127,11 +132,11 @@ object ref {
     case object GetBaseTypeName extends RefOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBaseTypeName())
     }
-    case object GetObject extends RefOp[Object] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
-    }
-    case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[Object] {
+    case class  GetObject(a: Map[String, Class[_]]) extends RefOp[Object] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject(a))
+    }
+    case object GetObject1 extends RefOp[Object] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getObject())
     }
     case class  SetObject(a: Object) extends RefOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setObject(a))
@@ -151,11 +156,24 @@ object ref {
    * Catchable instance for [[RefIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableRefIO: Catchable[RefIO] =
     new Catchable[RefIO] {
       def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
       def fail[A](err: Throwable): RefIO[A] = ref.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableRefIO: Catchable[RefIO] =
+    new Catchable[RefIO] {
+      def pure[A](a: A): RefIO[A] = ref.delay(a)
+      def flatMap[A, B](a: RefIO[A])(f: A => RefIO[B]): RefIO[B] = a.flatMap(f)
+      def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
+      def fail[A](err: Throwable): RefIO[A] = ref.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[RefIO]].
@@ -203,14 +221,14 @@ object ref {
   /** 
    * @group Constructors (Primitives)
    */
-  val getObject: RefIO[Object] =
-    F.liftF(GetObject)
+  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
+    F.liftF(GetObject(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getObject(a: Map[String, Class[_]]): RefIO[Object] =
-    F.liftF(GetObject1(a))
+  val getObject: RefIO[Object] =
+    F.liftF(GetObject1)
 
   /** 
    * @group Constructors (Primitives)

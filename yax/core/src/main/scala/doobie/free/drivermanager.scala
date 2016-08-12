@@ -5,10 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
 import cats.implicits._
-import doobie.util.catchable.Catchable
+import scala.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -80,11 +85,24 @@ object drivermanager {
    * Catchable instance for [[DriverManagerIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableDriverManagerIO: Catchable[DriverManagerIO] =
     new Catchable[DriverManagerIO] {
       def attempt[A](f: DriverManagerIO[A]): DriverManagerIO[Throwable \/ A] = drivermanager.attempt(f)
       def fail[A](err: Throwable): DriverManagerIO[A] = drivermanager.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableDriverManagerIO: Catchable[DriverManagerIO] =
+    new Catchable[DriverManagerIO] {
+      def pure[A](a: A): DriverManagerIO[A] = delay(a)
+      def flatMap[A, B](a: DriverManagerIO[A])(f: A => DriverManagerIO[B]): DriverManagerIO[B] = a.flatMap(f)
+      def attempt[A](f: DriverManagerIO[A]): DriverManagerIO[Throwable \/ A] = drivermanager.attempt(f)
+      def fail[A](err: Throwable): DriverManagerIO[A] = drivermanager.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.

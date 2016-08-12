@@ -16,8 +16,8 @@ import scalaz._, Scalaz._
 import scalaz.\&/._
 #-scalaz
 #+cats
-import cats.data.{ Xor => \/ }
-import cats.data.Xor.{ Left => -\/, Right => \/- }
+import scala.util.{ Either => \/ }
+import scala.util.{ Left => -\/, Right => \/- }
 import cats.implicits._
 import doobie.util.these.\&/
 import doobie.util.these.\&/._

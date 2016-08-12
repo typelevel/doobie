@@ -7,44 +7,20 @@ import scalaz.syntax.monad._
 #-scalaz
 #+cats
 import cats.Monad
-import cats.data.{ Kleisli, Xor => \/ }
+import scala.{ Either => \/ }
 import cats.implicits._
+#+fs2
+import fs2.util.Catchable
+// import fs2.interop.cats._
+import fs2.interop.cats.reverse._
+#-fs2
 #-cats
 
-/** 
+/**
  * Module of additional combinators for `Catchable`, all defined in terms of `attempt`. Similar to 
  * those provided for `MonadCatchIO`. 
  */
 object catchable {
-
-#+cats
-  trait Catchable[M[_]] {
-    def attempt[A](ma: M[A]): M[Throwable \/ A]
-    def fail[A](t: Throwable): M[A]
-  }
-
-  object Catchable {
-
-    implicit def catsKleisliCatchable[M[_], E](implicit c: Catchable[M]): Catchable[Kleisli[M, E, ?]] =
-      new Catchable[Kleisli[M, E, ?]] {
-        def attempt[A](ma: Kleisli[M, E, A]): Kleisli[M, E, Throwable \/ A] =
-          Kleisli(e => c.attempt(ma.run(e)))
-        def fail[A](t: Throwable): Kleisli[M, E, A] =
-          Kleisli(e => c.fail(t))
-      }
-
-#+fs2
-    implicit def doobieCatchableToFs2Catchable[M[_]: Monad](implicit c: Catchable[M]): fs2.util.Catchable[M] =
-      new fs2.util.Catchable[M] {
-        def flatMap[A, B](a: M[A])(f: A => M[B]) = a.flatMap(f)
-        def pure[A](a: A) = a.pure[M]
-        def attempt[A](ma: M[A]) = c.attempt(ma).map(_.toEither)
-        def fail[A](t: Throwable) = c.fail(t)
-      }
-#-fs2    
-
-  }
-#-cats
 
   /** Like `attempt` but catches (and maps) only where defined. */
   def attemptSome[M[_]: Monad, A, B](ma: M[A])(p: PartialFunction[Throwable, B])(implicit c: Catchable[M]): M[B \/ A] =

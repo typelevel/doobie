@@ -5,9 +5,12 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
-import doobie.util.catchable.Catchable
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+#-fs2
 #-cats
 
 import doobie.util.capture._

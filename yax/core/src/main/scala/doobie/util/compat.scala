@@ -19,7 +19,7 @@ object compat {
 
 #+cats
   object cats {
-    import _root_.cats.{ Applicative, Monad, MonadCombine, ~> => CatsNat }
+    import _root_.cats.{ Applicative, FlatMap, Monad, MonadCombine }
     import _root_.cats.std.list._
 
     object applicative {
@@ -63,23 +63,20 @@ object compat {
 
 #+fs2
     object fs2 {
-      import _root_.fs2.util.{ Monad => Fs2Monad, ~> => Fs2Nat }
+      import _root_.cats.data.Kleisli
+      import _root_.fs2.util.{ Attempt, Catchable }
 
-      implicit def monadCompat[F[_]](implicit monad: Monad[F]): Fs2Monad[F] =
-        new Fs2Monad[F] {
-          def pure[A](a: A) = monad.pure(a)
-          override def map[A, B](fa: F[A])(f: A => B) = monad.map(fa)(f)
-          def flatMap[A, B](fa: F[A])(f: A => F[B]) = monad.flatMap(fa)(f)
+      implicit def catsKleisliFs2Catchable[M[_]: Applicative: FlatMap, E](implicit c: Catchable[M]): Catchable[Kleisli[M, E, ?]] =
+        new Catchable[Kleisli[M, E, ?]] {
+          def pure[A](a: A): Kleisli[M, E, A] = Kleisli.pure[M, E, A](a)
+          def flatMap[A, B](ma: Kleisli[M, E, A])(f: A => Kleisli[M, E, B]): Kleisli[M, E, B] = ma.flatMap(f)
+          def attempt[A](ma: Kleisli[M, E, A]): Kleisli[M, E, Attempt[A]] =
+            Kleisli(e => c.attempt(ma.run(e)))
+          def fail[A](t: Throwable): Kleisli[M, E, A] =
+            Kleisli(e => c.fail(t))
         }
-
-      implicit def naturalTransformationCompat[F[_], G[_]](nat: CatsNat[F, G]): Fs2Nat[F, G] =
-        new Fs2Nat[F, G] {
-          def apply[A](fa: F[A]) = nat(fa)
-        }
-
-    }
+      }
 #-fs2
-
   }
 #-cats
 

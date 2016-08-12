@@ -6,8 +6,10 @@ import scalaz.{ Monad, Catchable, \/, Unapply }
 import doobie.util.{ catchable => C }
 #+cats
 import cats.{ Monad, Unapply }
-import cats.data.{ Xor => \/ }
-import C.Catchable
+import scala.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+#-fs2
 #-cats
 
 /** Syntax for `Catchable` combinators defined in `util.catchable`. */

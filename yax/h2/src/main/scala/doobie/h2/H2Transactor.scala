@@ -8,9 +8,11 @@ import org.h2.jdbcx.JdbcConnectionPool
 import scalaz.{ Catchable, Monad }
 #-scalaz
 #+cats
-import doobie.util.catchable._
 import cats.Monad
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
 object h2transactor {

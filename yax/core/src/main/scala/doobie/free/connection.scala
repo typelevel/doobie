@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -159,14 +164,14 @@ object connection {
     case object CreateSQLXML extends ConnectionOp[SQLXML] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createSQLXML())
     }
-    case class  CreateStatement(a: Int, b: Int) extends ConnectionOp[Statement] {
+    case object CreateStatement extends ConnectionOp[Statement] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement())
+    }
+    case class  CreateStatement1(a: Int, b: Int) extends ConnectionOp[Statement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b))
     }
-    case class  CreateStatement1(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
+    case class  CreateStatement2(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement(a, b, c))
-    }
-    case object CreateStatement2 extends ConnectionOp[Statement] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStatement())
     }
     case class  CreateStruct(a: String, b: Array[Object]) extends ConnectionOp[Struct] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.createStruct(a, b))
@@ -177,11 +182,11 @@ object connection {
     case object GetCatalog extends ConnectionOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getCatalog())
     }
-    case object GetClientInfo extends ConnectionOp[Properties] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo())
-    }
-    case class  GetClientInfo1(a: String) extends ConnectionOp[String] {
+    case class  GetClientInfo(a: String) extends ConnectionOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo(a))
+    }
+    case object GetClientInfo1 extends ConnectionOp[Properties] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getClientInfo())
     }
     case object GetHoldability extends ConnectionOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getHoldability())
@@ -219,20 +224,20 @@ object connection {
     case class  NativeSQL(a: String) extends ConnectionOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.nativeSQL(a))
     }
-    case class  PrepareCall(a: String, b: Int, c: Int) extends ConnectionOp[CallableStatement] {
+    case class  PrepareCall(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c, d))
+    }
+    case class  PrepareCall1(a: String, b: Int, c: Int) extends ConnectionOp[CallableStatement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c))
     }
-    case class  PrepareCall1(a: String) extends ConnectionOp[CallableStatement] {
+    case class  PrepareCall2(a: String) extends ConnectionOp[CallableStatement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a))
-    }
-    case class  PrepareCall2(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareCall(a, b, c, d))
     }
     case class  PrepareStatement(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c))
     }
-    case class  PrepareStatement1(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c, d))
+    case class  PrepareStatement1(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement2(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
@@ -243,17 +248,17 @@ object connection {
     case class  PrepareStatement4(a: String) extends ConnectionOp[PreparedStatement] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a))
     }
-    case class  PrepareStatement5(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b))
+    case class  PrepareStatement5(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.prepareStatement(a, b, c, d))
     }
     case class  ReleaseSavepoint(a: Savepoint) extends ConnectionOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.releaseSavepoint(a))
     }
-    case object Rollback extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback())
-    }
-    case class  Rollback1(a: Savepoint) extends ConnectionOp[Unit] {
+    case class  Rollback(a: Savepoint) extends ConnectionOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback(a))
+    }
+    case object Rollback1 extends ConnectionOp[Unit] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.rollback())
     }
     case class  SetAutoCommit(a: Boolean) extends ConnectionOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setAutoCommit(a))
@@ -309,11 +314,24 @@ object connection {
    * Catchable instance for [[ConnectionIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableConnectionIO: Catchable[ConnectionIO] =
     new Catchable[ConnectionIO] {
       def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
       def fail[A](err: Throwable): ConnectionIO[A] = connection.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableConnectionIO: Catchable[ConnectionIO] =
+    new Catchable[ConnectionIO] {
+      def pure[A](a: A): ConnectionIO[A] = connection.delay(a)
+      def flatMap[A, B](a: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = a.flatMap(f)
+      def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
+      def fail[A](err: Throwable): ConnectionIO[A] = connection.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[ConnectionIO]].
@@ -409,20 +427,20 @@ object connection {
   /** 
    * @group Constructors (Primitives)
    */
+  val createStatement: ConnectionIO[Statement] =
+    F.liftF(CreateStatement)
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def createStatement(a: Int, b: Int): ConnectionIO[Statement] =
-    F.liftF(CreateStatement(a, b))
+    F.liftF(CreateStatement1(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
   def createStatement(a: Int, b: Int, c: Int): ConnectionIO[Statement] =
-    F.liftF(CreateStatement1(a, b, c))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  val createStatement: ConnectionIO[Statement] =
-    F.liftF(CreateStatement2)
+    F.liftF(CreateStatement2(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
@@ -445,14 +463,14 @@ object connection {
   /** 
    * @group Constructors (Primitives)
    */
-  val getClientInfo: ConnectionIO[Properties] =
-    F.liftF(GetClientInfo)
+  def getClientInfo(a: String): ConnectionIO[String] =
+    F.liftF(GetClientInfo(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def getClientInfo(a: String): ConnectionIO[String] =
-    F.liftF(GetClientInfo1(a))
+  val getClientInfo: ConnectionIO[Properties] =
+    F.liftF(GetClientInfo1)
 
   /** 
    * @group Constructors (Primitives)
@@ -529,20 +547,20 @@ object connection {
   /** 
    * @group Constructors (Primitives)
    */
+  def prepareCall(a: String, b: Int, c: Int, d: Int): ConnectionIO[CallableStatement] =
+    F.liftF(PrepareCall(a, b, c, d))
+
+  /** 
+   * @group Constructors (Primitives)
+   */
   def prepareCall(a: String, b: Int, c: Int): ConnectionIO[CallableStatement] =
-    F.liftF(PrepareCall(a, b, c))
+    F.liftF(PrepareCall1(a, b, c))
 
   /** 
    * @group Constructors (Primitives)
    */
   def prepareCall(a: String): ConnectionIO[CallableStatement] =
-    F.liftF(PrepareCall1(a))
-
-  /** 
-   * @group Constructors (Primitives)
-   */
-  def prepareCall(a: String, b: Int, c: Int, d: Int): ConnectionIO[CallableStatement] =
-    F.liftF(PrepareCall2(a, b, c, d))
+    F.liftF(PrepareCall2(a))
 
   /** 
    * @group Constructors (Primitives)
@@ -553,8 +571,8 @@ object connection {
   /** 
    * @group Constructors (Primitives)
    */
-  def prepareStatement(a: String, b: Int, c: Int, d: Int): ConnectionIO[PreparedStatement] =
-    F.liftF(PrepareStatement1(a, b, c, d))
+  def prepareStatement(a: String, b: Array[String]): ConnectionIO[PreparedStatement] =
+    F.liftF(PrepareStatement1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -577,8 +595,8 @@ object connection {
   /** 
    * @group Constructors (Primitives)
    */
-  def prepareStatement(a: String, b: Array[String]): ConnectionIO[PreparedStatement] =
-    F.liftF(PrepareStatement5(a, b))
+  def prepareStatement(a: String, b: Int, c: Int, d: Int): ConnectionIO[PreparedStatement] =
+    F.liftF(PrepareStatement5(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
@@ -589,14 +607,14 @@ object connection {
   /** 
    * @group Constructors (Primitives)
    */
-  val rollback: ConnectionIO[Unit] =
-    F.liftF(Rollback)
+  def rollback(a: Savepoint): ConnectionIO[Unit] =
+    F.liftF(Rollback(a))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def rollback(a: Savepoint): ConnectionIO[Unit] =
-    F.liftF(Rollback1(a))
+  val rollback: ConnectionIO[Unit] =
+    F.liftF(Rollback1)
 
   /** 
    * @group Constructors (Primitives)

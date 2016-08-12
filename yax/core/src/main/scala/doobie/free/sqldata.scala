@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -146,11 +151,24 @@ object sqldata {
    * Catchable instance for [[SQLDataIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableSQLDataIO: Catchable[SQLDataIO] =
     new Catchable[SQLDataIO] {
       def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
       def fail[A](err: Throwable): SQLDataIO[A] = sqldata.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableSQLDataIO: Catchable[SQLDataIO] =
+    new Catchable[SQLDataIO] {
+      def pure[A](a: A): SQLDataIO[A] = sqldata.delay(a)
+      def flatMap[A, B](a: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = a.flatMap(f)
+      def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
+      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[SQLDataIO]].

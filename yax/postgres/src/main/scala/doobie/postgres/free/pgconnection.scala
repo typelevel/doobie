@@ -6,10 +6,14 @@ import scalaz.syntax.catchable._
 #-scalaz
 #+cats
 import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
-import cats.data.{ Kleisli, Xor => \/ }
-import doobie.util.catchable._
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import doobie.util.compat.cats.fs2._
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 import doobie.util.capture._
 
@@ -102,11 +106,22 @@ object pgconnection {
    * Catchable instance for [[PGConnectionIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchablePGConnectionIO: Catchable[PGConnectionIO] =
     new Catchable[PGConnectionIO] {
       def attempt[A](f: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(f)
       def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
     }
+#-scalaz
+#+fs2
+  implicit val CatchablePGConnectionIO: Catchable[PGConnectionIO] =
+    new Catchable[PGConnectionIO] {
+      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
+      def flatMap[A, B](ma: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = ma.flatMap(f)
+      def attempt[A](ma: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(ma)
+      def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
+    }
+#-fs2
 
   /**
    * Capture instance for [[PGConnectionIO]].
@@ -229,7 +244,7 @@ object pgconnection {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => Catchable.catsKleisliCatchable[M, PGConnection].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Catchable[M, PGConnection].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations

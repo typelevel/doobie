@@ -12,14 +12,14 @@ import scalaz.stream.Process
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
-import doobie.util.catchable.Catchable.doobieCatchableToFs2Catchable
 import cats.Monad
 import cats.implicits._
-#-cats
 #+fs2
 import fs2.{ Stream => Process }
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
 #-fs2
+#-cats
 
 /** Syntax for `Process` operations defined in `util.process`. */
 object process {

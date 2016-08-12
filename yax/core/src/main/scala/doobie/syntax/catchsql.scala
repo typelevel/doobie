@@ -6,9 +6,11 @@ import scalaz.{ Monad, Catchable, \/, Unapply }
 import doobie.util.{ catchsql => C }
 #+cats
 import cats.{ Monad, Unapply }
-import cats.data.{ Xor => \/ }
-import doobie.util.catchable.Catchable
+import scala.util.{ Either => \/ }
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 import doobie.enum.sqlstate.SqlState
 import java.sql.SQLException
 

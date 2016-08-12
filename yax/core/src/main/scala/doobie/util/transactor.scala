@@ -27,7 +27,8 @@ import cats.implicits._
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, eval_ }
-import compat.cats.fs2._
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
 #-fs2
 
 import java.sql.Connection

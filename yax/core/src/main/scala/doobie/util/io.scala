@@ -13,6 +13,9 @@ import doobie.util.compat.cats.monad._
 import cats.Monad
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {

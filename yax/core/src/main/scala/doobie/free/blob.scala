@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -126,11 +131,11 @@ object blob {
     case object Free extends BlobOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.free())
     }
-    case class  GetBinaryStream(a: Long, b: Long) extends BlobOp[InputStream] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
-    }
-    case object GetBinaryStream1 extends BlobOp[InputStream] {
+    case object GetBinaryStream extends BlobOp[InputStream] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream())
+    }
+    case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBinaryStream(a, b))
     }
     case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getBytes(a, b))
@@ -138,20 +143,20 @@ object blob {
     case object Length extends BlobOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.length())
     }
-    case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
+    case class  Position(a: Blob, b: Long) extends BlobOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
-    case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
+    case class  Position1(a: Array[Byte], b: Long) extends BlobOp[Long] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.position(a, b))
     }
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBinaryStream(a))
     }
-    case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
-    }
-    case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+    case class  SetBytes(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b, c, d))
+    }
+    case class  SetBytes1(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.setBytes(a, b))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.truncate(a))
@@ -171,11 +176,24 @@ object blob {
    * Catchable instance for [[BlobIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableBlobIO: Catchable[BlobIO] =
     new Catchable[BlobIO] {
       def attempt[A](f: BlobIO[A]): BlobIO[Throwable \/ A] = blob.attempt(f)
       def fail[A](err: Throwable): BlobIO[A] = blob.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableBlobIO: Catchable[BlobIO] =
+    new Catchable[BlobIO] {
+      def pure[A](a: A): BlobIO[A] = blob.delay(a)
+      def flatMap[A, B](a: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = a.flatMap(f)
+      def attempt[A](f: BlobIO[A]): BlobIO[Throwable \/ A] = blob.attempt(f)
+      def fail[A](err: Throwable): BlobIO[A] = blob.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[BlobIO]].
@@ -223,14 +241,14 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def getBinaryStream(a: Long, b: Long): BlobIO[InputStream] =
-    F.liftF(GetBinaryStream(a, b))
+  val getBinaryStream: BlobIO[InputStream] =
+    F.liftF(GetBinaryStream)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getBinaryStream: BlobIO[InputStream] =
-    F.liftF(GetBinaryStream1)
+  def getBinaryStream(a: Long, b: Long): BlobIO[InputStream] =
+    F.liftF(GetBinaryStream1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -247,13 +265,13 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Array[Byte], b: Long): BlobIO[Long] =
+  def position(a: Blob, b: Long): BlobIO[Long] =
     F.liftF(Position(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def position(a: Blob, b: Long): BlobIO[Long] =
+  def position(a: Array[Byte], b: Long): BlobIO[Long] =
     F.liftF(Position1(a, b))
 
   /** 
@@ -265,14 +283,14 @@ object blob {
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
-    F.liftF(SetBytes(a, b))
+  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
+    F.liftF(SetBytes(a, b, c, d))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] =
-    F.liftF(SetBytes1(a, b, c, d))
+  def setBytes(a: Long, b: Array[Byte]): BlobIO[Int] =
+    F.liftF(SetBytes1(a, b))
 
   /** 
    * @group Constructors (Primitives)

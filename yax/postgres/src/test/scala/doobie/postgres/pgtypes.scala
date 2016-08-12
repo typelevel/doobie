@@ -17,7 +17,7 @@ import org.specs2.mutable.Specification
 import scalaz.{ Maybe, \/- }
 #-scalaz
 #+cats
-import cats.data.Xor.{ Left => -\/, Right => \/- }
+import scala.util.{ Left => -\/, Right => \/- }
 #-cats
 
 // Establish that we can write and read various types.

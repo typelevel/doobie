@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -186,11 +191,11 @@ object sqloutput {
     case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeNString(a))
     }
-    case class  WriteObject(a: SQLData) extends SQLOutputOp[Unit] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
-    }
-    case class  WriteObject1(a: Object, b: SQLType) extends SQLOutputOp[Unit] {
+    case class  WriteObject(a: Object, b: SQLType) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a, b))
+    }
+    case class  WriteObject1(a: SQLData) extends SQLOutputOp[Unit] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeObject(a))
     }
     case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.writeRef(a))
@@ -234,11 +239,24 @@ object sqloutput {
    * Catchable instance for [[SQLOutputIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableSQLOutputIO: Catchable[SQLOutputIO] =
     new Catchable[SQLOutputIO] {
       def attempt[A](f: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] = sqloutput.attempt(f)
       def fail[A](err: Throwable): SQLOutputIO[A] = sqloutput.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableSQLOutputIO: Catchable[SQLOutputIO] =
+    new Catchable[SQLOutputIO] {
+      def pure[A](a: A): SQLOutputIO[A] = sqloutput.delay(a)
+      def flatMap[A, B](a: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = a.flatMap(f)
+      def attempt[A](f: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] = sqloutput.attempt(f)
+      def fail[A](err: Throwable): SQLOutputIO[A] = sqloutput.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[SQLOutputIO]].
@@ -382,14 +400,14 @@ object sqloutput {
   /** 
    * @group Constructors (Primitives)
    */
-  def writeObject(a: SQLData): SQLOutputIO[Unit] =
-    F.liftF(WriteObject(a))
+  def writeObject(a: Object, b: SQLType): SQLOutputIO[Unit] =
+    F.liftF(WriteObject(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def writeObject(a: Object, b: SQLType): SQLOutputIO[Unit] =
-    F.liftF(WriteObject1(a, b))
+  def writeObject(a: SQLData): SQLOutputIO[Unit] =
+    F.liftF(WriteObject1(a))
 
   /** 
    * @group Constructors (Primitives)

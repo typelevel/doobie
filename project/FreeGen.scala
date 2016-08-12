@@ -183,10 +183,15 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \\/ }
     |#-scalaz
     |#+cats
-    |import doobie.util.catchable.Catchable
     |import cats.{ Monad, ~> }
-    |import cats.data.{ Kleisli, Xor => \\/ }
+    |import cats.data.Kleisli
     |import cats.free.{ Free => F }
+    |import scala.util.{ Either => \\/ }
+    |#+fs2
+    |import fs2.util.Catchable
+    |import fs2.interop.cats.reverse._
+    |import doobie.util.compat.cats.fs2._
+    |#-fs2
     |#-cats
     |
     |import doobie.util.capture._
@@ -290,11 +295,24 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * Catchable instance for [[${sname}IO]].
     |   * @group Typeclass Instances
     |   */
+    |#+scalaz
     |  implicit val Catchable${sname}IO: Catchable[${sname}IO] =
     |    new Catchable[${sname}IO] {
     |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
     |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.delay(throw err)
     |    }
+    |#-scalaz
+    |#+cats
+    |#+fs2
+    |  implicit val Catchable${sname}IO: Catchable[${sname}IO] =
+    |    new Catchable[${sname}IO] {
+    |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
+    |      def flatMap[A, B](a: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = a.flatMap(f)
+    |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
+    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.delay(throw err)
+    |    }
+    |#-fs2
+    |#-cats
     |
     |  /**
     |   * Capture instance for [[${sname}IO]].

@@ -37,15 +37,14 @@ import scalaz.{ Monad, ~>, Catchable, Foldable }
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import cats.{ Foldable, Monad, ~> }
+import cats.{ Foldable, Monad }
 import cats.implicits._
 #-cats
 #+fs2
-import doobie.util.compat.cats.fs2._
-import doobie.util.catchable.Catchable
-import doobie.util.catchable.Catchable.doobieCatchableToFs2Catchable
 import fs2.{ Stream => Process }
+import fs2.util.{ Catchable, ~> }
 import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
+import fs2.interop.cats.reverse._
 #-fs2
 
 /**

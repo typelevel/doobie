@@ -22,10 +22,11 @@ import scalaz.stream.Process. { eval, eval_, halt }
 #+cats
 import doobie.util.catchable._
 import cats.Monad
-import cats.data.Xor.{ Left => -\/, Right => \/- }
 import cats.implicits._
+import scala.util.{ Left => -\/, Right => \/- }
 #-cats
 #+fs2
+import fs2.util.Catchable
 import fs2.{ Stream => Process }
 #-fs2
 

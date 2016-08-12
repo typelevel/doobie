@@ -6,10 +6,14 @@ import scalaz.syntax.catchable._
 #-scalaz
 #+cats
 import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
-import cats.data.{ Kleisli, Xor => \/ }
-import doobie.util.catchable._
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import doobie.util.compat.cats.fs2._
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 import doobie.util.capture._
 
@@ -99,11 +103,22 @@ object copymanager {
    * Catchable instance for [[CopyManagerIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableCopyManagerIO: Catchable[CopyManagerIO] =
     new Catchable[CopyManagerIO] {
       def attempt[A](f: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(f)
       def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
     }
+#-scalaz
+#+fs2
+  implicit val CatchableCopyManagerIO: Catchable[CopyManagerIO] =
+    new Catchable[CopyManagerIO] {
+      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
+      def flatMap[A, B](ma: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = ma.flatMap(f)
+      def attempt[A](ma: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(ma)
+      def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
+    }
+#-fs2
 
   /**
    * Capture instance for [[CopyManagerIO]].
@@ -202,7 +217,7 @@ object copymanager {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => Catchable.catsKleisliCatchable[M, CopyManager].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Catchable[M, CopyManager].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations

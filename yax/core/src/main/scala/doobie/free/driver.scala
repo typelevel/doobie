@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -161,11 +166,24 @@ object driver {
    * Catchable instance for [[DriverIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableDriverIO: Catchable[DriverIO] =
     new Catchable[DriverIO] {
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
       def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableDriverIO: Catchable[DriverIO] =
+    new Catchable[DriverIO] {
+      def pure[A](a: A): DriverIO[A] = driver.delay(a)
+      def flatMap[A, B](a: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = a.flatMap(f)
+      def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
+      def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[DriverIO]].

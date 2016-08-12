@@ -4,10 +4,15 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import doobie.util.catchable.Catchable
 import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.data.Kleisli
 import cats.free.{ Free => F }
+import scala.util.{ Either => \/ }
+#+fs2
+import fs2.util.Catchable
+import fs2.interop.cats.reverse._
+import doobie.util.compat.cats.fs2._
+#-fs2
 #-cats
 
 import doobie.util.capture._
@@ -329,11 +334,11 @@ object databasemetadata {
     case object GetSchemaTerm extends DatabaseMetaDataOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemaTerm())
     }
-    case class  GetSchemas(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas(a, b))
-    }
-    case object GetSchemas1 extends DatabaseMetaDataOp[ResultSet] {
+    case object GetSchemas extends DatabaseMetaDataOp[ResultSet] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas())
+    }
+    case class  GetSchemas1(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSchemas(a, b))
     }
     case object GetSearchStringEscape extends DatabaseMetaDataOp[String] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.getSearchStringEscape())
@@ -479,11 +484,11 @@ object databasemetadata {
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsColumnAliasing())
     }
-    case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
-    }
-    case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+    case class  SupportsConvert(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert(a, b))
+    }
+    case object SupportsConvert1 extends DatabaseMetaDataOp[Boolean] {
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsConvert())
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.supportsCoreSQLGrammar())
@@ -674,11 +679,24 @@ object databasemetadata {
    * Catchable instance for [[DatabaseMetaDataIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableDatabaseMetaDataIO: Catchable[DatabaseMetaDataIO] =
     new Catchable[DatabaseMetaDataIO] {
       def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
       def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.delay(throw err)
     }
+#-scalaz
+#+cats
+#+fs2
+  implicit val CatchableDatabaseMetaDataIO: Catchable[DatabaseMetaDataIO] =
+    new Catchable[DatabaseMetaDataIO] {
+      def pure[A](a: A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
+      def flatMap[A, B](a: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = a.flatMap(f)
+      def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
+      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.delay(throw err)
+    }
+#-fs2
+#-cats
 
   /**
    * Capture instance for [[DatabaseMetaDataIO]].
@@ -1128,14 +1146,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  def getSchemas(a: String, b: String): DatabaseMetaDataIO[ResultSet] =
-    F.liftF(GetSchemas(a, b))
+  val getSchemas: DatabaseMetaDataIO[ResultSet] =
+    F.liftF(GetSchemas)
 
   /** 
    * @group Constructors (Primitives)
    */
-  val getSchemas: DatabaseMetaDataIO[ResultSet] =
-    F.liftF(GetSchemas1)
+  def getSchemas(a: String, b: String): DatabaseMetaDataIO[ResultSet] =
+    F.liftF(GetSchemas1(a, b))
 
   /** 
    * @group Constructors (Primitives)
@@ -1428,14 +1446,14 @@ object databasemetadata {
   /** 
    * @group Constructors (Primitives)
    */
-  val supportsConvert: DatabaseMetaDataIO[Boolean] =
-    F.liftF(SupportsConvert)
+  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsConvert(a, b))
 
   /** 
    * @group Constructors (Primitives)
    */
-  def supportsConvert(a: Int, b: Int): DatabaseMetaDataIO[Boolean] =
-    F.liftF(SupportsConvert1(a, b))
+  val supportsConvert: DatabaseMetaDataIO[Boolean] =
+    F.liftF(SupportsConvert1)
 
   /** 
    * @group Constructors (Primitives)

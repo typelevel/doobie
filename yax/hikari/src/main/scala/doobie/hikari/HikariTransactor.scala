@@ -8,10 +8,12 @@ import scalaz.{ Catchable, Monad }
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import doobie.util.catchable._
 import cats.Monad
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 object hikaritransactor {
 

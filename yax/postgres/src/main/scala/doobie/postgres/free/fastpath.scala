@@ -6,10 +6,14 @@ import scalaz.syntax.catchable._
 #-scalaz
 #+cats
 import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
-import cats.data.{ Kleisli, Xor => \/ }
-import doobie.util.catchable._
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import doobie.util.compat.cats.fs2._
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 import doobie.util.capture._
 
@@ -95,11 +99,22 @@ object fastpath { self =>
    * Catchable instance for [[FastpathIO]].
    * @group Typeclass Instances
    */
+#+scalaz
   implicit val CatchableFastpathIO: Catchable[FastpathIO] =
     new Catchable[FastpathIO] {
       def attempt[A](f: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(f)
       def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
     }
+#-scalaz
+#+fs2
+  implicit val CatchableFastpathIO: Catchable[FastpathIO] =
+    new Catchable[FastpathIO] {
+      def pure[A](a: A): FastpathIO[A] = self.delay(a)
+      def flatMap[A, B](ma: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = ma.flatMap(f)
+      def attempt[A](ma: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(ma)
+      def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
+    }
+#-fs2
 
   /**
    * Capture instance for [[FastpathIO]].
@@ -198,7 +213,7 @@ object fastpath { self =>
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => Catchable.catsKleisliCatchable[M, PGFastpath].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Catchable[M, PGFastpath].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations

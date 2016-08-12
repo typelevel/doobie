@@ -9,9 +9,11 @@ import scalaz.{ Monad, Catchable, \/, -\/, \/- }
 #-scalaz
 #+cats
 import cats.Monad
-import cats.data.{ Xor => \/ }
-import cats.data.Xor.{ Left => -\/, Right => \/- }
-import doobie.util.catchable.Catchable
+import scala.util.{ Either => \/ }
+import scala.util.{ Left => -\/, Right => \/- }
+#+fs2
+import fs2.util.Catchable
+#-fs2
 #-cats
 
 object iolite {
@@ -114,11 +116,22 @@ object iolite {
 #-cats        
       }
 
+#+scalaz
     implicit val CatchableIOLite: Catchable[IOLite] =
       new Catchable[IOLite] {
         def attempt[A](fa: IOLite[A]): IOLite[Throwable \/ A] = fa.attempt
         def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
       }
+#-scalaz
+#+fs2
+    implicit val CatchableIOLite: Catchable[IOLite] =
+      new Catchable[IOLite] {
+        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
+        def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
+        def attempt[A](ma: IOLite[A]): IOLite[Throwable \/ A] = ma.attempt
+        def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
+      }
+#-fs2
 
     implicit val CaptureIOLite: Capture[IOLite] =
       new Capture[IOLite] {
