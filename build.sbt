@@ -217,7 +217,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats"     % "0.6.1",
-      "co.fs2"         %% "fs2-core" % "0.9.0-M5",
+      "co.fs2"         %% "fs2-core" % "0.9.0-RC1",
       "com.h2database" %  "h2"       % "1.3.170" % "test"
     )
   )
