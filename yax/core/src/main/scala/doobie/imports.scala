@@ -12,7 +12,7 @@ import cats.{ Monad, Functor, Unapply }
 import cats.free.Free
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.Effect
 import fs2.{ Stream => Process }
 #-fs2
 
@@ -79,7 +79,12 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
 
   /** @group Syntax */
+#+scalaz
   implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
+#-scalaz
+#+fs2
+  implicit def toProcessOps[F[_]: Effect, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
+#-fs2
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
@@ -96,8 +101,10 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type Atom[A] = doobie.util.atom.Atom[A]
   /** @group Companion Aliases */ val  Atom    = doobie.util.atom.Atom
 
+#+scalaz
   /** @group Type Aliases */      type Capture[M[_]] = doobie.util.capture.Capture[M]
   /** @group Companion Aliases */ val  Capture       = doobie.util.capture.Capture
+#-scalaz
 
   /** @group Type Aliases */      type Composite[A] = doobie.util.composite.Composite[A]
   /** @group Companion Aliases */ val  Composite    = doobie.util.composite.Composite
@@ -156,7 +163,7 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
         type M[X] = M0[M1[F0,?], X]
         type A = A0
         def TC = TC0
-#+scalaz        
+#+scalaz
         def leibniz = Leibniz.refl
 #-scalaz
 #+cats

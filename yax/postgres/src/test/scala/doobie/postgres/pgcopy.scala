@@ -3,6 +3,9 @@ package doobie.postgres
 import doobie.imports._
 import doobie.postgres.imports._
 
+#+fs2
+import fs2.util.Effect
+#-fs2
 
 import java.io.ByteArrayOutputStream
 
@@ -41,7 +44,12 @@ object pgcopyspec extends Specification {
 
       val prog: ConnectionIO[String] =
         for {
+#+scalaz
           out <- Capture[ConnectionIO].apply(new ByteArrayOutputStream)
+#-scalaz
+#+fs2
+          out <- Predef.implicitly[Effect[ConnectionIO]].delay(new ByteArrayOutputStream)
+#-fs2
           _   <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
         } yield new String(out.toByteArray, "UTF-8")
 

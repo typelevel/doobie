@@ -12,7 +12,9 @@ import doobie.syntax.process._
 
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
+#+scalaz
 import doobie.util.capture.Capture
+#-scalaz
 import doobie.util.process.repeatEvalChunks
 
 import doobie.free.{ connection => C }
@@ -42,7 +44,7 @@ import cats.implicits._
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
-import fs2.util.{ Catchable, ~> }
+import fs2.util.{ Effect, ~> }
 import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 import fs2.interop.cats.reverse._
 #-fs2
@@ -54,7 +56,12 @@ import fs2.interop.cats.reverse._
 object connection {
 
   /** @group Typeclass Instances */
+#+scalaz
   implicit val CatchableConnectionIO = C.CatchableConnectionIO
+#-scalaz
+#+fs2
+  implicit val EffectConnectionIO = C.EffectConnectionIO
+#-fs2
 
   /** @group Lifting */
   def delay[A](a: => A): ConnectionIO[A] =
@@ -91,7 +98,7 @@ object connection {
   private def liftProcess[A: Composite](
     chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
-    prep:   PreparedStatementIO[Unit], 
+    prep:   PreparedStatementIO[Unit],
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
 
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
@@ -117,7 +124,7 @@ object connection {
   /**
    * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
    * action, and return results via a `Process`.
-   * @group Prepared Statements 
+   * @group Prepared Statements
    */
   def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
     liftProcess(chunkSize, C.prepareStatement(sql), prep, PS.executeQuery)
@@ -296,7 +303,12 @@ object connection {
 
   /** @group Process Syntax */
   implicit class ProcessConnectionIOOps[A](pa: Process[ConnectionIO, A]) {
+#+scalaz
     def trans[M[_]: Monad: Catchable: Capture](c: Connection): Process[M, A] =
+#-scalaz
+#+fs2
+    def trans[M[_]: Effect](c: Connection): Process[M, A] =
+#-fs2
       pa.translate(new (ConnectionIO ~> M) {
         def apply[B](ma: ConnectionIO[B]): M[B] =
           ma.transK[M].run(c)
@@ -305,7 +317,7 @@ object connection {
 
   /** 
    * Compute a map from native type to closest-matching JDBC type.
-   * @group MetaData 
+   * @group MetaData
    */
   val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
     getMetaData(DMD.getTypeInfo.flatMap(DMD.lift(_, HRS.list[(String, JdbcType)].map(_.toMap))))   

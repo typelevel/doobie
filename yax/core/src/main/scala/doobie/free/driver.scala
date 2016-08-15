@@ -4,16 +4,16 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.data.Kleisli
 import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
+#-cats
 #+fs2
-import fs2.util.Catchable
-import fs2.interop.cats.reverse._
+import fs2.util.{ Effect, Monad }
+import fs2.interop.cats._
 import doobie.util.compat.cats.fs2._
 #-fs2
-#-cats
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -54,8 +54,8 @@ import resultset.ResultSetIO
 
 /**
  * Algebra and free monad for primitive operations over a `java.sql.Driver`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
- * for library developers. End users will prefer a safer, higher-level API such as that provided 
+ * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
+ * for library developers. End users will prefer a safer, higher-level API such as that provided
  * in the `doobie.hi` package.
  *
  * `DriverIO` is a free monad that must be run via an interpreter, most commonly via
@@ -63,16 +63,16 @@ import resultset.ResultSetIO
  * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, Driver, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
+ * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
  * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
  * val a: DriverIO[Foo] = ...
- * 
- * // A JDBC object 
+ *
+ * // A JDBC object
  * val s: Driver = ...
- * 
+ *
  * // Unfolding into a Task
  * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
@@ -80,29 +80,41 @@ import resultset.ResultSetIO
  * @group Modules
  */
 object driver {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `java.sql.Driver`.
-   * @group Algebra 
+   * @group Algebra
    */
   sealed trait DriverOp[A] {
-    protected def primitive[M[_]: Monad: Capture](f: Driver => A): Kleisli[M, Driver, A] = 
+#+scalaz
+    protected def primitive[M[_]: Monad: Capture](f: Driver => A): Kleisli[M, Driver, A] =
       Kleisli((s: Driver) => Capture[M].apply(f(s)))
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A]
+#-scalaz
+#+fs2
+    protected def primitive[M[_]: Effect](f: Driver => A): Kleisli[M, Driver, A] =
+      Kleisli((s: Driver) => Predef.implicitly[Effect[M]].delay(f(s)))
+    def defaultTransK[M[_]: Effect]: Kleisli[M, Driver, A]
+#-fs2
   }
 
-  /** 
+  /**
    * Module of constructors for `DriverOp`. These are rarely useful outside of the implementation;
    * prefer the smart constructors provided by the `driver` module.
-   * @group Algebra 
+   * @group Algebra
    */
   object DriverOp {
-    
+
     // This algebra has a default interpreter
     implicit val DriverKleisliTrans: KleisliTrans.Aux[DriverOp, Driver] =
       new KleisliTrans[DriverOp] {
         type J = Driver
+#+scalaz
         def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
+#-scalaz
+#+fs2
+        def interpK[M[_]: Effect]: DriverOp ~> Kleisli[M, Driver, ?] =
+#-fs2
           new (DriverOp ~> Kleisli[M, Driver, ?]) {
             def apply[A](op: DriverOp[A]): Kleisli[M, Driver, A] =
               op.defaultTransK[M]
@@ -111,25 +123,44 @@ object driver {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverOp[A] {
+#+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+#-scalaz
+#+fs2
+      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+#-fs2
     }
 
     // Combinators
     case class Attempt[A](action: DriverIO[A]) extends DriverOp[Throwable \/ A] {
 #+scalaz
-      import scalaz._, Scalaz._
-#-scalaz
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] =
         Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
+#-scalaz
+#+fs2
+      override def defaultTransK[M[_]: Effect] =
+        Predef.implicitly[Effect[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
+#-fs2
     }
     case class Pure[A](a: () => A) extends DriverOp[A] {
+#+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
+#-scalaz
+#+fs2
+      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+#-fs2
     }
     case class Raw[A](f: Driver => A) extends DriverOp[A] {
+#+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
+#-scalaz
+#+fs2
+      override def defaultTransK[M[_]: Effect] = primitive(f)
+#-fs2
     }
 
     // Primitive Operations
+#+scalaz
     case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.acceptsURL(a))
     }
@@ -151,39 +182,51 @@ object driver {
     case object JdbcCompliant extends DriverOp[Boolean] {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_.jdbcCompliant())
     }
+#-scalaz
+#+fs2
+    case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.acceptsURL(a))
+    }
+    case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.connect(a, b))
+    }
+    case object GetMajorVersion extends DriverOp[Int] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.getMajorVersion())
+    }
+    case object GetMinorVersion extends DriverOp[Int] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.getMinorVersion())
+    }
+    case object GetParentLogger extends DriverOp[Logger] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.getParentLogger())
+    }
+    case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.getPropertyInfo(a, b))
+    }
+    case object JdbcCompliant extends DriverOp[Boolean] {
+      override def defaultTransK[M[_]: Effect] = primitive(_.jdbcCompliant())
+    }
+#-fs2
 
   }
   import DriverOp._ // We use these immediately
 
   /**
-   * Free monad over a free functor of [[DriverOp]]; abstractly, a computation that consumes 
-   * a `java.sql.Driver` and produces a value of type `A`. 
-   * @group Algebra 
+   * Free monad over a free functor of [[DriverOp]]; abstractly, a computation that consumes
+   * a `java.sql.Driver` and produces a value of type `A`.
+   * @group Algebra
    */
   type DriverIO[A] = F[DriverOp, A]
 
+#+scalaz
   /**
    * Catchable instance for [[DriverIO]].
    * @group Typeclass Instances
    */
-#+scalaz
   implicit val CatchableDriverIO: Catchable[DriverIO] =
     new Catchable[DriverIO] {
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
       def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
     }
-#-scalaz
-#+cats
-#+fs2
-  implicit val CatchableDriverIO: Catchable[DriverIO] =
-    new Catchable[DriverIO] {
-      def pure[A](a: A): DriverIO[A] = driver.delay(a)
-      def flatMap[A, B](a: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = a.flatMap(f)
-      def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
-      def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
-    }
-#-fs2
-#-cats
 
   /**
    * Capture instance for [[DriverIO]].
@@ -193,6 +236,23 @@ object driver {
     new Capture[DriverIO] {
       def apply[A](a: => A): DriverIO[A] = driver.delay(a)
     }
+#-scalaz
+#+fs2
+  /**
+   * Effect instance for [[DriverIO]].
+   * @group Typeclass Instances
+   */
+  implicit val EffectDriverIO: Effect[DriverIO] =
+    new Effect[DriverIO] {
+      def pure[A](a: A): DriverIO[A] = driver.delay(a)
+      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = fa.flatMap(f)
+      def attempt[A](fa: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(fa)
+      def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
+      def suspend[A](fa: => DriverIO[A]): DriverIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
+      override def delay[A](a: => A): DriverIO[A] = driver.delay(a)
+      def unsafeRunAsync[A](fa: DriverIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -201,13 +261,13 @@ object driver {
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverIO[A] =
     F.liftF(Lift(j, action, mod))
 
-  /** 
+  /**
    * Lift a DriverIO[A] into an exception-capturing DriverIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: DriverIO[A]): DriverIO[Throwable \/ A] =
     F.liftF[DriverOp, Throwable \/ A](Attempt(a))
- 
+
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
@@ -222,76 +282,100 @@ object driver {
   def raw[A](f: Driver => A): DriverIO[A] =
     F.liftF(Raw(f))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def acceptsURL(a: String): DriverIO[Boolean] =
     F.liftF(AcceptsURL(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def connect(a: String, b: Properties): DriverIO[Connection] =
     F.liftF(Connect(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getMajorVersion: DriverIO[Int] =
     F.liftF(GetMajorVersion)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getMinorVersion: DriverIO[Int] =
     F.liftF(GetMinorVersion)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getParentLogger: DriverIO[Logger] =
     F.liftF(GetParentLogger)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def getPropertyInfo(a: String, b: Properties): DriverIO[Array[DriverPropertyInfo]] =
     F.liftF(GetPropertyInfo(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val jdbcCompliant: DriverIO[Boolean] =
     F.liftF(JdbcCompliant)
 
- /** 
-  * Natural transformation from `DriverOp` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
+ /**
+  * Natural transformation from `DriverOp` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`.
   * @group Algebra
   */
+#+scalaz
   def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
    DriverOp.DriverKleisliTrans.interpK
+#-scalaz
+#+fs2
+  def interpK[M[_]: Effect]: DriverOp ~> Kleisli[M, Driver, ?] =
+   DriverOp.DriverKleisliTrans.interpK
+#-fs2
 
- /** 
-  * Natural transformation from `DriverIO` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`. 
+ /**
+  * Natural transformation from `DriverIO` to `Kleisli` for the given `M`, consuming a `java.sql.Driver`.
   * @group Algebra
   */
+#+scalaz
   def transK[M[_]: Monad: Catchable: Capture]: DriverIO ~> Kleisli[M, Driver, ?] =
    DriverOp.DriverKleisliTrans.transK
+#-scalaz
+#+fs2
+  def transK[M[_]: Effect]: DriverIO ~> Kleisli[M, Driver, ?] =
+   DriverOp.DriverKleisliTrans.transK
+#-fs2
 
- /** 
-  * Natural transformation from `DriverIO` to `M`, given a `java.sql.Driver`. 
+ /**
+  * Natural transformation from `DriverIO` to `M`, given a `java.sql.Driver`.
   * @group Algebra
   */
+#+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: Driver): DriverIO ~> M =
    DriverOp.DriverKleisliTrans.trans[M](c)
+#-scalaz
+#+fs2
+ def trans[M[_]: Effect](c: Driver): DriverIO ~> M =
+   DriverOp.DriverKleisliTrans.trans[M](c)
+#-fs2
 
   /**
    * Syntax for `DriverIO`.
    * @group Algebra
    */
   implicit class DriverIOOps[A](ma: DriverIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A] =
       DriverOp.DriverKleisliTrans.transK[M].apply(ma)
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, Driver, A] =
+      DriverOp.DriverKleisliTrans.transK[M].apply(ma)
+#-fs2
   }
 
 }

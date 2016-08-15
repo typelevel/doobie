@@ -6,15 +6,13 @@ import scalaz.syntax.bifunctor._
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import cats.Monad
 import scala.{ Either => \/ }
 import cats.implicits._
-#+fs2
-import fs2.util.Catchable
-// import fs2.interop.cats._
-import fs2.interop.cats.reverse._
-#-fs2
+import fs2.interop.cats._
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Monad }
+#-fs2
 
 /**
  * Module of additional combinators for `Catchable`, all defined in terms of `attempt`. Similar to 

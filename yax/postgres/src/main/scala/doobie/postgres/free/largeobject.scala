@@ -5,16 +5,16 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
 import doobie.util.compat.cats.fs2._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Effect, Monad }
 #-fs2
-
 
 import doobie.util.capture._
 
@@ -113,16 +113,6 @@ object largeobject {
       def attempt[A](f: LargeObjectIO[A]): LargeObjectIO[Throwable \/ A] = largeobject.attempt(f)
       def fail[A](err: Throwable): LargeObjectIO[A] = largeobject.delay(throw err)
     }
-#-scalaz
-#+fs2
-  implicit val CatchableLargeObjectIO: Catchable[LargeObjectIO] =
-    new Catchable[LargeObjectIO] {
-      def pure[A](a: A): LargeObjectIO[A] = largeobject.delay(a)
-      def flatMap[A, B](ma: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = ma.flatMap(f)
-      def attempt[A](ma: LargeObjectIO[A]): LargeObjectIO[Throwable \/ A] = largeobject.attempt(ma)
-      def fail[A](err: Throwable): LargeObjectIO[A] = largeobject.delay(throw err)
-    }
-#-fs2
 
   /**
    * Capture instance for [[LargeObjectIO]].
@@ -132,8 +122,19 @@ object largeobject {
     new Capture[LargeObjectIO] {
       def apply[A](a: => A): LargeObjectIO[A] = largeobject.delay(a)
     }
-
-  
+#-scalaz
+#+fs2
+  implicit val EffectLargeObjectIO: Effect[LargeObjectIO] =
+    new Effect[LargeObjectIO] {
+      def pure[A](a: A): LargeObjectIO[A] = largeobject.delay(a)
+      def flatMap[A, B](ma: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = ma.flatMap(f)
+      def attempt[A](ma: LargeObjectIO[A]): LargeObjectIO[Throwable \/ A] = largeobject.attempt(ma)
+      def fail[A](err: Throwable): LargeObjectIO[A] = largeobject.delay(throw err)
+      def suspend[A](ma: => LargeObjectIO[A]): LargeObjectIO[A] = ma
+      override def delay[A](a: => A): LargeObjectIO[A] = largeobject.delay(a)
+      def unsafeRunAsync[A](ma: LargeObjectIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
 
   /** 
    * Lift a LargeObjectIO[A] into an exception-capturing LargeObjectIO[Throwable \/ A].
@@ -243,13 +244,26 @@ object largeobject {
   * Natural transformation from `LargeObjectOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObject`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: LargeObjectOp ~> ({type l[a] = Kleisli[M, LargeObject, a]})#l =
-   new (LargeObjectOp ~> ({type l[a] = Kleisli[M, LargeObject, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: LargeObjectOp ~> Kleisli[M, LargeObject, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Effect]: LargeObjectOp ~> Kleisli[M, LargeObject, ?] =
+#-fs2
+   new (LargeObjectOp ~> Kleisli[M, LargeObject, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: LargeObject => A): Kleisli[M, LargeObject, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Effect[M]]
+
+     def primitive[A](f: LargeObject => A): Kleisli[M, LargeObject, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: LargeObjectOp[A]): Kleisli[M, LargeObject, A] = 
        op match {
@@ -263,7 +277,7 @@ object largeobject {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Catchable[M, LargeObject].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Effect[M, LargeObject].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -292,7 +306,12 @@ object largeobject {
    * @group Algebra
    */
   implicit class LargeObjectIOOps[A](ma: LargeObjectIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, LargeObject, A] =
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, LargeObject, A] =
+#-fs2
       ma.foldMap[Kleisli[M, LargeObject, ?]](kleisliTrans[M])
   }
 

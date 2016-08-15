@@ -5,14 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
 import doobie.util.compat.cats.fs2._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Effect, Monad }
 #-fs2
 
 import doobie.util.capture._
@@ -101,16 +102,6 @@ object copyout {
       def attempt[A](f: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(f)
       def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
     }
-#-scalaz
-#+fs2
-  implicit val CatchableCopyOutIO: Catchable[CopyOutIO] =
-    new Catchable[CopyOutIO] {
-      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
-      def flatMap[A, B](ma: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = ma.flatMap(f)
-      def attempt[A](ma: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(ma)
-      def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
-    }
-#-fs2
 
   /**
    * Capture instance for [[CopyOutIO]].
@@ -120,6 +111,19 @@ object copyout {
     new Capture[CopyOutIO] {
       def apply[A](a: => A): CopyOutIO[A] = copyout.delay(a)
     }
+#-scalaz
+#+fs2
+  implicit val EffectCopyOutIO: Effect[CopyOutIO] =
+    new Effect[CopyOutIO] {
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      def flatMap[A, B](ma: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = ma.flatMap(f)
+      def attempt[A](ma: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(ma)
+      def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
+      def suspend[A](ma: => CopyOutIO[A]): CopyOutIO[A] = ma
+      override def delay[A](a: => A): CopyOutIO[A] = copyout.delay(a)
+      def unsafeRunAsync[A](ma: CopyOutIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
 
   /**
    * @group Constructors (Lifting)
@@ -187,13 +191,26 @@ object copyout {
   * Natural transformation from `CopyOutOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyOut`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyOutOp ~> ({type l[a] = Kleisli[M, CopyOut, a]})#l =
-   new (CopyOutOp ~> ({type l[a] = Kleisli[M, CopyOut, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Effect]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
+#-fs2
+   new (CopyOutOp ~> Kleisli[M, CopyOut, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Effect[M]]
+
+     def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: CopyOutOp[A]): Kleisli[M, CopyOut, A] = 
        op match {
@@ -207,9 +224,9 @@ object copyout {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Catchable[M, CopyOut].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Effect[M, CopyOut].attempt(a.transK[M])
 #-cats
-  
+
         // Primitive Operations
         case CancelCopy => primitive(_.cancelCopy)
         case GetFieldCount => primitive(_.getFieldCount)
@@ -228,7 +245,12 @@ object copyout {
    * @group Algebra
    */
   implicit class CopyOutIOOps[A](ma: CopyOutIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyOut, A] =
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, CopyOut, A] =
+#-fs2
       ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
   }
 

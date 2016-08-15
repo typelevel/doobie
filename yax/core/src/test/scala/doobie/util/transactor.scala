@@ -4,12 +4,9 @@ package doobie.util
 import scalaz.{ Catchable, Monad }
 import scalaz.concurrent.Task
 #-scalaz
-#+cats
-import cats.Monad
-#-cats
 #+fs2
 import fs2.Task
-import fs2.util.Catchable
+import fs2.util.Effect
 import fs2.interop.cats._
 import scala.util.{ Left => -\/, Right => \/- }
 #-fs2
@@ -29,8 +26,7 @@ object transactorspec extends Specification {
   )
 #-scalaz
 #+fs2
-  // fs2.util.Catchable is a Monad
-  def xa[A[_]: Catchable: Capture] = DriverManagerTransactor[A](
+  def xa[A[_]: Effect] = DriverManagerTransactor[A](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
@@ -38,6 +34,7 @@ object transactorspec extends Specification {
 #-fs2
 
   "transactor" should {
+
     "support doobie.util.IOLite" in {
       q.transact(xa[IOLite]).unsafePerformIO must_=== 42
     }
@@ -48,13 +45,11 @@ object transactorspec extends Specification {
     }
 #-scalaz
 
-#+cats
 #+fs2
     "support fs2.Task" in {
       q.transact(xa[Task]).unsafeRunSync must_=== \/-(42)
     }
 #-fs2
-#-cats
   }
 
 }

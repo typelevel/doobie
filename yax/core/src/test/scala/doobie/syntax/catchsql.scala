@@ -5,6 +5,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats.implicits._
+import fs2.interop.cats._
 #-cats
 import doobie.imports._
 import shapeless.test.illTyped

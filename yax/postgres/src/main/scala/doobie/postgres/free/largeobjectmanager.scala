@@ -5,14 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
+import cats.~>
+import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
 import doobie.util.compat.cats.fs2._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Effect, Monad }
 #-fs2
 
 import doobie.util.capture._
@@ -103,16 +104,6 @@ object largeobjectmanager {
       def attempt[A](f: LargeObjectManagerIO[A]): LargeObjectManagerIO[Throwable \/ A] = largeobjectmanager.attempt(f)
       def fail[A](err: Throwable): LargeObjectManagerIO[A] = largeobjectmanager.delay(throw err)
     }
-#-scalaz
-#+fs2
-  implicit val CatchableLargeObjectManagerIO: Catchable[LargeObjectManagerIO] =
-    new Catchable[LargeObjectManagerIO] {
-      def pure[A](a: A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
-      def flatMap[A, B](ma: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = ma.flatMap(f)
-      def attempt[A](ma: LargeObjectManagerIO[A]): LargeObjectManagerIO[Throwable \/ A] = largeobjectmanager.attempt(ma)
-      def fail[A](err: Throwable): LargeObjectManagerIO[A] = largeobjectmanager.delay(throw err)
-    }
-#-fs2
 
   /**
    * Capture instance for [[LargeObjectManagerIO]].
@@ -122,7 +113,20 @@ object largeobjectmanager {
     new Capture[LargeObjectManagerIO] {
       def apply[A](a: => A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
     }
-  
+#-scalaz
+#+fs2
+  implicit val EffectLargeObjectManagerIO: Effect[LargeObjectManagerIO] =
+    new Effect[LargeObjectManagerIO] {
+      def pure[A](a: A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
+      def flatMap[A, B](ma: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = ma.flatMap(f)
+      def attempt[A](ma: LargeObjectManagerIO[A]): LargeObjectManagerIO[Throwable \/ A] = largeobjectmanager.attempt(ma)
+      def fail[A](err: Throwable): LargeObjectManagerIO[A] = largeobjectmanager.delay(throw err)
+      def suspend[A](ma: => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = ma
+      override def delay[A](a: => A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
+      def unsafeRunAsync[A](ma: LargeObjectManagerIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
+
   /**
    * @group Constructors (Lifting)
    */
@@ -183,13 +187,26 @@ object largeobjectmanager {
   * Natural transformation from `LargeObjectManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObjectManager`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: LargeObjectManagerOp ~> ({type l[a] = Kleisli[M, LargeObjectManager, a]})#l =
-   new (LargeObjectManagerOp ~> ({type l[a] = Kleisli[M, LargeObjectManager, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Effect]: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?] =
+#-fs2
+   new (LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Effect[M]]
+
+     def primitive[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: LargeObjectManagerOp[A]): Kleisli[M, LargeObjectManager, A] = 
        op match {
@@ -203,7 +220,7 @@ object largeobjectmanager {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Catchable[M, LargeObjectManager].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Effect[M, LargeObjectManager].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -223,7 +240,12 @@ object largeobjectmanager {
    * @group Algebra
    */
   implicit class LargeObjectManagerIOOps[A](ma: LargeObjectManagerIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, LargeObjectManager, A] =
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, LargeObjectManager, A] =
+#-fs2
       ma.foldMap[Kleisli[M, LargeObjectManager, ?]](kleisliTrans[M])
   }
 

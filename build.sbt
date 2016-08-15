@@ -237,7 +237,7 @@ lazy val example = project.in(file("modules/example"))
 
 lazy val example_cats = project.in(file("modules-cats/example"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/example"), "cats"))
+  .settings(yax(file("yax/example"), "cats", "fs2"))
   .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
 
 ///
@@ -363,7 +363,7 @@ lazy val specs2 = project.in(file("modules/specs2"))
 lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .enablePlugins(SbtOsgi)
   .settings(
-    yax(file("yax/specs2"), "cats"),
+    yax(file("yax/specs2"), "cats", "fs2"),
     specs2Settings("specs2")
   )
   .dependsOn(core_cats)
@@ -382,7 +382,7 @@ lazy val bench = project.in(file("modules/bench"))
 
 lazy val bench_cats = project.in(file("modules-cats/bench"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/bench"), "cats"))
+  .settings(yax(file("yax/bench"), "cats", "fs2"))
   .dependsOn(core_cats, postgres_cats)
 
 ///

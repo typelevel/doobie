@@ -7,12 +7,12 @@ import scalaz.syntax.bifunctor._
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import cats.Monad
 import cats.implicits._
 import scala.util.{ Either => \/ }
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Catchable, Monad }
 #-fs2
 
 import doobie.enum.sqlstate.SqlState

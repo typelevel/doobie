@@ -5,14 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
 import doobie.util.compat.cats.fs2._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Effect, Monad }
 #-fs2
 
 import doobie.util.capture._
@@ -112,16 +113,6 @@ object pgconnection {
       def attempt[A](f: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(f)
       def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
     }
-#-scalaz
-#+fs2
-  implicit val CatchablePGConnectionIO: Catchable[PGConnectionIO] =
-    new Catchable[PGConnectionIO] {
-      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
-      def flatMap[A, B](ma: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = ma.flatMap(f)
-      def attempt[A](ma: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(ma)
-      def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
-    }
-#-fs2
 
   /**
    * Capture instance for [[PGConnectionIO]].
@@ -131,6 +122,19 @@ object pgconnection {
     new Capture[PGConnectionIO] {
       def apply[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
     }
+#-scalaz
+#+fs2
+  implicit val EffectPGConnectionIO: Effect[PGConnectionIO] =
+    new Effect[PGConnectionIO] {
+      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
+      def flatMap[A, B](ma: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = ma.flatMap(f)
+      def attempt[A](ma: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(ma)
+      def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
+      def suspend[A](ma: => PGConnectionIO[A]): PGConnectionIO[A] = ma
+      override def delay[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
+      def unsafeRunAsync[A](ma: PGConnectionIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
 
   /**
    * @group Constructors (Lifting)
@@ -222,13 +226,26 @@ object pgconnection {
   * Natural transformation from `PGConnectionOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.PGConnection`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: PGConnectionOp ~> ({type l[a] = Kleisli[M, PGConnection, a]})#l =
-   new (PGConnectionOp ~> ({type l[a] = Kleisli[M, PGConnection, a]})#l) {
-    
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Effect]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
+#-fs2
+   new (PGConnectionOp ~> Kleisli[M, PGConnection, ?]) {
+
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Effect[M]]
+
+     def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: PGConnectionOp[A]): Kleisli[M, PGConnection, A] = 
        op match {
@@ -244,7 +261,7 @@ object pgconnection {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Catchable[M, PGConnection].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Effect[M, PGConnection].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -267,7 +284,12 @@ object pgconnection {
    * @group Algebra
    */
   implicit class PGConnectionIOOps[A](ma: PGConnectionIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGConnection, A] =
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, PGConnection, A] =
+#-fs2
       ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
   }
 

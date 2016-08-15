@@ -8,22 +8,34 @@ import scalaz.{ Catchable, Monad }
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import cats.Monad
 import cats.implicits._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.Effect
 #-fs2
 
 object hikaritransactor {
 
   /** A `Transactor` backed by a `HikariDataSource`. */
+#+scalaz
   final class HikariTransactor[M[_]: Monad : Catchable : Capture] private (ds: HikariDataSource) extends Transactor[M] {
-    
-    protected val connect = Capture[M].apply(ds.getConnection)
+
+    val connect = Capture[M].apply(ds.getConnection)
 
     /** A program that shuts down this `HikariTransactor`. */
     val shutdown: M[Unit] = Capture[M].apply(ds.shutdown)
+#-scalaz
+#+fs2
+  final class HikariTransactor[M[_]: Effect] private (ds: HikariDataSource) extends Transactor[M] {
+
+    private val L = Predef.implicitly[Effect[M]]
+
+    val connect = L.delay(ds.getConnection)
+
+    /** A program that shuts down this `HikariTransactor`. */
+    val shutdown: M[Unit] = L.delay(ds.shutdown)
+#-fs2
 
     /** Constructs a program that configures the underlying `HikariDataSource`. */
     def configure(f: HikariDataSource => M[Unit]): M[Unit] = f(ds)
@@ -31,9 +43,10 @@ object hikaritransactor {
   }
 
   object HikariTransactor {
-    
+
+#+scalaz
     /** Constructs a program that yields an unconfigured `HikariTransactor`. */
-    def initial[M[_]: Monad : Catchable: Capture]: M[HikariTransactor[M]] = 
+    def initial[M[_]: Monad : Catchable: Capture]: M[HikariTransactor[M]] =
       Capture[M].apply(new HikariTransactor(new HikariDataSource))
 
     /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
@@ -56,6 +69,33 @@ object hikaritransactor {
           ds setPassword pass
         })
       } yield t
+#-scalaz
+#+fs2
+    /** Constructs a program that yields an unconfigured `HikariTransactor`. */
+    def initial[M[_]](implicit e: Effect[M]): M[HikariTransactor[M]] =
+      e.delay(new HikariTransactor(new HikariDataSource))
+
+    /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
+    def apply[M[_]: Effect](hikariDataSource : HikariDataSource): HikariTransactor[M] =
+      new HikariTransactor(hikariDataSource)
+
+    /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
+    @deprecated("doesn't load driver properly; will go away in 0.2.2; use 4-arg version", "0.2.1")
+    def apply[M[_]: Effect](url: String, user: String, pass: String): M[HikariTransactor[M]] =
+      apply("java.lang.String", url, user, pass)
+
+    /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
+    def apply[M[_]](driverClassName: String, url: String, user: String, pass: String)(implicit e: Effect[M]): M[HikariTransactor[M]] =
+      for {
+        _ <- e.delay(Class.forName(driverClassName))
+        t <- initial[M]
+        _ <- t.configure(ds => e.delay {
+          ds setJdbcUrl  url
+          ds setUsername user
+          ds setPassword pass
+        })
+      } yield t
+#-fs2
 
   }
 

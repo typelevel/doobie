@@ -5,14 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
 import doobie.util.compat.cats.fs2._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Effect, Monad }
 #-fs2
 
 import doobie.util.capture._
@@ -32,25 +33,25 @@ import copymanager.CopyManagerIO
 
 /**
  * Algebra and free monad for primitive operations over a `org.postgresql.copy.CopyManager`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
- * for library developers. End users will prefer a safer, higher-level API such as that provided 
+ * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
+ * for library developers. End users will prefer a safer, higher-level API such as that provided
  * in the `doobie.hi` package.
  *
  * `CopyManagerIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `CopyManagerOp` to another monad via
- * `Free#foldMap`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, CopyManager, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
+ * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
  * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
  * val a: CopyManagerIO[Foo] = ...
- * 
- * // A JDBC object 
+ *
+ * // A JDBC object
  * val s: CopyManager = ...
- * 
+ *
  * // Unfolding into a Task
  * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
@@ -58,22 +59,22 @@ import copymanager.CopyManagerIO
  * @group Modules
  */
 object copymanager {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `org.postgresql.copy.CopyManager`.
-   * @group Algebra 
+   * @group Algebra
    */
   sealed trait CopyManagerOp[A]
 
-  /** 
+  /**
    * Module of constructors for `CopyManagerOp`. These are rarely useful outside of the implementation;
    * prefer the smart constructors provided by the `copymanager` module.
-   * @group Algebra 
+   * @group Algebra
    */
   object CopyManagerOp {
-    
+
     // Lifting
-    
+
 
     // Combinators
     case class Attempt[A](action: CopyManagerIO[A]) extends CopyManagerOp[Throwable \/ A]
@@ -93,9 +94,9 @@ object copymanager {
   import CopyManagerOp._ // We use these immediately
 
   /**
-   * Free monad over a free functor of [[CopyManagerOp]]; abstractly, a computation that consumes 
-   * a `org.postgresql.copy.CopyManager` and produces a value of type `A`. 
-   * @group Algebra 
+   * Free monad over a free functor of [[CopyManagerOp]]; abstractly, a computation that consumes
+   * a `org.postgresql.copy.CopyManager` and produces a value of type `A`.
+   * @group Algebra
    */
   type CopyManagerIO[A] = F[CopyManagerOp, A]
 
@@ -109,16 +110,6 @@ object copymanager {
       def attempt[A](f: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(f)
       def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
     }
-#-scalaz
-#+fs2
-  implicit val CatchableCopyManagerIO: Catchable[CopyManagerIO] =
-    new Catchable[CopyManagerIO] {
-      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
-      def flatMap[A, B](ma: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = ma.flatMap(f)
-      def attempt[A](ma: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(ma)
-      def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
-    }
-#-fs2
 
   /**
    * Capture instance for [[CopyManagerIO]].
@@ -128,16 +119,27 @@ object copymanager {
     new Capture[CopyManagerIO] {
       def apply[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
     }
+#-scalaz
+#+fs2
+  implicit val EffectCopyManagerIO: Effect[CopyManagerIO] =
+    new Effect[CopyManagerIO] {
+      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
+      def flatMap[A, B](ma: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = ma.flatMap(f)
+      def attempt[A](ma: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(ma)
+      def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
+      def suspend[A](ma: => CopyManagerIO[A]): CopyManagerIO[A] = ma
+      override def delay[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
+      def unsafeRunAsync[A](ma: CopyManagerIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
 
-  
-
-  /** 
+  /**
    * Lift a CopyManagerIO[A] into an exception-capturing CopyManagerIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] =
     F.liftF[CopyManagerOp, Throwable \/ A](Attempt(a))
- 
+
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
@@ -145,81 +147,94 @@ object copymanager {
   def delay[A](a: => A): CopyManagerIO[A] =
     F.liftF(Pure(a _))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyIn(a: String, b: InputStream, c: Int): CopyManagerIO[Long] =
     F.liftF(CopyIn(a, b, c))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyIn(a: String, b: Reader): CopyManagerIO[Long] =
     F.liftF(CopyIn1(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyIn(a: String, b: Reader, c: Int): CopyManagerIO[Long] =
     F.liftF(CopyIn2(a, b, c))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyIn(a: String, b: InputStream): CopyManagerIO[Long] =
     F.liftF(CopyIn3(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyIn(a: String): CopyManagerIO[PGCopyIn] =
     F.liftF(CopyIn4(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyOut(a: String, b: OutputStream): CopyManagerIO[Long] =
     F.liftF(CopyOut(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyOut(a: String, b: Writer): CopyManagerIO[Long] =
     F.liftF(CopyOut1(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def copyOut(a: String): CopyManagerIO[PGCopyOut] =
     F.liftF(CopyOut2(a))
 
- /** 
-  * Natural transformation from `CopyManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyManager`. 
+ /**
+  * Natural transformation from `CopyManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyManager`.
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyManagerOp ~> ({type l[a] = Kleisli[M, CopyManager, a]})#l =
-   new (CopyManagerOp ~> ({type l[a] = Kleisli[M, CopyManager, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Effect]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
+#-fs2
+   new (CopyManagerOp ~> Kleisli[M, CopyManager, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: CopyManager => A): Kleisli[M, CopyManager, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Effect[M]]
 
-     def apply[A](op: CopyManagerOp[A]): Kleisli[M, CopyManager, A] = 
+     def primitive[A](f: CopyManager => A): Kleisli[M, CopyManager, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
+
+     def apply[A](op: CopyManagerOp[A]): Kleisli[M, CopyManager, A] =
        op match {
 
         // Lifting
-        
-  
+
+
         // Combinators
         case Pure(a) => primitive(_ => a())
 #+scalaz
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Catchable[M, CopyManager].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Effect[M, CopyManager].attempt(a.transK[M])
 #-cats
-  
+
         // Primitive Operations
         case CopyIn(a, b, c) => primitive(_.copyIn(a, b, c))
         case CopyIn1(a, b) => primitive(_.copyIn(a, b))
@@ -229,9 +244,9 @@ object copymanager {
         case CopyOut(a, b) => primitive(_.copyOut(a, b))
         case CopyOut1(a, b) => primitive(_.copyOut(a, b))
         case CopyOut2(a) => primitive(_.copyOut(a))
-  
+
       }
-  
+
     }
 
   /**
@@ -239,7 +254,12 @@ object copymanager {
    * @group Algebra
    */
   implicit class CopyManagerIOOps[A](ma: CopyManagerIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyManager, A] =
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, CopyManager, A] =
+#-fs2
       ma.foldMap[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
   }
 

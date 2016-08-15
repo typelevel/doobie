@@ -1,20 +1,19 @@
 package doobie.util
 
-import doobie.util.capture.Capture
 import scala.annotation.tailrec
 import scala.language.higherKinds
 
 #+scalaz
 import scalaz.{ Monad, Catchable, \/, -\/, \/- }
+import doobie.util.capture.Capture
 #-scalaz
 #+cats
-import cats.Monad
 import scala.util.{ Either => \/ }
 import scala.util.{ Left => -\/, Right => \/- }
-#+fs2
-import fs2.util.Catchable
-#-fs2
 #-cats
+#+fs2
+import fs2.util.{ Attempt, Effect, Monad }
+#-fs2
 
 object iolite {
   sealed abstract class IOLite[A] { self =>
@@ -99,45 +98,35 @@ object iolite {
 
   trait IOInstances {
 
+#+scalaz
     implicit val MonadIOLite: Monad[IOLite] = 
       new Monad[IOLite] {
-#+scalaz        
         def bind[A, B](fa: IOLite[A])(f: A => IOLite[B]): IOLite[B] = fa.flatMap(f)
-#-scalaz
-#+cats        
-        def flatMap[A, B](fa: IOLite[A])(f: A => IOLite[B]): IOLite[B] = fa.flatMap(f)
-#-cats        
-        override def map[A, B](fa: IOLite[A])(f: A => B): IOLite[B] = fa.map(f)
-#+scalaz        
         def point[A](a: => A): IOLite[A] = IOLite.pure(a)
-#-scalaz
-#+cats        
-        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
-#-cats        
       }
 
-#+scalaz
     implicit val CatchableIOLite: Catchable[IOLite] =
       new Catchable[IOLite] {
         def attempt[A](fa: IOLite[A]): IOLite[Throwable \/ A] = fa.attempt
         def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
       }
-#-scalaz
-#+fs2
-    implicit val CatchableIOLite: Catchable[IOLite] =
-      new Catchable[IOLite] {
-        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
-        def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
-        def attempt[A](ma: IOLite[A]): IOLite[Throwable \/ A] = ma.attempt
-        def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
-      }
-#-fs2
 
     implicit val CaptureIOLite: Capture[IOLite] =
       new Capture[IOLite] {
         def apply[A](a: => A) = IOLite.primitive(a)
       }
-
+#-scalaz
+#+fs2
+    implicit val EffectIOLite: Effect[IOLite] =
+      new Effect[IOLite] {
+        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
+        def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
+        def attempt[A](ma: IOLite[A]): IOLite[Throwable \/ A] = ma.attempt
+        def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
+        def suspend[A](ma: => IOLite[A]): IOLite[A] = IOLite.unit.flatMap(_ => ma)
+        def unsafeRunAsync[A](ma: IOLite[A])(cb: Attempt[A] => Unit): Unit = cb(ma.attempt.unsafePerformIO)
+      }
+#-fs2
   }
 
   trait IOFunctions {

@@ -5,10 +5,10 @@ import scalaz.{ Monad, Catchable, \/, Unapply }
 #-scalaz
 import doobie.util.{ catchable => C }
 #+cats
-import cats.{ Monad, Unapply }
+import cats.Unapply
 import scala.{ Either => \/ }
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Catchable, Monad }
 #-fs2
 #-cats
 
@@ -58,8 +58,14 @@ object catchable {
   trait ToDoobieCatchableOps extends ToDoobieCatchableOps0 {
 
     /** @group Syntax */
+#+scalaz
     implicit def toDoobieCatchableOps[M[_]: Monad: Catchable, A](ma: M[A]): DoobieCatchableOps[M, A] =
       new DoobieCatchableOps(ma)
+#-scalaz
+#+cats
+    implicit def toDoobieCatchableOps[M[_]: Catchable, A](ma: M[A]): DoobieCatchableOps[M, A] =
+      new DoobieCatchableOps(ma)
+#-cats
 
   }
 

@@ -42,6 +42,7 @@ import doobie.util.compat.cats.monad._
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, repeatEval }
 import fs2.pipe.unNoneTerminate
+import fs2.util.Effect
 #-fs2
 
 /**
@@ -51,7 +52,12 @@ import fs2.pipe.unNoneTerminate
 object resultset {
 
   /** @group Typeclass Instances */
+#+scalaz
   implicit val CatchableResultSetIO = RS.CatchableResultSetIO
+#-scalaz
+#+fs2
+  implicit val EffectResultSetIO = RS.EffectResultSetIO
+#-fs2
 
   /**
    * Non-strict unit for capturing effects.

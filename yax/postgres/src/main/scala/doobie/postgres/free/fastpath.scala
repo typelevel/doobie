@@ -5,14 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
 import doobie.util.compat.cats.fs2._
+import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Catchable
+import fs2.util.{ Effect, Monad}
 #-fs2
 
 import doobie.util.capture._
@@ -105,16 +106,6 @@ object fastpath { self =>
       def attempt[A](f: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(f)
       def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
     }
-#-scalaz
-#+fs2
-  implicit val CatchableFastpathIO: Catchable[FastpathIO] =
-    new Catchable[FastpathIO] {
-      def pure[A](a: A): FastpathIO[A] = self.delay(a)
-      def flatMap[A, B](ma: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = ma.flatMap(f)
-      def attempt[A](ma: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(ma)
-      def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
-    }
-#-fs2
 
   /**
    * Capture instance for [[FastpathIO]].
@@ -124,8 +115,19 @@ object fastpath { self =>
     new Capture[FastpathIO] {
       def apply[A](a: => A): FastpathIO[A] = self.delay(a)
     }
-
-  
+#-scalaz
+#+fs2
+  implicit val EffectFastpathIO: Effect[FastpathIO] =
+    new Effect[FastpathIO] {
+      def pure[A](a: A): FastpathIO[A] = self.delay(a)
+      def flatMap[A, B](ma: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = ma.flatMap(f)
+      def attempt[A](ma: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(ma)
+      def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
+      def suspend[A](ma: => FastpathIO[A]): FastpathIO[A] = ma
+      override def delay[A](a: => A): FastpathIO[A] = self.delay(a)
+      def unsafeRunAsync[A](ma: FastpathIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
+    }
+#-fs2
 
   /** 
    * Lift a FastpathIO[A] into an exception-capturing FastpathIO[Throwable \/ A].
@@ -193,13 +195,26 @@ object fastpath { self =>
   * Natural transformation from `FastpathOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.fastpath.Fastpath`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: FastpathOp ~> ({type l[a] = Kleisli[M, PGFastpath, a]})#l =
-   new (FastpathOp ~> ({type l[a] = Kleisli[M, PGFastpath, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: FastpathOp ~> Kleisli[M, PGFastpath, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Effect]: FastpathOp ~> Kleisli[M, PGFastpath, ?] =
+#-fs2
+   new (FastpathOp ~> Kleisli[M, PGFastpath, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Effect[M]]
+
+     def primitive[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: FastpathOp[A]): Kleisli[M, PGFastpath, A] = 
        op match {
@@ -213,7 +228,7 @@ object fastpath { self =>
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Catchable[M, PGFastpath].attempt(a.transK[M])
+        case Attempt(a) => catsKleisliFs2Effect[M, PGFastpath].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -235,7 +250,12 @@ object fastpath { self =>
    * @group Algebra
    */
   implicit class FastpathIOOps[A](ma: FastpathIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGFastpath, A] =
+#-scalaz
+#+fs2
+    def transK[M[_]: Effect]: Kleisli[M, PGFastpath, A] =
+#-fs2
       ma.foldMap[Kleisli[M, PGFastpath, ?]](kleisliTrans[M])
   }
 

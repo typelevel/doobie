@@ -13,6 +13,9 @@ import scalaz.Scalaz._
 #+cats
 import cats.implicits._
 #-cats
+#+fs2
+import fs2.util.Effect
+#-fs2
 
 object pgnotifyspec extends Specification {
 
@@ -28,7 +31,12 @@ object pgnotifyspec extends Specification {
   def listen[A](channel: String, notify: ConnectionIO[A]): IOLite[List[PGNotification]] =
     (PHC.pgListen(channel) *> commit *>
      delay { Thread.sleep(50) } *>
+#+scalaz
      Capture[ConnectionIO].apply(notify.transact(xa).unsafePerformIO) *>
+#-scalaz
+#+fs2
+     Predef.implicitly[Effect[ConnectionIO]].delay(notify.transact(xa).unsafePerformIO) *>
+#-fs2
      delay { Thread.sleep(50) } *>
      PHC.pgGetNotifications).transact(xa)
 
