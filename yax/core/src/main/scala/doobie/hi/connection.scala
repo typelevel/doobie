@@ -39,14 +39,13 @@ import scalaz.{ Monad, ~>, Catchable, Foldable }
 import scalaz.syntax.monad._
 #-scalaz
 #+cats
-import cats.{ Foldable, Monad }
+import cats.Foldable
 import cats.implicits._
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.util.{ Effect, ~> }
 import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
-import fs2.interop.cats.reverse._
 #-fs2
 
 /**
