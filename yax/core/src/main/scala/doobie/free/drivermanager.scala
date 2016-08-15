@@ -10,8 +10,7 @@ import cats.free.{ Free => F }
 import cats.implicits._
 import scala.{ Either => \/ }
 #+fs2
-import fs2.util.Catchable
-import fs2.util.{ Monad, Effect }
+import fs2.util.Effect
 import fs2.interop.cats._
 import doobie.util.compat.cats.fs2._
 #-fs2

@@ -13,7 +13,7 @@ import doobie.util.compat.cats.fs2._
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.{ Effect, Monad}
+import fs2.util.Effect
 #-fs2
 
 import doobie.util.capture._
