@@ -65,8 +65,9 @@ object compat {
     object fs2 {
       import _root_.cats.data.Kleisli
       import _root_.fs2.util.{ Attempt, Effect }
+      import _root_.fs2.interop.cats._
 
-      implicit def catsKleisliFs2Effect[M[_]: Applicative: FlatMap, E](implicit c: Effect[M]): Effect[Kleisli[M, E, ?]] =
+      implicit def catsKleisliFs2Effect[M[_], E](implicit c: Effect[M]): Effect[Kleisli[M, E, ?]] =
         new Effect[Kleisli[M, E, ?]] {
           def pure[A](a: A): Kleisli[M, E, A] = Kleisli.pure[M, E, A](a)
           def flatMap[A, B](ma: Kleisli[M, E, A])(f: A => Kleisli[M, E, B]): Kleisli[M, E, B] = ma.flatMap(f)
@@ -74,7 +75,8 @@ object compat {
             Kleisli(e => c.attempt(ma.run(e)))
           def fail[A](t: Throwable): Kleisli[M, E, A] =
             Kleisli(e => c.fail(t))
-          def suspend[A](ma: => Kleisli[M, E, A]): Kleisli[M, E, A] = Kleisli.pure[M, E, Unit](()).flatMap(_ => ma)
+          def suspend[A](ma: => Kleisli[M, E, A]): Kleisli[M, E, A] =
+            Kleisli.pure[M, E, Unit](()).flatMap(_ => ma)
           def unsafeRunAsync[A](ma: Kleisli[M, E, A])(cb: Attempt[A] => Unit): Unit = Predef.???
         }
       }
