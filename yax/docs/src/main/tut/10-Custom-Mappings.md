@@ -150,7 +150,12 @@ implicit val JsonMeta: Meta[Json] =
   Meta.other[PGobject]("json").nxmap[Json](
 #+scalaz
     a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
-    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces))
+    a => {
+      val o = new PGobject 
+      o.setType("json")
+      o.setValue(a.noSpaces)
+      o
+    }
 #-scalaz
 #+cats
     a => parse(a.getValue).leftMap[Json](e => throw e).merge, // failure raises an exception
