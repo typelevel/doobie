@@ -128,7 +128,12 @@ Here we go:
 implicit val JsonMeta: Meta[Json] = 
   Meta.other[PGobject]("json").nxmap[Json](
     a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
-    a => new PGobject <| (_.setType("json")) <| (_.setValue(a.nospaces))
+    a => { 
+            val pgObject = new PGobject
+            pgObject.setType("json")
+            pgObject.setValue(a.nospaces)
+            pgObject
+          }
   )
 ```
 
