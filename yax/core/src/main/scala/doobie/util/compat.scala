@@ -63,7 +63,14 @@ object compat {
 
 #+fs2
     object fs2 {
-      import _root_.fs2.util.{ ~> => Fs2Nat }
+      import _root_.fs2.util.{ Monad => Fs2Monad, ~> => Fs2Nat }
+
+      implicit def monadCompat[F[_]](implicit monad: Monad[F]): Fs2Monad[F] =
+        new Fs2Monad[F] {
+          def pure[A](a: A) = monad.pure(a)
+          override def map[A, B](fa: F[A])(f: A => B) = monad.map(fa)(f)
+          def flatMap[A, B](fa: F[A])(f: A => F[B]) = monad.flatMap(fa)(f)
+        }
 
       implicit def naturalTransformationCompat[F[_], G[_]](nat: CatsNat[F, G]): Fs2Nat[F, G] =
         new Fs2Nat[F, G] {

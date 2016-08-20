@@ -72,7 +72,7 @@ The development version is **0.3.1-SNAPSHOT**. It is updated continuously and wi
 
 ### Cats Support
 
-The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.6.1](http://typelevel.org/cats/) with [FS2 0.9.0-M6](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
+The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.6.1](http://typelevel.org/cats/) with [FS2 0.9.0-RC1](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
 
 Doc links for Cats artifacts (no unidoc yet, sorry):
 [core](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-core_2.11/0.3.1-SNAPSHOT/doobie-core_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
