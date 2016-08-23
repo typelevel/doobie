@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -88,7 +87,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object sqlinput {
+object sqlinput extends SQLInputInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.SQLInput`.
@@ -101,9 +100,9 @@ object sqlinput {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLInput, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: SQLInput => A): Kleisli[M, SQLInput, A] =
-      Kleisli((s: SQLInput) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, SQLInput, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: SQLInput => A): Kleisli[M, SQLInput, A] =
+      Kleisli((s: SQLInput) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLInput, A]
 #-fs2
   }
 
@@ -122,7 +121,7 @@ object sqlinput {
         def interpK[M[_]: Monad: Catchable: Capture]: SQLInputOp ~> Kleisli[M, SQLInput, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: SQLInputOp ~> Kleisli[M, SQLInput, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: SQLInputOp ~> Kleisli[M, SQLInput, ?] =
 #-fs2
           new (SQLInputOp ~> Kleisli[M, SQLInput, ?]) {
             def apply[A](op: SQLInputOp[A]): Kleisli[M, SQLInput, A] =
@@ -136,7 +135,7 @@ object sqlinput {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -144,19 +143,18 @@ object sqlinput {
     case class Attempt[A](action: SQLInputIO[A]) extends SQLInputOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, SQLInput, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, SQLInput, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, SQLInput, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends SQLInputOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: SQLInput => A) extends SQLInputOp[A] {
@@ -164,7 +162,7 @@ object sqlinput {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -257,88 +255,88 @@ object sqlinput {
 #-scalaz
 #+fs2
     case object ReadArray extends SQLInputOp[SqlArray] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readArray())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readArray())
     }
     case object ReadAsciiStream extends SQLInputOp[InputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readAsciiStream())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readAsciiStream())
     }
     case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readBigDecimal())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readBigDecimal())
     }
     case object ReadBinaryStream extends SQLInputOp[InputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readBinaryStream())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readBinaryStream())
     }
     case object ReadBlob extends SQLInputOp[Blob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readBlob())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readBlob())
     }
     case object ReadBoolean extends SQLInputOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readBoolean())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readBoolean())
     }
     case object ReadByte extends SQLInputOp[Byte] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readByte())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readByte())
     }
     case object ReadBytes extends SQLInputOp[Array[Byte]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readBytes())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readBytes())
     }
     case object ReadCharacterStream extends SQLInputOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readCharacterStream())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readCharacterStream())
     }
     case object ReadClob extends SQLInputOp[Clob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readClob())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readClob())
     }
     case object ReadDate extends SQLInputOp[Date] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readDate())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readDate())
     }
     case object ReadDouble extends SQLInputOp[Double] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readDouble())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readDouble())
     }
     case object ReadFloat extends SQLInputOp[Float] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readFloat())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readFloat())
     }
     case object ReadInt extends SQLInputOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readInt())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readInt())
     }
     case object ReadLong extends SQLInputOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readLong())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readLong())
     }
     case object ReadNClob extends SQLInputOp[NClob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readNClob())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readNClob())
     }
     case object ReadNString extends SQLInputOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readNString())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readNString())
     }
     case object ReadObject extends SQLInputOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readObject())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readObject())
     }
     case class  ReadObject1[T](a: Class[T]) extends SQLInputOp[T] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readObject(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readObject(a))
     }
     case object ReadRef extends SQLInputOp[Ref] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readRef())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readRef())
     }
     case object ReadRowId extends SQLInputOp[RowId] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readRowId())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readRowId())
     }
     case object ReadSQLXML extends SQLInputOp[SQLXML] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readSQLXML())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readSQLXML())
     }
     case object ReadShort extends SQLInputOp[Short] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readShort())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readShort())
     }
     case object ReadString extends SQLInputOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readString())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readString())
     }
     case object ReadTime extends SQLInputOp[Time] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readTime())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readTime())
     }
     case object ReadTimestamp extends SQLInputOp[Timestamp] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readTimestamp())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readTimestamp())
     }
     case object ReadURL extends SQLInputOp[URL] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readURL())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readURL())
     }
     case object WasNull extends SQLInputOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.wasNull())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.wasNull())
     }
 #-fs2
 
@@ -352,17 +350,22 @@ object sqlinput {
    */
   type SQLInputIO[A] = F[SQLInputOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[SQLInputIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableSQLInputIO: Catchable[SQLInputIO] =
     new Catchable[SQLInputIO] {
+#+fs2
+      def pure[A](a: A): SQLInputIO[A] = sqlinput.delay(a)
+      override def map[A, B](fa: SQLInputIO[A])(f: A => B): SQLInputIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: SQLInputIO[A]): SQLInputIO[Throwable \/ A] = sqlinput.attempt(f)
       def fail[A](err: Throwable): SQLInputIO[A] = sqlinput.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[SQLInputIO]].
    * @group Typeclass Instances
@@ -372,22 +375,6 @@ object sqlinput {
       def apply[A](a: => A): SQLInputIO[A] = sqlinput.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[SQLInputIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectSQLInputIO: Effect[SQLInputIO] =
-    new Effect[SQLInputIO] {
-      def pure[A](a: A): SQLInputIO[A] = sqlinput.delay(a)
-      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = fa.flatMap(f)
-      def attempt[A](fa: SQLInputIO[A]): SQLInputIO[Throwable \/ A] = sqlinput.attempt(fa)
-      def fail[A](err: Throwable): SQLInputIO[A] = sqlinput.delay(throw err)
-      def suspend[A](fa: => SQLInputIO[A]): SQLInputIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): SQLInputIO[A] = sqlinput.delay(a)
-      def unsafeRunAsync[A](fa: SQLInputIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -594,7 +581,7 @@ object sqlinput {
    SQLInputOp.SQLInputKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: SQLInputOp ~> Kleisli[M, SQLInput, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: SQLInputOp ~> Kleisli[M, SQLInput, ?] =
    SQLInputOp.SQLInputKleisliTrans.interpK
 #-fs2
 
@@ -607,7 +594,7 @@ object sqlinput {
    SQLInputOp.SQLInputKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: SQLInputIO ~> Kleisli[M, SQLInput, ?] =
+  def transK[M[_]: Catchable: Suspendable]: SQLInputIO ~> Kleisli[M, SQLInput, ?] =
    SQLInputOp.SQLInputKleisliTrans.transK
 #-fs2
 
@@ -620,7 +607,7 @@ object sqlinput {
    SQLInputOp.SQLInputKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: SQLInput): SQLInputIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: SQLInput): SQLInputIO ~> M =
    SQLInputOp.SQLInputKleisliTrans.trans[M](c)
 #-fs2
 
@@ -634,10 +621,27 @@ object sqlinput {
       SQLInputOp.SQLInputKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, SQLInput, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLInput, A] =
       SQLInputOp.SQLInputKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait SQLInputInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[SQLInputIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableSQLInputIO: Suspendable[SQLInputIO] =
+    new Suspendable[SQLInputIO] {
+      def pure[A](a: A): SQLInputIO[A] = sqlinput.delay(a)
+      override def map[A, B](fa: SQLInputIO[A])(f: A => B): SQLInputIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => SQLInputIO[A]): SQLInputIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): SQLInputIO[A] = sqlinput.delay(a)
+    }
+#-fs2
 }
 

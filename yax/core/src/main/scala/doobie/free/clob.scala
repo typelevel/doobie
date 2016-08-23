@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -80,7 +79,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object clob {
+object clob extends ClobInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Clob`.
@@ -93,9 +92,9 @@ object clob {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Clob, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: Clob => A): Kleisli[M, Clob, A] =
-      Kleisli((s: Clob) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, Clob, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: Clob => A): Kleisli[M, Clob, A] =
+      Kleisli((s: Clob) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Clob, A]
 #-fs2
   }
 
@@ -114,7 +113,7 @@ object clob {
         def interpK[M[_]: Monad: Catchable: Capture]: ClobOp ~> Kleisli[M, Clob, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: ClobOp ~> Kleisli[M, Clob, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: ClobOp ~> Kleisli[M, Clob, ?] =
 #-fs2
           new (ClobOp ~> Kleisli[M, Clob, ?]) {
             def apply[A](op: ClobOp[A]): Kleisli[M, Clob, A] =
@@ -128,7 +127,7 @@ object clob {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -136,19 +135,18 @@ object clob {
     case class Attempt[A](action: ClobIO[A]) extends ClobOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, Clob, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, Clob, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends ClobOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: Clob => A) extends ClobOp[A] {
@@ -156,7 +154,7 @@ object clob {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -204,43 +202,43 @@ object clob {
 #-scalaz
 #+fs2
     case object Free extends ClobOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.free())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.free())
     }
     case object GetAsciiStream extends ClobOp[InputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getAsciiStream())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getAsciiStream())
     }
     case object GetCharacterStream extends ClobOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCharacterStream())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCharacterStream())
     }
     case class  GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCharacterStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCharacterStream(a, b))
     }
     case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSubString(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSubString(a, b))
     }
     case object Length extends ClobOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.length())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.length())
     }
     case class  Position(a: Clob, b: Long) extends ClobOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.position(a, b))
     }
     case class  Position1(a: String, b: Long) extends ClobOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.position(a, b))
     }
     case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a))
     }
     case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a))
     }
     case class  SetString(a: Long, b: String) extends ClobOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setString(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setString(a, b))
     }
     case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setString(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setString(a, b, c, d))
     }
     case class  Truncate(a: Long) extends ClobOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.truncate(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.truncate(a))
     }
 #-fs2
 
@@ -254,17 +252,22 @@ object clob {
    */
   type ClobIO[A] = F[ClobOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[ClobIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableClobIO: Catchable[ClobIO] =
     new Catchable[ClobIO] {
+#+fs2
+      def pure[A](a: A): ClobIO[A] = clob.delay(a)
+      override def map[A, B](fa: ClobIO[A])(f: A => B): ClobIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(f)
       def fail[A](err: Throwable): ClobIO[A] = clob.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[ClobIO]].
    * @group Typeclass Instances
@@ -274,22 +277,6 @@ object clob {
       def apply[A](a: => A): ClobIO[A] = clob.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[ClobIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectClobIO: Effect[ClobIO] =
-    new Effect[ClobIO] {
-      def pure[A](a: A): ClobIO[A] = clob.delay(a)
-      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = fa.flatMap(f)
-      def attempt[A](fa: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(fa)
-      def fail[A](err: Throwable): ClobIO[A] = clob.delay(throw err)
-      def suspend[A](fa: => ClobIO[A]): ClobIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): ClobIO[A] = clob.delay(a)
-      def unsafeRunAsync[A](fa: ClobIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -406,7 +393,7 @@ object clob {
    ClobOp.ClobKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: ClobOp ~> Kleisli[M, Clob, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: ClobOp ~> Kleisli[M, Clob, ?] =
    ClobOp.ClobKleisliTrans.interpK
 #-fs2
 
@@ -419,7 +406,7 @@ object clob {
    ClobOp.ClobKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: ClobIO ~> Kleisli[M, Clob, ?] =
+  def transK[M[_]: Catchable: Suspendable]: ClobIO ~> Kleisli[M, Clob, ?] =
    ClobOp.ClobKleisliTrans.transK
 #-fs2
 
@@ -432,7 +419,7 @@ object clob {
    ClobOp.ClobKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: Clob): ClobIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: Clob): ClobIO ~> M =
    ClobOp.ClobKleisliTrans.trans[M](c)
 #-fs2
 
@@ -446,10 +433,27 @@ object clob {
       ClobOp.ClobKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, Clob, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Clob, A] =
       ClobOp.ClobKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait ClobInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[ClobIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableClobIO: Suspendable[ClobIO] =
+    new Suspendable[ClobIO] {
+      def pure[A](a: A): ClobIO[A] = clob.delay(a)
+      override def map[A, B](fa: ClobIO[A])(f: A => B): ClobIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => ClobIO[A]): ClobIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): ClobIO[A] = clob.delay(a)
+    }
+#-fs2
 }
 

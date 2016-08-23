@@ -18,7 +18,7 @@ import doobie.free.{ databasemetadata => DMD }
 import doobie.util.composite._
 
 #+fs2
-import fs2.util.Effect
+import fs2.util.Catchable
 #-fs2
 
 import java.net.URL
@@ -36,12 +36,7 @@ import scala.Predef.intArrayOps
 object statement {
 
   /** @group Typeclass Instances */
-#+scalaz
   implicit val CatchableStatementIO = S.CatchableStatementIO
-#-scalaz
-#+fs2
-  implicit val EffectStatementIO = S.EffectStatementIO
-#-fs2
 
   /** @group Batching */
   def addBatch(sql: String): StatementIO[Unit] =

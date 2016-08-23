@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -79,7 +78,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object databasemetadata {
+object databasemetadata extends DatabaseMetaDataInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.DatabaseMetaData`.
@@ -92,9 +91,9 @@ object databasemetadata {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] =
-      Kleisli((s: DatabaseMetaData) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, DatabaseMetaData, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] =
+      Kleisli((s: DatabaseMetaData) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, DatabaseMetaData, A]
 #-fs2
   }
 
@@ -113,7 +112,7 @@ object databasemetadata {
         def interpK[M[_]: Monad: Catchable: Capture]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
 #-fs2
           new (DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?]) {
             def apply[A](op: DatabaseMetaDataOp[A]): Kleisli[M, DatabaseMetaData, A] =
@@ -127,7 +126,7 @@ object databasemetadata {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -135,19 +134,18 @@ object databasemetadata {
     case class Attempt[A](action: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, DatabaseMetaData, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, DatabaseMetaData, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends DatabaseMetaDataOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: DatabaseMetaData => A) extends DatabaseMetaDataOp[A] {
@@ -155,7 +153,7 @@ object databasemetadata {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -698,538 +696,538 @@ object databasemetadata {
 #-scalaz
 #+fs2
     case object AllProceduresAreCallable extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.allProceduresAreCallable())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.allProceduresAreCallable())
     }
     case object AllTablesAreSelectable extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.allTablesAreSelectable())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.allTablesAreSelectable())
     }
     case object AutoCommitFailureClosesAllResultSets extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.autoCommitFailureClosesAllResultSets())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.autoCommitFailureClosesAllResultSets())
     }
     case object DataDefinitionCausesTransactionCommit extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.dataDefinitionCausesTransactionCommit())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.dataDefinitionCausesTransactionCommit())
     }
     case object DataDefinitionIgnoredInTransactions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.dataDefinitionIgnoredInTransactions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.dataDefinitionIgnoredInTransactions())
     }
     case class  DeletesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.deletesAreDetected(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.deletesAreDetected(a))
     }
     case object DoesMaxRowSizeIncludeBlobs extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.doesMaxRowSizeIncludeBlobs())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.doesMaxRowSizeIncludeBlobs())
     }
     case object GeneratedKeyAlwaysReturned extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.generatedKeyAlwaysReturned())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.generatedKeyAlwaysReturned())
     }
     case class  GetAttributes(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getAttributes(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getAttributes(a, b, c, d))
     }
     case class  GetBestRowIdentifier(a: String, b: String, c: String, d: Int, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBestRowIdentifier(a, b, c, d, e))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBestRowIdentifier(a, b, c, d, e))
     }
     case object GetCatalogSeparator extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCatalogSeparator())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCatalogSeparator())
     }
     case object GetCatalogTerm extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCatalogTerm())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCatalogTerm())
     }
     case object GetCatalogs extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCatalogs())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCatalogs())
     }
     case object GetClientInfoProperties extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getClientInfoProperties())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getClientInfoProperties())
     }
     case class  GetColumnPrivileges(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getColumnPrivileges(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getColumnPrivileges(a, b, c, d))
     }
     case class  GetColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getColumns(a, b, c, d))
     }
     case object GetConnection extends DatabaseMetaDataOp[Connection] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getConnection())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getConnection())
     }
     case class  GetCrossReference(a: String, b: String, c: String, d: String, e: String, f: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCrossReference(a, b, c, d, e, f))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCrossReference(a, b, c, d, e, f))
     }
     case object GetDatabaseMajorVersion extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDatabaseMajorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDatabaseMajorVersion())
     }
     case object GetDatabaseMinorVersion extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDatabaseMinorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDatabaseMinorVersion())
     }
     case object GetDatabaseProductName extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDatabaseProductName())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDatabaseProductName())
     }
     case object GetDatabaseProductVersion extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDatabaseProductVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDatabaseProductVersion())
     }
     case object GetDefaultTransactionIsolation extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDefaultTransactionIsolation())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDefaultTransactionIsolation())
     }
     case object GetDriverMajorVersion extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDriverMajorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDriverMajorVersion())
     }
     case object GetDriverMinorVersion extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDriverMinorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDriverMinorVersion())
     }
     case object GetDriverName extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDriverName())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDriverName())
     }
     case object GetDriverVersion extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDriverVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDriverVersion())
     }
     case class  GetExportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getExportedKeys(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getExportedKeys(a, b, c))
     }
     case object GetExtraNameCharacters extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getExtraNameCharacters())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getExtraNameCharacters())
     }
     case class  GetFunctionColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getFunctionColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getFunctionColumns(a, b, c, d))
     }
     case class  GetFunctions(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getFunctions(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getFunctions(a, b, c))
     }
     case object GetIdentifierQuoteString extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getIdentifierQuoteString())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getIdentifierQuoteString())
     }
     case class  GetImportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getImportedKeys(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getImportedKeys(a, b, c))
     }
     case class  GetIndexInfo(a: String, b: String, c: String, d: Boolean, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getIndexInfo(a, b, c, d, e))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getIndexInfo(a, b, c, d, e))
     }
     case object GetJDBCMajorVersion extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getJDBCMajorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getJDBCMajorVersion())
     }
     case object GetJDBCMinorVersion extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getJDBCMinorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getJDBCMinorVersion())
     }
     case object GetMaxBinaryLiteralLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxBinaryLiteralLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxBinaryLiteralLength())
     }
     case object GetMaxCatalogNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxCatalogNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxCatalogNameLength())
     }
     case object GetMaxCharLiteralLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxCharLiteralLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxCharLiteralLength())
     }
     case object GetMaxColumnNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxColumnNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxColumnNameLength())
     }
     case object GetMaxColumnsInGroupBy extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxColumnsInGroupBy())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxColumnsInGroupBy())
     }
     case object GetMaxColumnsInIndex extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxColumnsInIndex())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxColumnsInIndex())
     }
     case object GetMaxColumnsInOrderBy extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxColumnsInOrderBy())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxColumnsInOrderBy())
     }
     case object GetMaxColumnsInSelect extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxColumnsInSelect())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxColumnsInSelect())
     }
     case object GetMaxColumnsInTable extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxColumnsInTable())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxColumnsInTable())
     }
     case object GetMaxConnections extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxConnections())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxConnections())
     }
     case object GetMaxCursorNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxCursorNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxCursorNameLength())
     }
     case object GetMaxIndexLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxIndexLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxIndexLength())
     }
     case object GetMaxLogicalLobSize extends DatabaseMetaDataOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxLogicalLobSize())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxLogicalLobSize())
     }
     case object GetMaxProcedureNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxProcedureNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxProcedureNameLength())
     }
     case object GetMaxRowSize extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxRowSize())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxRowSize())
     }
     case object GetMaxSchemaNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxSchemaNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxSchemaNameLength())
     }
     case object GetMaxStatementLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxStatementLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxStatementLength())
     }
     case object GetMaxStatements extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxStatements())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxStatements())
     }
     case object GetMaxTableNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxTableNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxTableNameLength())
     }
     case object GetMaxTablesInSelect extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxTablesInSelect())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxTablesInSelect())
     }
     case object GetMaxUserNameLength extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxUserNameLength())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxUserNameLength())
     }
     case object GetNumericFunctions extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNumericFunctions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNumericFunctions())
     }
     case class  GetPrimaryKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getPrimaryKeys(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getPrimaryKeys(a, b, c))
     }
     case class  GetProcedureColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getProcedureColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getProcedureColumns(a, b, c, d))
     }
     case object GetProcedureTerm extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getProcedureTerm())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getProcedureTerm())
     }
     case class  GetProcedures(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getProcedures(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getProcedures(a, b, c))
     }
     case class  GetPseudoColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getPseudoColumns(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getPseudoColumns(a, b, c, d))
     }
     case object GetResultSetHoldability extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getResultSetHoldability())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getResultSetHoldability())
     }
     case object GetRowIdLifetime extends DatabaseMetaDataOp[RowIdLifetime] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getRowIdLifetime())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getRowIdLifetime())
     }
     case object GetSQLKeywords extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSQLKeywords())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSQLKeywords())
     }
     case object GetSQLStateType extends DatabaseMetaDataOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSQLStateType())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSQLStateType())
     }
     case object GetSchemaTerm extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSchemaTerm())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSchemaTerm())
     }
     case object GetSchemas extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSchemas())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSchemas())
     }
     case class  GetSchemas1(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSchemas(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSchemas(a, b))
     }
     case object GetSearchStringEscape extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSearchStringEscape())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSearchStringEscape())
     }
     case object GetStringFunctions extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getStringFunctions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getStringFunctions())
     }
     case class  GetSuperTables(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSuperTables(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSuperTables(a, b, c))
     }
     case class  GetSuperTypes(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSuperTypes(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSuperTypes(a, b, c))
     }
     case object GetSystemFunctions extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSystemFunctions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSystemFunctions())
     }
     case class  GetTablePrivileges(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTablePrivileges(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTablePrivileges(a, b, c))
     }
     case object GetTableTypes extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTableTypes())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTableTypes())
     }
     case class  GetTables(a: String, b: String, c: String, d: Array[String]) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTables(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTables(a, b, c, d))
     }
     case object GetTimeDateFunctions extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTimeDateFunctions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTimeDateFunctions())
     }
     case object GetTypeInfo extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTypeInfo())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTypeInfo())
     }
     case class  GetUDTs(a: String, b: String, c: String, d: Array[Int]) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getUDTs(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getUDTs(a, b, c, d))
     }
     case object GetURL extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getURL())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getURL())
     }
     case object GetUserName extends DatabaseMetaDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getUserName())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getUserName())
     }
     case class  GetVersionColumns(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getVersionColumns(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getVersionColumns(a, b, c))
     }
     case class  InsertsAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.insertsAreDetected(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.insertsAreDetected(a))
     }
     case object IsCatalogAtStart extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isCatalogAtStart())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isCatalogAtStart())
     }
     case object IsReadOnly extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isReadOnly())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isReadOnly())
     }
     case class  IsWrapperFor(a: Class[_]) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isWrapperFor(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isWrapperFor(a))
     }
     case object LocatorsUpdateCopy extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.locatorsUpdateCopy())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.locatorsUpdateCopy())
     }
     case object NullPlusNonNullIsNull extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.nullPlusNonNullIsNull())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.nullPlusNonNullIsNull())
     }
     case object NullsAreSortedAtEnd extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.nullsAreSortedAtEnd())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.nullsAreSortedAtEnd())
     }
     case object NullsAreSortedAtStart extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.nullsAreSortedAtStart())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.nullsAreSortedAtStart())
     }
     case object NullsAreSortedHigh extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.nullsAreSortedHigh())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.nullsAreSortedHigh())
     }
     case object NullsAreSortedLow extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.nullsAreSortedLow())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.nullsAreSortedLow())
     }
     case class  OthersDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.othersDeletesAreVisible(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.othersDeletesAreVisible(a))
     }
     case class  OthersInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.othersInsertsAreVisible(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.othersInsertsAreVisible(a))
     }
     case class  OthersUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.othersUpdatesAreVisible(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.othersUpdatesAreVisible(a))
     }
     case class  OwnDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.ownDeletesAreVisible(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.ownDeletesAreVisible(a))
     }
     case class  OwnInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.ownInsertsAreVisible(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.ownInsertsAreVisible(a))
     }
     case class  OwnUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.ownUpdatesAreVisible(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.ownUpdatesAreVisible(a))
     }
     case object StoresLowerCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.storesLowerCaseIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.storesLowerCaseIdentifiers())
     }
     case object StoresLowerCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.storesLowerCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.storesLowerCaseQuotedIdentifiers())
     }
     case object StoresMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.storesMixedCaseIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.storesMixedCaseIdentifiers())
     }
     case object StoresMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.storesMixedCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.storesMixedCaseQuotedIdentifiers())
     }
     case object StoresUpperCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.storesUpperCaseIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.storesUpperCaseIdentifiers())
     }
     case object StoresUpperCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.storesUpperCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.storesUpperCaseQuotedIdentifiers())
     }
     case object SupportsANSI92EntryLevelSQL extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsANSI92EntryLevelSQL())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsANSI92EntryLevelSQL())
     }
     case object SupportsANSI92FullSQL extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsANSI92FullSQL())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsANSI92FullSQL())
     }
     case object SupportsANSI92IntermediateSQL extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsANSI92IntermediateSQL())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsANSI92IntermediateSQL())
     }
     case object SupportsAlterTableWithAddColumn extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsAlterTableWithAddColumn())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsAlterTableWithAddColumn())
     }
     case object SupportsAlterTableWithDropColumn extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsAlterTableWithDropColumn())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsAlterTableWithDropColumn())
     }
     case object SupportsBatchUpdates extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsBatchUpdates())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsBatchUpdates())
     }
     case object SupportsCatalogsInDataManipulation extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCatalogsInDataManipulation())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCatalogsInDataManipulation())
     }
     case object SupportsCatalogsInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCatalogsInIndexDefinitions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCatalogsInIndexDefinitions())
     }
     case object SupportsCatalogsInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCatalogsInPrivilegeDefinitions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCatalogsInPrivilegeDefinitions())
     }
     case object SupportsCatalogsInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCatalogsInProcedureCalls())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCatalogsInProcedureCalls())
     }
     case object SupportsCatalogsInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCatalogsInTableDefinitions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCatalogsInTableDefinitions())
     }
     case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsColumnAliasing())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsColumnAliasing())
     }
     case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsConvert())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsConvert())
     }
     case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsConvert(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsConvert(a, b))
     }
     case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCoreSQLGrammar())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCoreSQLGrammar())
     }
     case object SupportsCorrelatedSubqueries extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsCorrelatedSubqueries())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsCorrelatedSubqueries())
     }
     case object SupportsDataDefinitionAndDataManipulationTransactions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsDataDefinitionAndDataManipulationTransactions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsDataDefinitionAndDataManipulationTransactions())
     }
     case object SupportsDataManipulationTransactionsOnly extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsDataManipulationTransactionsOnly())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsDataManipulationTransactionsOnly())
     }
     case object SupportsDifferentTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsDifferentTableCorrelationNames())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsDifferentTableCorrelationNames())
     }
     case object SupportsExpressionsInOrderBy extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsExpressionsInOrderBy())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsExpressionsInOrderBy())
     }
     case object SupportsExtendedSQLGrammar extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsExtendedSQLGrammar())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsExtendedSQLGrammar())
     }
     case object SupportsFullOuterJoins extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsFullOuterJoins())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsFullOuterJoins())
     }
     case object SupportsGetGeneratedKeys extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsGetGeneratedKeys())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsGetGeneratedKeys())
     }
     case object SupportsGroupBy extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsGroupBy())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsGroupBy())
     }
     case object SupportsGroupByBeyondSelect extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsGroupByBeyondSelect())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsGroupByBeyondSelect())
     }
     case object SupportsGroupByUnrelated extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsGroupByUnrelated())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsGroupByUnrelated())
     }
     case object SupportsIntegrityEnhancementFacility extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsIntegrityEnhancementFacility())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsIntegrityEnhancementFacility())
     }
     case object SupportsLikeEscapeClause extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsLikeEscapeClause())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsLikeEscapeClause())
     }
     case object SupportsLimitedOuterJoins extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsLimitedOuterJoins())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsLimitedOuterJoins())
     }
     case object SupportsMinimumSQLGrammar extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsMinimumSQLGrammar())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsMinimumSQLGrammar())
     }
     case object SupportsMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsMixedCaseIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsMixedCaseIdentifiers())
     }
     case object SupportsMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsMixedCaseQuotedIdentifiers())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsMixedCaseQuotedIdentifiers())
     }
     case object SupportsMultipleOpenResults extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsMultipleOpenResults())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsMultipleOpenResults())
     }
     case object SupportsMultipleResultSets extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsMultipleResultSets())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsMultipleResultSets())
     }
     case object SupportsMultipleTransactions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsMultipleTransactions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsMultipleTransactions())
     }
     case object SupportsNamedParameters extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsNamedParameters())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsNamedParameters())
     }
     case object SupportsNonNullableColumns extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsNonNullableColumns())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsNonNullableColumns())
     }
     case object SupportsOpenCursorsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsOpenCursorsAcrossCommit())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsOpenCursorsAcrossCommit())
     }
     case object SupportsOpenCursorsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsOpenCursorsAcrossRollback())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsOpenCursorsAcrossRollback())
     }
     case object SupportsOpenStatementsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsOpenStatementsAcrossCommit())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsOpenStatementsAcrossCommit())
     }
     case object SupportsOpenStatementsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsOpenStatementsAcrossRollback())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsOpenStatementsAcrossRollback())
     }
     case object SupportsOrderByUnrelated extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsOrderByUnrelated())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsOrderByUnrelated())
     }
     case object SupportsOuterJoins extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsOuterJoins())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsOuterJoins())
     }
     case object SupportsPositionedDelete extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsPositionedDelete())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsPositionedDelete())
     }
     case object SupportsPositionedUpdate extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsPositionedUpdate())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsPositionedUpdate())
     }
     case object SupportsRefCursors extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsRefCursors())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsRefCursors())
     }
     case class  SupportsResultSetConcurrency(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsResultSetConcurrency(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsResultSetConcurrency(a, b))
     }
     case class  SupportsResultSetHoldability(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsResultSetHoldability(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsResultSetHoldability(a))
     }
     case class  SupportsResultSetType(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsResultSetType(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsResultSetType(a))
     }
     case object SupportsSavepoints extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSavepoints())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSavepoints())
     }
     case object SupportsSchemasInDataManipulation extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSchemasInDataManipulation())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSchemasInDataManipulation())
     }
     case object SupportsSchemasInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSchemasInIndexDefinitions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSchemasInIndexDefinitions())
     }
     case object SupportsSchemasInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSchemasInPrivilegeDefinitions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSchemasInPrivilegeDefinitions())
     }
     case object SupportsSchemasInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSchemasInProcedureCalls())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSchemasInProcedureCalls())
     }
     case object SupportsSchemasInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSchemasInTableDefinitions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSchemasInTableDefinitions())
     }
     case object SupportsSelectForUpdate extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSelectForUpdate())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSelectForUpdate())
     }
     case object SupportsStatementPooling extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsStatementPooling())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsStatementPooling())
     }
     case object SupportsStoredFunctionsUsingCallSyntax extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsStoredFunctionsUsingCallSyntax())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsStoredFunctionsUsingCallSyntax())
     }
     case object SupportsStoredProcedures extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsStoredProcedures())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsStoredProcedures())
     }
     case object SupportsSubqueriesInComparisons extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSubqueriesInComparisons())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSubqueriesInComparisons())
     }
     case object SupportsSubqueriesInExists extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSubqueriesInExists())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSubqueriesInExists())
     }
     case object SupportsSubqueriesInIns extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSubqueriesInIns())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSubqueriesInIns())
     }
     case object SupportsSubqueriesInQuantifieds extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsSubqueriesInQuantifieds())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsSubqueriesInQuantifieds())
     }
     case object SupportsTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsTableCorrelationNames())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsTableCorrelationNames())
     }
     case class  SupportsTransactionIsolationLevel(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsTransactionIsolationLevel(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsTransactionIsolationLevel(a))
     }
     case object SupportsTransactions extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsTransactions())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsTransactions())
     }
     case object SupportsUnion extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsUnion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsUnion())
     }
     case object SupportsUnionAll extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.supportsUnionAll())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.supportsUnionAll())
     }
     case class  Unwrap[T](a: Class[T]) extends DatabaseMetaDataOp[T] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.unwrap(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.unwrap(a))
     }
     case class  UpdatesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.updatesAreDetected(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.updatesAreDetected(a))
     }
     case object UsesLocalFilePerTable extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.usesLocalFilePerTable())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.usesLocalFilePerTable())
     }
     case object UsesLocalFiles extends DatabaseMetaDataOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.usesLocalFiles())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.usesLocalFiles())
     }
 #-fs2
 
@@ -1243,17 +1241,22 @@ object databasemetadata {
    */
   type DatabaseMetaDataIO[A] = F[DatabaseMetaDataOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[DatabaseMetaDataIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableDatabaseMetaDataIO: Catchable[DatabaseMetaDataIO] =
     new Catchable[DatabaseMetaDataIO] {
+#+fs2
+      def pure[A](a: A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
+      override def map[A, B](fa: DatabaseMetaDataIO[A])(f: A => B): DatabaseMetaDataIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
       def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[DatabaseMetaDataIO]].
    * @group Typeclass Instances
@@ -1263,22 +1266,6 @@ object databasemetadata {
       def apply[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[DatabaseMetaDataIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectDatabaseMetaDataIO: Effect[DatabaseMetaDataIO] =
-    new Effect[DatabaseMetaDataIO] {
-      def pure[A](a: A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
-      def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = fa.flatMap(f)
-      def attempt[A](fa: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(fa)
-      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.delay(throw err)
-      def suspend[A](fa: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
-      def unsafeRunAsync[A](fa: DatabaseMetaDataIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -2385,7 +2372,7 @@ object databasemetadata {
    DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] =
    DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.interpK
 #-fs2
 
@@ -2398,7 +2385,7 @@ object databasemetadata {
    DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?] =
+  def transK[M[_]: Catchable: Suspendable]: DatabaseMetaDataIO ~> Kleisli[M, DatabaseMetaData, ?] =
    DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK
 #-fs2
 
@@ -2411,7 +2398,7 @@ object databasemetadata {
    DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
    DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
 #-fs2
 
@@ -2425,10 +2412,27 @@ object databasemetadata {
       DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, DatabaseMetaData, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, DatabaseMetaData, A] =
       DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait DatabaseMetaDataInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[DatabaseMetaDataIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableDatabaseMetaDataIO: Suspendable[DatabaseMetaDataIO] =
+    new Suspendable[DatabaseMetaDataIO] {
+      def pure[A](a: A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
+      override def map[A, B](fa: DatabaseMetaDataIO[A])(f: A => B): DatabaseMetaDataIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
+    }
+#-fs2
 }
 

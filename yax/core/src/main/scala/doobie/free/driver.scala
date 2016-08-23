@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -79,7 +78,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object driver {
+object driver extends DriverInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Driver`.
@@ -92,9 +91,9 @@ object driver {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: Driver => A): Kleisli[M, Driver, A] =
-      Kleisli((s: Driver) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, Driver, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: Driver => A): Kleisli[M, Driver, A] =
+      Kleisli((s: Driver) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Driver, A]
 #-fs2
   }
 
@@ -113,7 +112,7 @@ object driver {
         def interpK[M[_]: Monad: Catchable: Capture]: DriverOp ~> Kleisli[M, Driver, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: DriverOp ~> Kleisli[M, Driver, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: DriverOp ~> Kleisli[M, Driver, ?] =
 #-fs2
           new (DriverOp ~> Kleisli[M, Driver, ?]) {
             def apply[A](op: DriverOp[A]): Kleisli[M, Driver, A] =
@@ -127,7 +126,7 @@ object driver {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -135,19 +134,18 @@ object driver {
     case class Attempt[A](action: DriverIO[A]) extends DriverOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, Driver, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends DriverOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: Driver => A) extends DriverOp[A] {
@@ -155,7 +153,7 @@ object driver {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -185,25 +183,25 @@ object driver {
 #-scalaz
 #+fs2
     case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.acceptsURL(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.acceptsURL(a))
     }
     case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.connect(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.connect(a, b))
     }
     case object GetMajorVersion extends DriverOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMajorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMajorVersion())
     }
     case object GetMinorVersion extends DriverOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMinorVersion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMinorVersion())
     }
     case object GetParentLogger extends DriverOp[Logger] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getParentLogger())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getParentLogger())
     }
     case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getPropertyInfo(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getPropertyInfo(a, b))
     }
     case object JdbcCompliant extends DriverOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.jdbcCompliant())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.jdbcCompliant())
     }
 #-fs2
 
@@ -217,17 +215,22 @@ object driver {
    */
   type DriverIO[A] = F[DriverOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[DriverIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableDriverIO: Catchable[DriverIO] =
     new Catchable[DriverIO] {
+#+fs2
+      def pure[A](a: A): DriverIO[A] = driver.delay(a)
+      override def map[A, B](fa: DriverIO[A])(f: A => B): DriverIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
       def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[DriverIO]].
    * @group Typeclass Instances
@@ -237,22 +240,6 @@ object driver {
       def apply[A](a: => A): DriverIO[A] = driver.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[DriverIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectDriverIO: Effect[DriverIO] =
-    new Effect[DriverIO] {
-      def pure[A](a: A): DriverIO[A] = driver.delay(a)
-      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = fa.flatMap(f)
-      def attempt[A](fa: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(fa)
-      def fail[A](err: Throwable): DriverIO[A] = driver.delay(throw err)
-      def suspend[A](fa: => DriverIO[A]): DriverIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): DriverIO[A] = driver.delay(a)
-      def unsafeRunAsync[A](fa: DriverIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -333,7 +320,7 @@ object driver {
    DriverOp.DriverKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: DriverOp ~> Kleisli[M, Driver, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: DriverOp ~> Kleisli[M, Driver, ?] =
    DriverOp.DriverKleisliTrans.interpK
 #-fs2
 
@@ -346,7 +333,7 @@ object driver {
    DriverOp.DriverKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: DriverIO ~> Kleisli[M, Driver, ?] =
+  def transK[M[_]: Catchable: Suspendable]: DriverIO ~> Kleisli[M, Driver, ?] =
    DriverOp.DriverKleisliTrans.transK
 #-fs2
 
@@ -359,7 +346,7 @@ object driver {
    DriverOp.DriverKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: Driver): DriverIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: Driver): DriverIO ~> M =
    DriverOp.DriverKleisliTrans.trans[M](c)
 #-fs2
 
@@ -373,10 +360,27 @@ object driver {
       DriverOp.DriverKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, Driver, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Driver, A] =
       DriverOp.DriverKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait DriverInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[DriverIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableDriverIO: Suspendable[DriverIO] =
+    new Suspendable[DriverIO] {
+      def pure[A](a: A): DriverIO[A] = driver.delay(a)
+      override def map[A, B](fa: DriverIO[A])(f: A => B): DriverIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => DriverIO[A]): DriverIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): DriverIO[A] = driver.delay(a)
+    }
+#-fs2
 }
 

@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -94,7 +93,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object callablestatement {
+object callablestatement extends CallableStatementInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.CallableStatement`.
@@ -107,9 +106,9 @@ object callablestatement {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CallableStatement, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: CallableStatement => A): Kleisli[M, CallableStatement, A] =
-      Kleisli((s: CallableStatement) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, CallableStatement, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: CallableStatement => A): Kleisli[M, CallableStatement, A] =
+      Kleisli((s: CallableStatement) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, CallableStatement, A]
 #-fs2
   }
 
@@ -128,7 +127,7 @@ object callablestatement {
         def interpK[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
 #-fs2
           new (CallableStatementOp ~> Kleisli[M, CallableStatement, ?]) {
             def apply[A](op: CallableStatementOp[A]): Kleisli[M, CallableStatement, A] =
@@ -142,7 +141,7 @@ object callablestatement {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -150,19 +149,18 @@ object callablestatement {
     case class Attempt[A](action: CallableStatementIO[A]) extends CallableStatementOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, CallableStatement, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, CallableStatement, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, CallableStatement, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends CallableStatementOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: CallableStatement => A) extends CallableStatementOp[A] {
@@ -170,7 +168,7 @@ object callablestatement {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -872,697 +870,697 @@ object callablestatement {
 #-scalaz
 #+fs2
     case object AddBatch extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.addBatch())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.addBatch())
     }
     case class  AddBatch1(a: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.addBatch(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.addBatch(a))
     }
     case object Cancel extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.cancel())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.cancel())
     }
     case object ClearBatch extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.clearBatch())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.clearBatch())
     }
     case object ClearParameters extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.clearParameters())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.clearParameters())
     }
     case object ClearWarnings extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.clearWarnings())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.clearWarnings())
     }
     case object Close extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.close())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.close())
     }
     case object CloseOnCompletion extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.closeOnCompletion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.closeOnCompletion())
     }
     case object Execute extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.execute())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.execute())
     }
     case class  Execute1(a: String) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.execute(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.execute(a))
     }
     case class  Execute2(a: String, b: Array[Int]) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.execute(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.execute(a, b))
     }
     case class  Execute3(a: String, b: Array[String]) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.execute(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.execute(a, b))
     }
     case class  Execute4(a: String, b: Int) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.execute(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.execute(a, b))
     }
     case object ExecuteBatch extends CallableStatementOp[Array[Int]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeBatch())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeBatch())
     }
     case object ExecuteLargeBatch extends CallableStatementOp[Array[Long]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeLargeBatch())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeLargeBatch())
     }
     case object ExecuteLargeUpdate extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeLargeUpdate())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeLargeUpdate())
     }
     case class  ExecuteLargeUpdate1(a: String) extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeLargeUpdate(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeLargeUpdate(a))
     }
     case class  ExecuteLargeUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeLargeUpdate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeLargeUpdate(a, b))
     }
     case class  ExecuteLargeUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeLargeUpdate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeLargeUpdate(a, b))
     }
     case class  ExecuteLargeUpdate4(a: String, b: Int) extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeLargeUpdate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeLargeUpdate(a, b))
     }
     case object ExecuteQuery extends CallableStatementOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeQuery())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeQuery())
     }
     case class  ExecuteQuery1(a: String) extends CallableStatementOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeQuery(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeQuery(a))
     }
     case object ExecuteUpdate extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeUpdate())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeUpdate())
     }
     case class  ExecuteUpdate1(a: String) extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeUpdate(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeUpdate(a))
     }
     case class  ExecuteUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeUpdate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeUpdate(a, b))
     }
     case class  ExecuteUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeUpdate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeUpdate(a, b))
     }
     case class  ExecuteUpdate4(a: String, b: Int) extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.executeUpdate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.executeUpdate(a, b))
     }
     case class  GetArray(a: Int) extends CallableStatementOp[SqlArray] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getArray(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getArray(a))
     }
     case class  GetArray1(a: String) extends CallableStatementOp[SqlArray] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getArray(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getArray(a))
     }
     case class  GetBigDecimal(a: Int) extends CallableStatementOp[BigDecimal] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBigDecimal(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBigDecimal(a))
     }
     case class  GetBigDecimal1(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBigDecimal(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBigDecimal(a, b))
     }
     case class  GetBigDecimal2(a: String) extends CallableStatementOp[BigDecimal] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBigDecimal(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBigDecimal(a))
     }
     case class  GetBlob(a: Int) extends CallableStatementOp[Blob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBlob(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBlob(a))
     }
     case class  GetBlob1(a: String) extends CallableStatementOp[Blob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBlob(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBlob(a))
     }
     case class  GetBoolean(a: Int) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBoolean(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBoolean(a))
     }
     case class  GetBoolean1(a: String) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBoolean(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBoolean(a))
     }
     case class  GetByte(a: Int) extends CallableStatementOp[Byte] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getByte(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getByte(a))
     }
     case class  GetByte1(a: String) extends CallableStatementOp[Byte] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getByte(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getByte(a))
     }
     case class  GetBytes(a: Int) extends CallableStatementOp[Array[Byte]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBytes(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBytes(a))
     }
     case class  GetBytes1(a: String) extends CallableStatementOp[Array[Byte]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBytes(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBytes(a))
     }
     case class  GetCharacterStream(a: Int) extends CallableStatementOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCharacterStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCharacterStream(a))
     }
     case class  GetCharacterStream1(a: String) extends CallableStatementOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCharacterStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCharacterStream(a))
     }
     case class  GetClob(a: Int) extends CallableStatementOp[Clob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getClob(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getClob(a))
     }
     case class  GetClob1(a: String) extends CallableStatementOp[Clob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getClob(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getClob(a))
     }
     case object GetConnection extends CallableStatementOp[Connection] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getConnection())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getConnection())
     }
     case class  GetDate(a: Int) extends CallableStatementOp[Date] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDate(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDate(a))
     }
     case class  GetDate1(a: Int, b: Calendar) extends CallableStatementOp[Date] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDate(a, b))
     }
     case class  GetDate2(a: String) extends CallableStatementOp[Date] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDate(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDate(a))
     }
     case class  GetDate3(a: String, b: Calendar) extends CallableStatementOp[Date] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDate(a, b))
     }
     case class  GetDouble(a: Int) extends CallableStatementOp[Double] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDouble(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDouble(a))
     }
     case class  GetDouble1(a: String) extends CallableStatementOp[Double] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getDouble(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getDouble(a))
     }
     case object GetFetchDirection extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getFetchDirection())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getFetchDirection())
     }
     case object GetFetchSize extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getFetchSize())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getFetchSize())
     }
     case class  GetFloat(a: Int) extends CallableStatementOp[Float] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getFloat(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getFloat(a))
     }
     case class  GetFloat1(a: String) extends CallableStatementOp[Float] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getFloat(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getFloat(a))
     }
     case object GetGeneratedKeys extends CallableStatementOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getGeneratedKeys())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getGeneratedKeys())
     }
     case class  GetInt(a: Int) extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getInt(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getInt(a))
     }
     case class  GetInt1(a: String) extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getInt(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getInt(a))
     }
     case object GetLargeMaxRows extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getLargeMaxRows())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getLargeMaxRows())
     }
     case object GetLargeUpdateCount extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getLargeUpdateCount())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getLargeUpdateCount())
     }
     case class  GetLong(a: Int) extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getLong(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getLong(a))
     }
     case class  GetLong1(a: String) extends CallableStatementOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getLong(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getLong(a))
     }
     case object GetMaxFieldSize extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxFieldSize())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxFieldSize())
     }
     case object GetMaxRows extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMaxRows())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMaxRows())
     }
     case object GetMetaData extends CallableStatementOp[ResultSetMetaData] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMetaData())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMetaData())
     }
     case object GetMoreResults extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMoreResults())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMoreResults())
     }
     case class  GetMoreResults1(a: Int) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMoreResults(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMoreResults(a))
     }
     case class  GetNCharacterStream(a: Int) extends CallableStatementOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNCharacterStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNCharacterStream(a))
     }
     case class  GetNCharacterStream1(a: String) extends CallableStatementOp[Reader] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNCharacterStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNCharacterStream(a))
     }
     case class  GetNClob(a: Int) extends CallableStatementOp[NClob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNClob(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNClob(a))
     }
     case class  GetNClob1(a: String) extends CallableStatementOp[NClob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNClob(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNClob(a))
     }
     case class  GetNString(a: Int) extends CallableStatementOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNString(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNString(a))
     }
     case class  GetNString1(a: String) extends CallableStatementOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNString(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNString(a))
     }
     case class  GetObject(a: Int) extends CallableStatementOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a))
     }
     case class  GetObject1[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a, b))
     }
     case class  GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a, b))
     }
     case class  GetObject3(a: String) extends CallableStatementOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a))
     }
     case class  GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a, b))
     }
     case class  GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a, b))
     }
     case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getParameterMetaData())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getParameterMetaData())
     }
     case object GetQueryTimeout extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getQueryTimeout())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getQueryTimeout())
     }
     case class  GetRef(a: Int) extends CallableStatementOp[Ref] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getRef(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getRef(a))
     }
     case class  GetRef1(a: String) extends CallableStatementOp[Ref] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getRef(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getRef(a))
     }
     case object GetResultSet extends CallableStatementOp[ResultSet] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getResultSet())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getResultSet())
     }
     case object GetResultSetConcurrency extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getResultSetConcurrency())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getResultSetConcurrency())
     }
     case object GetResultSetHoldability extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getResultSetHoldability())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getResultSetHoldability())
     }
     case object GetResultSetType extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getResultSetType())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getResultSetType())
     }
     case class  GetRowId(a: Int) extends CallableStatementOp[RowId] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getRowId(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getRowId(a))
     }
     case class  GetRowId1(a: String) extends CallableStatementOp[RowId] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getRowId(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getRowId(a))
     }
     case class  GetSQLXML(a: Int) extends CallableStatementOp[SQLXML] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSQLXML(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSQLXML(a))
     }
     case class  GetSQLXML1(a: String) extends CallableStatementOp[SQLXML] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSQLXML(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSQLXML(a))
     }
     case class  GetShort(a: Int) extends CallableStatementOp[Short] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getShort(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getShort(a))
     }
     case class  GetShort1(a: String) extends CallableStatementOp[Short] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getShort(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getShort(a))
     }
     case class  GetString(a: Int) extends CallableStatementOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getString(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getString(a))
     }
     case class  GetString1(a: String) extends CallableStatementOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getString(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getString(a))
     }
     case class  GetTime(a: Int) extends CallableStatementOp[Time] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTime(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTime(a))
     }
     case class  GetTime1(a: Int, b: Calendar) extends CallableStatementOp[Time] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTime(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTime(a, b))
     }
     case class  GetTime2(a: String) extends CallableStatementOp[Time] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTime(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTime(a))
     }
     case class  GetTime3(a: String, b: Calendar) extends CallableStatementOp[Time] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTime(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTime(a, b))
     }
     case class  GetTimestamp(a: Int) extends CallableStatementOp[Timestamp] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTimestamp(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTimestamp(a))
     }
     case class  GetTimestamp1(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTimestamp(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTimestamp(a, b))
     }
     case class  GetTimestamp2(a: String) extends CallableStatementOp[Timestamp] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTimestamp(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTimestamp(a))
     }
     case class  GetTimestamp3(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTimestamp(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTimestamp(a, b))
     }
     case class  GetURL(a: Int) extends CallableStatementOp[URL] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getURL(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getURL(a))
     }
     case class  GetURL1(a: String) extends CallableStatementOp[URL] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getURL(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getURL(a))
     }
     case object GetUpdateCount extends CallableStatementOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getUpdateCount())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getUpdateCount())
     }
     case object GetWarnings extends CallableStatementOp[SQLWarning] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getWarnings())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getWarnings())
     }
     case object IsCloseOnCompletion extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isCloseOnCompletion())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isCloseOnCompletion())
     }
     case object IsClosed extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isClosed())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isClosed())
     }
     case object IsPoolable extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isPoolable())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isPoolable())
     }
     case class  IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isWrapperFor(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isWrapperFor(a))
     }
     case class  RegisterOutParameter(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b))
     }
     case class  RegisterOutParameter1(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter2(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter3(a: Int, b: SQLType) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b))
     }
     case class  RegisterOutParameter4(a: Int, b: SQLType, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter5(a: Int, b: SQLType, c: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter6(a: String, b: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b))
     }
     case class  RegisterOutParameter7(a: String, b: Int, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter8(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter9(a: String, b: SQLType) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b))
     }
     case class  RegisterOutParameter10(a: String, b: SQLType, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  RegisterOutParameter11(a: String, b: SQLType, c: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.registerOutParameter(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.registerOutParameter(a, b, c))
     }
     case class  SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setArray(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setArray(a, b))
     }
     case class  SetAsciiStream(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a, b))
     }
     case class  SetAsciiStream1(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream3(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a, b))
     }
     case class  SetAsciiStream4(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetAsciiStream5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAsciiStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAsciiStream(a, b, c))
     }
     case class  SetBigDecimal(a: Int, b: BigDecimal) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBigDecimal(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBigDecimal(a, b))
     }
     case class  SetBigDecimal1(a: String, b: BigDecimal) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBigDecimal(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBigDecimal(a, b))
     }
     case class  SetBinaryStream(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a, b))
     }
     case class  SetBinaryStream1(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream3(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a, b))
     }
     case class  SetBinaryStream4(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBinaryStream5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a, b, c))
     }
     case class  SetBlob(a: Int, b: Blob) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob1(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBlob(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBlob(a, b, c))
     }
     case class  SetBlob3(a: String, b: Blob) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob4(a: String, b: InputStream) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBlob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBlob(a, b))
     }
     case class  SetBlob5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBlob(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBlob(a, b, c))
     }
     case class  SetBoolean(a: Int, b: Boolean) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBoolean(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBoolean(a, b))
     }
     case class  SetBoolean1(a: String, b: Boolean) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBoolean(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBoolean(a, b))
     }
     case class  SetByte(a: Int, b: Byte) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setByte(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setByte(a, b))
     }
     case class  SetByte1(a: String, b: Byte) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setByte(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setByte(a, b))
     }
     case class  SetBytes(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBytes(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBytes(a, b))
     }
     case class  SetBytes1(a: String, b: Array[Byte]) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBytes(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBytes(a, b))
     }
     case class  SetCharacterStream(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a, b))
     }
     case class  SetCharacterStream1(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream3(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a, b))
     }
     case class  SetCharacterStream4(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetCharacterStream5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCharacterStream(a, b, c))
     }
     case class  SetClob(a: Int, b: Clob) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClob(a, b))
     }
     case class  SetClob1(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClob(a, b))
     }
     case class  SetClob2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClob(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClob(a, b, c))
     }
     case class  SetClob3(a: String, b: Clob) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClob(a, b))
     }
     case class  SetClob4(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClob(a, b))
     }
     case class  SetClob5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClob(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClob(a, b, c))
     }
     case class  SetCursorName(a: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCursorName(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCursorName(a))
     }
     case class  SetDate(a: Int, b: Date) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setDate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setDate(a, b))
     }
     case class  SetDate1(a: Int, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setDate(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setDate(a, b, c))
     }
     case class  SetDate2(a: String, b: Date) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setDate(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setDate(a, b))
     }
     case class  SetDate3(a: String, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setDate(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setDate(a, b, c))
     }
     case class  SetDouble(a: Int, b: Double) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setDouble(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setDouble(a, b))
     }
     case class  SetDouble1(a: String, b: Double) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setDouble(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setDouble(a, b))
     }
     case class  SetEscapeProcessing(a: Boolean) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setEscapeProcessing(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setEscapeProcessing(a))
     }
     case class  SetFetchDirection(a: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setFetchDirection(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setFetchDirection(a))
     }
     case class  SetFetchSize(a: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setFetchSize(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setFetchSize(a))
     }
     case class  SetFloat(a: Int, b: Float) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setFloat(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setFloat(a, b))
     }
     case class  SetFloat1(a: String, b: Float) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setFloat(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setFloat(a, b))
     }
     case class  SetInt(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setInt(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setInt(a, b))
     }
     case class  SetInt1(a: String, b: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setInt(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setInt(a, b))
     }
     case class  SetLargeMaxRows(a: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setLargeMaxRows(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setLargeMaxRows(a))
     }
     case class  SetLong(a: Int, b: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setLong(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setLong(a, b))
     }
     case class  SetLong1(a: String, b: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setLong(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setLong(a, b))
     }
     case class  SetMaxFieldSize(a: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setMaxFieldSize(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setMaxFieldSize(a))
     }
     case class  SetMaxRows(a: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setMaxRows(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setMaxRows(a))
     }
     case class  SetNCharacterStream(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNCharacterStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNCharacterStream(a, b))
     }
     case class  SetNCharacterStream1(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNCharacterStream(a, b, c))
     }
     case class  SetNCharacterStream2(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNCharacterStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNCharacterStream(a, b))
     }
     case class  SetNCharacterStream3(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNCharacterStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNCharacterStream(a, b, c))
     }
     case class  SetNClob(a: Int, b: NClob) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob1(a: Int, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNClob(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNClob(a, b, c))
     }
     case class  SetNClob3(a: String, b: NClob) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob4(a: String, b: Reader) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNClob(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNClob(a, b))
     }
     case class  SetNClob5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNClob(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNClob(a, b, c))
     }
     case class  SetNString(a: Int, b: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNString(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNString(a, b))
     }
     case class  SetNString1(a: String, b: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNString(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNString(a, b))
     }
     case class  SetNull(a: Int, b: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNull(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNull(a, b))
     }
     case class  SetNull1(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNull(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNull(a, b, c))
     }
     case class  SetNull2(a: String, b: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNull(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNull(a, b))
     }
     case class  SetNull3(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNull(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNull(a, b, c))
     }
     case class  SetObject(a: Int, b: AnyRef) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b))
     }
     case class  SetObject1(a: Int, b: AnyRef, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject2(a: Int, b: AnyRef, c: Int, d: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetObject3(a: Int, b: AnyRef, c: SQLType) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject4(a: Int, b: AnyRef, c: SQLType, d: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetObject5(a: String, b: AnyRef) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b))
     }
     case class  SetObject6(a: String, b: AnyRef, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject7(a: String, b: AnyRef, c: Int, d: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetObject8(a: String, b: AnyRef, c: SQLType) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c))
     }
     case class  SetObject9(a: String, b: AnyRef, c: SQLType, d: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a, b, c, d))
     }
     case class  SetPoolable(a: Boolean) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setPoolable(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setPoolable(a))
     }
     case class  SetQueryTimeout(a: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setQueryTimeout(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setQueryTimeout(a))
     }
     case class  SetRef(a: Int, b: Ref) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setRef(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setRef(a, b))
     }
     case class  SetRowId(a: Int, b: RowId) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setRowId(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setRowId(a, b))
     }
     case class  SetRowId1(a: String, b: RowId) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setRowId(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setRowId(a, b))
     }
     case class  SetSQLXML(a: Int, b: SQLXML) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setSQLXML(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setSQLXML(a, b))
     }
     case class  SetSQLXML1(a: String, b: SQLXML) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setSQLXML(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setSQLXML(a, b))
     }
     case class  SetShort(a: Int, b: Short) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setShort(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setShort(a, b))
     }
     case class  SetShort1(a: String, b: Short) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setShort(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setShort(a, b))
     }
     case class  SetString(a: Int, b: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setString(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setString(a, b))
     }
     case class  SetString1(a: String, b: String) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setString(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setString(a, b))
     }
     case class  SetTime(a: Int, b: Time) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTime(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTime(a, b))
     }
     case class  SetTime1(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTime(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTime(a, b, c))
     }
     case class  SetTime2(a: String, b: Time) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTime(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTime(a, b))
     }
     case class  SetTime3(a: String, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTime(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTime(a, b, c))
     }
     case class  SetTimestamp(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTimestamp(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTimestamp(a, b))
     }
     case class  SetTimestamp1(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTimestamp(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTimestamp(a, b, c))
     }
     case class  SetTimestamp2(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTimestamp(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTimestamp(a, b))
     }
     case class  SetTimestamp3(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTimestamp(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTimestamp(a, b, c))
     }
     case class  SetURL(a: Int, b: URL) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setURL(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setURL(a, b))
     }
     case class  SetURL1(a: String, b: URL) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setURL(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setURL(a, b))
     }
     case class  SetUnicodeStream(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setUnicodeStream(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setUnicodeStream(a, b, c))
     }
     case class  Unwrap[T](a: Class[T]) extends CallableStatementOp[T] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.unwrap(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.unwrap(a))
     }
     case object WasNull extends CallableStatementOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.wasNull())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.wasNull())
     }
 #-fs2
 
@@ -1576,17 +1574,22 @@ object callablestatement {
    */
   type CallableStatementIO[A] = F[CallableStatementOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[CallableStatementIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableCallableStatementIO: Catchable[CallableStatementIO] =
     new Catchable[CallableStatementIO] {
+#+fs2
+      def pure[A](a: A): CallableStatementIO[A] = callablestatement.delay(a)
+      override def map[A, B](fa: CallableStatementIO[A])(f: A => B): CallableStatementIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(f)
       def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[CallableStatementIO]].
    * @group Typeclass Instances
@@ -1596,22 +1599,6 @@ object callablestatement {
       def apply[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[CallableStatementIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectCallableStatementIO: Effect[CallableStatementIO] =
-    new Effect[CallableStatementIO] {
-      def pure[A](a: A): CallableStatementIO[A] = callablestatement.delay(a)
-      def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = fa.flatMap(f)
-      def attempt[A](fa: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(fa)
-      def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.delay(throw err)
-      def suspend[A](fa: => CallableStatementIO[A]): CallableStatementIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
-      def unsafeRunAsync[A](fa: CallableStatementIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -3036,7 +3023,7 @@ object callablestatement {
    CallableStatementOp.CallableStatementKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
    CallableStatementOp.CallableStatementKleisliTrans.interpK
 #-fs2
 
@@ -3049,7 +3036,7 @@ object callablestatement {
    CallableStatementOp.CallableStatementKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: CallableStatementIO ~> Kleisli[M, CallableStatement, ?] =
+  def transK[M[_]: Catchable: Suspendable]: CallableStatementIO ~> Kleisli[M, CallableStatement, ?] =
    CallableStatementOp.CallableStatementKleisliTrans.transK
 #-fs2
 
@@ -3062,7 +3049,7 @@ object callablestatement {
    CallableStatementOp.CallableStatementKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: CallableStatement): CallableStatementIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: CallableStatement): CallableStatementIO ~> M =
    CallableStatementOp.CallableStatementKleisliTrans.trans[M](c)
 #-fs2
 
@@ -3076,10 +3063,27 @@ object callablestatement {
       CallableStatementOp.CallableStatementKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, CallableStatement, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CallableStatement, A] =
       CallableStatementOp.CallableStatementKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait CallableStatementInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[CallableStatementIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCallableStatementIO: Suspendable[CallableStatementIO] =
+    new Suspendable[CallableStatementIO] {
+      def pure[A](a: A): CallableStatementIO[A] = callablestatement.delay(a)
+      override def map[A, B](fa: CallableStatementIO[A])(f: A => B): CallableStatementIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CallableStatementIO[A]): CallableStatementIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
+    }
+#-fs2
 }
 

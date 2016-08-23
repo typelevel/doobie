@@ -44,7 +44,7 @@ import cats.implicits._
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
-import fs2.util.{ Effect, ~> }
+import fs2.util.{ Catchable, Suspendable, ~> }
 import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 #-fs2
 
@@ -55,12 +55,7 @@ import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 object connection {
 
   /** @group Typeclass Instances */
-#+scalaz
   implicit val CatchableConnectionIO = C.CatchableConnectionIO
-#-scalaz
-#+fs2
-  implicit val EffectConnectionIO = C.EffectConnectionIO
-#-fs2
 
   /** @group Lifting */
   def delay[A](a: => A): ConnectionIO[A] =
@@ -306,7 +301,7 @@ object connection {
     def trans[M[_]: Monad: Catchable: Capture](c: Connection): Process[M, A] =
 #-scalaz
 #+fs2
-    def trans[M[_]: Effect](c: Connection): Process[M, A] =
+    def trans[M[_]: Catchable: Suspendable](c: Connection): Process[M, A] =
 #-fs2
       pa.translate(new (ConnectionIO ~> M) {
         def apply[B](ma: ConnectionIO[B]): M[B] =

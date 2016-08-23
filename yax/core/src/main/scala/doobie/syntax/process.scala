@@ -20,7 +20,7 @@ import fs2.interop.cats._
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 /** Syntax for `Process` operations defined in `util.process`. */
@@ -30,7 +30,7 @@ object process {
   implicit class ProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]) {
 #-scalaz
 #+fs2
-  implicit class ProcessOps[F[_]: Effect, A](fa: Process[F, A]) {
+  implicit class ProcessOps[F[_]: Catchable: Suspendable, A](fa: Process[F, A]) {
 #-fs2
 
     def vector: F[Vector[A]] =

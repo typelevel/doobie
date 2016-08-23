@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -86,7 +85,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object connection {
+object connection extends ConnectionInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Connection`.
@@ -99,9 +98,9 @@ object connection {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Connection, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: Connection => A): Kleisli[M, Connection, A] =
-      Kleisli((s: Connection) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, Connection, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: Connection => A): Kleisli[M, Connection, A] =
+      Kleisli((s: Connection) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Connection, A]
 #-fs2
   }
 
@@ -120,7 +119,7 @@ object connection {
         def interpK[M[_]: Monad: Catchable: Capture]: ConnectionOp ~> Kleisli[M, Connection, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: ConnectionOp ~> Kleisli[M, Connection, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: ConnectionOp ~> Kleisli[M, Connection, ?] =
 #-fs2
           new (ConnectionOp ~> Kleisli[M, Connection, ?]) {
             def apply[A](op: ConnectionOp[A]): Kleisli[M, Connection, A] =
@@ -134,7 +133,7 @@ object connection {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -142,19 +141,18 @@ object connection {
     case class Attempt[A](action: ConnectionIO[A]) extends ConnectionOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, Connection, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, Connection, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, Connection, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends ConnectionOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: Connection => A) extends ConnectionOp[A] {
@@ -162,7 +160,7 @@ object connection {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -333,166 +331,166 @@ object connection {
 #-scalaz
 #+fs2
     case class  Abort(a: Executor) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.abort(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.abort(a))
     }
     case object ClearWarnings extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.clearWarnings())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.clearWarnings())
     }
     case object Close extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.close())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.close())
     }
     case object Commit extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.commit())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.commit())
     }
     case class  CreateArrayOf(a: String, b: Array[AnyRef]) extends ConnectionOp[SqlArray] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createArrayOf(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createArrayOf(a, b))
     }
     case object CreateBlob extends ConnectionOp[Blob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createBlob())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createBlob())
     }
     case object CreateClob extends ConnectionOp[Clob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createClob())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createClob())
     }
     case object CreateNClob extends ConnectionOp[NClob] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createNClob())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createNClob())
     }
     case object CreateSQLXML extends ConnectionOp[SQLXML] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createSQLXML())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createSQLXML())
     }
     case object CreateStatement extends ConnectionOp[Statement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createStatement())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createStatement())
     }
     case class  CreateStatement1(a: Int, b: Int) extends ConnectionOp[Statement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createStatement(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createStatement(a, b))
     }
     case class  CreateStatement2(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createStatement(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createStatement(a, b, c))
     }
     case class  CreateStruct(a: String, b: Array[AnyRef]) extends ConnectionOp[Struct] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.createStruct(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.createStruct(a, b))
     }
     case object GetAutoCommit extends ConnectionOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getAutoCommit())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getAutoCommit())
     }
     case object GetCatalog extends ConnectionOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getCatalog())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getCatalog())
     }
     case object GetClientInfo extends ConnectionOp[Properties] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getClientInfo())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getClientInfo())
     }
     case class  GetClientInfo1(a: String) extends ConnectionOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getClientInfo(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getClientInfo(a))
     }
     case object GetHoldability extends ConnectionOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getHoldability())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getHoldability())
     }
     case object GetMetaData extends ConnectionOp[DatabaseMetaData] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getMetaData())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getMetaData())
     }
     case object GetNetworkTimeout extends ConnectionOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getNetworkTimeout())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getNetworkTimeout())
     }
     case object GetSchema extends ConnectionOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSchema())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSchema())
     }
     case object GetTransactionIsolation extends ConnectionOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTransactionIsolation())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTransactionIsolation())
     }
     case object GetTypeMap extends ConnectionOp[Map[String, Class[_]]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getTypeMap())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getTypeMap())
     }
     case object GetWarnings extends ConnectionOp[SQLWarning] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getWarnings())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getWarnings())
     }
     case object IsClosed extends ConnectionOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isClosed())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isClosed())
     }
     case object IsReadOnly extends ConnectionOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isReadOnly())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isReadOnly())
     }
     case class  IsValid(a: Int) extends ConnectionOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isValid(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isValid(a))
     }
     case class  IsWrapperFor(a: Class[_]) extends ConnectionOp[Boolean] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.isWrapperFor(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.isWrapperFor(a))
     }
     case class  NativeSQL(a: String) extends ConnectionOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.nativeSQL(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.nativeSQL(a))
     }
     case class  PrepareCall(a: String) extends ConnectionOp[CallableStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareCall(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareCall(a))
     }
     case class  PrepareCall1(a: String, b: Int, c: Int) extends ConnectionOp[CallableStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareCall(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareCall(a, b, c))
     }
     case class  PrepareCall2(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareCall(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareCall(a, b, c, d))
     }
     case class  PrepareStatement(a: String) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareStatement(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareStatement(a))
     }
     case class  PrepareStatement1(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareStatement(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement2(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareStatement(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement3(a: String, b: Int) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareStatement(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareStatement(a, b))
     }
     case class  PrepareStatement4(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareStatement(a, b, c))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareStatement(a, b, c))
     }
     case class  PrepareStatement5(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.prepareStatement(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.prepareStatement(a, b, c, d))
     }
     case class  ReleaseSavepoint(a: Savepoint) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.releaseSavepoint(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.releaseSavepoint(a))
     }
     case object Rollback extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.rollback())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.rollback())
     }
     case class  Rollback1(a: Savepoint) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.rollback(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.rollback(a))
     }
     case class  SetAutoCommit(a: Boolean) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setAutoCommit(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setAutoCommit(a))
     }
     case class  SetCatalog(a: String) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setCatalog(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setCatalog(a))
     }
     case class  SetClientInfo(a: Properties) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClientInfo(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClientInfo(a))
     }
     case class  SetClientInfo1(a: String, b: String) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setClientInfo(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setClientInfo(a, b))
     }
     case class  SetHoldability(a: Int) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setHoldability(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setHoldability(a))
     }
     case class  SetNetworkTimeout(a: Executor, b: Int) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setNetworkTimeout(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setNetworkTimeout(a, b))
     }
     case class  SetReadOnly(a: Boolean) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setReadOnly(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setReadOnly(a))
     }
     case object SetSavepoint extends ConnectionOp[Savepoint] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setSavepoint())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setSavepoint())
     }
     case class  SetSavepoint1(a: String) extends ConnectionOp[Savepoint] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setSavepoint(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setSavepoint(a))
     }
     case class  SetSchema(a: String) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setSchema(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setSchema(a))
     }
     case class  SetTransactionIsolation(a: Int) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTransactionIsolation(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTransactionIsolation(a))
     }
     case class  SetTypeMap(a: Map[String, Class[_]]) extends ConnectionOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setTypeMap(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setTypeMap(a))
     }
     case class  Unwrap[T](a: Class[T]) extends ConnectionOp[T] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.unwrap(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.unwrap(a))
     }
 #-fs2
 
@@ -506,17 +504,22 @@ object connection {
    */
   type ConnectionIO[A] = F[ConnectionOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[ConnectionIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableConnectionIO: Catchable[ConnectionIO] =
     new Catchable[ConnectionIO] {
+#+fs2
+      def pure[A](a: A): ConnectionIO[A] = connection.delay(a)
+      override def map[A, B](fa: ConnectionIO[A])(f: A => B): ConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
       def fail[A](err: Throwable): ConnectionIO[A] = connection.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[ConnectionIO]].
    * @group Typeclass Instances
@@ -526,22 +529,6 @@ object connection {
       def apply[A](a: => A): ConnectionIO[A] = connection.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[ConnectionIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectConnectionIO: Effect[ConnectionIO] =
-    new Effect[ConnectionIO] {
-      def pure[A](a: A): ConnectionIO[A] = connection.delay(a)
-      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = fa.flatMap(f)
-      def attempt[A](fa: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(fa)
-      def fail[A](err: Throwable): ConnectionIO[A] = connection.delay(throw err)
-      def suspend[A](fa: => ConnectionIO[A]): ConnectionIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): ConnectionIO[A] = connection.delay(a)
-      def unsafeRunAsync[A](fa: ConnectionIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -904,7 +891,7 @@ object connection {
    ConnectionOp.ConnectionKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: ConnectionOp ~> Kleisli[M, Connection, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: ConnectionOp ~> Kleisli[M, Connection, ?] =
    ConnectionOp.ConnectionKleisliTrans.interpK
 #-fs2
 
@@ -917,7 +904,7 @@ object connection {
    ConnectionOp.ConnectionKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: ConnectionIO ~> Kleisli[M, Connection, ?] =
+  def transK[M[_]: Catchable: Suspendable]: ConnectionIO ~> Kleisli[M, Connection, ?] =
    ConnectionOp.ConnectionKleisliTrans.transK
 #-fs2
 
@@ -930,7 +917,7 @@ object connection {
    ConnectionOp.ConnectionKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: Connection): ConnectionIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: Connection): ConnectionIO ~> M =
    ConnectionOp.ConnectionKleisliTrans.trans[M](c)
 #-fs2
 
@@ -944,10 +931,27 @@ object connection {
       ConnectionOp.ConnectionKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, Connection, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Connection, A] =
       ConnectionOp.ConnectionKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait ConnectionInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[ConnectionIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableConnectionIO: Suspendable[ConnectionIO] =
+    new Suspendable[ConnectionIO] {
+      def pure[A](a: A): ConnectionIO[A] = connection.delay(a)
+      override def map[A, B](fa: ConnectionIO[A])(f: A => B): ConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => ConnectionIO[A]): ConnectionIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): ConnectionIO[A] = connection.delay(a)
+    }
+#-fs2
 }
 

@@ -20,10 +20,10 @@ import scalaz.std.list._
 #-scalaz
 #+cats
 import cats.syntax.traverse._
-import cats.std.list._
+import cats.instances.list._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.Catchable
 #-fs2
 
 /**
@@ -33,12 +33,7 @@ import fs2.util.Effect
 object drivermanager {
 
   /** @group Typeclass Instances */
-#+scalaz
   implicit val CatchableDriverManagerIO = DM.CatchableDriverManagerIO
-#-scalaz
-#+fs2
-  implicit val EffectDriverManagerIO = DM.EffectDriverManagerIO
-#-fs2
 
   /** @group Lifting */
   def delay[A](a: => A): DriverManagerIO[A] =

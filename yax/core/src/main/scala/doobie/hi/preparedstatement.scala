@@ -55,7 +55,7 @@ import doobie.util.these.\&/._
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.pipe.unNoneTerminate
-import fs2.util.Effect
+import fs2.util.Catchable
 import fs2.Stream.{ bracket, repeatEval }
 #-fs2
 
@@ -67,12 +67,7 @@ import fs2.Stream.{ bracket, repeatEval }
 object preparedstatement {
 
   /** @group Typeclass Instances */
-#+scalaz
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
-#-scalaz
-#+fs2
-  implicit val EffectPreparedStatementIO = PS.EffectPreparedStatementIO
-#-fs2
 
 #+scalaz
 

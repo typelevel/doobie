@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -78,7 +77,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object ref {
+object ref extends RefInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Ref`.
@@ -91,9 +90,9 @@ object ref {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Ref, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: Ref => A): Kleisli[M, Ref, A] =
-      Kleisli((s: Ref) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, Ref, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: Ref => A): Kleisli[M, Ref, A] =
+      Kleisli((s: Ref) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Ref, A]
 #-fs2
   }
 
@@ -112,7 +111,7 @@ object ref {
         def interpK[M[_]: Monad: Catchable: Capture]: RefOp ~> Kleisli[M, Ref, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: RefOp ~> Kleisli[M, Ref, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: RefOp ~> Kleisli[M, Ref, ?] =
 #-fs2
           new (RefOp ~> Kleisli[M, Ref, ?]) {
             def apply[A](op: RefOp[A]): Kleisli[M, Ref, A] =
@@ -126,7 +125,7 @@ object ref {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -134,19 +133,18 @@ object ref {
     case class Attempt[A](action: RefIO[A]) extends RefOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, Ref, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, Ref, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, Ref, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends RefOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: Ref => A) extends RefOp[A] {
@@ -154,7 +152,7 @@ object ref {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -175,16 +173,16 @@ object ref {
 #-scalaz
 #+fs2
     case object GetBaseTypeName extends RefOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBaseTypeName())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBaseTypeName())
     }
     case object GetObject extends RefOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject())
     }
     case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getObject(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getObject(a))
     }
     case class  SetObject(a: AnyRef) extends RefOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setObject(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setObject(a))
     }
 #-fs2
 
@@ -198,17 +196,22 @@ object ref {
    */
   type RefIO[A] = F[RefOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[RefIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableRefIO: Catchable[RefIO] =
     new Catchable[RefIO] {
+#+fs2
+      def pure[A](a: A): RefIO[A] = ref.delay(a)
+      override def map[A, B](fa: RefIO[A])(f: A => B): RefIO[B] = fa.map(f)
+      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
       def fail[A](err: Throwable): RefIO[A] = ref.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[RefIO]].
    * @group Typeclass Instances
@@ -218,22 +221,6 @@ object ref {
       def apply[A](a: => A): RefIO[A] = ref.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[RefIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectRefIO: Effect[RefIO] =
-    new Effect[RefIO] {
-      def pure[A](a: A): RefIO[A] = ref.delay(a)
-      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = fa.flatMap(f)
-      def attempt[A](fa: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(fa)
-      def fail[A](err: Throwable): RefIO[A] = ref.delay(throw err)
-      def suspend[A](fa: => RefIO[A]): RefIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): RefIO[A] = ref.delay(a)
-      def unsafeRunAsync[A](fa: RefIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -296,7 +283,7 @@ object ref {
    RefOp.RefKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: RefOp ~> Kleisli[M, Ref, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: RefOp ~> Kleisli[M, Ref, ?] =
    RefOp.RefKleisliTrans.interpK
 #-fs2
 
@@ -309,7 +296,7 @@ object ref {
    RefOp.RefKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: RefIO ~> Kleisli[M, Ref, ?] =
+  def transK[M[_]: Catchable: Suspendable]: RefIO ~> Kleisli[M, Ref, ?] =
    RefOp.RefKleisliTrans.transK
 #-fs2
 
@@ -322,7 +309,7 @@ object ref {
    RefOp.RefKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: Ref): RefIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: Ref): RefIO ~> M =
    RefOp.RefKleisliTrans.trans[M](c)
 #-fs2
 
@@ -336,10 +323,27 @@ object ref {
       RefOp.RefKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, Ref, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Ref, A] =
       RefOp.RefKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait RefInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[RefIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableRefIO: Suspendable[RefIO] =
+    new Suspendable[RefIO] {
+      def pure[A](a: A): RefIO[A] = ref.delay(a)
+      override def map[A, B](fa: RefIO[A])(f: A => B): RefIO[B] = fa.map(f)
+      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => RefIO[A]): RefIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): RefIO[A] = ref.delay(a)
+    }
+#-fs2
 }
 

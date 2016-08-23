@@ -9,12 +9,11 @@ import cats.data.Kleisli
 import cats.free.{ Free => F }
 import cats.implicits._
 import scala.{ Either => \/ }
-#+fs2
-import fs2.util.Effect
-import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
-#-fs2
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Suspendable }
+import fs2.interop.cats._
+#-fs2
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -85,25 +84,16 @@ object drivermanager {
    * Catchable instance for [[DriverManagerIO]].
    * @group Typeclass Instances
    */
-#+scalaz
   implicit val CatchableDriverManagerIO: Catchable[DriverManagerIO] =
     new Catchable[DriverManagerIO] {
-      def attempt[A](f: DriverManagerIO[A]): DriverManagerIO[Throwable \/ A] = drivermanager.attempt(f)
-      def fail[A](err: Throwable): DriverManagerIO[A] = drivermanager.delay(throw err)
-    }
-#-scalaz
 #+fs2
-  implicit val EffectDriverManagerIO: Effect[DriverManagerIO] =
-    new Effect[DriverManagerIO] {
       def pure[A](a: A): DriverManagerIO[A] = drivermanager.delay(a)
-      def flatMap[A, B](a: DriverManagerIO[A])(f: A => DriverManagerIO[B]): DriverManagerIO[B] = a.flatMap(f)
+      override def map[A, B](fa: DriverManagerIO[A])(f: A => B): DriverManagerIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DriverManagerIO[A])(f: A => DriverManagerIO[B]): DriverManagerIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: DriverManagerIO[A]): DriverManagerIO[Throwable \/ A] = drivermanager.attempt(f)
       def fail[A](err: Throwable): DriverManagerIO[A] = drivermanager.delay(throw err)
-      def suspend[A](fa: => DriverManagerIO[A]): DriverManagerIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend in cats 0.7
-      override def delay[A](a: => A): DriverManagerIO[A] = drivermanager.delay(a)
-      def unsafeRunAsync[A](fa: DriverManagerIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
     }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -218,7 +208,7 @@ object drivermanager {
  def trans[M[_]: Monad: Capture](implicit c: Catchable[M]): DriverManagerOp ~> M =
 #-scalaz
 #+fs2
- def trans[M[_]: Effect]: DriverManagerOp ~> M =
+ def trans[M[_]: Suspendable](implicit c: Catchable[M]): DriverManagerOp ~> M =
 #-fs2
    new (DriverManagerOp ~>  M) {
 
@@ -226,7 +216,7 @@ object drivermanager {
      val L = Capture[M]
 #-scalaz
 #+fs2
-     val L = Predef.implicitly[Effect[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 #-fs2
 
      def apply[A](op: DriverManagerOp[A]): M[A] = 
@@ -238,12 +228,11 @@ object drivermanager {
         // Combinators
 #+scalaz
         case Pure(a) => L.apply(a())
-        case Attempt(a) => c.attempt(a.trans[M])
 #-scalaz
 #+fs2
         case Pure(a) => L.pure(a())
-        case Attempt(a) => L.attempt(a.trans[M])
 #-fs2
+        case Attempt(a) => c.attempt(a.trans[M])
 
         // Primitive Operations
 #+scalaz
@@ -290,11 +279,12 @@ object drivermanager {
   implicit class DriverManagerIOOps[A](ma: DriverManagerIO[A]) {
 #+scalaz
     def trans[M[_]: Monad: Catchable: Capture]: M[A] =
+      ma.foldMap(drivermanager.trans[M])
 #-scalaz
 #+fs2
-    def trans[M[_]: Effect]: M[A] =
+    def trans[M[_]: Catchable: Suspendable]: M[A] =
+      ma.foldMapUnsafe(drivermanager.trans[M])
 #-fs2
-      ma.foldMap(drivermanager.trans[M])
   }
 
 }

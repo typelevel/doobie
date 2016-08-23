@@ -15,7 +15,7 @@ import cats.implicits._
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
@@ -33,9 +33,9 @@ object io {
     private def delay[A](a: => A): M[A] = Capture[M].apply(a)
 #-scalaz
 #+fs2
-  class IOActions[M[_]: Effect] {
+  class IOActions[M[_]: Catchable: Suspendable] {
 
-    private def delay[A](a: => A): M[A] = Predef.implicitly[Effect[M]].delay(a)
+    private def delay[A](a: => A): M[A] = Predef.implicitly[Suspendable[M]].delay(a)
 #-fs2
 
     /**

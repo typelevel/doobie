@@ -191,9 +191,8 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |import scala.util.{ Either => \\/ }
     |#-cats
     |#+fs2
-    |import fs2.util.Effect
+    |import fs2.util.{ Catchable, Suspendable }
     |import fs2.interop.cats._
-    |import doobie.util.compat.cats.fs2._
     |#-fs2
     |
     |import doobie.util.capture._
@@ -230,7 +229,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     | *
     | * @group Modules
     | */
-    |object ${sname.toLowerCase} {
+    |object ${sname.toLowerCase} extends ${sname}Instances {
     |
     |  /**
     |   * Sum type of primitive operations over a `${ev.runtimeClass.getName}`.
@@ -243,9 +242,9 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A]
     |#-scalaz
     |#+fs2
-    |    protected def primitive[M[_]: Effect](f: ${sname} => A): Kleisli[M, ${sname}, A] =
-    |      Kleisli((s: ${sname}) => Predef.implicitly[Effect[M]].delay(f(s)))
-    |    def defaultTransK[M[_]: Effect]: Kleisli[M, ${sname}, A]
+    |    protected def primitive[M[_]: Catchable: Suspendable](f: ${sname} => A): Kleisli[M, ${sname}, A] =
+    |      Kleisli((s: ${sname}) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    |    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, ${sname}, A]
     |#-fs2
     |  }
     |
@@ -264,7 +263,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |        def interpK[M[_]: Monad: Catchable: Capture]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
     |#-scalaz
     |#+fs2
-    |        def interpK[M[_]: Effect]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
+    |        def interpK[M[_]: Catchable: Suspendable]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
     |#-fs2
     |          new (${sname}Op ~> Kleisli[M, ${sname}, ?]) {
     |            def apply[A](op: ${sname}Op[A]): Kleisli[M, ${sname}, A] =
@@ -278,7 +277,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     |#-scalaz
     |#+fs2
-    |      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+    |      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
     |#-fs2
     |    }
     |
@@ -286,19 +285,18 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |    case class Attempt[A](action: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A] {
     |#+scalaz
     |      override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-    |        Predef.implicitly[Catchable[Kleisli[M, ${sname}, ?]]].attempt(action.transK[M])
     |#-scalaz
     |#+fs2
-    |      override def defaultTransK[M[_]: Effect] =
-    |        Predef.implicitly[Effect[Kleisli[M, ${sname}, ?]]].attempt(action.transK[M])
+    |      override def defaultTransK[M[_]: Catchable: Suspendable] =
     |#-fs2
+    |        Predef.implicitly[Catchable[Kleisli[M, ${sname}, ?]]].attempt(action.transK[M])
     |    }
     |    case class Pure[A](a: () => A) extends ${sname}Op[A] {
     |#+scalaz
     |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
     |#-scalaz
     |#+fs2
-    |      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+    |      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
     |#-fs2
     |    }
     |    case class Raw[A](f: ${sname} => A) extends ${sname}Op[A] {
@@ -306,7 +304,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |      override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
     |#-scalaz
     |#+fs2
-    |      override def defaultTransK[M[_]: Effect] = primitive(f)
+    |      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
     |#-fs2
     |    }
     |
@@ -315,7 +313,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |    ${ctors[A].map(_.ctor("Monad: Catchable: Capture", sname)).mkString("\n    ")}
     |#-scalaz
     |#+fs2
-    |    ${ctors[A].map(_.ctor("Effect", sname)).mkString("\n    ")}
+    |    ${ctors[A].map(_.ctor("Catchable: Suspendable", sname)).mkString("\n    ")}
     |#-fs2
     |
     |  }
@@ -328,17 +326,22 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   */
     |  type ${sname}IO[A] = F[${sname}Op, A]
     |
-    |#+scalaz
     |  /**
     |   * Catchable instance for [[${sname}IO]].
     |   * @group Typeclass Instances
     |   */
     |  implicit val Catchable${sname}IO: Catchable[${sname}IO] =
     |    new Catchable[${sname}IO] {
+    |#+fs2
+    |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
+    |      override def map[A, B](fa: ${sname}IO[A])(f: A => B): ${sname}IO[B] = fa.map(f)
+    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = fa.flatMap(f)
+    |#-fs2
     |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
     |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.delay(throw err)
     |    }
     |
+    |#+scalaz
     |  /**
     |   * Capture instance for [[${sname}IO]].
     |   * @group Typeclass Instances
@@ -348,22 +351,6 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |      def apply[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
     |    }
     |#-scalaz
-    |#+fs2
-    |  /**
-    |   * Effect instance for [[${sname}IO]].
-    |   * @group Typeclass Instances
-    |   */
-    |  implicit val Effect${sname}IO: Effect[${sname}IO] =
-    |    new Effect[${sname}IO] {
-    |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
-    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = fa.flatMap(f)
-    |      def attempt[A](fa: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(fa)
-    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.delay(throw err)
-    |      def suspend[A](fa: => ${sname}IO[A]): ${sname}IO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-    |      override def delay[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
-    |      def unsafeRunAsync[A](fa: ${sname}IO[A])(cb: Throwable \\/ A => Unit): Unit = Predef.???
-    |    }
-    |#-fs2
     |
     |  /**
     |   * Lift a different type of program that has a default Kleisli interpreter.
@@ -404,7 +391,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   ${sname}Op.${sname}KleisliTrans.interpK
     |#-scalaz
     |#+fs2
-    |  def interpK[M[_]: Effect]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
+    |  def interpK[M[_]: Catchable: Suspendable]: ${sname}Op ~> Kleisli[M, ${sname}, ?] =
     |   ${sname}Op.${sname}KleisliTrans.interpK
     |#-fs2
     |
@@ -417,7 +404,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   ${sname}Op.${sname}KleisliTrans.transK
     |#-scalaz
     |#+fs2
-    |  def transK[M[_]: Effect]: ${sname}IO ~> Kleisli[M, ${sname}, ?] =
+    |  def transK[M[_]: Catchable: Suspendable]: ${sname}IO ~> Kleisli[M, ${sname}, ?] =
     |   ${sname}Op.${sname}KleisliTrans.transK
     |#-fs2
     |
@@ -430,7 +417,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   ${sname}Op.${sname}KleisliTrans.trans[M](c)
     |#-scalaz
     |#+fs2
-    | def trans[M[_]: Effect](c: $sname): ${sname}IO ~> M =
+    | def trans[M[_]: Catchable: Suspendable](c: $sname): ${sname}IO ~> M =
     |   ${sname}Op.${sname}KleisliTrans.trans[M](c)
     |#-fs2
     |
@@ -444,11 +431,28 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |      ${sname}Op.${sname}KleisliTrans.transK[M].apply(ma)
     |#-scalaz
     |#+fs2
-    |    def transK[M[_]: Effect]: Kleisli[M, ${sname}, A] =
+    |    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, ${sname}, A] =
     |      ${sname}Op.${sname}KleisliTrans.transK[M].apply(ma)
     |#-fs2
     |  }
     |
+    |}
+    |
+    |private[free] trait ${sname}Instances {
+    |#+fs2
+    |  /**
+    |   * Suspendable instance for [[${sname}IO]].
+    |   * @group Typeclass Instances
+    |   */
+    |  implicit val Suspendable${sname}IO: Suspendable[${sname}IO] =
+    |    new Suspendable[${sname}IO] {
+    |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
+    |      override def map[A, B](fa: ${sname}IO[A])(f: A => B): ${sname}IO[B] = fa.map(f)
+    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = fa.flatMap(f)
+    |      def suspend[A](fa: => ${sname}IO[A]): ${sname}IO[A] = F.suspend(fa)
+    |      override def delay[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
+    |    }
+    |#-fs2
     |}
     |""".trim.stripMargin
   }

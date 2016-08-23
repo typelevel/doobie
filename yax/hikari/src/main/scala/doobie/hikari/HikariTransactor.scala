@@ -12,7 +12,7 @@ import cats.implicits._
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 object hikaritransactor {
@@ -27,9 +27,9 @@ object hikaritransactor {
     val shutdown: M[Unit] = Capture[M].apply(ds.shutdown)
 #-scalaz
 #+fs2
-  final class HikariTransactor[M[_]: Effect] private (ds: HikariDataSource) extends Transactor[M] {
+  final class HikariTransactor[M[_]: Catchable: Suspendable] private (ds: HikariDataSource) extends Transactor[M] {
 
-    private val L = Predef.implicitly[Effect[M]]
+    private val L = Predef.implicitly[Suspendable[M]]
 
     val connect = L.delay(ds.getConnection)
 
@@ -72,20 +72,20 @@ object hikaritransactor {
 #-scalaz
 #+fs2
     /** Constructs a program that yields an unconfigured `HikariTransactor`. */
-    def initial[M[_]](implicit e: Effect[M]): M[HikariTransactor[M]] =
+    def initial[M[_]: Catchable](implicit e: Suspendable[M]): M[HikariTransactor[M]] =
       e.delay(new HikariTransactor(new HikariDataSource))
 
     /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
-    def apply[M[_]: Effect](hikariDataSource : HikariDataSource): HikariTransactor[M] =
+    def apply[M[_]: Catchable: Suspendable](hikariDataSource : HikariDataSource): HikariTransactor[M] =
       new HikariTransactor(hikariDataSource)
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
     @deprecated("doesn't load driver properly; will go away in 0.2.2; use 4-arg version", "0.2.1")
-    def apply[M[_]: Effect](url: String, user: String, pass: String): M[HikariTransactor[M]] =
+    def apply[M[_]: Catchable: Suspendable](url: String, user: String, pass: String): M[HikariTransactor[M]] =
       apply("java.lang.String", url, user, pass)
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
-    def apply[M[_]](driverClassName: String, url: String, user: String, pass: String)(implicit e: Effect[M]): M[HikariTransactor[M]] =
+    def apply[M[_]: Catchable](driverClassName: String, url: String, user: String, pass: String)(implicit e: Suspendable[M]): M[HikariTransactor[M]] =
       for {
         _ <- e.delay(Class.forName(driverClassName))
         t <- initial[M]

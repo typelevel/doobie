@@ -9,11 +9,10 @@ import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
-import doobie.util.compat.cats.fs2._
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 import doobie.util.capture._
@@ -51,7 +50,7 @@ import copyout.CopyOutIO
  *
  * @group Modules
  */
-object copyout {
+object copyout extends CopyOutIOInstances {
   
   /** 
    * Sum type of primitive operations over a `org.postgresql.copy.CopyOut`.
@@ -96,13 +95,18 @@ object copyout {
    * Catchable instance for [[CopyOutIO]].
    * @group Typeclass Instances
    */
-#+scalaz
   implicit val CatchableCopyOutIO: Catchable[CopyOutIO] =
     new Catchable[CopyOutIO] {
+#+fs2
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(f)
       def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[CopyOutIO]].
    * @group Typeclass Instances
@@ -112,18 +116,6 @@ object copyout {
       def apply[A](a: => A): CopyOutIO[A] = copyout.delay(a)
     }
 #-scalaz
-#+fs2
-  implicit val EffectCopyOutIO: Effect[CopyOutIO] =
-    new Effect[CopyOutIO] {
-      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
-      def flatMap[A, B](ma: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = ma.flatMap(f)
-      def attempt[A](ma: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(ma)
-      def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
-      def suspend[A](ma: => CopyOutIO[A]): CopyOutIO[A] = ma
-      override def delay[A](a: => A): CopyOutIO[A] = copyout.delay(a)
-      def unsafeRunAsync[A](ma: CopyOutIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * @group Constructors (Lifting)
@@ -195,7 +187,7 @@ object copyout {
  def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
 #-scalaz
 #+fs2
- def kleisliTrans[M[_]: Effect]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
 #-fs2
    new (CopyOutOp ~> Kleisli[M, CopyOut, ?]) {
 
@@ -206,7 +198,7 @@ object copyout {
        Kleisli(s => L.apply(f(s)))
 #-scalaz
 #+fs2
-     val L = Predef.implicitly[Effect[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
        Kleisli(s => L.delay(f(s)))
@@ -224,7 +216,7 @@ object copyout {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Effect[M, CopyOut].attempt(a.transK[M])
+        case Attempt(a) => kleisliCatchableInstance[M, CopyOut].attempt(a.transK[M])
 #-cats
 
         // Primitive Operations
@@ -247,12 +239,29 @@ object copyout {
   implicit class CopyOutIOOps[A](ma: CopyOutIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyOut, A] =
+      ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, CopyOut, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyOut, A] =
+      ma.foldMapUnsafe[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
 #-fs2
-      ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
   }
 
 }
 
+private[free] trait CopyOutIOInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[CopyOutIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCopyOutIO: Suspendable[CopyOutIO] =
+    new Suspendable[CopyOutIO] {
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CopyOutIO[A]): CopyOutIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CopyOutIO[A] = copyout.delay(a)
+    }
+#-fs2
+}

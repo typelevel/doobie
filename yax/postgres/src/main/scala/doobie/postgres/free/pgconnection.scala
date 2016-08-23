@@ -9,11 +9,10 @@ import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
-import doobie.util.compat.cats.fs2._
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 import doobie.util.capture._
@@ -107,13 +106,18 @@ object pgconnection {
    * Catchable instance for [[PGConnectionIO]].
    * @group Typeclass Instances
    */
-#+scalaz
   implicit val CatchablePGConnectionIO: Catchable[PGConnectionIO] =
     new Catchable[PGConnectionIO] {
+#+fs2
+      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
+      override def map[A, B](fa: PGConnectionIO[A])(f: A => B): PGConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(f)
       def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[PGConnectionIO]].
    * @group Typeclass Instances
@@ -123,18 +127,6 @@ object pgconnection {
       def apply[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
     }
 #-scalaz
-#+fs2
-  implicit val EffectPGConnectionIO: Effect[PGConnectionIO] =
-    new Effect[PGConnectionIO] {
-      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
-      def flatMap[A, B](ma: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = ma.flatMap(f)
-      def attempt[A](ma: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(ma)
-      def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
-      def suspend[A](ma: => PGConnectionIO[A]): PGConnectionIO[A] = ma
-      override def delay[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
-      def unsafeRunAsync[A](ma: PGConnectionIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * @group Constructors (Lifting)
@@ -230,7 +222,7 @@ object pgconnection {
  def kleisliTrans[M[_]: Monad: Catchable: Capture]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
 #-scalaz
 #+fs2
- def kleisliTrans[M[_]: Effect]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
 #-fs2
    new (PGConnectionOp ~> Kleisli[M, PGConnection, ?]) {
 
@@ -241,7 +233,7 @@ object pgconnection {
        Kleisli(s => L.apply(f(s)))
 #-scalaz
 #+fs2
-     val L = Predef.implicitly[Effect[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
        Kleisli(s => L.delay(f(s)))
@@ -261,7 +253,7 @@ object pgconnection {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Effect[M, PGConnection].attempt(a.transK[M])
+        case Attempt(a) => kleisliCatchableInstance[M, PGConnection].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -286,12 +278,29 @@ object pgconnection {
   implicit class PGConnectionIOOps[A](ma: PGConnectionIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGConnection, A] =
+      ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, PGConnection, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGConnection, A] =
+      ma.foldMapUnsafe[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
 #-fs2
-      ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
   }
 
 }
 
+private[free] trait PGConnectionIOInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[PGConnectionIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendablePGConnectionIO: Suspendable[PGConnectionIO] =
+    new Suspendable[PGConnectionIO] {
+      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
+      override def map[A, B](fa: PGConnectionIO[A])(f: A => B): PGConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => PGConnectionIO[A]): PGConnectionIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
+    }
+#-fs2
+}

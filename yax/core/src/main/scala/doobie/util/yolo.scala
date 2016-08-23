@@ -28,7 +28,7 @@ import scala.util.{ Left => -\/, Right => \/- }
 import fs2.interop.cats.reverse._
 #-cats
 #+fs2
-import fs2.util.{ Effect }
+import fs2.util.{ Catchable, Suspendable }
 import fs2.{ Stream => Process }
 #-fs2
 
@@ -42,7 +42,7 @@ object yolo extends ToDoobieCatchableOps0 {
   class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
 #-scalaz
 #+fs2
-  class Yolo[M[_]: Effect](xa: Transactor[M]) {
+  class Yolo[M[_]: Catchable: Suspendable](xa: Transactor[M]) {
 #-fs2
 
     private def out(s: String): ConnectionIO[Unit] =

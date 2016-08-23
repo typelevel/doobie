@@ -11,7 +11,7 @@ import scalaz.{ Catchable, Monad }
 import cats.Monad
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
@@ -52,36 +52,36 @@ object h2transactor {
   }
 #-scalaz
 #+fs2
-  final class H2Transactor[M[_]: Effect] private (ds: JdbcConnectionPool) extends Transactor[M] {
+  final class H2Transactor[M[_]: Catchable: Suspendable] private (ds: JdbcConnectionPool) extends Transactor[M] {
 
-    private val E = Predef.implicitly[Effect[M]]
+    private val L = Predef.implicitly[Suspendable[M]]
 
-    protected val connect = E.delay(ds.getConnection)
+    protected val connect = L.delay(ds.getConnection)
 
     /** A program that shuts down this `H2Transactor`. */
-    val dispose: M[Unit] = E.delay(ds.dispose)
+    val dispose: M[Unit] = L.delay(ds.dispose)
 
     /** Returns the number of active (open) connections of the underlying `JdbcConnectionPool`. */
-    val getActiveConnections: M[Int] = E.delay(ds.getActiveConnections)
+    val getActiveConnections: M[Int] = L.delay(ds.getActiveConnections)
 
     /** Gets the maximum time in seconds to wait for a free connection. */
-    val getLoginTimeout: M[Int] = E.delay(ds.getLoginTimeout)
+    val getLoginTimeout: M[Int] = L.delay(ds.getLoginTimeout)
 
     /** Gets the maximum number of connections to use. */
-    val getMaxConnections: M[Int] = E.delay(ds.getMaxConnections)
+    val getMaxConnections: M[Int] = L.delay(ds.getMaxConnections)
 
     /** Sets the maximum time in seconds to wait for a free connection. */
-    def setLoginTimeout(seconds: Int): M[Unit] = E.delay(ds.setLoginTimeout(seconds))
+    def setLoginTimeout(seconds: Int): M[Unit] = L.delay(ds.setLoginTimeout(seconds))
 
     /** Sets the maximum number of connections to use from now on. */
-    def setMaxConnections(max: Int): M[Unit] = E.delay(ds.setMaxConnections(max))
+    def setMaxConnections(max: Int): M[Unit] = L.delay(ds.setMaxConnections(max))
 
   }
 
   object H2Transactor {
 
     /** Constructs a program that yields a `H2Transactor` configured with the given info. */
-    def apply[M[_]](url: String, user: String, pass: String)(implicit e: Effect[M]): M[H2Transactor[M]] =
+    def apply[M[_]: Catchable](url: String, user: String, pass: String)(implicit e: Suspendable[M]): M[H2Transactor[M]] =
       e.delay(new H2Transactor(JdbcConnectionPool.create(url, user, pass)))
 
   }

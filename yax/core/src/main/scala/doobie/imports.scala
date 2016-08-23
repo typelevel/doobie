@@ -12,7 +12,7 @@ import cats.{ Monad, Functor, Unapply }
 import cats.free.Free
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.{ Stream => Process }
 #-fs2
 
@@ -83,7 +83,7 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
 #-scalaz
 #+fs2
-  implicit def toProcessOps[F[_]: Effect, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
+  implicit def toProcessOps[F[_]: Catchable: Suspendable, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
 #-fs2
     new doobie.syntax.process.ProcessOps(fa)
 
@@ -148,7 +148,12 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
    * @group Hacks
    */
   implicit def freeMonadC[FT[_[_], _], F[_]](implicit ev: Functor[FT[F, ?]]): Monad[Free[FT[F,?], ?]] =
+#+scalaz
     Free.freeMonad[FT[F,?]]
+#-scalaz
+#+cats
+    Free.catsFreeMonadForFree[FT[F,?]]
+#-cats
 
   /**
    * Unapply with correct shape to unpack `Monad[Free[Coyoneda[F, ?], ?]]`.

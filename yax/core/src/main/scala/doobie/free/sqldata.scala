@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -76,7 +75,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object sqldata {
+object sqldata extends SQLDataInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.SQLData`.
@@ -89,9 +88,9 @@ object sqldata {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLData, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: SQLData => A): Kleisli[M, SQLData, A] =
-      Kleisli((s: SQLData) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, SQLData, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: SQLData => A): Kleisli[M, SQLData, A] =
+      Kleisli((s: SQLData) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLData, A]
 #-fs2
   }
 
@@ -110,7 +109,7 @@ object sqldata {
         def interpK[M[_]: Monad: Catchable: Capture]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
 #-fs2
           new (SQLDataOp ~> Kleisli[M, SQLData, ?]) {
             def apply[A](op: SQLDataOp[A]): Kleisli[M, SQLData, A] =
@@ -124,7 +123,7 @@ object sqldata {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -132,19 +131,18 @@ object sqldata {
     case class Attempt[A](action: SQLDataIO[A]) extends SQLDataOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, SQLData, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, SQLData, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, SQLData, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends SQLDataOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: SQLData => A) extends SQLDataOp[A] {
@@ -152,7 +150,7 @@ object sqldata {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -170,13 +168,13 @@ object sqldata {
 #-scalaz
 #+fs2
     case object GetSQLTypeName extends SQLDataOp[String] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getSQLTypeName())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getSQLTypeName())
     }
     case class  ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.readSQL(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.readSQL(a, b))
     }
     case class  WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.writeSQL(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.writeSQL(a))
     }
 #-fs2
 
@@ -190,17 +188,22 @@ object sqldata {
    */
   type SQLDataIO[A] = F[SQLDataOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[SQLDataIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableSQLDataIO: Catchable[SQLDataIO] =
     new Catchable[SQLDataIO] {
+#+fs2
+      def pure[A](a: A): SQLDataIO[A] = sqldata.delay(a)
+      override def map[A, B](fa: SQLDataIO[A])(f: A => B): SQLDataIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
       def fail[A](err: Throwable): SQLDataIO[A] = sqldata.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[SQLDataIO]].
    * @group Typeclass Instances
@@ -210,22 +213,6 @@ object sqldata {
       def apply[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[SQLDataIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectSQLDataIO: Effect[SQLDataIO] =
-    new Effect[SQLDataIO] {
-      def pure[A](a: A): SQLDataIO[A] = sqldata.delay(a)
-      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = fa.flatMap(f)
-      def attempt[A](fa: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(fa)
-      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.delay(throw err)
-      def suspend[A](fa: => SQLDataIO[A]): SQLDataIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
-      def unsafeRunAsync[A](fa: SQLDataIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -282,7 +269,7 @@ object sqldata {
    SQLDataOp.SQLDataKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: SQLDataOp ~> Kleisli[M, SQLData, ?] =
    SQLDataOp.SQLDataKleisliTrans.interpK
 #-fs2
 
@@ -295,7 +282,7 @@ object sqldata {
    SQLDataOp.SQLDataKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: SQLDataIO ~> Kleisli[M, SQLData, ?] =
+  def transK[M[_]: Catchable: Suspendable]: SQLDataIO ~> Kleisli[M, SQLData, ?] =
    SQLDataOp.SQLDataKleisliTrans.transK
 #-fs2
 
@@ -308,7 +295,7 @@ object sqldata {
    SQLDataOp.SQLDataKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: SQLData): SQLDataIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: SQLData): SQLDataIO ~> M =
    SQLDataOp.SQLDataKleisliTrans.trans[M](c)
 #-fs2
 
@@ -322,10 +309,27 @@ object sqldata {
       SQLDataOp.SQLDataKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, SQLData, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLData, A] =
       SQLDataOp.SQLDataKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait SQLDataInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[SQLDataIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableSQLDataIO: Suspendable[SQLDataIO] =
+    new Suspendable[SQLDataIO] {
+      def pure[A](a: A): SQLDataIO[A] = sqldata.delay(a)
+      override def map[A, B](fa: SQLDataIO[A])(f: A => B): SQLDataIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => SQLDataIO[A]): SQLDataIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
+    }
+#-fs2
 }
 

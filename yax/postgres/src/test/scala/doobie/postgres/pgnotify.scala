@@ -14,7 +14,7 @@ import scalaz.Scalaz._
 import cats.implicits._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.Suspendable
 #-fs2
 
 object pgnotifyspec extends Specification {
@@ -35,7 +35,7 @@ object pgnotifyspec extends Specification {
      Capture[ConnectionIO].apply(notify.transact(xa).unsafePerformIO) *>
 #-scalaz
 #+fs2
-     Predef.implicitly[Effect[ConnectionIO]].delay(notify.transact(xa).unsafePerformIO) *>
+     Predef.implicitly[Suspendable[ConnectionIO]].delay(notify.transact(xa).unsafePerformIO) *>
 #-fs2
      delay { Thread.sleep(50) } *>
      PHC.pgGetNotifications).transact(xa)

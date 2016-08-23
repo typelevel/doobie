@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -77,7 +76,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object blob {
+object blob extends BlobInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Blob`.
@@ -90,9 +89,9 @@ object blob {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Effect](f: Blob => A): Kleisli[M, Blob, A] =
-      Kleisli((s: Blob) => Predef.implicitly[Effect[M]].delay(f(s)))
-    def defaultTransK[M[_]: Effect]: Kleisli[M, Blob, A]
+    protected def primitive[M[_]: Catchable: Suspendable](f: Blob => A): Kleisli[M, Blob, A] =
+      Kleisli((s: Blob) => Predef.implicitly[Suspendable[M]].delay(f(s)))
+    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Blob, A]
 #-fs2
   }
 
@@ -111,7 +110,7 @@ object blob {
         def interpK[M[_]: Monad: Catchable: Capture]: BlobOp ~> Kleisli[M, Blob, ?] =
 #-scalaz
 #+fs2
-        def interpK[M[_]: Effect]: BlobOp ~> Kleisli[M, Blob, ?] =
+        def interpK[M[_]: Catchable: Suspendable]: BlobOp ~> Kleisli[M, Blob, ?] =
 #-fs2
           new (BlobOp ~> Kleisli[M, Blob, ?]) {
             def apply[A](op: BlobOp[A]): Kleisli[M, Blob, A] =
@@ -125,7 +124,7 @@ object blob {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = Kleisli(_ => mod.transK[M].apply(action).run(j))
 #-fs2
     }
 
@@ -133,19 +132,18 @@ object blob {
     case class Attempt[A](action: BlobIO[A]) extends BlobOp[Throwable \/ A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] =
-        Predef.implicitly[Catchable[Kleisli[M, Blob, ?]]].attempt(action.transK[M])
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] =
-        Predef.implicitly[Effect[Kleisli[M, Blob, ?]]].attempt(action.transK[M])
+      override def defaultTransK[M[_]: Catchable: Suspendable] =
 #-fs2
+        Predef.implicitly[Catchable[Kleisli[M, Blob, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends BlobOp[A] {
 #+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(_ => a())
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(_ => a())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_ => a())
 #-fs2
     }
     case class Raw[A](f: Blob => A) extends BlobOp[A] {
@@ -153,7 +151,7 @@ object blob {
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = primitive(f)
 #-scalaz
 #+fs2
-      override def defaultTransK[M[_]: Effect] = primitive(f)
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(f)
 #-fs2
     }
 
@@ -195,37 +193,37 @@ object blob {
 #-scalaz
 #+fs2
     case object Free extends BlobOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.free())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.free())
     }
     case object GetBinaryStream extends BlobOp[InputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBinaryStream())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBinaryStream())
     }
     case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBinaryStream(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBinaryStream(a, b))
     }
     case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.getBytes(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.getBytes(a, b))
     }
     case object Length extends BlobOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.length())
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.length())
     }
     case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.position(a, b))
     }
     case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.position(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.position(a, b))
     }
     case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBinaryStream(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBinaryStream(a))
     }
     case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBytes(a, b))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBytes(a, b))
     }
     case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.setBytes(a, b, c, d))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.setBytes(a, b, c, d))
     }
     case class  Truncate(a: Long) extends BlobOp[Unit] {
-      override def defaultTransK[M[_]: Effect] = primitive(_.truncate(a))
+      override def defaultTransK[M[_]: Catchable: Suspendable] = primitive(_.truncate(a))
     }
 #-fs2
 
@@ -239,17 +237,22 @@ object blob {
    */
   type BlobIO[A] = F[BlobOp, A]
 
-#+scalaz
   /**
    * Catchable instance for [[BlobIO]].
    * @group Typeclass Instances
    */
   implicit val CatchableBlobIO: Catchable[BlobIO] =
     new Catchable[BlobIO] {
+#+fs2
+      def pure[A](a: A): BlobIO[A] = blob.delay(a)
+      override def map[A, B](fa: BlobIO[A])(f: A => B): BlobIO[B] = fa.map(f)
+      def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: BlobIO[A]): BlobIO[Throwable \/ A] = blob.attempt(f)
       def fail[A](err: Throwable): BlobIO[A] = blob.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[BlobIO]].
    * @group Typeclass Instances
@@ -259,22 +262,6 @@ object blob {
       def apply[A](a: => A): BlobIO[A] = blob.delay(a)
     }
 #-scalaz
-#+fs2
-  /**
-   * Effect instance for [[BlobIO]].
-   * @group Typeclass Instances
-   */
-  implicit val EffectBlobIO: Effect[BlobIO] =
-    new Effect[BlobIO] {
-      def pure[A](a: A): BlobIO[A] = blob.delay(a)
-      def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = fa.flatMap(f)
-      def attempt[A](fa: BlobIO[A]): BlobIO[Throwable \/ A] = blob.attempt(fa)
-      def fail[A](err: Throwable): BlobIO[A] = blob.delay(throw err)
-      def suspend[A](fa: => BlobIO[A]): BlobIO[A] = F.pure(()).flatMap(_ => fa) // TODO F.suspend(fa) in cats 0.7
-      override def delay[A](a: => A): BlobIO[A] = blob.delay(a)
-      def unsafeRunAsync[A](fa: BlobIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a different type of program that has a default Kleisli interpreter.
@@ -379,7 +366,7 @@ object blob {
    BlobOp.BlobKleisliTrans.interpK
 #-scalaz
 #+fs2
-  def interpK[M[_]: Effect]: BlobOp ~> Kleisli[M, Blob, ?] =
+  def interpK[M[_]: Catchable: Suspendable]: BlobOp ~> Kleisli[M, Blob, ?] =
    BlobOp.BlobKleisliTrans.interpK
 #-fs2
 
@@ -392,7 +379,7 @@ object blob {
    BlobOp.BlobKleisliTrans.transK
 #-scalaz
 #+fs2
-  def transK[M[_]: Effect]: BlobIO ~> Kleisli[M, Blob, ?] =
+  def transK[M[_]: Catchable: Suspendable]: BlobIO ~> Kleisli[M, Blob, ?] =
    BlobOp.BlobKleisliTrans.transK
 #-fs2
 
@@ -405,7 +392,7 @@ object blob {
    BlobOp.BlobKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
- def trans[M[_]: Effect](c: Blob): BlobIO ~> M =
+ def trans[M[_]: Catchable: Suspendable](c: Blob): BlobIO ~> M =
    BlobOp.BlobKleisliTrans.trans[M](c)
 #-fs2
 
@@ -419,10 +406,27 @@ object blob {
       BlobOp.BlobKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, Blob, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Blob, A] =
       BlobOp.BlobKleisliTrans.transK[M].apply(ma)
 #-fs2
   }
 
+}
+
+private[free] trait BlobInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[BlobIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableBlobIO: Suspendable[BlobIO] =
+    new Suspendable[BlobIO] {
+      def pure[A](a: A): BlobIO[A] = blob.delay(a)
+      override def map[A, B](fa: BlobIO[A])(f: A => B): BlobIO[B] = fa.map(f)
+      def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => BlobIO[A]): BlobIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): BlobIO[A] = blob.delay(a)
+    }
+#-fs2
 }
 

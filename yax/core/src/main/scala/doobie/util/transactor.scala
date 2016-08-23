@@ -27,7 +27,7 @@ import cats.implicits._
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, eval_ }
-import fs2.util.{ Effect, Monad }
+import fs2.util.{ Monad, Catchable, Suspendable }
 import fs2.interop.cats._
 #-fs2
 
@@ -49,7 +49,7 @@ object transactor {
   abstract class Transactor[M[_]: Monad: Catchable: Capture] {
 #-scalaz
 #+fs2
-  abstract class Transactor[M[_]: Effect] {
+  abstract class Transactor[M[_]: Catchable: Suspendable] {
 #-fs2
 
     /** Action preparing the connection; default is `setAutoCommit(false)`. */
@@ -118,7 +118,7 @@ object transactor {
     def create[M[_]: Monad: Catchable: Capture](driver: String, conn: DriverManagerIO[Connection]): Transactor[M] =
 #-scalaz
 #+fs2
-    def create[M[_]: Effect](driver: String, conn: DriverManagerIO[Connection]): Transactor[M] =
+    def create[M[_]: Catchable: Suspendable](driver: String, conn: DriverManagerIO[Connection]): Transactor[M] =
 #-fs2
       new Transactor[M] {
         val connect: M[Connection] =
@@ -129,7 +129,7 @@ object transactor {
     def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String): Transactor[M] =
 #-scalaz
 #+fs2
-    def apply[M[_]: Effect](driver: String, url: String): Transactor[M] =
+    def apply[M[_]: Catchable: Suspendable](driver: String, url: String): Transactor[M] =
 #-fs2
       create(driver, getConnection(url))
 
@@ -137,7 +137,7 @@ object transactor {
     def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, user: String, pass: String): Transactor[M] =
 #-scalaz
 #+fs2
-    def apply[M[_]: Effect](driver: String, url: String, user: String, pass: String): Transactor[M] =
+    def apply[M[_]: Catchable: Suspendable](driver: String, url: String, user: String, pass: String): Transactor[M] =
 #-fs2
       create(driver, getConnection(url, user, pass))
 
@@ -145,7 +145,7 @@ object transactor {
     def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, info: java.util.Properties): Transactor[M] =
 #-scalaz
 #+fs2
-    def apply[M[_]: Effect](driver: String, url: String, info: java.util.Properties): Transactor[M] =
+    def apply[M[_]: Catchable: Suspendable](driver: String, url: String, info: java.util.Properties): Transactor[M] =
 #-fs2
       create(driver, getConnection(url, info))
 
@@ -156,7 +156,7 @@ object transactor {
   abstract class DataSourceTransactor[M[_]: Monad: Catchable: Capture, D <: DataSource] private extends Transactor[M] {
 #-scalaz
 #+fs2
-  abstract class DataSourceTransactor[M[_]: Effect, D <: DataSource] private extends Transactor[M] {
+  abstract class DataSourceTransactor[M[_]: Catchable: Suspendable, D <: DataSource] private extends Transactor[M] {
 #-fs2
     def configure[A](f: D => M[A]): M[A]
   }
@@ -174,10 +174,10 @@ object transactor {
         }
 #-scalaz
 #+fs2
-      def apply[D <: DataSource](ds: D)(implicit e: Effect[M]): DataSourceTransactor[M ,D] =
+      def apply[D <: DataSource](ds: D)(implicit e0: Catchable[M], e1: Suspendable[M]): DataSourceTransactor[M ,D] =
         new DataSourceTransactor[M, D] {
           def configure[A](f: D => M[A]): M[A] = f(ds)
-          val connect = e.delay(ds.getConnection)
+          val connect = e1.delay(ds.getConnection)
         }
 #-fs2
     }

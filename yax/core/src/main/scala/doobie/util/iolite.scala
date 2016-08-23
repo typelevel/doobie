@@ -12,7 +12,7 @@ import scala.util.{ Either => \/ }
 import scala.util.{ Left => -\/, Right => \/- }
 #-cats
 #+fs2
-import fs2.util.{ Attempt, Effect, Monad }
+import fs2.util.{ Catchable, Suspendable, Monad }
 #-fs2
 
 object iolite {
@@ -96,7 +96,7 @@ object iolite {
 
   }
 
-  trait IOInstances {
+  trait IOInstances extends IOInstances0 {
 
 #+scalaz
     implicit val MonadIOLite: Monad[IOLite] = 
@@ -105,26 +105,32 @@ object iolite {
         def point[A](a: => A): IOLite[A] = IOLite.pure(a)
       }
 
-    implicit val CatchableIOLite: Catchable[IOLite] =
-      new Catchable[IOLite] {
-        def attempt[A](fa: IOLite[A]): IOLite[Throwable \/ A] = fa.attempt
-        def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
-      }
-
     implicit val CaptureIOLite: Capture[IOLite] =
       new Capture[IOLite] {
         def apply[A](a: => A) = IOLite.primitive(a)
       }
 #-scalaz
+
+    implicit val CatchableIOLite: Catchable[IOLite] =
+      new Catchable[IOLite] {
 #+fs2
-    implicit val EffectIOLite: Effect[IOLite] =
-      new Effect[IOLite] {
         def pure[A](a: A): IOLite[A] = IOLite.pure(a)
+        override def map[A, B](ma: IOLite[A])(f: A => B): IOLite[B] = ma.map(f)
         def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
-        def attempt[A](ma: IOLite[A]): IOLite[Throwable \/ A] = ma.attempt
+#-fs2
+        def attempt[A](fa: IOLite[A]): IOLite[Throwable \/ A] = fa.attempt
         def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
+      }
+  }
+
+  private[iolite] trait IOInstances0 {
+#+fs2
+    implicit val SuspendableIOLite: Suspendable[IOLite] =
+      new Suspendable[IOLite] {
+        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
+        override def map[A, B](ma: IOLite[A])(f: A => B): IOLite[B] = ma.map(f)
+        def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
         def suspend[A](ma: => IOLite[A]): IOLite[A] = IOLite.unit.flatMap(_ => ma)
-        def unsafeRunAsync[A](ma: IOLite[A])(cb: Attempt[A] => Unit): Unit = cb(ma.attempt.unsafePerformIO)
       }
 #-fs2
   }

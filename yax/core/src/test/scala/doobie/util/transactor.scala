@@ -6,7 +6,7 @@ import scalaz.concurrent.Task
 #-scalaz
 #+fs2
 import fs2.Task
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
 import scala.util.{ Left => -\/, Right => \/- }
 #-fs2
@@ -26,7 +26,7 @@ object transactorspec extends Specification {
   )
 #-scalaz
 #+fs2
-  def xa[A[_]: Effect] = DriverManagerTransactor[A](
+  def xa[A[_]: Catchable: Suspendable] = DriverManagerTransactor[A](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""

@@ -10,9 +10,8 @@ import cats.free.{ Free => F }
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.{ Effect, Monad }
+import fs2.util.{ Catchable, Suspendable, Monad }
 import scala.util.{ Either => \/ }
-import doobie.util.compat.cats.fs2._
 #-fs2
 
 import doobie.util.capture._
@@ -39,7 +38,7 @@ object kleislitrans {
     def interpK[M[_]: Monad: Catchable: Capture]: Op ~> Kleisli[M, J, ?]
 #-scalaz
 #+fs2
-    def interpK[M[_]: Effect]: Op ~> Kleisli[M, J, ?]
+    def interpK[M[_]: Catchable: Suspendable]: Op ~> Kleisli[M, J, ?]
 #-fs2
 
     /**
@@ -50,11 +49,16 @@ object kleislitrans {
     def transK[M[_]: Monad: Catchable: Capture]: OpIO ~> Kleisli[M, J, ?] =
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: OpIO ~> Kleisli[M, J, ?] =
+    def transK[M[_]: Catchable: Suspendable]: OpIO ~> Kleisli[M, J, ?] =
 #-fs2
       new (OpIO ~> Kleisli[M, J, ?]) {
         def apply[A](ma: OpIO[A]): Kleisli[M, J, A] =
+#+scalaz
           ma.foldMap[Kleisli[M, J, ?]](interpK[M])
+#-scalaz
+#+cats
+          ma.foldMapUnsafe[Kleisli[M, J, ?]](interpK[M])
+#-cats
       }
 
     /**
@@ -65,7 +69,7 @@ object kleislitrans {
     def trans[M[_]: Monad: Catchable: Capture](c: J): OpIO ~> M =
 #-scalaz
 #+fs2
-    def trans[M[_]: Effect](c: J): OpIO ~> M =
+    def trans[M[_]: Catchable: Suspendable](c: J): OpIO ~> M =
 #-fs2
      new (OpIO ~> M) {
        def apply[A](ma: OpIO[A]): M[A] =

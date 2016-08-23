@@ -210,16 +210,19 @@ lazy val core = project.in(file("modules/core"))
     scalazCrossSettings
   )
 
+val catsVersion = "0.7.0"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "org.typelevel"  %% "cats"     % "0.6.1",
-      "co.fs2"         %% "fs2-core" % "0.9.0-RC1",
-      "co.fs2"         %% "fs2-cats" % "0.1.0-RC1",
-      "com.h2database" %  "h2"       % "1.3.170" % "test"
+      "co.fs2"         %% "fs2-core"  % "0.9.0-RC2",
+      "co.fs2"         %% "fs2-cats"  % "0.1.0-RC2",
+      "org.typelevel"  %% "cats-core" % catsVersion,
+      "org.typelevel"  %% "cats-free" % catsVersion,
+      "org.typelevel"  %% "cats-laws" % catsVersion % "test",
+      "com.h2database" %  "h2"        % "1.3.170" % "test"
     )
   )
 

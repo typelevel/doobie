@@ -9,11 +9,10 @@ import cats.~>
 import cats.free.{ Free => F }
 import cats.data.Kleisli
 import scala.util.{ Either => \/ }
-import doobie.util.compat.cats.fs2._
 import fs2.interop.cats._
 #-cats
 #+fs2
-import fs2.util.Effect
+import fs2.util.{ Catchable, Suspendable }
 #-fs2
 
 import doobie.util.capture._
@@ -58,7 +57,7 @@ import copymanager.CopyManagerIO
  *
  * @group Modules
  */
-object copymanager {
+object copymanager extends CopyManagerIOInstances {
 
   /**
    * Sum type of primitive operations over a `org.postgresql.copy.CopyManager`.
@@ -107,6 +106,11 @@ object copymanager {
 #+scalaz
   implicit val CatchableCopyManagerIO: Catchable[CopyManagerIO] =
     new Catchable[CopyManagerIO] {
+#+fs2
+      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
+      override def map[A, B](fa: CopyManagerIO[A])(f: A => B): ConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyManagerIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(f)
       def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
     }
@@ -120,18 +124,6 @@ object copymanager {
       def apply[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
     }
 #-scalaz
-#+fs2
-  implicit val EffectCopyManagerIO: Effect[CopyManagerIO] =
-    new Effect[CopyManagerIO] {
-      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
-      def flatMap[A, B](ma: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = ma.flatMap(f)
-      def attempt[A](ma: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(ma)
-      def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
-      def suspend[A](ma: => CopyManagerIO[A]): CopyManagerIO[A] = ma
-      override def delay[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
-      def unsafeRunAsync[A](ma: CopyManagerIO[A])(cb: Throwable \/ A => Unit): Unit = Predef.???
-    }
-#-fs2
 
   /**
    * Lift a CopyManagerIO[A] into an exception-capturing CopyManagerIO[Throwable \/ A].
@@ -203,7 +195,7 @@ object copymanager {
  def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
 #-scalaz
 #+fs2
- def kleisliTrans[M[_]: Effect]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
 #-fs2
    new (CopyManagerOp ~> Kleisli[M, CopyManager, ?]) {
 
@@ -214,7 +206,7 @@ object copymanager {
        Kleisli(s => L.apply(f(s)))
 #-scalaz
 #+fs2
-     val L = Predef.implicitly[Effect[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: CopyManager => A): Kleisli[M, CopyManager, A] =
        Kleisli(s => L.delay(f(s)))
@@ -232,7 +224,7 @@ object copymanager {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => catsKleisliFs2Effect[M, CopyManager].attempt(a.transK[M])
+        case Attempt(a) => kleisliCatchableInstance[M, CopyManager].attempt(a.transK[M])
 #-cats
 
         // Primitive Operations
@@ -256,12 +248,29 @@ object copymanager {
   implicit class CopyManagerIOOps[A](ma: CopyManagerIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyManager, A] =
+      ma.foldMap[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
 #-scalaz
 #+fs2
-    def transK[M[_]: Effect]: Kleisli[M, CopyManager, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyManager, A] =
+      ma.foldMapUnsafe[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
 #-fs2
-      ma.foldMap[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
   }
 
 }
 
+private[free] trait CopyManagerIOInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[CopyManagerIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCopyManagerIO: Suspendable[CopyManagerIO] =
+    new Suspendable[CopyManagerIO] {
+      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
+      override def map[A, B](fa: CopyManagerIO[A])(f: A => B): CopyManagerIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CopyManagerIO[A]): CopyManagerIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
+    }
+#-fs2
+}
