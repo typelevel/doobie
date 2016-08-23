@@ -229,7 +229,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     | *
     | * @group Modules
     | */
-    |object ${sname.toLowerCase} extends ${sname}Instances {
+    |object ${sname.toLowerCase} extends ${sname}IOInstances {
     |
     |  /**
     |   * Sum type of primitive operations over a `${ev.runtimeClass.getName}`.
@@ -438,7 +438,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |
     |}
     |
-    |private[free] trait ${sname}Instances {
+    |private[free] trait ${sname}IOInstances {
     |#+fs2
     |  /**
     |   * Suspendable instance for [[${sname}IO]].

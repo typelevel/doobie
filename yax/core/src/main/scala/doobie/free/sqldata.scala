@@ -75,7 +75,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object sqldata extends SQLDataInstances {
+object sqldata extends SQLDataIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.SQLData`.
@@ -316,7 +316,7 @@ object sqldata extends SQLDataInstances {
 
 }
 
-private[free] trait SQLDataInstances {
+private[free] trait SQLDataIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[SQLDataIO]].

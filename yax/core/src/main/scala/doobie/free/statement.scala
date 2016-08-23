@@ -78,7 +78,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object statement extends StatementInstances {
+object statement extends StatementIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Statement`.
@@ -907,7 +907,7 @@ object statement extends StatementInstances {
 
 }
 
-private[free] trait StatementInstances {
+private[free] trait StatementIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[StatementIO]].

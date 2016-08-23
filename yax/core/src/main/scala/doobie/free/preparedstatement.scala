@@ -92,7 +92,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object preparedstatement extends PreparedStatementInstances {
+object preparedstatement extends PreparedStatementIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.PreparedStatement`.
@@ -1617,7 +1617,7 @@ object preparedstatement extends PreparedStatementInstances {
 
 }
 
-private[free] trait PreparedStatementInstances {
+private[free] trait PreparedStatementIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[PreparedStatementIO]].

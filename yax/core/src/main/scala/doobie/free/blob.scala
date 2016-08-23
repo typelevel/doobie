@@ -76,7 +76,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object blob extends BlobInstances {
+object blob extends BlobIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Blob`.
@@ -413,7 +413,7 @@ object blob extends BlobInstances {
 
 }
 
-private[free] trait BlobInstances {
+private[free] trait BlobIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[BlobIO]].

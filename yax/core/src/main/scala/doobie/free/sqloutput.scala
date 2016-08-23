@@ -88,7 +88,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object sqloutput extends SQLOutputInstances {
+object sqloutput extends SQLOutputIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.SQLOutput`.
@@ -629,7 +629,7 @@ object sqloutput extends SQLOutputInstances {
 
 }
 
-private[free] trait SQLOutputInstances {
+private[free] trait SQLOutputIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[SQLOutputIO]].

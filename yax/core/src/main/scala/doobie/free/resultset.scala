@@ -92,7 +92,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object resultset extends ResultSetInstances {
+object resultset extends ResultSetIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.ResultSet`.
@@ -2637,7 +2637,7 @@ object resultset extends ResultSetInstances {
 
 }
 
-private[free] trait ResultSetInstances {
+private[free] trait ResultSetIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[ResultSetIO]].

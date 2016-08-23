@@ -78,7 +78,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object driver extends DriverInstances {
+object driver extends DriverIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Driver`.
@@ -367,7 +367,7 @@ object driver extends DriverInstances {
 
 }
 
-private[free] trait DriverInstances {
+private[free] trait DriverIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[DriverIO]].

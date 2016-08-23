@@ -79,7 +79,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object clob extends ClobInstances {
+object clob extends ClobIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Clob`.
@@ -440,7 +440,7 @@ object clob extends ClobInstances {
 
 }
 
-private[free] trait ClobInstances {
+private[free] trait ClobIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[ClobIO]].

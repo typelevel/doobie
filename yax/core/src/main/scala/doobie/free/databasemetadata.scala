@@ -78,7 +78,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object databasemetadata extends DatabaseMetaDataInstances {
+object databasemetadata extends DatabaseMetaDataIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.DatabaseMetaData`.
@@ -2419,7 +2419,7 @@ object databasemetadata extends DatabaseMetaDataInstances {
 
 }
 
-private[free] trait DatabaseMetaDataInstances {
+private[free] trait DatabaseMetaDataIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[DatabaseMetaDataIO]].

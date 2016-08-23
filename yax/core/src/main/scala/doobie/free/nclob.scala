@@ -79,7 +79,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object nclob extends NClobInstances {
+object nclob extends NClobIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.NClob`.
@@ -440,7 +440,7 @@ object nclob extends NClobInstances {
 
 }
 
-private[free] trait NClobInstances {
+private[free] trait NClobIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[NClobIO]].

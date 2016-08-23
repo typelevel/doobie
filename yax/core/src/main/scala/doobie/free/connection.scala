@@ -85,7 +85,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object connection extends ConnectionInstances {
+object connection extends ConnectionIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Connection`.
@@ -938,7 +938,7 @@ object connection extends ConnectionInstances {
 
 }
 
-private[free] trait ConnectionInstances {
+private[free] trait ConnectionIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[ConnectionIO]].

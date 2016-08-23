@@ -77,7 +77,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object ref extends RefInstances {
+object ref extends RefIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.Ref`.
@@ -330,7 +330,7 @@ object ref extends RefInstances {
 
 }
 
-private[free] trait RefInstances {
+private[free] trait RefIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[RefIO]].

@@ -93,7 +93,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object callablestatement extends CallableStatementInstances {
+object callablestatement extends CallableStatementIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.CallableStatement`.
@@ -3070,7 +3070,7 @@ object callablestatement extends CallableStatementInstances {
 
 }
 
-private[free] trait CallableStatementInstances {
+private[free] trait CallableStatementIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[CallableStatementIO]].

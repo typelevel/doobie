@@ -87,7 +87,7 @@ import resultset.ResultSetIO
  *
  * @group Modules
  */
-object sqlinput extends SQLInputInstances {
+object sqlinput extends SQLInputIOInstances {
 
   /**
    * Sum type of primitive operations over a `java.sql.SQLInput`.
@@ -628,7 +628,7 @@ object sqlinput extends SQLInputInstances {
 
 }
 
-private[free] trait SQLInputInstances {
+private[free] trait SQLInputIOInstances {
 #+fs2
   /**
    * Suspendable instance for [[SQLInputIO]].
