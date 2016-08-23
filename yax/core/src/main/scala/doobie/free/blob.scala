@@ -89,7 +89,7 @@ object blob extends BlobIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: Blob => A): Kleisli[M, Blob, A] =
+    protected def primitive[M[_]: Suspendable](f: Blob => A): Kleisli[M, Blob, A] =
       Kleisli((s: Blob) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Blob, A]
 #-fs2
@@ -389,12 +389,11 @@ object blob extends BlobIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: Blob): BlobIO ~> M =
-   BlobOp.BlobKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: Blob): BlobIO ~> M =
-   BlobOp.BlobKleisliTrans.trans[M](c)
 #-fs2
+   BlobOp.BlobKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `BlobIO`.
@@ -403,12 +402,11 @@ object blob extends BlobIOInstances {
   implicit class BlobIOOps[A](ma: BlobIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A] =
-      BlobOp.BlobKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Blob, A] =
-      BlobOp.BlobKleisliTrans.transK[M].apply(ma)
 #-fs2
+      BlobOp.BlobKleisliTrans.transK[M].apply(ma)
   }
 
 }

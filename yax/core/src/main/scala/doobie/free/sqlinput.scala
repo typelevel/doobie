@@ -100,7 +100,7 @@ object sqlinput extends SQLInputIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLInput, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: SQLInput => A): Kleisli[M, SQLInput, A] =
+    protected def primitive[M[_]: Suspendable](f: SQLInput => A): Kleisli[M, SQLInput, A] =
       Kleisli((s: SQLInput) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLInput, A]
 #-fs2
@@ -604,12 +604,11 @@ object sqlinput extends SQLInputIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: SQLInput): SQLInputIO ~> M =
-   SQLInputOp.SQLInputKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: SQLInput): SQLInputIO ~> M =
-   SQLInputOp.SQLInputKleisliTrans.trans[M](c)
 #-fs2
+   SQLInputOp.SQLInputKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `SQLInputIO`.
@@ -618,12 +617,11 @@ object sqlinput extends SQLInputIOInstances {
   implicit class SQLInputIOOps[A](ma: SQLInputIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLInput, A] =
-      SQLInputOp.SQLInputKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLInput, A] =
-      SQLInputOp.SQLInputKleisliTrans.transK[M].apply(ma)
 #-fs2
+      SQLInputOp.SQLInputKleisliTrans.transK[M].apply(ma)
   }
 
 }

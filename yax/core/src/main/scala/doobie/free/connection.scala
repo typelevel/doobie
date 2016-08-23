@@ -98,7 +98,7 @@ object connection extends ConnectionIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Connection, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: Connection => A): Kleisli[M, Connection, A] =
+    protected def primitive[M[_]: Suspendable](f: Connection => A): Kleisli[M, Connection, A] =
       Kleisli((s: Connection) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Connection, A]
 #-fs2
@@ -914,12 +914,11 @@ object connection extends ConnectionIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: Connection): ConnectionIO ~> M =
-   ConnectionOp.ConnectionKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: Connection): ConnectionIO ~> M =
-   ConnectionOp.ConnectionKleisliTrans.trans[M](c)
 #-fs2
+   ConnectionOp.ConnectionKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `ConnectionIO`.
@@ -928,12 +927,11 @@ object connection extends ConnectionIOInstances {
   implicit class ConnectionIOOps[A](ma: ConnectionIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Connection, A] =
-      ConnectionOp.ConnectionKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Connection, A] =
-      ConnectionOp.ConnectionKleisliTrans.transK[M].apply(ma)
 #-fs2
+      ConnectionOp.ConnectionKleisliTrans.transK[M].apply(ma)
   }
 
 }

@@ -242,7 +242,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |    def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A]
     |#-scalaz
     |#+fs2
-    |    protected def primitive[M[_]: Catchable: Suspendable](f: ${sname} => A): Kleisli[M, ${sname}, A] =
+    |    protected def primitive[M[_]: Suspendable](f: ${sname} => A): Kleisli[M, ${sname}, A] =
     |      Kleisli((s: ${sname}) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     |    def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, ${sname}, A]
     |#-fs2
@@ -414,12 +414,11 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  */
     |#+scalaz
     | def trans[M[_]: Monad: Catchable: Capture](c: $sname): ${sname}IO ~> M =
-    |   ${sname}Op.${sname}KleisliTrans.trans[M](c)
     |#-scalaz
     |#+fs2
     | def trans[M[_]: Catchable: Suspendable](c: $sname): ${sname}IO ~> M =
-    |   ${sname}Op.${sname}KleisliTrans.trans[M](c)
     |#-fs2
+    |   ${sname}Op.${sname}KleisliTrans.trans[M](c)
     |
     |  /**
     |   * Syntax for `${sname}IO`.
@@ -428,12 +427,11 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |  implicit class ${sname}IOOps[A](ma: ${sname}IO[A]) {
     |#+scalaz
     |    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, ${sname}, A] =
-    |      ${sname}Op.${sname}KleisliTrans.transK[M].apply(ma)
     |#-scalaz
     |#+fs2
     |    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, ${sname}, A] =
-    |      ${sname}Op.${sname}KleisliTrans.transK[M].apply(ma)
     |#-fs2
+    |      ${sname}Op.${sname}KleisliTrans.transK[M].apply(ma)
     |  }
     |
     |}

@@ -91,7 +91,7 @@ object statement extends StatementIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Statement, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: Statement => A): Kleisli[M, Statement, A] =
+    protected def primitive[M[_]: Suspendable](f: Statement => A): Kleisli[M, Statement, A] =
       Kleisli((s: Statement) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Statement, A]
 #-fs2
@@ -883,12 +883,11 @@ object statement extends StatementIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: Statement): StatementIO ~> M =
-   StatementOp.StatementKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: Statement): StatementIO ~> M =
-   StatementOp.StatementKleisliTrans.trans[M](c)
 #-fs2
+   StatementOp.StatementKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `StatementIO`.
@@ -897,12 +896,11 @@ object statement extends StatementIOInstances {
   implicit class StatementIOOps[A](ma: StatementIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Statement, A] =
-      StatementOp.StatementKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Statement, A] =
-      StatementOp.StatementKleisliTrans.transK[M].apply(ma)
 #-fs2
+      StatementOp.StatementKleisliTrans.transK[M].apply(ma)
   }
 
 }

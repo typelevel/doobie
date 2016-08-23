@@ -105,7 +105,7 @@ object preparedstatement extends PreparedStatementIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PreparedStatement, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] =
+    protected def primitive[M[_]: Suspendable](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] =
       Kleisli((s: PreparedStatement) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, PreparedStatement, A]
 #-fs2
@@ -1593,12 +1593,11 @@ object preparedstatement extends PreparedStatementIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: PreparedStatement): PreparedStatementIO ~> M =
-   PreparedStatementOp.PreparedStatementKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: PreparedStatement): PreparedStatementIO ~> M =
-   PreparedStatementOp.PreparedStatementKleisliTrans.trans[M](c)
 #-fs2
+   PreparedStatementOp.PreparedStatementKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `PreparedStatementIO`.
@@ -1607,12 +1606,11 @@ object preparedstatement extends PreparedStatementIOInstances {
   implicit class PreparedStatementIOOps[A](ma: PreparedStatementIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PreparedStatement, A] =
-      PreparedStatementOp.PreparedStatementKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PreparedStatement, A] =
-      PreparedStatementOp.PreparedStatementKleisliTrans.transK[M].apply(ma)
 #-fs2
+      PreparedStatementOp.PreparedStatementKleisliTrans.transK[M].apply(ma)
   }
 
 }

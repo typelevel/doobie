@@ -90,7 +90,7 @@ object ref extends RefIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Ref, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: Ref => A): Kleisli[M, Ref, A] =
+    protected def primitive[M[_]: Suspendable](f: Ref => A): Kleisli[M, Ref, A] =
       Kleisli((s: Ref) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Ref, A]
 #-fs2
@@ -306,12 +306,11 @@ object ref extends RefIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: Ref): RefIO ~> M =
-   RefOp.RefKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: Ref): RefIO ~> M =
-   RefOp.RefKleisliTrans.trans[M](c)
 #-fs2
+   RefOp.RefKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `RefIO`.
@@ -320,12 +319,11 @@ object ref extends RefIOInstances {
   implicit class RefIOOps[A](ma: RefIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Ref, A] =
-      RefOp.RefKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Ref, A] =
-      RefOp.RefKleisliTrans.transK[M].apply(ma)
 #-fs2
+      RefOp.RefKleisliTrans.transK[M].apply(ma)
   }
 
 }

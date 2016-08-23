@@ -88,7 +88,7 @@ object sqldata extends SQLDataIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLData, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: SQLData => A): Kleisli[M, SQLData, A] =
+    protected def primitive[M[_]: Suspendable](f: SQLData => A): Kleisli[M, SQLData, A] =
       Kleisli((s: SQLData) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLData, A]
 #-fs2
@@ -292,12 +292,11 @@ object sqldata extends SQLDataIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: SQLData): SQLDataIO ~> M =
-   SQLDataOp.SQLDataKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: SQLData): SQLDataIO ~> M =
-   SQLDataOp.SQLDataKleisliTrans.trans[M](c)
 #-fs2
+   SQLDataOp.SQLDataKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `SQLDataIO`.
@@ -306,12 +305,11 @@ object sqldata extends SQLDataIOInstances {
   implicit class SQLDataIOOps[A](ma: SQLDataIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, SQLData, A] =
-      SQLDataOp.SQLDataKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, SQLData, A] =
-      SQLDataOp.SQLDataKleisliTrans.transK[M].apply(ma)
 #-fs2
+      SQLDataOp.SQLDataKleisliTrans.transK[M].apply(ma)
   }
 
 }

@@ -92,7 +92,7 @@ object nclob extends NClobIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, NClob, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: NClob => A): Kleisli[M, NClob, A] =
+    protected def primitive[M[_]: Suspendable](f: NClob => A): Kleisli[M, NClob, A] =
       Kleisli((s: NClob) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, NClob, A]
 #-fs2
@@ -416,12 +416,11 @@ object nclob extends NClobIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: NClob): NClobIO ~> M =
-   NClobOp.NClobKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: NClob): NClobIO ~> M =
-   NClobOp.NClobKleisliTrans.trans[M](c)
 #-fs2
+   NClobOp.NClobKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `NClobIO`.
@@ -430,12 +429,11 @@ object nclob extends NClobIOInstances {
   implicit class NClobIOOps[A](ma: NClobIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, NClob, A] =
-      NClobOp.NClobKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, NClob, A] =
-      NClobOp.NClobKleisliTrans.transK[M].apply(ma)
 #-fs2
+      NClobOp.NClobKleisliTrans.transK[M].apply(ma)
   }
 
 }

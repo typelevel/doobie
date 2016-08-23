@@ -91,7 +91,7 @@ object driver extends DriverIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: Driver => A): Kleisli[M, Driver, A] =
+    protected def primitive[M[_]: Suspendable](f: Driver => A): Kleisli[M, Driver, A] =
       Kleisli((s: Driver) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, Driver, A]
 #-fs2
@@ -343,12 +343,11 @@ object driver extends DriverIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: Driver): DriverIO ~> M =
-   DriverOp.DriverKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: Driver): DriverIO ~> M =
-   DriverOp.DriverKleisliTrans.trans[M](c)
 #-fs2
+   DriverOp.DriverKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `DriverIO`.
@@ -357,12 +356,11 @@ object driver extends DriverIOInstances {
   implicit class DriverIOOps[A](ma: DriverIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Driver, A] =
-      DriverOp.DriverKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, Driver, A] =
-      DriverOp.DriverKleisliTrans.transK[M].apply(ma)
 #-fs2
+      DriverOp.DriverKleisliTrans.transK[M].apply(ma)
   }
 
 }

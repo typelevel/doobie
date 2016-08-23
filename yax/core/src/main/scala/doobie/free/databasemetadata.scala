@@ -91,7 +91,7 @@ object databasemetadata extends DatabaseMetaDataIOInstances {
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A]
 #-scalaz
 #+fs2
-    protected def primitive[M[_]: Catchable: Suspendable](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] =
+    protected def primitive[M[_]: Suspendable](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] =
       Kleisli((s: DatabaseMetaData) => Predef.implicitly[Suspendable[M]].delay(f(s)))
     def defaultTransK[M[_]: Catchable: Suspendable]: Kleisli[M, DatabaseMetaData, A]
 #-fs2
@@ -2395,12 +2395,11 @@ object databasemetadata extends DatabaseMetaDataIOInstances {
   */
 #+scalaz
  def trans[M[_]: Monad: Catchable: Capture](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
-   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
 #-scalaz
 #+fs2
  def trans[M[_]: Catchable: Suspendable](c: DatabaseMetaData): DatabaseMetaDataIO ~> M =
-   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
 #-fs2
+   DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `DatabaseMetaDataIO`.
@@ -2409,12 +2408,11 @@ object databasemetadata extends DatabaseMetaDataIOInstances {
   implicit class DatabaseMetaDataIOOps[A](ma: DatabaseMetaDataIO[A]) {
 #+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, DatabaseMetaData, A] =
-      DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, DatabaseMetaData, A] =
-      DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
 #-fs2
+      DatabaseMetaDataOp.DatabaseMetaDataKleisliTrans.transK[M].apply(ma)
   }
 
 }
