@@ -58,6 +58,7 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 * `doobie-contrib-hikari` for [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling.
 * `doobie-contrib-postgresql` for [PostgreSQL](http://postgresql.org)-specific type mappings.
 * `doobie-contrib-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
+* `doobie-contrib-scalatest` for [scalatest](http://www.scalatest.org/) support for typechecking queries.
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) for more information on these add-ons.
 
