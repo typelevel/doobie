@@ -204,7 +204,7 @@ lazy val core = project.in(file("modules/core"))
     libraryDependencies ++= Seq(
       "org.scalaz"        %% "scalaz-core"      % "7.2.4",
       "org.scalaz"        %% "scalaz-effect"    % "7.2.4",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.2a",
+      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.4a",
       "com.h2database"    %  "h2"               % "1.3.170" % "test"
     ),
     scalazCrossSettings
