@@ -96,8 +96,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
+  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, scalatest, scalatest_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
+  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, scalatest, scalatest_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
   .settings(freeGenSettings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
@@ -165,8 +165,8 @@ lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
 /// CORE
 ///
 
-def coreSettings(mod: String) = 
-  doobieSettings  ++ 
+def coreSettings(mod: String) =
+  doobieSettings  ++
   publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Pure functional JDBC layer for Scala.",
@@ -318,7 +318,7 @@ lazy val h2_cats = project.in(file("modules-cats/h2"))
 ///
 
 def hikariSettings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++ 
+  doobieSettings  ++
   publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Hikari support for doobie.",
@@ -347,7 +347,7 @@ lazy val hikari_cats = project.in(file("modules-cats/hikari"))
 ///
 
 def specs2Settings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++ 
+  doobieSettings  ++
   publishSettings ++ Seq(
     name := "doobie-contrib-specs2",
     description := "Specs2 support for doobie.",
@@ -370,6 +370,36 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
     specs2Settings("specs2")
   )
   .dependsOn(core_cats)
+
+///
+/// SCALATEST
+///
+
+def scalatestSettings(mod: String): Seq[Setting[_]] =
+  doobieSettings  ++
+    publishSettings ++ Seq(
+    name := "doobie-contrib-scalatest",
+    description := "Scalatest support for doobie.",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0"
+  )
+
+lazy val scalatest = project.in(file("modules/scalatest"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/scalatest"), "scalaz"),
+    scalatestSettings("scalatest"),
+    scalazCrossSettings
+  )
+  .dependsOn(core)
+
+lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/scalatest"), "cats"),
+    scalatestSettings("scalatest")
+  )
+  .dependsOn(core_cats)
+
 
 ///
 /// BENCH
@@ -395,7 +425,7 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
   doobieSettings          ++
   noPublishSettings       ++
-  tutSettings             ++ 
+  tutSettings             ++
   docSkipScala212Settings ++ Seq(
     ctut := {
       val src = crossTarget.value / "tut"
