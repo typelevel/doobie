@@ -20,7 +20,7 @@ import scalaz.std.list._
 #-scalaz
 #+cats
 import cats.syntax.traverse._
-import cats.std.list._
+import cats.instances.list._
 #-cats
 
 /**
