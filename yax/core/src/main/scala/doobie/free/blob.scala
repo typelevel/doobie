@@ -5,7 +5,7 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
 import doobie.util.catchable.Catchable
-import cats.{ Monad, ~> }
+import cats.{ Monad, RecursiveTailRecM, ~> }
 import cats.data.{ Kleisli, Xor => \/ }
 import cats.free.{ Free => F }
 #-cats
@@ -81,7 +81,12 @@ object blob {
   sealed trait BlobOp[A] {
     protected def primitive[M[_]: Monad: Capture](f: Blob => A): Kleisli[M, Blob, A] = 
       Kleisli((s: Blob) => Capture[M].apply(f(s)))
+#+scalaz
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A]
+#-scalaz
+#+cats
+    def defaultTransK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: Kleisli[M, Blob, A]
+#-cats
   }
 
   /** 
@@ -95,7 +100,12 @@ object blob {
     implicit val BlobKleisliTrans: KleisliTrans.Aux[BlobOp, Blob] =
       new KleisliTrans[BlobOp] {
         type J = Blob
+#+scalaz
         def interpK[M[_]: Monad: Catchable: Capture]: BlobOp ~> Kleisli[M, Blob, ?] =
+#-scalaz
+#+cats
+        def interpK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: BlobOp ~> Kleisli[M, Blob, ?] =
+#-cats
           new (BlobOp ~> Kleisli[M, Blob, ?]) {
             def apply[A](op: BlobOp[A]): Kleisli[M, Blob, A] =
               op.defaultTransK[M]
@@ -104,15 +114,23 @@ object blob {
 
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends BlobOp[A] {
+#+scalaz
       override def defaultTransK[M[_]: Monad: Catchable: Capture] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+#-scalaz
+#+cats
+      override def defaultTransK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM] = Kleisli(_ => mod.transK[M].apply(action).run(j))
+#-cats
     }
 
     // Combinators
     case class Attempt[A](action: BlobIO[A]) extends BlobOp[Throwable \/ A] {
 #+scalaz
       import scalaz._, Scalaz._
+      override def defaultTransK[M[_]: Monad: Catchable: Capture] =
 #-scalaz
-      override def defaultTransK[M[_]: Monad: Catchable: Capture] = 
+#+cats
+      override def defaultTransK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM] =
+#-cats
         Predef.implicitly[Catchable[Kleisli[M, Blob, ?]]].attempt(action.transK[M])
     }
     case class Pure[A](a: () => A) extends BlobOp[A] {
@@ -291,22 +309,37 @@ object blob {
   * Natural transformation from `BlobIO` to `Kleisli` for the given `M`, consuming a `java.sql.Blob`. 
   * @group Algebra
   */
+#+scalaz
   def transK[M[_]: Monad: Catchable: Capture]: BlobIO ~> Kleisli[M, Blob, ?] =
+#-scalaz
+#+cats
+  def transK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: BlobIO ~> Kleisli[M, Blob, ?] =
+#-cats
    BlobOp.BlobKleisliTrans.transK
 
  /** 
   * Natural transformation from `BlobIO` to `M`, given a `java.sql.Blob`. 
   * @group Algebra
   */
- def trans[M[_]: Monad: Catchable: Capture](c: Blob): BlobIO ~> M =
-   BlobOp.BlobKleisliTrans.trans[M](c)
+#+scalaz
+  def trans[M[_]: Monad: Catchable: Capture](c: Blob): BlobIO ~> M =
+#-scalaz
+#+cats
+  def trans[M[_]: Monad: Catchable: Capture: RecursiveTailRecM](c: Blob): BlobIO ~> M =
+#-cats
+    BlobOp.BlobKleisliTrans.trans[M](c)
 
   /**
    * Syntax for `BlobIO`.
    * @group Algebra
    */
   implicit class BlobIOOps[A](ma: BlobIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, Blob, A] =
+#-scalaz
+#+cats
+    def transK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: Kleisli[M, Blob, A] =
+#-cats
       BlobOp.BlobKleisliTrans.transK[M].apply(ma)
   }
 

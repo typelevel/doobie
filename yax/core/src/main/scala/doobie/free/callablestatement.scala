@@ -5,7 +5,7 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
 import doobie.util.catchable.Catchable
-import cats.{ Monad, ~> }
+import cats.{ Monad, RecursiveTailRecM, ~> }
 import cats.data.{ Kleisli, Xor => \/ }
 import cats.free.{ Free => F }
 #-cats
@@ -96,9 +96,16 @@ object callablestatement {
    * @group Algebra 
    */
   sealed trait CallableStatementOp[A] {
-    protected def primitive[M[_]: Monad: Capture](f: CallableStatement => A): Kleisli[M, CallableStatement, A] = 
+#+scalaz
+    protected def primitive[M[_]: Monad: Capture](f: CallableStatement => A): Kleisli[M, CallableStatement, A] =
       Kleisli((s: CallableStatement) => Capture[M].apply(f(s)))
     def defaultTransK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CallableStatement, A]
+#-scalaz
+#+cats
+    protected def primitive[M[_]: Monad: Capture: RecursiveTailRecM](f: CallableStatement => A): Kleisli[M, CallableStatement, A] =
+      Kleisli((s: CallableStatement) => Capture[M].apply(f(s)))
+    def defaultTransK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: Kleisli[M, CallableStatement, A]
+#-cats
   }
 
   /** 
@@ -112,7 +119,12 @@ object callablestatement {
     implicit val CallableStatementKleisliTrans: KleisliTrans.Aux[CallableStatementOp, CallableStatement] =
       new KleisliTrans[CallableStatementOp] {
         type J = CallableStatement
+#+scalaz
         def interpK[M[_]: Monad: Catchable: Capture]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
+#-scalaz
+#+cats
+        def interpK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] =
+#-cats
           new (CallableStatementOp ~> Kleisli[M, CallableStatement, ?]) {
             def apply[A](op: CallableStatementOp[A]): Kleisli[M, CallableStatement, A] =
               op.defaultTransK[M]
