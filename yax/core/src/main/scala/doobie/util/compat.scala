@@ -20,7 +20,7 @@ object compat {
 #+cats
   object cats {
     import _root_.cats.{ Applicative, Monad, MonadCombine, ~> => CatsNat }
-    import _root_.cats.std.list._
+    import _root_.cats.instances.list._
 
     object applicative {
 

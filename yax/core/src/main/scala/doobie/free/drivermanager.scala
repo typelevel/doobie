@@ -4,7 +4,7 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.{ Monad, RecursiveTailRecM, ~> }
 import cats.data.{ Kleisli, Xor => \/ }
 import cats.free.{ Free => F }
 import cats.implicits._
@@ -195,7 +195,12 @@ object drivermanager {
   * Natural transformation from `DriverManagerOp` to the given `M`. 
   * @group Algebra
   */
- def trans[M[_]: Monad: Capture](implicit c: Catchable[M]): DriverManagerOp ~> M =
+#+scalaz
+  def trans[M[_]: Monad: Capture](implicit c: Catchable[M]): DriverManagerOp ~> M =
+#-scalaz
+#+cats
+ def trans[M[_]: Monad: Capture: RecursiveTailRecM](implicit c: Catchable[M]): DriverManagerOp ~> M =
+#-cats
    new (DriverManagerOp ~>  M) {
 
      val L = Predef.implicitly[Capture[M]]
@@ -235,8 +240,14 @@ object drivermanager {
    * @group Algebra
    */
   implicit class DriverManagerIOOps[A](ma: DriverManagerIO[A]) {
+#+scalaz
     def trans[M[_]: Monad: Catchable: Capture]: M[A] =
       ma.foldMap(drivermanager.trans[M])
+#-scalaz
+#+cats
+    def trans[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: M[A] =
+      ma.foldMap(drivermanager.trans[M])
+#-cats
   }
 
 }

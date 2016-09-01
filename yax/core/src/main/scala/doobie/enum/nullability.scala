@@ -9,7 +9,7 @@ import scalaz.std.anyVal.intInstance
 #-scalaz
 #+cats
 import cats.kernel.Eq
-import cats.kernel.std.int._
+import cats.kernel.instances.int._
 #-cats
 
 /** Generic nullability that subsumes JDBC's distinct parameter and column nullability. */

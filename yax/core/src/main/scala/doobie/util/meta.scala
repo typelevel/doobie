@@ -12,10 +12,10 @@ import scala.reflect.ClassTag
 import scala.Predef._
 
 #+scalaz
-import scalaz._, Scalaz._
+import scalaz._, Scalaz._, NonEmptyList.{ apply => NonEmptyListApply }
 #-scalaz
 #+cats
-import cats._, cats.data.{ NonEmptyList, Xor => \/ }, cats.data.Xor.{ Left => -\/, Right => \/- }, cats.implicits._
+import cats._, cats.data.{ NonEmptyList, Xor => \/ }, NonEmptyList.{ of => NonEmptyListApply }, cats.data.Xor.{ Left => -\/, Right => \/- }, cats.implicits._
 #-cats
 
 import shapeless._
@@ -229,7 +229,7 @@ object meta {
       set0: (Int, A) => PS.PreparedStatementIO[Unit],
       update0: (Int, A) => RS.ResultSetIO[Unit] 
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
-      basic(NonEmptyList(jdbcType), NonEmptyList(jdbcType), jdbcSourceSecondary0, get0, set0, update0)
+      basic(NonEmptyListApply(jdbcType), NonEmptyListApply(jdbcType), jdbcSourceSecondary0, get0, set0, update0)
 
     /**
      * Construct an `AdvancedMeta` for the given type.
@@ -259,7 +259,7 @@ object meta {
      * @group Constructors     
      */
     def array[A >: Null <: AnyRef: TypeTag](elementType: String, schemaH: String, schemaT: String*): AdvancedMeta[Array[A]] =
-      advanced[Array[A]](NonEmptyList(JdbcArray), NonEmptyList(schemaH, schemaT : _*),
+      advanced[Array[A]](NonEmptyListApply(JdbcArray), NonEmptyListApply(schemaH, schemaT : _*),
         { (r, n) => 
           val a = r.getArray(n)
           (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
@@ -284,7 +284,7 @@ object meta {
      * @group Constructors     
      */
     def other[A >: Null <: AnyRef: TypeTag](schemaH: String, schemaT: String*)(implicit A: ClassTag[A]): AdvancedMeta[A] =
-      advanced[A](NonEmptyList(Other, JavaObject), NonEmptyList(schemaH, schemaT : _*),
+      advanced[A](NonEmptyListApply(Other, JavaObject), NonEmptyListApply(schemaH, schemaT : _*),
         _.getObject(_) match { 
           case null => null
           case a    => 
@@ -302,7 +302,7 @@ object meta {
     //  * @group Constructors     
     //  */
     // def struct[A: TypeTag](schemaH: String, schemaT: String*): AdvancedMeta[A] =
-    //   advanced[A](NonEmptyList(Struct), NonEmptyList(schemaH, schemaT : _*))
+    //   advanced[A](NonEmptyListApply(Struct), NonEmptyListApply(schemaH, schemaT : _*))
 
     /** @group Instances */
     implicit def ArrayTypeAsListMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[List[A]] =
@@ -395,40 +395,40 @@ object meta {
 
     /** @group Instances */
     implicit val DoubleMeta = Meta.basic[Double](
-      NonEmptyList(Double), 
-      NonEmptyList(Float, Double),
+      NonEmptyListApply(Double),
+      NonEmptyListApply(Float, Double),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar, 
         LongVarChar),
       _.getDouble(_), PS.setDouble, RS.updateDouble)
 
     /** @group Instances */
     implicit val BigDecimalMeta = Meta.basic[java.math.BigDecimal](
-      NonEmptyList(Numeric), 
-      NonEmptyList(Decimal, Numeric), 
+      NonEmptyListApply(Numeric),
+      NonEmptyListApply(Decimal, Numeric),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar, 
         LongVarChar),
       _.getBigDecimal(_), PS.setBigDecimal, RS.updateBigDecimal)
 
     /** @group Instances */
     implicit val BooleanMeta = Meta.basic[Boolean](
-      NonEmptyList(Bit, JdbcBoolean),
-      NonEmptyList(Bit, JdbcBoolean),
+      NonEmptyListApply(Bit, JdbcBoolean),
+      NonEmptyListApply(Bit, JdbcBoolean),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar, 
         LongVarChar),
       _.getBoolean(_), PS.setBoolean, RS.updateBoolean)
 
     /** @group Instances */
     implicit val StringMeta = Meta.basic[String](
-      NonEmptyList(VarChar, Char, LongVarChar),
-      NonEmptyList(Char, VarChar),
+      NonEmptyListApply(VarChar, Char, LongVarChar),
+      NonEmptyListApply(Char, VarChar),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit, 
         LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
       _.getString(_), PS.setString, RS.updateString)
   
     /** @group Instances */
     implicit val ByteArrayMeta = Meta.basic[Array[Byte]](
-      NonEmptyList(Binary, VarBinary, LongVarBinary),
-      NonEmptyList(Binary, VarBinary),
+      NonEmptyListApply(Binary, VarBinary, LongVarBinary),
+      NonEmptyListApply(Binary, VarBinary),
       List(LongVarBinary),
       _.getBytes(_), PS.setBytes, RS.updateBytes)
 

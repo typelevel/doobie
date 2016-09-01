@@ -4,7 +4,7 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.{ Monad, RecursiveTailRecM, ~> }
 import cats.data.{ Kleisli, Xor => \/ }
 import cats.free.{ Free => F }
 import doobie.util.catchable.Catchable
@@ -36,7 +36,12 @@ object kleislitrans {
      * Natural transformation from `OpIO` to `Kleisli` for the given `M`, consuming a `J`. 
      * @group Algebra
      */
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: OpIO ~> Kleisli[M, J, ?] =
+#-scalaz
+#+cats
+    def transK[M[_]: Monad: Catchable: Capture: RecursiveTailRecM]: OpIO ~> Kleisli[M, J, ?] =
+#-cats
       new (OpIO ~> Kleisli[M, J, ?]) {
         def apply[A](ma: OpIO[A]): Kleisli[M, J, A] =
           ma.foldMap[Kleisli[M, J, ?]](interpK[M])

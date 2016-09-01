@@ -4,12 +4,12 @@ import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
 
 #+scalaz
-import scalaz.{ Monad, Catchable, Unapply, Leibniz, Free, Functor }
+import scalaz.{ Monad, Catchable, Unapply, Leibniz, Free, Functor }, scalaz.Free.{ freeMonad => FreeMonad }
 import scalaz.stream.Process
 #-scalaz
 #+cats
 import cats.{ Monad, Functor, Unapply }
-import cats.free.Free
+import cats.free.Free, cats.free.Free.{ catsFreeMonadForFree => FreeMonad }
 #-cats
 #+fs2
 import doobie.util.catchable.Catchable
@@ -146,7 +146,7 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
    * @group Hacks
    */
   implicit def freeMonadC[FT[_[_], _], F[_]](implicit ev: Functor[FT[F, ?]]): Monad[Free[FT[F,?], ?]] =
-    Free.freeMonad[FT[F,?]]
+    FreeMonad[FT[F,?]]
 
   /**
    * Unapply with correct shape to unpack `Monad[Free[Coyoneda[F, ?], ?]]`.

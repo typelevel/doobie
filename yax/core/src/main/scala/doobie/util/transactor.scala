@@ -21,7 +21,7 @@ import scalaz.{ Monad, Catchable, Kleisli, ~> }
 import scalaz.stream.Process
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
+import cats.{ Monad, RecursiveTailRecM, ~> }
 import cats.implicits._
 #-cats
 #+fs2

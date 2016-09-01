@@ -5,7 +5,7 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
 import doobie.util.catchable.Catchable
-import cats.{ Monad, ~> }
+import cats.{ Monad, RecursiveTailRecM, ~> }
 import cats.data.{ Kleisli, Xor => \/ }
 import cats.free.{ Free => F }
 #-cats
