@@ -12,7 +12,7 @@ lazy val buildSettings = Seq(
 )
 
 lazy val scalazCrossSettings = Seq(
-  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M4")
+  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M5")
 )
 
 lazy val commonSettings = Seq(
@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
       "org.specs2"     %% "specs2-core"       % "3.8.4"  % "test",
       "org.specs2"     %% "specs2-scalacheck" % "3.8.4"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.1")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
