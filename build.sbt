@@ -210,7 +210,7 @@ lazy val core = project.in(file("modules/core"))
     scalazCrossSettings
   )
 
-val catsVersion = "0.7.0"
+val catsVersion = "0.7.2"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
