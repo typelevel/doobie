@@ -4,7 +4,7 @@ package doobie.util
 import scalaz.{ -\/, \/- }
 #-scalaz
 #+cats
-import cats.data.Xor.{ Left => -\/, Right => \/- }
+import scala.util.{ Left => -\/, Right => \/- }
 #-cats
 import doobie.util.iolite.IOLite
 import doobie.enum.sqlstate.SqlState

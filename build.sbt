@@ -210,15 +210,19 @@ lazy val core = project.in(file("modules/core"))
     scalazCrossSettings
   )
 
+val catsVersion = "0.7.2"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "org.typelevel"  %% "cats"     % "0.6.1",
-      "co.fs2"         %% "fs2-core" % "0.9.0-RC1",
-      "com.h2database" %  "h2"       % "1.3.170" % "test"
+      "co.fs2"         %% "fs2-core"  % "0.9.0-RC2",
+      "co.fs2"         %% "fs2-cats"  % "0.1.0-RC2",
+      "org.typelevel"  %% "cats-core" % catsVersion,
+      "org.typelevel"  %% "cats-free" % catsVersion,
+      "org.typelevel"  %% "cats-laws" % catsVersion % "test",
+      "com.h2database" %  "h2"        % "1.3.170" % "test"
     )
   )
 
@@ -236,7 +240,7 @@ lazy val example = project.in(file("modules/example"))
 
 lazy val example_cats = project.in(file("modules-cats/example"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/example"), "cats"))
+  .settings(yax(file("yax/example"), "cats", "fs2"))
   .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
 
 ///
@@ -275,7 +279,7 @@ lazy val postgres = project.in(file("modules/postgres"))
 lazy val postgres_cats = project.in(file("modules-cats/postgres"))
   .enablePlugins(SbtOsgi)
   .settings(
-    yax(file("yax/postgres"), "cats"),
+    yax(file("yax/postgres"), "cats", "fs2"),
     postgresSettings("postgres-cats")
   )
   .dependsOn(core_cats)
@@ -304,7 +308,7 @@ lazy val h2 = project.in(file("modules/h2"))
 lazy val h2_cats = project.in(file("modules-cats/h2"))
   .enablePlugins(SbtOsgi)
   .settings(
-    yax(file("yax/h2"), "cats"),
+    yax(file("yax/h2"), "cats", "fs2"),
     h2Settings("h2-cats")
   )
   .dependsOn(core_cats)
@@ -333,7 +337,7 @@ lazy val hikari = project.in(file("modules/hikari"))
 lazy val hikari_cats = project.in(file("modules-cats/hikari"))
   .enablePlugins(SbtOsgi)
   .settings(
-    yax(file("yax/hikari"), "cats"),
+    yax(file("yax/hikari"), "cats", "fs2"),
     hikariSettings("hikari-cats")
   )
   .dependsOn(core_cats)
@@ -362,7 +366,7 @@ lazy val specs2 = project.in(file("modules/specs2"))
 lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .enablePlugins(SbtOsgi)
   .settings(
-    yax(file("yax/specs2"), "cats"),
+    yax(file("yax/specs2"), "cats", "fs2"),
     specs2Settings("specs2")
   )
   .dependsOn(core_cats)
@@ -381,7 +385,7 @@ lazy val bench = project.in(file("modules/bench"))
 
 lazy val bench_cats = project.in(file("modules-cats/bench"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/bench"), "cats"))
+  .settings(yax(file("yax/bench"), "cats", "fs2"))
   .dependsOn(core_cats, postgres_cats)
 
 ///

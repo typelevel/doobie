@@ -19,7 +19,7 @@ import scala.reflect.runtime.universe.TypeTag
 import scalaz.{ -\/, \/- }
 #-scalaz
 #+cats
-import cats.data.Xor.{ Left => -\/, Right => \/- }
+import scala.util.{ Left => -\/, Right => \/- }
 #-cats
 
 /**

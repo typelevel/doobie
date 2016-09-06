@@ -11,7 +11,7 @@ import scalaz.std.anyVal.intInstance
 #-scalaz
 #+cats
 import cats.kernel.Eq
-import cats.kernel.std.int._
+import cats.kernel.instances.int._
 #-cats
 
 object columnnullable {

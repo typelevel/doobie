@@ -20,8 +20,11 @@ import scalaz.std.list._
 #-scalaz
 #+cats
 import cats.syntax.traverse._
-import cats.std.list._
+import cats.instances.list._
 #-cats
+#+fs2
+import fs2.util.Catchable
+#-fs2
 
 /**
  * Module of high-level constructors for `DriverManagerIO` actions. 

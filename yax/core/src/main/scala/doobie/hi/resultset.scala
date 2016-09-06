@@ -42,6 +42,7 @@ import doobie.util.compat.cats.monad._
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, repeatEval }
 import fs2.pipe.unNoneTerminate
+import fs2.util.Catchable
 #-fs2
 
 /**

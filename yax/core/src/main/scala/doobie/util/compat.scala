@@ -2,25 +2,10 @@ package doobie.util
 
 object compat {
 
-// #+fs2
-//   object fs2 {
-//     import _root_.fs2.util.{ Catchable => Fs2Catchable}
-
-//     implicit def doobieCatchableToFs2Catchable[M[_]: Monad](implicit c: Catchable[M]): fs2.util.Catchable[M] =
-//       new fs2.util.Catchable[M] {
-//         def flatMap[A, B](a: M[A])(f: A => M[B]) = a.flatMap(f)
-//         def pure[A](a: A) = a.pure[M]
-//         def attempt[A](ma: M[A]) = c.attempt(ma).map(_.toEither)
-//         def fail[A](t: Throwable) = c.fail(t)
-//       }
-
-//   }
-// #-fs2
-
 #+cats
   object cats {
-    import _root_.cats.{ Applicative, Monad, MonadCombine, ~> => CatsNat }
-    import _root_.cats.std.list._
+    import _root_.cats.{ Applicative, FlatMap, Monad, MonadCombine }
+    import _root_.cats.instances.list._
 
     object applicative {
 
@@ -39,47 +24,26 @@ object compat {
       implicit class MoreCatsMonadOps[F[_], A](fa: F[A])(implicit M: Monad[F])
         extends applicative.MoreCatsApplicativeOps(fa)(M) {
 
-      def whileM[G[_]](p: F[Boolean])(implicit G: MonadCombine[G]): F[G[A]] =
-        M.ifM(p)(M.flatMap(fa)(x => M.map(whileM(p)(G))(xs => G.combineK(G.pure(x), xs))), M.pure(G.empty))
+        def whileM[G[_]](p: F[Boolean])(implicit G: MonadCombine[G]): F[G[A]] =
+          M.ifM(p)(M.flatMap(fa)(x => M.map(whileM(p)(G))(xs => G.combineK(G.pure(x), xs))), M.pure(G.empty))
 
-      def whileM_(p: F[Boolean]): F[Unit] =
-        M.ifM(p)(M.flatMap(fa)(_ => whileM_(p)), M.pure(()))
+        def whileM_(p: F[Boolean]): F[Unit] =
+          M.ifM(p)(M.flatMap(fa)(_ => whileM_(p)), M.pure(()))
 
-      def untilM[G[_]](cond: F[Boolean])(implicit G: MonadCombine[G]): F[G[A]] =
-        M.flatMap(fa)(x => M.map(whileM(M.map(cond)(!_))(G))(xs => G.combineK(G.pure(x), xs)))
+        def untilM[G[_]](cond: F[Boolean])(implicit G: MonadCombine[G]): F[G[A]] =
+          M.flatMap(fa)(x => M.map(whileM(M.map(cond)(!_))(G))(xs => G.combineK(G.pure(x), xs)))
 
-      def untilM_(cond: F[Boolean]): F[Unit] =
-        M.flatMap(fa)(_ => whileM_(M.map(cond)(!_)))
+        def untilM_(cond: F[Boolean]): F[Unit] =
+          M.flatMap(fa)(_ => whileM_(M.map(cond)(!_)))
 
-      def iterateWhile(p: A => Boolean): F[A] =
-        M.flatMap(fa)(y => if (p(y)) iterateWhile(p) else M.pure(y))
+        def iterateWhile(p: A => Boolean): F[A] =
+          M.flatMap(fa)(y => if (p(y)) iterateWhile(p) else M.pure(y))
 
-      def iterateUntil(p: A => Boolean): F[A] =
-        M.flatMap(fa)(y => if (p(y)) M.pure(y) else iterateUntil(p))
-
+        def iterateUntil(p: A => Boolean): F[A] =
+          M.flatMap(fa)(y => if (p(y)) M.pure(y) else iterateUntil(p))
       }
 
     }
-
-#+fs2
-    object fs2 {
-      import _root_.fs2.util.{ Monad => Fs2Monad, ~> => Fs2Nat }
-
-      implicit def monadCompat[F[_]](implicit monad: Monad[F]): Fs2Monad[F] =
-        new Fs2Monad[F] {
-          def pure[A](a: A) = monad.pure(a)
-          override def map[A, B](fa: F[A])(f: A => B) = monad.map(fa)(f)
-          def flatMap[A, B](fa: F[A])(f: A => F[B]) = monad.flatMap(fa)(f)
-        }
-
-      implicit def naturalTransformationCompat[F[_], G[_]](nat: CatsNat[F, G]): Fs2Nat[F, G] =
-        new Fs2Nat[F, G] {
-          def apply[A](fa: F[A]) = nat(fa)
-        }
-
-    }
-#-fs2
-
   }
 #-cats
 

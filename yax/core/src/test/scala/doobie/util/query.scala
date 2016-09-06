@@ -6,7 +6,7 @@ import scalaz.concurrent._
 import Scalaz._
 #-scalaz
 #+cats
-import cats.data.Xor.{ Left => -\/, Right => \/- }
+import scala.util.{ Left => -\/, Right => \/- }
 #-cats
 import doobie.imports._
 import org.specs2.mutable.Specification

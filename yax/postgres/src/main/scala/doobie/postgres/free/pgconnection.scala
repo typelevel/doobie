@@ -5,11 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
-import cats.data.{ Kleisli, Xor => \/ }
-import doobie.util.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Suspendable }
+#-fs2
 
 import doobie.util.capture._
 
@@ -104,10 +108,16 @@ object pgconnection {
    */
   implicit val CatchablePGConnectionIO: Catchable[PGConnectionIO] =
     new Catchable[PGConnectionIO] {
+#+fs2
+      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
+      override def map[A, B](fa: PGConnectionIO[A])(f: A => B): PGConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(f)
       def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[PGConnectionIO]].
    * @group Typeclass Instances
@@ -116,6 +126,7 @@ object pgconnection {
     new Capture[PGConnectionIO] {
       def apply[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
     }
+#-scalaz
 
   /**
    * @group Constructors (Lifting)
@@ -207,13 +218,26 @@ object pgconnection {
   * Natural transformation from `PGConnectionOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.PGConnection`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: PGConnectionOp ~> ({type l[a] = Kleisli[M, PGConnection, a]})#l =
-   new (PGConnectionOp ~> ({type l[a] = Kleisli[M, PGConnection, a]})#l) {
-    
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Catchable: Suspendable]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
+#-fs2
+   new (PGConnectionOp ~> Kleisli[M, PGConnection, ?]) {
+
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Suspendable[M]]
+
+     def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: PGConnectionOp[A]): Kleisli[M, PGConnection, A] = 
        op match {
@@ -229,7 +253,7 @@ object pgconnection {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => Catchable.catsKleisliCatchable[M, PGConnection].attempt(a.transK[M])
+        case Attempt(a) => kleisliCatchableInstance[M, PGConnection].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -252,9 +276,31 @@ object pgconnection {
    * @group Algebra
    */
   implicit class PGConnectionIOOps[A](ma: PGConnectionIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGConnection, A] =
       ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
+#-scalaz
+#+fs2
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGConnection, A] =
+      ma.foldMapUnsafe[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
+#-fs2
   }
 
 }
 
+private[free] trait PGConnectionIOInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[PGConnectionIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendablePGConnectionIO: Suspendable[PGConnectionIO] =
+    new Suspendable[PGConnectionIO] {
+      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
+      override def map[A, B](fa: PGConnectionIO[A])(f: A => B): PGConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => PGConnectionIO[A]): PGConnectionIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
+    }
+#-fs2
+}

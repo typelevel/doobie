@@ -6,7 +6,9 @@ import doobie.syntax.process._
 import doobie.syntax.catchable._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
+#+scalaz
 import doobie.util.capture._
+#-scalaz
 import doobie.util.query._
 import doobie.util.update._
 import doobie.util.transactor._
@@ -20,12 +22,13 @@ import scalaz.stream.Process
 import scalaz.stream.Process. { eval, eval_, halt }
 #-scalaz
 #+cats
-import doobie.util.catchable._
 import cats.Monad
-import cats.data.Xor.{ Left => -\/, Right => \/- }
 import cats.implicits._
+import scala.util.{ Left => -\/, Right => \/- }
+import fs2.interop.cats.reverse._
 #-cats
 #+fs2
+import fs2.util.{ Catchable, Suspendable }
 import fs2.{ Stream => Process }
 #-fs2
 
@@ -35,7 +38,12 @@ import Predef._
 /** Module for implicit syntax useful in REPL session. */
 object yolo extends ToDoobieCatchableOps0 {
 
+#+scalaz
   class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
+#-scalaz
+#+fs2
+  class Yolo[M[_]: Catchable: Suspendable](xa: Transactor[M]) {
+#-fs2
 
     private def out(s: String): ConnectionIO[Unit] =
       delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
