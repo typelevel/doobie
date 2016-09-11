@@ -79,7 +79,7 @@ Doc links for Cats artifacts (no unidoc yet, sorry):
 • [h2](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-h2_2.11/0.3.1-SNAPSHOT/doobie-h2_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
 • [hikari](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-hikari_2.11/0.3.1-SNAPSHOT/doobie-hikari_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
 • [postgres](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-postgres_2.11/0.3.1-SNAPSHOT/doobie-postgres_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
-• [book of doobie](https://oss.sonatype.org)
+• [book of doobie](http://tpolecat.github.io/doobie-cats-0.3.1-SNAPSHOT/00-index.html)
 
 The obligatory example:
 
