@@ -67,7 +67,7 @@ The development version is **0.3.1-SNAPSHOT**. It is updated continuously and wi
 
 - Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
 - The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
-- The `posgresql` segment and package name has been shortened to `postgres`.
+- The `postgresql` segment and package name has been shortened to `postgres`.
 - The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out. 
 
 ### Cats Support
