@@ -17,7 +17,7 @@ val xa = DriverManagerTransactor[IO](
 
 case class Country(code: String, name: String, population: Long)
 
-def find(n: String): ConnectionIO[Option[Country]] = 
+def find(n: String): ConnectionIO[Option[Country]] =
   sql"select code, name, population from country where name = $n".query[Country].option
 
 // And then
@@ -61,14 +61,14 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) for more information on these add-ons.
 
-## Development Snapshots
+## Development Milestones and Snapshots
 
-The development version is **0.3.1-SNAPSHOT**. It is updated continuously and without warning, so feel free to experiment but don't depend on it. So far differs from **0.3.0** in at least the following important ways:
+The current development milestone is **0.3.1-M1**, and the changing version is **0.3.1-SNAPSHOT**. These differ from **0.3.0** in at least the following important ways:
 
 - Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
 - The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
 - The `postgresql` segment and package name has been shortened to `postgres`.
-- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out. 
+- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out.
 
 ### Cats Support
 
