@@ -32,15 +32,15 @@ object query {
 
   val DefaultChunkSize = 512
 
-  /** 
+  /**
    * A query parameterized by some input type `A` yielding values of type `B`. We define here the
-   * core operations that are needed. Additional operations are provided on `[[Query0]]` which is the 
+   * core operations that are needed. Additional operations are provided on `[[Query0]]` which is the
    * residual query after applying an `A`. This is the type constructed by the `sql` interpolator.
    */
   trait Query[A, B] { outer =>
 
     // jiggery pokery to support CBF; we're doing the coyoneda trick on B to to avoid a Functor
-    // constraint on the `F` parameter in `to`, and it's just easier to do the contravariant coyo 
+    // constraint on the `F` parameter in `to`, and it's just easier to do the contravariant coyo
     // trick on A while we're at it.
     protected type I
     protected type O
@@ -49,15 +49,15 @@ object query {
     protected implicit val ic: Composite[I]
     protected implicit val oc: Composite[O]
 
-    /** 
-     * The SQL string. 
+    /**
+     * The SQL string.
      * @group Diagnostics
      */
     def sql: String
-    
-    /** 
-     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was 
-     * constructed. This is used only for diagnostic purposes. 
+
+    /**
+     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was
+     * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
     def stackFrame: Option[StackTraceElement]
@@ -77,25 +77,25 @@ object query {
       HC.prepareQueryAnalysis0[O](sql)
 
     /**
-     * Apply the argument `a` to construct a `Process` with the given chunking factor, with 
-     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of 
+     * Apply the argument `a` to construct a `Process` with the given chunking factor, with
+     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
      * @group Results
      */
-    def processWithChunkSize(a: A, chunkSize: Int): Process[ConnectionIO, B] = 
+    def processWithChunkSize(a: A, chunkSize: Int): Process[ConnectionIO, B] =
       HC.process[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
 
     /**
-     * Apply the argument `a` to construct a `Process` with `DefaultChunkSize`, with 
-     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of 
+     * Apply the argument `a` to construct a `Process` with `DefaultChunkSize`, with
+     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
      * @group Results
      */
-    def process(a: A): Process[ConnectionIO, B] = 
+    def process(a: A): Process[ConnectionIO, B] =
       processWithChunkSize(a, DefaultChunkSize)
 
     /**
-     * Apply the argument `a` to construct a program in 
+     * Apply the argument `a` to construct a program in
      *`[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
      * via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
      * @group Results
@@ -104,21 +104,21 @@ object query {
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
 
     /**
-     * Apply the argument `a` to construct a program in 
+     * Apply the argument `a` to construct a program in
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
      * via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
-    def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] = 
+    def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
 
     /**
-     * Apply the argument `a` to construct a program in 
+     * Apply the argument `a` to construct a program in
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and
      * raising an exception if the resultset does not have exactly one row. See also `option`.
      * @group Results
      */
-    def unique(a: A): ConnectionIO[B] = 
+    def unique(a: A): ConnectionIO[B] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getUnique[O])).map(ob)
 
     /**
@@ -146,7 +146,7 @@ object query {
         type O = outer.O
         val ai = outer.ai
         val ob = outer.ob andThen f
-        val ic: Composite[I] = outer.ic 
+        val ic: Composite[I] = outer.ic
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
         def stackFrame = outer.stackFrame
@@ -159,14 +159,14 @@ object query {
         type O = outer.O
         val ai = outer.ai compose f
         val ob = outer.ob
-        val ic: Composite[I] = outer.ic 
+        val ic: Composite[I] = outer.ic
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
         def stackFrame = outer.stackFrame
       }
 
-    /** 
-     * Apply an argument, yielding a residual `[[Query0]]`. Note that this is the typical (and the 
+    /**
+     * Apply an argument, yielding a residual `[[Query0]]`. Note that this is the typical (and the
      * only provided) way to construct a `[[Query0]]`.
      * @group Transformations
      */
@@ -177,7 +177,7 @@ object query {
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
         def processWithChunkSize(n: Int) = outer.processWithChunkSize(a, n)
-        def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)  
+        def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
         def option = outer.option(a)
@@ -191,8 +191,8 @@ object query {
 
     /**
      * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
-     * purposes, and composite type arguments for input and output types. The most common way to
-     * construct a `Query` is via the `sql` interpolator.
+     * purposes, and composite type arguments for input and output types. Note that the most common
+     * way to construct a `Query` is via the `sql` interpolator.
      * @group Constructors
      */
     def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
@@ -246,22 +246,22 @@ object query {
 
   }
 
-  /** 
+  /**
    * An abstract query closed over its input arguments and yielding values of type `B`, without a
    * specified disposition. Methods provided on `[[Query0]]` allow the query to be interpreted as a
    * stream or program in `CollectionIO`.
    */
   trait Query0[B] { outer =>
 
-    /** 
-     * The SQL string. 
+    /**
+     * The SQL string.
      * @group Diagnostics
      */
-    def sql: String  
+    def sql: String
 
-    /** 
-     * An optional `StackTraceElement` indicating the source location where this `Query` was 
-     * constructed. This is used only for diagnostic purposes. 
+    /**
+     * An optional `StackTraceElement` indicating the source location where this `Query` was
+     * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
     def stackFrame: Option[StackTraceElement]
@@ -271,46 +271,46 @@ object query {
      * column types.
      * @group Diagnostics
      */
-    def analysis: ConnectionIO[Analysis] 
+    def analysis: ConnectionIO[Analysis]
 
-    /** 
+    /**
      * Program to construct an analysis of this query's SQL statement and result set column types.
      * @group Diagnostics
      */
     def outputAnalysis: ConnectionIO[Analysis]
 
     /**
-     * `Process` with default chunk factor, with effect type 
-     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`. 
+     * `Process` with default chunk factor, with effect type
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
     def process: Process[ConnectionIO, B] =
       processWithChunkSize(DefaultChunkSize)
 
     /**
-     * `Process` with given chunk factor, with effect type 
-     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`. 
+     * `Process` with given chunk factor, with effect type
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
     def processWithChunkSize(n: Int): Process[ConnectionIO, B]
 
     /**
-     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
-     * accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a 
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`
+     * accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
      * collection.
      * @group Results
      */
     def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]]
 
     /**
-     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` 
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`
      * accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
     def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]
 
     /**
-     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and 
+     * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and
      * raising an exception if the resultset does not have exactly one row. See also `option`.
      * @group Results
      */
@@ -331,22 +331,22 @@ object query {
     def nel: ConnectionIO[NonEmptyList[B]]
 
     /** @group Transformations */
-    def map[C](f: B => C): Query0[C] 
+    def map[C](f: B => C): Query0[C]
 
-    /** 
-     * Convenience method; equivalent to `process.sink(f)` 
+    /**
+     * Convenience method; equivalent to `process.sink(f)`
      * @group Results
      */
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
 
-    /** 
-     * Convenience method; equivalent to `to[List]` 
+    /**
+     * Convenience method; equivalent to `to[List]`
      * @group Results
      */
     def list: ConnectionIO[List[B]] = to[List]
 
-    /** 
-     * Convenience method; equivalent to `to[Vector]` 
+    /**
+     * Convenience method; equivalent to `to[Vector]`
      * @group Results
      */
     def vector: ConnectionIO[Vector[B]] = to[Vector]
@@ -354,6 +354,15 @@ object query {
   }
 
   object Query0 {
+
+    /**
+     * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
+     * purposes, with no parameters. Note that the most common way to construct a `Query` is via the
+     * `sql`interpolator.
+     * @group Constructors
+     */
+     def apply[A: Composite](sql: String, stackFrame: Option[StackTraceElement] = None): Query0[A] =
+       Query[Unit, A](sql, stackFrame).toQuery0(())
 
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =
