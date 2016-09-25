@@ -3,9 +3,12 @@ package doobie.util
 import scala.collection.generic.CanBuildFrom
 
 import doobie.free.connection.ConnectionIO
+import doobie.free.resultset.ResultSetIO
+import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
+import doobie.free.{ preparedstatement => FPS }
 
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
@@ -48,6 +51,24 @@ object query {
     protected val ob: O => B
     protected implicit val ic: Composite[I]
     protected implicit val oc: Composite[O]
+
+    val logHandler: Option[Query.LogHandler[A]]
+
+    private val now: PreparedStatementIO[Long] =
+      FPS.delay(System.currentTimeMillis)
+
+    // Equivalent to HPS.executeQuery(k) but with logging
+    private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] =
+      logHandler.fold(HPS.executeQuery(k)) { h =>
+        for {
+          t0 <- FPS.delay(System.currentTimeMillis)
+          rs <- FPS.executeQuery
+          t1 <- FPS.delay(System.currentTimeMillis)
+          z  <- FPS.lift(rs, k)
+          t2 <- FPS.delay(System.currentTimeMillis)
+          _  <- FPS.delay(h(sql, a, t1 - t0, t2 - t1))
+        } yield z
+      }
 
     /**
      * The SQL string.
@@ -101,7 +122,7 @@ object query {
      * @group Results
      */
     def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.buildMap[F,O,B](ob)))
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.buildMap[F,O,B](ob)))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -110,7 +131,7 @@ object query {
      * @group Results
      */
     def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.accumulate[F, O].map(_.map(ob))))
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.accumulate[F, O].map(_.map(ob))))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -119,7 +140,7 @@ object query {
      * @group Results
      */
     def unique(a: A): ConnectionIO[B] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getUnique[O])).map(ob)
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.getUnique[O])).map(ob)
 
     /**
      * Apply the argument `a` to construct a program in
@@ -128,7 +149,7 @@ object query {
      * @group Results
      */
     def option(a: A): ConnectionIO[Option[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.getOption[O])).map(_.map(ob))
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.getOption[O])).map(_.map(ob))
 
     /**
       * Apply the argument `a` to construct a program in
@@ -137,7 +158,7 @@ object query {
       * @group Results
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeQuery(HRS.nel[O])).map(_.map(ob))
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.nel[O])).map(_.map(ob))
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
@@ -150,6 +171,7 @@ object query {
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
         def stackFrame = outer.stackFrame
+        val logHandler = outer.logHandler
       }
 
     /** @group Transformations */
@@ -163,6 +185,8 @@ object query {
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
         def stackFrame = outer.stackFrame
+        val logHandler: Option[Query.LogHandler[C]] =
+          outer.logHandler.map(h => (s, c, e1, e2) => h(s, f(c), e1, e2))
       }
 
     /**
@@ -189,13 +213,40 @@ object query {
 
   object Query {
 
+    type LogHandler[A] = (String, A, Long, Long) => Unit
+    object LogHandler {
+
+      // Some local imports that we only need here
+      import java.util.logging.Logger
+      import scala.Predef.augmentString
+      import shapeless.HList
+      import shapeless.ops.hlist.ToTraversable
+
+      /**
+       * A LogHandler that writes a default format to a JDK Logger, given an `HList` argument type
+       * with `ToTraversable` evidence, as is available when using the `sql` interpolator.
+       */
+      def jdkLogHandler[A <: HList, L](
+        implicit ev: ToTraversable.Aux[A, List, L]
+      ): LogHandler[A] = (s, a, e1, e2) => {
+        Logger.getLogger(this.getClass.getName).info(s"""Statement Execution:
+          |
+          |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+          |
+          | arguments = ${a.toList.mkString(", ")}
+          |   elapsed = $e1 ms + $e2 ms (${e1 + e2} ms total)
+        """.stripMargin)
+      }
+
+    }
+
     /**
      * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
      * purposes, and composite type arguments for input and output types. Note that the most common
      * way to construct a `Query` is via the `sql` interpolator.
      * @group Constructors
      */
-    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
+    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: Option[LogHandler[A]] = None)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
       new Query[A, B] {
         type I = A
         type O = B
@@ -205,6 +256,7 @@ object query {
         implicit val oc: Composite[O] = B
         val sql = sql0
         val stackFrame = stackFrame0
+        val logHandler = logHandler0
       }
 
     /** @group Typeclass Instances */
@@ -354,6 +406,7 @@ object query {
   }
 
   object Query0 {
+    import Query.LogHandler
 
     /**
      * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
@@ -361,8 +414,8 @@ object query {
      * `sql`interpolator.
      * @group Constructors
      */
-     def apply[A: Composite](sql: String, stackFrame: Option[StackTraceElement] = None): Query0[A] =
-       Query[Unit, A](sql, stackFrame).toQuery0(())
+     def apply[A: Composite](sql: String, stackFrame: Option[StackTraceElement] = None, logHandler: Option[LogHandler[Unit]] = None): Query0[A] =
+       Query[Unit, A](sql, stackFrame, logHandler).toQuery0(())
 
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =

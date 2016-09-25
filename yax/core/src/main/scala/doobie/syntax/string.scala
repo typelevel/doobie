@@ -22,21 +22,21 @@ import shapeless._
 /** Module defining the `sql` string interpolator. */
 object string {
 
-  /** 
+  /**
    * Typeclass for a flat vector of `Atom`s, analogous to `Composite` but with no nesting or
    * generalization to product types. Each element expands to some nonzero number of `?`
    * placeholders in the SQL literal, and the param vector itself has a `Composite` instance.
    */
   @implicitNotFound("""Could not find or construct Param[${A}].
 Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
-have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom 
+have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom
 instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.""")
   sealed trait Param[A] {
     val composite: Composite[A]
     val placeholders: List[Int]
   }
 
-  /** 
+  /**
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
    * with either an `Atom`, or with a singleton instance for a `NonEmptyList` of some atomic type,
    * derived with the `many` constructor.
@@ -76,13 +76,13 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 #-cats
       new Param[t.type] {
         val composite = new Composite[t.type] {
-#+scalaz          
+#+scalaz
           val length    = t.count
-#-scalaz          
-#+cats          
+#-scalaz
+#+cats
           val length    = t.foldMap(_ => 1)
-#-cats          
-          val set       = (n: Int, in: t.type) => 
+#-cats
+          val set       = (n: Int, in: t.type) =>
             t.foldLeft((n, ().pure[PreparedStatementIO])) { case ((n, psio), a) =>
               (n + 1, psio *> ev.set(n, a))
             } ._2
@@ -91,19 +91,19 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
           val update    = (_: Int, _: t.type) => fail
           def fail      = sys.error("singleton `IN` composite does not support get or update")
         }
-#+scalaz          
+#+scalaz
           val placeholders = List(t.count)
-#-scalaz          
-#+cats          
+#-scalaz
+#+cats
           val placeholders = List(t.foldMap(_ => 1))
-#-cats          
+#-cats
     }
 
   }
 
-  /** 
+  /**
    * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
-   * interpolated values of type `A` and `B` (which must have `[[Param]]` instances, derived 
+   * interpolated values of type `A` and `B` (which must have `[[Param]]` instances, derived
    * automatically from `Meta` via `Atom`) yields a value of type `[[Builder]]``[(A, B)]`.
    */
   implicit class SqlInterpolator(private val sc: StringContext) {
@@ -116,9 +116,9 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     private def placeholders(n: Int): String =
       List.fill(n)("?").mkString(", ")
 
-    /** 
-     * Arity-abstracted method accepting a sequence of values along with `[[Param]]` 
-     * witnesses, yielding a `[[Builder]]``[...]` parameterized over the product of the types of the 
+    /**
+     * Arity-abstracted method accepting a sequence of values along with `[[Param]]`
+     * witnesses, yielding a `[[Builder]]``[...]` parameterized over the product of the types of the
      * passed arguments. This method uses the `ProductArgs` macro from Shapeless and has no
      * meaningful internal structure.
      */
@@ -132,17 +132,20 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
   }
 
-  /** 
+  /**
    * Type computed by the `sql` interpolator, parameterized over the composite of the types of
    * interpolated arguments. This type captures the sql string and parameter types, which can
-   * subsequently transformed into a `[[doobie.util.query.Query0 Query0]]` or 
+   * subsequently transformed into a `[[doobie.util.query.Query0 Query0]]` or
    * `[[doobie.util.update.Update0 Update0]]` (see the associated methods).
    */
   final class Builder[A: Composite] private[string] (a: A, rawSql: String, stackFrame: Option[StackTraceElement]) {
 
-    /** 
+    def queryL[O: Composite](h: Query.LogHandler[A]): Query0[O] =
+      Query[A, O](rawSql, stackFrame, Some(h)).toQuery0(a)
+
+    /**
      * Construct a `[[doobie.util.query.Query0 Query0]]` from this `[[Builder]]`, parameterized over a
-     * composite output type. 
+     * composite output type.
      */
     def query[O: Composite]: Query0[O] =
       Query[A, O](rawSql, stackFrame).toQuery0(a)

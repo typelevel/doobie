@@ -62,7 +62,7 @@ From the `.attempt` combinator we derive the following, available as combinators
 
 From these we can derive combinators that only pay attention to `SQLException`:
 
-- `attemptSql` is like `attempt` but only traps `SQLException`. 
+- `attemptSql` is like `attempt` but only traps `SQLException`.
 - `attemptSomeSql` traps only specified `SQLException`s.
 - `exceptSql` recovers from a `SQLException` with a new action.
 - `onSqlException` executes an action on `SQLException` and discards its result.
@@ -117,13 +117,13 @@ The second will fail with a unique constraint violation.
 try {
   insert("bob").quick.unsafePerformIO
 } catch {
-  case e: java.sql.SQLException => 
+  case e: java.sql.SQLException =>
     println(e.getMessage)
     println(e.getSQLState)
 }
 ```
 
-So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `contrib-postgresql` add-on. 
+So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `contrib-postgresql` add-on.
 
 
 ```tut:silent
