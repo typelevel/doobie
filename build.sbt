@@ -217,7 +217,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % "0.9.0",
+      "co.fs2"         %% "fs2-core"  % "0.9.1",
       "co.fs2"         %% "fs2-cats"  % "0.1.0",
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion,
