@@ -205,7 +205,7 @@ lazy val core = project.in(file("modules/core"))
       "org.scalaz"        %% "scalaz-core"      % "7.2.4",
       "org.scalaz"        %% "scalaz-effect"    % "7.2.4",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.8.2a",
-      "com.h2database"    %  "h2"               % "1.3.170" % "test"
+      "com.h2database"    %  "h2"               % "1.4.192" % "test"
     ),
     scalazCrossSettings
   )
@@ -253,7 +253,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql"   % "9.4-1201-jdbc41",
+      "org.postgresql" % "postgresql"   % "9.4.1211",
       "org.postgis"    % "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
     ),
     initialCommands := """
@@ -322,7 +322,7 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Hikari support for doobie.",
-    libraryDependencies += "com.zaxxer" % "HikariCP-java6" % "2.2.5"
+    libraryDependencies += "com.zaxxer" % "HikariCP" % "2.5.1"
   )
 
 lazy val hikari = project.in(file("modules/hikari"))
