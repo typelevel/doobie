@@ -75,22 +75,22 @@ lazy val doobieVersion = "0.3.1-SNAPSHOT"
 #+scalaz
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core"       % doobieVersion,
-  "org.tpolecat" %% "doobie-postgresql" % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres"   % doobieVersion,
   "org.tpolecat" %% "doobie-specs2"     % doobieVersion
 )
 ```
 
-If you are not using PostgreSQL you can omit `doobie-postgresql` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
+If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
 #-scalaz
 #+cats
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core-cats"       % doobieVersion,
-  "org.tpolecat" %% "doobie-postgresql-cats" % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres-cats"   % doobieVersion,
   "org.tpolecat" %% "doobie-specs2-cats"     % doobieVersion
 )
 ```
 
-If you are not using PostgreSQL you can omit `doobie-postgresql-cats` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2-cats` add-on if you happen to be using [H2](http://www.h2database.com/).
+If you are not using PostgreSQL you can omit `doobie-postgres-cats` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2-cats` add-on if you happen to be using [H2](http://www.h2database.com/).
 #-cats
 
 ### Conventions
