@@ -21,7 +21,7 @@ import doobie.syntax.catchable._
 import java.sql.ResultSet
 
 #+scalaz
-import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList, -\/, \/- }
+import scalaz.{ Catchable, MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList, -\/, \/- }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
 import scalaz.syntax.catchable._
@@ -30,11 +30,12 @@ import scalaz.syntax.catchable._
 import cats.implicits._
 import cats.{ Functor, MonadCombine => MonadPlus }
 import cats.functor.{ Contravariant, Profunctor }
-import cats.data.Xor.{ Left => -\/, Right => \/-}
 import cats.data.NonEmptyList
+import scala.{ Left => -\/, Right => \/- }
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
+import fs2.util.Catchable
 #-fs2
 
 /** Module defining queries parameterized by input and output types. */
@@ -65,24 +66,27 @@ object query {
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
     // Equivalent to HPS.executeQuery(k) but with logging if logHandler is defined
-    private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] =
+    private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
+      // N.B. the .attempt syntax isn't working in cats. unclear why
+      val c = Predef.implicitly[Catchable[PreparedStatementIO]]
       logHandler.fold(HPS.executeQuery(k)) { h =>
         def log(e: LogEvent[A]) = FPS.delay(h.unsafeRun(e))
         for {
           t0 <- now
-          rs <- FPS.executeQuery.attempt.flatMap[ResultSet] {
+          rs <- c.attempt(FPS.executeQuery).flatMap[ResultSet] {
             case -\/(e) => log(ExecFailure(sql, a, e)) *> fail(e)
-            case \/-(a) => a.point[PreparedStatementIO]
+            case \/-(a) => a.pure[PreparedStatementIO]
           }
           t1 <- now
-          t  <- FPS.lift(rs, k).attempt.flatMap[T] {
+          t  <- c.attempt(FPS.lift(rs, k)).flatMap[T] {
             case -\/(e) => log(ProcessingFailure(sql, a, t1 - t0, e)) *> fail(e)
-            case \/-(a) => a.point[PreparedStatementIO]
+            case \/-(a) => a.pure[PreparedStatementIO]
           }
           t2 <- now
           _  <- log(Success(sql, a, t1 - t0, t2 - t1))
         } yield t
       }
+    }
 
     /**
      * The SQL string.

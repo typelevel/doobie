@@ -1,7 +1,12 @@
 package doobie.util
 
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
+#-scalaz
+#+cats
+import cats._, cats.data._, cats.functor.Contravariant
+#-cats
 import java.util.logging.{ Logger, Level }
 import scala.Predef.augmentString
 import shapeless.HList
