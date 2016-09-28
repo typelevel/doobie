@@ -19,6 +19,8 @@ import doobie.util.capture._
 
 import java.lang.Class
 import java.lang.String
+
+import org.postgresql.util.PGobject
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
 import org.postgresql.copy.CopyManager
@@ -83,7 +85,7 @@ object pgconnection {
 
     // Primitive Operations
     case class  AddDataType(a: String, b: String) extends PGConnectionOp[Unit]
-    case class  AddDataType1(a: String, b: Class[_]) extends PGConnectionOp[Unit]
+    case class  AddDataType1(a: String, b: Class[_ <: PGobject]) extends PGConnectionOp[Unit]
     case object GetBackendPID extends PGConnectionOp[Int]
     case object GetCopyAPI extends PGConnectionOp[CopyManager]
     case object GetFastpathAPI extends PGConnectionOp[Fastpath]
@@ -169,7 +171,7 @@ object pgconnection {
   /** 
    * @group Constructors (Primitives)
    */
-  def addDataType(a: String, b: Class[_]): PGConnectionIO[Unit] =
+  def addDataType(a: String, b: Class[_ <: PGobject]): PGConnectionIO[Unit] =
     F.liftF(AddDataType1(a, b))
 
   /** 
