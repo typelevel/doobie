@@ -4,7 +4,7 @@ import scala.collection.generic.CanBuildFrom
 
 import doobie.free.connection.ConnectionIO
 import doobie.free.resultset.ResultSetIO
-import doobie.free.preparedstatement.PreparedStatementIO
+import doobie.free.preparedstatement.{ PreparedStatementIO, CatchablePreparedStatementIO }
 import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
@@ -12,18 +12,25 @@ import doobie.free.{ preparedstatement => FPS }
 
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
+import doobie.util.log.{ LogHandler, LogEvent }
+import doobie.util.log.LogEvent._
 
 import doobie.syntax.process._
+import doobie.syntax.catchable._
+
+import java.sql.ResultSet
 
 #+scalaz
-import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList }
+import scalaz.{ MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList, -\/, \/- }
 import scalaz.stream.Process
 import scalaz.syntax.monad._
+import scalaz.syntax.catchable._
 #-scalaz
 #+cats
 import cats.implicits._
 import cats.{ Functor, MonadCombine => MonadPlus }
 import cats.functor.{ Contravariant, Profunctor }
+import cats.data.Xor.{ Left => -\/, Right => \/-}
 import cats.data.NonEmptyList
 #-cats
 #+fs2
@@ -52,22 +59,29 @@ object query {
     protected implicit val ic: Composite[I]
     protected implicit val oc: Composite[O]
 
-    val logHandler: Option[Query.LogHandler[A]]
+    val logHandler: Option[LogHandler[A]]
 
-    private val now: PreparedStatementIO[Long] =
-      FPS.delay(System.currentTimeMillis)
+    private val now: PreparedStatementIO[Long] = FPS.delay(System.currentTimeMillis)
+    private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
-    // Equivalent to HPS.executeQuery(k) but with logging
+    // Equivalent to HPS.executeQuery(k) but with logging if logHandler is defined
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] =
       logHandler.fold(HPS.executeQuery(k)) { h =>
+        def log(e: LogEvent[A]) = FPS.delay(h.unsafeRun(e))
         for {
-          t0 <- FPS.delay(System.currentTimeMillis)
-          rs <- FPS.executeQuery
-          t1 <- FPS.delay(System.currentTimeMillis)
-          z  <- FPS.lift(rs, k)
-          t2 <- FPS.delay(System.currentTimeMillis)
-          _  <- FPS.delay(h(sql, a, t1 - t0, t2 - t1))
-        } yield z
+          t0 <- now
+          rs <- FPS.executeQuery.attempt.flatMap[ResultSet] {
+            case -\/(e) => log(ExecFailure(sql, a, e)) *> fail(e)
+            case \/-(a) => a.point[PreparedStatementIO]
+          }
+          t1 <- now
+          t  <- FPS.lift(rs, k).attempt.flatMap[T] {
+            case -\/(e) => log(ProcessingFailure(sql, a, t1 - t0, e)) *> fail(e)
+            case \/-(a) => a.point[PreparedStatementIO]
+          }
+          t2 <- now
+          _  <- log(Success(sql, a, t1 - t0, t2 - t1))
+        } yield t
       }
 
     /**
@@ -185,8 +199,7 @@ object query {
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
         def stackFrame = outer.stackFrame
-        val logHandler: Option[Query.LogHandler[C]] =
-          outer.logHandler.map(h => (s, c, e1, e2) => h(s, f(c), e1, e2))
+        val logHandler: Option[LogHandler[C]] = outer.logHandler.map(_.contramap(f))
       }
 
     /**
@@ -212,33 +225,6 @@ object query {
   }
 
   object Query {
-
-    type LogHandler[A] = (String, A, Long, Long) => Unit
-    object LogHandler {
-
-      // Some local imports that we only need here
-      import java.util.logging.Logger
-      import scala.Predef.augmentString
-      import shapeless.HList
-      import shapeless.ops.hlist.ToTraversable
-
-      /**
-       * A LogHandler that writes a default format to a JDK Logger, given an `HList` argument type
-       * with `ToTraversable` evidence, as is available when using the `sql` interpolator.
-       */
-      def jdkLogHandler[A <: HList, L](
-        implicit ev: ToTraversable.Aux[A, List, L]
-      ): LogHandler[A] = (s, a, e1, e2) => {
-        Logger.getLogger(this.getClass.getName).info(s"""Statement Execution:
-          |
-          |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
-          |
-          | arguments = ${a.toList.mkString(", ")}
-          |   elapsed = $e1 ms + $e2 ms (${e1 + e2} ms total)
-        """.stripMargin)
-      }
-
-    }
 
     /**
      * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
@@ -406,7 +392,6 @@ object query {
   }
 
   object Query0 {
-    import Query.LogHandler
 
     /**
      * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic

@@ -4,6 +4,7 @@ import doobie.util.atom._
 import doobie.util.composite._
 import doobie.util.query._
 import doobie.util.update._
+import doobie.util.log.LogHandler
 
 import doobie.hi._
 
@@ -140,7 +141,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
    */
   final class Builder[A: Composite] private[string] (a: A, rawSql: String, stackFrame: Option[StackTraceElement]) {
 
-    def queryL[O: Composite](h: Query.LogHandler[A]): Query0[O] =
+    def queryL[O: Composite](h: LogHandler[A]): Query0[O] =
       Query[A, O](rawSql, stackFrame, Some(h)).toQuery0(a)
 
     /**
