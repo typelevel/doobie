@@ -1,6 +1,8 @@
 package doobie.util
 
 import scala.collection.generic.CanBuildFrom
+import scala.Predef.longWrapper
+import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS => UNITS }
 
 import doobie.free.connection.ConnectionIO
 import doobie.free.resultset.ResultSetIO
@@ -62,28 +64,31 @@ object query {
 
     val logHandler: Option[LogHandler[A]]
 
-    private val now: PreparedStatementIO[Long] = FPS.delay(System.currentTimeMillis)
+    private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
     // Equivalent to HPS.executeQuery(k) but with logging if logHandler is defined
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val c = Predef.implicitly[Catchable[PreparedStatementIO]]
+      def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, UNITS)
       logHandler.fold(HPS.executeQuery(k)) { h =>
         def log(e: LogEvent[A]) = FPS.delay(h.unsafeRun(e))
         for {
           t0 <- now
-          rs <- c.attempt(FPS.executeQuery).flatMap[ResultSet] {
-            case -\/(e) => log(ExecFailure(sql, a, e)) *> fail(e)
-            case \/-(a) => a.pure[PreparedStatementIO]
-          }
+          er <- c.attempt(FPS.executeQuery)
           t1 <- now
-          t  <- c.attempt(FPS.lift(rs, k)).flatMap[T] {
-            case -\/(e) => log(ProcessingFailure(sql, a, t1 - t0, e)) *> fail(e)
-            case \/-(a) => a.pure[PreparedStatementIO]
-          }
+          rs <- er match {
+                  case -\/(e) => log(ExecFailure(sql, a, diff(t1, t0), e)) *> fail[ResultSet](e)
+                  case \/-(a) => a.pure[PreparedStatementIO]
+                }
+          et <- c.attempt(FPS.lift(rs, k))
           t2 <- now
-          _  <- log(Success(sql, a, t1 - t0, t2 - t1))
+          t  <- et match {
+                  case -\/(e) => log(ProcessingFailure(sql, a, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
+                  case \/-(a) => a.pure[PreparedStatementIO]
+                }
+          _  <- log(Success(sql, a, diff(t1, t0), diff(t2, t1)))
         } yield t
       }
     }
