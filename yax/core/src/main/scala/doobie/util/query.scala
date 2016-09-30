@@ -2,7 +2,7 @@ package doobie.util
 
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.longWrapper
-import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS => UNITS }
+import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 
 import doobie.free.connection.ConnectionIO
 import doobie.free.resultset.ResultSetIO
@@ -71,7 +71,7 @@ object query {
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val c = Predef.implicitly[Catchable[PreparedStatementIO]]
-      def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, UNITS)
+      def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       logHandler.fold(HPS.executeQuery(k)) { h =>
         def log(e: LogEvent[A]) = FPS.delay(h.unsafeRun(e))
         for {

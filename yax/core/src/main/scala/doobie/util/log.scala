@@ -8,7 +8,7 @@ import scalaz._, Scalaz._
 import cats._, cats.data._, cats.functor.Contravariant
 #-cats
 import java.util.logging.{ Logger, Level }
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ FiniteDuration => FD }
 import scala.Predef.augmentString
 import shapeless.HList
 import shapeless.ops.hlist.ToTraversable
@@ -40,9 +40,9 @@ object log {
   }
   object LogEvent {
 
-    case class Success          [A](sql: String, args: A, msExec: FiniteDuration, msProcessing: FiniteDuration) extends LogEvent[A]
-    case class ProcessingFailure[A](sql: String, args: A, msExec: FiniteDuration, msProcessing: FiniteDuration, failure: Throwable) extends LogEvent[A]
-    case class ExecFailure      [A](sql: String, args: A, msExec: FiniteDuration,                     failure: Throwable) extends LogEvent[A]
+    case class Success          [A](sql: String, args: A, exec: FD, processing: FD                    ) extends LogEvent[A]
+    case class ProcessingFailure[A](sql: String, args: A, exec: FD, processing: FD, failure: Throwable) extends LogEvent[A]
+    case class ExecFailure      [A](sql: String, args: A, exec: FD,                 failure: Throwable) extends LogEvent[A]
 
     /** LogEvent is a traversable functor. */
     implicit val LogEventTraverse: Traverse[LogEvent] =
