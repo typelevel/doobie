@@ -5,7 +5,7 @@ import doobie.imports._
 import scalaz._, Scalaz._
 #-scalaz
 #+cats
-import cats._, cats.data._, cats.functor.Contravariant
+import cats._, cats.data._, cats.implicits._, cats.functor.Contravariant
 #-cats
 import java.util.logging.{ Logger, Level }
 import scala.concurrent.duration.{ FiniteDuration => FD }
@@ -47,8 +47,14 @@ object log {
     /** LogEvent is a traversable functor. */
     implicit val LogEventTraverse: Traverse[LogEvent] =
       new Traverse[LogEvent] {
-        def traverseImpl[G[_]: Applicative, A, B](fa: LogEvent[A])(f: A => G[B]): G[LogEvent[B]] =
-          fa.traverse(f)
+#+cats
+        def foldLeft[A, B](fa: LogEvent[A],b: B)(f: (B, A) => B): B = f(b, fa.args)
+        def foldRight[A, B](fa: LogEvent[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = f(fa.args, lb)
+        def traverse[G[_]: Applicative, A, B](fa: LogEvent[A])(f: A => G[B]): G[LogEvent[B]] = fa.traverse(f)
+#-cats
+#+scalaz
+        def traverseImpl[G[_]: Applicative, A, B](fa: LogEvent[A])(f: A => G[B]): G[LogEvent[B]] = fa.traverse(f)
+#-scalaz
       }
 
   }
