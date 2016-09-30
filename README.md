@@ -1,5 +1,6 @@
 # doobie
 
+<img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.3.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
 [![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=master)](https://travis-ci.org/tpolecat/doobie)
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.11)
@@ -17,7 +18,7 @@ val xa = DriverManagerTransactor[IO](
 
 case class Country(code: String, name: String, population: Long)
 
-def find(n: String): ConnectionIO[Option[Country]] = 
+def find(n: String): ConnectionIO[Option[Country]] =
   sql"select code, name, population from country where name = $n".query[Country].option
 
 // And then
@@ -61,25 +62,25 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) for more information on these add-ons.
 
-## Development Snapshots
+## Development Milestones and Snapshots
 
-The development version is **0.3.1-SNAPSHOT**. It is updated continuously and without warning, so feel free to experiment but don't depend on it. So far differs from **0.3.0** in at least the following important ways:
+The current development milestone is **0.3.1-M1**, and the changing version is **0.3.1-SNAPSHOT**. These differ from **0.3.0** in at least the following important ways:
 
 - Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
 - The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
-- The `posgresql` segment and package name has been shortened to `postgres`.
-- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out. 
+- The `postgresql` segment and package name has been shortened to `postgres`.
+- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out.
 
 ### Cats Support
 
-The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.6.1](http://typelevel.org/cats/) with [FS2 0.9.0-M6](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
+The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.7.2](http://typelevel.org/cats/) with [FS2 0.9.0](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
 
 Doc links for Cats artifacts (no unidoc yet, sorry):
 [core](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-core_2.11/0.3.1-SNAPSHOT/doobie-core_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
 • [h2](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-h2_2.11/0.3.1-SNAPSHOT/doobie-h2_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
 • [hikari](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-hikari_2.11/0.3.1-SNAPSHOT/doobie-hikari_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
 • [postgres](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-postgres_2.11/0.3.1-SNAPSHOT/doobie-postgres_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
-• [book of doobie](https://oss.sonatype.org)
+• [book of doobie](http://tpolecat.github.io/doobie-cats-0.3.1-SNAPSHOT/00-index.html)
 
 The obligatory example:
 
@@ -116,6 +117,7 @@ It should go without saying, but the appearance of a feature in a pre-release ve
 
 Listed newest first. If you have given a presentation or have written a blog post that includes **doobie**, let me know and I'll add it to this list.
 
+- [Pure Functional Database Programming with Fixpoint Types](https://www.youtube.com/watch?v=7xSfLPD6tiQ) by Rob Norris - Scala World, 2016 - [slides](http://tpolecat.github.io/presentations/sw2016/slides.html#1)
 - [The Functional Web Stack](https://t.co/rYH42gs2AU) by Gary Coady - Dublin Scala Users Group, April 2016
 - [End to End and On The Level](https://www.youtube.com/watch?v=lMW_yMkxX4Q&list=PL_5uJkfWNxdkQd7FbN1whrTOsJPMgHgLg&index=2) by Dave Gurnell - Typelevel Summit, Philadelphia, March 2016
 - [Programs as Values: JDBC Programming with doobie](https://www.youtube.com/watch?v=M5MF6M7FHPo) by Rob Norris - Scala by the Bay, 2015 - [slides](http://tpolecat.github.io/assets/sbtb-slides.pdf)

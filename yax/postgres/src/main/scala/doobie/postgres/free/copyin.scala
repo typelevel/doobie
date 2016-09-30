@@ -5,11 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
-import cats.data.{ Kleisli, Xor => \/ }
-import doobie.util.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Suspendable }
+#-fs2
 
 import doobie.util.capture._
 
@@ -46,7 +50,7 @@ import copyout.CopyOutIO
  *
  * @group Modules
  */
-object copyin {
+object copyin extends CopyInIOInstances {
   
   /** 
    * Sum type of primitive operations over a `org.postgresql.copy.CopyIn`.
@@ -95,10 +99,16 @@ object copyin {
    */
   implicit val CatchableCopyInIO: Catchable[CopyInIO] =
     new Catchable[CopyInIO] {
+#+fs2
+      def pure[A](a: A): CopyInIO[A] = copyin.delay(a)
+      override def map[A, B](fa: CopyInIO[A])(f: A => B): CopyInIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: CopyInIO[A]): CopyInIO[Throwable \/ A] = copyin.attempt(f)
       def fail[A](err: Throwable): CopyInIO[A] = copyin.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[CopyInIO]].
    * @group Typeclass Instances
@@ -107,6 +117,7 @@ object copyin {
     new Capture[CopyInIO] {
       def apply[A](a: => A): CopyInIO[A] = copyin.delay(a)
     }
+#-scalaz
 
   /**
    * @group Constructors (Lifting)
@@ -186,13 +197,26 @@ object copyin {
   * Natural transformation from `CopyInOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyIn`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyInOp ~> ({type l[a] = Kleisli[M, CopyIn, a]})#l =
-   new (CopyInOp ~> ({type l[a] = Kleisli[M, CopyIn, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyInOp ~> Kleisli[M, CopyIn, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Catchable: Suspendable]: CopyInOp ~> Kleisli[M, CopyIn, ?] =
+#-fs2
+   new (CopyInOp ~> Kleisli[M, CopyIn, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: CopyIn => A): Kleisli[M, CopyIn, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Suspendable[M]]
+
+     def primitive[A](f: CopyIn => A): Kleisli[M, CopyIn, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: CopyInOp[A]): Kleisli[M, CopyIn, A] = 
        op match {
@@ -206,7 +230,7 @@ object copyin {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => Catchable.catsKleisliCatchable[M, CopyIn].attempt(a.transK[M])
+        case Attempt(a) => kleisliCatchableInstance[M, CopyIn].attempt(a.transK[M])
 #-cats
   
         // Primitive Operations
@@ -229,9 +253,31 @@ object copyin {
    * @group Algebra
    */
   implicit class CopyInIOOps[A](ma: CopyInIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyIn, A] =
       ma.foldMap[Kleisli[M, CopyIn, ?]](kleisliTrans[M])
+#-scalaz
+#+fs2
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyIn, A] =
+      ma.foldMapUnsafe[Kleisli[M, CopyIn, ?]](kleisliTrans[M])
+#-fs2
   }
 
 }
 
+private[free] trait CopyInIOInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[CopyInIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCopyInIO: Suspendable[CopyInIO] =
+    new Suspendable[CopyInIO] {
+      def pure[A](a: A): CopyInIO[A] = copyin.delay(a)
+      override def map[A, B](fa: CopyInIO[A])(f: A => B): CopyInIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CopyInIO[A]): CopyInIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CopyInIO[A] = copyin.delay(a)
+    }
+#-fs2
+}

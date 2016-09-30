@@ -42,6 +42,7 @@ import doobie.util.compat.cats.monad._
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, repeatEval }
 import fs2.pipe.unNoneTerminate
+import fs2.util.Catchable
 #-fs2
 
 /**
@@ -206,7 +207,7 @@ object resultset {
       val b = Vector.newBuilder[A]
       while (n > 0 && rs.next) {
         b += A.unsafeGet(rs, 1)
-        n += 1
+        n -= 1
       }
       b.result()
     }

@@ -5,8 +5,11 @@ import scalaz.{ Monad, Catchable, Unapply }
 #-scalaz
 #+cats
 import cats.{ Monad, Unapply }
-import doobie.util.catchable._
 #-cats
+#+fs2
+import fs2.util.Catchable
+import doobie.util.catchable._
+#-fs2
 
 import doobie.postgres.sqlstate._
 import doobie.util.catchsql.exceptSomeSqlState

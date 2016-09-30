@@ -4,12 +4,16 @@ package doobie.free
 import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
-import cats.data.{ Kleisli, Xor => \/ }
+import cats.~>
+import cats.data.Kleisli
 import cats.free.{ Free => F }
 import cats.implicits._
-import doobie.util.catchable.Catchable
+import scala.{ Either => \/ }
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Suspendable }
+import fs2.interop.cats._
+#-fs2
 
 import doobie.util.capture._
 import doobie.free.kleislitrans._
@@ -29,8 +33,8 @@ import connection.ConnectionIO
 import driver.DriverIO
 
 object drivermanager {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `java.sql.DriverManager`.
    * @group Algebra 
    */
@@ -42,7 +46,7 @@ object drivermanager {
    * @group Algebra 
    */
   object DriverManagerOp {
-    
+
     // Lifting
     case class Lift[Op[_], A, J](j: J, action: F[Op, A], mod: KleisliTrans.Aux[Op, J]) extends DriverManagerOp[A]
 
@@ -82,6 +86,11 @@ object drivermanager {
    */
   implicit val CatchableDriverManagerIO: Catchable[DriverManagerIO] =
     new Catchable[DriverManagerIO] {
+#+fs2
+      def pure[A](a: A): DriverManagerIO[A] = drivermanager.delay(a)
+      override def map[A, B](fa: DriverManagerIO[A])(f: A => B): DriverManagerIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DriverManagerIO[A])(f: A => DriverManagerIO[B]): DriverManagerIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: DriverManagerIO[A]): DriverManagerIO[Throwable \/ A] = drivermanager.attempt(f)
       def fail[A](err: Throwable): DriverManagerIO[A] = drivermanager.delay(throw err)
     }
@@ -195,10 +204,20 @@ object drivermanager {
   * Natural transformation from `DriverManagerOp` to the given `M`. 
   * @group Algebra
   */
+#+scalaz
  def trans[M[_]: Monad: Capture](implicit c: Catchable[M]): DriverManagerOp ~> M =
+#-scalaz
+#+fs2
+ def trans[M[_]: Suspendable](implicit c: Catchable[M]): DriverManagerOp ~> M =
+#-fs2
    new (DriverManagerOp ~>  M) {
 
-     val L = Predef.implicitly[Capture[M]]
+#+scalaz
+     val L = Capture[M]
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Suspendable[M]]
+#-fs2
 
      def apply[A](op: DriverManagerOp[A]): M[A] = 
        op match {
@@ -207,10 +226,16 @@ object drivermanager {
         case Lift(s, a, mod) => mod.transK[M].apply(a).run(s)
 
         // Combinators
+#+scalaz
         case Pure(a) => L.apply(a())
-        case Attempt(a) => c.attempt(a.trans[M])  
-  
+#-scalaz
+#+fs2
+        case Pure(a) => L.pure(a())
+#-fs2
+        case Attempt(a) => c.attempt(a.trans[M])
+
         // Primitive Operations
+#+scalaz
         case DeregisterDriver(a) => L.apply(DriverManager.deregisterDriver(a))
         case GetConnection(a) => L.apply(DriverManager.getConnection(a))
         case GetConnection1(a, b, c) => L.apply(DriverManager.getConnection(a, b, c))
@@ -225,9 +250,26 @@ object drivermanager {
         case SetLogStream(a) => L.apply(DriverManager.setLogStream(a))
         case SetLogWriter(a) => L.apply(DriverManager.setLogWriter(a))
         case SetLoginTimeout(a) => L.apply(DriverManager.setLoginTimeout(a))
-  
+#-scalaz
+#+fs2
+        case DeregisterDriver(a) => L.delay(DriverManager.deregisterDriver(a))
+        case GetConnection(a) => L.delay(DriverManager.getConnection(a))
+        case GetConnection1(a, b, c) => L.delay(DriverManager.getConnection(a, b, c))
+        case GetConnection2(a, b) => L.delay(DriverManager.getConnection(a, b))
+        case GetDriver(a) => L.delay(DriverManager.getDriver(a))
+        case GetDrivers => L.delay(DriverManager.getDrivers)
+        case GetLogStream => L.delay(DriverManager.getLogStream)
+        case GetLogWriter => L.delay(DriverManager.getLogWriter)
+        case GetLoginTimeout => L.delay(DriverManager.getLoginTimeout)
+        case Println(a) => L.delay(DriverManager.println(a))
+        case RegisterDriver(a) => L.delay(DriverManager.registerDriver(a))
+        case SetLogStream(a) => L.delay(DriverManager.setLogStream(a))
+        case SetLogWriter(a) => L.delay(DriverManager.setLogWriter(a))
+        case SetLoginTimeout(a) => L.delay(DriverManager.setLoginTimeout(a))
+#-fs2
+
       }
-  
+
     }
 
   /**
@@ -235,8 +277,14 @@ object drivermanager {
    * @group Algebra
    */
   implicit class DriverManagerIOOps[A](ma: DriverManagerIO[A]) {
+#+scalaz
     def trans[M[_]: Monad: Catchable: Capture]: M[A] =
       ma.foldMap(drivermanager.trans[M])
+#-scalaz
+#+fs2
+    def trans[M[_]: Catchable: Suspendable]: M[A] =
+      ma.foldMapUnsafe(drivermanager.trans[M])
+#-fs2
   }
 
 }

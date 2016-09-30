@@ -12,7 +12,11 @@ import doobie.util.catchable._
 import doobie.util.compat.cats.monad._
 import cats.Monad
 import cats.implicits._
+import fs2.interop.cats._
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Suspendable }
+#-fs2
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {
@@ -23,9 +27,16 @@ object io {
    * used with caution; they are mostly intended for library authors who wish to integrate vendor-
    * specific behavior that relies on JDK IO.
    */
+#+scalaz
   class IOActions[M[_]: Monad: Catchable: Capture] {
-    
+
     private def delay[A](a: => A): M[A] = Capture[M].apply(a)
+#-scalaz
+#+fs2
+  class IOActions[M[_]: Catchable: Suspendable] {
+
+    private def delay[A](a: => A): M[A] = Predef.implicitly[Suspendable[M]].delay(a)
+#-fs2
 
     /**
      * Print to `Console.out`
@@ -48,10 +59,10 @@ object io {
     def copyBlock(buf: Array[Byte])(is: InputStream, os: OutputStream): M[Int] =
 #+scalaz
       delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenM(n >= 0).as(n) }
-#-scalaz      
+#-scalaz
 #+cats
       delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenA(n >= 0).as(n) }
-#-cats      
+#-cats
 
     /** 
      * Copy the contents of `file` to a `os` in blocks of size `bufSize`. 

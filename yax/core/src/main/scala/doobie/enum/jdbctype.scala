@@ -11,7 +11,7 @@ import scalaz.std.anyVal.intInstance
 #-scalaz
 #+cats
 import cats.kernel.Order
-import cats.kernel.std.int._
+import cats.kernel.instances.int._
 #-cats
 
 object jdbctype {
@@ -46,6 +46,7 @@ object jdbctype {
   /** @group Values */ case object Other         extends JdbcType(OTHER)
   /** @group Values */ case object Real          extends JdbcType(REAL)
   /** @group Values */ case object Ref           extends JdbcType(REF)
+  /** @group Values */ case object RefCursor     extends JdbcType(REF_CURSOR)
   /** @group Values */ case object RowId         extends JdbcType(ROWID)
   /** @group Values */ case object SmallInt      extends JdbcType(SMALLINT)
   /** @group Values */ case object SqlXml        extends JdbcType(SQLXML)
@@ -90,8 +91,9 @@ object jdbctype {
         case NVarChar.toInt      => NVarChar      
         case Other.toInt         => Other         
         case Real.toInt          => Real          
-        case Ref.toInt           => Ref           
-        case RowId.toInt         => RowId         
+        case Ref.toInt           => Ref
+        case RefCursor.toInt     => RefCursor
+        case RowId.toInt         => RowId
         case SmallInt.toInt      => SmallInt      
         case SqlXml.toInt        => SqlXml        
         case Struct.toInt        => Struct        

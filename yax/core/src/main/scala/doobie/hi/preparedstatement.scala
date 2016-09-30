@@ -55,6 +55,7 @@ import doobie.util.these.\&/._
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.pipe.unNoneTerminate
+import fs2.util.Catchable
 import fs2.Stream.{ bracket, repeatEval }
 #-fs2
 

@@ -5,11 +5,15 @@ import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import cats.{ Monad, ~> }
-import cats.free.{ Free => F } 
-import cats.data.{ Kleisli, Xor => \/ }
-import doobie.util.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
 #-cats
+#+fs2
+import fs2.util.{ Catchable, Suspendable }
+#-fs2
 
 import doobie.util.capture._
 
@@ -46,7 +50,7 @@ import copyout.CopyOutIO
  *
  * @group Modules
  */
-object copyout {
+object copyout extends CopyOutIOInstances {
   
   /** 
    * Sum type of primitive operations over a `org.postgresql.copy.CopyOut`.
@@ -93,10 +97,16 @@ object copyout {
    */
   implicit val CatchableCopyOutIO: Catchable[CopyOutIO] =
     new Catchable[CopyOutIO] {
+#+fs2
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
+#-fs2
       def attempt[A](f: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(f)
       def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
     }
 
+#+scalaz
   /**
    * Capture instance for [[CopyOutIO]].
    * @group Typeclass Instances
@@ -105,6 +115,7 @@ object copyout {
     new Capture[CopyOutIO] {
       def apply[A](a: => A): CopyOutIO[A] = copyout.delay(a)
     }
+#-scalaz
 
   /**
    * @group Constructors (Lifting)
@@ -172,13 +183,26 @@ object copyout {
   * Natural transformation from `CopyOutOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyOut`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyOutOp ~> ({type l[a] = Kleisli[M, CopyOut, a]})#l =
-   new (CopyOutOp ~> ({type l[a] = Kleisli[M, CopyOut, a]})#l) {
+#+scalaz
+ def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
+#-scalaz
+#+fs2
+ def kleisliTrans[M[_]: Catchable: Suspendable]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
+#-fs2
+   new (CopyOutOp ~> Kleisli[M, CopyOut, ?]) {
 
+#+scalaz
      val L = Predef.implicitly[Capture[M]]
 
      def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
        Kleisli(s => L.apply(f(s)))
+#-scalaz
+#+fs2
+     val L = Predef.implicitly[Suspendable[M]]
+
+     def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
+       Kleisli(s => L.delay(f(s)))
+#-fs2
 
      def apply[A](op: CopyOutOp[A]): Kleisli[M, CopyOut, A] = 
        op match {
@@ -192,9 +216,9 @@ object copyout {
         case Attempt(a) => a.transK[M].attempt
 #-scalaz
 #+cats
-        case Attempt(a) => Catchable.catsKleisliCatchable[M, CopyOut].attempt(a.transK[M])
+        case Attempt(a) => kleisliCatchableInstance[M, CopyOut].attempt(a.transK[M])
 #-cats
-  
+
         // Primitive Operations
         case CancelCopy => primitive(_.cancelCopy)
         case GetFieldCount => primitive(_.getFieldCount)
@@ -213,9 +237,31 @@ object copyout {
    * @group Algebra
    */
   implicit class CopyOutIOOps[A](ma: CopyOutIO[A]) {
+#+scalaz
     def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyOut, A] =
       ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
+#-scalaz
+#+fs2
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyOut, A] =
+      ma.foldMapUnsafe[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
+#-fs2
   }
 
 }
 
+private[free] trait CopyOutIOInstances {
+#+fs2
+  /**
+   * Suspendable instance for [[CopyOutIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCopyOutIO: Suspendable[CopyOutIO] =
+    new Suspendable[CopyOutIO] {
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CopyOutIO[A]): CopyOutIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CopyOutIO[A] = copyout.delay(a)
+    }
+#-fs2
+}
