@@ -141,9 +141,6 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
    */
   final class Builder[A: Composite] private[string] (a: A, rawSql: String, stackFrame: Option[StackTraceElement]) {
 
-    def queryL[O: Composite](h: LogHandler[A]): Query0[O] =
-      Query[A, O](rawSql, stackFrame, Some(h)).toQuery0(a)
-
     /**
      * Construct a `[[doobie.util.query.Query0 Query0]]` from this `[[Builder]]`, parameterized over a
      * composite output type.
@@ -151,9 +148,15 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     def query[O: Composite]: Query0[O] =
       Query[A, O](rawSql, stackFrame).toQuery0(a)
 
+    def queryL[O: Composite](h: LogHandler[A]): Query0[O] =
+      Query[A, O](rawSql, stackFrame, Some(h)).toQuery0(a)
+
     /** Construct an `[[doobie.util.update.Update0 Update0]]` from this `[[Builder]]`. */
     def update: Update0 =
       Update[A](rawSql, stackFrame).toUpdate0(a)
+
+    def updateL(h: LogHandler[A]): Update0 =
+      Update[A](rawSql, stackFrame, Some(h)).toUpdate0(a)
 
   }
 

@@ -63,7 +63,6 @@ object query {
     protected implicit val oc: Composite[O]
 
     val logHandler: Option[LogHandler[A]]
-
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
