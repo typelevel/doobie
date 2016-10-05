@@ -30,7 +30,7 @@ val xa = DriverManagerTransactor[IOLite](
 import xa.yolo._
 ```
 
-**doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings are provided in the `pgtypes` module.
+**doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
 
 ```tut:silent
 import doobie.postgres.pgtypes._
@@ -138,6 +138,16 @@ It is expected that these will be mapped to application-specific types via `nxma
 ### PostGIS Types
 
 **doobie** provides mappings for the top-level PostGIS geometric types provided by the `org.postgis` driver extension.
+
+Mappings for postgis are provided in the `pgistypes` module. Doobie expects postgis dependency to be provided, so if you use this module you should add postgis as a dependency.
+
+```scala
+libraryDependencies += "org.postgis" % "postgis-jdbc" % "1.3.3"
+```
+
+```tut:silent
+import doobie.postgres.pgistypes._
+```
 
 - `PGgeometry`
 - `PGbox2d`
