@@ -96,8 +96,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
+  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, postgis, postgis_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
+  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, postgis, postgis_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
   .settings(freeGenSettings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
@@ -236,12 +236,12 @@ lazy val example = project.in(file("modules/example"))
     yax(file("yax/example"), "scalaz"),
     scalazCrossSettings
   )
-  .dependsOn(core, postgres, specs2, hikari, h2)
+  .dependsOn(core, postgres, postgis, specs2, hikari, h2)
 
 lazy val example_cats = project.in(file("modules-cats/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(yax(file("yax/example"), "cats", "fs2"))
-  .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
+  .dependsOn(core_cats, postgres_cats, postgis_cats, specs2_cats, hikari_cats, h2_cats)
 
 ///
 /// POSTGRES
@@ -252,16 +252,12 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
-    libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql"   % "9.4.1211",
-      "org.postgis"    % "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
-    ),
+    libraryDependencies += "org.postgresql" % "postgresql" % "9.4.1211",
     initialCommands := """
       import doobie.imports._
       import doobie.postgres.pgtypes._
       val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       import xa.yolo._
-      import org.postgis._
       import org.postgresql.util._
       import org.postgresql.geometric._
       """
@@ -283,6 +279,46 @@ lazy val postgres_cats = project.in(file("modules-cats/postgres"))
     postgresSettings("postgres-cats")
   )
   .dependsOn(core_cats)
+
+
+///
+/// POSTGIS
+///
+
+def postgisSettings(mod: String): Seq[Setting[_]] =
+  doobieSettings  ++
+    publishSettings ++ Seq(
+    name  := "doobie-" + mod,
+    description := "Postgis support for doobie.",
+    libraryDependencies +=
+      "org.postgis" % "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs"),
+    initialCommands := """
+      import doobie.imports._
+      import doobie.postgres.pgtypes._
+      val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+      import xa.yolo._
+      import org.postgis._
+      import org.postgresql.util._
+      import org.postgresql.geometric._
+      """
+  )
+
+lazy val postgis = project.in(file("modules/postgis"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/postgis"), "scalaz"),
+    postgisSettings("postgis"),
+    scalazCrossSettings
+  )
+  .dependsOn(postgres)
+
+lazy val postgis_cats = project.in(file("modules-cats/postgis"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/postgis"), "cats", "fs2"),
+    postgisSettings("postgis-cats")
+  )
+  .dependsOn(postgres_cats)
 
 ///
 /// H2
