@@ -93,8 +93,10 @@ object pgtypesspec extends Specification {
 
   // 8.5 Date/Time Types"
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
+  testInOut("timestamp", java.time.Instant.now)
   skip("timestamp with time zone")
   testInOut("date", new java.sql.Date(4,5,6))
+  testInOut("date", java.time.LocalDate.of(4,5,6))
   testInOut("time", new java.sql.Time(3,4,5))
   skip("time with time zone")
   skip("interval")

@@ -466,6 +466,17 @@ object meta {
         a => a, 
         d => if (d == null) null else new java.sql.Date(d.getTime))
 
+    /** @group Instances */
+    implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
+      TimestampMeta.xmap(
+        a => if (a == null) null else a.toInstant,
+        i => if (i == null) null else java.sql.Timestamp.from(i))
+
+    /** @group Instances */
+    implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
+      DateMeta.xmap(
+        a => if (a == null) null else a.toLocalDate,
+        d => if (d == null) null else java.sql.Date.valueOf(d))
   }
 
 }
