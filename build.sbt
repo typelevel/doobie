@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
       "org.specs2"     %% "specs2-core"       % "3.8.4"  % "test",
       "org.specs2"     %% "specs2-scalacheck" % "3.8.4"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.0")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
