@@ -23,9 +23,9 @@ import scalaz.stream.Process. { eval, eval_, halt }
 #-scalaz
 #+cats
 import cats.Monad
+import cats.data.Xor.{ Left => -\/, Right => \/- }
 import cats.implicits._
-import scala.util.{ Left => -\/, Right => \/- }
-import fs2.interop.cats.reverse._
+import fs2.interop.cats._
 #-cats
 #+fs2
 import fs2.util.{ Catchable, Suspendable }

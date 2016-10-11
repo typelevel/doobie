@@ -119,7 +119,12 @@ There are a few things to notice here:
 Running this query gives us the desired result.
 
 ```tut
+#+scalaz
 populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).quick.unsafePerformIO
+#-scalaz
+#+cats
+populationIn(100000000 to 300000000, NonEmptyList.of("USA", "BRA", "PAK", "GBR")).quick.unsafePerformIO
+#-cats
 ```
 
 ### Diving Deeper

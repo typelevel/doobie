@@ -12,10 +12,10 @@ The examples in this chapter require the `contrib-postgresql` add-on, as well as
 
 ```scala
 #+scalaz
-libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M1" // as of date of publication
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M3" // as of date of publication
 #-scalaz
 #+cats
-val circeVersion = "0.4.1"
+val circeVersion = "0.5.3"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
@@ -44,6 +44,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 
 val xa = DriverManagerTransactor[IOLite](
@@ -153,7 +154,7 @@ implicit val JsonMeta: Meta[Json] =
     a => {
       val o = new PGobject 
       o.setType("json")
-      o.setValue(a.noSpaces)
+      o.setValue(a.nospaces)
       o
     }
 #-scalaz

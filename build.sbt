@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
       "org.specs2"     %% "specs2-core"       % "3.8.4"  % "test",
       "org.specs2"     %% "specs2-scalacheck" % "3.8.4"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.0")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
@@ -132,13 +132,13 @@ lazy val docSkipScala212Settings = Seq(
   libraryDependencies ++= {
     if (scalaVersion.value startsWith "2.12") Nil
     else {
-      val circeVersion = "0.5.0-M2"
+      val circeVersion = "0.5.3"
       Seq(
         "io.circe" %% "circe-core",
         "io.circe" %% "circe-generic",
         "io.circe" %% "circe-parser"
       ).map(_ % circeVersion) ++
-      Seq("io.argonaut" %% "argonaut" % "6.2-M1")
+      Seq("io.argonaut" %% "argonaut" % "6.2-M3")
     }
   },
   tuut := Def.taskDyn {
@@ -447,6 +447,7 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
       yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet + token)
       tutPluginJars.value
     },
+    fork in tut := true,
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep
   )

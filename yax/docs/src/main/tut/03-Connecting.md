@@ -24,8 +24,8 @@ import doobie.imports._
 import scalaz._, Scalaz._
 #-scalaz
 #+cats
-import doobie.util.compat.cats.monad._ // todo: make this automatic
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 ```
 
@@ -120,7 +120,7 @@ program3a.replicateM(5).transact(xa).unsafePerformIO.foreach(println)
 #-scalaz
 #+cats
 ```tut
-program3a.replicateA(5).transact(xa).unsafePerformIO.foreach(println)
+ApplicativeError[ConnectionIO, Throwable].replicateA(5, program3a).transact(xa).unsafePerformIO.foreach(println)
 ```
 #-cats
 

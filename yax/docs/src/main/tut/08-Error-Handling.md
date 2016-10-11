@@ -15,6 +15,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -40,7 +41,7 @@ All **doobie** monads have associated instances of the `Catchable` typeclass, an
 - `attempt` converts `M[A]` into `M[Throwable \/ A]`
 #-scalaz
 #+cats
-- `attempt` converts `M[A]` into `M[Throwable Xor A]`
+- `attempt` converts `M[A]` into `M[Either[Throwable, A]]`
 #-cats
 - `fail` constructs an `M[A]` that fails with a provided `Throwable`
 
@@ -72,7 +73,7 @@ And finally we have a set of combinators that focus on `SQLState`s.
 - `attemptSqlState` is like `attemptSql` but yields `M[SQLState \/ A]`.     
 #-scalaz
 #+cats
-- `attemptSqlState` is like `attemptSql` but yields `M[SQLState Xor A]`.     
+- `attemptSqlState` is like `attemptSql` but yields `M[Either[SQLState, A]]`.     
 #-cats
 - `attemptSomeSqlState` traps only specified `SQLState`s.
 - `exceptSqlState` recovers from a `SQLState` with a new action.
@@ -132,7 +133,7 @@ import doobie.postgres.sqlstate.class23.UNIQUE_VIOLATION
 def safeInsert(s: String): ConnectionIO[String \/ Person] =
 #-scalaz
 #+cats
-def safeInsert(s: String): ConnectionIO[String Xor Person] =
+def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
 #-cats
   insert(s).attemptSomeSqlState {
     case UNIQUE_VIOLATION => "Oops!"

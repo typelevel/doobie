@@ -5,7 +5,9 @@ import scalaz.syntax.monad._
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import doobie.util.catchable._
+#+fs2
+import fs2.interop.cats._
+#-fs2
 import cats.implicits._
 #-cats
 
@@ -22,7 +24,7 @@ object catchablespec extends Specification {
     }
 
     "work on unaliased IConnection" in {
-      42.pure[ConnectionIO].map(_ + 1).attempt
+      (42.pure[ConnectionIO].map(_ + 1): ConnectionIO[Int]).attempt
       true
     }
 
