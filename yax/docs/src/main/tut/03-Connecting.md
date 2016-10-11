@@ -120,7 +120,7 @@ program3a.replicateM(5).transact(xa).unsafePerformIO.foreach(println)
 #-scalaz
 #+cats
 ```tut
-ApplicativeError[ConnectionIO, Throwable].replicateA(5, program3a).transact(xa).unsafePerformIO.foreach(println)
+Applicative[ConnectionIO].replicateA(5, program3a).transact(xa).unsafePerformIO.foreach(println)
 ```
 #-cats
 
