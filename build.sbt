@@ -372,6 +372,35 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .dependsOn(core_cats)
 
 ///
+/// SCALATEST
+///
+
+def scalaTestSettings(mod: String): Seq[Setting[_]] =
+  doobieSettings ++
+  publishSettings ++ Seq(
+    name := s"doobie-contrib-$mod",
+    description := "Scalatest support for doobie.",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0"
+  )
+
+lazy val scalatest = project.in(file("modules/scalatest"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/scalatest"), "scalaz"),
+    scalaTestSettings("scalatest"),
+    scalazCrossSettings
+  )
+  .dependsOn(core)
+
+lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/scalatest"), "cats", "fs2"),
+    scalaTestSettings("scalatest-cats")
+  )
+  .dependsOn(core_cats)
+
+///
 /// BENCH
 ///
 
