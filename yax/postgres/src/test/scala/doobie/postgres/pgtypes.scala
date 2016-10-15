@@ -2,6 +2,7 @@ package doobie.postgres
 
 import doobie.imports._
 import doobie.postgres.pgtypes._
+import doobie.postgres.pgistypes._
 
 
 import java.net.InetAddress
@@ -11,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
+
 import org.specs2.mutable.Specification
 
 #+scalaz
