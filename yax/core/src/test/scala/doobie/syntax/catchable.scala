@@ -24,7 +24,13 @@ object catchablespec extends Specification {
     }
 
     "work on unaliased IConnection" in {
+#+scalaz
+      42.pure[ConnectionIO].map(_ + 1).attempt
+#-scalaz
+#+cats
+      // TODO Remove yax (https://github.com/tpolecat/doobie/issues/369)
       (42.pure[ConnectionIO].map(_ + 1): ConnectionIO[Int]).attempt
+#-cats
       true
     }
 
