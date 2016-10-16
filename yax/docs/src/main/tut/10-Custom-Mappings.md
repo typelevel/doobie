@@ -8,7 +8,7 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 
 ### Setting Up
 
-The examples in this chapter require the `contrib-postgresql` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
+The examples in this chapter require the `postgres` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
 
 ```scala
 #+scalaz

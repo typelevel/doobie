@@ -247,7 +247,7 @@ lazy val example_cats = project.in(file("modules-cats/example"))
 /// POSTGRES
 ///
 
-val postgisDep = "org.postgis" % "postgis-jdbc" % "1.3.3"
+val postgisDep = "net.postgis" % "postgis-jdbc" % "2.2.1"
 
 def postgresSettings(mod: String): Seq[Setting[_]] =
   doobieSettings  ++
@@ -255,8 +255,8 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql"   % "9.4.1211",
-      postgisDep % "provided" exclude("org.postgis", "postgis-stubs")
+      "org.postgresql" % "postgresql" % "9.4.1211",
+      postgisDep % "provided"
     ),
     initialCommands := """
       import doobie.imports._
@@ -447,7 +447,7 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
       yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet + token)
       tutPluginJars.value
     },
-    fork in tut := true,
+    fork in Test := true,
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep
   )
