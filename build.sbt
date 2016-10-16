@@ -122,10 +122,6 @@ lazy val doobie = project.in(file("."))
     }
   )
 
-// Workaround to avoid cyclic dependency
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally skip tut")
-
 // Temporarily skip tut for Scala 2.12
 // TODO remove after tut-core and argonaut for Scala 2.12 is released
 lazy val docSkipScala212Settings = Seq(
@@ -140,13 +136,7 @@ lazy val docSkipScala212Settings = Seq(
       ).map(_ % circeVersion) ++
       Seq("io.argonaut" %% "argonaut" % "6.2-M3")
     }
-  },
-  tuut := Def.taskDyn {
-    if (scalaVersion.value startsWith "2.12")
-      Def.task(Seq.empty[(File, String)])
-    else
-      Def.task(tut.value)
-  }.value
+  }
 )
 
 lazy val noPublishSettings = Seq(
