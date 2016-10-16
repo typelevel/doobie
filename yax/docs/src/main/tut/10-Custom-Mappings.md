@@ -8,7 +8,12 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 
 ### Setting Up
 
+#+scalaz
 The examples in this chapter require the `postgres` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
+#-scalaz
+#+cats
+The examples in this chapter require the `postgres` add-on, as well as the [circe](http://circe.io/) JSON library, which you can add to your build thus:
+#-cats
 
 ```scala
 #+scalaz
@@ -142,7 +147,12 @@ Note that the `Composite` width is now a single column. The rule is: if there ex
 
 Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
 
+#+scalaz
 We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value. 
+#-scalaz
+#+cats
+We can construct a `Meta` instance for the circe `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value. 
+#-cats
 
 Here we go:
 
@@ -193,7 +203,12 @@ def codecMeta[A >: Null : Encoder : Decoder : TypeTag]: Meta[A] =
 #-cats
 ```
 
-Let's make sure it works. Here is a simple data type with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
+#+scalaz
+Let's make sure it works. Here is a simple data type with an argonaut encoder, taken straight from the website, and a `Meta` instance derived from the code above.
+#-scalaz
+#+cats
+Let's make sure it works. Here is a simple data type with an circe encoder, taken straight from the website, and a `Meta` instance derived from the code above.
+#-cats
 
 ```tut:silent
 case class Person(name: String, age: Int, things: List[String])
