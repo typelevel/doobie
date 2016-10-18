@@ -12,11 +12,11 @@ object compositespec extends Specification {
 
   case class LenStr2(n: Int, s: String)
   object LenStr2 {
-    implicit val LenStrMeta = 
+    implicit val LenStrMeta =
       Meta[String].nxmap[LenStr2](s => LenStr2(s.length, s), _.s)
   }
 
-  "Composite" should { 
+  "Composite" should {
 
     "exist for some fancy types" in {
       Composite[Int]
@@ -37,10 +37,10 @@ object compositespec extends Specification {
 
       type DL = (Double, Long)
       type A = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
-      
+
       Composite[A]
       Composite[(A, A)]
-      
+
       true
     }
 
@@ -52,23 +52,34 @@ object compositespec extends Specification {
       Composite[LenStr2].length must_== 1
     }
 
+    "derive Composite[Option[A]] for all A: Composite" in {
+      import Composite._
+      implicit val optT1 = optional[(String, Int)](None)
+      implicit val optH1 = optional[Int :: String :: HNil](None)
+      implicit val optWoozle = optional[Woozle](None)
+      Composite[Option[(String, Int)]]
+      Composite[Option[Int :: String :: HNil]]
+      Composite[Option[Woozle]]
+      true
+    }
+
     // "work for products of ludicrous size (128)" in {
     //   Composite[
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
-    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: 
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
+    //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int :: HNil]
     //   true
     // }
@@ -81,14 +92,14 @@ object compositespec extends Specification {
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-    //     Option[String] :: Option[String] :: Option[String] :: Option[String] :: 
-    //     Option[String] :: Option[String] :: Option[LocalDateTime] :: Option[LocalDateTime] :: 
-    //     Option[LocalDateTime] :: Option[LocalDateTime] :: Option[String] :: Option[String] :: 
+    //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
+    //     Option[String] :: Option[String] :: Option[LocalDateTime] :: Option[LocalDateTime] ::
+    //     Option[LocalDateTime] :: Option[LocalDateTime] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
-    //     Option[String] :: Option[String] :: Option[String] :: Option[BigDecimal] :: 
+    //     Option[String] :: Option[String] :: Option[String] :: Option[BigDecimal] ::
     //     Option[String] :: Option[BigDecimal] :: Option[BigDecimal] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
