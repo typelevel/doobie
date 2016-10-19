@@ -122,31 +122,21 @@ lazy val doobie = project.in(file("."))
     }
   )
 
-// Workaround to avoid cyclic dependency
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally skip tut")
-
 // Temporarily skip tut for Scala 2.12
 // TODO remove after tut-core and argonaut for Scala 2.12 is released
 lazy val docSkipScala212Settings = Seq(
   libraryDependencies ++= {
     if (scalaVersion.value startsWith "2.12") Nil
     else {
-      val circeVersion = "0.5.0-M2"
+      val circeVersion = "0.5.3"
       Seq(
         "io.circe" %% "circe-core",
         "io.circe" %% "circe-generic",
         "io.circe" %% "circe-parser"
       ).map(_ % circeVersion) ++
-      Seq("io.argonaut" %% "argonaut" % "6.2-M1")
+      Seq("io.argonaut" %% "argonaut" % "6.2-M3")
     }
-  },
-  tuut := Def.taskDyn {
-    if (scalaVersion.value startsWith "2.12")
-      Def.task(Seq.empty[(File, String)])
-    else
-      Def.task(tut.value)
-  }.value
+  }
 )
 
 lazy val noPublishSettings = Seq(
@@ -247,7 +237,7 @@ lazy val example_cats = project.in(file("modules-cats/example"))
 /// POSTGRES
 ///
 
-val postgisDep = "org.postgis" % "postgis-jdbc" % "1.3.3"
+val postgisDep = "net.postgis" % "postgis-jdbc" % "2.2.1"
 
 def postgresSettings(mod: String): Seq[Setting[_]] =
   doobieSettings  ++
@@ -255,8 +245,8 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql"   % "9.4.1211",
-      postgisDep % "provided" exclude("org.postgis", "postgis-stubs")
+      "org.postgresql" % "postgresql" % "9.4.1211",
+      postgisDep % "provided"
     ),
     initialCommands := """
       import doobie.imports._
@@ -447,6 +437,7 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
       yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet + token)
       tutPluginJars.value
     },
+    fork in Test := true,
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep
   )
