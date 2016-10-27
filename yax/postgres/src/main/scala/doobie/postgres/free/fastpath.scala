@@ -248,7 +248,7 @@ object fastpath extends FastpathIOInstances { self =>
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGFastpath, A] =
-      ma.foldMapUnsafe[Kleisli[M, PGFastpath, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, PGFastpath, ?]](kleisliTrans[M])
 #-fs2
   }
 

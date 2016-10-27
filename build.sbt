@@ -12,7 +12,7 @@ lazy val buildSettings = Seq(
 )
 
 lazy val scalazCrossSettings = Seq(
-  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M4")
+  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-RC2")
 )
 
 lazy val commonSettings = Seq(
@@ -37,11 +37,11 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.scalacheck" %% "scalacheck"        % "1.13.1" % "test",
-      "org.specs2"     %% "specs2-core"       % "3.8.4"  % "test",
-      "org.specs2"     %% "specs2-scalacheck" % "3.8.4"  % "test"
+      "org.scalacheck" %% "scalacheck"        % "1.13.3" % "test",
+      "org.specs2"     %% "specs2-core"       % "3.8.5.1"  % "test",
+      "org.specs2"     %% "specs2-scalacheck" % "3.8.5.1"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.2")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
@@ -162,9 +162,10 @@ def coreSettings(mod: String) =
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       "org.scala-lang" %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
-      "com.chuusai"    %% "shapeless"     % "2.3.1"
+      "com.chuusai"    %% "shapeless"     % "2.3.2"
     ),
     scalacOptions += "-Yno-predef",
+    resolvers += Resolver.sonatypeRepo("snapshots"),
     sourceGenerators in Compile += Def.task {
       val outDir = (sourceManaged in Compile).value / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
@@ -192,15 +193,15 @@ lazy val core = project.in(file("modules/core"))
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"      % "7.2.4",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.4",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.2a",
+      "org.scalaz"        %% "scalaz-core"      % "7.2.6",
+      "org.scalaz"        %% "scalaz-effect"    % "7.2.6",
+      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.5a",
       "com.h2database"    %  "h2"               % "1.4.192" % "test"
     ),
     scalazCrossSettings
   )
 
-val catsVersion = "0.7.2"
+val catsVersion = "0.8.0"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
@@ -208,7 +209,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"  % "0.9.1",
-      "co.fs2"         %% "fs2-cats"  % "0.1.0",
+      "co.fs2"         %% "fs2-cats"  % "0.1.1-SNAPSHOT",
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion,
       "org.typelevel"  %% "cats-laws" % catsVersion % "test",

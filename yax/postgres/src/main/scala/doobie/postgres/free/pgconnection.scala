@@ -284,7 +284,7 @@ object pgconnection {
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGConnection, A] =
-      ma.foldMapUnsafe[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
 #-fs2
   }
 

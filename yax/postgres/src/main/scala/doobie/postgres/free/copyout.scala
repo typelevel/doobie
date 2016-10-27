@@ -243,7 +243,7 @@ object copyout extends CopyOutIOInstances {
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyOut, A] =
-      ma.foldMapUnsafe[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
 #-fs2
   }
 

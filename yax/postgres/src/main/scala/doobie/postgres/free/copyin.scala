@@ -259,7 +259,7 @@ object copyin extends CopyInIOInstances {
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyIn, A] =
-      ma.foldMapUnsafe[Kleisli[M, CopyIn, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, CopyIn, ?]](kleisliTrans[M])
 #-fs2
   }
 

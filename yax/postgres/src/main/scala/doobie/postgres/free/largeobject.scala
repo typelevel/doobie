@@ -304,7 +304,7 @@ object largeobject extends LargeObjectIOInstances {
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, LargeObject, A] =
-      ma.foldMapUnsafe[Kleisli[M, LargeObject, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, LargeObject, ?]](kleisliTrans[M])
 #-fs2
   }
 

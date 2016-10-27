@@ -283,7 +283,7 @@ object drivermanager {
 #-scalaz
 #+fs2
     def trans[M[_]: Catchable: Suspendable]: M[A] =
-      ma.foldMapUnsafe(drivermanager.trans[M])
+      ma.foldMap(drivermanager.trans[M])
 #-fs2
   }
 
