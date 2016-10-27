@@ -8,11 +8,12 @@ enablePlugins(CrossPerProjectPlugin)
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.11.8"
+  scalaVersion := "2.11.8",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.0-RC2")
 )
 
 lazy val scalazCrossSettings = Seq(
-  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-RC2")
+  crossScalaVersions := "2.10.6" +: crossScalaVersions.value
 )
 
 lazy val commonSettings = Seq(
@@ -96,8 +97,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats) //, docs, docs_cats
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats) //, docs, docs_cats
+  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
+  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .settings(freeGenSettings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
@@ -126,16 +127,15 @@ lazy val doobie = project.in(file("."))
 // TODO remove after tut-core and argonaut for Scala 2.12 is released
 lazy val docSkipScala212Settings = Seq(
   libraryDependencies ++= {
-    if (scalaVersion.value startsWith "2.12") Nil
-    else {
-      val circeVersion = "0.5.3"
-      Seq(
-        "io.circe" %% "circe-core",
-        "io.circe" %% "circe-generic",
-        "io.circe" %% "circe-parser"
-      ).map(_ % circeVersion) ++
-      Seq("io.argonaut" %% "argonaut" % "6.2-M3")
-    }
+    val circeVersion = "0.5.3"
+    Seq(
+      "io.circe" %% "circe-core",
+      "io.circe" %% "circe-generic",
+      "io.circe" %% "circe-parser"
+    ).map(_ % circeVersion) ++ (
+      if (scalaVersion.value startsWith "2.12") Nil
+      else Seq("io.argonaut" %% "argonaut" % "6.2-M3")
+    )
   }
 )
 
