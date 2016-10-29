@@ -117,7 +117,7 @@ It should go without saying, but the appearance of a feature in a pre-release ve
 
 Listed newest first. If you have given a presentation or have written a blog post that includes **doobie**, let me know and I'll add it to this list.
 
-- [Doobie - Feedback from the Trenches](http://fr.slideshare.net/normation/doobie-feedbacks-from-the-trenches-scalaio-2016) by Francois Armand, ScalaIO, October 2016
+- [Doobie - Feedback from the Trenches](http://fr.slideshare.net/normation/doobie-feedbacks-from-the-trenches-scalaio-2016) by François Armand, ScalaIO, October 2016
 - [Pure Functional Database Programming with Fixpoint Types](https://www.youtube.com/watch?v=7xSfLPD6tiQ) by Rob Norris - Scala World, 2016 - [slides](http://tpolecat.github.io/presentations/sw2016/slides.html#1)
 - [The Functional Web Stack](https://t.co/rYH42gs2AU) by Gary Coady - Dublin Scala Users Group, April 2016
 - [End to End and On The Level](https://www.youtube.com/watch?v=lMW_yMkxX4Q&list=PL_5uJkfWNxdkQd7FbN1whrTOsJPMgHgLg&index=2) by Dave Gurnell - Typelevel Summit, Philadelphia, March 2016
