@@ -382,7 +382,7 @@ object sqloutput extends SQLOutputIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLOutputIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[SQLOutputOp, A](Lift(j, action, mod))
 
   /**
    * Lift a SQLOutputIO[A] into an exception-capturing SQLOutputIO[Throwable \/ A].

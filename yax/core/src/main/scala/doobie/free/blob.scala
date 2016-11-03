@@ -268,7 +268,7 @@ object blob extends BlobIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): BlobIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[BlobOp, A](Lift(j, action, mod))
 
   /**
    * Lift a BlobIO[A] into an exception-capturing BlobIO[Throwable \/ A].

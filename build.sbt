@@ -30,6 +30,9 @@ lazy val commonSettings = Seq(
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Ywarn-value-discard"
+    ) ++ (
+      if (scalaVersion.value startsWith "2.12") Seq("-Ypartial-unification")
+      else Nil
     ),
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
@@ -127,7 +130,7 @@ lazy val doobie = project.in(file("."))
 // TODO remove after tut-core and argonaut for Scala 2.12 is released
 lazy val docSkipScala212Settings = Seq(
   libraryDependencies ++= {
-    val circeVersion = "0.5.3"
+    val circeVersion = "0.6.0-RC1"
     Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
