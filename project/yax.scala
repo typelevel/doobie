@@ -64,8 +64,17 @@ object yax {
       }
     }
 
-  private def foo(src: File, flags: String*) = Def.task {
-    walk(src, sourceManaged.value, flags.toSet)
+  // TODO obey [[sbt.Keys.crossPaths]] setting
+  private def srcDirs(root: File, config: String, sbv: String) =
+    List("", s"-$sbv").map { postfix =>
+      root / s"/src/$config/scala$postfix"
+    }
+
+  private def foo(root: File, config: String, flags: String*) = Def.task {
+    val dest = sourceManaged.value
+    val sbv = scalaBinaryVersion.value
+    val srcs = srcDirs(root, config, sbv)
+    srcs.flatMap(walk(_, dest, flags.toSet))
   }
 
   // all non-hidden files
@@ -77,8 +86,8 @@ object yax {
     }
 
   def apply(root: File, flags: String*): Seq[Setting[_]] =
-    inConfig(Compile)(Seq(sourceGenerators += foo(root / "/src/main/scala", flags: _*).taskValue)) ++
-    inConfig(Test   )(Seq(sourceGenerators += foo(root / "/src/test/scala", flags: _*).taskValue)) ++
+    inConfig(Compile)(Seq(sourceGenerators += foo(root, "main", flags: _*).taskValue)) ++
+    inConfig(Test)(Seq(sourceGenerators += foo(root, "test", flags: _*).taskValue)) ++
     Seq(watchSources := watchSources.value ++ closure(root))
 
 }

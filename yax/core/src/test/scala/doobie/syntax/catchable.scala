@@ -23,20 +23,13 @@ object catchablespec extends Specification {
       true
     }
 
-    "work on unaliased IConnection" in {
+// TODO Remove yax (https://github.com/tpolecat/doobie/issues/369)
 #+scalaz
+    "work on unaliased IConnection" in {
       42.pure[ConnectionIO].map(_ + 1).attempt
-#-scalaz
-#+cats
-      // TODO Remove yax (https://github.com/tpolecat/doobie/issues/369)
-      // From Scala 2.12, the following works under -Ypartial-unification scalac flag
-      // {{{
-      // 42.pure[ConnectionIO].map(_ + 1).attempt
-      // }}}
-      (42.pure[ConnectionIO].map(_ + 1): ConnectionIO[Int]).attempt
-#-cats
       true
     }
+#-scalaz
 
   }
 
