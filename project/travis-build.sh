@@ -17,5 +17,5 @@ if [ "$TRAVIS_SCALA_VERSION" = "$MAIN_SCALA_VERSION" ]; then
     exec sbt ++$MAIN_SCALA_VERSION scalastyle compile test:compile test docs/tut docs_cats/tut
 else
     echo "Testing without docs for Scala $TRAVIS_SCALA_VERSION"
-    exec sbt ++$TRAVIS_SCALA_VERSION core/test h2/test hikari/test postgres/test specs2/test
+    exec sbt ++$TRAVIS_SCALA_VERSION compile test:compile test
 fi
