@@ -53,16 +53,16 @@ object transactor {
 #-fs2
 
     /** Action preparing the connection; default is `setAutoCommit(false)`. */
-    protected def before = setAutoCommit(false)
+    protected[doobie] def before = setAutoCommit(false)
 
     /** Action in case of failure; default is `rollback`. */
-    protected def oops = rollback
+    protected[doobie] def oops = rollback
 
     /** Action in case of success; default is `commit`. */
-    protected def after = commit
+    protected[doobie] def after = commit
 
     /** Cleanup action run in all cases; default is `close`. */
-    protected def always = close
+    protected[doobie] def always = close
 
     @deprecated("will go away in 0.2.2; use trans", "0.2.1")
     def transact[A](ma: ConnectionIO[A]): M[A] = trans(ma)
@@ -71,7 +71,7 @@ object transactor {
     def transact[A](pa: Process[ConnectionIO, A]): Process[M, A] = transP(pa)
 
     /** Minimal implementation must provide a connection. */
-    protected def connect: M[Connection]
+    protected[doobie] def connect: M[Connection]
 
     /** Unethical syntax for use in the REPL. */
     lazy val yolo = new Yolo(this)

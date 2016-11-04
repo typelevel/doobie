@@ -21,7 +21,7 @@ object h2transactor {
 #+scalaz
   final class H2Transactor[M[_]: Monad : Catchable : Capture] private (ds: JdbcConnectionPool) extends Transactor[M] {
 
-    protected val connect = Capture[M].apply(ds.getConnection)
+    protected[doobie] val connect = Capture[M].apply(ds.getConnection)
 
     /** A program that shuts down this `H2Transactor`. */
     val dispose: M[Unit] = Capture[M].apply(ds.dispose)
@@ -56,7 +56,7 @@ object h2transactor {
 
     private val L = Predef.implicitly[Suspendable[M]]
 
-    protected val connect = L.delay(ds.getConnection)
+    protected[doobie] val connect = L.delay(ds.getConnection)
 
     /** A program that shuts down this `H2Transactor`. */
     val dispose: M[Unit] = L.delay(ds.dispose)
