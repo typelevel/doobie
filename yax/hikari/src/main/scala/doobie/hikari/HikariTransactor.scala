@@ -21,7 +21,7 @@ object hikaritransactor {
 #+scalaz
   final class HikariTransactor[M[_]: Monad : Catchable : Capture] private (ds: HikariDataSource) extends Transactor[M] {
 
-    val connect = Capture[M].apply(ds.getConnection)
+    protected[doobie] val connect = Capture[M].apply(ds.getConnection)
 
     /** A program that shuts down this `HikariTransactor`. */
     val shutdown: M[Unit] = Capture[M].apply(ds.shutdown)
@@ -31,7 +31,7 @@ object hikaritransactor {
 
     private val L = Predef.implicitly[Suspendable[M]]
 
-    val connect = L.delay(ds.getConnection)
+    protected[doobie] val connect = L.delay(ds.getConnection)
 
     /** A program that shuts down this `HikariTransactor`. */
     val shutdown: M[Unit] = L.delay(ds.shutdown)
