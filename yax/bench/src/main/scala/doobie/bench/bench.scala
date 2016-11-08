@@ -68,25 +68,6 @@ object bench {
       .map(_.length)
       .unsafePerformIO
 
-
-  // Reading via .list, which uses a lower-level collector
-  def doobieBenchL(n: Int): Int =
-    sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
-      .queryL[(String,String,String)](LogHandler.nop)
-      .list
-      .transact(xa)
-      .map(_.length)
-      .unsafePerformIO
-
-  // Reading via .vector, which uses a lower-level collector
-  def doobieBenchVL(n: Int): Int =
-    sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
-      .queryL[(String,String,String)](LogHandler.nop)
-      .vector
-      .transact(xa)
-      .map(_.length)
-      .unsafePerformIO
-
 #+scalaz
   // Reading via .ilist, which uses a lower-level collector
   def doobieBenchI(n: Int): Int =
@@ -152,8 +133,6 @@ object bench {
 #-scalaz
       bench.Case("list",    doobieBench),
       bench.Case("vector",  doobieBenchV),
-      bench.Case("list-L",  doobieBenchL),
-      bench.Case("vector-L",doobieBenchVL),
       bench.Case("jdbc",    jdbcBench)
     )
     bench.run(baseline, cases)
