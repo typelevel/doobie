@@ -62,7 +62,7 @@ object query {
     protected implicit val ic: Composite[I]
     protected implicit val oc: Composite[O]
 
-    val logHandler: Option[LogHandler[A]]
+    val logHandler: LogHandler[A]
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
@@ -71,25 +71,23 @@ object query {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val c = Predef.implicitly[Catchable[PreparedStatementIO]]
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
-      logHandler.fold(HPS.executeQuery(k)) { h =>
-        def log(e: LogEvent[A]) = FPS.delay(h.unsafeRun(e))
-        for {
-          t0 <- now
-          er <- c.attempt(FPS.executeQuery)
-          t1 <- now
-          rs <- er match {
-                  case -\/(e) => log(ExecFailure(sql, a, diff(t1, t0), e)) *> fail[ResultSet](e)
-                  case \/-(a) => a.pure[PreparedStatementIO]
-                }
-          et <- c.attempt(FPS.lift(rs, k))
-          t2 <- now
-          t  <- et match {
-                  case -\/(e) => log(ProcessingFailure(sql, a, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
-                  case \/-(a) => a.pure[PreparedStatementIO]
-                }
-          _  <- log(Success(sql, a, diff(t1, t0), diff(t2, t1)))
-        } yield t
-      }
+      def log(e: LogEvent[A]) = FPS.delay(logHandler.unsafeRun(e))
+      for {
+        t0 <- now
+        er <- c.attempt(FPS.executeQuery)
+        t1 <- now
+        rs <- er match {
+                case -\/(e) => log(ExecFailure(sql, a, diff(t1, t0), e)) *> fail[ResultSet](e)
+                case \/-(a) => a.pure[PreparedStatementIO]
+              }
+        et <- c.attempt(FPS.lift(rs, k))
+        t2 <- now
+        t  <- et match {
+                case -\/(e) => log(ProcessingFailure(sql, a, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
+                case \/-(a) => a.pure[PreparedStatementIO]
+              }
+        _  <- log(Success(sql, a, diff(t1, t0), diff(t2, t1)))
+      } yield t
     }
 
     /**
@@ -207,7 +205,7 @@ object query {
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
         def stackFrame = outer.stackFrame
-        val logHandler: Option[LogHandler[C]] = outer.logHandler.map(_.contramap(f))
+        val logHandler = outer.logHandler.contramap(f)
       }
 
     /**
@@ -240,7 +238,7 @@ object query {
      * way to construct a `Query` is via the `sql` interpolator.
      * @group Constructors
      */
-    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: Option[LogHandler[A]] = None)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
+    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: LogHandler[A] = LogHandler.nop[A])(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
       new Query[A, B] {
         type I = A
         type O = B
@@ -407,7 +405,7 @@ object query {
      * `sql`interpolator.
      * @group Constructors
      */
-     def apply[A: Composite](sql: String, stackFrame: Option[StackTraceElement] = None, logHandler: Option[LogHandler[Unit]] = None): Query0[A] =
+     def apply[A: Composite](sql: String, stackFrame: Option[StackTraceElement] = None, logHandler: LogHandler[Unit] = LogHandler.nop): Query0[A] =
        Query[Unit, A](sql, stackFrame, logHandler).toQuery0(())
 
     /** @group Typeclass Instances */

@@ -135,6 +135,9 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
   /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
 
+  /** @group Type Aliases */      type LogHandler[A] = doobie.util.log.LogHandler[A]
+  /** @group Companion Aliases */ val  LogHandler    = doobie.util.log.LogHandler
+
 #+scalaz
   /** @group Typeclass Instances */
   implicit val NameCatchable = doobie.util.name.NameCatchable

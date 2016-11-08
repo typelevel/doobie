@@ -51,7 +51,7 @@ object bench {
       .unsafePerformIO
 
   // Reading via .list, which uses a lower-level collector
-  def doobieBench(n: Int): Int = 
+  def doobieBench(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
       .list
@@ -63,6 +63,25 @@ object bench {
   def doobieBenchV(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
+      .vector
+      .transact(xa)
+      .map(_.length)
+      .unsafePerformIO
+
+
+  // Reading via .list, which uses a lower-level collector
+  def doobieBenchL(n: Int): Int =
+    sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
+      .queryL[(String,String,String)](LogHandler.nop)
+      .list
+      .transact(xa)
+      .map(_.length)
+      .unsafePerformIO
+
+  // Reading via .vector, which uses a lower-level collector
+  def doobieBenchVL(n: Int): Int =
+    sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
+      .queryL[(String,String,String)](LogHandler.nop)
       .vector
       .transact(xa)
       .map(_.length)
@@ -99,16 +118,16 @@ object bench {
       t / runs
     }
     case class Case[A](name: String, f: (Int => A)) {
-      def run(baseline: Option[List[Double]]): List[Double] = {        
+      def run(baseline: Option[List[Double]]): List[Double] = {
         val ts = ns.map(test(_)(f))
         baseline match {
           case None =>
-            println(f"${"* " + name}%10s" ++ ts.map(n => f" |${n}%6.0f    --").mkString)
+            println(f"${"* " + name}%10s" ++ ts.map(n => f" |${n}%6.2f    --").mkString)
           case Some(bs) =>
-            val ss = ts.zip(bs).map { case (t, b) => 
+            val ss = ts.zip(bs).map { case (t, b) =>
               val r = (100.0 * t / b)
               val c = if (r < 125) Console.GREEN else Console.RED
-              f" |${t}%6.0f $c%s$r%5.0f${Console.RESET}"
+              f" |${t}%6.2f $c%s$r%5.0f${Console.RESET}"
             }
             println(f"${name}%10s" ++ ss.mkString)
         }
@@ -128,11 +147,13 @@ object bench {
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
       bench.Case("process", doobieBenchP),
-#+scalaz      
+#+scalaz
       bench.Case("ilist",   doobieBenchI),
-#-scalaz      
+#-scalaz
       bench.Case("list",    doobieBench),
       bench.Case("vector",  doobieBenchV),
+      bench.Case("list-L",  doobieBenchL),
+      bench.Case("vector-L",doobieBenchVL),
       bench.Case("jdbc",    jdbcBench)
     )
     bench.run(baseline, cases)
@@ -143,7 +164,7 @@ object bench {
 
 // > bench/run
 // [info] Compiling 1 Scala source to /Users/rnorris/Scala/doobie/core/target/scala-2.11/classes...
-// [info] Running doobie.bench.bench 
+// [info] Running doobie.bench.bench
 //     * jdbc |     6    -- |     6    -- |     8    -- |    23    -- |    96    -- |  1371    --
 //    process |     9   154 |    15   238 |    27   325 |    51   226 |   506   526 |  6018   439
 //       list |     6   100 |     8   132 |     8    95 |    17    77 |   103   107 |  1403   102
@@ -151,4 +172,3 @@ object bench {
 //      ilist |     7   121 |     7   107 |     9   105 |    20    90 |   111   115 |  1534   112
 //       jdbc |     6    98 |     6   103 |     6    78 |    16    70 |   103   107 |  1593   116
 // [success] Total time: 168 s, completed Jul 11, 2015 9:06:41 PM
-

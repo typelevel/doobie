@@ -75,6 +75,9 @@ object log {
           fa.contramap(f)
       }
 
+    def nop[A]: LogHandler[A] =
+      LogHandler(_ => ())
+
     /**
      * A LogHandler that writes a default format to a JDK Logger, given an `HList` argument type
      * with `ToTraversable` evidence, as is available when using the `sql` interpolator. This is

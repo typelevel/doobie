@@ -46,7 +46,7 @@ object update {
 
   trait Update[A] extends UpdateDiagnostics { u =>
 
-    val logHandler: Option[LogHandler[A]]
+    val logHandler: LogHandler[A]
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
@@ -55,19 +55,17 @@ object update {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val c = Predef.implicitly[Catchable[PreparedStatementIO]]
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
-      logHandler.fold(HPS.executeUpdate) { h =>
-        def log(e: LogEvent[A]) = FPS.delay(h.unsafeRun(e))
-        for {
-          t0 <- now
-          en <- c.attempt(FPS.executeUpdate)
-          t1 <- now
-          n  <- en match {
-                  case -\/(e) => log(ExecFailure(sql, a, diff(t1, t0), e)) *> fail[Int](e)
-                  case \/-(a) => a.pure[PreparedStatementIO]
-                }
-          _  <- log(Success(sql, a, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
-        } yield n
-      }
+      def log(e: LogEvent[A]) = FPS.delay(logHandler.unsafeRun(e))
+      for {
+        t0 <- now
+        en <- c.attempt(FPS.executeUpdate)
+        t1 <- now
+        n  <- en match {
+                case -\/(e) => log(ExecFailure(sql, a, diff(t1, t0), e)) *> fail[Int](e)
+                case \/-(a) => a.pure[PreparedStatementIO]
+              }
+        _  <- log(Success(sql, a, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
+      } yield n
     }
 
     def run(a: A): ConnectionIO[Int]
@@ -95,7 +93,7 @@ object update {
       new Update[C] {
         val sql = u.sql
         val stackFrame = u.stackFrame
-        val logHandler = u.logHandler.map(_.contramap(f))
+        val logHandler = u.logHandler.contramap(f)
         def analysis: ConnectionIO[Analysis] = u.analysis
         def run(c: C) = u.run(f(c))
         def updateMany[F[_]: Foldable](fa: F[C]) = u.updateMany(fa.toList.map(f))
@@ -133,7 +131,7 @@ object update {
       def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K]
     }
 
-    def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: Option[LogHandler[A]] = None): Update[A] =
+    def apply[A: Composite](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: LogHandler[A] = LogHandler.nop[A]): Update[A] =
       new Update[A] {
         val logHandler = logHandler0
         val sql = sql0
