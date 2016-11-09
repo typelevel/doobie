@@ -15,8 +15,12 @@ import shapeless.ops.hlist.ToTraversable
 
 /** A module of types and instances for logged statements. */
 object log {
-  import LogEvent._
 
+  /**
+   * Algebraic type of events that can be passed to a `LogHandler`, both parameterized by the
+   * argument type of the SQL input parameters (this is typically an `HList`).
+   * @group Events
+   */
   sealed abstract class LogEvent[A] extends Product with Serializable {
 
     /** The complete SQL string as seen by JDBC. */
@@ -38,13 +42,15 @@ object log {
       }
 
   }
+
+  /** @group Events */ case class Success          [A](sql: String, args: A, exec: FD, processing: FD                    ) extends LogEvent[A]
+  /** @group Events */ case class ProcessingFailure[A](sql: String, args: A, exec: FD, processing: FD, failure: Throwable) extends LogEvent[A]
+  /** @group Events */ case class ExecFailure      [A](sql: String, args: A, exec: FD,                 failure: Throwable) extends LogEvent[A]
+
+  /** @group Events */
   object LogEvent {
 
-    case class Success          [A](sql: String, args: A, exec: FD, processing: FD                    ) extends LogEvent[A]
-    case class ProcessingFailure[A](sql: String, args: A, exec: FD, processing: FD, failure: Throwable) extends LogEvent[A]
-    case class ExecFailure      [A](sql: String, args: A, exec: FD,                 failure: Throwable) extends LogEvent[A]
-
-    /** LogEvent is a traversable functor. */
+    /** @group Typeclass instances */
     implicit val LogEventTraverse: Traverse[LogEvent] =
       new Traverse[LogEvent] {
 #+cats
@@ -59,6 +65,10 @@ object log {
 
   }
 
+  /**
+   * A sink for `LogEvent`s with input type `A`.
+   * @group Handlers
+   */
   case class LogHandler[A](unsafeRun: LogEvent[A] => Unit) {
 
     /* LogHandler is a contravariant functor. */
@@ -66,15 +76,26 @@ object log {
       LogHandler(eb => unsafeRun(eb.map(f)))
 
   }
+  /**
+   * Module of instances and constructors for `LogHandler`.
+   * @group Handlers
+   */
   object LogHandler {
 
-    /* LogHandler is a contravariant functor. */
+    /**
+     * LogHandler is a contravariant functor.
+     * @group Typeclass Instances
+     */
     implicit val LogEventContravariant: Contravariant[LogHandler] =
       new Contravariant[LogHandler] {
         def contramap[A, B](fa: LogHandler[A])(f: B => A) =
           fa.contramap(f)
       }
 
+    /**
+     * A do-nothing `LogHandler`.
+     * @group Constructors
+     */
     def nop[A]: LogHandler[A] =
       LogHandler(_ => ())
 
@@ -82,6 +103,7 @@ object log {
      * A LogHandler that writes a default format to a JDK Logger, given an `HList` argument type
      * with `ToTraversable` evidence, as is available when using the `sql` interpolator. This is
      * provided for demonstration purposes and is not intended for production use.
+     * @group Constructors
      */
     @deprecated("This example LogHandler is not intended for production use. Write your own!", "0.3.1")
     def jdkLogHandler[A <: HList, L](

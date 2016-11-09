@@ -10,8 +10,7 @@ import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
-import doobie.util.log.{ LogHandler, LogEvent }
-import doobie.util.log.LogEvent._
+import doobie.util.log._
 
 #+scalaz
 import scalaz.{ Contravariant, Foldable, Catchable, -\/, \/- }

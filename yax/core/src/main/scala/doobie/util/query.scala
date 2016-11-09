@@ -14,8 +14,7 @@ import doobie.free.{ preparedstatement => FPS }
 
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
-import doobie.util.log.{ LogHandler, LogEvent }
-import doobie.util.log.LogEvent._
+import doobie.util.log._
 
 import doobie.syntax.process._
 import doobie.syntax.catchable._
