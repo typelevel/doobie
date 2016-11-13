@@ -17,10 +17,10 @@ The examples in this chapter require the `postgres` add-on, as well as the [circ
 
 ```scala
 #+scalaz
-libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M3" // as of date of publication
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-RC1" // as of date of publication
 #-scalaz
 #+cats
-val circeVersion = "0.5.3"
+val circeVersion = "0.6.0"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",

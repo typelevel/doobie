@@ -9,7 +9,7 @@ lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.0-RC2")
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.0")
 )
 
 lazy val scalazCrossSettings = Seq(
@@ -41,11 +41,11 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.scalacheck" %% "scalacheck"        % "1.13.3" % "test",
-      "org.specs2"     %% "specs2-core"       % "3.8.5.1"  % "test",
-      "org.specs2"     %% "specs2-scalacheck" % "3.8.5.1"  % "test"
+      "org.scalacheck" %% "scalacheck"        % "1.13.4" % "test",
+      "org.specs2"     %% "specs2-core"       % "3.8.6"  % "test",
+      "org.specs2"     %% "specs2-scalacheck" % "3.8.6"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.2")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
@@ -126,22 +126,6 @@ lazy val doobie = project.in(file("."))
     }
   )
 
-// Temporarily skip tut for Scala 2.12
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val docSkipScala212Settings = Seq(
-  libraryDependencies ++= {
-    val circeVersion = "0.6.0-RC1"
-    Seq(
-      "io.circe" %% "circe-core",
-      "io.circe" %% "circe-generic",
-      "io.circe" %% "circe-parser"
-    ).map(_ % circeVersion) ++ (
-      if (scalaVersion.value startsWith "2.12") Nil
-      else Seq("io.argonaut" %% "argonaut" % "6.2-M3")
-    )
-  }
-)
-
 lazy val noPublishSettings = Seq(
   publish := (),
   publishLocal := (),
@@ -149,7 +133,7 @@ lazy val noPublishSettings = Seq(
 )
 
 def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full))
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
@@ -168,7 +152,6 @@ def coreSettings(mod: String) =
       "com.chuusai"    %% "shapeless"     % "2.3.2"
     ),
     scalacOptions += "-Yno-predef",
-    resolvers += Resolver.sonatypeRepo("snapshots"),
     sourceGenerators in Compile += Def.task {
       val outDir = (sourceManaged in Compile).value / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
@@ -196,27 +179,27 @@ lazy val core = project.in(file("modules/core"))
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"      % "7.2.6",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.6",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.5a",
-      "com.h2database"    %  "h2"               % "1.4.192" % "test"
+      "org.scalaz"        %% "scalaz-core"      % "7.2.7",
+      "org.scalaz"        %% "scalaz-effect"    % "7.2.7",
+      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
+      "com.h2database"    %  "h2"               % "1.4.193" % "test"
     ),
     scalazCrossSettings
   )
 
-val catsVersion = "0.8.0"
+val catsVersion = "0.8.1"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % "0.9.1",
-      "co.fs2"         %% "fs2-cats"  % "0.1.1-SNAPSHOT",
+      "co.fs2"         %% "fs2-core"  % "0.9.2",
+      "co.fs2"         %% "fs2-cats"  % "0.2.0",
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion,
       "org.typelevel"  %% "cats-laws" % catsVersion % "test",
-      "com.h2database" %  "h2"        % "1.3.170" % "test"
+      "com.h2database" %  "h2"        % "1.4.193"   % "test"
     )
   )
 
@@ -289,7 +272,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name  := "doobie-" + mod,
     description := "H2 support for doobie.",
-    libraryDependencies += "com.h2database" % "h2"  % "1.3.170"
+    libraryDependencies += "com.h2database" % "h2"  % "1.4.193"
   )
 
 lazy val h2 = project.in(file("modules/h2"))
@@ -417,11 +400,18 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
+val circeVersion = "0.6.0"
+
 def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
-  doobieSettings          ++
-  noPublishSettings       ++
-  tutSettings             ++
-  docSkipScala212Settings ++ Seq(
+  doobieSettings    ++
+  noPublishSettings ++
+  tutSettings       ++ Seq(
+    libraryDependencies ++= Seq(
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
+      "io.argonaut" %% "argonaut" % "6.2-RC1"
+    ),
     ctut := {
       val src = crossTarget.value / "tut"
       val dst = file("../tpolecat.github.io/_doobie-" + token + "-" + version.value + "/")
