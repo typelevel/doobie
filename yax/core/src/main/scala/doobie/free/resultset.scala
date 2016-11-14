@@ -1388,7 +1388,7 @@ object resultset extends ResultSetIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ResultSetIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[ResultSetOp, A](Lift(j, action, mod))
 
   /**
    * Lift a ResultSetIO[A] into an exception-capturing ResultSetIO[Throwable \/ A].

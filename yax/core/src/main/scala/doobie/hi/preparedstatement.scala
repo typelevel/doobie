@@ -100,12 +100,7 @@ object preparedstatement {
 
   /** @group Batching */
   val executeBatch: PreparedStatementIO[List[Int]] =
-    PS.executeBatch.map(arr =>
-      // `Predef.intArrayOps` is not implicit as of Scala 2.12.0-M3
-      // https://github.com/scala/scala/blob/v2.12.0-M3/src/library/scala/Predef.scala#L336
-      // TODO replace with `_.toList` after it gets back
-      intArrayOps(arr).toList
-    )
+    PS.executeBatch.map(_.toList)
 
   /** @group Batching */
   val addBatch: PreparedStatementIO[Unit] =

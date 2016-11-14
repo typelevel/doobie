@@ -1605,7 +1605,7 @@ object callablestatement extends CallableStatementIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): CallableStatementIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[CallableStatementOp, A](Lift(j, action, mod))
 
   /**
    * Lift a CallableStatementIO[A] into an exception-capturing CallableStatementIO[Throwable \/ A].

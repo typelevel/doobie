@@ -50,7 +50,7 @@ libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.3.0" // or any suppo
 If you are using Scala 2.10 you must also add the paradise compiler plugin.
 
 ```scala
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
 
 It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core` and are released together.
@@ -73,7 +73,7 @@ The current development milestone is **0.3.1-M1**, and the changing version is *
 
 ### Cats Support
 
-The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.7.2](http://typelevel.org/cats/) with [FS2 0.9.0](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
+The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.8.1](http://typelevel.org/cats/) with [FS2 0.9.2](https://github.com/functional-streams-for-scala/fs2) for 2.11 and 2.12 (FS2 isn't available for 2.10).
 
 Doc links for Cats artifacts (no unidoc yet, sorry):
 [core](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-core_2.11/0.3.1-SNAPSHOT/doobie-core_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)

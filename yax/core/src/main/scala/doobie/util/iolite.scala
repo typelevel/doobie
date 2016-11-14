@@ -28,8 +28,9 @@ object iolite {
         case c: IOLite.Compute[A] =>
           new IOLite.Compute[B] {
             type Start = c.Start
-            val start = c.start
-            val run = (s: c.Start) =>
+            // https://issues.scala-lang.org/browse/SI-9931
+            val start: () => IOLite[Start] = c.start
+            val run: Start => IOLite[B] = (s: c.Start) =>
               new IOLite.Compute[B] {
                 type Start = A
                 val start = () => c.run(s)
