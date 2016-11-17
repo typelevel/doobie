@@ -33,6 +33,31 @@ object logspec extends Specification {
 
   "query" >> {
 
+    "default handler" in {
+      val q = sql"select 1".query[Int]
+      true // compilation test only
+    }
+
+    "implicit handler" in {
+      var result  = null : LogEvent[HNil]
+      implicit val handler = LogHandler[HNil](result = _)
+      val cio = sql"select 1".query[Int].unique
+      cio.transact(xa).attempt.unsafePerformIO
+      result must beLike {
+        case Success(_, _, _, _) => ok
+      }
+    }
+
+    "implicit handler" in {
+      var result  = null : LogEvent[HNil]
+      val handler = LogHandler[HNil](result = _)
+      val cio = sql"select 1".queryWithLogHandler[Int](handler).unique
+      cio.transact(xa).attempt.unsafePerformIO
+      result must beLike {
+        case Success(_, _, _, _) => ok
+      }
+    }
+
     "zero-arg success" in {
       val Sql = "select 1"
       eventForUniqueQuery(Sql) must beLike {
@@ -46,6 +71,14 @@ object logspec extends Specification {
       eventForUniqueQuery(Sql, Arg) must beLike {
         case Success(Sql, Arg, _, _) => ok
       }
+    }
+
+    "zero-arg execution failure" in {
+      pending
+    }
+
+    "n-arg execution failure" in {
+      pending
     }
 
     "zero-arg processing failure" in {
@@ -64,4 +97,5 @@ object logspec extends Specification {
     }
 
   }
+
 }

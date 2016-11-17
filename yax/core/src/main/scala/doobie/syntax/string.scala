@@ -152,6 +152,20 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     def update(implicit h: LogHandler[A] = LogHandler.nop): Update0 =
       Update[A](rawSql, stackFrame, h).toUpdate0(a)
 
+    /**
+     * Construct a `[[doobie.util.query.Query0 Query0]]` from this `[[Builder]]`, parameterized over a
+     * composite output type, with the given `LogHandler`.
+     */
+    def queryWithLogHandler[O: Composite](h: LogHandler[A]): Query0[O] =
+      query[O](Predef.implicitly, h)
+
+    /**
+     * Construct an `[[doobie.util.update.Update0 Update0]]` from this `[[Builder]]`, with the
+     * given `LogHandler`.
+     */
+    def updateWithLogHandler(h: LogHandler[A]): Update0 =
+      update(h)
+
   }
 
 }
