@@ -151,6 +151,9 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     def query[B](implicit B: Composite[B]): Query0[B] =
       Query[A, B](sql, None)(A, B).toQuery0(a)
 
+    def update: Update0 =
+      Update[A](sql, None)(A).toUpdate0(a)
+
   }
   object Fragment {
     type Aux[A0 <: HList] = Fragment { type A = A0 }
