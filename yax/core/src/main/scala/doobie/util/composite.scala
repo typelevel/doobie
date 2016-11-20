@@ -34,10 +34,10 @@ import java.sql.ParameterMetaData
  */
 object composite {
 
-  @implicitNotFound("""Could not find or construct Composite[${A}]. 
-Ensure that this type has a Composite instance in scope; or is a Product type whose members have 
-Composite instances in scope; or is an atomic type with an Atom instance in scope. You can usually 
-diagnose this problem by trying to summon the Composite instance for each element in the REPL. See 
+  @implicitNotFound("""Could not find or construct Composite[${A}].
+Ensure that this type has a Composite instance in scope; or is a Product type whose members have
+Composite instances in scope; or is an atomic type with an Atom instance in scope. You can usually
+diagnose this problem by trying to summon the Composite instance for each element in the REPL. See
 the FAQ in the Book of Doobie for more hints.""")
   trait Composite[A] { c =>
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
@@ -59,6 +59,17 @@ the FAQ in the Book of Doobie for more hints.""")
         val length = c.length
         val meta   = c.meta
       }
+
+    /** Product of two Composites. */
+    def zip[B](cb: Composite[B]): Composite[(A, B)] =
+      new Composite[(A, B)] {
+        val set    = (n: Int, ab: (A, B)) => c.set(n, ab._1) *> cb.set(n + c.length, ab._2)
+        val update = (n: Int, ab: (A, B)) => c.update(n, ab._1) *> cb.update(n + c.length, ab._2)
+        val unsafeGet = (r: ResultSet, n: Int) => (c.unsafeGet(r,n), cb.unsafeGet(r, n + c.length))
+        val length = c.length + cb.length
+        val meta   = c.meta ++ cb.meta
+      }
+
   }
 
   object Composite extends LowerPriorityComposite {
@@ -67,14 +78,14 @@ the FAQ in the Book of Doobie for more hints.""")
 
     implicit val compositeInvariantFunctor: InvariantFunctor[Composite] =
       new InvariantFunctor[Composite] {
-#+scalaz        
+#+scalaz
         def xmap[A, B](ma: Composite[A], f: A => B, g: B => A): Composite[B] =
           ma.xmap(f, g)
-#-scalaz        
-#+cats        
+#-scalaz
+#+cats
         def imap[A, B](ma: Composite[A])(f: A => B)(g: B => A): Composite[B] =
           ma.imap(f)(g)
-#-cats              
+#-cats
       }
 
     implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
@@ -121,7 +132,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val meta = Nil
       }
 
-    implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] = 
+    implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
       new Composite[F] {
         val set: (Int, F) => PS.PreparedStatementIO[Unit] = (n, f) => G.value.set(n, gen.to(f))
         val update: (Int, F) => RS.ResultSetIO[Unit] = (n, f) => G.value.update(n, gen.to(f))

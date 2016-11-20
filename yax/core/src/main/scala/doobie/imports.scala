@@ -124,8 +124,8 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type SqlState = doobie.enum.sqlstate.SqlState
   /** @group Companion Aliases */ val  SqlState = doobie.enum.sqlstate.SqlState
 
-  /** @group Type Aliases */      type Param[A] = doobie.syntax.string.Param[A]
-  /** @group Companion Aliases */ val  Param    = doobie.syntax.string.Param
+  /** @group Type Aliases */      type Param[A] = doobie.util.param.Param[A]
+  /** @group Companion Aliases */ val  Param    = doobie.util.param.Param
 
   /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
 
@@ -134,6 +134,9 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
 
   /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
   /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
+
+  /** @group Type Aliases */      type Fragment = doobie.util.fragment.Fragment
+  /** @group Companion Aliases */ val  Fragment = doobie.util.fragment.Fragment
 
 #+scalaz
   /** @group Typeclass Instances */
