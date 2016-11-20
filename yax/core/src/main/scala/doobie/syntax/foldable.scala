@@ -1,5 +1,7 @@
 package doobie.syntax
 
+import doobie.util.{ foldable => F }
+
 #+scalaz
 import scalaz._, Scalaz._
 #-scalaz
@@ -9,8 +11,6 @@ import cats._, cats.implicits._
 
 /** Module of additional functions for `Foldable`. */
 object foldable {
-
-  val F = doobie.util.foldable
 
   class DoobieFoldableOps[F[_]: Foldable, A](self: F[A]) {
 

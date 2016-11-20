@@ -141,6 +141,8 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type Fragment = doobie.util.fragment.Fragment
   /** @group Companion Aliases */ val  Fragment = doobie.util.fragment.Fragment
 
+  /** @group Companion Aliases */ val  Fragments = doobie.util.fragments
+
 #+scalaz
   /** @group Typeclass Instances */
   implicit val NameCatchable = doobie.util.name.NameCatchable
