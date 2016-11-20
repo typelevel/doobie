@@ -1,31 +1,9 @@
 package doobie.syntax
 
-import doobie.util.atom._
-import doobie.util.composite._
-import doobie.util.query._
-import doobie.util.update._
-import doobie.util.update._
-import doobie.util.param._
-import doobie.util.fragment._
-import doobie.util.concat.Concat
-import doobie.util.meta.Meta
-import doobie.enum.nullability.NullabilityKnown
-import java.sql.ResultSet
-import Predef._
-
-import doobie.hi._
-
-import scala.annotation.implicitNotFound
-
-#+scalaz
-import scalaz._, Scalaz._
-#-scalaz
-#+cats
-import cats.Reducible
-import cats.implicits._
-#-cats
-
-import shapeless._
+import doobie.util.param.Param
+import doobie.util.fragment.Fragment
+import scala.Predef._ // for .zipped
+import shapeless.ProductArgs
 
 /** Module defining the `sql` string interpolator. */
 object string {
