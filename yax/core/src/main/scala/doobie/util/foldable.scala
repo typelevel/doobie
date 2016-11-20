@@ -18,7 +18,7 @@ object foldable {
     }.value.getOrElse(A.empty)
 #-cats
 
-  /** Generlization of `mkString` for any monoid. */
+  /** Generalization of `mkString` for any monoid. */
   def foldSmash[F[_]: Foldable, A](fa: F[A])(prefix: A, delim: A, suffix: A)(implicit ev: Monoid[A]): A =
 #+scalaz
     ev.append(prefix, ev.append(fa.intercalate(delim), suffix))
