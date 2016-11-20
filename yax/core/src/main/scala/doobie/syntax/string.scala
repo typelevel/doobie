@@ -11,7 +11,7 @@ object string {
   /**
    * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
    * interpolated values of type `A` and `B` (which must have `[[Param]]` instances, derived
-   * automatically from `Meta` via `Atom`) yields a value of type `[[Fragment.Aux[A :: B :: HNil]]]`.
+   * automatically from `Meta` via `Atom`) yields a value of type `[[Fragment]]`.
    */
   implicit class SqlInterpolator(private val sc: StringContext) {
 
@@ -40,8 +40,8 @@ object string {
       def applyProduct[A: Param](a: A): Fragment = mkFragment(a, true)
     }
 
-    /** Alternative name for the `fr` interpolator. */
-    final val sql: fr.type = fr
+    /** Alternative name for the `fr0` interpolator. */
+    final val sql: fr0.type = fr0
 
     /**
      * Interpolator for a statement fragment that can contain interpolated values. Unlike `fr` no
