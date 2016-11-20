@@ -100,7 +100,7 @@ object iolite {
   trait IOInstances extends IOInstances0 {
 
 #+scalaz
-    implicit val MonadIOLite: Monad[IOLite] = 
+    implicit val MonadIOLite: Monad[IOLite] =
       new Monad[IOLite] {
         def bind[A, B](fa: IOLite[A])(f: A => IOLite[B]): IOLite[B] = fa.flatMap(f)
         def point[A](a: => A): IOLite[A] = IOLite.pure(a)
