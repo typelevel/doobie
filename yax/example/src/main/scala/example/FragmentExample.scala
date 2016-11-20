@@ -1,23 +1,14 @@
-#+scalaz
 package doobie.example
 
 import doobie.imports._
+#+scalaz
 import scalaz._, Scalaz._
+#-scalaz
+#+cats
+import cats._, cats.implicits._
+#-cats
 
 object FragmentExample extends App {
-
-  /** Some extra smashing ops for `F[A]` given `Foldable[F]` and `Monoid[A]`. */
-  implicit class MoreFoldableMonoidOps[F[_]: Foldable, A: Monoid](fa: F[A]) {
-
-    /** Generalization of `mkString` for any monoid. */
-    def foldSmash(prefix: A, interc: A, suffix: A): A =
-      prefix |+| fa.intercalate(interc) |+| suffix
-
-    /** Like `foldSmash1` but returns `mzero`` if the foldable is empty. */
-    def foldSmash1(prefix: A, interc: A, suffix: A): A =
-      if (fa.empty) mzero[A] else foldSmash(prefix, interc, suffix)
-
-  }
 
   // Returns `WHERE c1 AND c1 AND ... cN` if any are defined, otherwise Fragment.empty. This is an
   // easy way to crush a list of optional filters into a single fragment.
@@ -59,4 +50,3 @@ object FragmentExample extends App {
   }
 
 }
-#-scalaz

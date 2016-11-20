@@ -2,6 +2,7 @@ package doobie
 
 import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
+import doobie.syntax.foldable.ToDoobieFoldableOps
 
 #+scalaz
 import scalaz.{ Monad, Catchable, Unapply, Leibniz, Free, Functor }
@@ -17,7 +18,9 @@ import fs2.{ Stream => Process }
 #-fs2
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
-object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
+object imports extends ToDoobieCatchSqlOps
+                  with ToDoobieCatchableOps
+                  with ToDoobieFoldableOps {
 
   /**
    * Alias for `doobie.free.connection`.
