@@ -2,7 +2,6 @@ package doobie.syntax
 
 import doobie.util.param.Param
 import doobie.util.fragment.Fragment
-import scala.Predef._ // for .zipped
 import shapeless.ProductArgs
 
 /** Module defining the `sql` string interpolator. */
@@ -20,13 +19,8 @@ object string {
       Thread.currentThread.getStackTrace.lift(3)
     }
 
-    private def placeholders(n: Int): String =
-      List.fill(n)("?").mkString(", ")
-
     private def mkFragment[A](a: A, token: Boolean)(implicit ev: Param[A]): Fragment = {
-      val ps  = sc.parts.toList
-      val qs  = ev.placeholders.map(placeholders) :+ (if (token) " " else "")
-      val sql = (ps, qs).zipped.map(_ + _).mkString
+      val sql = sc.parts.mkString("", "?", if (token) " " else "")
       Fragment(sql, a)(ev.composite)
     }
 

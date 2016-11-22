@@ -28,8 +28,8 @@ object fragment {
     protected def ca: Composite[A]  // proof that we can map the argument to parameters
     protected def sql: String       // snipped of SQL with `ca.length` placeholders
 
-    /** Compose this fragment with another, yielding a larger fragment. */
-    def +(fb: Fragment): Fragment =
+    /** Concatenate this fragment with another, yielding a larger fragment. */
+    def ++(fb: Fragment): Fragment =
       new Fragment {
         type A  = (fa.A, fb.A)
         val ca  = fa.ca zip fb.ca
@@ -80,12 +80,12 @@ object fragment {
     /** Statement fragments form a monoid. */
     implicit val FragmentMonoid: Monoid[Fragment] =
 #+scalaz
-        Monoid.instance(_ + _, empty)
+        Monoid.instance(_ ++ _, empty)
 #-scalaz
 #+cats
       new Monoid[Fragment] {
         val empty = Fragment.empty
-        def combine(a: Fragment, b: Fragment) = a + b
+        def combine(a: Fragment, b: Fragment) = a ++ b
       }
 #-cats
 

@@ -27,8 +27,8 @@ object FragmentExample extends App {
 
     // Our final query
     val q: Fragment =
-      fr"SELECT name, code, population FROM country" +
-      whereAndOpt(f1, f2, f3)                        +
+      fr"SELECT name, code, population FROM country" ++
+      whereAndOpt(f1, f2, f3)                        ++
       fr"LIMIT $limit"
 
     // Consruct a Query0
