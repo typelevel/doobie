@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 14
+number: 15
 title: Extensions for H2
 ---
 
@@ -20,10 +20,10 @@ This library pulls in [H2 Version 1.3.170](http://www.h2database.com/html/main.h
 - `Int`
 - `Long`   
 - `Float`  
-- `Double` 
-- `String` 
+- `Double`
+- `String`
 
-In addition to `Array` you can also map to `List` and `Vector`. 
+In addition to `Array` you can also map to `List` and `Vector`.
 
 See the previous chapter on **SQL Arrays** for usage examples.
 
