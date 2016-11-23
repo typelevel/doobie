@@ -34,7 +34,7 @@ object fragments {
 
   /** Returns `f1 OR f2 OR ... fn` for all defined fragments. */
   def orOpt(fs: Option[Fragment]*): Fragment =
-    and(fs.flatten: _*)
+    or(fs.flatten: _*)
 
   /** Returns `WHERE f1 AND f2 AND ... fn` or the empty fragment if `fs` is empty. */
   def whereAnd(fs: Fragment*): Fragment =

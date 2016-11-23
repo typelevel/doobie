@@ -44,11 +44,10 @@ SQL literals constructed with the `fr` interpolator behave just like the `sql` i
 val a = fr"select name from country"
 val b = fr"where code = 'USA'"
 val c = a ++ b // concatenation by ++
-println(c.query[String].sql)
 c.query[String].unique.quick.unsafePerformIO
 ```
 
-Fragments can capture arguments.
+Fragments can capture arguments of any type with a `Param` instance, just as the `sql` interpolator does.
 
 ```tut
 def whereCode(s: String) = fr"where code = $s"
@@ -66,7 +65,7 @@ If you do *not* want a fragment to have trailing space you can use the `fr0` int
 fr"IN (" ++ List(1, 2, 3).map(n => fr"$n").intercalate(fr",") ++ fr")"
 fr0"IN (" ++ List(1, 2, 3).map(n => fr0"$n").intercalate(fr",") ++ fr")"
 ```
-Note that the `sql` interpolator is an alias for `fr0`.
+Note that the `sql` interpolator is simply an alias for `fr0`.
 
 ### The `Fragments` Module
 
@@ -76,7 +75,7 @@ Here we define a query with a three optional filter conditions.
 
 ```tut:silent
 // Import some convenience combinators.
-import Fragments.{ in, whereOrOpt }
+import Fragments.{ in, whereAndOpt }
 
 // Country Info
 case class Info(name: String, code: String, population: Int)
@@ -92,7 +91,7 @@ def select(name: Option[String], pop: Option[Int], codes: List[String], limit: L
   // Our final query
   val q: Fragment =
     fr"SELECT name, code, population FROM country" ++
-    whereOrOpt(f1, f2, f3)                         ++
+    whereAndOpt(f1, f2, f3)                         ++
     fr"LIMIT $limit"
 
   // Consruct a Query0
@@ -101,12 +100,12 @@ def select(name: Option[String], pop: Option[Int], codes: List[String], limit: L
 }
 ```
 
-We first construct three optional filters, the third of which uses the `in` combinator to construct an SQL `IN` clause. The final statement uses the `whereAndOpt` combinator that constructs a `WHERE` clause with the passed sequence of `Option[Fragment]` joined with `OR` if an are defined, otherwise it evaluates to the empty fragment. The end result is that the `WHERE` clause appears only if at least one filter is defined.
+We first construct three optional filters, the third of which uses the `in` combinator to construct an SQL `IN` clause. The final statement uses the `whereAndOpt` combinator that constructs a `WHERE` clause with the passed sequence of `Option[Fragment]` joined with `AND` if any are defined, otherwise it evaluates to the empty fragment. The end result is that the `WHERE` clause appears only if at least one filter is defined.
 
 Let's look at a few possibilities.
 
 ```tut
 select(None, None, Nil, 10).check.unsafePerformIO // no filters
 select(Some("U%"), None, Nil, 10).check.unsafePerformIO // one filter
-select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafePerformIO // one filter
+select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafePerformIO // three filters
 ```
