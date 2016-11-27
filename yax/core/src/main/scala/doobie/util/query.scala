@@ -65,7 +65,7 @@ object query {
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
-    // Equivalent to HPS.executeQuery(k) but with logging if logHandler is defined
+    // Equivalent to HPS.executeQuery(k) but with logging
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val c = Predef.implicitly[Catchable[PreparedStatementIO]]
