@@ -1,4 +1,4 @@
-sudo: false
+sudo: true # this gets you 7.5G of RAM instead of 4G but it's slower
 
 language: scala
 
