@@ -28,6 +28,10 @@ object fragment {
     protected def ca: Composite[A]  // proof that we can map the argument to parameters
     protected def sql: String       // snipped of SQL with `ca.length` placeholders
 
+    // Stack frame, used by the query checker to guess the source position. This will go away at
+    // some point, possibly in favor of Haoyi's source position doodad.
+    protected def stackFrame: Option[StackTraceElement]
+
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =
       new Fragment {
@@ -35,15 +39,16 @@ object fragment {
         val ca  = fa.ca zip fb.ca
         val a   = (fa.a, fb.a)
         val sql = fa.sql + fb.sql
+        val stackFrame = fa.stackFrame orElse fb.stackFrame
       }
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     def query[B](implicit cb: Composite[B]): Query0[B] =
-      Query[A, B](sql, None)(ca, cb).toQuery0(a)
+      Query[A, B](sql, stackFrame)(ca, cb).toQuery0(a)
 
     /** Construct an [[Update0]] from this fragment. */
     def update: Update0 =
-      Update[A](sql, None)(ca).toUpdate0(a)
+      Update[A](sql, stackFrame)(ca).toUpdate0(a)
 
     override def toString =
       s"""Fragment("$sql")"""
@@ -57,12 +62,15 @@ object fragment {
      * placeholders to accommodate the fields of the given interpolated value. This is normally
      * accomplished via the string interpolator rather than direct construction.
      */
-    def apply[A0](sql0: String, a0: A0)(implicit ev: Composite[A0]): Fragment =
+    def apply[A0](sql0: String, a0: A0, stackFrame0: Option[StackTraceElement] = None)(
+      implicit ev: Composite[A0]
+    ): Fragment =
       new Fragment {
         type A  = A0
         val ca  = ev
         val a   = a0
         val sql = sql0
+        val stackFrame = stackFrame0
       }
 
     /**
@@ -70,8 +78,8 @@ object fragment {
      * contain `?` placeholders. This is normally accomplished via the string interpolator rather
      * than direct construction.
      */
-    def const(sql: String): Fragment =
-      Fragment[HNil](sql, HNil)
+    def const(sql: String, stackFrame: Option[StackTraceElement] = None): Fragment =
+      Fragment[HNil](sql, HNil, stackFrame)
 
     /** The empty fragment. Adding this to another fragment has no affect. */
     val empty: Fragment =
