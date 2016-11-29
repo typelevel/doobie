@@ -328,7 +328,7 @@ lazy val hikari_cats = project.in(file("modules-cats/hikari"))
 def specs2Settings(mod: String): Seq[Setting[_]] =
   doobieSettings  ++
   publishSettings ++ Seq(
-    name := "doobie-contrib-specs2",
+    name := s"doobie-$mod",
     description := "Specs2 support for doobie.",
     libraryDependencies += "org.specs2" %% "specs2-core" % "3.8.4"
   )
@@ -346,7 +346,7 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/specs2"), "cats", "fs2"),
-    specs2Settings("specs2")
+    specs2Settings("specs2-cats")
   )
   .dependsOn(core_cats)
 
@@ -357,7 +357,7 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
 def scalaTestSettings(mod: String): Seq[Setting[_]] =
   doobieSettings ++
   publishSettings ++ Seq(
-    name := s"doobie-contrib-$mod",
+    name := s"doobie-$mod",
     description := "Scalatest support for doobie.",
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0"
   )
