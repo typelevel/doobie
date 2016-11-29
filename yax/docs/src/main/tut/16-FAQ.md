@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 15
+number: 16
 title: Frequently-Asked Questions
 ---
 
@@ -27,7 +27,7 @@ import xa.yolo._
 
 ### How do I do an `IN` clause?
 
-This used to be very irritating, but as of 0.2.3 is only moderately irritating. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html).
+This used to be very irritating, but as of 0.3.1 there is a good solution. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html) and [Chapter 8](08-Fragments.html) on statement fragments.
 
 ### How do I ascribe a SQL type to an interpolated parameter?
 
@@ -41,24 +41,24 @@ sql"select $s :: char".query[String].check.unsafePerformIO
 
 ### How do I do several things in the same transaction?
 
-You can use a `for` comprehension to compose any number of `ConnectionIO` programs, and then call `.transact(xa)` on the result. All of the composed programs will run in the same transaction. For this reason it's useful for your APIs to expose values in `ConnectionIO`, so higher-level code can place transaction boundaries as needed. 
+You can use a `for` comprehension to compose any number of `ConnectionIO` programs, and then call `.transact(xa)` on the result. All of the composed programs will run in the same transaction. For this reason it's useful for your APIs to expose values in `ConnectionIO`, so higher-level code can place transaction boundaries as needed.
 
-### How do I turn an arbitrary SQL string into a `Query/Query0`?
+### How do I turn an arbitrary SQL string into a `Query0/Update0`?
 
-The `sql` interpolator does not allow arbitrary string interpolation in SQL literals; each interpolated value becomes a `?` placeholder, paired with a type-appropriate `setXXX` action. So if you wish to generate SQL statements dynamically you cannot use the `sql` interpolator. Instead construct the SQL literal with placeholders for parameters, and pass this to the `Query` constructor. You can then apply your parameters (tupled if there are several) to produce the desired `Query0`.
+As of **doobie** 0.3.1 this is done via [statement fragments](08-Fragments.html). Here we choose the sort order dynamically.
 
 ```tut:silent
 case class Code(country: String)
 case class City(code: Code, name: String, population: Int)
 
 def cities(code: Code, asc: Boolean): Query0[City] = {
-  val sql = s"""
+  val ord = if (asc) fr"ASC" else fr"DESC"
+  val sql = fr"""
     SELECT countrycode, name, population
     FROM   city
-    WHERE  countrycode = ?
-    ORDER BY name ${if (asc) "ASC" else "DESC"}
-  """
-  Query[Code, City](sql, None).toQuery0(code)
+    WHERE  countrycode = $code
+    ORDER BY name""" ++ ord
+  sql.query[City]
 }
 ```
 
@@ -83,12 +83,12 @@ With an outer join you end up with set of nullable columns, which you typically 
 case class Country(name: String, code: String)
 case class City(name: String, district: String)
 
-val join: Query0[(Country, Option[City])] = 
+val join: Query0[(Country, Option[City])] =
   sql"""
     select c.name, c.code,
-           k.name, k.district 
-    from country c 
-    left outer join city k 
+           k.name, k.district
+    from country c
+    left outer join city k
     on c.capital = k.id
   """.query[(Country, Option[String], Option[String])].map {
 #+scalaz  
@@ -190,7 +190,7 @@ Composite[Point2D.Double]
 If this were an atomic type it would be a matter of importing or defining a `Meta` instance, but here we need to define a `Composite` directly because we're mapping a type with several members. As this type is isomorphic to `(Double, Double)` we can simply base our mapping off of the existing `Composite`.
 
 ```tut:silent
-implicit val Point2DComposite: Composite[Point2D.Double] = 
+implicit val Point2DComposite: Composite[Point2D.Double] =
 #+scalaz
   Composite[(Double, Double)].xmap(
     (t: (Double, Double)) => new Point2D.Double(t._1, t._2),
@@ -199,7 +199,7 @@ implicit val Point2DComposite: Composite[Point2D.Double] =
 #-scalaz
 #+cats
   Composite[(Double, Double)].imap(
-    (t: (Double, Double)) => new Point2D.Double(t._1, t._2))( 
+    (t: (Double, Double)) => new Point2D.Double(t._1, t._2))(
     (p: Point2D.Double) => (p.x, p.y)
   )
 #-cats
@@ -218,4 +218,3 @@ Because the actual execution of a query does not occur at the site in the code w
 ### How do I log the SQL produced for my query after interpolation?
 
 The result of `sql"…".query` is a `Query0`. The `Query0` type has an `sql` method which provides the SQL. Unfortunately, the SQL includes `?` placeholders for the interpolated values in order to facilitate creating a prepared statement. If you want the values that were interpolated to appear in your logging, you'll have to separately include them in your logging statement.
-

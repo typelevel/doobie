@@ -36,34 +36,6 @@ object stringspec extends Specification {
       q.sql must_=== "foo bar ?"
     }
 
-#+scalaz
-    "support sequence params" in {
-      val a = NonEmptyList(1,2,3)
-      implicit val pa = Param.many(a)
-      val q = sql"foo ${a : a.type} bar baz".query[Int]
-      q.sql must_=== "foo ?, ?, ? bar baz"
-    }
-
-    "support multiple distinct sequence params" in {
-      val a = NonEmptyList(1,2,3)
-      val b = NonEmptyList("foo", "bar")
-      implicit val pa = Param.many(a)
-      implicit val pb = Param.many(b)
-      val q = sql"foo ${a : a.type} bar ${b : b.type} baz".query[Int]
-      q.sql must_=== "foo ?, ?, ? bar ?, ? baz"
-    }
-
-    "support a combination of atomic and sequence params" in {
-      val a = NonEmptyList(1,2,3)
-      val b = NonEmptyList("foo", "bar")
-      implicit val pa = Param.many(a)
-      implicit val pb = Param.many(b)
-      val c = 42
-      val q = sql"foo ${a : a.type} bar ${b : b.type} baz $c".query[Int]
-      q.sql must_=== "foo ?, ?, ? bar ?, ? baz ?"
-    }
-#-scalaz
-
     "not support product params" in {
       val a = (1, "two")
       Composite[(Int, String)]

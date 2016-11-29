@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 12
+number: 13
 title: Managing Connections
 ---
 
@@ -122,9 +122,3 @@ val task = prog.transK[IOLite].run(rs) // IOLite[Int]
 ```
 
 This facility allows you to mix **doobie** programs into existing JDBC applications in a fine-grained manner if this meets your needs.
-
-
-
-
-
-

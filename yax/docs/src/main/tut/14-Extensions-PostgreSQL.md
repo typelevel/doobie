@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 13
+number: 14
 title: Extensions for PostgreSQL
 ---
 
@@ -65,8 +65,8 @@ create type myenum as enum ('foo', 'bar')
 The first option is to map `myenum` to an instance of the execrable `scala.Enumeration` class via the `pgEnum` constructor.
 
 ```tut:silent
-object MyEnum extends Enumeration { 
-  val foo, bar = Value 
+object MyEnum extends Enumeration {
+  val foo, bar = Value
 }
 
 implicit val MyEnumAtom = pgEnum(MyEnum, "myenum")
@@ -93,7 +93,7 @@ And the final, most general construction simply requires evidence that your tage
 sealed trait FooBar
 
 object FooBar {
-  
+
   case object Foo extends FooBar
   case object Bar extends FooBar
 
@@ -114,7 +114,7 @@ object FooBar {
 
 }
 
-implicit val FoobarAtom: Atom[FooBar] = 
+implicit val FoobarAtom: Atom[FooBar] =
   pgEnumString("myenum", FooBar.unsafeFromEnum, FooBar.toEnum)
 ```
 
@@ -232,15 +232,15 @@ import doobie.postgres.free.copymanager.copyOut
 import doobie.postgres.hi.connection.pgGetCopyAPI
 
 val q = """
-  copy country (name, code, population) 
+  copy country (name, code, population)
   to stdout (
-    encoding 'utf-8', 
-    force_quote *, 
+    encoding 'utf-8',
+    force_quote *,
     format csv
   )
   """
 
-val prog: ConnectionIO[Long] = 
+val prog: ConnectionIO[Long] =
   pgGetCopyAPI(copyOut(q, Console.out)) // return value is the row count
 ```
 
@@ -249,5 +249,3 @@ See the links above and sample code in the `examples/` project in the **doobie**
 ### Fastpath
 
 **doobie** provides an algebra and free monad for constructing programs that use the `FastPathAPI` provided by the PostgreSQL JDBC driver, however this API is mostly deprecated in favor of server-side statements (see above). And in any case I can't find an example of how you would use it from Java so I don't have an example here. But if you're using it let me know and we can figure it out.
-
-

@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 9
+number: 10
 title: SQL Arrays
 ---
 
@@ -33,7 +33,7 @@ Let's create a new table with a SQL array column. Note that this is likely to wo
 ```tut:silent
 val drop = sql"DROP TABLE IF EXISTS person".update.quick
 
-val create = 
+val create =
   sql"""
     CREATE TABLE person (
       id   SERIAL,
@@ -98,5 +98,3 @@ Once this mapping is in scope we can map columns directly to `IList`.
 sql"select pets from person where name = 'Bob'".query[IList[String]].quick.unsafePerformIO
 ```
 #-scalaz
-
-
