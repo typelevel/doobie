@@ -50,6 +50,6 @@ object fragments {
 
   /** Returns `WHERE f1 OR f2 OR ... fn` for defined `f`, if any, otherwise the empty fragment. */
   def whereOrOpt(fs: Option[Fragment]*): Fragment =
-    whereAnd(fs.flatten: _*)
+    whereOr(fs.flatten: _*)
 
 }
