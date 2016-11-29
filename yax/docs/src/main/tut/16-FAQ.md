@@ -27,7 +27,7 @@ import xa.yolo._
 
 ### How do I do an `IN` clause?
 
-This used to be very irritating, but as of 0.2.3 is only moderately irritating. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html).
+This used to be very irritating, but as of 0.3.1 there is a good solution. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html) and [Chapter 8](08-Fragments.html) on statement fragments.
 
 ### How do I ascribe a SQL type to an interpolated parameter?
 
@@ -43,22 +43,22 @@ sql"select $s :: char".query[String].check.unsafePerformIO
 
 You can use a `for` comprehension to compose any number of `ConnectionIO` programs, and then call `.transact(xa)` on the result. All of the composed programs will run in the same transaction. For this reason it's useful for your APIs to expose values in `ConnectionIO`, so higher-level code can place transaction boundaries as needed.
 
-### How do I turn an arbitrary SQL string into a `Query/Query0`?
+### How do I turn an arbitrary SQL string into a `Query0/Update0`?
 
-The `sql` interpolator does not allow arbitrary string interpolation in SQL literals; each interpolated value becomes a `?` placeholder, paired with a type-appropriate `setXXX` action. So if you wish to generate SQL statements dynamically you cannot use the `sql` interpolator. Instead construct the SQL literal with placeholders for parameters, and pass this to the `Query` constructor. You can then apply your parameters (tupled if there are several) to produce the desired `Query0`.
+As of **doobie** 0.3.1 this is done via [statement fragments](08-Fragments.html). Here we choose the sort order dynamically.
 
 ```tut:silent
 case class Code(country: String)
 case class City(code: Code, name: String, population: Int)
 
 def cities(code: Code, asc: Boolean): Query0[City] = {
-  val sql = s"""
+  val ord = if (asc) fr"ASC" else fr"DESC"
+  val sql = fr"""
     SELECT countrycode, name, population
     FROM   city
-    WHERE  countrycode = ?
-    ORDER BY name ${if (asc) "ASC" else "DESC"}
-  """
-  Query[Code, City](sql, None).toQuery0(code)
+    WHERE  countrycode = $code
+    ORDER BY name""" ++ ord
+  sql.query[City]
 }
 ```
 
