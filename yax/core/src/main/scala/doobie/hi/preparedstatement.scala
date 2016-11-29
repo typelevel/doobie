@@ -145,14 +145,16 @@ object preparedstatement {
    * @group Metadata
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
-    PS.getMetaData.map { md =>
-      (1 to md.getColumnCount).toList.map { i =>
-        val j = JdbcType.unsafeFromInt(md.getColumnType(i))
-        val s = md.getColumnTypeName(i)
-        val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
-        val c = md.getColumnName(i)
-        ColumnMeta(j, s, n, c)
-      }
+    PS.getMetaData.map {
+      case null => Nil // https://github.com/tpolecat/doobie/issues/262
+      case md   =>
+        (1 to md.getColumnCount).toList.map { i =>
+          val j = JdbcType.unsafeFromInt(md.getColumnType(i))
+          val s = md.getColumnTypeName(i)
+          val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
+          val c = md.getColumnName(i)
+          ColumnMeta(j, s, n, c)
+        }
     }
 
   /**
