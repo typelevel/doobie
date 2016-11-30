@@ -138,6 +138,9 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
   /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
 
+  /** @group Type Aliases */      type LogHandler = doobie.util.log.LogHandler
+  /** @group Companion Aliases */ val  LogHandler = doobie.util.log.LogHandler
+
   /** @group Type Aliases */      type Fragment = doobie.util.fragment.Fragment
   /** @group Companion Aliases */ val  Fragment = doobie.util.fragment.Fragment
 

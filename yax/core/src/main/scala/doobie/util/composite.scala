@@ -58,6 +58,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet    = (r: ResultSet, n: Int) => f(c.unsafeGet(r,n))
         val length = c.length
         val meta   = c.meta
+        def toList(b: B) = c.toList(g(b))
       }
 
     /** Product of two Composites. */
@@ -68,7 +69,11 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (r: ResultSet, n: Int) => (c.unsafeGet(r,n), cb.unsafeGet(r, n + c.length))
         val length = c.length + cb.length
         val meta   = c.meta ++ cb.meta
+        def toList(p: (A, B)) = c.toList(p._1) ++ cb.toList(p._2)
       }
+
+    /** Flatten the composite into its untyped constituents. This is only useful for logging. */
+    def toList(a: A): List[Any]
 
   }
 
@@ -95,6 +100,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = A.unsafeGet
         val length = 1
         val meta = List(A.meta)
+        def toList(a: A) = List(a)
       }
 
     // Composite for shapeless record types
@@ -105,6 +111,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (r: ResultSet, i: Int) => field[K](H.unsafeGet(r, i)) :: T.unsafeGet(r, i + H.length)
         val length = H.length + T.length
         val meta = H.meta ++ T.meta
+        def toList(l: FieldType[K, H] :: T) = H.toList(l.head) ++ T.toList(l.tail)
       }
 
   }
@@ -121,6 +128,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
         val length = H.length + T.length
         val meta = H.meta ++ T.meta
+        def toList(l: H :: T) = H.toList(l.head) ++ T.toList(l.tail)
       }
 
     implicit def emptyProduct: Composite[HNil] =
@@ -130,6 +138,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
         val length = 0
         val meta = Nil
+        def toList(l: HNil) = Nil
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
@@ -139,6 +148,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet: (ResultSet, Int) => F = (rs, n) => gen.from(G.value.unsafeGet(rs, n))
         val length: Int = G.value.length
         val meta: List[(Meta[_], NullabilityKnown)] = G.value.meta
+        def toList(f: F) = G.value.toList(gen.to(f))
       }
 
   }
