@@ -61,7 +61,9 @@ object query {
     protected implicit val ic: Composite[I]
     protected implicit val oc: Composite[O]
 
-    val logHandler: LogHandler
+    // LogHandler is protected for now.
+    protected val logHandler: LogHandler
+
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 

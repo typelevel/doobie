@@ -57,7 +57,9 @@ object update {
     protected val ai: A => I
     protected implicit val ic: Composite[I]
 
-    val logHandler: LogHandler
+    // LogHandler is protected for now.
+    protected val logHandler: LogHandler
+
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
     private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
@@ -80,6 +82,7 @@ object update {
       } yield n
     }
 
+
     /**
      * The SQL string.
      * @group Diagnostics
@@ -100,32 +103,64 @@ object update {
     def analysis: ConnectionIO[Analysis] =
       HC.prepareUpdateAnalysis[I](sql)
 
+    /**
+     * Construct a program to execute the update and yield a count of affected rows, given the
+     * composite argument `a`.
+     * @group Execution
+     */
     def run(a: A): ConnectionIO[Int] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeUpdate)
 
-    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K] =
-      withGeneratedKeysWithChunkSize[K](columns: _*)(a, DefaultChunkSize)
-
-    def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K] =
-      HC.prepareStatementS(sql, columns.toList)(HPS.set(ai(a)) *> HPS.executeUpdateWithUniqueGeneratedKeys)
-
-    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Process[ConnectionIO, K] =
-      HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(ai(a)), chunkSize)
-
+    /**
+     * Program to execute a batch update and yield a count of affected rows.
+     * @group Execution
+     */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
       HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa.toList.map(ai)))
 
-    // N.B. this what we want to implement, but updateManyWithGeneratedKeys is what we want to call
-    protected def updateManyWithGeneratedKeysA[F[_]: Foldable, K: Composite](columns: String*)(as: F[A], chunkSize: Int): Process[ConnectionIO, K] =
-      HC.updateManyWithGeneratedKeys[List,I,K](columns.toList)(sql, ().pure[PreparedStatementIO], as.toList.map(ai), chunkSize)
-
+    /**
+     * Construct a stream that performs a batch update as with `updateMany`, yielding generated
+     * keys of composite type `K`, identified by the specified columns. Note that not all drivers
+     * support generated keys, and some support only a single key column.
+     * @group Execution
+     */
     def updateManyWithGeneratedKeys[K](columns: String*): UpdateManyWithGeneratedKeysPartiallyApplied[A, K] =
       new UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
         def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
-          updateManyWithGeneratedKeysA[F,K](columns: _*)(as, chunkSize)
+          HC.updateManyWithGeneratedKeys[List,I,K](columns.toList)(sql, ().pure[PreparedStatementIO], as.toList.map(ai), chunkSize)
       }
 
-    /** @group Transformations */
+    /**
+     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
+     * identified by the specified columns, given a composite argument `a`. Note that not all
+     * drivers support generated keys, and some support only a single key column.
+     * @group Execution
+     */
+    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K] =
+      withGeneratedKeysWithChunkSize[K](columns: _*)(a, DefaultChunkSize)
+
+    /**
+     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
+     * identified by the specified columns, given a composite argument `a` and `chunkSize`. Note
+     * that not all drivers support generated keys, and some support only a single key column.
+     * @group Execution
+     */
+    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Process[ConnectionIO, K] =
+      HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(ai(a)), chunkSize)
+
+    /**
+     * Construct a program that performs the update, yielding a single set of generated keys of
+     * composite type `K`, identified by the specified columns, given a composite argument `a`.
+     * Note that not all drivers support generated keys, and some support only a single key column.
+     * @group Execution
+     */
+    def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K] =
+      HC.prepareStatementS(sql, columns.toList)(HPS.set(ai(a)) *> HPS.executeUpdateWithUniqueGeneratedKeys)
+
+    /**
+     * Update is a contravariant functor.
+     * @group Transformations
+     */
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
         type I  = u.I
@@ -156,6 +191,12 @@ object update {
 
   object Update {
 
+    /**
+     * Construct an `Update` for some composite parameter type `A` with the given SQL string, and
+     * optionally a `StackTraceElement` and/or `LogHandler` for diagnostics. The normal mechanism
+     * for construction is the `sql/fr/fr0` interpolators.
+     * @group Constructors
+     */
     def apply[A](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: LogHandler = LogHandler.nop)(
       implicit C: Composite[A]
     ): Update[A] =
@@ -168,6 +209,10 @@ object update {
         val stackFrame = stackFrame0
       }
 
+    /**
+     * Update is a contravariant functor.
+     * @group Typeclass Instances
+     */
     implicit val updateContravariant: Contravariant[Update] =
       new Contravariant[Update] {
         def contramap[A, B](fa: Update[A])(f: B => A) = fa contramap f
@@ -177,25 +222,66 @@ object update {
 
   trait Update0 {
 
+    /**
+     * The SQL string.
+     * @group Diagnostics
+     */
     val sql: String
 
+    /**
+     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was
+     * constructed. This is used only for diagnostic purposes.
+     * @group Diagnostics
+     */
     val stackFrame: Option[StackTraceElement]
 
+    /**
+     * Program to construct an analysis of this query's SQL statement and asserted parameter types.
+     * @group Diagnostics
+     */
     def analysis: ConnectionIO[Analysis]
 
+    /**
+     * Program to execute the update and yield a count of affected rows.
+     * @group Execution
+     */
     def run: ConnectionIO[Int]
 
+    /**
+     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
+     * identified by the specified columns. Note that not all drivers support generated keys, and
+     * some support only a single key column.
+     * @group Execution
+     */
     def withGeneratedKeys[K: Composite](columns: String*): Process[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
 
-    def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
-
+    /**
+     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
+     * identified by the specified columns, given a `chunkSize`. Note that not all drivers support
+     * generated keys, and some support only a single key column.
+     * @group Execution
+     */
     def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): Process[ConnectionIO, K]
+
+    /**
+     * Construct a program that performs the update, yielding a single set of generated keys of
+     * composite type `K`, identified by the specified columns. Note that not all drivers support
+     * generated keys, and some support only a single key column.
+     * @group Execution
+     */
+    def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
 
   }
 
   object Update0 {
 
+    /**
+     * Construct an `Update0` with the given SQL string, and optionally a `StackTraceElement`
+     * and/or `LogHandler` for diagnostics. The normal mechanism for construction is the
+     * `sql/fr/fr0` interpolators.
+     * @group Constructors
+     */
     def apply(sql0: String, stackFrame0: Option[StackTraceElement]): Update0 =
       Update[Unit](sql0, stackFrame0).toUpdate0(())
 
