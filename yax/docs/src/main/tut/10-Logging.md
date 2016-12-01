@@ -8,7 +8,7 @@ In this chapter we discuss how to log statement execution and timing.
 
 ### Setting Up
 
-Once again we will set up our REPL with a transactor and YOLO mode.
+Once again we will set up our REPL with a transactor.
 
 ```tut:silent
 import doobie.imports._
@@ -18,10 +18,10 @@ import scalaz._, Scalaz._
 #+cats
 import cats._, cats.data._, cats.implicits._
 #-cats
+
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-import xa.yolo._
 ```
 
 We're still playing with the `country` table, shown here for reference.
@@ -77,7 +77,7 @@ Let's break down what we're seeing:
 
 ### Implicit Logging
 
-If you wish to turn on logging generally for existint code, you can introduce an implicit `LogHandler` that will get picked up and used by the `.query/.update` operations.
+If you wish to turn on logging generally, you can introduce an implicit `LogHandler` that will get picked up and used by the `.query/.update` operations.
 
 ```tut:silent
 implicit val han = LogHandler.jdkLogHandler
@@ -103,6 +103,8 @@ case class LogHandler(unsafeRun: LogEvent => Unit)
 - `ExecFailure` indicates that query execution failed, due to a key violation for example. This constructor provides timing information only for the (failed) execution as well as the raised exception.
 - `ProcessingFailure` indicates that execution was successful but resultset processing failed. This constructor provides timing information for both execution and (failed) processing, as well as the raised exception.
 
+The the Scaladoc for details on this data type.
+
 The simplest possible `LogHandler` does nothing at all, and this is what you get by default.
 
 ```tut:silent
@@ -116,10 +118,54 @@ implicit val trivial = LogHandler(e => Console.println("*** " + e))
 sql"select 42".queryWithLogHandler[Int](trivial).unique.transact(xa).unsafePerformIO
 ```
 
-See the `jdkLogHandler` implementation in `log.scala` in the doobie source code for more information.
+The `jdkLogHandler` implementation is straightforward. You might use it as a template to write a logger to suit your particular logging back-end.
+
+```tut:silent
+import java.util.logging.Logger
+import doobie.util.log._
+
+val jdkLogHandler: LogHandler = {
+  val jdkLogger = Logger.getLogger(getClass.getName)
+  LogHandler {
+
+    case Success(s, a, e1, e2) =>
+      jdkLogger.info(s"""Successful Statement Execution:
+        |
+        |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+        |
+        | arguments = [${a.mkString(", ")}]
+        |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (${(e1 + e2).toMillis} ms total)
+      """.stripMargin)
+
+    case ProcessingFailure(s, a, e1, e2, t) =>
+      jdkLogger.severe(s"""Failed Resultset Processing:
+        |
+        |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+        |
+        | arguments = [${a.mkString(", ")}]
+        |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (failed) (${(e1 + e2).toMillis} ms total)
+        |   failure = ${t.getMessage}
+      """.stripMargin)
+
+    case ExecFailure(s, a, e1, t) =>
+      jdkLogger.severe(s"""Failed Statement Execution:
+        |
+        |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+        |
+        | arguments = [${a.mkString(", ")}]
+        |   elapsed = ${e1.toMillis} ms exec (failed)
+        |   failure = ${t.getMessage}
+      """.stripMargin)
+
+  }
+}
+```
+
 
 ### Caveats
 
-Note that the `LogHandler` invocation is part of your program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.
+Logging is not yet supported for streaming (`.process` or YOLO mode's `.quick`).
+
+Note that the `LogHandler` invocation is part of your `ConnectionIO` program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.
 
 Further note that the handler is not transactional; anything your logger does stays done, even if the transaction is rolled back. This is only for diagnostics, not for business logic.
