@@ -3,6 +3,7 @@ package doobie.scalatest
 import doobie.free.connection._
 import doobie.util.analysis.{AlignmentError, Analysis}
 import doobie.util.pretty._
+import doobie.util.pos.Pos
 import doobie.util.query.{Query, Query0}
 import doobie.util.transactor.Transactor
 import doobie.util.update.{Update, Update0}
@@ -45,19 +46,19 @@ trait QueryChecker {
   def transactor: Transactor[IOLite]
 
   def check[A, B](q: Query[A, B])(implicit A: WeakTypeTag[A], B: WeakTypeTag[B]) =
-    checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.stackFrame, q.sql, q.analysis)
+    checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)
 
   def check[A](q: Query0[A])(implicit A: WeakTypeTag[A]) =
-    checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
+    checkAnalysis(s"Query0[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
   def checkOutput[A](q: Query0[A])(implicit A: WeakTypeTag[A]) =
-    checkAnalysis(s"Query0[${typeName(A)}]", q.stackFrame, q.sql, q.outputAnalysis)
+    checkAnalysis(s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis)
 
   def check[A](q: Update[A])(implicit A: WeakTypeTag[A]) =
-    checkAnalysis(s"Update[${typeName(A)}]", q.stackFrame, q.sql, q.analysis)
+    checkAnalysis(s"Update[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
   def check[A](q: Update0)(implicit A: WeakTypeTag[A]) =
-    checkAnalysis(s"Update0", q.stackFrame, q.sql, q.analysis)
+    checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
   /** Check if the analysis has an error */
   private def hasError(analysis: ConnectionIO[Analysis]): Boolean = {
@@ -71,7 +72,7 @@ trait QueryChecker {
   }
 
   private def checkAnalysis(typeName: String,
-                            stackFrame: Option[StackTraceElement],
+                            pos: Option[Pos],
                             sql: String,
                             analysis: ConnectionIO[Analysis]) = {
     if (hasError(analysis)) {
@@ -85,17 +86,17 @@ trait QueryChecker {
       }
 
       println(
-        s"  $typeName defined at ${loc(stackFrame)}\n" +
+        s"  $typeName defined at ${loc(pos)}\n" +
           formatSql(sql) + "\n" +
           analysisOutput)
-      fail(s"$typeName defined at ${loc(stackFrame)}")
+      fail(s"$typeName defined at ${loc(pos)}")
     }
   }
 
   private val packagePrefix = "\\b[a-z]+\\.".r
 
-  private def loc(f: Option[StackTraceElement]): String =
-    f.map(f => s"${f.getFileName}:${f.getLineNumber}").getOrElse("(source location unknown)")
+  private def loc(f: Option[Pos]): String =
+    f.map(f => s"${f.file}:${f.line}").getOrElse("(source location unknown)")
 
   private def assertEmpty(name: String, es: List[AlignmentError]): String =
     if (es.isEmpty) success(name, None)

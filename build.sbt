@@ -149,7 +149,8 @@ def coreSettings(mod: String) =
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       "org.scala-lang" %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
-      "com.chuusai"    %% "shapeless"     % "2.3.2"
+      "com.chuusai"    %% "shapeless"     % "2.3.2",
+      "com.lihaoyi"    %% "sourcecode"    % "0.1.3"
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {

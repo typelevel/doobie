@@ -1,5 +1,6 @@
 package doobie
 
+import doobie.util.pos.Pos
 import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
 import doobie.syntax.foldable.ToDoobieFoldableOps
@@ -91,7 +92,7 @@ object imports extends ToDoobieCatchSqlOps
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
-  implicit def toSqlInterpolator(sc: StringContext): doobie.syntax.string.SqlInterpolator =
+  implicit def toSqlInterpolator(sc: StringContext)(implicit pos: Pos): doobie.syntax.string.SqlInterpolator =
     new doobie.syntax.string.SqlInterpolator(sc)
 
   /** @group Syntax */
