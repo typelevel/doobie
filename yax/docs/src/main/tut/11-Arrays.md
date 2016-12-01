@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 10
+number: 11
 title: SQL Arrays
 ---
 

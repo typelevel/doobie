@@ -3,6 +3,7 @@ package doobie.util
 import doobie.util.composite.Composite
 import doobie.util.query.{ Query, Query0 }
 import doobie.util.update.{ Update, Update0 }
+import doobie.util.log.LogHandler
 import shapeless.HNil
 
 #+scalaz
@@ -43,12 +44,23 @@ object fragment {
       }
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
-    def query[B](implicit cb: Composite[B]): Query0[B] =
-      Query[A, B](sql, stackFrame)(ca, cb).toQuery0(a)
+    def query[B: Composite](implicit h: LogHandler = LogHandler.nop): Query0[B] =
+      queryWithLogHandler(h)
+
+    /**
+     * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
+     * `LogHandler`.
+     */
+    def queryWithLogHandler[B](h: LogHandler)(implicit cb: Composite[B]): Query0[B] =
+      Query[A, B](sql, stackFrame, h)(ca, cb).toQuery0(a)
 
     /** Construct an [[Update0]] from this fragment. */
-    def update: Update0 =
-      Update[A](sql, stackFrame)(ca).toUpdate0(a)
+    def update(implicit h: LogHandler = LogHandler.nop): Update0 =
+      updateWithLogHandler(h)
+
+    /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
+    def updateWithLogHandler(h: LogHandler): Update0 =
+      Update[A](sql, stackFrame, h)(ca).toUpdate0(a)
 
     override def toString =
       s"""Fragment("$sql")"""
@@ -81,7 +93,7 @@ object fragment {
     def const(sql: String, stackFrame: Option[StackTraceElement] = None): Fragment =
       Fragment[HNil](sql, HNil, stackFrame)
 
-    /** The empty fragment. Adding this to another fragment has no affect. */
+    /** The empty fragment. Adding this to another fragment has no effect. */
     val empty: Fragment =
       const("")
 

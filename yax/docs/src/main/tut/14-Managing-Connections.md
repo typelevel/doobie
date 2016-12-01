@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 13
+number: 14
 title: Managing Connections
 ---
 

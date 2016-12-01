@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 16
+number: 17
 title: Frequently-Asked Questions
 ---
 
@@ -212,9 +212,6 @@ sql"…".query[State]
 ```
 
 ### How do I time query execution?
-
-Because the actual execution of a query does not occur at the site in the code where the query is defined, logging timing is a little challenging. Rob wrote up an example of how to do it in [Issue #267](https://github.com/tpolecat/doobie/issues/267). You'll need to copy the `import`s and the `Combinators` trait into your code base. See the `wickland` object for an example of how to use the `Combinators.timed`.
-
 ### How do I log the SQL produced for my query after interpolation?
 
-The result of `sql"…".query` is a `Query0`. The `Query0` type has an `sql` method which provides the SQL. Unfortunately, the SQL includes `?` placeholders for the interpolated values in order to facilitate creating a prepared statement. If you want the values that were interpolated to appear in your logging, you'll have to separately include them in your logging statement.
+As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentation question. See [Chapter 10](10-Logging.html) for more details.
