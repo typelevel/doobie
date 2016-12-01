@@ -4,6 +4,7 @@ import doobie.util.composite.Composite
 import doobie.util.query.{ Query, Query0 }
 import doobie.util.update.{ Update, Update0 }
 import doobie.util.log.LogHandler
+import doobie.util.pos.Pos
 import shapeless.HNil
 
 #+scalaz
@@ -31,7 +32,7 @@ object fragment {
 
     // Stack frame, used by the query checker to guess the source position. This will go away at
     // some point, possibly in favor of Haoyi's source position doodad.
-    protected def stackFrame: Option[StackTraceElement]
+    protected def pos: Option[Pos]
 
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =
@@ -40,7 +41,7 @@ object fragment {
         val ca  = fa.ca zip fb.ca
         val a   = (fa.a, fb.a)
         val sql = fa.sql + fb.sql
-        val stackFrame = fa.stackFrame orElse fb.stackFrame
+        val pos = fa.pos orElse fb.pos
       }
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
@@ -52,7 +53,7 @@ object fragment {
      * `LogHandler`.
      */
     def queryWithLogHandler[B](h: LogHandler)(implicit cb: Composite[B]): Query0[B] =
-      Query[A, B](sql, stackFrame, h)(ca, cb).toQuery0(a)
+      Query[A, B](sql, pos, h)(ca, cb).toQuery0(a)
 
     /** Construct an [[Update0]] from this fragment. */
     def update(implicit h: LogHandler = LogHandler.nop): Update0 =
@@ -60,7 +61,7 @@ object fragment {
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLogHandler(h: LogHandler): Update0 =
-      Update[A](sql, stackFrame, h)(ca).toUpdate0(a)
+      Update[A](sql, pos, h)(ca).toUpdate0(a)
 
     override def toString =
       s"""Fragment("$sql")"""
@@ -74,7 +75,7 @@ object fragment {
      * placeholders to accommodate the fields of the given interpolated value. This is normally
      * accomplished via the string interpolator rather than direct construction.
      */
-    def apply[A0](sql0: String, a0: A0, stackFrame0: Option[StackTraceElement] = None)(
+    def apply[A0](sql0: String, a0: A0, pos0: Option[Pos] = None)(
       implicit ev: Composite[A0]
     ): Fragment =
       new Fragment {
@@ -82,7 +83,7 @@ object fragment {
         val ca  = ev
         val a   = a0
         val sql = sql0
-        val stackFrame = stackFrame0
+        val pos = pos0
       }
 
     /**
@@ -90,8 +91,8 @@ object fragment {
      * contain `?` placeholders. This is normally accomplished via the string interpolator rather
      * than direct construction.
      */
-    def const(sql: String, stackFrame: Option[StackTraceElement] = None): Fragment =
-      Fragment[HNil](sql, HNil, stackFrame)
+    def const(sql: String, pos: Option[Pos] = None): Fragment =
+      Fragment[HNil](sql, HNil, pos)
 
     /** The empty fragment. Adding this to another fragment has no effect. */
     val empty: Fragment =

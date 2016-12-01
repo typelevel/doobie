@@ -11,6 +11,7 @@ import doobie.hi.{ preparedstatement => HPS }
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
 import doobie.util.log._
+import doobie.util.pos.Pos
 
 #+scalaz
 import scalaz.{ Contravariant, Foldable, Catchable, -\/, \/- }
@@ -90,11 +91,11 @@ object update {
     val sql: String
 
     /**
-     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was
+     * An optional `[[Pos]]` indicating the source location where this `[[Query]]` was
      * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
-    val stackFrame: Option[StackTraceElement]
+    val pos: Option[Pos]
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
@@ -167,7 +168,7 @@ object update {
         val ai  = u.ai compose f
         val ic  = u.ic
         val sql = u.sql
-        val stackFrame = u.stackFrame
+        val pos = u.pos
         val logHandler = u.logHandler
       }
 
@@ -178,7 +179,7 @@ object update {
     def toUpdate0(a: A): Update0 =
       new Update0 {
         val sql = u.sql
-        val stackFrame = u.stackFrame
+        val pos = u.pos
         def analysis = u.analysis
         def run = u.run(a)
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
@@ -193,11 +194,11 @@ object update {
 
     /**
      * Construct an `Update` for some composite parameter type `A` with the given SQL string, and
-     * optionally a `StackTraceElement` and/or `LogHandler` for diagnostics. The normal mechanism
+     * optionally a `Pos` and/or `LogHandler` for diagnostics. The normal mechanism
      * for construction is the `sql/fr/fr0` interpolators.
      * @group Constructors
      */
-    def apply[A](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: LogHandler = LogHandler.nop)(
+    def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
       implicit C: Composite[A]
     ): Update[A] =
       new Update[A] {
@@ -206,7 +207,7 @@ object update {
         val ic  = C
         val sql = sql0
         val logHandler = logHandler0
-        val stackFrame = stackFrame0
+        val pos = pos0
       }
 
     /**
@@ -229,11 +230,11 @@ object update {
     val sql: String
 
     /**
-     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was
+     * An optional `[[Pos]]` indicating the source location where this `[[Query]]` was
      * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
-    val stackFrame: Option[StackTraceElement]
+    val pos: Option[Pos]
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
@@ -277,13 +278,13 @@ object update {
   object Update0 {
 
     /**
-     * Construct an `Update0` with the given SQL string, and optionally a `StackTraceElement`
+     * Construct an `Update0` with the given SQL string, and optionally a `Pos`
      * and/or `LogHandler` for diagnostics. The normal mechanism for construction is the
      * `sql/fr/fr0` interpolators.
      * @group Constructors
      */
-    def apply(sql0: String, stackFrame0: Option[StackTraceElement]): Update0 =
-      Update[Unit](sql0, stackFrame0).toUpdate0(())
+    def apply(sql0: String, pos0: Option[Pos]): Update0 =
+      Update[Unit](sql0, pos0).toUpdate0(())
 
   }
 

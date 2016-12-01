@@ -15,6 +15,7 @@ import doobie.free.{ preparedstatement => FPS }
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.util.log._
+import doobie.util.pos.Pos
 
 import doobie.syntax.process._
 import doobie.syntax.catchable._
@@ -99,11 +100,11 @@ object query {
     def sql: String
 
     /**
-     * An optional `[[StackTraceElement]]` indicating the source location where this `[[Query]]` was
+     * An optional `[[Pos]]` indicating the source location where this `[[Query]]` was
      * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
-    def stackFrame: Option[StackTraceElement]
+    def pos: Option[Pos]
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
@@ -192,7 +193,7 @@ object query {
         val ic: Composite[I] = outer.ic
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
-        def stackFrame = outer.stackFrame
+        def pos = outer.pos
         val logHandler = outer.logHandler
       }
 
@@ -206,7 +207,7 @@ object query {
         val ic: Composite[I] = outer.ic
         val oc: Composite[O] = outer.oc
         def sql = outer.sql
-        def stackFrame = outer.stackFrame
+        def pos = outer.pos
         val logHandler = outer.logHandler
       }
 
@@ -217,7 +218,7 @@ object query {
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
         def sql = outer.sql
-        def stackFrame = outer.stackFrame
+        def pos = outer.pos
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
         def processWithChunkSize(n: Int) = outer.processWithChunkSize(a, n)
@@ -234,12 +235,12 @@ object query {
   object Query {
 
     /**
-     * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
+     * Construct a `Query` with the given SQL string, an optional `Pos` for diagnostic
      * purposes, and composite type arguments for input and output types. Note that the most common
      * way to construct a `Query` is via the `sql` interpolator.
      * @group Constructors
      */
-    def apply[A, B](sql0: String, stackFrame0: Option[StackTraceElement] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
+    def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
       new Query[A, B] {
         type I = A
         type O = B
@@ -248,7 +249,7 @@ object query {
         implicit val ic: Composite[I] = A
         implicit val oc: Composite[O] = B
         val sql = sql0
-        val stackFrame = stackFrame0
+        val pos = pos0
         val logHandler = logHandler0
       }
 
@@ -305,11 +306,11 @@ object query {
     def sql: String
 
     /**
-     * An optional `StackTraceElement` indicating the source location where this `Query` was
+     * An optional `Pos` indicating the source location where this `Query` was
      * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
-    def stackFrame: Option[StackTraceElement]
+    def pos: Option[Pos]
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
@@ -401,13 +402,13 @@ object query {
   object Query0 {
 
     /**
-     * Construct a `Query` with the given SQL string, an optional `StackTraceElement` for diagnostic
+     * Construct a `Query` with the given SQL string, an optional `Pos` for diagnostic
      * purposes, with no parameters. Note that the most common way to construct a `Query` is via the
      * `sql`interpolator.
      * @group Constructors
      */
-     def apply[A: Composite](sql: String, stackFrame: Option[StackTraceElement] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
-       Query[Unit, A](sql, stackFrame, logHandler).toQuery0(())
+     def apply[A: Composite](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
+       Query[Unit, A](sql, pos, logHandler).toQuery0(())
 
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =

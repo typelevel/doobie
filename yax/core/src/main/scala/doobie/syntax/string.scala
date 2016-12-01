@@ -1,6 +1,7 @@
 package doobie.syntax
 
 import doobie.util.param.Param
+import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
 import shapeless.ProductArgs
 
@@ -12,16 +13,11 @@ object string {
    * interpolated values of type `A` and `B` (which must have `[[Param]]` instances, derived
    * automatically from `Meta` via `Atom`) yields a value of type `[[Fragment]]`.
    */
-  implicit class SqlInterpolator(private val sc: StringContext) {
-
-    private val stackFrame = {
-      import Predef._
-      Thread.currentThread.getStackTrace.lift(3)
-    }
+  implicit class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
 
     private def mkFragment[A](a: A, token: Boolean)(implicit ev: Param[A]): Fragment = {
       val sql = sc.parts.mkString("", "?", if (token) " " else "")
-      Fragment(sql, a, stackFrame)(ev.composite)
+      Fragment(sql, a, Some(pos))(ev.composite)
     }
 
     /**
