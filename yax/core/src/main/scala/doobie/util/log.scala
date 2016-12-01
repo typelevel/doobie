@@ -36,7 +36,7 @@ object log {
   /** @group Events */ case class ExecFailure      (sql: String, args: List[Any], exec: FD,                 failure: Throwable) extends LogEvent
 
   /**
-   * A sink for `LogEvent`s with input type `A`.
+   * A sink for `LogEvent`s.
    * @group Handlers
    */
   case class LogHandler(unsafeRun: LogEvent => Unit)
@@ -55,9 +55,8 @@ object log {
       LogHandler(_ => ())
 
     /**
-     * A LogHandler that writes a default format to a JDK Logger, given an `HList` argument type
-     * with `ToTraversable` evidence, as is available when using the `sql` interpolator. This is
-     * provided for demonstration purposes and is not intended for production use.
+     * A LogHandler that writes a default format to a JDK Logger. This is provided for demonstration
+     * purposes and is not intended for production use.
      * @group Constructors
      */
     @deprecated("This example LogHandler is not intended for production use. Write your own!", "0.3.1")

@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 15
+number: 16
 title: Extensions for H2
 ---
 

@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 14
+number: 15
 title: Extensions for PostgreSQL
 ---
 
