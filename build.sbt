@@ -8,7 +8,7 @@ enablePlugins(CrossPerProjectPlugin)
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.0",
+  scalaVersion := "2.12.1",
   crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 )
 
