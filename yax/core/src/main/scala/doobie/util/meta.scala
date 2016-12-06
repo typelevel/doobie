@@ -165,7 +165,9 @@ object meta {
       Order.orderBy(_.fold(
 #-scalaz
 #+cats
-      Order.by(_.fold(
+      // Type argument necessary to avoid spurious "illegal cyclic reference involving object Meta"
+      // only in Scala 2.11, and only with cats for whatever reason. Confidence high!
+      Order.by[Meta[_], (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], List[JdbcType]) \/ (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], NonEmptyList[String])](_.fold(
 #-cats
         b => -\/((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
         a => \/-((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
@@ -186,9 +188,7 @@ object meta {
 
     // sorry
     private def reg(m: Meta[_]): Unit =
-      synchronized {
-          instances = instances + m
-      }
+      synchronized { instances = instances + m }
 
     implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
       IntMeta.xmap(doobie.enum.jdbctype.JdbcType.unsafeFromInt, _.toInt)
