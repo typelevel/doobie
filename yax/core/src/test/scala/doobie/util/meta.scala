@@ -1,7 +1,9 @@
 package doobie.util
 
 import shapeless._, shapeless.test._
+import scala.Predef.classOf
 import doobie.imports._
+import doobie.enum.jdbctype._
 import org.specs2.mutable.Specification
 
 object metaspec extends Specification {
@@ -12,6 +14,9 @@ object metaspec extends Specification {
 
   case class Z(i: Int, s: String)
   object S
+
+  case class Reg1(x: Int)
+  case class Reg2(x: Int)
 
   "Meta" should {
 
@@ -37,6 +42,18 @@ object metaspec extends Specification {
       illTyped("Meta[S.type]")
 
       true
+    }
+
+    "register new instances" in {
+      Meta[Reg1]
+      Meta.readersOf(Integer, "").filter(_.scalaType == "doobie.util.metaspec.Reg1").size must_== 1
+    }
+
+    "not register multiple equivalent instances" in {
+      Meta[Reg2]
+      Meta[Reg2]
+      Meta[Reg2]
+      Meta.readersOf(Integer, "").filter(_.scalaType == "doobie.util.metaspec.Reg2").size must_== 1
     }
 
   }
