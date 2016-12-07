@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 09
+number: 9
 title: Error Handling
 ---
 
