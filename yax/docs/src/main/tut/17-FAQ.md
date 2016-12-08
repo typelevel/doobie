@@ -43,6 +43,22 @@ sql"select $s :: char".query[String].check.unsafePerformIO
 
 You can use a `for` comprehension to compose any number of `ConnectionIO` programs, and then call `.transact(xa)` on the result. All of the composed programs will run in the same transaction. For this reason it's useful for your APIs to expose values in `ConnectionIO`, so higher-level code can place transaction boundaries as needed.
 
+### How do I run something outside of a transaction?
+
+`Transactor.transact` takes a `ConnectionIO` and constructs a `Task` or similar that will run it in a single transaction, but it is also possible to include transaction boundaries *within* a `ConnectionIO`, and to disable transaction handling altogether. Some kinds of DDL statements may require this for some databases. You can define a combinator to do this for you.
+
+```tut:silent
+/**
+ * Take a program `p` and return an equivalent one that first commits any ongoing transaction, runs
+ * `p` without transaction handling, then starts a new transaction.
+ */
+def withoutTransaction[A](p: ConnectionIO[A]): ConnectionIO[A] =
+  FC.setAutoCommit(true) *> p <* FC.setAutoCommit(false)
+```
+
+Note that you need both of these operations if you are using a `Transactor` because it will always start a transaction and will try to commit on completion.
+
+
 ### How do I turn an arbitrary SQL string into a `Query0/Update0`?
 
 As of **doobie** 0.3.1 this is done via [statement fragments](08-Fragments.html). Here we choose the sort order dynamically.
