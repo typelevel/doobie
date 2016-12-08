@@ -232,7 +232,7 @@ sql"…".query[State]
 
 As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentation question. See [Chapter 10](10-Logging.html) for more details.
 
-### Whay is there no `Meta[SQLXML]`?
+### Why is there no `Meta[SQLXML]`?
 
 There are a lot of ways to handle `SQLXML` so there is no pre-defined strategy, but here is one that maps `scala.xml.Elem` to `SQLXML` via streaming.
 
