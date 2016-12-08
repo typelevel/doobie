@@ -243,8 +243,14 @@ import scala.xml.{ XML, Elem }
 
 implicit val XmlMeta: Meta[Elem] =
   Meta.advanced[Elem](
+#+scalaz
     NonEmptyList(Other),
     NonEmptyList("xml"),
+#-scalaz    
+#+cats
+    NonEmptyList.of(Other),
+    NonEmptyList.of("xml"),
+#-cats    
     (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
     (n,  e) => FPS.raw { ps =>
       val sqlXml = ps.getConnection.createSQLXML
