@@ -231,3 +231,28 @@ sql"…".query[State]
 ### How do I log the SQL produced for my query after interpolation?
 
 As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentation question. See [Chapter 10](10-Logging.html) for more details.
+
+### Whay is there no `Meta[SQLXML]`?
+
+There are a lot of ways to handle `SQLXML` so there is no pre-defined strategy, but here is one that maps `scala.xml.Elem` to `SQLXML` via streaming.
+
+```tut:silent
+import doobie.enum.jdbctype.Other
+import java.sql.SQLXML
+import scala.xml.{ XML, Elem }
+
+implicit val XmlMeta: Meta[Elem] =
+  Meta.advanced[Elem](
+    NonEmptyList(Other),
+    NonEmptyList("xml"),
+    (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
+    (n,  e) => FPS.raw { ps =>
+      val sqlXml = ps.getConnection.createSQLXML
+      val osw = new java.io.OutputStreamWriter(sqlXml.setBinaryStream)
+      XML.write(osw, e, "UTF-8", false, null)
+      osw.close
+      ps.setObject(n, sqlXml)
+    },
+    (_,  _) => sys.error("update not supported, sorry")
+  )
+```
