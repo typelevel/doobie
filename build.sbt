@@ -209,12 +209,12 @@ lazy val example = project.in(file("modules/example"))
     yax(file("yax/example"), "scalaz"),
     scalazCrossSettings
   )
-  .dependsOn(core, postgres, specs2, hikari, h2)
+  .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
 
 lazy val example_cats = project.in(file("modules-cats/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(yax(file("yax/example"), "cats", "fs2"))
-  .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
+  .dependsOn(core_cats, postgres_cats, specs2_cats, scalatest_cats, hikari_cats, h2_cats)
 
 ///
 /// POSTGRES

@@ -71,26 +71,25 @@ trait QueryChecker {
     }
   }
 
-  private def checkAnalysis(typeName: String,
-                            pos: Option[Pos],
-                            sql: String,
-                            analysis: ConnectionIO[Analysis]) = {
-    if (hasError(analysis)) {
-      val analysisOutput = transactor.trans(analysis).attempt.unsafePerformIO match {
-        case -\/(e) =>
-          failure("SQL fails typechecking", formatError(e.getMessage))
-        case \/-(a) =>
-          success("SQL compiles and typechecks", None) +
-            a.paramDescriptions.map { case (s, es)  => assertEmpty(s, es) }.mkString("\n") +
-            a.columnDescriptions.map { case (s, es) => assertEmpty(s, es) }.mkString("\n")
-      }
-
-      println(
-        s"  $typeName defined at ${loc(pos)}\n" +
-          formatSql(sql) + "\n" +
-          analysisOutput)
-      fail(s"$typeName defined at ${loc(pos)}")
+  private def checkAnalysis(
+    typeName: String,
+    pos:      Option[Pos],
+    sql:      String,
+    analysis: ConnectionIO[Analysis]
+  ) = {
+    val analysisOutput = transactor.trans(analysis).attempt.unsafePerformIO match {
+      case -\/(e) =>
+        failure("SQL fails typechecking", formatError(e.getMessage))
+      case \/-(a) =>
+        success("SQL compiles and typechecks", None) +
+          a.paramDescriptions.map { case (s, es) => assertEmpty(s, es) }
+            .map(s => s"  $s")
+            .mkString +
+          a.columnDescriptions.map { case (s, es) => assertEmpty(s, es) }
+            .map(s => s"  $s")
+            .mkString
     }
+    println(s"  $typeName defined at ${loc(pos)}\n${formatSql(sql)}\n  ${analysisOutput}")
   }
 
   private val packagePrefix = "\\b[a-z]+\\.".r

@@ -65,7 +65,7 @@ object analysisspec {
       checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
     private def checkAnalysis(typeName: String, pos: Option[Pos], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
-      s"$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
+      s"\n$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
         transactor.trans(analysis).attempt.unsafePerformIO match {
           case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
           case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
