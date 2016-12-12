@@ -13,10 +13,10 @@ import org.scalatest.FunSuite
 import scala.reflect.runtime.universe.WeakTypeTag
 
 #+scalaz
-import scalaz.{ -\/, \/- }
+import scalaz.{ \/, -\/, \/- }
 #-scalaz
 #+cats
-import scala.util.{ Left => -\/, Right => \/- }
+import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 #-cats
 
 
@@ -34,8 +34,8 @@ import scala.util.{ Left => -\/, Right => \/- }
   *   )
   *
   *   // Now just mention the queries. Arguments are not used.
-  *   check(MyDaoModule.findByNameAndAge(null, 0))
-  *   check(MyDaoModule.allWoozles)
+  *   test("findByNameAndAge") { check(MyDaoModule.findByNameAndAge(null, 0)) }
+  *   test("allWoozles") { check(MyDaoModule.allWoozles) }
   *
   * }
   * }}}
@@ -61,15 +61,14 @@ trait QueryChecker {
     checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
   /** Check if the analysis has an error */
-  private def hasError(analysis: ConnectionIO[Analysis]): Boolean = {
-    transactor.trans(analysis).attempt.unsafePerformIO match {
+  private def hasError(analysisAttempt: Throwable \/ Analysis): Boolean =
+    analysisAttempt match {
       case -\/(e) => true
       case \/-(a) =>
         !(a.paramDescriptions.map { case (s, es) => es.isEmpty } ++ a.columnDescriptions.map {
           case (s, es)                           => es.isEmpty
         }).forall(x => x)
     }
-  }
 
   private def checkAnalysis(
     typeName: String,
@@ -77,7 +76,8 @@ trait QueryChecker {
     sql:      String,
     analysis: ConnectionIO[Analysis]
   ) = {
-    val analysisOutput = transactor.trans(analysis).attempt.unsafePerformIO match {
+    val analysisAttempt = transactor.trans(analysis).attempt.unsafePerformIO
+    val analysisOutput = analysisAttempt match {
       case -\/(e) =>
         failure("SQL fails typechecking", formatError(e.getMessage))
       case \/-(a) =>
@@ -89,7 +89,11 @@ trait QueryChecker {
             .map(s => s"  $s")
             .mkString
     }
-    println(s"  $typeName defined at ${loc(pos)}\n${formatSql(sql)}\n  ${analysisOutput}")
+    if (hasError(analysisAttempt)) {
+      fail(s"  $typeName defined at ${loc(pos)}\n${formatSql(sql)}\n  ${analysisOutput}")
+      // fail("Query checking failed")
+    }
+    else succeed
   }
 
   private val packagePrefix = "\\b[a-z]+\\.".r
@@ -113,13 +117,11 @@ trait QueryChecker {
       case Nil     => Nil
     }).mkString("\n")
 
-  private def formatSql(sql: String): String = {
-    val line = sql.lines.dropWhile(_.trim.isEmpty).map(s => s"  \033[37m$s${Console.RESET}").mkString("")
-    s"\n$line\n"
-  }
+  private def formatSql(sql: String): String =
+    sql.lines.dropWhile(_.trim.isEmpty).map(s => s"  \033[37m$s${Console.RESET}").mkString("\n", "\n", "")
 
   private def failure(name: String, desc: String): String =
-    s"${Console.RED}  ✕ ${Console.RESET}$name\n" + desc.lines.map(s => s"  $s").mkString("\n")
+    s"${Console.RED}  ✕ ${Console.RESET}$name\n" + desc.lines.map(s => s"  $s").mkString("", "\n", "\n")
 
   private def success(name: String, desc: Option[String]): String =
     s"${Console.GREEN}  ✓ ${Console.RESET}$name\n" + desc.mkString("\n")
