@@ -8,7 +8,7 @@ import doobie.util.query.{Query, Query0}
 import doobie.util.transactor.Transactor
 import doobie.util.update.{Update, Update0}
 import doobie.util.iolite.IOLite
-import org.scalatest.FunSuite
+import org.scalatest.Assertions
 
 import scala.reflect.runtime.universe.WeakTypeTag
 
@@ -41,7 +41,7 @@ import scala.util.{ Either => \/, Left => -\/, Right => \/- }
   * }}}
   */
 trait QueryChecker {
-  self: FunSuite =>
+  self: Assertions =>
 
   def transactor: Transactor[IOLite]
 
@@ -77,23 +77,21 @@ trait QueryChecker {
     analysis: ConnectionIO[Analysis]
   ) = {
     val analysisAttempt = transactor.trans(analysis).attempt.unsafePerformIO
-    val analysisOutput = analysisAttempt match {
-      case -\/(e) =>
-        failure("SQL fails typechecking", formatError(e.getMessage))
-      case \/-(a) =>
-        success("SQL compiles and typechecks", None) +
-          a.paramDescriptions.map { case (s, es) => assertEmpty(s, es) }
-            .map(s => s"  $s")
-            .mkString +
-          a.columnDescriptions.map { case (s, es) => assertEmpty(s, es) }
-            .map(s => s"  $s")
-            .mkString
-    }
     if (hasError(analysisAttempt)) {
+      val analysisOutput = analysisAttempt match {
+        case -\/(e) =>
+          failure("SQL fails typechecking", formatError(e.getMessage))
+        case \/-(a) =>
+          success("SQL compiles and typechecks", None) +
+            a.paramDescriptions.map { case (s, es) => assertEmpty(s, es) }
+              .map(s => s"  $s")
+              .mkString +
+            a.columnDescriptions.map { case (s, es) => assertEmpty(s, es) }
+              .map(s => s"  $s")
+              .mkString
+      }
       fail(s"  $typeName defined at ${loc(pos)}\n${formatSql(sql)}\n  ${analysisOutput}")
-      // fail("Query checking failed")
     }
-    else succeed
   }
 
   private val packagePrefix = "\\b[a-z]+\\.".r
