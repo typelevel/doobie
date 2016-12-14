@@ -6,8 +6,8 @@ import OsgiKeys._
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M3")
+  scalaVersion := "2.12.1",
+  crossScalaVersions := Seq("2.10.6", "2.11.8", scalaVersion.value)
 )
 
 lazy val commonSettings = Seq(
@@ -32,10 +32,10 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.scalacheck" %% "scalacheck"  % "1.13.0" % "test",
-      "org.specs2"     %% "specs2-core" % "3.7.1"  % "test"
+      "org.scalacheck" %% "scalacheck"  % "1.13.4" % "test",
+      "org.specs2"     %% "specs2-core" % "3.8.6"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
@@ -101,10 +101,10 @@ lazy val core = project.in(file("core"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scala-lang"    %  "scala-reflect"    % scalaVersion.value, // required for shapeless macros
-      "org.scalaz"        %% "scalaz-core"      % "7.2.0",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.0",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.8a",
-      "com.chuusai"       %% "shapeless"        % "2.3.0",
+      "org.scalaz"        %% "scalaz-core"      % "7.2.7",
+      "org.scalaz"        %% "scalaz-effect"    % "7.2.7",
+      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
+      "com.chuusai"       %% "shapeless"        % "2.3.2",
       "com.h2database"    %  "h2"               % "1.3.170" % "test"
     )
   )
@@ -213,7 +213,7 @@ lazy val specs2 = project.in(file("contrib/specs2"))
   .settings(name := "doobie-contrib-specs2")
   .settings(description := "Specs2 support for doobie.")
   .settings(doobieSettings ++ publishSettings)
-  .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.7.1")
+  .settings(libraryDependencies += "org.specs2" %% "specs2-core" % "3.8.6")
   .dependsOn(core)
 
 lazy val docs = project.in(file("doc"))
@@ -280,4 +280,3 @@ def macroParadise(v: String): List[ModuleID] =
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
-
