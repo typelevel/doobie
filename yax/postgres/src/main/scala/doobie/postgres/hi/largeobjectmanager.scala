@@ -3,7 +3,7 @@ package doobie.postgres.hi
 import doobie.imports._
 import doobie.postgres.imports._
 
-import java.io.File
+import java.io.{File, OutputStream, InputStream}
 
 #+scalaz
 import scalaz.syntax.monad._
@@ -38,4 +38,11 @@ object largeobjectmanager {
   def createFileFromLO(blockSize: Int, oid: Long, file: File): LargeObjectManagerIO[Unit] =
     open(oid)(PHLO.copyToFile(blockSize, file))
 
+  def createLOFromStream(blockSize: Int, is: InputStream): LargeObjectManagerIO[Long] =
+    PHLOM.createLO >>= { oid =>
+      PHLOM.open(oid)(PHLO.copyFromStream(blockSize, is)).as(oid)
+    }
+
+  def createStreamFromLO(blockSize: Int, oid: Long, os: OutputStream): LargeObjectManagerIO[Unit] =
+    open(oid)(PHLO.copyToStream(blockSize, os))
 }

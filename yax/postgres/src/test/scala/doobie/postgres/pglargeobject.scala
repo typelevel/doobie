@@ -4,7 +4,7 @@ import doobie.imports._
 import doobie.postgres.imports._
 import doobie.util.iolite.IOLite
 
-import java.io.File
+import java.io.{File, FileInputStream, FileOutputStream}
 
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
@@ -34,6 +34,20 @@ object pglargeobjectspec extends Specification with FileEquality {
       }
       PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformIO
       filesEqual(in, out)
+      out.delete()
+    }
+
+    "allow round-trip from stream to large object and back" in  {
+      val in   = new File("world.sql")
+      val out  = File.createTempFile("doobie", "tst")
+      val is = new FileInputStream(in)
+      val os = new FileOutputStream(out)
+      val prog = PHLOM.createLOFromStream(1024 * 16, is) >>= { oid =>
+        PHLOM.createStreamFromLO(1024 * 16, oid, os) *> PHLOM.delete(oid)
+      }
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformIO
+      filesEqual(in, out)
+      out.delete()
     }
 
   }
