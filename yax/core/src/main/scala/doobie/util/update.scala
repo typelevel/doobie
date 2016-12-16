@@ -12,6 +12,7 @@ import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
 import doobie.util.log._
 import doobie.util.pos.Pos
+import doobie.util.fragment.Fragment
 
 #+scalaz
 import scalaz.{ Contravariant, Foldable, Catchable, -\/, \/- }
@@ -91,11 +92,15 @@ object update {
     val sql: String
 
     /**
-     * An optional `[[Pos]]` indicating the source location where this `[[Query]]` was
+     * An optional `[[Pos]]` indicating the source location where this `[[Update]]` was
      * constructed. This is used only for diagnostic purposes.
      * @group Diagnostics
      */
     val pos: Option[Pos]
+
+    /** Turn this `Update` into a `Fragment`, given an argument. */
+    def toFragment(a: A): Fragment =
+      Fragment(sql, ai(a), pos)
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
@@ -180,6 +185,7 @@ object update {
       new Update0 {
         val sql = u.sql
         val pos = u.pos
+        def toFragment = u.toFragment(a)
         def analysis = u.analysis
         def run = u.run(a)
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
@@ -235,6 +241,9 @@ object update {
      * @group Diagnostics
      */
     val pos: Option[Pos]
+
+    /** Turn this `Update`0 into a `Fragment`. */
+    def toFragment: Fragment
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
