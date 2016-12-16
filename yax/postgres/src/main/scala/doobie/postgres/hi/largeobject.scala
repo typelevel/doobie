@@ -4,7 +4,7 @@ import doobie.imports._
 import doobie.util.io.IOActions
 import doobie.postgres.imports._
 
-import java.io.File
+import java.io.{File, InputStream, OutputStream}
 
 #+scalaz
 import scalaz.syntax.apply._
@@ -23,4 +23,13 @@ object largeobject {
   def copyToFile(blockSize: Int, file: File): LargeObjectIO[Unit] =
     PFLO.getInputStream.flatMap { is => io.copyStreamToFile(blockSize, file, is) }
 
+  def copyFromStream(blockSize: Int, is: InputStream): LargeObjectIO[Unit] =
+    PFLO.getOutputStream.flatMap { os =>
+      io.copyStream(new Array[Byte](blockSize))(is, os)
+    }
+
+  def copyToStream(blockSize: Int, os: OutputStream): LargeObjectIO[Unit] =
+    PFLO.getInputStream.flatMap { is =>
+      io.copyStream(new Array[Byte](blockSize))(is, os)
+    }
 }
