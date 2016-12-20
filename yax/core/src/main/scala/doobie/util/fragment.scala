@@ -66,6 +66,10 @@ object fragment {
     override def toString =
       s"""Fragment("$sql")"""
 
+    /** Used only for testing; this uses universal equality on the captured argument. */
+    private[util] def unsafeEquals(fb: Fragment): Boolean =
+      fa.a == fb.a && fa.sql == fb.sql
+
   }
 
   object Fragment {
