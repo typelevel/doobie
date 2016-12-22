@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 12
+number: 14
 title: Managing Connections
 ---
 
@@ -59,7 +59,7 @@ val xa = DriverManagerTransactor[IOLite](
 
 ### Using a HikariCP Connection Pool
 
-The `doobie-contrib-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
+The `doobie-hikari-cats` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
 ```tut:silent
 import doobie.hikari.hikaritransactor._
@@ -122,9 +122,3 @@ val task = prog.transK[IOLite].run(rs) // IOLite[Int]
 ```
 
 This facility allows you to mix **doobie** programs into existing JDBC applications in a fine-grained manner if this meets your needs.
-
-
-
-
-
-

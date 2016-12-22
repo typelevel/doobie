@@ -246,7 +246,7 @@ object driver extends DriverIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DriverIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[DriverOp, A](Lift(j, action, mod))
 
   /**
    * Lift a DriverIO[A] into an exception-capturing DriverIO[Throwable \/ A].

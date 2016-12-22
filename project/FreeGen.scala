@@ -357,7 +357,7 @@ class FreeGen(managed: List[Class[_]], log: Logger) {
     |   * @group Constructors (Lifting)
     |   */
     |  def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ${sname}IO[A] =
-    |    F.liftF(Lift(j, action, mod))
+    |    F.liftF[${sname}Op, A](Lift(j, action, mod))
     |
     |  /**
     |   * Lift a ${sname}IO[A] into an exception-capturing ${sname}IO[Throwable \\/ A].

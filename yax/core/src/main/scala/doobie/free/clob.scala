@@ -283,7 +283,7 @@ object clob extends ClobIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): ClobIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[ClobOp, A](Lift(j, action, mod))
 
   /**
    * Lift a ClobIO[A] into an exception-capturing ClobIO[Throwable \/ A].

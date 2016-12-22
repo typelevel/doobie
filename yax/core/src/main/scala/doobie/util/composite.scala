@@ -34,10 +34,10 @@ import java.sql.ParameterMetaData
  */
 object composite {
 
-  @implicitNotFound("""Could not find or construct Composite[${A}]. 
-Ensure that this type has a Composite instance in scope; or is a Product type whose members have 
-Composite instances in scope; or is an atomic type with an Atom instance in scope. You can usually 
-diagnose this problem by trying to summon the Composite instance for each element in the REPL. See 
+  @implicitNotFound("""Could not find or construct Composite[${A}].
+Ensure that this type has a Composite instance in scope; or is a Product type whose members have
+Composite instances in scope; or is an atomic type with an Atom instance in scope. You can usually
+diagnose this problem by trying to summon the Composite instance for each element in the REPL. See
 the FAQ in the Book of Doobie for more hints.""")
   trait Composite[A] { c =>
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
@@ -58,7 +58,23 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet    = (r: ResultSet, n: Int) => f(c.unsafeGet(r,n))
         val length = c.length
         val meta   = c.meta
+        def toList(b: B) = c.toList(g(b))
       }
+
+    /** Product of two Composites. */
+    def zip[B](cb: Composite[B]): Composite[(A, B)] =
+      new Composite[(A, B)] {
+        val set    = (n: Int, ab: (A, B)) => c.set(n, ab._1) *> cb.set(n + c.length, ab._2)
+        val update = (n: Int, ab: (A, B)) => c.update(n, ab._1) *> cb.update(n + c.length, ab._2)
+        val unsafeGet = (r: ResultSet, n: Int) => (c.unsafeGet(r,n), cb.unsafeGet(r, n + c.length))
+        val length = c.length + cb.length
+        val meta   = c.meta ++ cb.meta
+        def toList(p: (A, B)) = c.toList(p._1) ++ cb.toList(p._2)
+      }
+
+    /** Flatten the composite into its untyped constituents. This is only useful for logging. */
+    def toList(a: A): List[Any]
+
   }
 
   object Composite extends LowerPriorityComposite {
@@ -67,14 +83,14 @@ the FAQ in the Book of Doobie for more hints.""")
 
     implicit val compositeInvariantFunctor: InvariantFunctor[Composite] =
       new InvariantFunctor[Composite] {
-#+scalaz        
+#+scalaz
         def xmap[A, B](ma: Composite[A], f: A => B, g: B => A): Composite[B] =
           ma.xmap(f, g)
-#-scalaz        
-#+cats        
+#-scalaz
+#+cats
         def imap[A, B](ma: Composite[A])(f: A => B)(g: B => A): Composite[B] =
           ma.imap(f)(g)
-#-cats              
+#-cats
       }
 
     implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
@@ -84,6 +100,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = A.unsafeGet
         val length = 1
         val meta = List(A.meta)
+        def toList(a: A) = List(a)
       }
 
     // Composite for shapeless record types
@@ -94,6 +111,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (r: ResultSet, i: Int) => field[K](H.unsafeGet(r, i)) :: T.unsafeGet(r, i + H.length)
         val length = H.length + T.length
         val meta = H.meta ++ T.meta
+        def toList(l: FieldType[K, H] :: T) = H.toList(l.head) ++ T.toList(l.tail)
       }
 
   }
@@ -110,6 +128,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
         val length = H.length + T.length
         val meta = H.meta ++ T.meta
+        def toList(l: H :: T) = H.toList(l.head) ++ T.toList(l.tail)
       }
 
     implicit def emptyProduct: Composite[HNil] =
@@ -119,15 +138,17 @@ the FAQ in the Book of Doobie for more hints.""")
         val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
         val length = 0
         val meta = Nil
+        def toList(l: HNil) = Nil
       }
 
-    implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] = 
+    implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
       new Composite[F] {
         val set: (Int, F) => PS.PreparedStatementIO[Unit] = (n, f) => G.value.set(n, gen.to(f))
         val update: (Int, F) => RS.ResultSetIO[Unit] = (n, f) => G.value.update(n, gen.to(f))
         val unsafeGet: (ResultSet, Int) => F = (rs, n) => gen.from(G.value.unsafeGet(rs, n))
         val length: Int = G.value.length
         val meta: List[(Meta[_], NullabilityKnown)] = G.value.meta
+        def toList(f: F) = G.value.toList(gen.to(f))
       }
 
   }

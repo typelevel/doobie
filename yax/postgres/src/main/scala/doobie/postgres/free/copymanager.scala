@@ -252,7 +252,7 @@ object copymanager extends CopyManagerIOInstances {
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyManager, A] =
-      ma.foldMapUnsafe[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
 #-fs2
   }
 

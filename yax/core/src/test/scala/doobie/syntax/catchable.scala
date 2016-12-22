@@ -5,7 +5,9 @@ import scalaz.syntax.monad._
 import scalaz.syntax.catchable._
 #-scalaz
 #+cats
-import doobie.util.catchable._
+#+fs2
+import fs2.interop.cats._
+#-fs2
 import cats.implicits._
 #-cats
 
@@ -21,10 +23,13 @@ object catchablespec extends Specification {
       true
     }
 
+// TODO Remove yax (https://github.com/tpolecat/doobie/issues/369)
+#+scalaz
     "work on unaliased IConnection" in {
       42.pure[ConnectionIO].map(_ + 1).attempt
       true
     }
+#-scalaz
 
   }
 

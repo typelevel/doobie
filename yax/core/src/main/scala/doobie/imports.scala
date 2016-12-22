@@ -1,7 +1,9 @@
 package doobie
 
+import doobie.util.pos.Pos
 import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
+import doobie.syntax.foldable.ToDoobieFoldableOps
 
 #+scalaz
 import scalaz.{ Monad, Catchable, Unapply, Leibniz, Free, Functor }
@@ -17,7 +19,9 @@ import fs2.{ Stream => Process }
 #-fs2
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
-object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
+object imports extends ToDoobieCatchSqlOps
+                  with ToDoobieCatchableOps
+                  with ToDoobieFoldableOps {
 
   /**
    * Alias for `doobie.free.connection`.
@@ -88,7 +92,7 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
-  implicit def toSqlInterpolator(sc: StringContext): doobie.syntax.string.SqlInterpolator =
+  implicit def toSqlInterpolator(sc: StringContext)(implicit pos: Pos): doobie.syntax.string.SqlInterpolator =
     new doobie.syntax.string.SqlInterpolator(sc)
 
   /** @group Syntax */
@@ -124,8 +128,8 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
   /** @group Type Aliases */      type SqlState = doobie.enum.sqlstate.SqlState
   /** @group Companion Aliases */ val  SqlState = doobie.enum.sqlstate.SqlState
 
-  /** @group Type Aliases */      type Param[A] = doobie.syntax.string.Param[A]
-  /** @group Companion Aliases */ val  Param    = doobie.syntax.string.Param
+  /** @group Type Aliases */      type Param[A] = doobie.util.param.Param[A]
+  /** @group Companion Aliases */ val  Param    = doobie.util.param.Param
 
   /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
 
@@ -134,6 +138,14 @@ object imports extends ToDoobieCatchSqlOps with ToDoobieCatchableOps {
 
   /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
   /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
+
+  /** @group Type Aliases */      type LogHandler = doobie.util.log.LogHandler
+  /** @group Companion Aliases */ val  LogHandler = doobie.util.log.LogHandler
+
+  /** @group Type Aliases */      type Fragment = doobie.util.fragment.Fragment
+  /** @group Companion Aliases */ val  Fragment = doobie.util.fragment.Fragment
+
+  /** @group Companion Aliases */ val  Fragments = doobie.util.fragments
 
 #+scalaz
   /** @group Typeclass Instances */

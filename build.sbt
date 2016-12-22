@@ -8,11 +8,12 @@ enablePlugins(CrossPerProjectPlugin)
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.11.8"
+  scalaVersion := "2.12.1",
+  crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 )
 
 lazy val scalazCrossSettings = Seq(
-  crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M4")
+  crossScalaVersions := "2.10.6" +: crossScalaVersions.value
 )
 
 lazy val commonSettings = Seq(
@@ -29,6 +30,9 @@ lazy val commonSettings = Seq(
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Ywarn-value-discard"
+    ) ++ (
+      if (scalaVersion.value startsWith "2.12") Seq("-Ypartial-unification")
+      else Nil
     ),
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
@@ -37,11 +41,11 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.scalacheck" %% "scalacheck"        % "1.13.1" % "test",
-      "org.specs2"     %% "specs2-core"       % "3.8.4"  % "test",
-      "org.specs2"     %% "specs2-scalacheck" % "3.8.4"  % "test"
+      "org.scalacheck" %% "scalacheck"        % "1.13.4" % "test",
+      "org.specs2"     %% "specs2-core"       % "3.8.6"  % "test",
+      "org.specs2"     %% "specs2-scalacheck" % "3.8.6"  % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 )
 
 lazy val publishSettings = osgiSettings ++ Seq(
@@ -96,8 +100,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats) //, docs, docs_cats
+  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
+  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .settings(freeGenSettings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
@@ -122,33 +126,6 @@ lazy val doobie = project.in(file("."))
     }
   )
 
-// Workaround to avoid cyclic dependency
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val tuut = taskKey[Seq[(File, String)]]("Temporary task to conditionally skip tut")
-
-// Temporarily skip tut for Scala 2.12
-// TODO remove after tut-core and argonaut for Scala 2.12 is released
-lazy val docSkipScala212Settings = Seq(
-  libraryDependencies ++= {
-    if (scalaVersion.value startsWith "2.12") Nil
-    else {
-      val circeVersion = "0.5.0-M2"
-      Seq(
-        "io.circe" %% "circe-core",
-        "io.circe" %% "circe-generic",
-        "io.circe" %% "circe-parser"
-      ).map(_ % circeVersion) ++
-      Seq("io.argonaut" %% "argonaut" % "6.2-M1")
-    }
-  },
-  tuut := Def.taskDyn {
-    if (scalaVersion.value startsWith "2.12")
-      Def.task(Seq.empty[(File, String)])
-    else
-      Def.task(tut.value)
-  }.value
-)
-
 lazy val noPublishSettings = Seq(
   publish := (),
   publishLocal := (),
@@ -156,7 +133,7 @@ lazy val noPublishSettings = Seq(
 )
 
 def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full))
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
@@ -165,14 +142,15 @@ lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
 /// CORE
 ///
 
-def coreSettings(mod: String) = 
-  doobieSettings  ++ 
+def coreSettings(mod: String) =
+  doobieSettings  ++
   publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       "org.scala-lang" %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
-      "com.chuusai"    %% "shapeless"     % "2.3.1"
+      "com.chuusai"    %% "shapeless"     % "2.3.2",
+      "com.lihaoyi"    %% "sourcecode"    % "0.1.3"
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {
@@ -202,27 +180,27 @@ lazy val core = project.in(file("modules/core"))
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"      % "7.2.4",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.4",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.2a",
-      "com.h2database"    %  "h2"               % "1.4.192" % "test"
+      "org.scalaz"        %% "scalaz-core"      % "7.2.7",
+      "org.scalaz"        %% "scalaz-effect"    % "7.2.7",
+      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
+      "com.h2database"    %  "h2"               % "1.4.193" % "test"
     ),
     scalazCrossSettings
   )
 
-val catsVersion = "0.7.2"
+val catsVersion = "0.8.1"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % "0.9.1",
-      "co.fs2"         %% "fs2-cats"  % "0.1.0",
+      "co.fs2"         %% "fs2-core"  % "0.9.2",
+      "co.fs2"         %% "fs2-cats"  % "0.2.0",
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion,
       "org.typelevel"  %% "cats-laws" % catsVersion % "test",
-      "com.h2database" %  "h2"        % "1.3.170" % "test"
+      "com.h2database" %  "h2"        % "1.4.193"   % "test"
     )
   )
 
@@ -247,14 +225,16 @@ lazy val example_cats = project.in(file("modules-cats/example"))
 /// POSTGRES
 ///
 
+val postgisDep = "net.postgis" % "postgis-jdbc" % "2.2.1"
+
 def postgresSettings(mod: String): Seq[Setting[_]] =
   doobieSettings  ++
   publishSettings ++ Seq(
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql"   % "9.4.1211",
-      "org.postgis"    % "postgis-jdbc" % "1.3.3" exclude("org.postgis", "postgis-stubs")
+      "org.postgresql" % "postgresql" % "9.4.1211",
+      postgisDep % "provided"
     ),
     initialCommands := """
       import doobie.imports._
@@ -293,7 +273,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name  := "doobie-" + mod,
     description := "H2 support for doobie.",
-    libraryDependencies += "com.h2database" % "h2"  % "1.3.170"
+    libraryDependencies += "com.h2database" % "h2"  % "1.4.193"
   )
 
 lazy val h2 = project.in(file("modules/h2"))
@@ -318,7 +298,7 @@ lazy val h2_cats = project.in(file("modules-cats/h2"))
 ///
 
 def hikariSettings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++ 
+  doobieSettings  ++
   publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Hikari support for doobie.",
@@ -347,9 +327,9 @@ lazy val hikari_cats = project.in(file("modules-cats/hikari"))
 ///
 
 def specs2Settings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++ 
+  doobieSettings  ++
   publishSettings ++ Seq(
-    name := "doobie-contrib-specs2",
+    name := s"doobie-$mod",
     description := "Specs2 support for doobie.",
     libraryDependencies += "org.specs2" %% "specs2-core" % "3.8.4"
   )
@@ -367,7 +347,36 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/specs2"), "cats", "fs2"),
-    specs2Settings("specs2")
+    specs2Settings("specs2-cats")
+  )
+  .dependsOn(core_cats)
+
+///
+/// SCALATEST
+///
+
+def scalaTestSettings(mod: String): Seq[Setting[_]] =
+  doobieSettings ++
+  publishSettings ++ Seq(
+    name := s"doobie-$mod",
+    description := "Scalatest support for doobie.",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0"
+  )
+
+lazy val scalatest = project.in(file("modules/scalatest"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/scalatest"), "scalaz"),
+    scalaTestSettings("scalatest"),
+    scalazCrossSettings
+  )
+  .dependsOn(core)
+
+lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
+  .enablePlugins(SbtOsgi)
+  .settings(
+    yax(file("yax/scalatest"), "cats", "fs2"),
+    scalaTestSettings("scalatest-cats")
   )
   .dependsOn(core_cats)
 
@@ -392,11 +401,18 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
+val circeVersion = "0.6.0"
+
 def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
-  doobieSettings          ++
-  noPublishSettings       ++
-  tutSettings             ++ 
-  docSkipScala212Settings ++ Seq(
+  doobieSettings    ++
+  noPublishSettings ++
+  tutSettings       ++ Seq(
+    libraryDependencies ++= Seq(
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
+      "io.argonaut" %% "argonaut" % "6.2-RC1"
+    ),
     ctut := {
       val src = crossTarget.value / "tut"
       val dst = file("../tpolecat.github.io/_doobie-" + token + "-" + version.value + "/")
@@ -415,7 +431,10 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
       // piggyback on a task tut depends on, so yax runs first
       yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet + token)
       tutPluginJars.value
-    }
+    },
+    fork in Test := true,
+    // postgis is `provided` dependency for users, and section from book of doobie needs it
+    libraryDependencies += postgisDep
   )
 
 lazy val docs = project.in(file("modules/docs"))

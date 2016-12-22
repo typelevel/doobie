@@ -53,12 +53,7 @@ object kleislitrans {
 #-fs2
       new (OpIO ~> Kleisli[M, J, ?]) {
         def apply[A](ma: OpIO[A]): Kleisli[M, J, A] =
-#+scalaz
           ma.foldMap[Kleisli[M, J, ?]](interpK[M])
-#-scalaz
-#+cats
-          ma.foldMapUnsafe[Kleisli[M, J, ?]](interpK[M])
-#-cats
       }
 
     /**

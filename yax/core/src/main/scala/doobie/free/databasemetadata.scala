@@ -1272,7 +1272,7 @@ object databasemetadata extends DatabaseMetaDataIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): DatabaseMetaDataIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[DatabaseMetaDataOp, A](Lift(j, action, mod))
 
   /**
    * Lift a DatabaseMetaDataIO[A] into an exception-capturing DatabaseMetaDataIO[Throwable \/ A].

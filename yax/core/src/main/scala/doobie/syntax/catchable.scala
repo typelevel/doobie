@@ -22,11 +22,6 @@ object catchable {
   class DoobieCatchableOps[M[_], A](self: M[A])(implicit c: Catchable[M]) {
 #-fs2
 
-#+cats
-    def attempt: M[Throwable \/ A] =
-      c.attempt(self)
-#-cats
-
     def attemptSome[B](handler: PartialFunction[Throwable, B]): M[B \/ A] =
       C.attemptSome(self)(handler)
 

@@ -238,7 +238,7 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
 #-scalaz
 #+fs2
     def transK[M[_]: Catchable: Suspendable]: Kleisli[M, LargeObjectManager, A] =
-      ma.foldMapUnsafe[Kleisli[M, LargeObjectManager, ?]](kleisliTrans[M])
+      ma.foldMap[Kleisli[M, LargeObjectManager, ?]](kleisliTrans[M])
 #-fs2
   }
 

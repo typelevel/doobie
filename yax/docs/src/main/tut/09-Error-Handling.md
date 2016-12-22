@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 8
+number: 9
 title: Error Handling
 ---
 
@@ -15,6 +15,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -40,7 +41,7 @@ All **doobie** monads have associated instances of the `Catchable` typeclass, an
 - `attempt` converts `M[A]` into `M[Throwable \/ A]`
 #-scalaz
 #+cats
-- `attempt` converts `M[A]` into `M[Throwable Xor A]`
+- `attempt` converts `M[A]` into `M[Either[Throwable, A]]`
 #-cats
 - `fail` constructs an `M[A]` that fails with a provided `Throwable`
 
@@ -61,7 +62,7 @@ From the `.attempt` combinator we derive the following, available as combinators
 
 From these we can derive combinators that only pay attention to `SQLException`:
 
-- `attemptSql` is like `attempt` but only traps `SQLException`. 
+- `attemptSql` is like `attempt` but only traps `SQLException`.
 - `attemptSomeSql` traps only specified `SQLException`s.
 - `exceptSql` recovers from a `SQLException` with a new action.
 - `onSqlException` executes an action on `SQLException` and discards its result.
@@ -72,7 +73,7 @@ And finally we have a set of combinators that focus on `SQLState`s.
 - `attemptSqlState` is like `attemptSql` but yields `M[SQLState \/ A]`.     
 #-scalaz
 #+cats
-- `attemptSqlState` is like `attemptSql` but yields `M[SQLState Xor A]`.     
+- `attemptSqlState` is like `attemptSql` but yields `M[Either[SQLState, A]]`.     
 #-cats
 - `attemptSomeSqlState` traps only specified `SQLState`s.
 - `exceptSqlState` recovers from a `SQLState` with a new action.
@@ -116,13 +117,13 @@ The second will fail with a unique constraint violation.
 try {
   insert("bob").quick.unsafePerformIO
 } catch {
-  case e: java.sql.SQLException => 
+  case e: java.sql.SQLException =>
     println(e.getMessage)
     println(e.getSQLState)
 }
 ```
 
-So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `contrib-postgresql` add-on. 
+So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `contrib-postgresql` add-on.
 
 
 ```tut:silent
@@ -132,7 +133,7 @@ import doobie.postgres.sqlstate.class23.UNIQUE_VIOLATION
 def safeInsert(s: String): ConnectionIO[String \/ Person] =
 #-scalaz
 #+cats
-def safeInsert(s: String): ConnectionIO[String Xor Person] =
+def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
 #-cats
   insert(s).attemptSomeSqlState {
     case UNIQUE_VIOLATION => "Oops!"

@@ -219,7 +219,7 @@ object sqldata extends SQLDataIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): SQLDataIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[SQLDataOp, A](Lift(j, action, mod))
 
   /**
    * Lift a SQLDataIO[A] into an exception-capturing SQLDataIO[Throwable \/ A].

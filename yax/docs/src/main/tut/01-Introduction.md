@@ -113,7 +113,12 @@ After that there is text interspersed with code examples. Sometimes definitions 
 
 case class Person(name: String, age: Int)
 
+#+scalaz
 val nel = NonEmptyList(Person("Bob", 12), Person("Alice", 14))
+#-scalaz
+#+cats
+val nel = NonEmptyList.of(Person("Bob", 12), Person("Alice", 14))
+#-cats
 ```
 And sometimes they will appear as a REPL interaction.
 

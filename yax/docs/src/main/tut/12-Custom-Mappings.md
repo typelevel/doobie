@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 10
+number: 12
 title: Custom Mappings
 ---
 
@@ -8,14 +8,19 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 
 ### Setting Up
 
-The examples in this chapter require the `contrib-postgresql` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
+#+scalaz
+The examples in this chapter require the `postgres` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
+#-scalaz
+#+cats
+The examples in this chapter require the `postgres` add-on, as well as the [circe](http://circe.io/) JSON library, which you can add to your build thus:
+#-cats
 
 ```scala
 #+scalaz
-libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M1" // as of date of publication
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-RC1" // as of date of publication
 #-scalaz
 #+cats
-val circeVersion = "0.4.1"
+val circeVersion = "0.6.0"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
@@ -44,6 +49,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 
 val xa = DriverManagerTransactor[IOLite](
@@ -79,7 +85,7 @@ So our strategy for mapping custom types is to construct a new `Meta` instance (
 
 ### Meta by Invariant Map
 
-Let's say we have a structured value that's represented by a single string in a legacy database. We also have conversion methods to and from the legacy format. 
+Let's say we have a structured value that's represented by a single string in a legacy database. We also have conversion methods to and from the legacy format.
 
 ```tut:silent
 case class PersonId(department: String, number: Int) {
@@ -114,7 +120,7 @@ However if we try to use this type for a *single* column value (i.e., as a query
 sql"select * from person where id = $pid"
 ```
 
-According to the error message we need a `Param[PersonId :: HNil]` instance which requires a `Meta` instance for each member, which means we need a `Meta[PersonId]`. 
+According to the error message we need a `Param[PersonId :: HNil]` instance which requires a `Meta` instance for each member, which means we need a `Meta[PersonId]`.
 
 ```tut:fail
 Meta[PersonId]
@@ -123,7 +129,7 @@ Meta[PersonId]
 ... and we don't have one. So how do we get one? The simplest way is by basing it on an existing `Meta` instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
 
 ```tut:silent
-implicit val PersonIdMeta: Meta[PersonId] = 
+implicit val PersonIdMeta: Meta[PersonId] =
   Meta[String].nxmap(PersonId.unsafeFromLegacy, _.toLegacy)
 ```
 
@@ -141,26 +147,31 @@ Note that the `Composite` width is now a single column. The rule is: if there ex
 
 Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
 
-We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value. 
+#+scalaz
+We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value.
+#-scalaz
+#+cats
+We can construct a `Meta` instance for the circe `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value.
+#-cats
 
 Here we go:
 
 ```tut:silent
-implicit val JsonMeta: Meta[Json] = 
+implicit val JsonMeta: Meta[Json] =
   Meta.other[PGobject]("json").nxmap[Json](
 #+scalaz
     a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
     a => {
-      val o = new PGobject 
+      val o = new PGobject
       o.setType("json")
-      o.setValue(a.noSpaces)
+      o.setValue(a.nospaces)
       o
     }
 #-scalaz
 #+cats
     a => parse(a.getValue).leftMap[Json](e => throw e).merge, // failure raises an exception
     a => {
-      val o = new PGobject 
+      val o = new PGobject
       o.setType("json")
       o.setValue(a.noSpaces)
       o
@@ -179,20 +190,25 @@ Given this mapping to and from `Json` we can construct a *further* mapping to an
 #+scalaz
 def codecMeta[A >: Null : EncodeJson : DecodeJson : TypeTag]: Meta[A] =
   Meta[Json].nxmap[A](
-    _.as[A].result.fold(p => sys.error(p._1), identity), 
+    _.as[A].result.fold(p => sys.error(p._1), identity),
     _.asJson
   )
 #-scalaz
 #+cats
 def codecMeta[A >: Null : Encoder : Decoder : TypeTag]: Meta[A] =
   Meta[Json].nxmap[A](
-    _.as[A].fold[A](throw _, identity), 
+    _.as[A].fold[A](throw _, identity),
     _.asJson
   )
 #-cats
 ```
 
-Let's make sure it works. Here is a simple data type with an argonaut serializer, taken straight from the website, and a `Meta` instance derived from the code above.
+#+scalaz
+Let's make sure it works. Here is a simple data type with an argonaut encoder, taken straight from the website, and a `Meta` instance derived from the code above.
+#-scalaz
+#+cats
+Let's make sure it works. Here is a simple data type with an circe encoder, taken straight from the website, and a `Meta` instance derived from the code above.
+#-cats
 
 ```tut:silent
 case class Person(name: String, age: Int, things: List[String])
@@ -215,7 +231,7 @@ Now let's create a table that has a `json` column to store a `Person`.
 ```tut:silent
 val drop = sql"DROP TABLE IF EXISTS pet".update.run
 
-val create = 
+val create =
   sql"""
     CREATE TABLE pet (
       id    SERIAL,
@@ -252,7 +268,7 @@ sql"select name, owner from pet".query[(String,String)].quick.unsafePerformIO
 We get `Composite[A]` for free given `Atom[A]`, or for tuples, `HList`s, shapeless records, and case classes whose fields have `Composite` instances. This covers a lot of cases, but we still need a way to map other types. For example, what if we wanted to map a `java.awt.Point` across two columns? Because it's not a tuple or case class we can't do it for free, but we can get there via `xmap`. Here we map `Point` to a pair of `Int` columns.
 
 ```tut:silent
-implicit val Point2DComposite: Composite[Point] = 
+implicit val Point2DComposite: Composite[Point] =
 #+scalaz
   Composite[(Int, Int)].xmap(
     (t: (Int,Int)) => new Point(t._1, t._2),
@@ -272,5 +288,3 @@ And it works!
 ```tut
 sql"select 'foo', 12, 42, true".query[(String, Point, Boolean)].unique.quick.unsafePerformIO
 ```
-
-

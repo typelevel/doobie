@@ -50,7 +50,7 @@ libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.3.0" // or any suppo
 If you are using Scala 2.10 you must also add the paradise compiler plugin.
 
 ```scala
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
 
 It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core` and are released together.
@@ -64,16 +64,17 @@ See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.htm
 
 ## Development Milestones and Snapshots
 
-The current development milestone is **0.3.1-M1**, and the changing version is **0.3.1-SNAPSHOT**. These differ from **0.3.0** in at least the following important ways:
+The current development milestone is **0.3.1-M3**, and the changing version is **0.3.1-SNAPSHOT**. These differ from **0.3.0** in at least the following important ways:
 
 - Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
 - The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
 - The `postgresql` segment and package name has been shortened to `postgres`.
-- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`, which is trivially different between scalaz and fs2 and complicates the yaxing. It's a totally inconsequential change but I think it may freak people out.
+- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`.
+- There is now support for catenable query fragments and statement logging, each of which have a chapter in the [book](http://tpolecat.github.io/doobie-scalaz-0.3.1-SNAPSHOT/00-index.html).
 
 ### Cats Support
 
-The `0.3.1-SNAPSHOT` release is [also] compiled for [Cats 0.7.2](http://typelevel.org/cats/) with [FS2 0.9.0](https://github.com/functional-streams-for-scala/fs2) for **2.11 only** (FS2 isn't available for 2.10 and Cats isn't available for 2.12).
+The development release is [also] compiled for [Cats 0.8.1](http://typelevel.org/cats/) with [FS2 0.9.2](https://github.com/functional-streams-for-scala/fs2) for 2.11 and 2.12 (FS2 isn't available for 2.10).
 
 Doc links for Cats artifacts (no unidoc yet, sorry):
 [core](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-core_2.11/0.3.1-SNAPSHOT/doobie-core_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
@@ -117,6 +118,7 @@ It should go without saying, but the appearance of a feature in a pre-release ve
 
 Listed newest first. If you have given a presentation or have written a blog post that includes **doobie**, let me know and I'll add it to this list.
 
+- [Doobie - Feedback from the Trenches](http://fr.slideshare.net/normation/doobie-feedbacks-from-the-trenches-scalaio-2016) by François Armand, ScalaIO, October 2016
 - [Pure Functional Database Programming with Fixpoint Types](https://www.youtube.com/watch?v=7xSfLPD6tiQ) by Rob Norris - Scala World, 2016 - [slides](http://tpolecat.github.io/presentations/sw2016/slides.html#1)
 - [The Functional Web Stack](https://t.co/rYH42gs2AU) by Gary Coady - Dublin Scala Users Group, April 2016
 - [End to End and On The Level](https://www.youtube.com/watch?v=lMW_yMkxX4Q&list=PL_5uJkfWNxdkQd7FbN1whrTOsJPMgHgLg&index=2) by Dave Gurnell - Typelevel Summit, Philadelphia, March 2016

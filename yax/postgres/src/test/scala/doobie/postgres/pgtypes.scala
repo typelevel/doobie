@@ -2,6 +2,7 @@ package doobie.postgres
 
 import doobie.imports._
 import doobie.postgres.pgtypes._
+import doobie.postgres.pgistypes._
 
 
 import java.net.InetAddress
@@ -12,6 +13,7 @@ import java.time.Duration
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
+
 import org.specs2.mutable.Specification
 
 #+scalaz
@@ -94,8 +96,10 @@ object pgtypesspec extends Specification {
 
   // 8.5 Date/Time Types"
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
+  testInOut("timestamp", java.time.Instant.now)
   skip("timestamp with time zone")
   testInOut("date", new java.sql.Date(4,5,6))
+  testInOut("date", java.time.LocalDate.of(4,5,6))
   testInOut("time", new java.sql.Time(3,4,5))
   skip("time with time zone")
   testInOut("interval", Duration.ofSeconds(5L))

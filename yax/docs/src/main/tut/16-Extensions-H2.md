@@ -1,13 +1,13 @@
 ---
 layout: book
-number: 14
+number: 16
 title: Extensions for H2
 ---
 
 In this chapter we discuss the extended support that **doobie** offers for users of [H2](http://www.h2database.com/html/main.html) . To use these extensions you must add an additional dependency to your project:
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-contrib-h2" % "0.2.2"
+libraryDependencies += "org.tpolecat" %% "doobie-contrib-h2" % "0.3.0-M1"
 ```
 
 This library pulls in [H2 Version 1.3.170](http://www.h2database.com/html/main.html) as a transitive dependency.
@@ -20,10 +20,10 @@ This library pulls in [H2 Version 1.3.170](http://www.h2database.com/html/main.h
 - `Int`
 - `Long`   
 - `Float`  
-- `Double` 
-- `String` 
+- `Double`
+- `String`
 
-In addition to `Array` you can also map to `List` and `Vector`. 
+In addition to `Array` you can also map to `List` and `Vector`.
 
 See the previous chapter on **SQL Arrays** for usage examples.
 

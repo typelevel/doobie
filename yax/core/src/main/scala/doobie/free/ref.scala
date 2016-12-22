@@ -227,7 +227,7 @@ object ref extends RefIOInstances {
    * @group Constructors (Lifting)
    */
   def lift[Op[_], A, J](j: J, action: F[Op, A])(implicit mod: KleisliTrans.Aux[Op, J]): RefIO[A] =
-    F.liftF(Lift(j, action, mod))
+    F.liftF[RefOp, A](Lift(j, action, mod))
 
   /**
    * Lift a RefIO[A] into an exception-capturing RefIO[Throwable \/ A].

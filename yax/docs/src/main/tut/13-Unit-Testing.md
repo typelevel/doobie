@@ -1,6 +1,6 @@
 ---
 layout: book
-number: 11
+number: 13
 title: Unit Testing
 ---
 
@@ -21,6 +21,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -44,7 +45,7 @@ CREATE TABLE country (
 
 The `doobie-contrib-specs2` add-on provides a mix-in trait that we can add to a `Specification` to allow for typechecking of queries, interpreted as a set of specifications.
 
-So here are a few queries we would like to check. Note that we can only check values of type `Query0` and `Update0`; we can't check `Process` or `ConnectionIO` values, so a good practice is to define your queries in a DAO module and apply further operations at a higher level. 
+So here are a few queries we would like to check. Note that we can only check values of type `Query0` and `Update0`; we can't check `Process` or `ConnectionIO` values, so a good practice is to define your queries in a DAO module and apply further operations at a higher level.
 
 ```tut:silent
 case class Country(code: Int, name: String, pop: Int, gnp: Double)
@@ -89,6 +90,3 @@ When we run the test we get output similar to what we saw in the previous chapte
 ```tut:plain
 { specs2 run AnalysisTestSpec; () } // pretend this is sbt> test
 ```
-
-
-
