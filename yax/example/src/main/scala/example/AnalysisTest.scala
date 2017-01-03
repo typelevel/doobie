@@ -1,7 +1,7 @@
 package doobie.example
 
 import doobie.imports._
-import doobie.postgres.pgtypes._
+import doobie.postgres.imports._
 
 import org.postgresql.geometric._
 
@@ -45,15 +45,14 @@ object AnalysisTest {
     """.query[PGcircle]
   }
 
-  def update(code: String, name: Int): Update0 = 
+  def update(code: String, name: Int): Update0 =
     sql"""
       UPDATE COUNTRY SET NAME = $name WHERE CODE = $code
     """.update
 
-  val update2 = 
+  val update2 =
     sql"""
       UPDATE COUNTRY SET NAME = 'foo' WHERE CODE = 'bkah'
     """.update
 
 }
-

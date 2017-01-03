@@ -62,7 +62,7 @@ val xa = DriverManagerTransactor[IOLite](
 The `doobie-hikari-cats` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
 ```tut:silent
-import doobie.hikari.hikaritransactor._
+import doobie.hikari.imports._
 
 val q = sql"select 42".query[Int].unique
 

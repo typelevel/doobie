@@ -2,7 +2,7 @@ package doobie.example
 
 import doobie.imports._
 import doobie.util.iolite.IOLite
-import doobie.postgres.pgtypes._
+import doobie.postgres.imports._
 
 import org.postgresql.geometric.PGpoint
 
@@ -15,7 +15,7 @@ object PostgresPoint extends App {
   // instance precludes mapping `Point` to two columns. If you want two mappings you need two types.
   case class Point(x: Double, y: Double)
   object Point {
-    implicit val PointType: Meta[Point] = 
+    implicit val PointType: Meta[Point] =
       Meta[PGpoint].nxmap(p => new Point(p.x, p.y), p => new PGpoint(p.x, p.y))
   }
 

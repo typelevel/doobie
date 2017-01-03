@@ -233,7 +233,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     ),
     initialCommands := """
       import doobie.imports._
-      import doobie.postgres.pgtypes._
+      import doobie.postgres.imports._
       val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       import xa.yolo._
       import org.postgis._

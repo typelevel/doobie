@@ -1,47 +1,54 @@
 package doobie.postgres
 
-/** 
- * Module of aliases for commonly-used PostgreSQL types and syntax; use as 
- * `import doobie.postgres.imports._` 
+/**
+ * Module of aliases for commonly-used PostgreSQL types and syntax; use as
+ * `import doobie.postgres.imports._`
  */
-object imports {
+object imports extends PGTypes
+               with Syntax {
+
+ /**
+  * Alias for `doobie.postgres.sqlstate`
+  * @group PostgreSQL Module Aliases
+  */
+  val sqlstate = doobie.postgres.sqlstate
 
   /**
    * Alias for `doobie.postgres.free.copyin`
    * @group PostgreSQL Free Module Aliases
    */
   val PFCI = doobie.postgres.free.copyin
-  
+
   /**
    * Alias for `doobie.postgres.free.copymanager`
    * @group PostgreSQL Free Module Aliases
    */
   val PFCM = doobie.postgres.free.copymanager
-  
+
   /**
    * Alias for `doobie.postgres.free.copyout`
    * @group PostgreSQL Free Module Aliases
    */
   val PFCO = doobie.postgres.free.copyout
-  
+
   /**
    * Alias for `doobie.postgres.free.fastpath`
    * @group PostgreSQL Free Module Aliases
    */
   val PFFP = doobie.postgres.free.fastpath
-  
+
   /**
    * Alias for `doobie.postgres.free.largeobject`
    * @group PostgreSQL Free Module Aliases
    */
   val PFLO = doobie.postgres.free.largeobject
-  
+
   /**
    * Alias for `doobie.postgres.free.largeobjectmanager`
    * @group PostgreSQL Free Module Aliases
    */
   val PFLOM = doobie.postgres.free.largeobjectmanager
-  
+
   /**
    * Alias for `doobie.postgres.free.pgconnection`
    * @group PostgreSQL Free Module Aliases

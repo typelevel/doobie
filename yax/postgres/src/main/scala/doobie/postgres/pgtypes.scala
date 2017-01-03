@@ -15,7 +15,9 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 /** `Meta` and `Atom` instances for PostgreSQL types. */
-object pgtypes {
+object PGTypes extends PGTypes
+
+trait PGTypes {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
 
@@ -45,8 +47,8 @@ object pgtypes {
   // Network Address Types
   implicit val InetType = Meta.other[PGobject]("inet").xmap[InetAddress](
     o => Option(o).map(a => InetAddress.getByName(a.getValue)).orNull,
-    a => Option(a).map { a => 
-      val o = new PGobject 
+    a => Option(a).map { a =>
+      val o = new PGobject
       o.setType("inet")
       o.setValue(a.getHostAddress)
       o
@@ -123,7 +125,7 @@ object pgtypes {
 
 
   // It seems impossible to write a NULL value for an enum column/parameter using the current JDBC
-  // driver, so we will define a mapping only for non-nullables. As a further twist, we read as 
+  // driver, so we will define a mapping only for non-nullables. As a further twist, we read as
   // String and write as PGobject. This Meta instance isn't able to write NULL. This would be a good
   // use case for splitting the read/write halves of Meta/Atom/Composite because here it's no
   // problem to *read* NULL, we just can't write it.
@@ -144,7 +146,7 @@ object pgtypes {
       })
     )
 
-  /** 
+  /**
    * Construct an `Atom` for values of the given type, mapped via `String` to the named PostgreSQL
    * enum type.
    */
@@ -156,17 +158,17 @@ object pgtypes {
     Atom.fromScalaType(enumPartialMeta(name)).imap[A](f)(g)
 #-cats
 
-  /** 
+  /**
    * Construct an `Atom` for value members of the given `Enumeration`. Note that this precludes
    * reading or writing `Option[e.Value]` because writing NULL is unsupported by the driver.
    */
   def pgEnum(e: Enumeration, name: String): Atom[e.Value] =
-    pgEnumString[e.Value](name, 
-      a => try e.withName(a) catch { 
-        case _: NoSuchElementException => throw InvalidEnum[e.Value](a) 
+    pgEnumString[e.Value](name,
+      a => try e.withName(a) catch {
+        case _: NoSuchElementException => throw InvalidEnum[e.Value](a)
       }, _.toString)
 
-  /** 
+  /**
    * Construct an `Atom` for value members of the given Jave `enum`. Note that this precludes
    * reading or writing `Option[E]` because writing NULL is unsupported by the driver.
    */
@@ -179,7 +181,3 @@ object pgtypes {
   }
 
 }
-
-
-
-

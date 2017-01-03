@@ -1,8 +1,9 @@
 package doobie.postgres
 
-import shapeless._, shapeless.test._
 import doobie.imports._
-import doobie.postgres.syntax._
+import doobie.postgres.imports._
+
+import shapeless._, shapeless.test._
 import org.specs2.mutable.Specification
 
 #+scalaz
@@ -14,7 +15,7 @@ import cats.implicits._
 
 object unapplyspec extends Specification {
 
-  "Unapply" should { 
+  "Unapply" should {
 
     "allow use of sqlstate syntax" in {
       1.pure[ConnectionIO].map(_ + 1).void

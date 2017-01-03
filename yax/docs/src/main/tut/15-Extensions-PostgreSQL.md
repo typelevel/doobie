@@ -34,7 +34,7 @@ import xa.yolo._
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
 
 ```tut:silent
-import doobie.postgres.pgtypes._
+import doobie.postgres.imports._
 ```
 
 ### Array Types
@@ -147,6 +147,7 @@ libraryDependencies += "org.postgis" % "postgis-jdbc" % "1.3.3"
 ```
 
 ```tut:silent
+// Not provided via doobie.postgres.imports._; you must import them explicitly.
 import doobie.postgres.pgistypes._
 ```
 
@@ -177,8 +178,7 @@ In addition to the general types above, **doobie** provides mappings for the fol
 A complete table of SQLSTATE values is provided in the `doobie.postgres.sqlstate` module. Recovery combinators for each of these states (`onUniqueViolation` for example) are provided in `doobie.postgres.syntax`.
 
 ```tut:silent
-import doobie.postgres.sqlstate
-import doobie.postgres.syntax._
+import doobie.postgres.imports._
 
 val p = sql"oops".query[String].unique // this won't work
 ```
@@ -228,8 +228,7 @@ Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat
 The PostgreSQL JDBC driver's [CopyManager](https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html) API provides a pass-through for the SQL [`COPY`](http://www.postgresql.org/docs/9.3/static/sql-copy.html) statement, allowing very fast data transfer via `java.io` streams. Here we construct a program that dumps a table to `Console.out` in CSV format, with quoted values.
 
 ```tut:silent
-import doobie.postgres.free.copymanager.copyOut
-import doobie.postgres.hi.connection.pgGetCopyAPI
+import doobie.postgres.imports._
 
 val q = """
   copy country (name, code, population)
@@ -241,7 +240,7 @@ val q = """
   """
 
 val prog: ConnectionIO[Long] =
-  pgGetCopyAPI(copyOut(q, Console.out)) // return value is the row count
+  PHC.pgGetCopyAPI(PFCM.copyOut(q, Console.out)) // return value is the row count
 ```
 
 See the links above and sample code in the `examples/` project in the **doobie** GitHub repo for more information on this specialized API.
