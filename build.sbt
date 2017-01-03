@@ -90,7 +90,8 @@ lazy val publishSettings = osgiSettings ++ Seq(
     setNextVersion,
     commitNextVersion,
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
-    pushChanges)
+    pushChanges),
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -154,7 +155,7 @@ def coreSettings(mod: String) =
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {
-      val outDir = (sourceManaged in Compile).value / "doobie"
+      val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
       outDir.mkdirs
       val v = version.value
