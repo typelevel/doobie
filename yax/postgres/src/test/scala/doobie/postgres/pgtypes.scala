@@ -1,7 +1,7 @@
 package doobie.postgres
 
 import doobie.imports._
-import doobie.postgres.pgtypes._
+import doobie.postgres.imports._
 import doobie.postgres.pgistypes._
 
 
@@ -203,5 +203,3 @@ object pgtypesspec extends Specification {
   testInOutGeom[Point](pts.next)
 
 }
-
-

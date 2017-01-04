@@ -12,7 +12,7 @@ Again we set up a transactor and pull in YOLO mode. We also need an import to ge
 
 ```tut:silent
 import doobie.imports._
-import doobie.postgres.pgtypes._
+import doobie.postgres.imports._
 #+scalaz
 import scalaz._, Scalaz._
 #-scalaz

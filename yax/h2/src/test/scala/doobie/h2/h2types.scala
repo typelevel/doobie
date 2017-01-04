@@ -1,6 +1,6 @@
 package doobie.h2
 
-import doobie.h2.h2types._
+import doobie.h2.imports._
 import doobie.imports._
 
 
@@ -97,4 +97,3 @@ object h2typesspec extends Specification {
   }
 
 }
-

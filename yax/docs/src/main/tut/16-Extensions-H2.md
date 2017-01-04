@@ -36,8 +36,8 @@ See the previous chapter on **SQL Arrays** for usage examples.
 **doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `Task`).
 
 ```tut:silent
-import doobie.h2.h2transactor._
 import doobie.imports._
+import doobie.h2.imports._
 
 val q = sql"select 42".query[Int].unique
 
