@@ -33,12 +33,15 @@ object invariant {
     def index: Int
     def jdbcType: JdbcType
   }
+
+  private def oneBasedDisclaimer = "Note that JDBC column indexing is 1-based."
+
   final case class NonNullableParameter(index: Int, jdbcType: JdbcType) 
-    extends MappingViolation(s"Scala `null` value passed as parameter $index (JDBC type $jdbcType); use an Option type here.")
+    extends MappingViolation(s"Scala `null` value passed as parameter $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
   final case class NonNullableColumnUpdate(index: Int, jdbcType: JdbcType) 
-    extends MappingViolation(s"Scala `null` value passed as update to column $index (JDBC type $jdbcType); use an Option type here.")
+    extends MappingViolation(s"Scala `null` value passed as update to column $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
   final case class NonNullableColumnRead(index: Int, jdbcType: JdbcType)
-    extends MappingViolation(s"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here.")
+    extends MappingViolation(s"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here. $oneBasedDisclaimer")
 
   /** Array violations. Not terribly illuminating at this point. */
   sealed abstract class ArrayStructureViolation(msg: String) extends InvariantViolation(msg)
