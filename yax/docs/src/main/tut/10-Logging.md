@@ -60,20 +60,20 @@ byName("U%").unsafePerformIO
 But now on standard out we see:
 
 ```
-Nov 30, 2016 3:45:37 PM doobie.util.log$LogHandler$$anonfun$2 apply
+Jan 07, 2017 7:07:43 AM doobie.util.log$LogHandler$ $anonfun$jdkLogHandler$1
 INFO: Successful Statement Execution:
 
   select name, code from country where name like ?
 
  arguments = [U%]
-   elapsed = 19 ms exec + 9 ms processing (28 ms total)
+   elapsed = 9 ms exec + 6 ms processing (15 ms total)
 ```
 
 Let's break down what we're seeing:
 
 - We see the SQL string that is sent to the JDBC driver.
 - We see the argument list (in this case just the pattern `U%`).
-- We see elapsed time: it took 19ms for the first row to become available, then 9ms to process the rows, for a total of 28ms.
+- We see elapsed time: it took 9ms for the first row to become available, then 6ms to process the rows, for a total of 15ms.
 
 ### Implicit Logging
 
@@ -99,6 +99,7 @@ case class LogHandler(unsafeRun: LogEvent => Unit)
 ```
 
 `LogEvent` has three constructors, all of which provide the SQL string and argument list.
+
 - `Success` indicates successful execution and result processing, and provides timing information for both.
 - `ExecFailure` indicates that query execution failed, due to a key violation for example. This constructor provides timing information only for the (failed) execution as well as the raised exception.
 - `ProcessingFailure` indicates that execution was successful but resultset processing failed. This constructor provides timing information for both execution and (failed) processing, as well as the raised exception.
@@ -114,7 +115,7 @@ val nop = LogHandler(_ => ())
 But that's not interesting. Let's at least print the event out.
 
 ```tut
-implicit val trivial = LogHandler(e => Console.println("*** " + e))
+val trivial = LogHandler(e => Console.println("*** " + e))
 sql"select 42".queryWithLogHandler[Int](trivial).unique.transact(xa).unsafePerformIO
 ```
 
