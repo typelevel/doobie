@@ -44,7 +44,7 @@ The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-
 - Result sets as scalaz streams.
 - Typesafe string interpolator for SQL literals.
 
-The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the `doobie.hi` API can use constuctors from `doobie.free` to implement advanced or vendor-specific behavior directly, without translation or lifting.
+The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the `doobie.hi` API can use constructors from `doobie.free` to implement advanced or vendor-specific behavior directly, without translation or lifting.
 
 ### Vendor Extensions
 
