@@ -55,6 +55,14 @@ val fra = whereCode("FRA")
 (fr"select name from country" ++ fra).query[String].quick.unsafePerformIO
 ```
 
+You can lift an arbitrary string value via `Fragment.const`, which allows you to parameterize on things that aren't valid SQL parameters.
+
+```tut
+def count(table: String) = (fr"select count(*) from" ++ Fragment.const(table)).query[Int].unique
+count("city").quick.unsafePerformIO
+```
+
+
 ### Whitespace handling
 
 The rendered SQL string for a `fr` fragment will have a single space character appended, which is usually what you want. Normally you don't need to worry about whitespace when composing fragments.
