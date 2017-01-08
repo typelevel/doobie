@@ -262,3 +262,7 @@ implicit val XmlMeta: Meta[Elem] =
     (_,  _) => sys.error("update not supported, sorry")
   )
 ```
+
+## How do I set the chunk size for streaming results?
+
+By default streams constructed with the `sql` interpolator are fetched `Query.DefaultChunkSize` rows at a time (currently 512). If you wish to change this chunk size you can use `processWithChunkSize` for queries, and `withGeneratedKeysWithChunkSize` for updates that return results.
