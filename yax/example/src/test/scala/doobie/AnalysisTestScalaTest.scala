@@ -1,7 +1,7 @@
 package doobie.example
 
 import doobie.imports._
-import doobie.scalatest.QueryChecker
+import doobie.scalatest.imports._
 import org.scalatest._
 
 class AnalysisTestScalaCheck extends FunSuite with Matchers with QueryChecker {

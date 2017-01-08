@@ -427,9 +427,22 @@ lazy val docs = project.in(file("modules/docs"))
     docsSettings("scalaz"),
     scalazCrossSettings
   )
-  .dependsOn(core, postgres, specs2, hikari, h2)
-
+  .dependsOn(
+    core,
+    postgres,
+    specs2,
+    hikari,
+    h2,
+    scalatest
+  )
 
 lazy val docs_cats = project.in(file("modules-cats/docs"))
   .settings(docsSettings("cats", "fs2"))
-  .dependsOn(core_cats, postgres_cats, specs2_cats, hikari_cats, h2_cats)
+  .dependsOn(
+    core_cats, 
+    postgres_cats, 
+    specs2_cats, 
+    hikari_cats, 
+    h2_cats, 
+    scalatest_cats
+  )
