@@ -8,15 +8,15 @@ import doobie.util.query.{Query, Query0}
 import doobie.util.transactor.Transactor
 import doobie.util.update.{Update, Update0}
 import doobie.util.iolite.IOLite
-import org.scalatest.FunSuite
+import org.scalatest.Assertions
 
 import scala.reflect.runtime.universe.WeakTypeTag
 
 #+scalaz
-import scalaz.{ -\/, \/- }
+import scalaz.{ \/, -\/, \/- }
 #-scalaz
 #+cats
-import scala.util.{ Left => -\/, Right => \/- }
+import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 #-cats
 
 
@@ -34,14 +34,14 @@ import scala.util.{ Left => -\/, Right => \/- }
   *   )
   *
   *   // Now just mention the queries. Arguments are not used.
-  *   check(MyDaoModule.findByNameAndAge(null, 0))
-  *   check(MyDaoModule.allWoozles)
+  *   test("findByNameAndAge") { check(MyDaoModule.findByNameAndAge(null, 0)) }
+  *   test("allWoozles") { check(MyDaoModule.allWoozles) }
   *
   * }
   * }}}
   */
 trait QueryChecker {
-  self: FunSuite =>
+  self: Assertions =>
 
   def transactor: Transactor[IOLite]
 
@@ -61,35 +61,36 @@ trait QueryChecker {
     checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
   /** Check if the analysis has an error */
-  private def hasError(analysis: ConnectionIO[Analysis]): Boolean = {
-    transactor.trans(analysis).attempt.unsafePerformIO match {
+  private def hasError(analysisAttempt: Throwable \/ Analysis): Boolean =
+    analysisAttempt match {
       case -\/(e) => true
       case \/-(a) =>
         !(a.paramDescriptions.map { case (s, es) => es.isEmpty } ++ a.columnDescriptions.map {
           case (s, es)                           => es.isEmpty
         }).forall(x => x)
     }
-  }
 
-  private def checkAnalysis(typeName: String,
-                            pos: Option[Pos],
-                            sql: String,
-                            analysis: ConnectionIO[Analysis]) = {
-    if (hasError(analysis)) {
-      val analysisOutput = transactor.trans(analysis).attempt.unsafePerformIO match {
+  private def checkAnalysis(
+    typeName: String,
+    pos:      Option[Pos],
+    sql:      String,
+    analysis: ConnectionIO[Analysis]
+  ) = {
+    val analysisAttempt = transactor.trans(analysis).attempt.unsafePerformIO
+    if (hasError(analysisAttempt)) {
+      val analysisOutput = analysisAttempt match {
         case -\/(e) =>
           failure("SQL fails typechecking", formatError(e.getMessage))
         case \/-(a) =>
           success("SQL compiles and typechecks", None) +
-            a.paramDescriptions.map { case (s, es)  => assertEmpty(s, es) }.mkString("\n") +
-            a.columnDescriptions.map { case (s, es) => assertEmpty(s, es) }.mkString("\n")
+            a.paramDescriptions.map { case (s, es) => assertEmpty(s, es) }
+              .map(s => s"  $s")
+              .mkString +
+            a.columnDescriptions.map { case (s, es) => assertEmpty(s, es) }
+              .map(s => s"  $s")
+              .mkString
       }
-
-      println(
-        s"  $typeName defined at ${loc(pos)}\n" +
-          formatSql(sql) + "\n" +
-          analysisOutput)
-      fail(s"$typeName defined at ${loc(pos)}")
+      fail(s"  $typeName defined at ${loc(pos)}\n${formatSql(sql)}\n  ${analysisOutput}")
     }
   }
 
@@ -114,13 +115,11 @@ trait QueryChecker {
       case Nil     => Nil
     }).mkString("\n")
 
-  private def formatSql(sql: String): String = {
-    val line = sql.lines.dropWhile(_.trim.isEmpty).map(s => s"  \033[37m$s${Console.RESET}").mkString("")
-    s"\n$line\n"
-  }
+  private def formatSql(sql: String): String =
+    sql.lines.dropWhile(_.trim.isEmpty).map(s => s"  \033[37m$s${Console.RESET}").mkString("\n", "\n", "")
 
   private def failure(name: String, desc: String): String =
-    s"${Console.RED}  ✕ ${Console.RESET}$name\n" + desc.lines.map(s => s"  $s").mkString("\n")
+    s"${Console.RED}  ✕ ${Console.RESET}$name\n" + desc.lines.map(s => s"  $s").mkString("", "\n", "\n")
 
   private def success(name: String, desc: Option[String]): String =
     s"${Console.GREEN}  ✓ ${Console.RESET}$name\n" + desc.mkString("\n")
