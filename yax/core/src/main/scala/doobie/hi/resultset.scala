@@ -89,27 +89,27 @@ object resultset {
   val first: ResultSetIO[Boolean] =
     RS.first
 
-  /** 
+  /**
    * Read a value of type `A` starting at column `n`.
-   * @group Results 
+   * @group Results
    */
   def get[A](n: Int)(implicit A: Composite[A]): ResultSetIO[A] =
     A.get(n)
 
-  /** 
+  /**
    * Read a value of type `A` starting at column 1.
-   * @group Results 
+   * @group Results
    */
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
     get(1)
 
 #+scalaz
   /**
-   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and
    * accumulating them in an `IList`.
-   * @group Results 
+   * @group Results
    */
-  def ilist[A](implicit A: Composite[A]): ResultSetIO[IList[A]] = 
+  def ilist[A](implicit A: Composite[A]): ResultSetIO[IList[A]] =
     RS.raw { rs =>
       var as = IList.empty[A]
       while (rs.next)
@@ -119,7 +119,7 @@ object resultset {
 #-scalaz
 
   /**
-   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and
    * accumulating them in a standard library collection via `CanBuildFrom`.
    * @group Results
    */
@@ -147,19 +147,19 @@ object resultset {
     }
 
   /**
-   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and
    * accumulating them in a `Vector`.
-   * @group Results 
+   * @group Results
    */
-  def vector[A: Composite]: ResultSetIO[Vector[A]] = 
+  def vector[A: Composite]: ResultSetIO[Vector[A]] =
     build[Vector, A]
 
   /**
-   * Consumes the remainder of the resultset, reading each row as a value of type `A` and 
+   * Consumes the remainder of the resultset, reading each row as a value of type `A` and
    * accumulating them in a `List`.
-   * @group Results 
+   * @group Results
    */
-  def list[A: Composite]: ResultSetIO[List[A]] = 
+  def list[A: Composite]: ResultSetIO[List[A]] =
     build[List, A]
 
   /**
@@ -169,39 +169,47 @@ object resultset {
   def accumulate[G[_]: MonadPlus, A: Composite]: ResultSetIO[G[A]] =
     get[A].whileM(next)
 
-  /** 
+  /**
    * Updates a value of type `A` starting at column `n`.
-   * @group Updating 
+   * @group Updating
    */
   def update[A](n: Int, a:A)(implicit A: Composite[A]): ResultSetIO[Unit] =
     A.update(n, a)
 
-  /** 
+  /**
    * Updates a value of type `A` starting at column 1.
-   * @group Updating 
+   * @group Updating
    */
   def update[A](a: A)(implicit A: Composite[A]): ResultSetIO[Unit] =
     A.update(1, a)
 
-  /** 
+  /**
    * Similar to `next >> get` but lifted into `Option`; returns `None` when no more rows are
    * available.
-   * @group Results 
+   * @group Results
    */
   def getNext[A: Composite]: ResultSetIO[Option[A]] =
     next >>= {
       case true  => get[A].map(Some(_))
       case false => Monad[ResultSetIO].pure(None)
     }
-    
+
   /**
    * Similar to `getNext` but reads `chunkSize` rows at a time (the final chunk in a resultset may
    * be smaller). A non-positive `chunkSize` yields an empty `Seq` and consumes no rows. This method
-   * yields a `Seq` for easier interoperability with streaming libraries that like to talk in terms
-   * of `Seq`. The concrete type is guaranteed to be `Vector`.
+   * delegates to `getNextChunkV` and widens to `Seq` for easier interoperability with streaming
+   * libraries that like `Seq` better.
    * @group Results
    */
-  def getNextChunk[A: Composite](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Seq[A]] =
+  def getNextChunk[A: Composite](chunkSize: Int): ResultSetIO[Seq[A]] =
+    getNextChunkV[A](chunkSize).widen[Seq[A]]
+
+  /**
+   * Similar to `getNext` but reads `chunkSize` rows at a time (the final chunk in a resultset may
+   * be smaller). A non-positive `chunkSize` yields an empty `Vector` and consumes no rows.
+   * @group Results
+   */
+  def getNextChunkV[A](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Vector[A]] =
     RS.raw { rs =>
       var n = chunkSize
       val b = Vector.newBuilder[A]
@@ -212,18 +220,18 @@ object resultset {
       b.result()
     }
 
-  /** 
+  /**
    * Equivalent to `getNext`, but verifies that there is exactly one row remaining.
    * @throws `UnexpectedCursorPosition` if there is not exactly one row remaining
-   * @group Results 
+   * @group Results
    */
   def getUnique[A: Composite]: ResultSetIO[A] =
 #+scalaz
     (getNext[A] |@| next) {
-#-scalaz      
+#-scalaz
 #+cats
     (getNext[A] |@| next) map {
-#-cats      
+#-cats
       case (Some(a), false) => a
       case (Some(a), true)  => throw UnexpectedContinuation
       case (None, _)        => throw UnexpectedEnd
@@ -237,10 +245,10 @@ object resultset {
   def getOption[A: Composite]: ResultSetIO[Option[A]] =
 #+scalaz
     (getNext[A] |@| next) {
-#-scalaz      
+#-scalaz
 #+cats
     (getNext[A] |@| next) map {
-#-cats      
+#-cats
       case (a @ Some(_), false) => a
       case (Some(a), true)      => throw UnexpectedContinuation
       case (None, _)            => None
@@ -265,12 +273,12 @@ object resultset {
     }
 #-cats
 
-  /** 
+  /**
    * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
-   * @group Results 
+   * @group Results
    */
-  def process[A: Composite](chunkSize: Int): Process[ResultSetIO, A] = 
+  def process[A: Composite](chunkSize: Int): Process[ResultSetIO, A] =
 #+scalaz
     repeatEvalChunks(getNextChunk[A](chunkSize))
 #-scalaz
