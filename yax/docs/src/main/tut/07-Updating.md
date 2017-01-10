@@ -27,17 +27,17 @@ import xa.yolo._
 
 ### Data Definition
 
-It is uncommon to define database structures at runtime, but **doobie** handles it just fine and treats such operations like any other kind of update. And it happens to be useful here! 
+It is uncommon to define database structures at runtime, but **doobie** handles it just fine and treats such operations like any other kind of update. And it happens to be useful here!
 
 Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `Task[Unit]` that prints out the row count.
 
 ```tut:silent
-val drop: Update0 = 
+val drop: Update0 =
   sql"""
     DROP TABLE IF EXISTS person
   """.update
 
-val create: Update0 = 
+val create: Update0 =
   sql"""
     CREATE TABLE person (
       id   SERIAL,
@@ -50,7 +50,7 @@ val create: Update0 =
 We can compose these and run them together.
 
 ```tut
-(drop.quick *> create.quick).unsafePerformIO
+(drop.run *> create.run).transact(xa).unsafePerformIO
 ```
 
 
@@ -67,8 +67,8 @@ def insert1(name: String, age: Option[Short]): Update0 =
 Let's insert a few rows.
 
 ```tut
-insert1("Alice", Some(12)).quick.unsafePerformIO
-insert1("Bob", None).quick.unsafePerformIO
+insert1("Alice", Some(12)).run.transact(xa).unsafePerformIO
+insert1("Bob", None).quick.unsafePerformIO // switch to YOLO mode
 ```
 
 And read them back.
@@ -94,7 +94,7 @@ sql"select id, name, age from person".query[Person].quick.unsafePerformIO
 
 ### Retrieving Results
 
-When we insert we usually want the new row back, so let's do that. First we'll do it the hard way, by inserting, getting the last used key via `lastVal()`, then selecting the indicated row. 
+When we insert we usually want the new row back, so let's do that. First we'll do it the hard way, by inserting, getting the last used key via `lastVal()`, then selecting the indicated row.
 
 ```tut:silent
 def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
@@ -184,7 +184,7 @@ def insertMany(ps: List[PersonInfo]): ConnectionIO[Int] = {
 
 // Some rows to insert
 val data = List[PersonInfo](
-  ("Frank", Some(12)), 
+  ("Frank", Some(12)),
   ("Daddy", None))
 ```
 
@@ -216,8 +216,8 @@ def insertMany2(ps: List[PersonInfo]): Stream[ConnectionIO, Person] = {
 
 // Some rows to insert
 val data = List[PersonInfo](
-  ("Banjo",   Some(39)), 
-  ("Skeeter", None), 
+  ("Banjo",   Some(39)),
+  ("Skeeter", None),
   ("Jim-Bob", Some(12)))
 ```
 
