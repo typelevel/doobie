@@ -77,7 +77,7 @@ the FAQ in the Book of Doobie for more hints.""")
 
   }
 
-  object Composite extends LowerPriorityComposite {
+  object Composite extends LowerPriorityComposite with CompositesDerivations {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
 
@@ -114,6 +114,94 @@ the FAQ in the Book of Doobie for more hints.""")
         def toList(l: FieldType[K, H] :: T) = H.toList(l.head) ++ T.toList(l.tail)
       }
 
+  }
+
+  trait CompositesDerivations {
+    import shapeless._
+    import shapeless.ops.hlist._
+    import tag.@@
+
+    private[CompositesDerivations] sealed trait Required
+    private[CompositesDerivations] object Required {
+      private val tagger = new tag.Tagger[Required]
+      def apply[T](t: T) = tagger(t)
+    }
+
+    private[CompositesDerivations] sealed trait Optional
+    private[CompositesDerivations] object Optional {
+      private val tagger = new tag.Tagger[Optional]
+      def apply[T](t: T) = tagger(t)
+    }
+
+    trait LowPriorityOptionify extends Poly1 {
+      implicit def caseDefault[A] =
+        at[A] { a => Required(Option(a)) }
+    }
+
+    object optionify extends LowPriorityOptionify {
+      implicit def caseOption[A] =
+        at[Option[A]] { a => Optional(a) }
+    }
+
+    object mergeOptions extends Poly2 {
+      implicit def caseOptional[H <: HList, A](implicit pre: Prepend[H, A :: HNil]) =
+        at[Option[H], Option[A] @@ Required] { (oh, oa) =>
+          for {
+            h <- oh
+            a <- oa
+          } yield h :+ a
+        }
+
+      implicit def caseRequired[H <: HList, A](implicit pre: Prepend[H, Option[A] :: HNil]) =
+        at[Option[H], Option[A] @@ Optional] { (oh, oa) =>
+          for {
+            h <- oh
+          } yield h :+ oa.asInstanceOf[Option[A]]
+        }
+    }
+
+    implicit def taggedCompositeRequired[T](implicit c: Composite[Option[T]]): Composite[Option[T] @@ Required] =
+      Composite[Option[T]].xmap(Required.apply, _.asInstanceOf[Option[T]])
+
+    implicit def taggedCompositeOptional[T](implicit c: Composite[Option[T]]): Composite[Option[T] @@ Optional] =
+      Composite[Option[T]].xmap(Optional.apply, _.asInstanceOf[Option[T]])
+
+    implicit def hlistGeneric[H <: HList] =
+      new Generic[H] {
+        type Repr = H
+        def from(r: H): H = r
+        def to(t: H): H = t
+      }
+
+    trait OptionalCompositeDerivation[A] {
+      def apply[Repr <: HList, MOut <: HList, L <: Nat](empty: Option[A])(implicit
+        gen: Lazy[Generic.Aux[A, Repr]],
+        map: Lazy[Mapper.Aux[optionify.type, Repr, MOut]],
+        comp: Lazy[Composite[MOut]],
+        lf: Lazy[LeftFolder.Aux[MOut, Option[shapeless.HNil.type], mergeOptions.type, Option[Repr]]],
+        length: Lazy[Length.Aux[Repr, L]],
+        fill: Lazy[Fill[L, None.type]]
+      ): Composite[Option[A]] = {
+        implicit val folder = lf.value
+        implicit val mapper = map.value
+        val nones = fill.value(None).asInstanceOf[MOut]
+        comp.value.xmap(
+          { mo =>
+            val res =
+              mo.foldLeft(Option(HNil))(mergeOptions)
+            // If all fields are Optional, and are all Nones,
+            // use the empty value
+            if (res == Option(nones)) empty
+            else res.map(gen.value.from)
+          },
+          _.map { a =>
+            gen.value.to(a).map(optionify)
+          }.getOrElse(nones)
+        )
+      }
+    }
+
+    def optional[A] = new OptionalCompositeDerivation[A]{}
   }
 
   // N.B. we're separating this out in order to make the atom ~> composite derivation higher
