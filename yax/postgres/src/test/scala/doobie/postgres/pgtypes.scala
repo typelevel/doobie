@@ -8,6 +8,7 @@ import doobie.postgres.pgistypes._
 import java.net.InetAddress
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import java.time.Duration
 
 import org.postgis._
 import org.postgresql.util._
@@ -101,7 +102,7 @@ object pgtypesspec extends Specification {
   testInOut("date", java.time.LocalDate.of(4,5,6))
   testInOut("time", new java.sql.Time(3,4,5))
   skip("time with time zone")
-  skip("interval")
+  testInOut("interval", Duration.ofSeconds(5L))
 
   // 8.6 Boolean Type
   testInOut("boolean", true)

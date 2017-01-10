@@ -6,6 +6,7 @@ import doobie.util.invariant._
 
 import java.util.UUID
 import java.net.InetAddress
+import java.time.Duration
 
 import org.postgresql.util._
 import org.postgresql.geometric._
@@ -45,8 +46,50 @@ trait PGTypes {
   //   org.postgresql.jdbc4.AbstractJdbc4ResultSet.internalGetObject(AbstractJdbc4ResultSet.java:300)
   //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.getObject(AbstractJdbc2ResultSet.java:2704)
 
-  // Interval Type (TODO)
-  // implicit val PGIntervalType = Meta.other[PGInterval]
+  // Interval Type
+  implicit val PGIntervalType = {
+    val nanosPerSecond = 1000000000L
+    val secsPerMinute = 60
+    val secsPerHour = 3600
+    val secsPerDay = 86400
+    val secsPerYear = (365.25 * secsPerDay).toInt
+    val secsPerMonth = 30 * secsPerDay
+    Meta.other[PGInterval]("interval").xmap[Duration](
+      o => Option(o).map { a =>
+        val nanos = (a.getSeconds - a.getSeconds.floor) * nanosPerSecond
+        var seconds = 0L
+        seconds += a.getSeconds.toLong
+        seconds += a.getMinutes * secsPerMinute
+        seconds += a.getHours * secsPerHour
+        seconds += a.getDays * secsPerDay
+        seconds += a.getMonths * secsPerMonth
+        seconds += a.getYears * secsPerYear
+        Duration.ofSeconds(seconds, nanos.toLong)
+      } .orNull,
+      a => Option(a).map { a =>
+        val nano = a.getNano.toDouble / nanosPerSecond.toDouble
+        val totalSeconds = a.getSeconds
+        val years = totalSeconds / secsPerYear
+        val yearLeft = totalSeconds % secsPerYear
+        val months = yearLeft / secsPerMonth
+        val monthLeft = yearLeft % secsPerMonth
+        val days = monthLeft / secsPerDay
+        val dayLeft = monthLeft % secsPerDay
+        val hours = dayLeft / secsPerHour
+        val hoursLeft = dayLeft % secsPerHour
+        val minutes = hoursLeft / secsPerMinute
+        val seconds = (hoursLeft % secsPerMinute).toDouble + nano
+        new PGInterval(
+          years.toInt,
+          months.toInt,
+          days.toInt,
+          hours.toInt,
+          minutes.toInt,
+          seconds
+        )
+      } .orNull
+    )
+  }
 
   // UUID
   implicit val UuidType = Meta.other[UUID]("uuid")
