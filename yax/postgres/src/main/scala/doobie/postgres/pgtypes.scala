@@ -14,6 +14,13 @@ import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
+#+scalaz
+import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
+#-scalaz
+#+cats
+import cats.data.NonEmptyList.{ of => NonEmptyListOf }
+#-cats
+
 /** `Meta` and `Atom` instances for PostgreSQL types. */
 object PGTypes extends PGTypes
 
@@ -130,7 +137,10 @@ trait PGTypes {
   // use case for splitting the read/write halves of Meta/Atom/Composite because here it's no
   // problem to *read* NULL, we just can't write it.
   private def enumPartialMeta(name: String): Meta[String] =
-    Meta.basic1[String](jdbctype.Other, Nil,
+    Meta.basic[String](
+      NonEmptyListOf(jdbctype.Other, jdbctype.VarChar), // https://github.com/tpolecat/doobie/issues/303
+      NonEmptyListOf(jdbctype.Other),
+      Nil,
       (rs, n) => rs.getString(n),
       (n, a) => FPS.setObject(n, {
         val o = new PGobject
