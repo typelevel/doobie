@@ -1,9 +1,10 @@
 # doobie
 
 <img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.3.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
-[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=master)](https://travis-ci.org/tpolecat/doobie)
+Release:[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=master)](https://travis-ci.org/tpolecat/doobie)
+0.4.x:[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=0.4.0-staging)](https://travis-ci.org/tpolecat/doobie)
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.11)
+[![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12)
 
 **doobie** is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level libraries) that use JDBC. **doobie** introduces very few new abstractions; if you are familiar with core typeclasses like `Functor` and `Monad` you should have no trouble here.
 
@@ -33,12 +34,12 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 Recent releases and dependencies are shown below. The current release is **0.4.0** … if you wish to use an older version please switch to the associated tag. The remainder of this document assumes you're using the current release.
 
-| doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats | fs2 | shapeless |
-|:------:|:-------:|:----:|------------------|:------:|:-------------:|:----:|:---:|:---------:|
-|  0.4.0 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8  | 0.9 |    2.3    |
-|  0.3.0 | eol     | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | --   | --  |    2.3    |
-|  0.2.4 | eol     | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      | --   | --  |    2.2    |
-|  0.2.3 | eol     | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      | --   | --  |    2.2    |
+| doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats   | fs2   | shapeless |
+|:------:|:-------:|:----:|------------------|:------:|:-------------:|:------:|:-----:|:---------:|
+|  0.4.0 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8.x  | 0.9.x |    2.3    |
+|  0.3.0 | eol     | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | ---    | ---   |    2.3    |
+|  0.2.4 | eol     | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      | ---    | ---   |    2.2    |
+|  0.2.3 | eol     | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      | ---    | ---   |    2.2    |
 
 To use **doobie** you need to add **one of the following** to your `build.sbt`.
 
