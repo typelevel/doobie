@@ -27,3 +27,6 @@ bin/
 # ENSIME
 .ensime
 .ensime_cache/
+
+# IntelliJ
+.idea/
