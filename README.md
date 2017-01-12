@@ -34,12 +34,12 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 Recent releases and dependencies are shown below. The current release is **0.4.0** … if you wish to use an older version please switch to the associated tag. The remainder of this document assumes you're using the current release.
 
-| doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats   | fs2   | shapeless |
-|:------:|:-------:|:----:|------------------|:------:|:-------------:|:------:|:-----:|:---------:|
-|  0.4.0 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8.x  | 0.9.x |    2.3    |
-|  0.3.0 | eol     | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | ---    | ---   |    2.3    |
-|  0.2.4 | eol     | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      | ---    | ---   |    2.2    |
-|  0.2.3 | eol     | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      | ---    | ---   |    2.2    |
+| doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats | fs2 | shapeless |
+|:------:|:-------:|:----:|------------------|:------:|:-------------:|:----:|:---:|:---------:|
+|  0.4.0 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8  | 0.9 |    2.3    |
+|  0.3.0 | eol     | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | --   | --  |    2.3    |
+|  0.2.4 | eol     | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      | --   | --  |    2.2    |
+|  0.2.3 | eol     | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      | --   | --  |    2.2    |
 
 To use **doobie** you need to add **one of the following** to your `build.sbt`.
 
