@@ -65,7 +65,7 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 
 See the [**book of doobie**](http://tpolecat.github.io/doobie-0.4.0/00-index.html) for more information on these add-ons.
 
-Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible. Nontrivial breaking changes will be introduced through a deprecation cycle of at least one minor (0.x) release.
+Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
 
 ## Documentation and Support
 
