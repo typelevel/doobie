@@ -71,7 +71,7 @@ Note that **doobie** is pre-1.0 software and is still undergoing active developm
 
 - See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.0) for an overview of changes in this and previous versions.
 - Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.4.0/00-index.html) ← start here
-- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.4.0/api/index.html) will be handy once you get your feet wet.
+- The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
 - Find **tpolecat** on the FreeNode `#scala` channel, or join the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).
