@@ -63,7 +63,7 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 | `doobie-specs2`    | `doobie-specs2-cats`    | [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 | `doobie-scalatest` | `doobie-scalatest-cats` | [ScalaTest](http://www.scalatest.org/) support for typechecking queries.
 
-See the [**book of doobie**](http://tpolecat.github.io/doobie-0.4.0/00-index.html) for more information on these add-ons.
+See the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-0.4.0/00-index.html) or [cats](http://tpolecat.github.io/doobie-cats-0.4.0/00-index.html) for more information on these add-ons.
 
 Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
 
