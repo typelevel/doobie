@@ -70,7 +70,7 @@ Note that **doobie** is pre-1.0 software and is still undergoing active developm
 ## Documentation and Support
 
 - See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.0) for an overview of changes in this and previous versions.
-- Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.4.0/00-index.html) ← start here
+- Behold the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-0.4.0/00-index.html) and [cats](http://tpolecat.github.io/doobie-cats-0.4.0/00-index.html) ← start here
 - The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
