@@ -31,24 +31,13 @@ git checkout -b 0.2.4-staging
 
 - Remove the `-SNAPSHOT` suffix from the tut doc root and then update `_config.yml`. Remove the warning block from the `00-index.md`.
 
-- Stage scaladoc as well:
-
-```
-> unidoc
-
-...
-
-doobie (0.2.4-staging)$ mkdir ../tpolecat.github.io/doc/doobie/0.2.4
-doobie (0.2.4-staging)$ mv target/scala-2.11/unidoc ../tpolecat.github.io/doc/doobie/0.2.4/api
-```
-
 - Update the version in `projects.html`.
 
 - Commit and push the doc. Ensure that links from `projects.html` work, and that it looks generally ok. Note that source links won't work from the scaladoc until the tag is created.
 
 - Commit and push the staging branch and ensure that doc links work and go to the correct versions. The `CHANGELOG` link will be wrong.
 
-- Attempt to release. 
+- Attempt to release.
 ```
 > release cross
 ```

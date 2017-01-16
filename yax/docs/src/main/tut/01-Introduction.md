@@ -70,7 +70,7 @@ On the Scala side you just need a console with the proper dependencies. A minima
 ```scala
 scalaVersion := "2.11.8" // no support for 2.10 or 2.12 at the moment
 
-lazy val doobieVersion = "0.3.1-SNAPSHOT"
+lazy val doobieVersion = "0.4.0"
 
 #+scalaz
 libraryDependencies ++= Seq(
@@ -136,4 +136,3 @@ woozle(nel) // doesn't compile
 ### Feedback and Contributions
 
 Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or find and chat with **tpolecat** as mentioned above.
-

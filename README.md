@@ -1,11 +1,11 @@
 # doobie
 
-<img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.3.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
-[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=master)](https://travis-ci.org/tpolecat/doobie)
+<img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.4.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
+[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.4.x)](https://travis-ci.org/tpolecat/doobie)
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.11)
+[![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12)
 
-**doobie** is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level libraries) that use JDBC. **doobie** introduces very few new abstractions; if you are familiar with basic `scalaz` typeclasses like `Functor` and `Monad` you should have no trouble here.
+**doobie** is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it just provides a principled way to construct programs (and higher-level libraries) that use JDBC. **doobie** introduces very few new abstractions; if you are familiar with core typeclasses like `Functor` and `Monad` you should have no trouble here.
 
 For common use cases **doobie** provides a minimal but expressive high-level API:
 
@@ -31,20 +31,20 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-Supported releases and dependencies are shown below.
+Recent releases and dependencies are shown below. The current release is **0.4.0** … if you wish to use an older version please switch to the associated tag. The remainder of this document assumes you're using the current release.
 
-| doobie | status |  jdk | scala            | scalaz | scalaz-stream | shapeless |
-|:------:|:------:|:----:|------------------|:------:|:-------------:|:---------:|
-|  0.3.0 | stable | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      |    2.3    |
-|  0.2.4 | stable | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      |    2.2    |
-|  0.2.3 |   eol  | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      |    2.2    |
+| doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats | fs2 | shapeless |
+|:------:|:-------:|:----:|------------------|:------:|:-------------:|:----:|:---:|:---------:|
+|  0.4.0 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8  | 0.9 |    2.3    |
+|  0.3.0 | eol     | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | --   | --  |    2.3    |
+|  0.2.4 | eol     | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      | --   | --  |    2.2    |
+|  0.2.3 | eol     | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      | --   | --  |    2.2    |
 
-Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible. Nontrivial breaking changes will be introduced through a deprecation cycle of at least one minor (0.x) release.
-
-To use **doobie** you need to add the following to your `build.sbt`.
+To use **doobie** you need to add **one of the following** to your `build.sbt`.
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-core" % "0.3.0" // or any supported release above
+libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.4.0" // scalaz + scalaz-stream
+                       "org.tpolecat" %% "doobie-core-cats" % "0.4.0" // cats   + fs2
 ```
 
 If you are using Scala 2.10 you must also add the paradise compiler plugin.
@@ -53,63 +53,25 @@ If you are using Scala 2.10 you must also add the paradise compiler plugin.
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
 
-It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core` and are released together.
+It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core[-cats]` and are released together.
 
-* `doobie-contrib-h2` for [H2](http://www.h2database.com/html/main.html)-specific type mappings.
-* `doobie-contrib-hikari` for [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling.
-* `doobie-contrib-postgresql` for [PostgreSQL](http://postgresql.org)-specific type mappings.
-* `doobie-contrib-specs2` for [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
+|  scalaz            |  cats                   | description
+|--------------------|-------------------------|-----------------
+| `doobie-h2`        | `doobie-h2-cats`        | [H2](http://www.h2database.com/html/main.html)-specific type mappings.
+| `doobie-hikari`    | `doobie-hikari-cats`    | [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling.
+| `doobie-postgres`  | `doobie-postgres-cats`  | [PostgreSQL](http://postgresql.org)-specific type mappings.
+| `doobie-specs2`    | `doobie-specs2-cats`    | [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
+| `doobie-scalatest` | `doobie-scalatest-cats` | [ScalaTest](http://www.scalatest.org/) support for typechecking queries.
 
-See the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) for more information on these add-ons.
+See the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-0.4.0/00-index.html) or [cats](http://tpolecat.github.io/doobie-cats-0.4.0/00-index.html) for more information on these add-ons.
 
-## Development Milestones and Snapshots
-
-The current development milestone is **0.3.1-M3**, and the changing version is **0.3.1-SNAPSHOT**. These differ from **0.3.0** in at least the following important ways:
-
-- Artifacts are now published for [Cats](http://typelevel.org/cats/)! Artifact names are the same but end in `-cats`, so `doobie-core-cats` and `doobie-h2-cats`. The scalaz and Cats variants are compiled without shims or indirection; **doobie** now uses a preprocessor to make slight adjustments to the source to compile it "natively" for both libraries. See below for more details.
-- The `contrib` segment in artifacts and package names is gone. So `doobie-h2` is the artifact now and `doobie.h2` is the package name.
-- The `postgresql` segment and package name has been shortened to `postgres`.
-- The **book of doobie** now uses `IOLite` (included in `doobie.imports._`) instead of `Task`.
-- There is now support for catenable query fragments and statement logging, each of which have a chapter in the [book](http://tpolecat.github.io/doobie-scalaz-0.3.1-SNAPSHOT/00-index.html).
-
-### Cats Support
-
-The development release is [also] compiled for [Cats 0.8.1](http://typelevel.org/cats/) with [FS2 0.9.2](https://github.com/functional-streams-for-scala/fs2) for 2.11 and 2.12 (FS2 isn't available for 2.10).
-
-Doc links for Cats artifacts (no unidoc yet, sorry):
-[core](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-core_2.11/0.3.1-SNAPSHOT/doobie-core_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
-• [h2](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-h2_2.11/0.3.1-SNAPSHOT/doobie-h2_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
-• [hikari](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-hikari_2.11/0.3.1-SNAPSHOT/doobie-hikari_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
-• [postgres](https://oss.sonatype.org/service/local/repositories/snapshots/archive/org/tpolecat/doobie-postgres_2.11/0.3.1-SNAPSHOT/doobie-postgres_2.11-0.3.1-SNAPSHOT-javadoc.jar/!/index.html)
-• [book of doobie](http://tpolecat.github.io/doobie-cats-0.3.1-SNAPSHOT/00-index.html)
-
-The obligatory example:
-
-```scala
-scala> import doobie.imports._
-import doobie.imports._
-
-scala> val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-xa: doobie.util.transactor.Transactor[doobie.imports.IOLite] = doobie.util.transactor$DriverManagerTransactor$$anon$2@9ab5c78
-
-scala> val c = sql"select name, population from country".query[(String, Int)].list
-c: doobie.free.connection.ConnectionIO[List[(String, Int)]] = Gosub(Suspend(PrepareStatement4(select name, population from country)),<function1>)
-
-scala> val c2 = c.map(_.toMap) // lose the type alias so we see it's cats.free.Free!
-c2: cats.free.Free[doobie.free.connection.ConnectionOp,scala.collection.immutable.Map[String,Int]] = Gosub(Gosub(Suspend(PrepareStatement4(select name, population from country)),<function1>),<function1>)
-
-scala> c2.transact(xa).unsafePerformIO
-res2: scala.collection.immutable.Map[String,Int] = Map(Kazakstan -> 16223000, Gibraltar -> 25000, Haiti -> 8222000, Grenada -> 94000, Vanuatu -> 190000, Iraq -> 23115000, Poland -> 38653600, East Timor -> 885000, Saint Helena -> 6000, Montserrat -> 11000, Martinique -> 395000, Jordan -> 5083000, Gabon -> 1226000, Netherlands Antilles -> 217000, United States Minor Outlying Islands -> 0, Philippines -> 75967000, Somalia -> 10097000, Madagascar -> 15942000, Andorra -> 78000, Falkland Islands -> 2000, Algeria -> 31471000, Liechtenstein -> 32300, Norfolk Island -> 2000, Yugoslavia -> 10640000, Kiribati -> 83000, Angola -> 12878000, Croatia -> 4473000, Luxembourg -> 435700, Lebanon -> 3282000, United States -> 278357000, Greece -> 10545700, Eritrea -> 3850000, Bhuta...
-```
-
-It should go without saying, but the appearance of a feature in a pre-release version is not a promise that it will appear in the final release. The `yax` preprocessor (and therefore Cats support) is *very* experimental.
-
+Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
 
 ## Documentation and Support
 
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.3.x/CHANGELOG.md#0.3.0) for an overview of changes in this and previous versions.
-- Behold the [**book of doobie**](http://tpolecat.github.io/doobie-0.3.0/00-index.html) ← start here
-- The [**scaladoc**](http://tpolecat.github.io/doc/doobie/0.3.0/api/index.html) will be handy once you get your feet wet.
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.0) for an overview of changes in this and previous versions.
+- Behold the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-0.4.0/00-index.html) and [cats](http://tpolecat.github.io/doobie-cats-0.4.0/00-index.html) ← start here
+- The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
 - Find **tpolecat** on the FreeNode `#scala` channel, or join the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).

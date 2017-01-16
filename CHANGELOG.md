@@ -2,6 +2,43 @@
 
 This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
 
+----
+### <a name="0.4.0"></a>New and Noteworthy for Version 0.4.0
+
+This was intended to be a quick follow-up to 0.3.0 but it got a little out of hand and turned into a major release. **Please read these notes carefully** because there are some breaking changes relative to 0.3.0.
+
+Eighteen people contributed to this release, of whom seventeen were not tpolecat. They are sparkly and awesome. In no particular order, many many thanks to :sparkles: Channing Walton :sparkles: Daniel Wunsch :sparkles: Gary Coady :sparkles: Tristan Lohman :sparkles: Jisoo Park :sparkles: Yury Liavitski :sparkles: Ikhoon Eom :sparkles: Marek Kadek :sparkles: Leif Wickland :sparkles: Zack Powers :sparkles: Kris Nuttycombe :sparkles: Pepe García :sparkles: Peter Neyens :sparkles: ritschwumm :sparkles: ronanM :sparkles: Sam Ritchie :sparkles: and wedens. :sparkles:
+
+##### Cats Support
+
+This is probably the most important development for 0.4.0 and it is due in large part to the hard work of :sparkles: Jisoo Park :sparkles:. Impossibly huge thanks for his work throughout this process.
+
+<img align="right" height="150" style="padding-left: 20px" src="https://camo.githubusercontent.com/c7a1d594954b34a8277bce52343fe731b14870ad/687474703a2f2f706c61737469632d69646f6c617472792e636f6d2f6572696b2f63617473322e706e67"/>
+
+- **doobie** is now built natively for [Cats](https://github.com/typelevel/cats) with [fs2](https://github.com/functional-streams-for-scala/fs2/tree/series/0.9), with no need for a shim/adapter layer. At the moment this is accomplished via a preprocessor.
+- All artifacts are built for Cats. Names are suffixed with `-cats`, so the scalaz version is `doobie-core` and the Cats version is `doobie-core-cats`.
+- The **book of doobie** is now published in separate editions for scalaz and Cats.
+
+##### Changes to Core
+
+- There is now support for simple **statement logging** with timing information. This is *not* the long-promised structured logging feature but it fits the common use case and fills a clear functional gap. See the book chapter for details and examples.
+- The **dynamic SQL** story is now slightly better with the introduction of **composable statement fragments**. These allow you to build statements from smaller pieces without having to track parameter placeholders/offsets by hand. See the book chapter for details and examples.
+- Methods on `Query[0]/Update[0]` that construct streams (`.process`) now have variants that allow you to specify the **chunk size**, which by default is 512 rows.
+- There is now an `IOLite` data type that you can use if you're having a hard time settling on a target effect type. It works identically in Cats and scalaz and is what's used in the book.
+
+##### Changes to Add-On Modules
+
+We cleaned up the add-on modules a bit and made some naming simplifications that are **breaking** relative to 0.3.0.
+
+- There is now a **ScalaTest** add-on. See the book chapter on unit testing for details and examples.
+- The `contrib` segment has been removed from module names, so `doobie-contrib-h2` is now just `doobie-h2`. It has also been removed from *package* names. So `doobie.contrib.h2` is now just `doobie.h2`.
+- In both cases the `postgresql` segment has been shortened to `postgres`.
+- All modules now have a consistent import story. `import doobie.<module>.imports._` should get you everything you need.
+
+That's it! Enjoy the release. Once again many thanks to our contributors.
+
+----
+
 ### <a name="0.3.0"></a>New and Noteworthy for Version 0.3.0
 
 This release brings **doobie** up to date with major dependencies, almost entirely due to the hard work of **@guersam**. The release is otherwise equivalent to 0.2.4 from a feature standpoint.
@@ -11,6 +48,9 @@ Upgrades:
 - Updated to shapeless 2.3
 - Updated to JDK 1.8
 - Added build support Scala 2.12
+
+
+----
 
 ### <a name="0.2.4"></a>New and Noteworthy for Version 0.2.4
 
@@ -25,6 +65,9 @@ Improvements:
 
 Upgrades:
 - Updated to scalaz-stream 0.8 (thanks **@guersam**).
+
+
+----
 
 ### <a name="0.2.3"></a>New and Noteworthy for Version 0.2.3
 
@@ -57,6 +100,9 @@ Upgrades:
 - Updated to sbt 0.13.8 (build-time dependency only)
 - Updated to kind-projector 0.7.1 (build-time dependency only)
 
+
+----
+
 ### <a name="0.2.2"></a>New and Noteworthy for Version 0.2.2
 
 This is another minor release that adds yet more support PostgreSQL-specific features, updates dependencies, and improves performance for resultset processing. Thanks everyone for your continued interest and contributions!
@@ -80,6 +126,9 @@ Upgrades:
 - Updated to scalaz-stream 0.7a
 - Updated to PostgreSQL JDBC driver 9.4-1201-jdbc41
 - Updated to Specs2 3.6 (thanks [@etorrebore](https://twitter.com/etorreborre))
+
+
+----
 
 ### <a name="0.2.1"></a>New and Noteworthy for Version 0.2.1
 
