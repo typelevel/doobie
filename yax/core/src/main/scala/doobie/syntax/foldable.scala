@@ -18,9 +18,6 @@ object foldable {
     def empty: Boolean =
       self.isEmpty
 
-    def intercalate(a: A)(implicit A: Monoid[A]): A =
-      F.intercalate(self, a)
-
 #-cats
     def foldSmash(prefix: A, delim: A, suffix: A)(implicit ev: Monoid[A]): A =
       F.foldSmash(self)(prefix, delim, suffix)
