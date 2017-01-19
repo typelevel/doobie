@@ -1,5 +1,6 @@
 import UnidocKeys._
 import FreeGen._
+import FreeGen2._
 import ReleaseTransformations._
 
 enablePlugins(CrossPerProjectPlugin)
@@ -100,9 +101,30 @@ lazy val doobie = project.in(file("."))
   .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .settings(freeGenSettings)
+  .settings(freeGen2Settings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
     freeGenClasses := {
+      import java.sql._
+      List[Class[_]](
+        classOf[java.sql.NClob],
+        classOf[java.sql.Blob],
+        classOf[java.sql.Clob],
+        classOf[java.sql.DatabaseMetaData],
+        classOf[java.sql.Driver],
+        classOf[java.sql.Ref],
+        classOf[java.sql.SQLData],
+        classOf[java.sql.SQLInput],
+        classOf[java.sql.SQLOutput],
+        classOf[java.sql.Connection],
+        classOf[java.sql.Statement],
+        classOf[java.sql.PreparedStatement],
+        classOf[java.sql.CallableStatement],
+        classOf[java.sql.ResultSet]
+      )
+    },
+    freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
+    freeGen2Classes := {
       import java.sql._
       List[Class[_]](
         classOf[java.sql.NClob],
@@ -439,10 +461,10 @@ lazy val docs = project.in(file("modules/docs"))
 lazy val docs_cats = project.in(file("modules-cats/docs"))
   .settings(docsSettings("cats", "fs2"))
   .dependsOn(
-    core_cats, 
-    postgres_cats, 
-    specs2_cats, 
-    hikari_cats, 
-    h2_cats, 
+    core_cats,
+    postgres_cats,
+    specs2_cats,
+    hikari_cats,
+    h2_cats,
     scalatest_cats
   )
