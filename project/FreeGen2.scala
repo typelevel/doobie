@@ -184,12 +184,14 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |package doobie.free2
     |
     |#+scalaz
-    |import scalaz.{ Free => FF , ~>, \\/ }
+    |import doobie.util.capture.Capture
+    |import scalaz.{ Catchable, Free => FF , ~>, \\/ }
     |#-scalaz
     |#+cats
     |import cats.~>
     |import cats.free.{ Free => FF }
     |import scala.util.{ Either => \\/ }
+    |import fs2.util.Catchable
     |#-cats
     |
     |${imports[A].mkString("\n")}
@@ -198,25 +200,31 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |
     |object ${sname.toLowerCase} {
     |
+    |  // Algebra of operations for $sname. Each accepts a visitor as an alternatie to pattern-matching.
     |  sealed trait ${sname}Op[A] {
     |    def visit[F[_]](v: ${sname}Op.Visitor[F]): F[A]
     |  }
     |
+    |  // Free monad over ${sname}Op.
     |  type ${sname}IO[A] = FF[${sname}Op, A]
     |
+    |  // Module of instances and constructors of ${sname}Op.
     |  object ${sname}Op {
     |
+    |    // Given a $sname we can embed a ${sname}IO program in any algebra that understands embedding.
     |    implicit val ${sname}OpEmbeddable: Embeddable[${sname}Op, ${sname}] =
     |      new Embeddable[${sname}Op, ${sname}] {
     |        def embed[A](j: ${sname}, fa: FF[${sname}Op, A]) = Embedded.${sname}(j, fa)
     |      }
     |
+    |    // Interface for a natural tansformation ${sname}Op ~> F encoded via the visitor pattern.
+    |    // This approach is much more efficient than pattern-matching for large algebras.
     |    trait Visitor[F[_]] extends (${sname}Op ~> F) {
     |      final def apply[A](fa: ${sname}Op[A]): F[A] = fa.visit(this)
     |
     |      // Common
     |      def embed[A](e: Embedded[A]): F[A]
-    |      def capture[A](a: () => A): F[A]
+    |      def delay[A](a: () => A): F[A]
     |      def attempt[A](fa: ${sname}IO[A]): F[Throwable \\/ A]
     |
     |      // $sname
@@ -224,31 +232,51 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |
     |    }
     |
-    |    // Common
+    |    // Common operations for all algebras.
     |    case class Embed[A](e: Embedded[A]) extends ${sname}Op[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.embed(e)
     |    }
-    |    case class  Capture[A](a: () => A) extends ${sname}Op[A] {
-    |      def visit[F[_]](v: Visitor[F]) = v.capture(a)
+    |    case class  Delay[A](a: () => A) extends ${sname}Op[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.delay(a)
     |    }
     |    case class  Attempt[A](fa: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A] {
     |      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
     |    }
     |
-    |    // $sname
+    |    // $sname-specific operations.
     |    ${ctors[A].map(_.ctor(sname)).mkString("\n    ")}
     |
     |  }
     |  import ${sname}Op._
     |
-    |  // Common
+    |  // Smart constructors for operations common to all algebras.
     |  val unit: ${sname}IO[Unit] = FF.pure[${sname}Op, Unit](())
     |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = FF.liftF(Embed(ev.embed(j, fa)))
-    |  def capture[A](a: => A): ${sname}IO[A] = FF.liftF(Capture(() => a))
+    |  def delay[A](a: => A): ${sname}IO[A] = FF.liftF(Delay(() => a))
     |  def attempt[A](fa: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = FF.liftF[${sname}Op, Throwable \\/ A](Attempt(fa))
     |
-    |  // $sname
+    |  // Smart constructors for $sname-specific operations.
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n  ")}
+    |
+    |  // ${sname}IO can trap and raise exceptions.
+    |  implicit val Catchable${sname}IO: Catchable[${sname}IO] =
+    |    new Catchable[${sname}IO] {
+    |#+fs2
+    |      def pure[A](a: A): ${sname}IO[A] = Monad[${sname}OP].pure(a)
+    |      override def map[A, B](fa: ${sname}IO[A])(f: A => B): ${sname}IO[B] = fa.map(f)
+    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = fa.flatMap(f)
+    |#-fs2
+    |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
+    |      def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
+    |    }
+    |
+    |#+scalaz
+    |  // ${sname}IO can capture side-effects a values.
+    |  implicit val Capture${sname}IO: Capture[${sname}IO] =
+    |    new Capture[${sname}IO] {
+    |      def apply[A](a: => A): ${sname}IO[A] = delay(a)
+    |    }
+    |#-scalaz
     |
     |}
     |""".trim.stripMargin
@@ -333,7 +361,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |  // Some operations are uniform for all ${managed.length} interpreters.
       |  trait Base[J] {
       |    protected[this] def primitive[A](f: J => A): Kleisli[M, J, A] = Kleisli(a => C.delay(f(a)))
-      |    def capture[A](a: () => A): Kleisli[M, J, A] = primitive(_ => a())
+      |    def delay[A](a: () => A): Kleisli[M, J, A] = primitive(_ => a())
       |    def embed[A](e: Embedded[A]): Kleisli[M, J, A] =
       |      e match {
       |        ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n        ")}
