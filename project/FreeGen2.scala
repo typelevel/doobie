@@ -290,14 +290,16 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      s"""
       |package doobie.free2
       |
-      |import doobie.util.capture.Capture
       |#+scalaz
-      |import scalaz.{ Free, Kleisli, Monad, ~> }
+      |import doobie.util.capture.Capture
+      |import scalaz.{ Catchable, Free, Kleisli, Monad, ~> }
       |#-scalaz
       |#+cats
-      |import cats.Monad
-      |import cats.data.{ Kleisli, ~> }
+      |import cats.{ Monad, ~> }
+      |import cats.data.Kleisli
       |import cats.free.Free
+      |import fs2.util.{ Catchable, Suspendable => Capture }
+      |import fs2.interop.cats._
       |#-cats
       |
       |${managed.map(_.getName).map(n => s"import $n").mkString("\n")}
@@ -308,56 +310,32 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |trait KleisliInterpreter[M[_]] {
       |  implicit val M: Monad[M]
       |  implicit val C: Capture[M]
+      |  implicit val K: Catchable[M]
       |
-      |  ${managed.map(_.getSimpleName).map(n => s"def ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?]").mkString("\n  ")}
+      |  ${managed.map(_.getSimpleName).map(n => s"val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] // = new ${n}Interpreter { }").mkString("\n  ")}
       |
-      |  // The `embed` handler is uniform for all ${managed.length} interpreters.
-      |  trait Embedding[J] {
+      |  // Some operations are uniform for all ${managed.length} interpreters.
+      |  trait Base[J] {
+      |    protected[this] def primitive[A](f: J => A): Kleisli[M, J, A] = Kleisli(a => C.delay(f(a)))
+      |    def capture[A](a: () => A): Kleisli[M, J, A] = primitive(_ => a())
       |    def embed[A](e: Embedded[A]): Kleisli[M, J, A] =
       |      e match {
       |        ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n        ")}
       |      }
       |  }
       |
-      |  // Interpreter templates based on visitors, with a provided `embed` implementation.
-      |  ${managed.map(_.getSimpleName).map(n => s"""trait ${n}InterpreterTemplate extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Embedding[${n}] {
-      |    protected def primitive[A](f: $n => A): Kleisli[M, $n, A] = Kleisli(a => C.apply(f(a)))
-      |  }""").mkString("\n  ")}
+      |  // Interpreters
+      |  ${managed.map(_.getSimpleName).map(n => s"""trait ${n}InterpreterTemplate extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
+      |    private[this] val KK: Catchable[Kleisli[M, ${n}, ?]] = Predef.implicitly
+      |    override def attempt[A](fa: ${n}IO[A]) = KK.attempt(fa.foldMap(${n}Interpreter))
+      |  }""").mkString("\n\n  ")}
       |
       |}
       |""".trim.stripMargin
 
-    // The kleisli interpreter implementation
-    def kleisliInterpreterImpl: String =
-      s"""
-       |package doobie.free2
-       |
-       |#+scalaz
-       |import scalaz.{ Free, Kleisli, Monad, ~> }
-       |#-scalaz
-       |#+cats
-       |import cats.Monad
-       |import cats.data.{ Kleisli, ~> }
-       |import cats.free.Free
-       |#-cats
-       |
-       |${managed.map(_.getName).map(n => s"import $n").mkString("\n")}
-       |
-       |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
-       |
-       |// Implementation of a Kleisli Interpreter, intended to be overridden.
-       |trait KleisliInterpreterImpl[M[_]] {
-       |  implicit val M: Monad[M]
-       |
-       |  ${managed.map(_.getSimpleName).map(n => s"override val ${n}Interpreter = new ${n}Interpreter { }").mkString("\n  ")}
-       |
-       |}
-       |""".trim.stripMargin
-
   def gen(base: File): Seq[java.io.File] = {
     import java.io._
     log.info("Generating free algebras into " + base)
-    println(kleisliInterpreterImpl)
     val fs = managed.map { c =>
       base.mkdirs
       val mod  = module(ClassTag(c))
