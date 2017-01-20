@@ -184,14 +184,14 @@ lazy val core = project.in(file("modules/core"))
     scalazCrossSettings
   )
 
-val catsVersion = "0.8.1"
+val catsVersion = "0.9.0"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .settings(
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"  % "0.9.2",
-      "co.fs2"         %% "fs2-cats"  % "0.2.0",
+      "co.fs2"         %% "fs2-cats"  % "0.3.0",
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion,
       "org.typelevel"  %% "cats-laws" % catsVersion % "test",
@@ -386,7 +386,7 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
-val circeVersion = "0.6.0"
+val circeVersion = "0.7.0"
 
 def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
   doobieSettings    ++

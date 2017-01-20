@@ -10,21 +10,13 @@ import cats._, cats.implicits._
 /** Module of additional functions for `Foldable`. */
 object foldable {
 
-#+cats
-  /** Insert an `A` between every A, yielding the sum. */
-  def intercalate[F[_], A](fa: F[A], a: A)(implicit F: Foldable[F], A: Monoid[A]): A =
-    F.foldRight(fa, Eval.now(Option.empty[A])) { (l, eoa) =>
-      eoa.map(oa => Some(A.combine(l, oa.map(A.combine(a, _)).getOrElse(A.empty))))
-    }.value.getOrElse(A.empty)
-#-cats
-
   /** Generalization of `mkString` for any monoid. */
   def foldSmash[F[_]: Foldable, A](fa: F[A])(prefix: A, delim: A, suffix: A)(implicit ev: Monoid[A]): A =
 #+scalaz
     ev.append(prefix, ev.append(fa.intercalate(delim), suffix))
 #-scalaz
 #+cats
-    ev.combine(prefix, ev.combine(intercalate(fa, delim), suffix))
+    ev.combine(prefix, ev.combine(fa.intercalate(delim), suffix))
 #-cats
 
   /** Like `foldSmash` but returns monoidal zero if the foldable is empty. */
