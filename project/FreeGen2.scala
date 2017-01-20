@@ -139,8 +139,8 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       else s"""|      def $mname$ctparams(${cargs.mkString(", ")}): F[$ret] = sys.error("Not implemented: $mname$ctparams(${cparams.mkString(", ")})")"""
 
     def kleisliImpl: String =
-      if (cargs.isEmpty) s"|      def $mname = primitive(_.$mname)"
-      else s"|      def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname(${cargs.mkString(", ")}))"
+      if (cargs.isEmpty) s"|    override def $mname = primitive(_.$mname)"
+      else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname(${cargs.mkString(", ")}))"
 
   }
 
@@ -285,16 +285,29 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      |}
      |""".trim.stripMargin
 
+   def interp[A](implicit ev: ClassTag[A]): String = {
+     val n = toScalaType(ev.runtimeClass)
+     s"""
+       |  trait ${n}InterpreterTemplate extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
+       |    private[this] val KK: Catchable[Kleisli[M, ${n}, ?]] = Predef.implicitly
+       |    override def attempt[A](fa: ${n}IO[A]) = KK.attempt(fa.foldMap(${n}Interpreter))
+       |${ctors[A].map(_.kleisliImpl).mkString("\n")}
+       |  }
+       |""".trim.stripMargin
+    }
+
    // template for a kleisli interpreter
    def kleisliInterpreter: String =
      s"""
       |package doobie.free2
       |
       |#+scalaz
+      |// Library imports required for the scalaz implementation.
       |import doobie.util.capture.Capture
       |import scalaz.{ Catchable, Free, Kleisli, Monad, ~> }
       |#-scalaz
       |#+cats
+      |// Library imports required for the Cats implementation.
       |import cats.{ Monad, ~> }
       |import cats.data.Kleisli
       |import cats.free.Free
@@ -302,17 +315,20 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |import fs2.interop.cats._
       |#-cats
       |
-      |${managed.map(_.getName).map(n => s"import $n").mkString("\n")}
+      |// Types referenced in the JDBC API
+      |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
       |
-      |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |// Algebras and free monads thereof referenced by our interpreter.
+      |${managed.map(_.getSimpleName).map(c => s"import doobie.free2.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
-      |// Template for a Kleisli interpreter
+      |// Family of interpreters into Kleisli arrows for some monad M.
       |trait KleisliInterpreter[M[_]] {
       |  implicit val M: Monad[M]
       |  implicit val C: Capture[M]
       |  implicit val K: Catchable[M]
       |
-      |  ${managed.map(_.getSimpleName).map(n => s"val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] // = new ${n}Interpreter { }").mkString("\n  ")}
+      |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
+      |  ${managed.map(_.getSimpleName).map(n => s"val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] = new ${n}Interpreter { }").mkString("\n  ")}
       |
       |  // Some operations are uniform for all ${managed.length} interpreters.
       |  trait Base[J] {
@@ -325,10 +341,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |  }
       |
       |  // Interpreters
-      |  ${managed.map(_.getSimpleName).map(n => s"""trait ${n}InterpreterTemplate extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
-      |    private[this] val KK: Catchable[Kleisli[M, ${n}, ?]] = Predef.implicitly
-      |    override def attempt[A](fa: ${n}IO[A]) = KK.attempt(fa.foldMap(${n}Interpreter))
-      |  }""").mkString("\n\n  ")}
+      |${managed.map(ClassTag(_)).map(interp(_)).mkString("\n\n")}
       |
       |}
       |""".trim.stripMargin
