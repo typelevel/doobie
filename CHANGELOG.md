@@ -3,6 +3,11 @@
 This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
 
 ----
+
+### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
+
+This release updates **doobie** to Cats 0.9 and the associated fs2-cats interop layer to 0.3, courtesy of mighty space robot Adelbert Chang. There are no other changes.
+
 ### <a name="0.4.0"></a>New and Noteworthy for Version 0.4.0
 
 This was intended to be a quick follow-up to 0.3.0 but it got a little out of hand and turned into a major release. **Please read these notes carefully** because there are some breaking changes relative to 0.3.0.
