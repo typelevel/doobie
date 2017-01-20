@@ -288,7 +288,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
    def interp[A](implicit ev: ClassTag[A]): String = {
      val n = toScalaType(ev.runtimeClass)
      s"""
-       |  trait ${n}InterpreterTemplate extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
+       |  trait ${n}Interpreter extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
        |    private[this] val KK: Catchable[Kleisli[M, ${n}, ?]] = Predef.implicitly
        |    override def attempt[A](fa: ${n}IO[A]) = KK.attempt(fa.foldMap(${n}Interpreter))
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
@@ -341,7 +341,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |  }
       |
       |  // Interpreters
-      |${managed.map(ClassTag(_)).map(interp(_)).mkString("\n\n")}
+      |${managed.map(ClassTag(_)).map(interp(_)).mkString("\n")}
       |
       |}
       |""".trim.stripMargin
