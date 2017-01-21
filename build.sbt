@@ -1,19 +1,13 @@
 import UnidocKeys._
-// import FreeGen._
 import FreeGen2._
 import ReleaseTransformations._
-
-enablePlugins(CrossPerProjectPlugin)
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.0",
+  scalaOrganization := "org.typelevel",
   crossScalaVersions := Seq("2.11.8", scalaVersion.value)
-)
-
-lazy val scalazCrossSettings = Seq(
-  crossScalaVersions := "2.10.6" +: crossScalaVersions.value
 )
 
 lazy val commonSettings = Seq(
@@ -29,10 +23,8 @@ lazy val commonSettings = Seq(
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Ywarn-value-discard"
-    ) ++ (
-      if (scalaVersion.value startsWith "2.12") Seq("-Ypartial-unification")
-      else Nil
+      "-Ywarn-value-discard",
+      "-Ypartial-unification"
     ),
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
@@ -100,29 +92,8 @@ lazy val doobie = project.in(file("."))
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
   .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
-  // .settings(freeGenSettings)
   .settings(freeGen2Settings)
   .settings(
-  //   freeGenDir := file("yax/core/src/main/scala/doobie/free"),
-  //   freeGenClasses := {
-  //     import java.sql._
-  //     List[Class[_]](
-  //       classOf[java.sql.NClob],
-  //       classOf[java.sql.Blob],
-  //       classOf[java.sql.Clob],
-  //       classOf[java.sql.DatabaseMetaData],
-  //       classOf[java.sql.Driver],
-  //       classOf[java.sql.Ref],
-  //       classOf[java.sql.SQLData],
-  //       classOf[java.sql.SQLInput],
-  //       classOf[java.sql.SQLOutput],
-  //       classOf[java.sql.Connection],
-  //       classOf[java.sql.Statement],
-  //       classOf[java.sql.PreparedStatement],
-  //       classOf[java.sql.CallableStatement],
-  //       classOf[java.sql.ResultSet]
-  //     )
-  //   },
     freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
     freeGen2Classes := {
       import java.sql._
@@ -202,8 +173,7 @@ lazy val core = project.in(file("modules/core"))
       "org.scalaz"        %% "scalaz-effect"    % "7.2.7",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
       "com.h2database"    %  "h2"               % "1.4.193" % "test"
-    ),
-    scalazCrossSettings
+    )
   )
 
 val catsVersion = "0.9.0"
@@ -228,8 +198,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
 lazy val example = project.in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(
-    yax(file("yax/example"), "scalaz"),
-    scalazCrossSettings
+    yax(file("yax/example"), "scalaz")
   )
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
 
@@ -267,8 +236,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
 lazy val postgres = project.in(file("modules/postgres"))
   .settings(
     yax(file("yax/postgres"), "scalaz"),
-    postgresSettings("postgres"),
-    scalazCrossSettings
+    postgresSettings("postgres")
   )
   .dependsOn(core)
 
@@ -294,8 +262,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
 lazy val h2 = project.in(file("modules/h2"))
   .settings(
     yax(file("yax/h2"), "scalaz"),
-    h2Settings("h2"),
-    scalazCrossSettings
+    h2Settings("h2")
   )
   .dependsOn(core)
 
@@ -321,8 +288,7 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
 lazy val hikari = project.in(file("modules/hikari"))
   .settings(
     yax(file("yax/hikari"), "scalaz"),
-    hikariSettings("hikari"),
-    scalazCrossSettings
+    hikariSettings("hikari")
   )
   .dependsOn(core)
 
@@ -348,8 +314,7 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
 lazy val specs2 = project.in(file("modules/specs2"))
   .settings(
     yax(file("yax/specs2"), "scalaz"),
-    specs2Settings("specs2"),
-    scalazCrossSettings
+    specs2Settings("specs2")
   )
   .dependsOn(core)
 
@@ -375,8 +340,7 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
 lazy val scalatest = project.in(file("modules/scalatest"))
   .settings(
     yax(file("yax/scalatest"), "scalaz"),
-    scalaTestSettings("scalatest"),
-    scalazCrossSettings
+    scalaTestSettings("scalatest")
   )
   .dependsOn(core)
 
@@ -394,8 +358,7 @@ lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
 lazy val bench = project.in(file("modules/bench"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(
-    yax(file("yax/bench"), "scalaz"),
-    scalazCrossSettings
+    yax(file("yax/bench"), "scalaz")
   )
   .dependsOn(core, postgres)
 
@@ -446,8 +409,7 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
 
 lazy val docs = project.in(file("modules/docs"))
   .settings(
-    docsSettings("scalaz"),
-    scalazCrossSettings
+    docsSettings("scalaz")
   )
   .dependsOn(
     core,
