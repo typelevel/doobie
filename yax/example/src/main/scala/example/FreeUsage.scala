@@ -3,11 +3,11 @@ package doobie.example
 import java.io.File
 
 import doobie.util.iolite.IOLite
-import doobie.free.{ drivermanager => DM }
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.syntax.catchable.ToDoobieCatchableOps._
+import doobie.util.transactor.DriverManagerTransactor
 
 #+scalaz
 import scalaz.Scalaz._
@@ -20,17 +20,11 @@ import cats.implicits._
 object FreeUsage {
 
   case class CountryCode(code: String)
-  
-  def main(args: Array[String]): Unit = 
-    tmain.trans[IOLite].unsafePerformIO
 
-  val tmain: DM.DriverManagerIO[Unit] = 
-    for {
-      _ <- DM.delay(Class.forName("org.h2.Driver"))
-      c <- DM.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-      a <- DM.lift(c, examples ensuring C.close).except(t => t.toString.pure[DM.DriverManagerIO])
-      _ <- DM.delay(Console.println(a))
-    } yield ()
+  def main(args: Array[String]): Unit = {
+    val db = DriverManagerTransactor[IOLite]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    db.trans(examples.void).unsafePerformIO
+  }
 
   def examples: C.ConnectionIO[String] =
     for {
@@ -61,7 +55,7 @@ object FreeUsage {
     } yield l
 
   def unroll[A](a: RS.ResultSetIO[A]): RS.ResultSetIO[List[A]] = {
-    def unroll0(as: List[A]): RS.ResultSetIO[List[A]] = 
+    def unroll0(as: List[A]): RS.ResultSetIO[List[A]] =
       RS.next >>= {
         case false => as.pure[RS.ResultSetIO]
         case true  => a >>= { a => unroll0(a :: as) }
