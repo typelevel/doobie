@@ -139,6 +139,9 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type Fragment = doobie.util.fragment.Fragment
   /** @group Companion Aliases */ val  Fragment = doobie.util.fragment.Fragment
 
+  /** @group Type Aliases */      type KleisliInterpreter[F[_]] = doobie.free.KleisliInterpreter[F]
+  /** @group Companion Aliases */ val  KleisliInterpreter       = doobie.free.KleisliInterpreter
+
   /** @group Companion Aliases */ val  Fragments = doobie.util.fragments
 
 #+scalaz
