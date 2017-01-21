@@ -8,7 +8,8 @@ enablePlugins(CrossPerProjectPlugin)
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.0",
+  scalaOrganization := (if (scalaVersion.value.startsWith("2.10")) "org.scala-lang" else "org.typelevel"),
   crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 )
 
@@ -31,7 +32,8 @@ lazy val commonSettings = Seq(
       "-Ywarn-dead-code",
       "-Ywarn-value-discard"
     ) ++ (
-      if (scalaVersion.value startsWith "2.12") Seq("-Ypartial-unification")
+      if (scalaVersion.value.startsWith("2.12") ||
+          scalaVersion.value.startsWith("2.11")) Seq("-Ypartial-unification")
       else Nil
     ),
     scalacOptions in (Compile, doc) ++= Seq(
@@ -44,6 +46,11 @@ lazy val commonSettings = Seq(
       "org.scalacheck" %% "scalacheck"        % "1.13.4" % "test",
       "org.specs2"     %% "specs2-core"       % "3.8.6"  % "test",
       "org.specs2"     %% "specs2-scalacheck" % "3.8.6"  % "test"
+    ) ++ (
+      if (scalaVersion.value startsWith "2.10") Seq(
+        compilerPlugin("com.milessabin" % "si2712fix-plugin_2.10.6" % "1.2.0")
+      )
+      else Nil
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 )
