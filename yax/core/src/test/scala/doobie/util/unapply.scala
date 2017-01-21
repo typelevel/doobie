@@ -14,7 +14,7 @@ import cats.free.{ Free, Coyoneda }
 
 object unapplyspec extends Specification {
 
-  "Unapply" should { 
+  "Partial Unification" should { 
 
     "allow inference of Monad[Free[Coyoneda[F, ?], ?]]" in {
       trait Foo[A]

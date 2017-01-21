@@ -1,11 +1,10 @@
 package doobie.syntax
 
 #+scalaz
-import scalaz.{ Monad, Catchable, \/, Unapply }
+import scalaz.{ Monad, Catchable, \/ }
 #-scalaz
 import doobie.util.{ catchsql => C }
 #+cats
-import cats.Unapply
 import scala.util.{ Either => \/ }
 #-cats
 #+fs2
@@ -44,30 +43,10 @@ object catchsql {
 
     def onSqlException[B](action: M[B]): M[A] =
       C.onSqlException(self)(action)
-    
-  }
-
-  trait ToDoobieCatchSqlOps0 {
-
-#+scalaz
-    /** @group Syntax */
-    implicit def toDoobieCatchSqlOpsUnapply[MA](ma: MA)(
-      implicit M0: Unapply[Monad, MA],
-               C0: Unapply[Catchable, MA]
-    ): DoobieCatchSqlOps[M0.M, M0.A] =
-      new DoobieCatchSqlOps[M0.M, M0.A](M0.apply(ma))(M0.TC, C0.TC.asInstanceOf[Catchable[M0.M]])
-#-scalaz
-#+fs2
-    /** @group Syntax */
-    implicit def toDoobieCatchSqlOpsUnapply[MA](ma: MA)(
-      implicit C0: Unapply[Catchable, MA]
-    ): DoobieCatchSqlOps[C0.M, C0.A] =
-      new DoobieCatchSqlOps[C0.M, C0.A](C0.subst(ma))(C0.TC.asInstanceOf[Catchable[C0.M]])
-#-fs2
 
   }
 
-  trait ToDoobieCatchSqlOps extends ToDoobieCatchSqlOps0 {
+  trait ToDoobieCatchSqlOps {
 
     /** @group Syntax */
 #+scalaz

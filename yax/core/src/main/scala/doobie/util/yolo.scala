@@ -36,7 +36,7 @@ import java.sql.Connection
 import Predef._
 
 /** Module for implicit syntax useful in REPL session. */
-object yolo extends ToDoobieCatchableOps0 {
+object yolo {
 
 #+scalaz
   class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
