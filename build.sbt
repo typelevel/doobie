@@ -97,8 +97,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   // .settings(unidocSettings)
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
+  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
+  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
   .settings(freeGenSettings)
   .settings(
     freeGenDir := file("yax/core/src/main/scala/doobie/free"),
@@ -446,3 +446,30 @@ lazy val docs_cats = project.in(file("modules-cats/docs"))
     h2_cats, 
     scalatest_cats
   )
+
+///
+/// REFINED
+///
+
+def refinedSettings(mod: String): Seq[Setting[_]] =
+  doobieSettings  ++
+    publishSettings ++ Seq(
+    name := "doobie-" + mod,
+    description := "Refined support for doobie.",
+    libraryDependencies +=   "eu.timepit" %% "refined" % "0.6.2"
+  )
+
+lazy val refined = project.in(file("modules/refined"))
+  .settings(
+    yax(file("yax/refined"), "scalaz"),
+    refinedSettings("refined"),
+    scalazCrossSettings
+  )
+  .dependsOn(core)
+
+lazy val refined_cats = project.in(file("modules-cats/refined"))
+  .settings(
+    yax(file("yax/refined"), "cats", "fs2"),
+    refinedSettings("refined-cats")
+  )
+  .dependsOn(core_cats)
