@@ -1,15 +1,21 @@
 import UnidocKeys._
-// import FreeGen._
 import FreeGen2._
 import ReleaseTransformations._
+
+/**
+ * This build now depends on partial unification, but this is slightly tricky. It's built into 2.12,
+ * but for 2.11 we need the Typelevel compiler, util 2.11.9 arrives. For 2.10 we need the plugin. In
+ * addition the cats/fs2 build isn't available for 2.10 because there's no fs2 for 2.10, so we need
+ * sbt-doge to support that. Whee.
+ */
 
 enablePlugins(CrossPerProjectPlugin)
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.0",
-  scalaOrganization := (if (scalaVersion.value.startsWith("2.10")) "org.scala-lang" else "org.typelevel"),
+  scalaVersion := "2.12.1",
+  scalaOrganization := (if (scalaVersion.value startsWith "2.11") "org.typelevel" else "org.scala-lang"),
   crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 )
 
@@ -103,33 +109,10 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  // .settings(unidocSettings)
-  // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
   .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
-  // .settings(freeGenSettings)
   .settings(freeGen2Settings)
   .settings(
-  //   freeGenDir := file("yax/core/src/main/scala/doobie/free"),
-  //   freeGenClasses := {
-  //     import java.sql._
-  //     List[Class[_]](
-  //       classOf[java.sql.NClob],
-  //       classOf[java.sql.Blob],
-  //       classOf[java.sql.Clob],
-  //       classOf[java.sql.DatabaseMetaData],
-  //       classOf[java.sql.Driver],
-  //       classOf[java.sql.Ref],
-  //       classOf[java.sql.SQLData],
-  //       classOf[java.sql.SQLInput],
-  //       classOf[java.sql.SQLOutput],
-  //       classOf[java.sql.Connection],
-  //       classOf[java.sql.Statement],
-  //       classOf[java.sql.PreparedStatement],
-  //       classOf[java.sql.CallableStatement],
-  //       classOf[java.sql.ResultSet]
-  //     )
-  //   },
     freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
     freeGen2Classes := {
       import java.sql._
