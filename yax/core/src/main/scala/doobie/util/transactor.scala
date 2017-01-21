@@ -2,7 +2,7 @@ package doobie.util
 
 
 import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
-import doobie.hi.connection.ProcessConnectionIOOps
+import doobie.free.KleisliInterpreter
 import doobie.syntax.catchable.ToDoobieCatchableOps._
 import doobie.syntax.process._
 import doobie.util.query._
@@ -11,6 +11,7 @@ import doobie.util.update._
 import doobie.util.catchable._
 #-cats
 import doobie.util.yolo._
+import doobie.util.naturaltransformation._
 
 #+scalaz
 import scalaz.syntax.monad._
@@ -27,11 +28,13 @@ import cats.implicits._
 #+fs2
 import fs2.{ Stream => Process }
 import fs2.Stream.{ eval, eval_ }
-import fs2.util.{ Monad, Catchable, Suspendable }
+import fs2.util.{ Monad, Catchable, Suspendable  }
 import fs2.interop.cats._
+import fs2.interop.cats.reverse.functionKToUf1
 #-fs2
 
 import java.sql.Connection
+import java.sql.DriverManager
 import javax.sql.DataSource
 
 /**
@@ -83,7 +86,7 @@ object transactor {
         (before *> ma <* after) onException oops ensuring always
 
       def apply[A](ma: ConnectionIO[A]): M[A] =
-        connect.flatMap(c => safe(ma).transK[M].run(c))
+        connect.flatMap(c => safe(ma).foldMap(KleisliInterpreter[M].ConnectionInterpreter).run(c))
 
     }
 
@@ -103,8 +106,16 @@ object transactor {
         (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
 #-fs2
 
-      def apply[A](pa: Process[ConnectionIO, A]): Process[M, A] =
-        eval(connect).flatMap(safe(pa).trans[M](_))
+      def apply[A](pa: Process[ConnectionIO, A]): Process[M, A] = {
+        import KleisliInterpreter._
+        def nat(c: Connection): ConnectionIO ~> M = LiftF(KleisliInterpreter[M].ConnectionInterpreter andThen ApplyKleisli(c))
+#+scalaz
+        eval(connect).flatMap(c => safe(pa).translate[M](nat(c)))
+#-scalaz
+#+fs2
+        eval(connect).flatMap(c => safe(pa).translate[M](functionKToUf1(nat(c))))
+#-fs2
+      }
 
     }
 
@@ -112,18 +123,21 @@ object transactor {
 
   /** `Transactor` wrapping `java.sql.DriverManager`. */
   object DriverManagerTransactor {
-    import doobie.free.drivermanager.{ delay, getConnection, DriverManagerIO }
 
 #+scalaz
-    def create[M[_]: Monad: Catchable: Capture](driver: String, conn: DriverManagerIO[Connection]): Transactor[M] =
-#-scalaz
-#+fs2
-    def create[M[_]: Catchable: Suspendable](driver: String, conn: DriverManagerIO[Connection]): Transactor[M] =
-#-fs2
+    def create[M[_]: Monad: Catchable: Capture](driver: String, conn: => Connection): Transactor[M] =
       new Transactor[M] {
         val connect: M[Connection] =
-          (delay(Class.forName(driver)) *> conn).trans[M]
+          Capture[M].delay { Class.forName(driver); conn }
       }
+#-scalaz
+#+fs2
+    def create[M[_]: Catchable: Suspendable](driver: String, conn: => Connection): Transactor[M] =
+      new Transactor[M] {
+        val connect: M[Connection] =
+          Suspendable[M].delay { Class.forName(driver); conn }
+      }
+#-fs2
 
 #+scalaz
     def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String): Transactor[M] =
@@ -131,7 +145,7 @@ object transactor {
 #+fs2
     def apply[M[_]: Catchable: Suspendable](driver: String, url: String): Transactor[M] =
 #-fs2
-      create(driver, getConnection(url))
+      create(driver, DriverManager.getConnection(url))
 
 #+scalaz
     def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, user: String, pass: String): Transactor[M] =
@@ -139,7 +153,7 @@ object transactor {
 #+fs2
     def apply[M[_]: Catchable: Suspendable](driver: String, url: String, user: String, pass: String): Transactor[M] =
 #-fs2
-      create(driver, getConnection(url, user, pass))
+      create(driver, DriverManager.getConnection(url, user, pass))
 
 #+scalaz
     def apply[M[_]: Monad: Catchable: Capture](driver: String, url: String, info: java.util.Properties): Transactor[M] =
@@ -147,7 +161,7 @@ object transactor {
 #+fs2
     def apply[M[_]: Catchable: Suspendable](driver: String, url: String, info: java.util.Properties): Transactor[M] =
 #-fs2
-      create(driver, getConnection(url, info))
+      create(driver, DriverManager.getConnection(url, info))
 
   }
 

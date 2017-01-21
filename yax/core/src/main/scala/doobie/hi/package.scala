@@ -2,7 +2,6 @@ package doobie
 
 import doobie.free.{ connection => C }
 import doobie.free.{ driver => D }
-import doobie.free.{ drivermanager => DM }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ callablestatement => CS }
 import doobie.free.{ resultset => RS }
@@ -14,7 +13,7 @@ import doobie.util.these.\&/
 import doobie.util.these.\&/._
 #-cats
 
-/** 
+/**
  * High-level database API. The constructors here are defined
  * in terms of those in `doobie.free.connection` but differ in the following ways:
  *
@@ -22,20 +21,19 @@ import doobie.util.these.\&/._
  *    defined in `doobie.enum`.
  *  - Nullable values are represented in terms of `Option`.
  *  - Java collection types are translated to immutable Scala equivalents.
- *  - Actions that compute liftime-managed resources do not return the resource directly, but rather 
+ *  - Actions that compute liftime-managed resources do not return the resource directly, but rather
  *    take a continuation in the resource's monad.
  *  - Actions that compute values of impure types (`CLOB`, `InputStream`, etc.) do not appear in this API.
  *    They are available in the low-level API but must be used with considerable caution.
  *  - An exception to the above rule is that actions consuming or returning Scala `Array` are available
  *    here but use `scalaz.ImmutableArray` or `List`, depending on usage.
- *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear 
+ *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear
  *    in this API.
  */
 package object hi {
 
   /** @group Aliases */  type ConnectionIO[A]        = C.ConnectionIO[A]
   /** @group Aliases */  type DriverIO[A]            = D.DriverIO[A]
-  /** @group Aliases */  type DriverManagerIO[A]     = DM.DriverManagerIO[A]
   /** @group Aliases */  type StatementIO[A]         = S.StatementIO[A]
   /** @group Aliases */  type CallableStatementIO[A] = CS.CallableStatementIO[A]
   /** @group Aliases */  type PreparedStatementIO[A] = PS.PreparedStatementIO[A]

@@ -1,5 +1,5 @@
 import UnidocKeys._
-import FreeGen._
+// import FreeGen._
 import FreeGen2._
 import ReleaseTransformations._
 
@@ -100,29 +100,29 @@ lazy val doobie = project.in(file("."))
   // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
   .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
-  .settings(freeGenSettings)
+  // .settings(freeGenSettings)
   .settings(freeGen2Settings)
   .settings(
-    freeGenDir := file("yax/core/src/main/scala/doobie/free"),
-    freeGenClasses := {
-      import java.sql._
-      List[Class[_]](
-        classOf[java.sql.NClob],
-        classOf[java.sql.Blob],
-        classOf[java.sql.Clob],
-        classOf[java.sql.DatabaseMetaData],
-        classOf[java.sql.Driver],
-        classOf[java.sql.Ref],
-        classOf[java.sql.SQLData],
-        classOf[java.sql.SQLInput],
-        classOf[java.sql.SQLOutput],
-        classOf[java.sql.Connection],
-        classOf[java.sql.Statement],
-        classOf[java.sql.PreparedStatement],
-        classOf[java.sql.CallableStatement],
-        classOf[java.sql.ResultSet]
-      )
-    },
+  //   freeGenDir := file("yax/core/src/main/scala/doobie/free"),
+  //   freeGenClasses := {
+  //     import java.sql._
+  //     List[Class[_]](
+  //       classOf[java.sql.NClob],
+  //       classOf[java.sql.Blob],
+  //       classOf[java.sql.Clob],
+  //       classOf[java.sql.DatabaseMetaData],
+  //       classOf[java.sql.Driver],
+  //       classOf[java.sql.Ref],
+  //       classOf[java.sql.SQLData],
+  //       classOf[java.sql.SQLInput],
+  //       classOf[java.sql.SQLOutput],
+  //       classOf[java.sql.Connection],
+  //       classOf[java.sql.Statement],
+  //       classOf[java.sql.PreparedStatement],
+  //       classOf[java.sql.CallableStatement],
+  //       classOf[java.sql.ResultSet]
+  //     )
+  //   },
     freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
     freeGen2Classes := {
       import java.sql._

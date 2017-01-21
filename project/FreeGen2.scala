@@ -181,17 +181,17 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
   def module[A](implicit ev: ClassTag[A]): String = {
     val sname = toScalaType(ev.runtimeClass)
    s"""
-    |package doobie.free2
+    |package doobie.free
     |
     |#+scalaz
     |import doobie.util.capture.Capture
-    |import scalaz.{ Catchable, Free => FF , ~>, \\/ }
+    |import scalaz.{ Catchable, Free => FF, Monad, ~>, \\/ }
     |#-scalaz
     |#+cats
-    |import cats.~>
+    |import cats.{ Monad, ~> }
     |import cats.free.{ Free => FF }
     |import scala.util.{ Either => \\/ }
-    |import fs2.util.Catchable
+    |import fs2.util.{ Catchable, Suspendable }
     |#-cats
     |
     |${imports[A].mkString("\n")}
@@ -223,6 +223,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |      final def apply[A](fa: ${sname}Op[A]): F[A] = fa.visit(this)
     |
     |      // Common
+    |      def raw[A](f: $sname => A): F[A]
     |      def embed[A](e: Embedded[A]): F[A]
     |      def delay[A](a: () => A): F[A]
     |      def attempt[A](fa: ${sname}IO[A]): F[Throwable \\/ A]
@@ -233,6 +234,9 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |    }
     |
     |    // Common operations for all algebras.
+    |    case class Raw[A](f: $sname => A) extends ${sname}Op[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.raw(f)
+    |    }
     |    case class Embed[A](e: Embedded[A]) extends ${sname}Op[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.embed(e)
     |    }
@@ -251,32 +255,36 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |
     |  // Smart constructors for operations common to all algebras.
     |  val unit: ${sname}IO[Unit] = FF.pure[${sname}Op, Unit](())
+    |  def raw[A](f: $sname => A): ${sname}IO[A] = FF.liftF(Raw(f))
     |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = FF.liftF(Embed(ev.embed(j, fa)))
+    |  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = embed(j, fa)
     |  def delay[A](a: => A): ${sname}IO[A] = FF.liftF(Delay(() => a))
     |  def attempt[A](fa: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = FF.liftF[${sname}Op, Throwable \\/ A](Attempt(fa))
     |
     |  // Smart constructors for $sname-specific operations.
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n  ")}
     |
-    |  // ${sname}IO can trap and raise exceptions.
-    |  implicit val Catchable${sname}IO: Catchable[${sname}IO] =
-    |    new Catchable[${sname}IO] {
+    |// ${sname}IO can capture side-effects, and can trap and raise exceptions.
+    |#+scalaz
+    |  implicit val Catchable${sname}IO: Catchable[${sname}IO] with Capture[${sname}IO] =
+    |    new Catchable[${sname}IO] with Capture[${sname}IO] {
+    |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
+    |      def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
+    |      def apply[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
+    |    }
+    |#-scalaz
     |#+fs2
-    |      def pure[A](a: A): ${sname}IO[A] = Monad[${sname}OP].pure(a)
+    |  implicit val Catchable${sname}IO: Suspendable[${sname}IO] with Catchable[${sname}IO] =
+    |    new Suspendable[${sname}IO] with Catchable[${sname}IO] {
+    |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
     |      override def map[A, B](fa: ${sname}IO[A])(f: A => B): ${sname}IO[B] = fa.map(f)
     |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = fa.flatMap(f)
-    |#-fs2
+    |      def suspend[A](fa: => ${sname}IO[A]): ${sname}IO[A] = FF.suspend(fa)
+    |      override def delay[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
     |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
     |      def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
     |    }
-    |
-    |#+scalaz
-    |  // ${sname}IO can capture side-effects a values.
-    |  implicit val Capture${sname}IO: Capture[${sname}IO] =
-    |    new Capture[${sname}IO] {
-    |      def apply[A](a: => A): ${sname}IO[A] = delay(a)
-    |    }
-    |#-scalaz
+    |#-fs2
     |
     |}
     |""".trim.stripMargin
@@ -290,7 +298,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
   // The Embedded definition for all modules.
   def embeds: String =
     s"""
-     |package doobie.free2
+     |package doobie.free
      |
      |#+scalaz
      |import scalaz.Free
@@ -318,6 +326,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      s"""
        |  trait ${n}Interpreter extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
        |    private[this] val KK: Catchable[Kleisli[M, ${n}, ?]] = Predef.implicitly
+       |    override def raw[A](f: $n => A) = primitive(f)
        |    override def attempt[A](fa: ${n}IO[A]) = KK.attempt(fa.foldMap(${n}Interpreter))
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
        |  }
@@ -327,7 +336,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
    // template for a kleisli interpreter
    def kleisliInterpreter: String =
      s"""
-      |package doobie.free2
+      |package doobie.free
       |
       |#+scalaz
       |// Library imports required for the scalaz implementation.
@@ -347,7 +356,20 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
       |
       |// Algebras and free monads thereof referenced by our interpreter.
-      |${managed.map(_.getSimpleName).map(c => s"import doobie.free2.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |${managed.map(_.getSimpleName).map(c => s"import doobie.free.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |
+      |object KleisliInterpreter {
+      |  def apply[M[_]](
+      |    implicit M0: Monad[M],
+      |             C0: Capture[M],
+      |             K0: Catchable[M]
+      |  ): KleisliInterpreter[M] =
+      |    new KleisliInterpreter[M] {
+      |      val M = M0
+      |      val C = C0
+      |      val K = K0
+      |    }
+      |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
       |trait KleisliInterpreter[M[_]] {
@@ -355,8 +377,14 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |  implicit val C: Capture[M]
       |  implicit val K: Catchable[M]
       |
+      |  // Natural transformation by Kleisli application.
+      |  def applyKleisli[F[_], E](e: E): Kleisli[F, E, ?] ~> F =
+      |    new (Kleisli[F, E, ?] ~> F) {
+      |      def apply[A](fa: Kleisli[F, E, A]) = fa.run(e)
+      |    }
+      |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
-      |  ${managed.map(_.getSimpleName).map(n => s"val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] = new ${n}Interpreter { }").mkString("\n  ")}
+      |  ${managed.map(_.getSimpleName).map(n => s"lazy val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] = new ${n}Interpreter { }").mkString("\n  ")}
       |
       |  // Some operations are uniform for all ${managed.length} interpreters.
       |  trait Base[J] {
