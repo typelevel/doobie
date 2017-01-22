@@ -140,7 +140,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
 
     def kleisliImpl: String =
       if (cargs.isEmpty) s"|    override def $mname = primitive(_.$mname)"
-      else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname(${cargs.mkString(", ")}))"
+      else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args))"
 
   }
 
@@ -324,10 +324,13 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
    def interp[A](implicit ev: ClassTag[A]): String = {
      val n = toScalaType(ev.runtimeClass)
      s"""
-       |  trait ${n}Interpreter extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] with Base[${n}] {
-       |    private[this] val KK: Catchable[Kleisli[M, ${n}, ?]] = Predef.implicitly
-       |    override def raw[A](f: $n => A) = primitive(f)
-       |    override def attempt[A](fa: ${n}IO[A]) = KK.attempt(fa.foldMap(${n}Interpreter))
+       |  trait ${n}Interpreter extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] {
+       |    // common operations delegate to outer interpeter
+       |    override def delay[A](a: () => A): Kleisli[M, ${n}, A] = outer.delay(a)
+       |    override def embed[A](e: Embedded[A]): Kleisli[M, ${n}, A] = outer.embed(e)
+       |    override def raw[A](f: ${n} => A) = outer.raw(f)
+       |    override def attempt[A](fa: ${n}IO[A]) = outer.attempt(fa)(this)
+       |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
        |  }
        |""".trim.stripMargin
@@ -341,7 +344,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |#+scalaz
       |// Library imports required for the scalaz implementation.
       |import doobie.util.capture.Capture
-      |import scalaz.{ Catchable, Free, Kleisli, Monad, ~> }
+      |import scalaz.{ Catchable, Free, Kleisli, Monad, ~>, \\/ }
       |#-scalaz
       |#+cats
       |// Library imports required for the Cats implementation.
@@ -350,6 +353,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |import cats.free.Free
       |import fs2.util.{ Catchable, Suspendable => Capture }
       |import fs2.interop.cats._
+      |import scala.util.{ Either => \\/ }
       |#-cats
       |
       |// Types referenced in the JDBC API
@@ -372,29 +376,24 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
-      |trait KleisliInterpreter[M[_]] {
+      |trait KleisliInterpreter[M[_]] { outer =>
       |  implicit val M: Monad[M]
       |  implicit val C: Capture[M]
       |  implicit val K: Catchable[M]
       |
-      |  // Natural transformation by Kleisli application.
-      |  def applyKleisli[F[_], E](e: E): Kleisli[F, E, ?] ~> F =
-      |    new (Kleisli[F, E, ?] ~> F) {
-      |      def apply[A](fa: Kleisli[F, E, A]) = fa.run(e)
-      |    }
-      |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(_.getSimpleName).map(n => s"lazy val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] = new ${n}Interpreter { }").mkString("\n  ")}
       |
-      |  // Some operations are uniform for all ${managed.length} interpreters.
-      |  trait Base[J] {
-      |    protected[this] def primitive[A](f: J => A): Kleisli[M, J, A] = Kleisli(a => C.delay(f(a)))
-      |    def delay[A](a: () => A): Kleisli[M, J, A] = primitive(_ => a())
-      |    def embed[A](e: Embedded[A]): Kleisli[M, J, A] =
-      |      e match {
-      |        ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n        ")}
-      |      }
-      |  }
+      |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
+      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => C.delay(f(a)))
+      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = primitive(_ => a())
+      |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
+      |  def attempt[F[_], J, A](fa: Free[F, A])(nat: F ~> Kleisli[M, J, ?]): Kleisli[M, J, Throwable \\/ A] =
+      |    Catchable[Kleisli[M, J, ?]].attempt(fa.foldMap(nat))
+      |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
+      |    e match {
+      |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}
+      |    }
       |
       |  // Interpreters
       |${managed.map(ClassTag(_)).map(interp(_)).mkString("\n")}
