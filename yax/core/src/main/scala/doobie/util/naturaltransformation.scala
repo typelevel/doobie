@@ -12,13 +12,11 @@ import cats.free.Free
 object naturaltransformation {
 
   // Natural transformation by Kleisli application.
-  case class ApplyKleisli[F[_], E](e: E) extends (Kleisli[F, E, ?] ~> F) {
-    def apply[A](fa: Kleisli[F, E, A]) = fa.run(e)
-  }
+  def applyKleisli[F[_], E](e: E) =
+    λ[Kleisli[F, E, ?] ~> F](_.run(e))
 
-  // Lift a natural translation over an algebra to one over its free monad.
-  case class LiftF[F[_], G[_]: Monad](nat: F ~> G) extends (Free[F, ?] ~> G) {
-    def apply[A](fa: Free[F, A]) = fa.foldMap(nat)
-  }
+  // Lift a natural translation over an functor to one over its free monad.
+  def liftF[F[_], G[_]: Monad](nat: F ~> G) =
+    λ[Free[F, ?] ~> G](_.foldMap(nat))
 
 }

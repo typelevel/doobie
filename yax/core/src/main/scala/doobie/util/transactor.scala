@@ -108,7 +108,7 @@ object transactor {
 
       def apply[A](pa: Process[ConnectionIO, A]): Process[M, A] = {
         import KleisliInterpreter._
-        def nat(c: Connection): ConnectionIO ~> M = LiftF(KleisliInterpreter[M].ConnectionInterpreter andThen ApplyKleisli(c))
+        def nat(c: Connection): ConnectionIO ~> M = liftF(KleisliInterpreter[M].ConnectionInterpreter andThen applyKleisli(c))
 #+scalaz
         eval(connect).flatMap(c => safe(pa).translate[M](nat(c)))
 #-scalaz
