@@ -45,7 +45,7 @@ val xa = DriverManagerTransactor[IOLite](
 )
 ```
 
-A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IOLite`, which gives us something we can run. Specifically it gives us an `IOLIte` that, when run, will connect to the database and run our program in a single transaction.
+A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IOLite`, which gives us something we can run. Specifically it gives us an `IOLite` that, when run, will connect to the database and run our program in a single transaction.
 
 > Scala does not have a standard IO, so the examples in this book use the simple `IOLite` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar types like `scalaz.effect.IO`, `scalaz.concurrent.Task`, `fs2.Task`, and `monix.Task` also work fine.
 
