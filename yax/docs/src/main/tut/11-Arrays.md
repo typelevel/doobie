@@ -28,7 +28,7 @@ import xa.yolo._
 
 ### Reading and Writing Arrays
 
-Let's create a new table with a SQL array column. Note that this is likely to work only for PostgreSQL; the syntax for arrays differs significantly from vendor to vendor.
+Let's create a new table with an SQL array column. Note that this is likely to work only for PostgreSQL; the syntax for arrays differs significantly from vendor to vendor.
 
 ```tut:silent
 val drop = sql"DROP TABLE IF EXISTS person".update.quick

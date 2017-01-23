@@ -29,9 +29,9 @@ import xa.yolo._
 
 This used to be very irritating, but as of 0.4.0 there is a good solution. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html) and [Chapter 8](08-Fragments.html) on statement fragments.
 
-### How do I ascribe a SQL type to an interpolated parameter?
+### How do I ascribe an SQL type to an interpolated parameter?
 
-Interpolated parameters are replaced with `?` placeholders, so if you need to ascribe a SQL type you can use vendor-specific syntax in conjunction with the interpolated value. For example, in PostgreSQL you use `:: type`:
+Interpolated parameters are replaced with `?` placeholders, so if you need to ascribe an SQL type you can use vendor-specific syntax in conjunction with the interpolated value. For example, in PostgreSQL you use `:: type`:
 
 ```tut
 val s = "foo"

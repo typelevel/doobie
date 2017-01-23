@@ -104,7 +104,7 @@ case class LogHandler(unsafeRun: LogEvent => Unit)
 - `ExecFailure` indicates that query execution failed, due to a key violation for example. This constructor provides timing information only for the (failed) execution as well as the raised exception.
 - `ProcessingFailure` indicates that execution was successful but resultset processing failed. This constructor provides timing information for both execution and (failed) processing, as well as the raised exception.
 
-The the Scaladoc for details on this data type.
+See the Scaladoc for details on this data type.
 
 The simplest possible `LogHandler` does nothing at all, and this is what you get by default.
 

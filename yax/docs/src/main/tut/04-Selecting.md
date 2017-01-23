@@ -213,7 +213,7 @@ val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO], 512) /
   .quick.unsafePerformIO)
 ```
 
-The `process` combinator is parameterized on the process element type and consumes a sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
+The `process` combinator is parameterized on the process element type and consumes an sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
 
 
 

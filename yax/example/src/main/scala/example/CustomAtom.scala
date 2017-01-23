@@ -8,7 +8,7 @@ import scalaz.{ Tag, @@ }
 
 object CustomAtom {
 
-  // Treat a Long as a date in code, but store it as a SQL DATE for reporting purposes.
+  // Treat a Long as a date in code, but store it as an SQL DATE for reporting purposes.
   // We'll use a scalaz tagged type, but a value class would work fine as well.
   trait PosixTimeTag
   type PosixTime = Long @@ PosixTimeTag
