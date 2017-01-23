@@ -54,9 +54,9 @@ Let's break this down a bit.
 - `.list` is a convenience method that streams the results, accumulating them in a `List`, in this case yielding a `ConnectionIO[List[String]]`. Similar methods are:
   - `.vector`, which accumulates to a `Vector`
   - `.to[Coll]`, which accumulates to a type `Coll`, given an implicit `CanBuildFrom`. This works with Scala standard library collections.
-  #+scalaz
+#+scalaz
   - `.accumulate[M[_]: MonadPlus]` which accumulates to a universally quantified monoid `M`. This works with many scalaz collections, as well as standard library collections with `MonadPlus` instances.
-  #-scalaz
+#-scalaz
   - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
   - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
   - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
