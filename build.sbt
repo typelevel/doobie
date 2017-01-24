@@ -468,7 +468,10 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
     publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Refined support for doobie.",
-    libraryDependencies +=   "eu.timepit" %% "refined" % "0.6.2"
+    libraryDependencies ++= Seq(
+      "eu.timepit"        %% "refined" % "0.6.2",
+      "com.h2database"    %  "h2"      % "1.4.193" % "test"
+    )
   )
 
 lazy val refined = project.in(file("modules/refined"))
