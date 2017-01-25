@@ -228,6 +228,7 @@ sql"…".query[State]
 ```
 
 ### How do I time query execution?
+
 ### How do I log the SQL produced for my query after interpolation?
 
 As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentation question. See [Chapter 10](10-Logging.html) for more details.
