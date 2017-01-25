@@ -114,7 +114,7 @@ Because `PersonId` is a case class of primitive column values, we can already ma
 Composite[PersonId].length
 ```
 
-However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires an `Param` instance), it doesn't compile.
+However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires a `Param` instance), it doesn't compile.
 
 ```tut:fail:plain
 sql"select * from person where id = $pid"
@@ -184,7 +184,7 @@ implicit val JsonMeta: Meta[Json] =
 1 + 1
 ```
 
-Given this mapping to and from `Json` we can construct a *further* mapping to any type that has a `EncodeJson` and `DecodeJson` instances. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : EncodeJson : DecodeJson : TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
+Given this mapping to and from `Json` we can construct a *further* mapping to any type that has an `EncodeJson` and `DecodeJson` instances. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : EncodeJson : DecodeJson : TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
 
 ```tut:silent
 #+scalaz
@@ -207,7 +207,7 @@ def codecMeta[A >: Null : Encoder : Decoder : TypeTag]: Meta[A] =
 Let's make sure it works. Here is a simple data type with an argonaut encoder, taken straight from the website, and a `Meta` instance derived from the code above.
 #-scalaz
 #+cats
-Let's make sure it works. Here is a simple data type with an circe encoder, taken straight from the website, and a `Meta` instance derived from the code above.
+Let's make sure it works. Here is a simple data type with a circe encoder, taken straight from the website, and a `Meta` instance derived from the code above.
 #-cats
 
 ```tut:silent

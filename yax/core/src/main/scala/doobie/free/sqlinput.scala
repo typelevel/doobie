@@ -384,7 +384,7 @@ object sqlinput extends SQLInputIOInstances {
     F.liftF[SQLInputOp, A](Lift(j, action, mod))
 
   /**
-   * Lift a SQLInputIO[A] into an exception-capturing SQLInputIO[Throwable \/ A].
+   * Lift an SQLInputIO[A] into an exception-capturing SQLInputIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: SQLInputIO[A]): SQLInputIO[Throwable \/ A] =

@@ -222,7 +222,7 @@ object sqldata extends SQLDataIOInstances {
     F.liftF[SQLDataOp, A](Lift(j, action, mod))
 
   /**
-   * Lift a SQLDataIO[A] into an exception-capturing SQLDataIO[Throwable \/ A].
+   * Lift an SQLDataIO[A] into an exception-capturing SQLDataIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: SQLDataIO[A]): SQLDataIO[Throwable \/ A] =

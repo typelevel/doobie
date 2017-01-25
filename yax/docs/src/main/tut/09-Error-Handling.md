@@ -64,7 +64,7 @@ From these we can derive combinators that only pay attention to `SQLException`:
 
 - `attemptSql` is like `attempt` but only traps `SQLException`.
 - `attemptSomeSql` traps only specified `SQLException`s.
-- `exceptSql` recovers from a `SQLException` with a new action.
+- `exceptSql` recovers from an `SQLException` with a new action.
 - `onSqlException` executes an action on `SQLException` and discards its result.
 
 And finally we have a set of combinators that focus on `SQLState`s.
@@ -76,7 +76,7 @@ And finally we have a set of combinators that focus on `SQLState`s.
 - `attemptSqlState` is like `attemptSql` but yields `M[Either[SQLState, A]]`.     
 #-cats
 - `attemptSomeSqlState` traps only specified `SQLState`s.
-- `exceptSqlState` recovers from a `SQLState` with a new action.
+- `exceptSqlState` recovers from an `SQLState` with a new action.
 - `exceptSomeSqlState`  recovers from specified `SQLState`s with a new action.
 
 See the ScalaDoc for more information.
