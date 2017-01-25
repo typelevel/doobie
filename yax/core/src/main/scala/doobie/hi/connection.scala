@@ -49,7 +49,7 @@ import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 #-fs2
 
 /**
- * Module of high-level constructors for `ConnectionIO` actions. 
+ * Module of high-level constructors for `ConnectionIO` actions.
  * @group Modules
  */
 object connection {
@@ -66,7 +66,7 @@ object connection {
   private def liftProcess[A: Composite](
     chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
-    prep:   PreparedStatementIO[Unit], 
+    prep:   PreparedStatementIO[Unit],
     exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
 
     def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
@@ -78,7 +78,7 @@ object connection {
     def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
       repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
+    val preparedStatement: Process[ConnectionIO, PreparedStatement] =
       bracket(create)(ps => eval_(C.lift(ps, PS.close)))(prepared)
 
     def results(ps: PreparedStatement): Process[ConnectionIO, A] =
@@ -125,10 +125,10 @@ object connection {
 
   /**
    * Construct a prepared update statement with the given return columns (and composite destination
-   * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return 
-   * the generated key results via a 
+   * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return
+   * the generated key results via a
    * `Process`.
-   * @group Prepared Statements 
+   * @group Prepared Statements
    */
   def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
     liftProcess(chunkSize, C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
@@ -142,7 +142,7 @@ object connection {
     C.commit
 
   /**
-   * Construct an analysis for the provided `sql` query, given parameter composite type `A` and 
+   * Construct an analysis for the provided `sql` query, given parameter composite type `A` and
    * resultset row composite `B`.
    */
   def prepareQueryAnalysis[A: Composite, B: Composite](sql: String): ConnectionIO[Analysis] =
@@ -156,17 +156,17 @@ object connection {
     })
 
   def prepareQueryAnalysis0[B: Composite](sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       HPS.getColumnMappings[B] map (cm => Analysis(sql, m, Nil, cm))
     })
 
   def prepareUpdateAnalysis[A: Composite](sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       HPS.getParameterMappings[A] map (pm => Analysis(sql, m, pm, Nil))
     })
 
   def prepareUpdateAnalysis0(sql: String): ConnectionIO[Analysis] =
-    nativeTypeMap flatMap (m => prepareStatement(sql) { 
+    nativeTypeMap flatMap (m => prepareStatement(sql) {
       Analysis(sql, m, Nil, Nil).pure[PreparedStatementIO]
     })
 
@@ -295,27 +295,11 @@ object connection {
   def setTransactionIsolation(ti: TransactionIsolation): ConnectionIO[Unit] =
     C.setTransactionIsolation(ti.toInt)
 
-  /** @group Process Syntax */
-  implicit class ProcessConnectionIOOps[A](pa: Process[ConnectionIO, A]) {
-#+scalaz
-    def trans[M[_]: Monad: Catchable: Capture](c: Connection): Process[M, A] =
-#-scalaz
-#+fs2
-    def trans[M[_]: Catchable: Suspendable](c: Connection): Process[M, A] =
-#-fs2
-      pa.translate(new (ConnectionIO ~> M) {
-        def apply[B](ma: ConnectionIO[B]): M[B] =
-          ma.transK[M].run(c)
-      })
-  }
-
-  /** 
+  /**
    * Compute a map from native type to closest-matching JDBC type.
    * @group MetaData
    */
   val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
-    getMetaData(DMD.getTypeInfo.flatMap(DMD.lift(_, HRS.list[(String, JdbcType)].map(_.toMap))))   
+    getMetaData(DMD.getTypeInfo.flatMap(DMD.lift(_, HRS.list[(String, JdbcType)].map(_.toMap))))
   }
 }
-
-

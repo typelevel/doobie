@@ -1,6 +1,13 @@
 import UnidocKeys._
-import FreeGen._
+import FreeGen2._
 import ReleaseTransformations._
+
+/**
+ * This build now depends on partial unification, but this is slightly tricky. It's built into 2.12,
+ * but for 2.11 we need the Typelevel compiler, util 2.11.9 arrives. For 2.10 we need the plugin. In
+ * addition the cats/fs2 build isn't available for 2.10 because there's no fs2 for 2.10, so we need
+ * sbt-doge to support that. Whee.
+ */
 
 enablePlugins(CrossPerProjectPlugin)
 
@@ -8,6 +15,7 @@ lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.12.1",
+  scalaOrganization := (if (scalaVersion.value startsWith "2.11") "org.typelevel" else "org.scala-lang"),
   crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 )
 
@@ -30,7 +38,8 @@ lazy val commonSettings = Seq(
       "-Ywarn-dead-code",
       "-Ywarn-value-discard"
     ) ++ (
-      if (scalaVersion.value startsWith "2.12") Seq("-Ypartial-unification")
+      if (scalaVersion.value.startsWith("2.12") ||
+          scalaVersion.value.startsWith("2.11")) Seq("-Ypartial-unification")
       else Nil
     ),
     scalacOptions in (Compile, doc) ++= Seq(
@@ -43,6 +52,11 @@ lazy val commonSettings = Seq(
       "org.scalacheck" %% "scalacheck"        % "1.13.4" % "test",
       "org.specs2"     %% "specs2-core"       % "3.8.6"  % "test",
       "org.specs2"     %% "specs2-scalacheck" % "3.8.6"  % "test"
+    ) ++ (
+      if (scalaVersion.value startsWith "2.10") Seq(
+        compilerPlugin("com.milessabin" % "si2712fix-plugin_2.10.6" % "1.2.0")
+      )
+      else Nil
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 )
@@ -95,14 +109,12 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  // .settings(unidocSettings)
-  // .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(example, bench, docs))
   .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
-  .settings(freeGenSettings)
+  .settings(freeGen2Settings)
   .settings(
-    freeGenDir := file("yax/core/src/main/scala/doobie/free"),
-    freeGenClasses := {
+    freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
+    freeGen2Classes := {
       import java.sql._
       List[Class[_]](
         classOf[java.sql.NClob],
@@ -439,10 +451,10 @@ lazy val docs = project.in(file("modules/docs"))
 lazy val docs_cats = project.in(file("modules-cats/docs"))
   .settings(docsSettings("cats", "fs2"))
   .dependsOn(
-    core_cats, 
-    postgres_cats, 
-    specs2_cats, 
-    hikari_cats, 
-    h2_cats, 
+    core_cats,
+    postgres_cats,
+    specs2_cats,
+    hikari_cats,
+    h2_cats,
     scalatest_cats
   )

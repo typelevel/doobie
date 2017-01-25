@@ -11,6 +11,7 @@ object capture {
 #+scalaz
   trait Capture[M[_]] {
     def apply[A](a: => A): M[A]
+    def delay[A](a: => A): M[A] = apply(a)
   }
 
   object Capture {

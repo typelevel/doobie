@@ -1,10 +1,10 @@
 package doobie.postgres
 
 #+scalaz
-import scalaz.{ Monad, Catchable, Unapply }
+import scalaz.{ Monad, Catchable }
 #-scalaz
 #+cats
-import cats.{ Monad, Unapply }
+import cats.{ Monad }
 #-cats
 #+fs2
 import fs2.util.Catchable
@@ -21,15 +21,6 @@ trait Syntax {
 
   implicit def toSqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]): SqlStateOps[M, A] =
     new SqlStateOps(ma)
-
-  implicit def toSqlStateOpsUnapply[FA](v: FA)
-    (implicit F0: Unapply[Monad, FA], F1: Unapply[Catchable, FA]): SqlStateOps[F0.M, F0.A] =
-#+scalaz
-    new SqlStateOps[F0.M, F0.A](F0(v))(F0.TC, F1.TC.asInstanceOf[Catchable[F0.M]])
-#-scalaz
-#+cats
-    new SqlStateOps[F0.M, F0.A](F0.subst(v))(F0.TC, F1.TC.asInstanceOf[Catchable[F0.M]])
-#-cats
 
   class SqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]) {
 

@@ -17,6 +17,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 ```
 
@@ -105,12 +106,14 @@ If the provided `Transactor` implementations don't meet your needs, it is straig
 
 ### Using an Existing JDBC Connection
 
-If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target monad `M` that has `Catchable` and `Capture` instances by running the `Kleisli[M, Connection, A]` provided by the `transK` method.
+If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target monad `M` that has `Catchable` and `Capture` instances by running the `Kleisli[M, Connection, A]` yielded by the default interpreter.
 
 ```tut:silent
 val conn: java.sql.Connection = null     // Connection (pretending)
 val prog = 42.pure[ConnectionIO]         // ConnectionIO[Int]
-val task = prog.transK[IOLite].run(conn) // IOLite[Int]
+val int  = KleisliInterpreter[IOLite]    // KleisliInterpreter[IOLite]
+val nat  = int.ConnectionInterpreter     // ConnectionIO ~> Kleisli[IOLite, Connection, ?]
+val task = prog.foldMap(nat).run(conn)   // IOLite[Int]
 ```
 
 As an aside, this technique works for programs written in *any* of the provided contexts. For example, here we run a program in `ResultSetIO`.
@@ -118,7 +121,8 @@ As an aside, this technique works for programs written in *any* of the provided 
 ```tut:silent
 val rs: java.sql.ResultSet = null      // ResultSet (pretending)
 val prog = 42.pure[ResultSetIO]        // ResultSetIO[Int]
-val task = prog.transK[IOLite].run(rs) // IOLite[Int]
+val nat  = int.ResultSetInterpreter    // ResultSetIO ~> Kleisli[IOLite, ResultSet, ?]
+val task = prog.foldMap(nat).run(rs)   // IOLite[Int]
 ```
 
 This facility allows you to mix **doobie** programs into existing JDBC applications in a fine-grained manner if this meets your needs.

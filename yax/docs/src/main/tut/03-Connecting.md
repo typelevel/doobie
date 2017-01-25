@@ -10,7 +10,7 @@ In this chapter we start from the beginning. First we write a program that conne
 
 ### Our First Program
 
-Before we can use **doobie** we need to import some symbols. We will use the `doobie.imports` module here as a convenience; it exposes the most commonly-used symbols when working with the high-level API. We will also import the 
+Before we can use **doobie** we need to import some symbols. We will use the `doobie.imports` module here as a convenience; it exposes the most commonly-used symbols when working with the high-level API. We will also import the
 #+scalaz
 [scalaz](https://github.com/scalaz/scalaz) core, as well as `Task` from scalaz-concurrent.
 #-scalaz
@@ -74,7 +74,7 @@ val task2 = program2.transact(xa)
 task2.unsafePerformIO
 ```
 
-Ok! We have now connected to a database to compute a constant. Considerably more impressive. 
+Ok! We have now connected to a database to compute a constant. Considerably more impressive.
 
 
 ### Our Third Program
@@ -82,7 +82,7 @@ Ok! We have now connected to a database to compute a constant. Considerably more
 What if we want to do more than one thing in a transaction? Easy! `ConnectionIO` is a monad, so we can use a `for` comprehension to compose two smaller programs into one larger program.
 
 ```tut:silent
-val program3 = 
+val program3 =
   for {
     a <- sql"select 42".query[Int].unique
     b <- sql"select random()".query[Double].unique
@@ -128,12 +128,12 @@ Applicative[ConnectionIO].replicateA(5, program3a).transact(xa).unsafePerformIO.
 
 *You do not need to know this, but if you're a scalaz user you might find it helpful.*
 
-All of the **doobie** monads are implemented via `Free` and have no operational semantics; we can only "run" a **doobie** program by transforming `FooIO` (for some carrier type `java.sql.Foo`) to a monad that actually has some meaning. 
+All of the **doobie** monads are implemented via `Free` and have no operational semantics; we can only "run" a **doobie** program by transforming `FooIO` (for some carrier type `java.sql.Foo`) to a monad that actually has some meaning.
 
-Out of the box all of the **doobie** free monads provide a transformation to `Kleisli[M, Foo, ?]` given `Monad[M]`, `Catchable[M]`, and `Capture[M]` (we will discuss `Capture` shortly, standby). The `transK` method gives quick access to this transformation.
+Out of the box all of the **doobie** provides an interpreter from its free monads to `Kleisli[M, Foo, ?]` given `Monad[M]`, `Catchable[M]`, and `Capture[M]` (we will discuss `Capture` shortly, standby).
 
 ```tut
-val kleisli = program1.transK[IOLite] 
+val kleisli = program1.foldMap(KleisliInterpreter[IOLite].ConnectionInterpreter)
 val task = IOLite.primitive(null: java.sql.Connection) >>= kleisli.run
 task.unsafePerformIO // sneaky; program1 never looks at the connection
 ```
@@ -152,9 +152,8 @@ And analogously for other modules in `doobie.free`.
 
 #### The Capture Typeclass
 
-Currently scalaz has no typeclass for monads with **effect-capturing unit**, so that's all `Capture` does; it's simply `(=> A) => M[A]` that is referentially transparent for *all* expressions, even those with side-effects. This allows us to sequence the same effect multiple times in the same program. This is exactly the behavior you expect from `IO` for example. 
+Currently scalaz has no typeclass for monads with **effect-capturing unit**, so that's all `Capture` does; it's simply `(=> A) => M[A]` that is referentially transparent for *all* expressions, even those with side-effects. This allows us to sequence the same effect multiple times in the same program. This is exactly the behavior you expect from `IO` for example.
 
 **doobie** provides instances for `Task` and `IO`, and the implementations are simply `delay` and `apply`, respectively.
 
 > Note that `scala.concurrent.Future` does **not** have an effect-capturing constructor and thus cannot be used as a target type for **doobie** programs. Although `Future` is very commonly used for side-effecting operations, doing so is not referentially transparent. *`Future` has nothing at all to say about side-effects. It is well-behaved in a functional sense only for pure computations.*
-
