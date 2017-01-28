@@ -86,7 +86,7 @@ object coproduct {
       "jdbc:postgresql:world",
       "postgres", ""
     )
-    xa.exec(iprog).unsafePerformIO
+    xa.exec.apply(iprog).unsafePerformIO
   }
 
   // Enter a pattern:

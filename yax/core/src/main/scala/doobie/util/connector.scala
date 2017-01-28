@@ -135,7 +135,7 @@ object transactor  {
      * compatible `Transactor`s via implicit conversion.
      * @group Configuration
      */
-    def configure(f: A => Unit)(implicit ev: Capture[M]): M[Unit] =
+    def configure[B](f: A => B)(implicit ev: Capture[M]): M[B] =
       ev.delay(f(kernel))
 
     /**

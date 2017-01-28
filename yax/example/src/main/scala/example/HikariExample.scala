@@ -4,6 +4,10 @@ package doobie.example
 import doobie.imports._
 import doobie.hikari.imports._
 
+#+cats
+import fs2.interop.cats._
+#-cats
+
 object HikariExample {
 
   def tmain: IOLite[Unit] =

@@ -43,8 +43,7 @@ object postgrescopymanager {
     ).intercalate("|")
 
 
-  lazy val xa: Transactor[Task] =
-    DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  lazy val xa = Transactor.fromDriverManager[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   object inputstream {
 

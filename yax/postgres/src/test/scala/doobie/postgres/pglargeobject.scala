@@ -14,6 +14,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats.implicits._
+import fs2.interop.cats._
 #-cats
 
 object pglargeobjectspec extends Specification with FileEquality {
@@ -73,5 +74,5 @@ trait FileEquality {
     mapIn(f2) { bb2 =>
       bb1 == bb2
     }}
-    
+
 }
