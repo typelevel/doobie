@@ -12,6 +12,7 @@ import scalaz.Monoid
 #-scalaz
 #+cats
 import cats.Monoid
+import fs2.interop.cats._
 #-cats
 
 /** Module defining the `Fragment` data type. */

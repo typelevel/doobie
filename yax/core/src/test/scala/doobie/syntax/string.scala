@@ -3,6 +3,10 @@ package doobie.syntax
 #+scalaz
 import scalaz.NonEmptyList
 #-scalaz
+#+cats
+import fs2.interop.cats._
+#-cats
+
 import doobie.imports._
 import shapeless._
 import shapeless.test.illTyped

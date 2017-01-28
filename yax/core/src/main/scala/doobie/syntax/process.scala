@@ -36,14 +36,14 @@ object process {
     def vector: F[Vector[A]] =
       fa.runLog.map(_.toVector)
 
-    def list: F[List[A]] = 
+    def list: F[List[A]] =
       fa.runLog.map(_.toList)
 
     def sink(f: A => F[Unit]): F[Unit] =
       fa.to(doobie.util.process.sink(f)).run
 
-    def transact[M[_]](xa: Transactor[M])(implicit ev: Process[F, A] =:= Process[ConnectionIO, A]): Process[M, A] =
-      xa.transP(fa)
+    def transact[M[_]: Monad](xa: Transactor[M, _])(implicit ev: Process[F, A] =:= Process[ConnectionIO, A]): Process[M, A] =
+      xa.transP.apply(fa)
 
   }
 
