@@ -28,7 +28,7 @@ import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
