@@ -3,9 +3,12 @@ package doobie.util
 #+scalaz
 import scalaz._
 import Scalaz._
+import doobie.util.capture.Capture
 #-scalaz
 #+cats
+import cats.Monad
 import cats.implicits._
+import fs2.util.{ Catchable, Suspendable => Capture }
 import fs2.interop.cats._
 #-cats
 import doobie.imports._
@@ -23,9 +26,9 @@ object strategyspec extends Specification {
 
   // an instrumented interpreter
   class Interp extends KleisliInterpreter[IOLite] {
-    val M = implicitly
-    val C = implicitly
-    val K = implicitly
+    val M = implicitly[Monad[IOLite]]
+    val C = implicitly[Capture[IOLite]]
+    val K = implicitly[Catchable[IOLite]]
 
     object Connection {
       var autoCommit: Option[Boolean] = None
