@@ -11,7 +11,7 @@ package object refined {
 
   implicit def refinedMeta[T, P](implicit metaT: Meta[T], v: Validate[T, P], tag: TypeTag[T Refined P]): Meta[T Refined P] =
     metaT.xmap[T Refined P](
-      refineV[P](_)(v).right.get,
+      t => rightOrException[T Refined P](refineV[P](t)(v)),
       _.value
     )
 
@@ -27,12 +27,16 @@ package object refined {
   implicit def refinedComposite[T, P](implicit compositeT: Composite[T], v: Validate.Plain[T, P], tag: TypeTag[T Refined P]): Composite[T Refined P] =
 #+scalaz
       compositeT.xmap[T Refined P](
-        refineV[P](_)(v).right.get,
+        t => rightOrException[T Refined P](refineV[P](t)(v)),
         _.value
       )
 #-scalaz
 #+cats
-      compositeT.imap[T Refined P](refineV[P](_)(v).right.get)(_.value)
+      compositeT.imap[T Refined P](t => rightOrException[T Refined P](refineV[P](t)(v))(_.value)
 #-cats
 
+  private[this] def rightOrException[T](either: Either[String, T]): T = either match {
+    case Left(err) => throw new IllegalArgumentException(err)
+    case Right(t) => t
+  }
 }
