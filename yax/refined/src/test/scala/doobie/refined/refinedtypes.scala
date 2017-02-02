@@ -25,10 +25,38 @@ object refinedtypes extends Specification {
     }
   }
 
+  case class Point(x: Int, y: Int)
+  case class Quadrant1()
+  type PointInQuadrant1 = Point Refined Quadrant1
+
+  implicit val PointComposite: Composite[Point] =
+    Composite[(Int, Int)].xmap(
+      (t: (Int,Int)) => new Point(t._1, t._2),
+      (p: Point) => (p.x, p.y)
+    )
+
+  implicit val quadrant1Validate: Validate.Plain[Point, Quadrant1] =
+    Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => s"($p is in quadrant 1)", Quadrant1())
+
+  "Composite" should {
+    "exist for refined types" in {
+      Composite[PointInQuadrant1]
+
+      true
+    }
+  }
+
   "Query" should {
     "return a refined type when conversion is possible" in {
       val pInt: PositiveInt =
         Query[Unit,PositiveInt]("select 123", None).unique(()).transact(xa).unsafePerformIO
+
+      true
+    }
+
+    "return a refined product-type when conversion is possible" in {
+      val pInQ1: PointInQuadrant1 =
+        Query[Unit,PointInQuadrant1]("select 1, 1", None).unique(()).transact(xa).unsafePerformIO
 
       true
     }
