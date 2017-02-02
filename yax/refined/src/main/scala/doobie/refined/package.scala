@@ -15,4 +15,24 @@ package object refined {
       _.value
     )
 
+#+scalaz
+  import scalaz.InvariantFunctor
+  import scalaz.syntax.applicative._
+#-scalaz
+#+cats
+  import cats.functor.{ Invariant => InvariantFunctor }
+  import cats.implicits._
+#-cats
+
+  implicit def refinedComposite[T, P](implicit compositeT: Composite[T], v: Validate.Plain[T, P], tag: TypeTag[T Refined P]): Composite[T Refined P] =
+#+scalaz
+      compositeT.xmap[T Refined P](
+        refineV[P](_)(v).right.get,
+        _.value
+      )
+#-scalaz
+#+cats
+      compositeT.imap[T Refined P](refineV[P](_)(v).right.get)(_.value)
+#-cats
+
 }
