@@ -9,8 +9,8 @@ import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
 
 #+cats
-import doobie.util.these.\&/
-import doobie.util.these.\&/._
+import cats.data.{ Ior => \&/ }
+import cats.data.Ior. { Left => This, Both, Right => That }
 #-cats
 
 /**

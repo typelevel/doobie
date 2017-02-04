@@ -56,7 +56,7 @@ val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 ### Meta, Atom, and Composite

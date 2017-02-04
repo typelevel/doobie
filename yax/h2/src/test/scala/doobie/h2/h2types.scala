@@ -15,6 +15,7 @@ import scalaz.{ Maybe, \/- }
 #-scalaz
 #+cats
 import scala.util.{ Left => -\/, Right => \/- }
+import fs2.interop.cats._
 #-cats
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.

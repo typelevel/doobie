@@ -10,14 +10,13 @@ import doobie.postgres.imports._
 
 import java.io.File
 
-/** 
- * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the 
+/**
+ * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the
  * source in doobie.contrib.postgresql for more information.
  */
 object PostgresLargeObject {
 
-  val xa: Transactor[IOLite] = 
-    DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   val prog: LargeObjectManagerIO[Long] =
     for {
@@ -28,11 +27,11 @@ object PostgresLargeObject {
 
   val task: IOLite[Unit] =
 
-    PHC.pgGetLargeObjectAPI(prog).transact(xa).flatMap { oid => 
+    PHC.pgGetLargeObjectAPI(prog).transact(xa).flatMap { oid =>
       IOLite.primitive(Console.println("oid was " + oid))
     }
 
-  def main(args: Array[String]): Unit = 
+  def main(args: Array[String]): Unit =
     task.unsafePerformIO
 
 }

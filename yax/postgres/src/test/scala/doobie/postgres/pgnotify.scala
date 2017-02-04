@@ -15,6 +15,7 @@ import cats.implicits._
 #-cats
 #+fs2
 import fs2.util.Suspendable
+import fs2.interop.cats._
 #-fs2
 
 object pgnotifyspec extends Specification {

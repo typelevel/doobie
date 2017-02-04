@@ -17,6 +17,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -85,7 +86,7 @@ This is ok, but there's not much point reading all the results from the database
 
 The difference here is that `process` gives us a `scalaz.stream.Process[ConnectionIO, String]` which emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
-Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool. For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) repo, which has a good list of learning resources. 
+Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool. For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) repo, which has a good list of learning resources.
 
 
 ### YOLO Mode
@@ -93,7 +94,7 @@ Of course a server-side `LIMIT` would be an even better way to do this (for data
 The API we have seen so far is ok, but it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So **just for REPL exploration** there is a module of extra syntax provided on `Transactor` that you can import, and it gives you some shortcuts.
 
 ```tut:silent
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 We can now run our previous query in an abbreviated form.
@@ -107,9 +108,9 @@ We can now run our previous query in an abbreviated form.
   .unsafePerformIO)
 ```
 
-This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around. 
+This syntax allows you to quickly run a `Query0[A]` or `Process[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around.
 
-- The `.quick` method sinks the stream to standard out (adding ANSI coloring for fun) and then calls `.transact`, yielding a `Task[Unit]`. 
+- The `.quick` method sinks the stream to standard out (adding ANSI coloring for fun) and then calls `.transact`, yielding a `Task[Unit]`.
 - The `.check` method returns a `Task[Unit]` that performs a metadata analysis on the provided query and asserted types and prints out a report. This is covered in detail in the chapter on typechecking queries.
 
 ### Multi-Column Queries
@@ -214,8 +215,3 @@ val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO], 512) /
 ```
 
 The `process` combinator is parameterized on the process element type and consumes an sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
-
-
-
-
-

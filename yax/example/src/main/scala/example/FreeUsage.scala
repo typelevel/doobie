@@ -7,13 +7,14 @@ import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 import doobie.syntax.catchable.ToDoobieCatchableOps._
-import doobie.util.transactor.DriverManagerTransactor
+import doobie.util.transactor.Transactor
 
 #+scalaz
 import scalaz.Scalaz._
 #-scalaz
 #+cats
 import cats.implicits._
+import fs2.interop.cats._
 #-cats
 
 // JDBC program using the low-level API
@@ -22,8 +23,8 @@ object FreeUsage {
   case class CountryCode(code: String)
 
   def main(args: Array[String]): Unit = {
-    val db = DriverManagerTransactor[IOLite]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-    db.trans(examples.void).unsafePerformIO
+    val db = Transactor.fromDriverManager[IOLite]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    db.trans.apply(examples.void).unsafePerformIO
   }
 
   def examples: C.ConnectionIO[String] =
