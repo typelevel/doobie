@@ -51,7 +51,8 @@ object FragmentExample extends App {
     select(Some("U%"), None, List("USA", "GBR", "FRA"), 10),
     select(Some("U%"), Some(100000000), List("USA", "GBR", "FRA"), 10)
   ).traverse { q =>
-    import xa.yolo._
+    val y = xa.yolo
+    import y._
     q.check *> q.quick
   }
 

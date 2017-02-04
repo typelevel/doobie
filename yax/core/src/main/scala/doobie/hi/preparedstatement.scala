@@ -49,8 +49,8 @@ import scalaz.\&/
 #+cats
 import cats.Foldable
 import cats.implicits._
-import doobie.util.these._
-import doobie.util.these.\&/._
+import cats.data.{ Ior => \&/ }
+import cats.data.Ior. { Left => This, Both, Right => That }
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
@@ -140,9 +140,9 @@ object preparedstatement {
 #+fs2
     bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
 #-fs2
-  /** 
+  /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
-   * @group Metadata 
+   * @group Metadata
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
     PS.getMetaData.map { md =>
@@ -154,11 +154,11 @@ object preparedstatement {
         ColumnMeta(j, s, n, c)
       }
     }
-  
-  /** 
-   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+
+  /**
+   * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta`
    * with the `JdbcMeta` provided by a `Composite` instance.
-   * @group Metadata 
+   * @group Metadata
    */
   def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ColumnMeta]] =
     getColumnJdbcMeta.map(m => A.meta align m)
@@ -179,9 +179,9 @@ object preparedstatement {
   def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
     getGeneratedKeys(resultset.getUnique[A])
 
-  /** 
+  /**
    * Compute the parameter `JdbcMeta` list for this `PreparedStatement`.
-   * @group Metadata 
+   * @group Metadata
    */
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
     PS.getParameterMetaData.map { md =>
@@ -194,10 +194,10 @@ object preparedstatement {
       }
     }
 
-  /** 
-   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta` 
+  /**
+   * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta`
    * with the `JdbcMeta` provided by a `Composite` instance.
-   * @group Metadata 
+   * @group Metadata
    */
   def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ParameterMeta]] =
     getParameterJdbcMeta.map(m => A.meta align m)
@@ -209,7 +209,7 @@ object preparedstatement {
   /** @group Properties */
   val getMaxRows: PreparedStatementIO[Int] =
     PS.getMaxRows
-     
+
   /** @group MetaData */
   val getMetaData: PreparedStatementIO[ResultSetMetaData] =
     PS.getMetaData
@@ -238,16 +238,16 @@ object preparedstatement {
   val getWarnings: PreparedStatementIO[SQLWarning] =
     PS.getWarnings
 
-  /** 
+  /**
    * Set the given composite value, starting at column `n`.
-   * @group Parameters 
+   * @group Parameters
    */
   def set[A](n: Int, a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
     A.set(n, a)
 
-  /** 
+  /**
    * Set the given composite value, starting at column `1`.
-   * @group Parameters 
+   * @group Parameters
    */
   def set[A](a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
     A.set(1, a)

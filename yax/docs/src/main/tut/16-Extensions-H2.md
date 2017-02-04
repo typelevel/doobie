@@ -39,6 +39,10 @@ See the previous chapter on **SQL Arrays** for usage examples.
 import doobie.imports._
 import doobie.h2.imports._
 
+#+cats
+import fs2.interop.cats._
+#-cats
+
 val q = sql"select 42".query[Int].unique
 
 for {

@@ -17,6 +17,7 @@ import scalaz.{ \/, -\/, \/- }
 #-scalaz
 #+cats
 import scala.util.{ Either => \/, Left => -\/, Right => \/- }
+import fs2.interop.cats._
 #-cats
 
 
@@ -43,7 +44,7 @@ import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 trait QueryChecker {
   self: Assertions =>
 
-  def transactor: Transactor[IOLite]
+  def transactor: Transactor[IOLite, _]
 
   def check[A, B](q: Query[A, B])(implicit A: WeakTypeTag[A], B: WeakTypeTag[B]) =
     checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)
@@ -76,7 +77,7 @@ trait QueryChecker {
     sql:      String,
     analysis: ConnectionIO[Analysis]
   ) = {
-    val analysisAttempt = transactor.trans(analysis).attempt.unsafePerformIO
+    val analysisAttempt = transactor.trans.apply(analysis).attempt.unsafePerformIO
     if (hasError(analysisAttempt)) {
       val analysisOutput = analysisAttempt match {
         case -\/(e) =>

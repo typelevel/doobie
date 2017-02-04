@@ -4,6 +4,10 @@ import doobie.imports._
 
 import java.sql.DriverManager
 
+#+cats
+import fs2.interop.cats._
+#-cats
+
 /** Rough benchmark based on non/jawn */
 object bench {
 

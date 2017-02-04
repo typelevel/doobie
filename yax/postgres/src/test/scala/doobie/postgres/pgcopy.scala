@@ -5,6 +5,7 @@ import doobie.postgres.imports._
 
 #+fs2
 import fs2.util.Suspendable
+import fs2.interop.cats._
 #-fs2
 
 import java.io.ByteArrayOutputStream
@@ -17,17 +18,17 @@ object pgcopyspec extends Specification {
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
-  )  
+  )
 
   "copy out" should {
 
     "read csv in utf-8 and match expectations" in  {
 
       val query = """
-        copy (select code, name, population 
-              from country 
-              where name like 'U%' 
-              order by code) 
+        copy (select code, name, population
+              from country
+              where name like 'U%'
+              order by code)
         to stdout (encoding 'utf-8', format csv)"""
 
       val fixture = """
@@ -56,7 +57,7 @@ object pgcopyspec extends Specification {
       prog.transact(xa).unsafePerformIO must_== fixture
 
     }
-    
+
   }
 
 }

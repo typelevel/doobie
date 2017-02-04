@@ -11,6 +11,7 @@ import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
 import doobie.free.{ preparedstatement => FPS }
+import doobie.free.{ resultset => FRS }
 
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
@@ -20,6 +21,7 @@ import doobie.util.fragment.Fragment
 
 import doobie.syntax.process._
 import doobie.syntax.catchable._
+import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import java.sql.ResultSet
 
@@ -84,7 +86,7 @@ object query {
                 case -\/(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[ResultSet](e)
                 case \/-(a) => a.pure[PreparedStatementIO]
               }
-        et <- c.attempt(FPS.lift(rs, k))
+        et <- c.attempt(FPS.lift(rs, k.ensuring(FRS.close)))
         t2 <- now
         t  <- et match {
                 case -\/(e) => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) *> fail(e)

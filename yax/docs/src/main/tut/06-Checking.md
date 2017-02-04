@@ -21,11 +21,12 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 And again, we're playing with the `country` table, shown here for reference.
@@ -49,7 +50,7 @@ In order to create a query that's not quite right, let's redefine our `Country` 
 case class Country(code: Int, name: String, pop: Int, gnp: Double)
 ```
 
-Here's our parameterized query from last chapter, but with the new `Country` definition and the `minPop` parameter changed to a `Short`. 
+Here's our parameterized query from last chapter, but with the new `Country` definition and the `minPop` parameter changed to a `Short`.
 
 ```tut:silent
 def biggerThan(minPop: Short) = sql"""
@@ -114,11 +115,3 @@ The way this works is that a `Query` value has enough type information to descri
 - Parameter and column arity. All query inputs and outputs must map 1:1 with parameters and columns.
 - Nullability. A parameter or column that is *provably* nullable must be mapped to a Scala `Option`. Note that this is a weak guarantee; columns introduced by an outer join might be nullable but JDBC will tend to report them as "might not be nullable" which isn't useful information.
 - Coercibility of types. Mapping of Scala types to JDBC types and JDBC types to vendor types, is asymmetric with respect to reading and writing, and the specification is quite terrible. **doobie** encodes the JDBC spec and combines this with vendor-specific metadata to determine whether a given asserted mapping is sensible or not, and if not, will suggest a fix via changing the Scala type, and another via changing the schema type.
-
-
-
-
-
-
-
-

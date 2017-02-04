@@ -125,10 +125,11 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type Param[A] = doobie.util.param.Param[A]
   /** @group Companion Aliases */ val  Param    = doobie.util.param.Param
 
-  /** @group Type Aliases */ type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
+  /** @group Type Aliases */      type Transactor[M[_], A] = doobie.util.transactor.Transactor[M, A]
+  /** @group Type Aliases */      val  Transactor          = doobie.util.transactor.Transactor
 
-  /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.DriverManagerTransactor
-  /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.DataSourceTransactor
+  /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.Transactor.DriverManagerTransactor
+  /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.Transactor.DataSourceTransactor
 
   /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
   /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
@@ -143,13 +144,5 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Companion Aliases */ val  KleisliInterpreter       = doobie.free.KleisliInterpreter
 
   /** @group Companion Aliases */ val  Fragments = doobie.util.fragments
-
-#+scalaz
-  /** @group Typeclass Instances */
-  implicit val NameCatchable = doobie.util.name.NameCatchable
-
-  /** @group Typeclass Instances */
-  implicit val NameCapture   = doobie.util.name.NameCapture
-#-scalaz
 
 }

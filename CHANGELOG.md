@@ -4,6 +4,16 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.4.2"></a>Notable Work in Progress for Version 0.4.2
+
+non-tpolecat contributors thus far: n4to4, Alexa DeWit
+
+- Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change. Book update TBD.
+- Switched to a new transactor design that makes it simple to customize behavior, and combined with new interpreter design makes it practical to use **doobie** types in free coproducts (see `coproduct.scala` in the `example` project). This is a **minor breaking change**:
+  - The `yolo` member on `Transactor` is no longer stable, so you cannot `import xa.yolo._` anymore; instead you must say `val y = xa.yolo; import y._`. Because this is typically done with `initialCommands` in sbt it's unlikely to be a big deal.
+  - `Transactor` is now a final case class with two type parameters which means existing declarations will be wrong. Book update TBD.
+- Note that the interpreter/transactor changes require `Monad` instances at a few more call sites, which should be transparent in most cases but may require Cats users to `import fs2.interop.cats._` here and there … if scalac is claiming there's no instance available after upgrading that's probably why.
+
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
 This release updates **doobie** to Cats 0.9 and the associated fs2-cats interop layer to 0.3, courtesy of mighty space robot Adelbert Chang. There are no other changes.

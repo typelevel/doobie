@@ -17,6 +17,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 
 val xa = DriverManagerTransactor[IOLite](

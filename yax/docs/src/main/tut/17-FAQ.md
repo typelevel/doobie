@@ -15,6 +15,7 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 import shapeless._
 
@@ -22,7 +23,7 @@ val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 ### How do I do an `IN` clause?

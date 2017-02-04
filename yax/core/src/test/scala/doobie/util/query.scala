@@ -7,6 +7,7 @@ import Scalaz._
 #-scalaz
 #+cats
 import scala.util.{ Left => -\/, Right => \/- }
+import fs2.interop.cats._
 #-cats
 import doobie.imports._
 import org.specs2.mutable.Specification
