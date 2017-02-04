@@ -113,7 +113,7 @@ lazy val doobie = project.in(file("."))
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats)
   .settings(freeGen2Settings)
   .settings(
-    freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
+    freeGen2Dir := file("yax/core/src/main/scala/doobie/free"),
     freeGen2Classes := {
       import java.sql._
       List[Class[_]](
