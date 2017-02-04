@@ -23,7 +23,7 @@ import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 ### Reading and Writing Arrays

@@ -247,7 +247,8 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
       import doobie.imports._
       import doobie.postgres.imports._
       val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-      import xa.yolo._
+      val yolo = xa.yolo
+      import yolo._
       import org.postgis._
       import org.postgresql.util._
       import org.postgresql.geometric._

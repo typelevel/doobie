@@ -6,6 +6,10 @@ import doobie.postgres.imports._
 
 import org.postgresql.geometric.PGpoint
 
+#+cats
+import fs2.interop.cats._
+#-cats
+
 object PostgresPoint extends App {
 
   val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
