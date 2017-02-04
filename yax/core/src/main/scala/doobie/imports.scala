@@ -145,12 +145,4 @@ object imports extends ToDoobieCatchSqlOps
 
   /** @group Companion Aliases */ val  Fragments = doobie.util.fragments
 
-#+scalaz
-  /** @group Typeclass Instances */
-  implicit val NameCatchable = doobie.util.name.NameCatchable
-
-  /** @group Typeclass Instances */
-  implicit val NameCapture   = doobie.util.name.NameCapture
-#-scalaz
-
 }
