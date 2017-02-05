@@ -343,6 +343,7 @@ lazy val specs2 = project.in(file("modules/specs2"))
     scalazCrossSettings
   )
   .dependsOn(core)
+  .dependsOn(h2 % "test")
 
 lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .settings(
