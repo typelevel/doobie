@@ -1,4 +1,4 @@
-package doobie.example
+package doobie.specs2
 
 import doobie.imports._
 import doobie.h2.imports._
@@ -11,8 +11,7 @@ import fs2.interop.cats._
 #-cats
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
-object AnalysisTestSpecs2BeforeAll extends Specification
-    with AnalysisSpec with BeforeAll {
+object beforeall extends Specification with AnalysisSpec with BeforeAll {
   // Setup
   val initQ = sql"create table some_table (value varchar not null)".update
 
