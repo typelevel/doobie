@@ -35,7 +35,7 @@ package object refined {
       compositeT.imap[T Refined P](t => rightOrException[T Refined P](refineV[P](t)(v))(_.value)
 #-cats
 
-  private[this] def rightOrException[T](either: Either[String, T]): T = either match {
+  def rightOrException[T](either: Either[String, T]): T = either match {
     case Left(err) => throw new IllegalArgumentException(err)
     case Right(t) => t
   }
