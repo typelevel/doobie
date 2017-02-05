@@ -48,28 +48,26 @@ object refinedtypes extends Specification {
 
   "Query" should {
     "return a refined type when conversion is possible" in {
-      val pInt: PositiveInt =
-        Query[Unit,PositiveInt]("select 123", None).unique(()).transact(xa).unsafePerformIO
+      sql"select 123".query[PositiveInt].unique.transact(xa).unsafePerformIO
 
       true
     }
 
     "throw an IllegalArgumentException if value does not fit the refinement-type " in {
       illegalArgumentExceptionCaught_?(
-        Query[Unit, PositiveInt]("select -1", None).unique(()).transact(xa).unsafePerformIO
+       sql"select -1".query[PositiveInt].unique.transact(xa).unsafePerformIO
       )
     }
 
     "return a refined product-type when conversion is possible" in {
-      val pInQ1: PointInQuadrant1 =
-        Query[Unit,PointInQuadrant1]("select 1, 1", None).unique(()).transact(xa).unsafePerformIO
+      sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).unsafePerformIO
 
       true
     }
 
     "throw an IllegalArgumentException if object does not fit the refinement-type " in {
       illegalArgumentExceptionCaught_?(
-        Query[Unit, PointInQuadrant1]("select -1, 1", None).unique(()).transact(xa).unsafePerformIO
+        sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).unsafePerformIO
       )
     }
   }
