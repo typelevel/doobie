@@ -1,5 +1,12 @@
 package doobie.util
 
+#+scalaz
+import scalaz.State
+#-scalaz
+#+cats
+import cats.data.State
+#-cats
+
 // embarrassigly minimal lens implementation to avoid a lib conflict
 object lens {
 
@@ -22,6 +29,20 @@ object lens {
 
     def xmapB[BB](f: BB => B, g: B => BB): Lens[A, BB] =
       Lens(a => g(get(a)), (a, bb) => set(a, f(bb)))
+
+    def mods(f: B => B): State[A, B] =
+      State { a =>
+        val b  = get(a)
+        val bʹ = f(b)
+        val aʹ = set(a, bʹ)
+        (aʹ, bʹ)
+      }
+
+    def %=(f: B => B): State[A, B] =
+      mods(f)
+
+    def :=(b: => B): State[A, B] =
+      mods(_ => b)
 
   }
 
