@@ -8,6 +8,7 @@ package object refined {
   import scala.reflect.runtime.universe.TypeTag
 
   import doobie.imports._
+  import doobie.util.invariant._
 
   implicit def refinedMeta[T, P](implicit metaT: Meta[T], v: Validate[T, P], tag: TypeTag[T Refined P]): Meta[T Refined P] =
     metaT.xmap[T Refined P](
@@ -35,8 +36,8 @@ package object refined {
       compositeT.imap[T Refined P](t => rightOrException[T Refined P](refineV[P](t)(v))(_.value)
 #-cats
 
-  def rightOrException[T](either: Either[String, T]): T = either match {
-    case Left(err) => throw new IllegalArgumentException(err)
+  def rightOrException[T](either: Either[String, T])(implicit ev: Manifest[T]): T = either match {
+    case Left(err) => throw new SecondaryValidationFailed[T](err)(ev)
     case Right(t) => t
   }
 }

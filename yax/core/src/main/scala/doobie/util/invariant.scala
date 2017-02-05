@@ -28,6 +28,9 @@ object invariant {
   final case class InvalidEnum[A](value: String)(implicit ev: Manifest[A]) 
     extends InvariantViolation(s"${ev.runtimeClass.getName}: invalid ordinal: $value")
 
+  final case class SecondaryValidationFailed[A](value: String)(implicit ev: Manifest[A])
+    extends InvariantViolation(s"${ev.runtimeClass.getName}: validation failed: $value")
+
   /** The type of schema violations. */
   sealed abstract class MappingViolation(msg: String) extends InvariantViolation(msg) {
     def index: Int

@@ -6,6 +6,8 @@ import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.auto._
 import eu.timepit.refined._
 import doobie.imports._
+import doobie.util.invariant._
+
 
 object refinedtypes extends Specification {
 
@@ -54,7 +56,7 @@ object refinedtypes extends Specification {
     }
 
     "throw an IllegalArgumentException if value does not fit the refinement-type " in {
-      illegalArgumentExceptionCaught_?(
+      secondaryValidationFailedCaught_?(
        sql"select -1".query[PositiveInt].unique.transact(xa).unsafePerformIO
       )
     }
@@ -66,18 +68,18 @@ object refinedtypes extends Specification {
     }
 
     "throw an IllegalArgumentException if object does not fit the refinement-type " in {
-      illegalArgumentExceptionCaught_?(
+      secondaryValidationFailedCaught_?(
         sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).unsafePerformIO
       )
     }
   }
 
-  private[this] def illegalArgumentExceptionCaught_?(query: => Unit): Boolean = try {
+  private[this] def secondaryValidationFailedCaught_?(query: => Unit): Boolean = try {
       query
       false
     }
     catch {
-      case e: IllegalArgumentException => true
+      case e: SecondaryValidationFailed[_] => true
       case _: Throwable => false
     }
 
