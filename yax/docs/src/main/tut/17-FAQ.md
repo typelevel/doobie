@@ -94,7 +94,7 @@ cities(Code("USA"), false).process.take(5).quick.unsafePerformIO
 
 ### How do I handle outer joins?
 
-With an outer join you end up with set of nullable columns, which you typically want to map to a single `Option` of some composite type. The most straightforward way do this is to select the `Option` columns directly, then use the `map` method on `Query0` to transform the result type using applicative composition on the optional values:
+With an outer join you end up with set of nullable columns, which you typically want to map to a single `Option` of some composite type. The most straightforward way to do this is to select the `Option` columns directly, then use the `map` method on `Query0` to transform the result type using applicative composition on the optional values:
 
 ```tut:silent
 case class Country(name: String, code: String)
@@ -161,7 +161,7 @@ def query(s: String, u: UUID) = sql"select ... where foo = $s and url = $u".quer
 
 ### How do I resolve `error: Could not find or construct Composite[...]`?
 
-When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` is has an `Atom` instance, or is a product type whose elements have `Composite` instances.
+When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has an `Atom` instance, or is a product type whose elements have `Composite` instances.
 
 ```tut:silent
 case class Point(lat: Double, lon: Double)
