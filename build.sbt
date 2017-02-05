@@ -351,6 +351,7 @@ lazy val specs2_cats = project.in(file("modules-cats/specs2"))
     specs2Settings("specs2-cats")
   )
   .dependsOn(core_cats)
+  .dependsOn(h2_cats % "test")
 
 ///
 /// SCALATEST
