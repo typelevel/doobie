@@ -103,6 +103,12 @@ object transactor  {
      */
     val default = Strategy(setAutoCommit(false), commit, rollback, close)
 
+    /**
+     * A no-op `Strategy`. All actions simply return `()`.
+     * @group Constructors
+     */
+    val void = Strategy(unit, unit, unit, unit)
+
   }
 
   /**
