@@ -44,8 +44,7 @@ object PostgresNotify {
     } yield n).onComplete(eval_(PHC.pgUnlisten(channel) *> HC.commit))
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
-  val xa: Transactor[Task] =
-    DriverManagerTransactor("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   /**
    * Construct a stream of PGNotifications that prints to the console. Transform it to a

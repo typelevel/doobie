@@ -5,6 +5,10 @@ import doobie.imports._
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 
+#+cats
+import fs2.interop.cats._
+#-cats
+
 object manyrows extends Specification {
 
   val xa = DriverManagerTransactor[IOLite](

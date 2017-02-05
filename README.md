@@ -68,6 +68,10 @@ See the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-
 
 Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
 
+## Development Version
+
+The active development version is **0.4.2-SNAPSHOT**. It is updated sporadically and is subject to unannounced changes. See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.2) for information on work in progress.
+
 ## Documentation and Support
 
 - See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.1) for an overview of changes in this and previous versions.

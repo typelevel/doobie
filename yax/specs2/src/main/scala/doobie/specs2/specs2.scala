@@ -21,6 +21,7 @@ import scalaz.{ -\/, \/- }
 #-scalaz
 #+cats
 import scala.util.{ Left => -\/, Right => \/- }
+import fs2.interop.cats._
 #-cats
 
 /**
@@ -47,7 +48,7 @@ object analysisspec {
 
   trait AnalysisSpec { this: Specification =>
 
-    def transactor: Transactor[IOLite]
+    def transactor: Transactor[IOLite, _]
 
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
       checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)
@@ -66,7 +67,7 @@ object analysisspec {
 
     private def checkAnalysis(typeName: String, pos: Option[Pos], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
       s"\n$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
-        transactor.trans(analysis).attempt.unsafePerformIO match {
+        transactor.trans.apply(analysis).attempt.unsafePerformIO match {
           case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
           case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
             Fragments.foreach(a.paramDescriptions)  { case (s, es) => s in assertEmpty(es, pos) }

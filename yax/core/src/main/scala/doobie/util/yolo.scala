@@ -39,10 +39,10 @@ import Predef._
 object yolo {
 
 #+scalaz
-  class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
+  class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M, _]) {
 #-scalaz
 #+fs2
-  class Yolo[M[_]: Catchable: Suspendable](xa: Transactor[M]) {
+  class Yolo[M[_]: Catchable: Suspendable](xa: Transactor[M, _]) {
 #-fs2
 
     private def out(s: String): ConnectionIO[Unit] =

@@ -37,7 +37,7 @@ So once you have a `Transactor[M]` you have a way of discharging `ConnectionIO` 
 In addition to simply supplying a connection, a `Transactor` (by default) wraps the transformed `ConnectionIO` as follows:
 
 - The connection is configured with `setAutoCommit(false)`
-- The program is followed by `commit` if it completes normally, or `rollback` is an exception escapes.
+- The program is followed by `commit` if it completes normally, or `rollback` if an exception escapes.
 - In all cases the connection is cleaned up with `close`.
 
 **doobie** provides several implementations, described below.

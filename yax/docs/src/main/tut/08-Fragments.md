@@ -17,11 +17,12 @@ import scalaz._, Scalaz._
 #-scalaz
 #+cats
 import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 #-cats
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 We're still playing with the `country` table, shown here for reference.

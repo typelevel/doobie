@@ -113,7 +113,7 @@ lazy val doobie = project.in(file("."))
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
   .settings(freeGen2Settings)
   .settings(
-    freeGen2Dir := file("yax/core/src/main/scala/doobie/free2"),
+    freeGen2Dir := file("yax/core/src/main/scala/doobie/free"),
     freeGen2Classes := {
       import java.sql._
       List[Class[_]](
@@ -247,7 +247,8 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
       import doobie.imports._
       import doobie.postgres.imports._
       val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-      import xa.yolo._
+      val yolo = xa.yolo
+      import yolo._
       import org.postgis._
       import org.postgresql.util._
       import org.postgresql.geometric._

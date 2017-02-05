@@ -20,7 +20,7 @@ The examples in this chapter require the `postgres` add-on, as well as the [circ
 libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-RC1" // as of date of publication
 #-scalaz
 #+cats
-val circeVersion = "0.6.0"
+val circeVersion = "0.7.0"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
@@ -56,7 +56,7 @@ val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-import xa.yolo._
+val y = xa.yolo; import y._
 ```
 
 ### Meta, Atom, and Composite
