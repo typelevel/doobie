@@ -189,6 +189,18 @@ object query {
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.nel[O])).map(_.map(ob))
+    
+    /**
+     * Convenience method; equivalent to `to[List]`
+     * @group Results
+     */
+    def list(a: A): ConnectionIO[List[B]] = to[List](a)
+
+    /**
+     * Convenience method; equivalent to `to[Vector]`
+     * @group Results
+     */
+    def vector(a: A): ConnectionIO[Vector[B]] = to[Vector](a)
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
