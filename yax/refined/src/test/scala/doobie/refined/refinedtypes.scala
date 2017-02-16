@@ -8,6 +8,9 @@ import eu.timepit.refined._
 import doobie.imports._
 import doobie.util.invariant._
 
+#+cats
+import fs2.interop.cats._
+#-cats
 
 object refinedtypes extends Specification {
 
@@ -19,9 +22,14 @@ object refinedtypes extends Specification {
 
   type PositiveInt = Int Refined Positive
 
-  "Meta" should {
+  "Atom" should {
     "exist for refined types" in {
-      Meta[PositiveInt]
+      Atom[PositiveInt]
+
+      true
+    }
+    "exist for Option of a refined type" in {
+      Atom[Option[PositiveInt]]
 
       true
     }
@@ -32,10 +40,16 @@ object refinedtypes extends Specification {
   type PointInQuadrant1 = Point Refined Quadrant1
 
   implicit val PointComposite: Composite[Point] =
-    Composite[(Int, Int)].xmap(
-      (t: (Int,Int)) => new Point(t._1, t._2),
-      (p: Point) => (p.x, p.y)
-    )
+    Composite[(Int, Int)]
+#+scalaz
+      .xmap(
+        (t: (Int,Int)) => new Point(t._1, t._2),
+        (p: Point) => (p.x, p.y)
+      )
+#-scalaz
+#+cats
+      .imap((t: (Int,Int)) => new Point(t._1, t._2))((p: Point) => (p.x, p.y))
+#-cats
 
   implicit val quadrant1Validate: Validate.Plain[Point, Quadrant1] =
     Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => s"($p is in quadrant 1)", Quadrant1())
@@ -55,7 +69,42 @@ object refinedtypes extends Specification {
       true
     }
 
-    "throw an IllegalArgumentException if value does not fit the refinement-type " in {
+    "return an Option of a refined type when query returns null-value" in {
+      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).unsafePerformIO
+
+      true
+    }
+
+    "return an Option of a refined type when query returns a value and converion is possible" in {
+      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).unsafePerformIO
+
+      true
+    }
+
+    "save a None of a refined type" in {
+      val none: Option[PositiveInt] = None
+      insertOptionalPositiveInt(none)
+
+      true
+    }
+
+    "save a Some of a refined type" in {
+      val somePositiveInt: Option[PositiveInt] = Some(5)
+      insertOptionalPositiveInt(somePositiveInt)
+
+      true
+    }
+
+    def insertOptionalPositiveInt(v: Option[PositiveInt]) = {
+      val queryRes = for {
+        _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value INT)", None).run
+        _  <- sql"INSERT INTO TEST VALUES ($v)".update.run
+      } yield ()
+
+      queryRes.transact(xa).unsafePerformIO
+    }
+
+    "throw an SecondaryValidationFailed if value does not fit the refinement-type " in {
       secondaryValidationFailedCaught_?(
        sql"select -1".query[PositiveInt].unique.transact(xa).unsafePerformIO
       )
@@ -67,7 +116,7 @@ object refinedtypes extends Specification {
       true
     }
 
-    "throw an IllegalArgumentException if object does not fit the refinement-type " in {
+    "throw an SecondaryValidationFailed if object does not fit the refinement-type " in {
       secondaryValidationFailedCaught_?(
         sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).unsafePerformIO
       )
