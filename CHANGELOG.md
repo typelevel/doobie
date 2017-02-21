@@ -14,6 +14,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens
   - `Transactor` is now a final case class with two type parameters which means existing declarations will be wrong. Book update TBD.
 - Note that the interpreter/transactor changes require `Monad` instances at a few more call sites, which should be transparent in most cases but may require Cats users to `import fs2.interop.cats._` here and there … if scalac is claiming there's no instance available after upgrading that's probably why.
 - Added `list` and `vector` convenience methods to `Query`.
+- Updated Posgtgres JDBC driver to v42.0.0.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
