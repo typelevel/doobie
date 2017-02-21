@@ -142,7 +142,7 @@ lazy val noPublishSettings = Seq(
 )
 
 def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full))
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
@@ -157,7 +157,7 @@ def coreSettings(mod: String) =
     name := "doobie-" + mod,
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "org.scala-lang" %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
+      scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"    %% "shapeless"     % "2.3.2",
       "com.lihaoyi"    %% "sourcecode"    % "0.1.3"
     ),
