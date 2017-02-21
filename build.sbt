@@ -240,7 +240,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "9.4.1211",
+      "org.postgresql" % "postgresql" % "42.0.0",
       postgisDep % "provided"
     ),
     initialCommands := """
