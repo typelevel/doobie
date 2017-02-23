@@ -17,7 +17,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred
 - Updated Posgtgres JDBC driver to v42.0.0.
 - Added `set` and `setOpt` combinators for building fragments which contain `SET` operations.
 - Updated build to sbt 0.13.13
-- Updated to scalaz 7.2
+- Updated to scalaz 7.2.9
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
