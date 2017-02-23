@@ -188,8 +188,8 @@ lazy val core = project.in(file("modules/core"))
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"      % "7.2.7",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.7",
+      "org.scalaz"        %% "scalaz-core"      % "7.2.9",
+      "org.scalaz"        %% "scalaz-effect"    % "7.2.9",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
       "com.h2database"    %  "h2"               % "1.4.193" % "test"
     ),
