@@ -51,7 +51,7 @@ libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.4.1" // scalaz 
 If you are using Scala 2.10 you must also add the paradise compiler plugin.
 
 ```scala
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
 ```
 
 It is likely that you will want one or more add-on libraries. **doobie** provides the following, which have the same version as `doobie-core[-cats]` and are released together.

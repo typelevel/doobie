@@ -142,7 +142,7 @@ lazy val noPublishSettings = Seq(
 )
 
 def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full))
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
@@ -157,7 +157,7 @@ def coreSettings(mod: String) =
     name := "doobie-" + mod,
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "org.scala-lang" %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
+      scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"    %% "shapeless"     % "2.3.2",
       "com.lihaoyi"    %% "sourcecode"    % "0.1.3"
     ),
@@ -188,8 +188,8 @@ lazy val core = project.in(file("modules/core"))
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"      % "7.2.7",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.7",
+      "org.scalaz"        %% "scalaz-core"      % "7.2.9",
+      "org.scalaz"        %% "scalaz-effect"    % "7.2.9",
       "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
       "com.h2database"    %  "h2"               % "1.4.193" % "test"
     ),
@@ -240,7 +240,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "9.4.1211",
+      "org.postgresql" % "postgresql" % "42.0.0",
       postgisDep % "provided"
     ),
     initialCommands := """
