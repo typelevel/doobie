@@ -6,7 +6,7 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.4.2"></a>Notable Work in Progress for Version 0.4.2
 
-non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred
+non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred, Benjamin Trenker
 
 - Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change. Book update TBD.
 - Switched to a new transactor design that makes it simple to customize behavior, and combined with new interpreter design makes it practical to use **doobie** types in free coproducts (see `coproduct.scala` in the `example` project). This is a **minor breaking change**:
@@ -18,6 +18,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred
 - Added `set` and `setOpt` combinators for building fragments which contain `SET` operations.
 - Updated build to sbt 0.13.13
 - Updated to scalaz 7.2.9
+- Added support for type refinements (refined library)
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
