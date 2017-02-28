@@ -2,6 +2,27 @@ import UnidocKeys._
 import FreeGen2._
 import ReleaseTransformations._
 
+// Library versions all in one place, for convenience and sanity.
+lazy val scalaCheckVersion    = "1.13.4"
+lazy val specs2Version        = "3.8.6"
+lazy val si2712fixVersion     = "1.2.0"
+lazy val kindProjectorVersion = "0.9.3"
+lazy val shapelessVersion     = "2.3.2"
+lazy val sourcecodeVersion    = "0.1.3"
+lazy val scalazVersion        = "7.2.9"
+lazy val scalazStreamVersion  = "0.8.6a"
+lazy val h2Version            = "1.4.193"
+lazy val postgresVersion      = "42.0.0"
+lazy val fs2CoreVersion       = "0.9.2"
+lazy val fs2CatsVersion       = "0.3.0"
+lazy val postGisVersion       = "2.2.1"
+lazy val hikariVersion        = "2.5.1"
+lazy val scalatestVersion     = "3.0.0"
+lazy val refinedVersion       = "0.6.2"
+lazy val argonautVersion      = "6.2-RC1"
+lazy val paradiseVersion      = "2.1.0"
+lazy val circeVersion         = "0.7.0"
+
 /**
  * This build now depends on partial unification, but this is slightly tricky. It's built into 2.12,
  * but for 2.11 we need the Typelevel compiler, util 2.11.9 arrives. For 2.10 we need the plugin. In
@@ -49,16 +70,16 @@ lazy val commonSettings = Seq(
       "-skip-packages", "scalaz"
     ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-      "org.scalacheck" %% "scalacheck"        % "1.13.4" % "test",
-      "org.specs2"     %% "specs2-core"       % "3.8.6"  % "test",
-      "org.specs2"     %% "specs2-scalacheck" % "3.8.6"  % "test"
+      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
+      "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
+      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ) ++ (
       if (scalaVersion.value startsWith "2.10") Seq(
-        compilerPlugin("com.milessabin" % "si2712fix-plugin_2.10.6" % "1.2.0")
+        compilerPlugin("com.milessabin" % "si2712fix-plugin_2.10.6" % si2712fixVersion)
       )
       else Nil
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion)
 )
 
 lazy val publishSettings = Seq(
@@ -142,7 +163,7 @@ lazy val noPublishSettings = Seq(
 )
 
 def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
+  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch))
   else Nil
 
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
@@ -158,8 +179,8 @@ def coreSettings(mod: String) =
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
-      "com.chuusai"    %% "shapeless"     % "2.3.2",
-      "com.lihaoyi"    %% "sourcecode"    % "0.1.3"
+      "com.chuusai"           %% "shapeless"     % shapelessVersion,
+      "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {
@@ -188,10 +209,10 @@ lazy val core = project.in(file("modules/core"))
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"      % "7.2.9",
-      "org.scalaz"        %% "scalaz-effect"    % "7.2.9",
-      "org.scalaz.stream" %% "scalaz-stream"    % "0.8.6a",
-      "com.h2database"    %  "h2"               % "1.4.193" % "test"
+      "org.scalaz"        %% "scalaz-core"   % scalazVersion,
+      "org.scalaz"        %% "scalaz-effect" % scalazVersion,
+      "org.scalaz.stream" %% "scalaz-stream" % scalazStreamVersion,
+      "com.h2database"    %  "h2"            % h2Version % "test"
     ),
     scalazCrossSettings
   )
@@ -202,12 +223,12 @@ lazy val core_cats = project.in(file("modules-cats/core"))
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % "0.9.2",
-      "co.fs2"         %% "fs2-cats"  % "0.3.0",
+      "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
+      "co.fs2"         %% "fs2-cats"  % fs2CatsVersion,
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion,
       "org.typelevel"  %% "cats-laws" % catsVersion % "test",
-      "com.h2database" %  "h2"        % "1.4.193"   % "test"
+      "com.h2database" %  "h2"        % h2Version   % "test"
     )
   )
 
@@ -232,7 +253,7 @@ lazy val example_cats = project.in(file("modules-cats/example"))
 /// POSTGRES
 ///
 
-val postgisDep = "net.postgis" % "postgis-jdbc" % "2.2.1"
+val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
 def postgresSettings(mod: String): Seq[Setting[_]] =
   doobieSettings  ++
@@ -240,7 +261,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
     name  := "doobie-" + mod,
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.0.0",
+      "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided"
     ),
     initialCommands := """
@@ -279,7 +300,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name  := "doobie-" + mod,
     description := "H2 support for doobie.",
-    libraryDependencies += "com.h2database" % "h2"  % "1.4.193"
+    libraryDependencies += "com.h2database" % "h2"  % h2Version
   )
 
 lazy val h2 = project.in(file("modules/h2"))
@@ -306,7 +327,7 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name := "doobie-" + mod,
     description := "Hikari support for doobie.",
-    libraryDependencies += "com.zaxxer" % "HikariCP" % "2.5.1"
+    libraryDependencies += "com.zaxxer" % "HikariCP" % hikariVersion
   )
 
 lazy val hikari = project.in(file("modules/hikari"))
@@ -333,7 +354,7 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name := s"doobie-$mod",
     description := "Specs2 support for doobie.",
-    libraryDependencies += "org.specs2" %% "specs2-core" % "3.8.4"
+    libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
   )
 
 lazy val specs2 = project.in(file("modules/specs2"))
@@ -360,7 +381,7 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name := s"doobie-$mod",
     description := "Scalatest support for doobie.",
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0"
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion
   )
 
 lazy val scalatest = project.in(file("modules/scalatest"))
@@ -399,17 +420,15 @@ lazy val bench_cats = project.in(file("modules-cats/bench"))
 /// DOCS
 ///
 
-val circeVersion = "0.7.0"
-
 def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
   doobieSettings    ++
   noPublishSettings ++
   tutSettings       ++ Seq(
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % circeVersion,
-      "io.circe" %% "circe-generic" % circeVersion,
-      "io.circe" %% "circe-parser" % circeVersion,
-      "io.argonaut" %% "argonaut" % "6.2-RC1"
+      "io.circe"    %% "circe-core"    % circeVersion,
+      "io.circe"    %% "circe-generic" % circeVersion,
+      "io.circe"    %% "circe-parser"  % circeVersion,
+      "io.argonaut" %% "argonaut"      % argonautVersion
     ),
     ctut := {
       val src = crossTarget.value / "tut"
@@ -470,8 +489,8 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
     name := "doobie-" + mod,
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"        %% "refined" % "0.6.2",
-      "com.h2database"    %  "h2"      % "1.4.193" % "test"
+      "eu.timepit"     %% "refined" % refinedVersion,
+      "com.h2database" %  "h2"      % h2Version % "test"
     )
   )
 
