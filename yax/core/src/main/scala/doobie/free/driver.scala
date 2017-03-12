@@ -133,6 +133,7 @@ object driver {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DriverOp, A] = embed(j, fa)
   def delay[A](a: => A): DriverIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: DriverIO[A]): DriverIO[Throwable \/ A] = FF.liftF[DriverOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): DriverIO[A] = delay(throw err)
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))
@@ -148,7 +149,7 @@ object driver {
   implicit val CatchableDriverIO: Catchable[DriverIO] with Capture[DriverIO] =
     new Catchable[DriverIO] with Capture[DriverIO] {
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
-      def fail[A](err: Throwable): DriverIO[A] = delay(throw err)
+      def fail[A](err: Throwable): DriverIO[A] = driver.fail(err)
       def apply[A](a: => A): DriverIO[A] = driver.delay(a)
     }
 #-scalaz
@@ -161,7 +162,7 @@ object driver {
       def suspend[A](fa: => DriverIO[A]): DriverIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): DriverIO[A] = driver.delay(a)
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
-      def fail[A](err: Throwable): DriverIO[A] = delay(throw err)
+      def fail[A](err: Throwable): DriverIO[A] = driver.fail(err)
     }
 #-fs2
 

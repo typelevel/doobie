@@ -313,6 +313,7 @@ object statement {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = embed(j, fa)
   def delay[A](a: => A): StatementIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: StatementIO[A]): StatementIO[Throwable \/ A] = FF.liftF[StatementOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): StatementIO[A] = delay(throw err)
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
@@ -373,7 +374,7 @@ object statement {
   implicit val CatchableStatementIO: Catchable[StatementIO] with Capture[StatementIO] =
     new Catchable[StatementIO] with Capture[StatementIO] {
       def attempt[A](f: StatementIO[A]): StatementIO[Throwable \/ A] = statement.attempt(f)
-      def fail[A](err: Throwable): StatementIO[A] = delay(throw err)
+      def fail[A](err: Throwable): StatementIO[A] = statement.fail(err)
       def apply[A](a: => A): StatementIO[A] = statement.delay(a)
     }
 #-scalaz
@@ -386,7 +387,7 @@ object statement {
       def suspend[A](fa: => StatementIO[A]): StatementIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): StatementIO[A] = statement.delay(a)
       def attempt[A](f: StatementIO[A]): StatementIO[Throwable \/ A] = statement.attempt(f)
-      def fail[A](err: Throwable): StatementIO[A] = delay(throw err)
+      def fail[A](err: Throwable): StatementIO[A] = statement.fail(err)
     }
 #-fs2
 

@@ -227,6 +227,7 @@ object sqloutput {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLOutputOp, A] = embed(j, fa)
   def delay[A](a: => A): SQLOutputIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] = FF.liftF[SQLOutputOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): SQLOutputIO[A] = delay(throw err)
 
   // Smart constructors for SQLOutput-specific operations.
   def writeArray(a: SqlArray): SQLOutputIO[Unit] = FF.liftF(WriteArray(a))
@@ -263,7 +264,7 @@ object sqloutput {
   implicit val CatchableSQLOutputIO: Catchable[SQLOutputIO] with Capture[SQLOutputIO] =
     new Catchable[SQLOutputIO] with Capture[SQLOutputIO] {
       def attempt[A](f: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] = sqloutput.attempt(f)
-      def fail[A](err: Throwable): SQLOutputIO[A] = delay(throw err)
+      def fail[A](err: Throwable): SQLOutputIO[A] = sqloutput.fail(err)
       def apply[A](a: => A): SQLOutputIO[A] = sqloutput.delay(a)
     }
 #-scalaz
@@ -276,7 +277,7 @@ object sqloutput {
       def suspend[A](fa: => SQLOutputIO[A]): SQLOutputIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): SQLOutputIO[A] = sqloutput.delay(a)
       def attempt[A](f: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] = sqloutput.attempt(f)
-      def fail[A](err: Throwable): SQLOutputIO[A] = delay(throw err)
+      def fail[A](err: Throwable): SQLOutputIO[A] = sqloutput.fail(err)
     }
 #-fs2
 

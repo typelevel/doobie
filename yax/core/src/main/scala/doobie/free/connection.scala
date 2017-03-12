@@ -328,6 +328,7 @@ object connection {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ConnectionOp, A] = embed(j, fa)
   def delay[A](a: => A): ConnectionIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = FF.liftF[ConnectionOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): ConnectionIO[A] = delay(throw err)
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
@@ -390,7 +391,7 @@ object connection {
   implicit val CatchableConnectionIO: Catchable[ConnectionIO] with Capture[ConnectionIO] =
     new Catchable[ConnectionIO] with Capture[ConnectionIO] {
       def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
-      def fail[A](err: Throwable): ConnectionIO[A] = delay(throw err)
+      def fail[A](err: Throwable): ConnectionIO[A] = connection.fail(err)
       def apply[A](a: => A): ConnectionIO[A] = connection.delay(a)
     }
 #-scalaz
@@ -403,7 +404,7 @@ object connection {
       def suspend[A](fa: => ConnectionIO[A]): ConnectionIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): ConnectionIO[A] = connection.delay(a)
       def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
-      def fail[A](err: Throwable): ConnectionIO[A] = delay(throw err)
+      def fail[A](err: Throwable): ConnectionIO[A] = connection.fail(err)
     }
 #-fs2
 

@@ -260,6 +260,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = embed(j, fa)
     |  def delay[A](a: => A): ${sname}IO[A] = FF.liftF(Delay(() => a))
     |  def attempt[A](fa: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = FF.liftF[${sname}Op, Throwable \\/ A](Attempt(fa))
+    |  def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
     |
     |  // Smart constructors for $sname-specific operations.
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n  ")}
@@ -269,7 +270,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |  implicit val Catchable${sname}IO: Catchable[${sname}IO] with Capture[${sname}IO] =
     |    new Catchable[${sname}IO] with Capture[${sname}IO] {
     |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
-    |      def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
+    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.fail(err)
     |      def apply[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
     |    }
     |#-scalaz
@@ -282,7 +283,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |      def suspend[A](fa: => ${sname}IO[A]): ${sname}IO[A] = FF.suspend(fa)
     |      override def delay[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
     |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
-    |      def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
+    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.fail(err)
     |    }
     |#-fs2
     |

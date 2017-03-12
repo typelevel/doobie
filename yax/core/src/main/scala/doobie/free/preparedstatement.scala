@@ -559,6 +559,7 @@ object preparedstatement {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = embed(j, fa)
   def delay[A](a: => A): PreparedStatementIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: PreparedStatementIO[A]): PreparedStatementIO[Throwable \/ A] = FF.liftF[PreparedStatementOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): PreparedStatementIO[A] = delay(throw err)
 
   // Smart constructors for PreparedStatement-specific operations.
   val addBatch: PreparedStatementIO[Unit] = FF.liftF(AddBatch)
@@ -677,7 +678,7 @@ object preparedstatement {
   implicit val CatchablePreparedStatementIO: Catchable[PreparedStatementIO] with Capture[PreparedStatementIO] =
     new Catchable[PreparedStatementIO] with Capture[PreparedStatementIO] {
       def attempt[A](f: PreparedStatementIO[A]): PreparedStatementIO[Throwable \/ A] = preparedstatement.attempt(f)
-      def fail[A](err: Throwable): PreparedStatementIO[A] = delay(throw err)
+      def fail[A](err: Throwable): PreparedStatementIO[A] = preparedstatement.fail(err)
       def apply[A](a: => A): PreparedStatementIO[A] = preparedstatement.delay(a)
     }
 #-scalaz
@@ -690,7 +691,7 @@ object preparedstatement {
       def suspend[A](fa: => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): PreparedStatementIO[A] = preparedstatement.delay(a)
       def attempt[A](f: PreparedStatementIO[A]): PreparedStatementIO[Throwable \/ A] = preparedstatement.attempt(f)
-      def fail[A](err: Throwable): PreparedStatementIO[A] = delay(throw err)
+      def fail[A](err: Throwable): PreparedStatementIO[A] = preparedstatement.fail(err)
     }
 #-fs2
 
