@@ -147,6 +147,7 @@ object blob {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[BlobOp, A] = embed(j, fa)
   def delay[A](a: => A): BlobIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: BlobIO[A]): BlobIO[Throwable \/ A] = FF.liftF[BlobOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): BlobIO[A] = delay(throw err)
 
   // Smart constructors for Blob-specific operations.
   val free: BlobIO[Unit] = FF.liftF(Free)
@@ -166,7 +167,7 @@ object blob {
   implicit val CatchableBlobIO: Catchable[BlobIO] with Capture[BlobIO] =
     new Catchable[BlobIO] with Capture[BlobIO] {
       def attempt[A](f: BlobIO[A]): BlobIO[Throwable \/ A] = blob.attempt(f)
-      def fail[A](err: Throwable): BlobIO[A] = delay(throw err)
+      def fail[A](err: Throwable): BlobIO[A] = blob.fail(err)
       def apply[A](a: => A): BlobIO[A] = blob.delay(a)
     }
 #-scalaz
@@ -179,7 +180,7 @@ object blob {
       def suspend[A](fa: => BlobIO[A]): BlobIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): BlobIO[A] = blob.delay(a)
       def attempt[A](f: BlobIO[A]): BlobIO[Throwable \/ A] = blob.attempt(f)
-      def fail[A](err: Throwable): BlobIO[A] = delay(throw err)
+      def fail[A](err: Throwable): BlobIO[A] = blob.fail(err)
     }
 #-fs2
 

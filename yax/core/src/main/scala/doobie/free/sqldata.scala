@@ -114,6 +114,7 @@ object sqldata {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLDataOp, A] = embed(j, fa)
   def delay[A](a: => A): SQLDataIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = FF.liftF[SQLDataOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): SQLDataIO[A] = delay(throw err)
 
   // Smart constructors for SQLData-specific operations.
   val getSQLTypeName: SQLDataIO[String] = FF.liftF(GetSQLTypeName)
@@ -125,7 +126,7 @@ object sqldata {
   implicit val CatchableSQLDataIO: Catchable[SQLDataIO] with Capture[SQLDataIO] =
     new Catchable[SQLDataIO] with Capture[SQLDataIO] {
       def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
-      def fail[A](err: Throwable): SQLDataIO[A] = delay(throw err)
+      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.fail(err)
       def apply[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
     }
 #-scalaz
@@ -138,7 +139,7 @@ object sqldata {
       def suspend[A](fa: => SQLDataIO[A]): SQLDataIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
       def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
-      def fail[A](err: Throwable): SQLDataIO[A] = delay(throw err)
+      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.fail(err)
     }
 #-fs2
 

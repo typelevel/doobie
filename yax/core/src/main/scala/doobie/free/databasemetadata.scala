@@ -817,6 +817,7 @@ object databasemetadata {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DatabaseMetaDataOp, A] = embed(j, fa)
   def delay[A](a: => A): DatabaseMetaDataIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = FF.liftF[DatabaseMetaDataOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): DatabaseMetaDataIO[A] = delay(throw err)
 
   // Smart constructors for DatabaseMetaData-specific operations.
   val allProceduresAreCallable: DatabaseMetaDataIO[Boolean] = FF.liftF(AllProceduresAreCallable)
@@ -1003,7 +1004,7 @@ object databasemetadata {
   implicit val CatchableDatabaseMetaDataIO: Catchable[DatabaseMetaDataIO] with Capture[DatabaseMetaDataIO] =
     new Catchable[DatabaseMetaDataIO] with Capture[DatabaseMetaDataIO] {
       def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
-      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = delay(throw err)
+      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.fail(err)
       def apply[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
     }
 #-scalaz
@@ -1016,7 +1017,7 @@ object databasemetadata {
       def suspend[A](fa: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
       def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
-      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = delay(throw err)
+      def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.fail(err)
     }
 #-fs2
 

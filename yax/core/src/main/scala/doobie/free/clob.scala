@@ -158,6 +158,7 @@ object clob {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ClobOp, A] = embed(j, fa)
   def delay[A](a: => A): ClobIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: ClobIO[A]): ClobIO[Throwable \/ A] = FF.liftF[ClobOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): ClobIO[A] = delay(throw err)
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)
@@ -179,7 +180,7 @@ object clob {
   implicit val CatchableClobIO: Catchable[ClobIO] with Capture[ClobIO] =
     new Catchable[ClobIO] with Capture[ClobIO] {
       def attempt[A](f: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(f)
-      def fail[A](err: Throwable): ClobIO[A] = delay(throw err)
+      def fail[A](err: Throwable): ClobIO[A] = clob.fail(err)
       def apply[A](a: => A): ClobIO[A] = clob.delay(a)
     }
 #-scalaz
@@ -192,7 +193,7 @@ object clob {
       def suspend[A](fa: => ClobIO[A]): ClobIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): ClobIO[A] = clob.delay(a)
       def attempt[A](f: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(f)
-      def fail[A](err: Throwable): ClobIO[A] = delay(throw err)
+      def fail[A](err: Throwable): ClobIO[A] = clob.fail(err)
     }
 #-fs2
 

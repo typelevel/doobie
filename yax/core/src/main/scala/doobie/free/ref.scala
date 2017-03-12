@@ -120,6 +120,7 @@ object ref {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = embed(j, fa)
   def delay[A](a: => A): RefIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: RefIO[A]): RefIO[Throwable \/ A] = FF.liftF[RefOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): RefIO[A] = delay(throw err)
 
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
@@ -132,7 +133,7 @@ object ref {
   implicit val CatchableRefIO: Catchable[RefIO] with Capture[RefIO] =
     new Catchable[RefIO] with Capture[RefIO] {
       def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
-      def fail[A](err: Throwable): RefIO[A] = delay(throw err)
+      def fail[A](err: Throwable): RefIO[A] = ref.fail(err)
       def apply[A](a: => A): RefIO[A] = ref.delay(a)
     }
 #-scalaz
@@ -145,7 +146,7 @@ object ref {
       def suspend[A](fa: => RefIO[A]): RefIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): RefIO[A] = ref.delay(a)
       def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
-      def fail[A](err: Throwable): RefIO[A] = delay(throw err)
+      def fail[A](err: Throwable): RefIO[A] = ref.fail(err)
     }
 #-fs2
 

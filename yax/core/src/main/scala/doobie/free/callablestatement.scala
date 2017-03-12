@@ -1044,6 +1044,7 @@ object callablestatement {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CallableStatementOp, A] = embed(j, fa)
   def delay[A](a: => A): CallableStatementIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = FF.liftF[CallableStatementOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): CallableStatementIO[A] = delay(throw err)
 
   // Smart constructors for CallableStatement-specific operations.
   val addBatch: CallableStatementIO[Unit] = FF.liftF(AddBatch)
@@ -1283,7 +1284,7 @@ object callablestatement {
   implicit val CatchableCallableStatementIO: Catchable[CallableStatementIO] with Capture[CallableStatementIO] =
     new Catchable[CallableStatementIO] with Capture[CallableStatementIO] {
       def attempt[A](f: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(f)
-      def fail[A](err: Throwable): CallableStatementIO[A] = delay(throw err)
+      def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.fail(err)
       def apply[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
     }
 #-scalaz
@@ -1296,7 +1297,7 @@ object callablestatement {
       def suspend[A](fa: => CallableStatementIO[A]): CallableStatementIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
       def attempt[A](f: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(f)
-      def fail[A](err: Throwable): CallableStatementIO[A] = delay(throw err)
+      def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.fail(err)
     }
 #-fs2
 

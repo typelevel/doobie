@@ -899,6 +899,7 @@ object resultset {
   def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ResultSetOp, A] = embed(j, fa)
   def delay[A](a: => A): ResultSetIO[A] = FF.liftF(Delay(() => a))
   def attempt[A](fa: ResultSetIO[A]): ResultSetIO[Throwable \/ A] = FF.liftF[ResultSetOp, Throwable \/ A](Attempt(fa))
+  def fail[A](err: Throwable): ResultSetIO[A] = delay(throw err)
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))
@@ -1102,7 +1103,7 @@ object resultset {
   implicit val CatchableResultSetIO: Catchable[ResultSetIO] with Capture[ResultSetIO] =
     new Catchable[ResultSetIO] with Capture[ResultSetIO] {
       def attempt[A](f: ResultSetIO[A]): ResultSetIO[Throwable \/ A] = resultset.attempt(f)
-      def fail[A](err: Throwable): ResultSetIO[A] = delay(throw err)
+      def fail[A](err: Throwable): ResultSetIO[A] = resultset.fail(err)
       def apply[A](a: => A): ResultSetIO[A] = resultset.delay(a)
     }
 #-scalaz
@@ -1115,7 +1116,7 @@ object resultset {
       def suspend[A](fa: => ResultSetIO[A]): ResultSetIO[A] = FF.suspend(fa)
       override def delay[A](a: => A): ResultSetIO[A] = resultset.delay(a)
       def attempt[A](f: ResultSetIO[A]): ResultSetIO[Throwable \/ A] = resultset.attempt(f)
-      def fail[A](err: Throwable): ResultSetIO[A] = delay(throw err)
+      def fail[A](err: Throwable): ResultSetIO[A] = resultset.fail(err)
     }
 #-fs2
 
