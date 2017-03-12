@@ -18,7 +18,7 @@ lazy val fs2CatsVersion       = "0.3.0"
 lazy val postGisVersion       = "2.2.1"
 lazy val hikariVersion        = "2.5.1"
 lazy val scalatestVersion     = "3.0.0"
-lazy val refinedVersion       = "0.6.2"
+lazy val refinedVersion       = "0.7.0"
 lazy val argonautVersion      = "6.2-RC1"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.7.0"
@@ -490,6 +490,7 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
       "eu.timepit"     %% "refined" % refinedVersion,
+      scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
       "com.h2database" %  "h2"      % h2Version % "test"
     )
   )
