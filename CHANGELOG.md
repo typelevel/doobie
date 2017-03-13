@@ -19,6 +19,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred, Benjam
 - Updated build to sbt 0.13.13
 - Updated to scalaz 7.2.9
 - Added support for type refinements (refined library)
+- Added a `fail` constructor to all the `F*` modules.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
