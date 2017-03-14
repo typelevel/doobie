@@ -130,7 +130,7 @@ Meta[PersonId]
 
 ```tut:silent
 implicit val PersonIdMeta: Meta[PersonId] =
-  Meta[String].nxmap(PersonId.unsafeFromLegacy, _.toLegacy)
+  Meta[String].xmap(PersonId.unsafeFromLegacy, _.toLegacy)
 ```
 
 Now it compiles as a column value and as a `Composite` that maps to a *single* column:

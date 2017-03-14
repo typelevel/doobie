@@ -17,7 +17,7 @@ import scalaz._, Scalaz._
 import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
 #-scalaz
 #+cats
-import cats._, cats.data.NonEmptyList
+import cats._, cats.data.NonEmptyList, cats.free.Coyoneda
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import cats.implicits._
 import scala.util. { Either => \/, Left => -\/, Right => \/- }
@@ -38,6 +38,14 @@ object meta {
   sealed trait Meta[A] {
 
     /**
+     * Get operation, split into the underlying column read (hich must subsequently be checked for
+     * null) followed by the accumulated output map. Because the output map may be undefined for the
+     * null value of the underlying column type, it may not be possible to yield an `A`. Logic to
+     * handle this case correctly is provided in `Atom`.
+     */
+    def coyo: Coyoneda[(ResultSet, Int) => ?, A]
+
+    /**
      * Name of the Scala type, for diagnostic purposes. Smart constructors require a `TypeTag` to
      * guarantee this value is correct.
      */
@@ -52,12 +60,6 @@ object meta {
     /** Switch on the flavor of this `Meta`. */
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B
 
-    /** Unsafe direct JDBC `get` operation for optimized reads. */
-    val unsafeGet: (ResultSet, Int) => A
-
-    /** Constructor for a `getXXX` operation for type `A` at a given index. */
-    val get: Int => RS.ResultSetIO[A] = n => RS.raw(rs => unsafeGet(rs, n))
-
     /** Constructor for a `setXXX` operation for a given `A` at a given index. */
     val set: (Int, A) => PS.PreparedStatementIO[Unit]
 
@@ -67,20 +69,16 @@ object meta {
     /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
     val setNull: Int => PS.PreparedStatementIO[Unit]
 
-    /**
-     * Invariant map (note that you must handle `null`; see `nxmap`). `Meta` is
-     * not quite an invariant functor because of the tag constraint, but I think it's worth the
-     * sacrifice because we get much better diagnostic information as a result.
-     */
+    /** Invariant map. */
     def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B]
 
     /**
      * Invariant map with `null` handling, for `A, B >: Null`; the functions `f` and `g` will
      * never be passed a `null` value.
      */
+    @deprecated("Null is no longer observable here; just use xmap.", "0.4.2")
     def nxmap[B >: Null : TypeTag](f: A => B, g: B => A)(implicit ev: Null <:< A): Meta[B] =
-      xmap(a => if (a == null)    null  else f(a),
-           b => if (b == null) ev(null) else g(b))
+      xmap(f, g)
 
   }
 
@@ -116,7 +114,22 @@ object meta {
     val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
       PS.setNull(i, jdbcTarget.head.toInt)
 
+    def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B =
+      f(this)
+
+    def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
+      new BasicMeta[B] {
+        val coyo                = outer.coyo.map(f)
+        val jdbcSource          = outer.jdbcSource
+        val jdbcTarget          = outer.jdbcTarget
+        val scalaType           = ev.tpe.toString
+        val set                 = (n: Int, b: B) => outer.set(n, g(b))
+        val update              = (n: Int, b: B) => outer.update(n, g(b))
+        val jdbcSourceSecondary = outer.jdbcSourceSecondary
+      } <| Meta.reg
+
   }
+
 
   /**
    * `Meta` for "advanced" JDBC types as defined by the specification. These include `Array`,
@@ -125,7 +138,7 @@ object meta {
    * These mappings require (in addition to matching JDBC types) matching driver, schema, or
    * vendor-specific data types, sadly given as `String`s in JDBC.
    */
-  sealed trait AdvancedMeta[A] extends Meta[A] {
+  sealed trait AdvancedMeta[A] extends Meta[A] { outer =>
 
     /**
      * List of schema types to which values of type `A` can be written and from which they can be
@@ -152,6 +165,20 @@ object meta {
     /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
     val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
       PS.setNull(i, jdbcTarget.head.toInt, schemaTypes.head)
+
+    def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B =
+      g(this)
+
+    def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
+      new AdvancedMeta[B] {
+        val coyo        = outer.coyo.map(f)
+        val jdbcSource  = outer.jdbcSource
+        val jdbcTarget  = outer.jdbcTarget
+        val scalaType   = ev.tpe.toString
+        val set         = (n: Int, b: B) => outer.set(n, g(b))
+        val update      = (n: Int, b: B) => outer.update(n, g(b))
+        val schemaTypes = outer.schemaTypes
+      } <| Meta.reg
 
   }
 
@@ -187,7 +214,7 @@ object meta {
   } with LowPriorityImplicits with MetaInstances {
 
     // sorry
-    private def reg(m: Meta[_]): Unit =
+    def reg(m: Meta[_]): Unit =
       synchronized { instances = instances + m }
 
     implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
@@ -222,15 +249,13 @@ object meta {
       update0: (Int, A) => RS.ResultSetIO[Unit]
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
       new BasicMeta[A] {
-        val scalaType = ev.tpe.toString
-        val jdbcTarget = jdbcTarget0
-        val jdbcSource = jdbcSource0
+        val scalaType           = ev.tpe.toString
+        val jdbcTarget          = jdbcTarget0
+        val jdbcSource          = jdbcSource0
         val jdbcSourceSecondary = jdbcSourceSecondary0
-        def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B) = f(this)
-        val (unsafeGet, set, update) = (get0, set0, update0)
-        def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] =
-          basic[B](jdbcTarget, jdbcSource, jdbcSourceSecondary, (r, n) => f(unsafeGet(r, n)),
-            (n, b) => set(n, g(b)), (n, b) => update(n, g(b)))
+        val coyo                = Coyoneda.lift[(ResultSet, Int) => ?, A](get0)
+        val set                 = set0
+        val update              = update0
       } <| reg
 
     /**
@@ -253,20 +278,18 @@ object meta {
     def advanced[A](
       jdbcTypes: NonEmptyList[JdbcType],
       schemaTypes0: NonEmptyList[String],
-      get0: (ResultSet, Int) => A,
+      get: (ResultSet, Int) => A,
       set0: (Int, A) => PS.PreparedStatementIO[Unit],
       update0: (Int, A) => RS.ResultSetIO[Unit]
     )(implicit ev: TypeTag[A]): AdvancedMeta[A] =
       new AdvancedMeta[A] {
-        val scalaType = ev.tpe.toString
-        val jdbcTarget = jdbcTypes
-        val jdbcSource = jdbcTypes
+        val scalaType   = ev.tpe.toString
+        val jdbcTarget  = jdbcTypes
+        val jdbcSource  = jdbcTypes
         val schemaTypes = schemaTypes0
-        def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B) = g(this)
-        val (unsafeGet, set, update) = (get0, set0, update0)
-        def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] =
-          advanced[B](jdbcTypes, schemaTypes, (r, n) => f(unsafeGet(r, n)), (n, b) => set(n, g(b)),
-            (n, b) => update(n, g(b)))
+        val coyo        = Coyoneda.lift[(ResultSet, Int) => ?, A](get)
+        val set         = set0
+        val update      = update0
       } <| reg
 
     /**
@@ -335,7 +358,7 @@ object meta {
       * T - type of the tail of L (unused)
       * @group Instances
       */
-    implicit def unaryProductMetaNullable[A >: Null : TypeTag, L <: HList, H >: Null, T <: HList](
+    implicit def unaryProductMetaNullable[A: TypeTag, L <: HList, H >: Null, T <: HList](
       // representation (L) for type A
       implicit gen: Generic.Aux[A, L],
       // head (H) and tail (T) type of representation (L)
@@ -345,7 +368,7 @@ object meta {
       // provide evidence that representation (L) and singleton hlist with
       // the only element of type H are the same type
       ev: =:=[H :: HNil, L]
-    ): Meta[A] = hmeta.value.nxmap[A](
+    ): Meta[A] = hmeta.value.xmap[A](
       // `from` converts representation L to A, but there is only H here,
       // but provided evidence `=:=[H :: HNil, L]` we can construct L from H
       // and A from L (using `from`)
