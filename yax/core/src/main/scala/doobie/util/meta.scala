@@ -221,7 +221,7 @@ object meta {
   } with LowPriorityImplicits with MetaInstances {
 
     // sorry
-    def reg(m: Meta[_]): Unit =
+    private[meta] def reg(m: Meta[_]): Unit =
       synchronized { instances = instances + m }
 
     implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =

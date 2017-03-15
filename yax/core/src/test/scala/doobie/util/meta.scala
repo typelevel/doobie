@@ -5,6 +5,9 @@ import scala.Predef.classOf
 import doobie.imports._
 import doobie.enum.jdbctype._
 import org.specs2.mutable.Specification
+#+cats
+import fs2.interop.cats._
+#-cats
 
 object metaspec extends Specification {
   case class X(x: Int)
