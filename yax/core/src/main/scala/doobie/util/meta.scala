@@ -33,12 +33,19 @@ object meta {
    * Metadata defining the column-level mapping to and from Scala type `A`. A given Scala type might
    * be read from or written to columns with a variety of JDBC and/or vendor-specific types,
    * depending on supported coercions and luck.
+   *
+   * Reading and writing values to JDBC is asymmetric with respect to `null`, is complicated by
+   * unboxed types, and is not consistent with idiomatic Scala; so some discussion is required.
+   * Scala values should never be `null`. Setting a `NULL` JDBC value is accomplished via the
+   * `setNull` operation. Similarly when getting a JDBC value we must subsequently ask `.wasNull`
+   * on the JDBC resource and decide how to handle the value. The `Atom` typeclass takes care of
+   * mapping nullable values to `Option` so these issues should not be a concern for casual users.
    */
   @implicitNotFound("Could not find an instance of Meta[${A}]; you can construct one based on a primitive instance via `xmap`.")
   sealed trait Meta[A] {
 
     /**
-     * Get operation, split into the underlying column read (hich must subsequently be checked for
+     * Get operation, split into the underlying column read (which must subsequently be checked for
      * null) followed by the accumulated output map. Because the output map may be undefined for the
      * null value of the underlying column type, it may not be possible to yield an `A`. Logic to
      * handle this case correctly is provided in `Atom`.

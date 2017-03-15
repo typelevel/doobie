@@ -83,13 +83,13 @@ sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.un
 #+scalaz
 ### Diving Deep
 
-We can easily add support for other sequence types like `scalaz.IList` by invariant mapping. The `nxmap` method is a variant of `xmap` that ensures null values read from the database are never observed. The `TypeTag` is required to provide better feedback when type mismatches are detected.
+We can easily add support for other sequence types like `scalaz.IList` by invariant mapping. The `TypeTag` is required to provide better feedback when type mismatches are detected.
 
 ```tut:silent
 import scala.reflect.runtime.universe.TypeTag
 
 implicit def IListMeta[A: TypeTag](implicit ev: Meta[List[A]]): Meta[IList[A]] =
-  ev.nxmap[IList[A]](IList.fromList, _.toList)
+  ev.xmap[IList[A]](IList.fromList, _.toList)
 ```
 
 Once this mapping is in scope we can map columns directly to `IList`.

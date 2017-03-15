@@ -126,7 +126,7 @@ According to the error message we need a `Param[PersonId :: HNil]` instance whic
 Meta[PersonId]
 ```
 
-... and we don't have one. So how do we get one? The simplest way is by basing it on an existing `Meta` instance, using `nxmap`, which is like the invariant functor `xmap` but ensures that `null` values are never observed. So we simply provide `String => PersonId` and vice-versa and we're good to go.
+... and we don't have one. So how do we get one? The simplest way is by basing it on an existing `Meta` instance, using `xmap`. So we simply provide `String => PersonId` and vice-versa and we're good to go.
 
 ```tut:silent
 implicit val PersonIdMeta: Meta[PersonId] =
@@ -158,7 +158,7 @@ Here we go:
 
 ```tut:silent
 implicit val JsonMeta: Meta[Json] =
-  Meta.other[PGobject]("json").nxmap[Json](
+  Meta.other[PGobject]("json").xmap[Json](
 #+scalaz
     a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
     a => {
@@ -184,19 +184,19 @@ implicit val JsonMeta: Meta[Json] =
 1 + 1
 ```
 
-Given this mapping to and from `Json` we can construct a *further* mapping to any type that has an `EncodeJson` and `DecodeJson` instances. The `nxmap` constrains us to reference types and requires a `TypeTag` for diagnostics, so the full type constraint is `A >: Null : EncodeJson : DecodeJson : TypeTag`. On failure we throw an exception; this indicates a logic or schema problem.
+Given this mapping to and from `Json` we can construct a *further* mapping to any type that has an `EncodeJson` and `DecodeJson` instances. On failure we throw an exception; this indicates a logic or schema problem.
 
 ```tut:silent
 #+scalaz
-def codecMeta[A >: Null : EncodeJson : DecodeJson : TypeTag]: Meta[A] =
-  Meta[Json].nxmap[A](
+def codecMeta[A : EncodeJson : DecodeJson : TypeTag]: Meta[A] =
+  Meta[Json].xmap[A](
     _.as[A].result.fold(p => sys.error(p._1), identity),
     _.asJson
   )
 #-scalaz
 #+cats
-def codecMeta[A >: Null : Encoder : Decoder : TypeTag]: Meta[A] =
-  Meta[Json].nxmap[A](
+def codecMeta[A : Encoder : Decoder : TypeTag]: Meta[A] =
+  Meta[Json].xmap[A](
     _.as[A].fold[A](throw _, identity),
     _.asJson
   )
