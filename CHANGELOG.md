@@ -20,6 +20,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred, Benjam
 - Updated to scalaz 7.2.9
 - Added support for type refinements (refined library)
 - Added a `fail` constructor to all the `F*` modules.
+- Made `Meta.nxmap` unnecessary and fixed issues with mappings that are undefined for zero values of underlying unboxed types.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
