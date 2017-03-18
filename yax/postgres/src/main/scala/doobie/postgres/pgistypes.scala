@@ -17,7 +17,7 @@ object pgistypes {
 
   // Constructor for geometry types via the `Geometry` member of PGgeometry
   private def geometryType[A >: Null <: Geometry: TypeTag](implicit A: ClassTag[A]): Meta[A] =
-  PGgeometryType.nxmap[A](g =>
+  PGgeometryType.xmap[A](g =>
     try A.runtimeClass.cast(g.getGeometry).asInstanceOf[A]
     catch {
       case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, g.getGeometry.getClass)

@@ -134,7 +134,7 @@ The following geometric types are supported, and map to driver-supplied types.
 - the `point` schema type maps to `org.postgresql.geometric.PGpoint`
 - the `polygon` schema type maps to `org.postgresql.geometric.PGpolygon`
 
-It is expected that these will be mapped to application-specific types via `nxmap` as described in **Custom Mappings**.
+It is expected that these will be mapped to application-specific types via `xmap` as described in **Custom Mappings**.
 
 ### PostGIS Types
 

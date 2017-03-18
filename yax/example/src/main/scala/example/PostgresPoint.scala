@@ -20,7 +20,7 @@ object PostgresPoint extends App {
   case class Point(x: Double, y: Double)
   object Point {
     implicit val PointType: Meta[Point] =
-      Meta[PGpoint].nxmap(p => new Point(p.x, p.y), p => new PGpoint(p.x, p.y))
+      Meta[PGpoint].xmap(p => new Point(p.x, p.y), p => new PGpoint(p.x, p.y))
   }
 
   // Point is now a perfectly cromulent input/output type
