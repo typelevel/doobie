@@ -68,18 +68,43 @@ object metaspec extends Specification {
       Meta.readersOf(Integer, "").filter(_.scalaType == "doobie.util.metaspec.Reg2").size must_== 1
     }
 
+    // Both of these will fail at runtime if called with a null value, we check that this is
+    // avoided below.
+    implicit def FooMeta: Meta[Foo] = Meta[String].xmap(s => Foo(s.toUpperCase), _.s)
+    implicit def barMeta: Meta[Bar] = Meta[Int].xmap(n => if (n == 0) sys.error("") else Bar(n), _.n)
+
     "not allow xmap to observe null on the read side (AnyRef)" in {
-      implicit def FooMeta: Meta[Foo] = Meta[String].xmap(s => Foo(s.toUpperCase), _.s)
       val x = sql"select null".query[Option[Foo]].unique.transact(xa).unsafePerformIO
       x must_== None
     }
 
+    "read non-null value (AnyRef)" in {
+      val x = sql"select 'abc'".query[Foo].unique.transact(xa).unsafePerformIO
+      x must_== Foo("ABC")
+    }
+
+    "throw when reading a NULL into an unlifted Scala type (AnyRef)" in {
+      def x = sql"select null".query[Foo].unique.transact(xa).unsafePerformIO
+      x must throwA[doobie.util.invariant.NonNullableColumnRead]
+    }
+
+
     "not allow xmap to observe null on the read side (AnyVal)" in {
-      implicit def FooMeta: Meta[Bar] = Meta[Int].xmap(n => if (n == 0) sys.error("") else Bar(n), _.n)
       val x = sql"select null".query[Option[Bar]].unique.transact(xa).unsafePerformIO
       x must_== None
     }
 
+    "read non-null value (AnyVal)" in {
+      val x = sql"select 1".query[Bar].unique.transact(xa).unsafePerformIO
+      x must_== Bar(1)
+    }
+
+    "throw when reading a NULL into an unlifted Scala type (AnyVal)" in {
+      def x = sql"select null".query[Bar].unique.transact(xa).unsafePerformIO
+      x must throwA[doobie.util.invariant.NonNullableColumnRead]
+    }
+
   }
+
 
 }
