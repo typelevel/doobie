@@ -3,7 +3,6 @@ package doobie.refined
 import org.specs2.mutable.Specification
 import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.auto._
 import eu.timepit.refined._
 import doobie.imports._
 import doobie.util.invariant._
@@ -89,7 +88,7 @@ object refinedtypes extends Specification {
     }
 
     "save a Some of a refined type" in {
-      val somePositiveInt: Option[PositiveInt] = Some(5)
+      val somePositiveInt: Option[PositiveInt] = refineV[Positive](5).toOption
       insertOptionalPositiveInt(somePositiveInt)
 
       true
