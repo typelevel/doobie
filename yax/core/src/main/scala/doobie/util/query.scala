@@ -55,7 +55,7 @@ object query {
    */
   trait Query[A, B] { outer =>
 
-    // jiggery pokery to support CBF; we're doing the coyoneda trick on B to to avoid a Functor
+    // jiggery pokery to support CBF; we're doing the coyoneda trick on B to avoid a Functor
     // constraint on the `F` parameter in `to`, and it's just easier to do the contravariant coyo
     // trick on A while we're at it.
     protected type I
