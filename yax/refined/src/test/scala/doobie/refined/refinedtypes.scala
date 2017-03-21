@@ -88,7 +88,7 @@ object refinedtypes extends Specification {
     }
 
     "save a Some of a refined type" in {
-      val somePositiveInt: Option[PositiveInt] = refineV[Positive](5).toOption
+      val somePositiveInt: Option[PositiveInt] = refineV[Positive](5).right.toOption
       insertOptionalPositiveInt(somePositiveInt)
 
       true
