@@ -139,7 +139,7 @@ trait PGTypes {
   private def enumPartialMeta(name: String): Meta[String] =
     Meta.basic[String](
       NonEmptyListOf(jdbctype.Other, jdbctype.VarChar), // https://github.com/tpolecat/doobie/issues/303
-      NonEmptyListOf(jdbctype.Other),
+      NonEmptyListOf(jdbctype.Other, jdbctype.VarChar),
       Nil,
       (rs, n) => rs.getString(n),
       (n, a) => FPS.setObject(n, {
