@@ -115,7 +115,7 @@ object update {
      * @group Execution
      */
     def run(a: A): ConnectionIO[Int] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> HPS.executeUpdate)
+      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeUpdate(a))
 
     /**
      * Program to execute a batch update and yield a count of affected rows.
