@@ -29,7 +29,7 @@ object logspec extends Specification {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio     = Query[A, HNil](sql, None, handler).unique(arg)
-    Console.println(cio.transact(xa).attempt.unsafePerformIO)
+    cio.transact(xa).attempt.unsafePerformIO
     result
   }
 
@@ -38,7 +38,7 @@ object logspec extends Specification {
     val handler = LogHandler(result = _)
     val cio     = sql"create table if not exists foo (bar integer)".update.run *>
                   Update[A](sql, None, handler).run(arg)
-    Console.println(cio.transact(xa).attempt.unsafePerformIO)
+    cio.transact(xa).attempt.unsafePerformIO
     result
   }
 
