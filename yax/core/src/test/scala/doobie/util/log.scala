@@ -7,6 +7,7 @@ import Scalaz._
 #-scalaz
 #+cats
 import scala.util.{ Left => -\/, Right => \/- }
+import cats.implicits._
 import fs2.interop.cats._
 #-cats
 import doobie.imports._
@@ -157,7 +158,7 @@ object logspec extends Specification {
     "n-arg execution failure" in {
       pending
     }
-    
+
   }
 
 }
