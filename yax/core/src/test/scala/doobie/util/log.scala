@@ -36,7 +36,7 @@ object logspec extends Specification {
   def eventForUniqueUpdate[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
-    val cio     = sql"create table if not exists Foo (bar integer)".update.run *>
+    val cio     = sql"create table if not exists foo (bar integer)".update.run *>
                   Update[A](sql, None, handler).run(arg)
     Console.println(cio.transact(xa).attempt.unsafePerformIO)
     result
