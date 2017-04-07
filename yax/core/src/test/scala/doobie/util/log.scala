@@ -112,14 +112,14 @@ object logspec extends Specification {
   "update" >> {
 
     "default handler" in {
-      val q = sql"drop table if exists foo".update
+      val q = sql"drop table if exists barf".update
       true // compilation test only
     }
 
     "implicit handler" in {
       var result  = null : LogEvent
       implicit val handler = LogHandler(result = _)
-      val cio = sql"drop table if exists foo".update.run
+      val cio = sql"drop table if exists barf".update.run
       cio.transact(xa).attempt.unsafePerformIO
       result must beLike {
         case Success(_, _, _, _) => ok
@@ -129,7 +129,7 @@ object logspec extends Specification {
     "implicit handler" in {
       var result  = null : LogEvent
       val handler = LogHandler(result = _)
-      val cio = sql"drop table if exists foo".updateWithLogHandler(handler).run
+      val cio = sql"drop table if exists barf".updateWithLogHandler(handler).run
       cio.transact(xa).attempt.unsafePerformIO
       result must beLike {
         case Success(_, _, _, _) => ok
