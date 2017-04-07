@@ -32,6 +32,15 @@ object logspec extends Specification {
     result
   }
 
+  def eventForUniqueUpdate[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
+    var result  = null : LogEvent
+    val handler = LogHandler(result = _)
+    val cio     = sql"create table if not exists Foo (bar integer)".update.run *>
+                  Update[A](sql, None, handler).run(arg)
+    cio.transact(xa).attempt.unsafePerformIO
+    result
+  }
+
   "query" >> {
 
     "default handler" in {
@@ -97,6 +106,58 @@ object logspec extends Specification {
       }
     }
 
+  }
+
+  "update" >> {
+
+    "default handler" in {
+      val q = sql"drop table if exists foo".update
+      true // compilation test only
+    }
+
+    "implicit handler" in {
+      var result  = null : LogEvent
+      implicit val handler = LogHandler(result = _)
+      val cio = sql"drop table if exists foo".update.run
+      cio.transact(xa).attempt.unsafePerformIO
+      result must beLike {
+        case Success(_, _, _, _) => ok
+      }
+    }
+
+    "implicit handler" in {
+      var result  = null : LogEvent
+      val handler = LogHandler(result = _)
+      val cio = sql"drop table if exists foo".updateWithLogHandler(handler).run
+      cio.transact(xa).attempt.unsafePerformIO
+      result must beLike {
+        case Success(_, _, _, _) => ok
+      }
+    }
+
+    "zero-arg success" in {
+      val Sql = "update foo set bar = 42"
+      eventForUniqueUpdate(Sql) must beLike {
+        case Success(Sql, Nil, _, _) => ok
+      }
+    }
+
+    "n-arg success" in {
+      val Sql = "update foo set bar = ?"
+      val Arg = 42 :: HNil
+      eventForUniqueUpdate(Sql, Arg) must beLike {
+        case Success(Sql, List(42), _, _) => ok
+      }
+    }
+
+    "zero-arg execution failure" in {
+      pending
+    }
+
+    "n-arg execution failure" in {
+      pending
+    }
+    
   }
 
 }
