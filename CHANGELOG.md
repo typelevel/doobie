@@ -16,7 +16,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred, Benjam
 - Added `list` and `vector` convenience methods to `Query`.
 - Updated Posgtgres JDBC driver to v42.0.0.
 - Added `set` and `setOpt` combinators for building fragments which contain `SET` operations.
-- Updated build to sbt 0.13.13
+- Updated build to sbt 0.13.15
 - Updated to scalaz 7.2.9
 - Added support for type refinements (refined library)
 - Added a `fail` constructor to all the `F*` modules.
