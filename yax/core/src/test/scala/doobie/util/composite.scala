@@ -33,6 +33,11 @@ object compositespec extends Specification {
       true
     }
 
+    "exist for Unit" in {
+      Composite[Unit]
+      Composite[(Int, Unit)].length must_== 1
+    }
+
     "exist for shapeless record types" in {
 
       type DL = (Double, Long)

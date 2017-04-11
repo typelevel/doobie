@@ -93,6 +93,14 @@ the FAQ in the Book of Doobie for more hints.""")
 #-cats
       }
 
+    implicit val unitComposite: Composite[Unit] =
+#+scalaz
+      emptyProduct.xmap(_ => (), _ => HNil)
+#-scalaz
+#+cats
+      emptyProduct.imap(_ => ())(_ => HNil)
+#-cats
+
     implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
       new Composite[A] {
         val set = A.set
