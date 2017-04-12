@@ -12,7 +12,9 @@ import doobie.util.iolite.IOLite
 
 import org.specs2.mutable.Specification
 import org.specs2.execute.Failure
-import org.specs2.specification.core.Fragments
+import org.specs2.specification.core.{ Fragments, Fragment }
+import org.specs2.specification.dsl.Online._
+import org.specs2.specification.create.{ FormattingFragments => Format }
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -66,12 +68,18 @@ object analysisspec {
       checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
     private def checkAnalysis(typeName: String, pos: Option[Pos], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
-      s"\n$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> {
+      // continuesWith is necessary to make sure the query doesn't run too early
+      s"\n$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> ok.continueWith {
         transactor.trans.apply(analysis).attempt.unsafePerformIO match {
-          case -\/(e) => Fragments("SQL Compiles and Typechecks" in failure(formatError(e.getMessage)))
-          case \/-(a) => Fragments("SQL Compiles and Typechecks" in ok)
-            Fragments.foreach(a.paramDescriptions)  { case (s, es) => s in assertEmpty(es, pos) }
-            Fragments.foreach(a.columnDescriptions) { case (s, es) => s in assertEmpty(es, pos) }
+          // We can't rely on mutable Specification DSL here!
+          case -\/(e) => indentBlock(Seq(
+            "SQL Compiles and Typechecks" ! failure(formatError(e.getMessage))
+          ))
+          case \/-(a) => indentBlock(
+            ("SQL Compiles and Typechecks" ! ok) +:
+              a.paramDescriptions.map{ case (s, es) => s ! assertEmpty(es, pos) } ++:
+              a.columnDescriptions.map{ case (s, es) => s ! assertEmpty(es, pos) }
+          )
         }
       }
 
@@ -96,6 +104,14 @@ object analysisspec {
         case Nil => Nil
       }).mkString("\n")
 
+    private def indentBlock(fs: Seq[Fragment]): Fragments =
+      // intersperse fragments with newlines, and indent them.
+      // This differs from standard version (FragmentsDsl.fragmentsBlock()) in
+      // that any failure gets properly indented, too.
+      Fragments.empty
+        .append(Format.t)
+        .append(fs.flatMap(Seq(Format.br, _)))
+        .append(Format.bt)
   }
 
 }
