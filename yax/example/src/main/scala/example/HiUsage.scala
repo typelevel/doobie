@@ -1,6 +1,3 @@
-#+cats
-// relies on streaming, so no cats for now
-#-cats
 #+scalaz
 package doobie.example
 
