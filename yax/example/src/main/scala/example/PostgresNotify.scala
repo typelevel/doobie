@@ -15,7 +15,7 @@ import scalaz.stream._, Process.{ eval, eval_, repeatEval, emitAll}
 
 /**
  * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
- * likely be provided as a standard service in doobie-contrib-postgresql in a future version.
+ * likely be provided as a standard service in doobie-postgres in a future version.
  * To play with this program, run it and then in another window do:
  *
  * > psql -d world -U postgres -c "notify foo, 'abc'"
