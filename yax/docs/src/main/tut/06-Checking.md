@@ -91,7 +91,7 @@ def biggerThan(minPop: Int) = sql"""
 biggerThan(0).check.unsafePerformIO
 ```
 
-**doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `contrib-specs2` package, which allows checking to become part of your unit test suite. We will investigate this in the chapter on testing.
+**doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2` package, which allows checking to become part of your unit test suite. We will investigate this in the chapter on testing.
 
 ### Working Around Bad Metadata
 
@@ -103,7 +103,7 @@ However a common case is that *parameter* metadata is unavailable but *output co
 biggerThan(0).checkOutput.unsafePerformIO
 ```
 
-This option is also available in the `contrib-specs2` package.
+This option is also available in the `doobie-specs2` package.
 
 ### Diving Deeper
 
