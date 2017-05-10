@@ -23,7 +23,7 @@ object pgcheck extends Specification {
   case object Foo extends MyEnum
   case object Bar extends MyEnum
   object MyEnum {
-    implicit val MyEnumMeta: Atom[MyEnum] =
+    implicit val MyEnumMeta: Meta[MyEnum] =
       pgEnumString("myenum", {
         case "foo" => Foo
         case "bar" => Bar

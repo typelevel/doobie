@@ -23,6 +23,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, coltfred, Benjam
 - Made `Meta.nxmap` unnecessary and fixed issues with mappings that are undefined for zero values of underlying unboxed types.
 - Added `Composite` instance for `Unit`.
 - Fix execution flow for AnalysisSpec checks.
+- Make postgres enums nullable (change `Atom` instance to `Meta`).
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 

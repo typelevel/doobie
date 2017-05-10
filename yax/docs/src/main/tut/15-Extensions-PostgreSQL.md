@@ -60,8 +60,6 @@ See the previous chapter on **SQL Arrays** for usage examples.
 create type myenum as enum ('foo', 'bar')
 ```
 
-**NOTE** that because it seems to be impossible to write a `NULL` value to an enum column or parameter, **doobie** cannot support `Option` mappings for enum types.
-
 The first option is to map `myenum` to an instance of the execrable `scala.Enumeration` class via the `pgEnum` constructor.
 
 ```tut:silent
@@ -69,7 +67,7 @@ object MyEnum extends Enumeration {
   val foo, bar = Value
 }
 
-implicit val MyEnumAtom = pgEnum(MyEnum, "myenum")
+implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
 ```
 
 ```tut
@@ -84,7 +82,7 @@ public enum MyJavaEnum { foo, bar; }
 ```
 
 ```scala
-implicit val MyJavaEnumAtom = pgJavaEnum[MyJavaEnum]("myenum")
+implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
 ```
 
 And the final, most general construction simply requires evidence that your taget type can be translated to and from `String`.
@@ -114,7 +112,7 @@ object FooBar {
 
 }
 
-implicit val FoobarAtom: Atom[FooBar] =
+implicit val FoobarMeta: Meta[FooBar] =
   pgEnumString("myenum", FooBar.unsafeFromEnum, FooBar.toEnum)
 ```
 

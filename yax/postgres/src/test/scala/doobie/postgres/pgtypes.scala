@@ -59,13 +59,6 @@ object pgtypesspec extends Specification {
 #-scalaz
     }
 
-  def testInOutNN[A](col: String, a: A)(implicit m: Atom[A]) =
-    s"Mapping for $col as ${m.meta._1.scalaType}" >> {
-      s"write+read $col as ${m.meta._1.scalaType}" in {
-        inOut(col, a).transact(xa).attempt.unsafePerformIO must_== \/-(a)
-      }
-    }
-
   def skip(col: String, msg: String = "not yet implemented") =
     s"Mapping for $col" >> {
       "PENDING:" in pending(msg)
@@ -113,7 +106,7 @@ object pgtypesspec extends Specification {
 
   // as scala.Enumeration
   implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
-  testInOutNN("myenum", MyEnum.foo)
+  testInOut("myenum", MyEnum.foo)
 
   // // as java.lang.Enum
   // implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")

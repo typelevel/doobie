@@ -131,11 +131,6 @@ trait PGTypes {
   // we can certainly do better than that.
 
 
-  // It seems impossible to write a NULL value for an enum column/parameter using the current JDBC
-  // driver, so we will define a mapping only for non-nullables. As a further twist, we read as
-  // String and write as PGobject. This Meta instance isn't able to write NULL. This would be a good
-  // use case for splitting the read/write halves of Meta/Atom/Composite because here it's no
-  // problem to *read* NULL, we just can't write it.
   private def enumPartialMeta(name: String): Meta[String] =
     Meta.basic[String](
       NonEmptyListOf(jdbctype.Other, jdbctype.VarChar), // https://github.com/tpolecat/doobie/issues/303
@@ -157,32 +152,25 @@ trait PGTypes {
     )
 
   /**
-   * Construct an `Atom` for values of the given type, mapped via `String` to the named PostgreSQL
+   * Construct a `Meta` for values of the given type, mapped via `String` to the named PostgreSQL
    * enum type.
    */
-  def pgEnumString[A](name: String, f: String => A, g: A => String): Atom[A] =
-#+scalaz
-    Atom.fromScalaType(enumPartialMeta(name)).xmap[A](f, g)
-#-scalaz
-#+cats
-    Atom.fromScalaType(enumPartialMeta(name)).imap[A](f)(g)
-#-cats
+  def pgEnumString[A: TypeTag](name: String, f: String => A, g: A => String): Meta[A] =
+    enumPartialMeta(name).xmap[A](f, g)
 
   /**
-   * Construct an `Atom` for value members of the given `Enumeration`. Note that this precludes
-   * reading or writing `Option[e.Value]` because writing NULL is unsupported by the driver.
+   * Construct a `Meta` for value members of the given `Enumeration`. 
    */
-  def pgEnum(e: Enumeration, name: String): Atom[e.Value] =
+  def pgEnum(e: Enumeration, name: String): Meta[e.Value] =
     pgEnumString[e.Value](name,
       a => try e.withName(a) catch {
         case _: NoSuchElementException => throw InvalidEnum[e.Value](a)
       }, _.toString)
 
   /**
-   * Construct an `Atom` for value members of the given Jave `enum`. Note that this precludes
-   * reading or writing `Option[E]` because writing NULL is unsupported by the driver.
+   * Construct a `Meta` for value members of the given Jave `enum`.
    */
-  def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Atom[E] = {
+  def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Meta[E] = {
     val clazz = E.runtimeClass.asInstanceOf[Class[E]]
     pgEnumString[E](name,
       a => try java.lang.Enum.valueOf(clazz, a).asInstanceOf[E] catch {
