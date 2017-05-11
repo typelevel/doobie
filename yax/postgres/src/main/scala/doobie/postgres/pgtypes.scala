@@ -4,12 +4,13 @@ import doobie.enum.jdbctype
 import doobie.imports._
 import doobie.util.invariant._
 
-import java.util.UUID
+import java.util.{ UUID, Map => JMap }
 import java.net.InetAddress
 
 import org.postgresql.util._
 import org.postgresql.geometric._
 
+import scala.collection.JavaConverters._
 import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
@@ -189,5 +190,13 @@ trait PGTypes {
         case _: NoSuchElementException => throw InvalidEnum[E](a)
       }, _.name)
   }
+
+  /** HSTORE maps to a java.util.Map[String, String]. */
+  implicit val hstoreMetaJava: Meta[JMap[String, String]] =
+    Meta.other[JMap[String, String]]("hstore")
+
+  /** HSTORE maps to a Map[String, String]. */
+  implicit val hstoreMeta: Meta[Map[String, String]] =
+    hstoreMetaJava.xmap[Map[String, String]](_.asScala.toMap, _.asJava)
 
 }

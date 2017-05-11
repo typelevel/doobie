@@ -172,6 +172,7 @@ In addition to the general types above, **doobie** provides mappings for the fol
 
 - The `uuid` schema type is supported and maps to `java.util.UUID`.
 - The `inet` schema type is supported and maps to `java.net.InetAddress`.
+- The `hstore` schema type is supported and maps to both `java.util.Map[String, String]` and Scala `Map[String, String]`.
 
 ### Extended Error Handling
 
