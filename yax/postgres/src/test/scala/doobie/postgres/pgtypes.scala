@@ -203,4 +203,7 @@ object pgtypesspec extends Specification {
   testInOutGeom[Polygon](pls.next)
   testInOutGeom[Point](pts.next)
 
+  // hstore
+  testInOut("hstore", Map("foo" -> "1", "bar" -> "2", "baz" -> "3"))
+
 }
