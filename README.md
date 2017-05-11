@@ -81,7 +81,7 @@ The active development version is **0.4.2-SNAPSHOT**. It is updated sporadically
 - The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.
 - If you have comments or run into trouble, please file an issue.
-- Find **tpolecat** on the FreeNode `#scala` channel, or join the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).
+- Find **tpolecat** on the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).
 
 ## Presentations, Blog Posts, etc.
 
