@@ -24,6 +24,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Added `Composite` instance for `Unit`.
 - Fix execution flow for AnalysisSpec checks.
 - Added mapping for Postgres `hstore` type.
+- Make postgres enums nullable (change `Atom` instance to `Meta`).
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
