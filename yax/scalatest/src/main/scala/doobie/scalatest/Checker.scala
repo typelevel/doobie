@@ -171,7 +171,7 @@ trait CheckerTask extends Checker[Task] {
   val monadM: Monad[Task] = implicitly
   val catchableM: Catchable[Task] = implicitly
   val captureM: Suspendable[Task] = implicitly
-  def unsafePerformIO[A](ma: Task[A]) = Await.result(ma.unsafeRunAsyncFuture, Duration.Inf)
+  def unsafePerformIO[A](ma: Task[A]) = ma.unsafeRun
 }
 #-cats
 
