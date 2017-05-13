@@ -1,7 +1,6 @@
 package doobie.scalatest
 
 import doobie.free.connection._
-import doobie.syntax.catchable.ToDoobieCatchableOps
 import doobie.util.analysis.{AlignmentError, Analysis}
 import doobie.util.pretty._
 import doobie.util.pos.Pos
@@ -49,17 +48,17 @@ import fs2.interop.cats._
   * }
   * }}}
   */
-trait Checker[M[_]] extends ToDoobieCatchableOps {
+trait Checker[M[_]] {
   self: Assertions =>
 
   // Effect type, required instances, unsafe run
-  val monadM: Monad[M]
-  val catchableM: Catchable[M]
+  implicit val monadM: Monad[M]
+  implicit val catchableM: Catchable[M]
 #+scalaz
-  val captureM: Capture[M]
+  implicit val captureM: Capture[M]
 #-scalaz
 #+cats
-  val captureM: Suspendable[M]
+  implicit val captureM: Suspendable[M]
 #-cats
   def unsafePerformIO[A](ma: M[A]): A
 
@@ -166,7 +165,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.Await
 
 /** Implementation of Checker[fs2.Task] */
-trait CheckerTask extends Checker[Task] {
+trait TaskChecker extends Checker[Task] {
   self: Assertions =>
   val monadM: Monad[Task] = implicitly
   val catchableM: Catchable[Task] = implicitly
