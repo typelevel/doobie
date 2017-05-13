@@ -110,7 +110,7 @@ The `doobie-scalatest-cats` add-on provides a mix-in trait that we can add to an
 import doobie.scalatest.imports._
 import org.scalatest._
 
-class AnalysisTestScalaCheck extends FunSuite with Matchers with QueryChecker {
+class AnalysisTestScalaCheck extends FunSuite with Matchers with IOLiteChecker {
 
   val transactor = DriverManagerTransactor[IOLite](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

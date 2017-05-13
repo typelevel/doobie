@@ -1,6 +1,7 @@
 package doobie.scalatest
 
 import doobie.free.connection._
+import doobie.syntax.catchable.ToDoobieCatchableOps
 import doobie.util.analysis.{AlignmentError, Analysis}
 import doobie.util.pretty._
 import doobie.util.pos.Pos
@@ -8,24 +9,31 @@ import doobie.util.query.{Query, Query0}
 import doobie.util.transactor.Transactor
 import doobie.util.update.{Update, Update0}
 import doobie.util.iolite.IOLite
+
 import org.scalatest.Assertions
 
 import scala.reflect.runtime.universe.WeakTypeTag
 
 #+scalaz
-import scalaz.{ \/, -\/, \/- }
+import doobie.util.capture.Capture
+import scalaz.{ Monad, Catchable, \/, -\/, \/- }
 #-scalaz
 #+cats
 import scala.util.{ Either => \/, Left => -\/, Right => \/- }
+import cats.Monad
+import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
 #-cats
 
-
 /**
   * Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
+  * Users must provide an effect type `M` as well as a `Transactor[M]` and instances. As a
+  * convenience doobie provides specializations for common effect types (see other types in this
+  * package).
+  *
   * {{{
   * // An example specification, taken from the examples project.
-  * class ExampleSpec extends FunSuite with QueryChecker {
+  * class ExampleSpec extends FunSuite with IOLiteChecker {
   *
   *   // The transactor to use for the tests.
   *   val transactor = DriverManagerTransactor[IOLite](
@@ -41,10 +49,22 @@ import fs2.interop.cats._
   * }
   * }}}
   */
-trait QueryChecker {
+trait Checker[M[_]] extends ToDoobieCatchableOps {
   self: Assertions =>
 
-  def transactor: Transactor[IOLite, _]
+  // Effect type, required instances, unsafe run
+  val monadM: Monad[M]
+  val catchableM: Catchable[M]
+#+scalaz
+  val captureM: Capture[M]
+#-scalaz
+#+cats
+  val captureM: Suspendable[M]
+#-cats
+  def unsafePerformIO[A](ma: M[A]): A
+
+  def transactor: Transactor[M, _]
+
 
   def check[A, B](q: Query[A, B])(implicit A: WeakTypeTag[A], B: WeakTypeTag[B]) =
     checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)
@@ -77,7 +97,7 @@ trait QueryChecker {
     sql:      String,
     analysis: ConnectionIO[Analysis]
   ) = {
-    val analysisAttempt = transactor.trans.apply(analysis).attempt.unsafePerformIO
+    val analysisAttempt = unsafePerformIO(catchableM.attempt(transactor.trans(monadM).apply(analysis)))
     if (hasError(analysisAttempt)) {
       val analysisOutput = analysisAttempt match {
         case -\/(e) =>
@@ -125,3 +145,55 @@ trait QueryChecker {
   private def success(name: String, desc: Option[String]): String =
     s"${Console.GREEN}  ✓ ${Console.RESET}$name\n" + desc.mkString("\n")
 }
+
+/** Implementation of Checker[IOLite] */
+trait IOLiteChecker extends Checker[IOLite] {
+  self: Assertions =>
+  val monadM: Monad[IOLite] = implicitly
+  val catchableM: Catchable[IOLite] = implicitly
+#+scalaz
+  val captureM: Capture[IOLite] = implicitly
+#-scalaz
+#+cats
+  val captureM: Suspendable[IOLite] = implicitly
+#-cats
+  def unsafePerformIO[A](ma: IOLite[A]) = ma.unsafePerformIO
+}
+
+#+cats
+import fs2.Task
+import scala.concurrent.duration.Duration
+import scala.concurrent.Await
+
+/** Implementation of Checker[fs2.Task] */
+trait CheckerTask extends Checker[Task] {
+  self: Assertions =>
+  val monadM: Monad[Task] = implicitly
+  val catchableM: Catchable[Task] = implicitly
+  val captureM: Suspendable[Task] = implicitly
+  def unsafePerformIO[A](ma: Task[A]) = Await.result(ma.unsafeRunAsyncFuture, Duration.Inf)
+}
+#-cats
+
+#+scalaz
+import scalaz.concurrent.Task
+import scalaz.effect.IO
+
+/** Implementation of Checker[scalaz.concurrent.Task] */
+trait TaskChecker extends Checker[Task] {
+  self: Assertions =>
+  val monadM: Monad[Task] = implicitly
+  val catchableM: Catchable[Task] = implicitly
+  val captureM: Capture[Task] = implicitly
+  def unsafePerformIO[A](ma: Task[A]) = ma.unsafePerformSync
+}
+
+/** Implementation of Checker[scalaz.effect.IO] */
+trait IOChecker extends Checker[IO] {
+  self: Assertions =>
+  val monadM: Monad[IO] = implicitly
+  val catchableM: Catchable[IO] = implicitly
+  val captureM: Capture[IO] = implicitly
+  def unsafePerformIO[A](ma: IO[A]) = ma.unsafePerformIO
+}
+#-scalaz
