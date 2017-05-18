@@ -137,6 +137,13 @@ object query {
       HC.process[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
 
     /**
+     * FS2 Friendly Alias for processWithChunkSize.
+     * @group Results
+     */
+    def streamWithChunkSize(a: A, chunkSize: Int): Process[ConnectionIO, B] =
+      processWithChunkSize(a, chunkSize)
+
+    /**
      * Apply the argument `a` to construct a `Process` with `DefaultChunkSize`, with
      * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
@@ -144,6 +151,13 @@ object query {
      */
     def process(a: A): Process[ConnectionIO, B] =
       processWithChunkSize(a, DefaultChunkSize)
+
+    /**
+     * FS2 Friendly Alias for process.
+     * @group Results
+     */
+    def stream(a: A): Process[ConnectionIO, B] =
+      process(a)
 
     /**
      * Apply the argument `a` to construct a program in
@@ -357,11 +371,25 @@ object query {
       processWithChunkSize(DefaultChunkSize)
 
     /**
+     * FS2 Friendly Alias for process.
+     * @group Results
+     */
+    def stream : Process[ConnectionIO, B] =
+      process
+
+    /**
      * `Process` with given chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
     def processWithChunkSize(n: Int): Process[ConnectionIO, B]
+
+    /**
+     * FS2 Friendly Alias for processWithChunkSize.
+     * @group Results
+     */
+    def streamWithChunkSize(n: Int): Process[ConnectionIO, B] =
+      processWithChunkSize(n)
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`
