@@ -383,7 +383,10 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
   publishSettings ++ Seq(
     name := s"doobie-$mod",
     description := "Scalatest support for doobie.",
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion
+    libraryDependencies ++= Seq(
+      "org.scalatest"  %% "scalatest" % scalatestVersion,
+      "com.h2database"  %  "h2"       % h2Version % "test"
+    )
   )
 
 lazy val scalatest = project.in(file("modules/scalatest"))
