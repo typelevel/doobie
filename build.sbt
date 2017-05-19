@@ -24,10 +24,9 @@ lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
 
 /**
- * This build now depends on partial unification, but this is slightly tricky. It's built into 2.12,
- * but for 2.11 we need the Typelevel compiler, util 2.11.9 arrives. For 2.10 we need the plugin. In
- * addition the cats/fs2 build isn't available for 2.10 because there's no fs2 for 2.10, so we need
- * sbt-doge to support that. Whee.
+ * This build now depends on partial unification. It's built into 2.12 and from 2.11.9. For 2.10 we
+ * need the plugin. In addition the cats/fs2 build isn't available for 2.10 because there's no fs2
+ * for 2.10, so we need sbt-doge to support that. Whee.
  */
 
 enablePlugins(CrossPerProjectPlugin)
@@ -36,7 +35,6 @@ lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.12.2",
-  scalaOrganization := (if (scalaVersion.value startsWith "2.11") "org.typelevel" else "org.scala-lang"),
   crossScalaVersions := Seq("2.11.11", scalaVersion.value)
 )
 
