@@ -187,6 +187,7 @@ As mentioned earlier, you can use any monad `M[_]` when using a `Transactor` as 
 ```tut:silent
 import fs2.util.{Catchable, Suspendable}
 import monix.eval.Task
+import scala.util.{Failure, Success}
 
 implicit object monixTaskCatchableSuspendable extends Catchable[Task] with Suspendable[Task] {
   def pure[A](a: A): Task[A] =
@@ -199,7 +200,10 @@ implicit object monixTaskCatchableSuspendable extends Catchable[Task] with Suspe
     Task.raiseError(err)
 
   def attempt[A](fa: Task[A]): Task[Either[Throwable,A]] =
-    fa.materialize.map(_.toEither)
+    fa.materialize.map({
+      case Success(v) => Right(v)
+      case Failure(err) => Left(err)
+    })
 
   def suspend[A](fa: => Task[A]): Task[A] =
     Task.suspend(fa)
@@ -211,7 +215,8 @@ As mentioned earlier, you can use any monad `M[_]` when using a `Transactor` as 
 ```tut:silent
 import doobie.util.capture.Capture
 import monix.eval.Task
-import scalaz.{Catchable, \/}
+import scala.util.{Failure, Success}
+import scalaz.{Catchable, \/, \/-, -\/}
 
 implicit object monixTaskCatchable extends Catchable[Task] with Capture[Task] {
   def apply[A](a: => A): Task[A] =
@@ -227,7 +232,10 @@ implicit object monixTaskCatchable extends Catchable[Task] with Capture[Task] {
     Task.raiseError(err)
 
   def attempt[A](fa: Task[A]): Task[Throwable \/ A] =
-    fa.materialize.map(r => \/.fromEither(r.toEither))
+    fa.materialize.map({
+      case Success(v) => \/-(v)
+      case Failure(err) => -\/(err)
+    })
 
   def suspend[A](fa: => Task[A]): Task[A] =
     Task.suspend(fa)
