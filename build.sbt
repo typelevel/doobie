@@ -3,31 +3,30 @@ import FreeGen2._
 import ReleaseTransformations._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val scalaCheckVersion    = "1.13.4"
-lazy val specs2Version        = "3.8.6"
+lazy val scalaCheckVersion    = "1.13.5"
+lazy val specs2Version        = "3.8.9"
 lazy val si2712fixVersion     = "1.2.0"
 lazy val kindProjectorVersion = "0.9.3"
 lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.3"
-lazy val scalazVersion        = "7.2.9"
+lazy val scalazVersion        = "7.2.12"
 lazy val scalazStreamVersion  = "0.8.6a"
-lazy val h2Version            = "1.4.193"
-lazy val postgresVersion      = "42.0.0"
-lazy val fs2CoreVersion       = "0.9.2"
+lazy val h2Version            = "1.4.195"
+lazy val postgresVersion      = "42.1.1"
+lazy val fs2CoreVersion       = "0.9.6"
 lazy val fs2CatsVersion       = "0.3.0"
 lazy val postGisVersion       = "2.2.1"
-lazy val hikariVersion        = "2.5.1"
-lazy val scalatestVersion     = "3.0.0"
-lazy val refinedVersion       = "0.8.0"
-lazy val argonautVersion      = "6.2-RC1"
+lazy val hikariVersion        = "2.6.1"
+lazy val scalatestVersion     = "3.0.3"
+lazy val refinedVersion       = "0.8.1"
+lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
-lazy val circeVersion         = "0.7.0"
+lazy val circeVersion         = "0.8.0"
 
 /**
- * This build now depends on partial unification, but this is slightly tricky. It's built into 2.12,
- * but for 2.11 we need the Typelevel compiler, util 2.11.9 arrives. For 2.10 we need the plugin. In
- * addition the cats/fs2 build isn't available for 2.10 because there's no fs2 for 2.10, so we need
- * sbt-doge to support that. Whee.
+ * This build now depends on partial unification. It's built into 2.12 and from 2.11.9. For 2.10 we
+ * need the plugin. In addition the cats/fs2 build isn't available for 2.10 because there's no fs2
+ * for 2.10, so we need sbt-doge to support that. Whee.
  */
 
 enablePlugins(CrossPerProjectPlugin)
@@ -35,9 +34,8 @@ enablePlugins(CrossPerProjectPlugin)
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.1",
-  scalaOrganization := (if (scalaVersion.value startsWith "2.11") "org.typelevel" else "org.scala-lang"),
-  crossScalaVersions := Seq("2.11.8", scalaVersion.value)
+  scalaVersion := "2.12.2",
+  crossScalaVersions := Seq("2.11.11", scalaVersion.value)
 )
 
 lazy val scalazCrossSettings = Seq(

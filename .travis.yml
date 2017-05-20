@@ -7,12 +7,12 @@ jdk:
 
 scala:
   - 2.10.6
-  - 2.11.8
-  - 2.12.1
+  - 2.11.11
+  - 2.12.2
 
 env:
   global:
-    - MAIN_SCALA_VERSION=2.11.8
+    - MAIN_SCALA_VERSION=2.11.11
 
 addons:
   postgresql: "9.3"

@@ -6,7 +6,7 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.4.2"></a>Notable Work in Progress for Version 0.4.2
 
-non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, ChristopherDavenport
+non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, ChristopherDavenport, and Damir Vandic.
 
 - Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change. Book update TBD.
 - Switched to a new transactor design that makes it simple to customize behavior, and combined with new interpreter design makes it practical to use **doobie** types in free coproducts (see `coproduct.scala` in the `example` project). This is a **minor breaking change**:
@@ -27,6 +27,9 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Make postgres enums nullable (change `Atom` instance to `Meta`).
 - Generalized `QueryChecker` to allow any effect type.
 - Added `stream` and `streamWithChunkSize` as fs2 friendly aliases on `Query`.
+- Fix parsing of JDBC type TimestampWithTimezone (introduced in JDK 8).
+- Updated to Scala 2.10.6, 2.11.11, and 2.12.2. The Scala 2.11.x build no longer uses the Typelevel distribution of Scala because partial unification is natively supported since Scala 2.11.9.
+- Updated to PostgreSQL JDBC driver 42.1.1, Hikari 2.6.1, and Circe 0.8.0.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
