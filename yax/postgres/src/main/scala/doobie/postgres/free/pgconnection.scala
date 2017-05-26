@@ -59,7 +59,7 @@ import largeobjectmanager.LargeObjectManagerIO
  *
  * @group Modules
  */
-object pgconnection {
+object pgconnection extends PGConnectionIOInstances {
   
   /** 
    * Sum type of primitive operations over a `org.postgresql.PGConnection`.
