@@ -25,7 +25,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Fix execution flow for AnalysisSpec checks.
 - Added mapping for Postgres `hstore` type.
 - Make postgres enums nullable (change `Atom` instance to `Meta`).
-- Generalized `QueryChecker` to allow any effect type.
+- Generalized `QueryChecker` and `AnalysisSpec` to allow any effect type.
 - Added `stream` and `streamWithChunkSize` as fs2 friendly aliases on `Query`.
 - Fix parsing of JDBC type TimestampWithTimezone (introduced in JDK 8).
 - Updated to Scala 2.10.6, 2.11.11, and 2.12.2. The Scala 2.11.x build no longer uses the Typelevel distribution of Scala because partial unification is natively supported since Scala 2.11.9.
