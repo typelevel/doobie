@@ -51,6 +51,9 @@ import fs2.interop.cats._
  */
 object analysisspec {
 
+  @deprecated("Use IOLiteChecker.", "0.4.2")
+  type AnalysisSpec = IOLiteChecker
+
   trait Checker[M[_]] { this: Specification =>
 
     // Effect type, required instances, unsafe run
