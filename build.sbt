@@ -22,7 +22,7 @@ lazy val refinedVersion       = "0.8.1"
 lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
-
+lazy val monixVersion         = "2.3.0"
 /**
  * This build now depends on partial unification. It's built into 2.12 and from 2.11.9. For 2.10 we
  * need the plugin. In addition the cats/fs2 build isn't available for 2.10 because there's no fs2
@@ -431,7 +431,8 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
       "io.circe"    %% "circe-parser"  % circeVersion,
-      "io.argonaut" %% "argonaut"      % argonautVersion
+      "io.argonaut" %% "argonaut"      % argonautVersion,
+      "io.monix"    %% "monix-eval"    % monixVersion
     ),
     ctut := {
       val src = crossTarget.value / "tut"

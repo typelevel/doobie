@@ -69,25 +69,34 @@ This is ok, but there's not much point reading all the results from the database
 ```tut
 (sql"select name from country"
   .query[String]     // Query0[String]
-#+scalaz
   .process           // Process[ConnectionIO, String]
   .take(5)           // Process[ConnectionIO, String]
   .list              // ConnectionIO[List[String]]
-#-scalaz
-#+fs2
-  .process           // Stream[ConnectionIO, String]
-  .take(5)           // Stream[ConnectionIO, String]
-  .list              // ConnectionIO[List[String]]
-#-fs2
   .transact(xa)      // IOLite[List[String]]
   .unsafePerformIO   // List[String]
   .foreach(println))
 ```
 
-The difference here is that `process` gives us a `scalaz.stream.Process[ConnectionIO, String]` which emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
+The difference here is that `process` gives us a
+#+scalaz
+`scalaz.stream.Process[ConnectionIO, String]`
+#-scalaz
+#+cats
+`Process[ConnectionIO, String]` (an alias for `fs2.Stream[ConnectionIO, String]`)
+#-cats
+that emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
-Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool. For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) repo, which has a good list of learning resources.
+#+cats
+> From this point on we use the alias `Process[A, B]` for `fs2.Stream[A, B]`
+#-cats
 
+Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool.
+#+scalaz
+For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) repo, which has a good list of learning resources.
+#-scalaz
+#+cats
+For more information see the [fs2](https://github.com/functional-streams-for-scala/fs2) repo, which has a good list of learning resources.
+#-cats
 
 ### YOLO Mode
 
