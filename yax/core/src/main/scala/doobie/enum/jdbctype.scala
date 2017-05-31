@@ -1,8 +1,5 @@
 package doobie.enum
 
-import doobie.util.invariant._
-
-import java.sql.ResultSet._
 import java.sql.Types._
 
 #+scalaz
@@ -61,11 +58,17 @@ object jdbctype {
   /** @group Values (MS-SQL Specific) */ case object MsSqlDateTimeOffset extends JdbcType(-155)
   /** @group Values (MS-SQL Specific) */ case object MsSqlVariant extends JdbcType(-150)
 
+  /**
+   * A catch-all constructor for JDBC type constants outside the specification and known extensions.
+   * @group Values
+   */
+  case class Unknown(override val toInt: Int) extends JdbcType(toInt)
+
   /** @group Implementation */
   object JdbcType {
 
-    def fromInt(n:Int): Option[JdbcType] =
-      Some(n) collect {
+    def fromInt(n:Int): JdbcType =
+      n match {
         case Array.toInt                 => Array
         case BigInt.toInt                => BigInt
         case Binary.toInt                => Binary
@@ -106,18 +109,18 @@ object jdbctype {
         case VarChar.toInt               => VarChar
 
         // MS-SQL Specific values, sigh
-        case MsSqlDateTimeOffset.toInt => MsSqlDateTimeOffset
-        case MsSqlVariant.toInt        => MsSqlVariant
+        case MsSqlDateTimeOffset.toInt   => MsSqlDateTimeOffset
+        case MsSqlVariant.toInt          => MsSqlVariant
 
         // Gets a little iffy here. H2 reports NVarChar as -10 rather than -9 ... no idea. It's
         // definitely not in the spec. So let's just accept it here and call it good. What's the
         // worst thing that could happen? heh-heh
-        case -10                 => NVarChar
+        case -10                         => NVarChar
+
+        // In the case of an unknown value we construct a catch-all
+        case n                           => Unknown(n)
 
       }
-
-    def unsafeFromInt(n:Int): JdbcType =
-      fromInt(n).getOrElse(throw InvalidOrdinal[JdbcType](n))
 
     implicit val OrderJdbcType: Order[JdbcType] =
 #+scalaz
