@@ -7,41 +7,29 @@ import doobie.enum.parameternullable.ParameterNullable
 import doobie.enum.parametermode.ParameterMode
 import doobie.enum.holdability.Holdability
 import doobie.enum.nullability.NullabilityKnown
-import doobie.enum.transactionisolation.TransactionIsolation
 import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
 
 import doobie.syntax.catchable.ToDoobieCatchableOps._
 
-import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
-import doobie.free.{ callablestatement => CS }
 import doobie.free.{ resultset => RS }
-import doobie.free.{ statement => S }
-import doobie.free.{ databasemetadata => DMD }
 
 import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.process.repeatEvalChunks
 
-import java.net.URL
-import java.util.{ Date, Calendar }
-import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
+import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 
-import scala.collection.immutable.Map
-import scala.collection.JavaConverters._
 import scala.Predef.{ intArrayOps, intWrapper }
 
 #+scalaz
 import scalaz.stream.Process
 import scalaz.stream.Process.{ bracket, eval_ }
-import scalaz.syntax.id._
-import scalaz.syntax.enum._
 import scalaz.syntax.foldable._
 import scalaz.syntax.monad._
 import scalaz.syntax.align._
-import scalaz.std.anyVal._
 import scalaz.std.list._
 import scalaz.Foldable
 import scalaz.\&/
@@ -50,13 +38,10 @@ import scalaz.\&/
 import cats.Foldable
 import cats.implicits._
 import cats.data.{ Ior => \&/ }
-import cats.data.Ior. { Left => This, Both, Right => That }
 #-cats
 #+fs2
 import fs2.{ Stream => Process }
-import fs2.pipe.unNoneTerminate
-import fs2.util.Catchable
-import fs2.Stream.{ bracket, repeatEval }
+import fs2.Stream.{ bracket }
 #-fs2
 
 /**
@@ -149,7 +134,7 @@ object preparedstatement {
       case null => Nil // https://github.com/tpolecat/doobie/issues/262
       case md   =>
         (1 to md.getColumnCount).toList.map { i =>
-          val j = JdbcType.unsafeFromInt(md.getColumnType(i))
+          val j = JdbcType.fromInt(md.getColumnType(i))
           val s = md.getColumnTypeName(i)
           val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
           val c = md.getColumnName(i)
@@ -188,7 +173,7 @@ object preparedstatement {
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
     PS.getParameterMetaData.map { md =>
       (1 to md.getParameterCount).toList.map { i =>
-        val j = JdbcType.unsafeFromInt(md.getParameterType(i))
+        val j = JdbcType.fromInt(md.getParameterType(i))
         val s = md.getParameterTypeName(i)
         val n = ParameterNullable.unsafeFromInt(md.isNullable(i)).toNullability
         val m = ParameterMode.unsafeFromInt(md.getParameterMode(i))

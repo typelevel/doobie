@@ -31,6 +31,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Updated to Scala 2.10.6, 2.11.11, and 2.12.2. The Scala 2.11.x build no longer uses the Typelevel distribution of Scala because partial unification is natively supported since Scala 2.11.9.
 - Updated to PostgreSQL JDBC driver 42.1.1, Hikari 2.6.1, and Circe 0.8.0.
 - `Suspendable` instance for `PGConnectionIO`
+- Added an `Unknown` constructor to `JdbcType` for JDBC type constants outside the spec and known extensions.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 

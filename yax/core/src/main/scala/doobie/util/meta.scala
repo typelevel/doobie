@@ -225,7 +225,7 @@ object meta {
       synchronized { instances = instances + m }
 
     implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
-      IntMeta.xmap(doobie.enum.jdbctype.JdbcType.unsafeFromInt, _.toInt)
+      IntMeta.xmap(doobie.enum.jdbctype.JdbcType.fromInt, _.toInt)
 
     def apply[A](implicit A: Meta[A]): Meta[A] = A
 
