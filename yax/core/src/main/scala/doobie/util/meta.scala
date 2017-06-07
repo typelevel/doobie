@@ -17,7 +17,7 @@ import scalaz._, Scalaz._
 import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
 #-scalaz
 #+cats
-import cats._, cats.data.NonEmptyList, cats.free.Coyoneda
+import cats._, cats.data.NonEmptyList
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import cats.implicits._
 import scala.util.{ Either => \/, Left => -\/, Right => \/- }

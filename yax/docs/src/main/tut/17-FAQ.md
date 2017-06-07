@@ -131,16 +131,10 @@ When we use the `sql` interpolator we require a `Param` instance for an `HList` 
 def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
 ```
 
-Ok, so the message suggests that we need an `Atom` instance for each type in the `HList`, so let's see which one is missing by trying to summon them in the REPL.
+Ok, so the message suggests that we need an `Meta[A]` for each `A` or `Option[A]` in the `HList`, so let's see which one is missing by trying to summon them in the REPL.
 
 ```tut:nofail:plain
-Atom[String]
-Atom[UUID]
-```
-
-Ok so we see that there is no `Atom[UUID]`, and as suggested we check to see if there is a `Meta` instance, which there isn't.
-
-```tut:nofail:plain
+Meta[String]
 Meta[UUID]
 ```
 
@@ -150,11 +144,10 @@ So what this means is that we have not defined a mapping for the `UUID` type to 
 import doobie.postgres.imports.UuidType
 ```
 
-Having done this, the `Meta`, `Atom`, and `Param` instances are now present and our code compiles.
+Having done this, the `Meta` and `Param` instances are now present and our code compiles.
 
 ```tut
 Meta[UUID]
-Atom[UUID]
 Param[String :: UUID :: HNil]
 def query(s: String, u: UUID) = sql"select ... where foo = $s and url = $u".query[Int]
 ```
@@ -254,14 +247,14 @@ implicit val XmlMeta: Meta[Elem] =
     NonEmptyList.of("xml"),
 #-cats    
     (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
-    (n,  e) => FPS.raw { ps =>
+    (ps, n,  e) => {
       val sqlXml = ps.getConnection.createSQLXML
       val osw = new java.io.OutputStreamWriter(sqlXml.setBinaryStream)
       XML.write(osw, e, "UTF-8", false, null)
       osw.close
       ps.setObject(n, sqlXml)
     },
-    (_,  _) => sys.error("update not supported, sorry")
+    (_, _,  _) => sys.error("update not supported, sorry")
   )
 ```
 
