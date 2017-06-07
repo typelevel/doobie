@@ -279,11 +279,11 @@ object meta {
       Meta.reg(new BasicMeta[A] {
         val kernel = new Kernel[A] {
           type I = A
-          val ai      = a => a
-          val ia      = i => i
+          val ai      = (a: I) => a
+          val ia      = (i: I) => i
           val get     = get0
           val set     = set0
-          val setNull = _.setNull(_, jdbcTarget0.head.toInt)
+          val setNull = (ps: PreparedStatement, n: Int) => ps.setNull(n, jdbcTarget0.head.toInt)
           val update  = update0
           val width   = 1
         }
@@ -320,11 +320,11 @@ object meta {
       Meta.reg(new AdvancedMeta[A] {
         val kernel = new Kernel[A] {
           type I = A
-          val ai      = a => a
-          val ia      = i => i
+          val ai      = (a: I) => a
+          val ia      = (i: I) => i
           val get     = get0
           val set     = set0
-          val setNull = _.setNull(_, jdbcTypes.head.toInt, schemaTypes0.head)
+          val setNull = (ps: PreparedStatement, n: Int) => ps.setNull(n, jdbcTypes.head.toInt, schemaTypes0.head)
           val update  = update0
           val width   = 1
         }

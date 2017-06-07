@@ -58,60 +58,60 @@ object kernel {
     val unit: Kernel[Unit] =
       new Kernel[Unit] {
         type I      = Unit
-        val ia      = i => i
-        val ai      = a => a
-        val get     = (_, _) => ()
-        val set     = (_, _, _) => ()
-        val setNull = (_, _) => ()
-        val update  = (_, _, _) => ()
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (_: ResultSet, _: Int) => ()
+        val set     = (_: PreparedStatement, _: Int, _: I) => ()
+        val setNull = (_: PreparedStatement, _: Int) => ()
+        val update  = (_: ResultSet, _: Int, _: Unit) => ()
         val width   = 0
       }
 
     val hnil: Kernel[HNil] =
       new Kernel[HNil] {
         type I      = HNil
-        val ia      = i => i
-        val ai      = a => a
-        val get     = (_, _) => HNil
-        val set     = (_, _, _) => ()
-        val setNull = (_, _) => ()
-        val update  = (_, _, _) => ()
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (_: ResultSet, _: Int) => HNil
+        val set     = (_: PreparedStatement, _: Int, _: I) => ()
+        val setNull = (_: PreparedStatement, _: Int) => ()
+        val update  = (_: ResultSet, _: Int, _: HNil) => ()
         val width   = 0
       }
 
     def hcons[H, T <: HList](h: Kernel[H], t: Kernel[T]): Kernel[H :: T] =
       new Kernel[H :: T] {
         type I      = H :: T
-        val ia      = i => i
-        val ai      = a => a
-        val get     = (rs, n)     =>   h.ia(h.get(rs, n)) ::            t.ia(t.get(rs, n + h.width))
-        val set     = (ps, n, ht) => { h.set(ps, n, h.ai(ht.head)) ;    t.set(ps, n + h.width, t.ai(ht.tail)) }
-        val setNull = (ps, n)     => { h.setNull(ps, n) ;               t.setNull(ps, n + h.width) }
-        val update  = (rs, n, ht) => { h.update(rs, n, h.ai(ht.head)) ; t.update(rs, n + h.width, t.ai(ht.tail)) }
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (rs: ResultSet, n: Int)     =>   h.ia(h.get(rs, n)) ::            t.ia(t.get(rs, n + h.width))
+        val set     = (ps: PreparedStatement, n: Int, ht: I) => { h.set(ps, n, h.ai(ht.head)) ;    t.set(ps, n + h.width, t.ai(ht.tail)) }
+        val setNull = (ps: PreparedStatement, n: Int)     => { h.setNull(ps, n) ;               t.setNull(ps, n + h.width) }
+        val update  = (rs: ResultSet, n: Int, ht: I) => { h.update(rs, n, h.ai(ht.head)) ; t.update(rs, n + h.width, t.ai(ht.tail)) }
         val width   = h.width + t.width
       }
 
     def product[A, B](a: Kernel[A], b: Kernel[B]): Kernel[(A, B)] =
       new Kernel[(A, B)] {
         type I      = (A, B)
-        val ia      = i => i
-        val ai      = a => a
-        val get     = (rs, n)     => ( a.ia(a.get(rs, n)),            b.ia(b.get(rs, n + a.width)) )
-        val set     = (ps, n, ab) => { a.set(ps, n, a.ai(ab._1)) ;    b.set(ps, n + a.width, b.ai(ab._2)) }
-        val setNull = (ps, n)     => { a.setNull(ps, n) ;             b.setNull(ps, n + a.width) }
-        val update  = (rs, n, ab) => { a.update(rs, n, a.ai(ab._1)) ; b.update(rs, n + a.width, b.ai(ab._2)) }
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (rs: ResultSet, n: Int) => ( a.ia(a.get(rs, n)), b.ia(b.get(rs, n + a.width)) )
+        val set     = (ps: PreparedStatement, n: Int, ab: I) => { a.set(ps, n, a.ai(ab._1)); b.set(ps, n + a.width, b.ai(ab._2)) }
+        val setNull = (ps: PreparedStatement, n: Int) => { a.setNull(ps, n); b.setNull(ps, n + a.width) }
+        val update  = (rs: ResultSet, n: Int, ab: I) => { a.update(rs, n, a.ai(ab._1)) ; b.update(rs, n + a.width, b.ai(ab._2)) }
         val width   = a.width + b.width
       }
 
     def record[K <: Symbol, H, T <: HList](h: Kernel[H], t: Kernel[T]): Kernel[FieldType[K, H] :: T] =
       new Kernel[FieldType[K, H] :: T] {
         type I      = FieldType[K, H] :: T
-        val ia      = i => i
-        val ai      = a => a
-        val get     = (rs, n)     =>  field[K](h.ia(h.get(rs, n)))  ::  t.ia(t.get(rs, n + h.width))
-        val set     = (ps, n, ht) => { h.set(ps, n, h.ai(ht.head)) ;    t.set(ps, n + h.width, t.ai(ht.tail)) }
-        val setNull = (ps, n)     => { h.setNull(ps, n) ;               t.setNull(ps, n + h.width) }
-        val update  = (rs, n, ht) => { h.update(rs, n, h.ai(ht.head)) ; t.update(rs, n + h.width, t.ai(ht.tail)) }
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (rs: ResultSet, n: Int) => field[K](h.ia(h.get(rs, n))) :: t.ia(t.get(rs, n + h.width))
+        val set     = (ps: PreparedStatement, n: Int, ht: I) => { h.set(ps, n, h.ai(ht.head)); t.set(ps, n + h.width, t.ai(ht.tail)) }
+        val setNull = (ps: PreparedStatement, n: Int) => { h.setNull(ps, n);  t.setNull(ps, n + h.width) }
+        val update  = (rs: ResultSet, n: Int, ht: I) => { h.update(rs, n, h.ai(ht.head)); t.update(rs, n + h.width, t.ai(ht.tail)) }
         val width   = h.width + t.width
       }
 

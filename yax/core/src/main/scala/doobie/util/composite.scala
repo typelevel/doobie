@@ -70,7 +70,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val kernel = c.kernel.imap(f)(g)
 #-cats
         val meta   = c.meta
-        val toList = b => c.toList(g(b))
+        val toList = (b: B) => c.toList(g(b))
       }
 
     /** Product of two Composites. */
@@ -78,7 +78,7 @@ the FAQ in the Book of Doobie for more hints.""")
       new Composite[(A, B)] {
         val kernel = c.kernel.zip(cb.kernel)
         val meta   = c.meta ++ cb.meta
-        val toList = p => c.toList(p._1) ++ cb.toList(p._2)
+        val toList = (p: (A, B)) => c.toList(p._1) ++ cb.toList(p._2)
       }
 
   }
@@ -111,40 +111,40 @@ the FAQ in the Book of Doobie for more hints.""")
       new Composite[A] {
         val kernel = new Kernel[A] {
           type I      = A
-          val ia      = i => i
-          val ai      = a => a
-          val get     = A.unsafeGetNonNullable
-          val set     = A.unsafeSetNonNullable
-          val setNull = A.unsafeSetNull
-          val update  = A.unsafeUpdateNonNullable
+          val ia      = (i: I) => i
+          val ai      = (a: A) => a
+          val get     = A.unsafeGetNonNullable _
+          val set     = A.unsafeSetNonNullable _
+          val setNull = A.unsafeSetNull _
+          val update  = A.unsafeUpdateNonNullable _
           val width   = A.kernel.width
         }
-        val meta = List((A, NoNulls))
-        val toList = a => List(a)
+        val meta   = List((A, NoNulls))
+        val toList = (a: A) => List(a)
       }
 
     implicit def fromMetaOption[A](implicit A: Meta[A]): Composite[Option[A]] =
       new Composite[Option[A]] {
         val kernel = new Kernel[Option[A]] {
           type I      = Option[A]
-          val ia      = i => i
-          val ai      = a => a
-          val get     = A.unsafeGetNullable
-          val set     = A.unsafeSetNullable
-          val setNull = A.unsafeSetNull
-          val update  = A.unsafeUpdateNullable
+          val ia      = (i: I) => i
+          val ai      = (a: I) => a
+          val get     = A.unsafeGetNullable _
+          val set     = A.unsafeSetNullable _
+          val setNull = A.unsafeSetNull _
+          val update  = A.unsafeUpdateNullable _
           val width   = A.kernel.width
         }
-        val meta = List((A, Nullable))
-        val toList = a => List(a)
+        val meta   = List((A, Nullable))
+        val toList = (a: Option[A]) => List(a)
       }
 
     // Composite for shapeless record types
     implicit def recordComposite[K <: Symbol, H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[FieldType[K, H] :: T] =
       new Composite[FieldType[K, H] :: T] {
-        val kernel = Kernel.record(H.kernel, T.kernel)
+        val kernel = Kernel.record(H.kernel, T.kernel): Kernel[FieldType[K,H] :: T] // ascription necessary in 2.11 for some reason
         val meta   = H.meta ++ T.meta
-        val toList = l => H.toList(l.head) ++ T.toList(l.tail)
+        val toList = (l: FieldType[K, H] :: T) => H.toList(l.head) ++ T.toList(l.tail)
       }
 
   }
@@ -158,14 +158,14 @@ the FAQ in the Book of Doobie for more hints.""")
       new Composite[H :: T] {
         val kernel = Kernel.hcons(H.kernel, T.kernel)
         val meta   = H.meta ++ T.meta
-        val toList = l => H.toList(l.head) ++ T.toList(l.tail)
+        val toList = (l: H :: T) => H.toList(l.head) ++ T.toList(l.tail)
       }
 
     implicit def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
         val kernel = Kernel.hnil
         val meta   = Nil
-        val toList = _ => Nil
+        val toList = (_: HNil) => Nil
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
@@ -177,7 +177,7 @@ the FAQ in the Book of Doobie for more hints.""")
         val kernel = G.value.kernel.imap(gen.from)(gen.to)
 #-cats
         val meta   = G.value.meta
-        val toList = f => G.value.toList(gen.to(f))
+        val toList = (f: F) => G.value.toList(gen.to(f))
       }
 
   }
