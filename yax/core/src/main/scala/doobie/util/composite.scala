@@ -1,33 +1,26 @@
-
 package doobie.util
 
-import doobie.enum.jdbctype.JdbcType
-import doobie.util.meta.Meta
-import doobie.enum.nullability._
-import doobie.util.atom._
-import doobie.util.invariant._
-import doobie.free.resultset.{ ResultSetIO, updateNull }
-import doobie.free.preparedstatement.PreparedStatementIO
-import doobie.free.{ preparedstatement => PS }
-import doobie.free.{ resultset => RS }
+#+cats
+import cats.functor.{ Invariant => InvariantFunctor }
+#-cats
 
-import java.sql.ResultSet
+import doobie.enum.nullability.{ NullabilityKnown, Nullable, NoNulls }
+import doobie.free.{ preparedstatement => FPS }
+import doobie.free.{ resultset => FRS }
+import doobie.util.kernel.Kernel
+import doobie.util.meta.Meta
+
+import java.sql.{ PreparedStatement, ResultSet }
+
+import shapeless.{ HList, HNil, ::, Generic, Lazy }
+import shapeless.labelled.FieldType
 
 import scala.annotation.implicitNotFound
 
 #+scalaz
 import scalaz.InvariantFunctor
-import scalaz.syntax.applicative._
 #-scalaz
-#+cats
-import cats.functor.{ Invariant => InvariantFunctor }
-import cats.implicits._
-#-cats
 
-import shapeless._
-import shapeless.labelled.{ field, FieldType }
-
-import java.sql.ParameterMetaData
 
 /**
  * Module defining a typeclass for composite database types (those that can map to multiple columns).
@@ -40,12 +33,29 @@ Composite instances in scope; or is an atomic type with an Atom instance in scop
 diagnose this problem by trying to summon the Composite instance for each element in the REPL. See
 the FAQ in the Book of Doobie for more hints.""")
   trait Composite[A] { c =>
-    val set: (Int, A) => PS.PreparedStatementIO[Unit]
-    val update: (Int, A) => RS.ResultSetIO[Unit]
-    val get: Int => RS.ResultSetIO[A] = n => RS.raw(rs => unsafeGet(rs, n))
-    val unsafeGet: (ResultSet, Int) => A
-    val length: Int
+
+    private[composite] val kernel: Kernel[A]
+    final lazy val length: Int = kernel.width
     val meta: List[(Meta[_], NullabilityKnown)]
+
+    /** Flatten the composite into its untyped constituents. This is only useful for logging. */
+    val toList: A => List[Any]
+
+    val set: (Int, A) => FPS.PreparedStatementIO[Unit] =
+      (n, a) => FPS.raw(ps => kernel.set(ps, n, kernel.ai(a)))
+
+    val update: (Int, A) => FRS.ResultSetIO[Unit] =
+      (n, a) => FRS.raw(rs => kernel.update(rs, n, kernel.ai(a)))
+
+    val get: Int => FRS.ResultSetIO[A] =
+      n => FRS.raw(rs => kernel.ia(kernel.get(rs, n)))
+
+    val unsafeGet: (ResultSet, Int) => A =
+      (rs, n) => kernel.ia(kernel.get(rs, n))
+
+    val unsafeSet: (PreparedStatement, Int, A) => Unit =
+      (ps, n, a) => kernel.set(ps, n, kernel.ai(a))
+
 #+scalaz
     def xmap[B](f: A => B, g: B => A): Composite[B] =
 #-scalaz
@@ -53,27 +63,23 @@ the FAQ in the Book of Doobie for more hints.""")
     def imap[B](f: A => B)(g: B => A): Composite[B] =
 #-cats
       new Composite[B] {
-        val set    = (n: Int, b: B) => c.set(n, g(b))
-        val update = (n: Int, b: B) => c.update(n, g(b))
-        val unsafeGet    = (r: ResultSet, n: Int) => f(c.unsafeGet(r,n))
-        val length = c.length
+#+scalaz
+        val kernel = c.kernel.xmap(f, g)
+#-scalaz
+#+cats
+        val kernel = c.kernel.imap(f)(g)
+#-cats
         val meta   = c.meta
-        def toList(b: B) = c.toList(g(b))
+        val toList = b => c.toList(g(b))
       }
 
     /** Product of two Composites. */
     def zip[B](cb: Composite[B]): Composite[(A, B)] =
       new Composite[(A, B)] {
-        val set    = (n: Int, ab: (A, B)) => c.set(n, ab._1) *> cb.set(n + c.length, ab._2)
-        val update = (n: Int, ab: (A, B)) => c.update(n, ab._1) *> cb.update(n + c.length, ab._2)
-        val unsafeGet = (r: ResultSet, n: Int) => (c.unsafeGet(r,n), cb.unsafeGet(r, n + c.length))
-        val length = c.length + cb.length
+        val kernel = c.kernel.zip(cb.kernel)
         val meta   = c.meta ++ cb.meta
-        def toList(p: (A, B)) = c.toList(p._1) ++ cb.toList(p._2)
+        val toList = p => c.toList(p._1) ++ cb.toList(p._2)
       }
-
-    /** Flatten the composite into its untyped constituents. This is only useful for logging. */
-    def toList(a: A): List[Any]
 
   }
 
@@ -101,25 +107,44 @@ the FAQ in the Book of Doobie for more hints.""")
       emptyProduct.imap(_ => ())(_ => HNil)
 #-cats
 
-    implicit def fromAtom[A](implicit A: Atom[A]): Composite[A] =
+    implicit def fromMeta[A](implicit A: Meta[A]): Composite[A] =
       new Composite[A] {
-        val set = A.set
-        val update = A.update
-        val unsafeGet = A.unsafeGet
-        val length = 1
-        val meta = List(A.meta)
-        def toList(a: A) = List(a)
+        val kernel = new Kernel[A] {
+          type I      = A
+          val ia      = i => i
+          val ai      = a => a
+          val get     = A.unsafeGetNonNullable
+          val set     = A.unsafeSetNonNullable
+          val setNull = A.unsafeSetNull
+          val update  = A.unsafeUpdateNonNullable
+          val width   = A.kernel.width
+        }
+        val meta = List((A, NoNulls))
+        val toList = a => List(a)
+      }
+
+    implicit def fromMetaOption[A](implicit A: Meta[A]): Composite[Option[A]] =
+      new Composite[Option[A]] {
+        val kernel = new Kernel[Option[A]] {
+          type I      = Option[A]
+          val ia      = i => i
+          val ai      = a => a
+          val get     = A.unsafeGetNullable
+          val set     = A.unsafeSetNullable
+          val setNull = A.unsafeSetNull
+          val update  = A.unsafeUpdateNullable
+          val width   = A.kernel.width
+        }
+        val meta = List((A, Nullable))
+        val toList = a => List(a)
       }
 
     // Composite for shapeless record types
     implicit def recordComposite[K <: Symbol, H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[FieldType[K, H] :: T] =
       new Composite[FieldType[K, H] :: T] {
-        val set = (i: Int, l: H :: T) => H.set(i, l.head) *> T.set(i + H.length, l.tail)
-        val update = (i: Int, l: H :: T) => H.update(i, l.head) *> T.update(i + H.length, l.tail)
-        val unsafeGet = (r: ResultSet, i: Int) => field[K](H.unsafeGet(r, i)) :: T.unsafeGet(r, i + H.length)
-        val length = H.length + T.length
-        val meta = H.meta ++ T.meta
-        def toList(l: FieldType[K, H] :: T) = H.toList(l.head) ++ T.toList(l.tail)
+        val kernel = Kernel.record(H.kernel, T.kernel)
+        val meta   = H.meta ++ T.meta
+        val toList = l => H.toList(l.head) ++ T.toList(l.tail)
       }
 
   }
@@ -131,32 +156,28 @@ the FAQ in the Book of Doobie for more hints.""")
 
     implicit def product[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
       new Composite[H :: T] {
-        val set = (i: Int, l: H :: T) => H.set(i, l.head) *> T.set(i + H.length, l.tail)
-        val update = (i: Int, l: H :: T) => H.update(i, l.head) *> T.update(i + H.length, l.tail)
-        val unsafeGet = (r: ResultSet, i: Int) => H.unsafeGet(r, i) :: T.unsafeGet(r, i + H.length)
-        val length = H.length + T.length
-        val meta = H.meta ++ T.meta
-        def toList(l: H :: T) = H.toList(l.head) ++ T.toList(l.tail)
+        val kernel = Kernel.hcons(H.kernel, T.kernel)
+        val meta   = H.meta ++ T.meta
+        val toList = l => H.toList(l.head) ++ T.toList(l.tail)
       }
 
     implicit def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
-        val set = (_: Int, _: HNil) => ().pure[PS.PreparedStatementIO]
-        val update = (_: Int, _: HNil) => ().pure[RS.ResultSetIO]
-        val unsafeGet = (_: ResultSet, _: Int) => (HNil : HNil)
-        val length = 0
-        val meta = Nil
-        def toList(l: HNil) = Nil
+        val kernel = Kernel.hnil
+        val meta   = Nil
+        val toList = _ => Nil
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
       new Composite[F] {
-        val set: (Int, F) => PS.PreparedStatementIO[Unit] = (n, f) => G.value.set(n, gen.to(f))
-        val update: (Int, F) => RS.ResultSetIO[Unit] = (n, f) => G.value.update(n, gen.to(f))
-        val unsafeGet: (ResultSet, Int) => F = (rs, n) => gen.from(G.value.unsafeGet(rs, n))
-        val length: Int = G.value.length
-        val meta: List[(Meta[_], NullabilityKnown)] = G.value.meta
-        def toList(f: F) = G.value.toList(gen.to(f))
+#+scalaz
+        val kernel = G.value.kernel.xmap(gen.from, gen.to)
+#-scalaz
+#+cats
+        val kernel = G.value.kernel.imap(gen.from)(gen.to)
+#-cats
+        val meta   = G.value.meta
+        val toList = f => G.value.toList(gen.to(f))
       }
 
   }

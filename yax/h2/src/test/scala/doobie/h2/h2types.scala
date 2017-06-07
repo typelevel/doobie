@@ -3,15 +3,12 @@ package doobie.h2
 import doobie.h2.imports._
 import doobie.imports._
 
-
-import java.net.InetAddress
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 
 import org.specs2.mutable.Specification
 
 #+scalaz
-import scalaz.{ Maybe, \/- }
+import scalaz.\/-
 #-scalaz
 #+cats
 import scala.util.{ Left => -\/, Right => \/- }
@@ -27,7 +24,7 @@ object h2typesspec extends Specification {
     "sa", ""
   )
 
-  def inOut[A: Atom](col: String, a: A) =
+  def inOut[A: Param: Composite](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
       _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
@@ -45,14 +42,6 @@ object h2typesspec extends Specification {
       s"write+read $col as Option[${m.scalaType}] (None)" in {
         inOut[Option[A]](col, None).transact(xa).attempt.unsafePerformIO must_== \/-(None)
       }
-#+scalaz
-      s"write+read $col as Maybe[${m.scalaType}] (Just)" in {
-        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).attempt.unsafePerformIO must_== \/-(Maybe.Just(a))
-      }
-      s"write+read $col as Maybe[${m.scalaType}] (Empty)" in {
-        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).attempt.unsafePerformIO must_== \/-(Maybe.Empty())
-      }
-#-scalaz
     }
 
   def skip(col: String, msg: String = "not yet implemented") =

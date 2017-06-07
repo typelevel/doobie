@@ -1,19 +1,9 @@
 package doobie.util
 
-import doobie.free.preparedstatement.PreparedStatementIO
-import doobie.util.atom.Atom
+import doobie.util.meta.Meta
 import doobie.util.composite.Composite
 
 import scala.annotation.implicitNotFound
-
-#+scalaz
-import scalaz.Foldable1
-import scalaz.syntax.foldable1._
-import scalaz.syntax.applicative._
-#-scalaz
-#+cats
-import cats._, cats.implicits._
-#-cats
 
 import shapeless.{ HNil, HList, :: }
 
@@ -33,16 +23,19 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
   /**
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
-   * with either an `Atom`, or with a singleton instance for a `NonEmptyList` of some atomic type,
-   * derived with the `many` constructor.
+   * with a type with a `Meta` instance, or an `Option` thereof.
    */
   object Param {
 
     def apply[A](implicit ev: Param[A]): Param[A] = ev
 
-    /** Each `Atom` gives rise to a `Param`. */
-    implicit def fromAtom[A](implicit ev: Atom[A]): Param[A] =
-      Param[A](Composite.fromAtom(ev))
+    /** Each `Meta[A]` gives rise to a `Param[A]`. */
+    implicit def fromMeta[A](implicit ev: Meta[A]): Param[A] =
+      Param[A](Composite.fromMeta(ev))
+
+    /** Each `Meta[A]` gives rise to a `Param[Option[A]]`. */
+    implicit def fromMetaOption[A](implicit ev: Meta[A]): Param[Option[A]] =
+      Param[Option[A]](Composite.fromMetaOption(ev))
 
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =

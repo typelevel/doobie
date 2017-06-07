@@ -2,7 +2,6 @@ package doobie.util
 
 #+scalaz
 import scalaz._
-import scalaz.concurrent._
 import Scalaz._
 #-scalaz
 #+cats
@@ -30,7 +29,7 @@ object queryspec extends Specification {
       q.process("foo").list.transact(xa).unsafePerformIO must_=== List(123)
     }
     "sink" in {
-      var x = Array(0)
+      val x = Array(0)
       def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
       q.process("foo").sink(effect).transact(xa).unsafePerformIO
       x(0) must_=== 123
@@ -62,7 +61,7 @@ object queryspec extends Specification {
       q.process("bar").list.transact(xa).unsafePerformIO must_=== Nil
     }
     "sink" in {
-      var x = Array(0)
+      val x = Array(0)
       def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
       q.process("bar").sink(effect).transact(xa).unsafePerformIO
       x(0) must_=== 0
@@ -94,7 +93,7 @@ object queryspec extends Specification {
       q.toQuery0("foo").process.list.transact(xa).unsafePerformIO must_=== List(123)
     }
     "sink" in {
-      var x = Array(0)
+      val x = Array(0)
       def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
       q.toQuery0("foo").process.sink(effect).transact(xa).unsafePerformIO
       x(0) must_=== 123
@@ -123,7 +122,7 @@ object queryspec extends Specification {
       q.toQuery0("bar").process.list.transact(xa).unsafePerformIO must_=== Nil
     }
     "sink" in {
-      var x = Array(0)
+      val x = Array(0)
       def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
       q.toQuery0("bar").process.sink(effect).transact(xa).unsafePerformIO
       x(0) must_=== 0
@@ -154,7 +153,7 @@ object queryspec extends Specification {
       q0n.process.list.transact(xa).unsafePerformIO must_=== List(123)
     }
     "sink" in {
-      var x = Array(0)
+      val x = Array(0)
       def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
       q0n.process.sink(effect).transact(xa).unsafePerformIO
       x(0) must_=== 123
@@ -185,7 +184,7 @@ object queryspec extends Specification {
       q0e.process.list.transact(xa).unsafePerformIO must_=== Nil
     }
     "sink" in {
-      var x = Array(0)
+      val x = Array(0)
       def effect(n: Int): ConnectionIO[Unit] = HC.delay(x(0) = n)
       q0e.process.sink(effect).transact(xa).unsafePerformIO
       x(0) must_=== 0

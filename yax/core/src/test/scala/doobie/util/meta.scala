@@ -1,7 +1,6 @@
 package doobie.util
 
-import shapeless._, shapeless.test._
-import scala.Predef.classOf
+import shapeless.test._
 import doobie.imports._
 import doobie.enum.jdbctype._
 import org.specs2.mutable.Specification

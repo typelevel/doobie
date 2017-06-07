@@ -21,17 +21,12 @@ object CustomAtom {
   // What we just defined
   Meta[PosixTime]
 
-  // Free derived Atom with null handling
-  Atom[PosixTime] // non-nullable
-  Atom[Option[PosixTime]] // nullable
-
   // Free derived composites containing atomic types
   Composite[(PosixTime, Int, String)]
   Composite[(Option[PosixTime], Int, String)]
 
   // You can now use PosixTime as a column or parameter type (both demonstrated here)
-  def query(lpt: PosixTime): Query0[(String, PosixTime)] = 
-    sql"SELECT NAME, DATE FROM FOO WHERE DATE > $lpt".query[(String, PosixTime)] 
+  def query(lpt: PosixTime): Query0[(String, PosixTime)] =
+    sql"SELECT NAME, DATE FROM FOO WHERE DATE > $lpt".query[(String, PosixTime)]
 
 }
-

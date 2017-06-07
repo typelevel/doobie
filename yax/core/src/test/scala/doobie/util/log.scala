@@ -2,7 +2,6 @@ package doobie.util
 
 #+scalaz
 import scalaz._
-import scalaz.concurrent._
 import Scalaz._
 #-scalaz
 #+cats
@@ -11,9 +10,8 @@ import cats.implicits._
 import fs2.interop.cats._
 #-cats
 import doobie.imports._
-import doobie.util.log.{ LogEvent, Success, ProcessingFailure, ExecFailure }
+import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification
-import org.specs2.matcher.MatchResult
 import shapeless._
 
 
@@ -45,7 +43,7 @@ object logspec extends Specification {
   "query" >> {
 
     "default handler" in {
-      val q = sql"select 1".query[Int]
+      sql"select 1".query[Int]
       true // compilation test only
     }
 
@@ -112,7 +110,7 @@ object logspec extends Specification {
   "update" >> {
 
     "default handler" in {
-      val q = sql"drop table if exists barf".update
+      sql"drop table if exists barf".update
       true // compilation test only
     }
 

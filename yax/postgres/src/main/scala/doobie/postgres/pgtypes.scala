@@ -138,18 +138,18 @@ trait PGTypes {
       NonEmptyListOf(jdbctype.Other, jdbctype.VarChar),
       Nil,
       (rs, n) => rs.getString(n),
-      (n, a) => FPS.setObject(n, {
+      (ps, n, a) => {
         val o = new PGobject
         o.setValue(a.toString)
         o.setType(name)
-        o
-      }),
-      (n, a) => FRS.updateObject(n, {
+        ps.setObject(n, o)
+      },
+      (rs, n, a) => {
         val o = new PGobject
         o.setValue(a.toString)
         o.setType(name)
-        o
-      })
+        rs.updateObject(n, o)
+      }
     )
 
   /**
@@ -160,7 +160,7 @@ trait PGTypes {
     enumPartialMeta(name).xmap[A](f, g)
 
   /**
-   * Construct a `Meta` for value members of the given `Enumeration`. 
+   * Construct a `Meta` for value members of the given `Enumeration`.
    */
   def pgEnum(e: Enumeration, name: String): Meta[e.Value] =
     pgEnumString[e.Value](name,
