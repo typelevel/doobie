@@ -112,7 +112,7 @@ object csv {
 
   trait CsvInstances0 extends CsvInstances1 { this: Csv.type =>
 
-    // Foldable
+    // Iterable and views thereof, as [nested] ARRAY
     implicit def iterableInstance[F[_], A](
       implicit ev: Csv[A],
                f:  F[A] => Iterable[A]
