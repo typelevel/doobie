@@ -1,6 +1,7 @@
 package doobie.util
 
 #+cats
+import cats.Cartesian
 import cats.functor.{ Invariant => InvariantFunctor }
 #-cats
 
@@ -98,6 +99,14 @@ the FAQ in the Book of Doobie for more hints.""")
           ma.imap(f)(g)
 #-cats
       }
+
+#+cats
+    implicit val compositeCartesian: Cartesian[Composite] =
+      new Cartesian[Composite] {
+        def product[A, B](a: Composite[A], b: Composite[B]): Composite[(A, B)] =
+          a.zip(b)
+      }
+#-cats
 
     implicit val unitComposite: Composite[Unit] =
 #+scalaz

@@ -6,6 +6,7 @@ import java.sql.{ ResultSet, PreparedStatement }
 import scalaz.InvariantFunctor
 #-scalaz
 #+cats
+import cats.Cartesian
 import cats.functor.{ Invariant => InvariantFunctor }
 #-cats
 
@@ -131,6 +132,14 @@ object kernel {
           ma.imap(f)(g)
 #-cats
       }
+
+#+cats
+    implicit val kernelCarterisn: Cartesian[Kernel] =
+      new Cartesian[Kernel] {
+        def product[A, B](fa: Kernel[A], fb: Kernel[B]): Kernel[(A, B)] =
+          Kernel.product(fa, fb)
+      }
+#-cats
 
   }
 
