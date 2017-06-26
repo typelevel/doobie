@@ -68,6 +68,14 @@ object fragmentspec extends Specification {
       f.update.toFragment unsafeEquals f
     }
 
+    "Add a trailing space when constructed with .const" in {
+      Fragment.const("foo").query[Int].sql must_== "foo "
+    }
+
+    "Not add a trailing space when constructed with .const0" in {
+      Fragment.const0("foo").query[Int].sql must_== "foo"
+    }
+
   }
 
 }

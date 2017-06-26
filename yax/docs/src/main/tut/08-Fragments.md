@@ -66,9 +66,9 @@ count("city").quick.unsafePerformIO
 
 ### Whitespace handling
 
-The rendered SQL string for a `fr` fragment will have a single space character appended, which is usually what you want. Normally you don't need to worry about whitespace when composing fragments.
+The rendered SQL string for a `fr` or `const` fragment will have a single space character appended, which is usually what you want. Normally you don't need to worry about whitespace when composing fragments.
 
-If you do *not* want a fragment to have trailing space you can use the `fr0` interpolator. This is used here and there in the `Fragments` module to yield prettier SQL strings.
+If you do *not* want a fragment to have trailing space you can use the `fr0` interpolator or `const0` constructor. This is used here and there in the `Fragments` module to yield prettier SQL strings.
 
 ```tut
 fr"IN (" ++ List(1, 2, 3).map(n => fr"$n").intercalate(fr",") ++ fr")"
