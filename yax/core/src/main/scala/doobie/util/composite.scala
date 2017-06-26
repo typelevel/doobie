@@ -29,10 +29,13 @@ import scalaz.InvariantFunctor
 object composite {
 
   @implicitNotFound("""Could not find or construct Composite[${A}].
-Ensure that this type has a Composite instance in scope; or is a Product type whose members have
-Composite instances in scope; or is an atomic type with an Atom instance in scope. You can usually
-diagnose this problem by trying to summon the Composite instance for each element in the REPL. See
-the FAQ in the Book of Doobie for more hints.""")
+
+  If ${A} is a simple type (or option thereof) that maps to a single column, you're
+  probably missing a Meta instance. If ${A} is a product type (typically a case class,
+  tuple, or HList) then probably one of its component types is missing a Composite instance. You can
+  usually diagnose this by evaluating Composite[Foo] for each element Foo of the product type in
+  question. See the FAQ in the Book of Doobie for more hints.
+""")
   trait Composite[A] { c =>
 
     private[composite] val kernel: Kernel[A]
