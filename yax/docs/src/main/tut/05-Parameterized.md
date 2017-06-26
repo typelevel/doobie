@@ -70,7 +70,7 @@ biggerThan(150000000).quick.unsafePerformIO // Let's see them all
 
 So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a proper parameterized `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
 
-**doobie** allows you to interpolate values of any type with an `Atom` instance, which includes
+**doobie** allows you to interpolate values of any type (and options thereof) with an `Meta` instance, which includes
 
 - any JVM type that has a target mapping defined by the JDBC specification,
 - vendor-specific types defined by extension packages,
@@ -159,9 +159,9 @@ proc(150000000 to 200000000).quick.unsafePerformIO
 
 But how does the `set` constructor work?
 
-When reading a row or setting parameters in the high-level API, we require an instance of `Composite[A]` for the input or output type. It is not immediately obvious when using the `sql` interpolator, but the parameters (each of which require an `Atom` instance, to be discussed in a later chapter) are gathered into an `HList` and treated as a single composite parameter.
+When reading a row or setting parameters in the high-level API, we require an instance of `Composite[A]` for the input or output type. It is not immediately obvious when using the `sql` interpolator, but the parameters (each of which require a `Meta` instance, to be discussed in a later chapter) are gathered into an `HList` and treated as a single composite parameter.
 
-`Composite` instances are derived automatically for column types that have `Atom` instances, and for products of other composites (via `shapeless.ProductTypeclass`). We can summon their instances thus:
+`Composite` instances are derived automatically for column types (and options thereof) that have `Meta` instances, and for products of other composites (via `shapeless.ProductTypeclass`). We can summon their instances thus:
 
 ```tut
 Composite[(String, Boolean)]
@@ -184,7 +184,7 @@ HPS.set(1, "foo") *> HPS.set(2, true)
 HPS.set(2, true) *> HPS.set(1, "foo")
 ```
 
-Using the low level `doobie.free` constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the `Atom` typeclass (discussed in a later chapter) is to abstract away these differences.
+Using the low level `doobie.free` constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the `Meta` typeclass (discussed in a later chapter) is to abstract away these differences.
 
 ```tut:silent
 FPS.setString(1, "foo") *> FPS.setBoolean(2, true)

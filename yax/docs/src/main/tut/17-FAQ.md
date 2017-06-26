@@ -154,7 +154,7 @@ def query(s: String, u: UUID) = sql"select ... where foo = $s and url = $u".quer
 
 ### How do I resolve `error: Could not find or construct Composite[...]`?
 
-When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has an `Atom` instance, or is a product type whose elements have `Composite` instances.
+When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has a `Meta` instance, or is an option thereof, or a product type whose elements have `Composite` instances.
 
 ```tut:silent
 case class Point(lat: Double, lon: Double)
@@ -162,7 +162,7 @@ case class City(name: String, loc: Point)
 case class State(name: String, capitol: City)
 ```
 
-In this case if we were to say `.query[State]` the derivation would be automatic, because all elements of the "flattened" structure have `Atom` instances for free.
+In this case if we were to say `.query[State]` the derivation would be automatic, because all elements of the "flattened" structure have `Meta` instances for free.
 
 ```scala
 State(String, City(String, Point(Double, Double))) // our structure
@@ -183,7 +183,7 @@ The derivation now fails.
 sql"…".query[State]
 ```
 
-And if we look at the flat stucture it's clear that the culprit has to be `Point2D.Double` since we know `String` has a defined column mapping.
+And if we look at the flat structure it's clear that the culprit has to be `Point2D.Double` since we know `String` has a defined column mapping.
 
 ```scala
 State(String, City(String, Point2D.Double)) // our structure
