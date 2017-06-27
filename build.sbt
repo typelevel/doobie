@@ -1,6 +1,7 @@
 import UnidocKeys._
 import FreeGen2._
 import ReleaseTransformations._
+import OsgiKeys._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val scalaCheckVersion    = "1.13.5"
@@ -23,6 +24,8 @@ lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
 lazy val monixVersion         = "2.3.0"
+lazy val catsVersion          = "0.9.0"
+
 /**
  * This build now depends on partial unification. It's built into 2.12 and from 2.11.9. For 2.10 we
  * need the plugin. In addition the cats/fs2 build isn't available for 2.10 because there's no fs2
@@ -80,7 +83,10 @@ lazy val commonSettings = Seq(
     addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion)
 )
 
-lazy val publishSettings = Seq(
+lazy val publishSettings = osgiSettings ++ Seq(
+  exportPackage := Seq("doobie.*"),
+  privatePackage := Seq(),
+  dynamicImportPackage := Seq("*"),
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -203,6 +209,7 @@ def coreSettings(mod: String) =
   )
 
 lazy val core = project.in(file("modules/core"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
@@ -215,8 +222,8 @@ lazy val core = project.in(file("modules/core"))
     scalazCrossSettings
   )
 
-val catsVersion = "0.9.0"
 lazy val core_cats = project.in(file("modules-cats/core"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
@@ -275,6 +282,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val postgres = project.in(file("modules/postgres"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/postgres"), "scalaz"),
     postgresSettings("postgres"),
@@ -283,6 +291,7 @@ lazy val postgres = project.in(file("modules/postgres"))
   .dependsOn(core)
 
 lazy val postgres_cats = project.in(file("modules-cats/postgres"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/postgres"), "cats", "fs2"),
     postgresSettings("postgres-cats")
@@ -302,6 +311,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val h2 = project.in(file("modules/h2"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/h2"), "scalaz"),
     h2Settings("h2"),
@@ -310,6 +320,7 @@ lazy val h2 = project.in(file("modules/h2"))
   .dependsOn(core)
 
 lazy val h2_cats = project.in(file("modules-cats/h2"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/h2"), "cats", "fs2"),
     h2Settings("h2-cats")
@@ -329,6 +340,7 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val hikari = project.in(file("modules/hikari"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/hikari"), "scalaz"),
     hikariSettings("hikari"),
@@ -337,6 +349,7 @@ lazy val hikari = project.in(file("modules/hikari"))
   .dependsOn(core)
 
 lazy val hikari_cats = project.in(file("modules-cats/hikari"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/hikari"), "cats", "fs2"),
     hikariSettings("hikari-cats")
@@ -356,6 +369,7 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val specs2 = project.in(file("modules/specs2"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/specs2"), "scalaz"),
     specs2Settings("specs2"),
@@ -365,6 +379,7 @@ lazy val specs2 = project.in(file("modules/specs2"))
   .dependsOn(h2 % "test")
 
 lazy val specs2_cats = project.in(file("modules-cats/specs2"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/specs2"), "cats", "fs2"),
     specs2Settings("specs2-cats")
@@ -388,6 +403,7 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val scalatest = project.in(file("modules/scalatest"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/scalatest"), "scalaz"),
     scalaTestSettings("scalatest"),
@@ -396,6 +412,7 @@ lazy val scalatest = project.in(file("modules/scalatest"))
   .dependsOn(core)
 
 lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/scalatest"), "cats", "fs2"),
     scalaTestSettings("scalatest-cats")
@@ -500,6 +517,7 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val refined = project.in(file("modules/refined"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/refined"), "scalaz"),
     refinedSettings("refined"),
@@ -508,6 +526,7 @@ lazy val refined = project.in(file("modules/refined"))
   .dependsOn(core)
 
 lazy val refined_cats = project.in(file("modules-cats/refined"))
+  .enablePlugins(SbtOsgi)
   .settings(
     yax(file("yax/refined"), "cats", "fs2"),
     refinedSettings("refined-cats")
