@@ -384,11 +384,11 @@ object meta {
 
     /** @group Instances */
     implicit def ArrayTypeAsListMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[List[A]] =
-      ev.xmap(a => if (a == null) null else a.toList, a => if (a == null) null else a.toArray)
+      ev.xmap(_.toList, _.toArray)
 
     /** @group Instances */
     implicit def ArrayTypeAsVectorMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[Vector[A]] =
-      ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
+      ev.xmap(_.toVector, _.toArray)
 
     /**
       * Derive Meta for nullable unary product types.
@@ -530,27 +530,19 @@ object meta {
 
     /** @group Instances */
     implicit val ScalaBigDecimalMeta: Meta[BigDecimal] =
-      BigDecimalMeta.xmap(
-        a => if (a == null) null else BigDecimal(a),
-        a => if (a == null) null else a.bigDecimal)
+      BigDecimalMeta.xmap(BigDecimal.apply, _.bigDecimal)
 
     /** @group Instances */
     implicit val JavaUtilDateMeta: Meta[java.util.Date] =
-      DateMeta.xmap(
-        a => a,
-        d => if (d == null) null else new java.sql.Date(d.getTime))
+      DateMeta.xmap(identity, d => new java.sql.Date(d.getTime))
 
     /** @group Instances */
     implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
-      TimestampMeta.xmap(
-        a => if (a == null) null else a.toInstant,
-        i => if (i == null) null else java.sql.Timestamp.from(i))
+      TimestampMeta.xmap(_.toInstant, java.sql.Timestamp.from)
 
     /** @group Instances */
     implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
-      DateMeta.xmap(
-        a => if (a == null) null else a.toLocalDate,
-        d => if (d == null) null else java.sql.Date.valueOf(d))
+      DateMeta.xmap(_.toLocalDate, java.sql.Date.valueOf)
 
   }
 
