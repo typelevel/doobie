@@ -92,16 +92,22 @@ object fragment {
       }
 
     /**
-     * Construct a statement fragment with no interpolated values; the passed SQL string must not
-     * contain `?` placeholders. This is normally accomplished via the string interpolator rather
-     * than direct construction.
+     * Construct a statement fragment with no interpolated values and no trailing space; the
+     * passed SQL string must not contain `?` placeholders.
+     */
+    def const0(sql: String, pos: Option[Pos] = None): Fragment =
+      Fragment[HNil](sql, HNil, pos)
+
+    /**
+     * Construct a statement fragment with no interpolated values and a trailing space; the
+     * passed SQL string must not contain `?` placeholders.
      */
     def const(sql: String, pos: Option[Pos] = None): Fragment =
-      Fragment[HNil](sql, HNil, pos)
+      const0(sql + " ", pos)
 
     /** The empty fragment. Adding this to another fragment has no effect. */
     val empty: Fragment =
-      const("")
+      const0("")
 
     /** Statement fragments form a monoid. */
     implicit val FragmentMonoid: Monoid[Fragment] =
