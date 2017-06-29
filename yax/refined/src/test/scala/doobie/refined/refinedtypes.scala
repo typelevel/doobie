@@ -21,15 +21,9 @@ object refinedtypes extends Specification {
 
   type PositiveInt = Int Refined Positive
 
-  "Atom" should {
+  "Meta" should {
     "exist for refined types" in {
-      Atom[PositiveInt]
-
-      true
-    }
-    "exist for Option of a refined type" in {
-      Atom[Option[PositiveInt]]
-
+      Meta[PositiveInt]
       true
     }
   }
@@ -54,43 +48,44 @@ object refinedtypes extends Specification {
     Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => s"($p is in quadrant 1)", Quadrant1())
 
   "Composite" should {
+
     "exist for refined types" in {
       Composite[PointInQuadrant1]
-
       true
     }
+
+    "exist for Option of a refined type" in {
+      Composite[Option[PositiveInt]]
+      true
+    }
+
   }
 
   "Query" should {
     "return a refined type when conversion is possible" in {
-      sql"select 123".query[PositiveInt].unique.transact(xa).unsafePerformIO
-
+      sql"select 123".query[PositiveInt].unique.transact(xa).void.unsafePerformIO
       true
     }
 
     "return an Option of a refined type when query returns null-value" in {
-      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).unsafePerformIO
-
+      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafePerformIO
       true
     }
 
     "return an Option of a refined type when query returns a value and converion is possible" in {
-      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).unsafePerformIO
-
+      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafePerformIO
       true
     }
 
     "save a None of a refined type" in {
       val none: Option[PositiveInt] = None
       insertOptionalPositiveInt(none)
-
       true
     }
 
     "save a Some of a refined type" in {
       val somePositiveInt: Option[PositiveInt] = refineV[Positive](5).right.toOption
       insertOptionalPositiveInt(somePositiveInt)
-
       true
     }
 
@@ -99,34 +94,32 @@ object refinedtypes extends Specification {
         _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value INT)", None).run
         _  <- sql"INSERT INTO TEST VALUES ($v)".update.run
       } yield ()
-
       queryRes.transact(xa).unsafePerformIO
     }
 
     "throw an SecondaryValidationFailed if value does not fit the refinement-type " in {
       secondaryValidationFailedCaught_?(
-       sql"select -1".query[PositiveInt].unique.transact(xa).unsafePerformIO
+       sql"select -1".query[PositiveInt].unique.transact(xa).void.unsafePerformIO
       )
     }
 
     "return a refined product-type when conversion is possible" in {
-      sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).unsafePerformIO
-
+      sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafePerformIO
       true
     }
 
     "throw an SecondaryValidationFailed if object does not fit the refinement-type " in {
       secondaryValidationFailedCaught_?(
-        sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).unsafePerformIO
+        sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafePerformIO
       )
     }
   }
 
-  private[this] def secondaryValidationFailedCaught_?(query: => Unit): Boolean = try {
+  private[this] def secondaryValidationFailedCaught_?(query: => Unit): Boolean =
+    try {
       query
       false
-    }
-    catch {
+    } catch {
       case e: SecondaryValidationFailed[_] => true
       case _: Throwable => false
     }

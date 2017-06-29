@@ -1,14 +1,10 @@
 package doobie.syntax
 
-#+scalaz
-import scalaz.NonEmptyList
-#-scalaz
 #+cats
 import fs2.interop.cats._
 #-cats
 
 import doobie.imports._
-import shapeless._
 import shapeless.test.illTyped
 import org.specs2.mutable.Specification
 
@@ -41,9 +37,8 @@ object stringspec extends Specification {
     }
 
     "not support product params" in {
-      val a = (1, "two")
       Composite[(Int, String)]
-      illTyped(""" sql"foo $a bar baz".query[Int] """)
+      illTyped(""" val a = (1, "two"); sql"foo $a bar baz".query[Int] """)
       true
     }
 

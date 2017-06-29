@@ -2,7 +2,6 @@ package doobie.issue
 
 #+scalaz
 import scalaz._
-import Scalaz._
 import doobie.util.capture.Capture
 #-scalaz
 #+cats
