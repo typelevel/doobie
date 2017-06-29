@@ -152,11 +152,11 @@ object composite {
       }
 
     // Composite for shapeless record types
-    implicit def recordComposite[K <: Symbol, H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[FieldType[K, H] :: T] =
+    implicit def recordComposite[K <: Symbol, H, T <: HList](implicit H: Lazy[Composite[H]], T: Lazy[Composite[T]]): Composite[FieldType[K, H] :: T] =
       new Composite[FieldType[K, H] :: T] {
-        val kernel = Kernel.record(H.kernel, T.kernel): Kernel[FieldType[K,H] :: T] // ascription necessary in 2.11 for some reason
-        val meta   = H.meta ++ T.meta
-        val toList = (l: FieldType[K, H] :: T) => H.toList(l.head) ++ T.toList(l.tail)
+        val kernel = Kernel.record(H.value.kernel, T.value.kernel): Kernel[FieldType[K,H] :: T] // ascription necessary in 2.11 for some reason
+        val meta   = H.value.meta ++ T.value.meta
+        val toList = (l: FieldType[K, H] :: T) => H.value.toList(l.head) ++ T.value.toList(l.tail)
       }
 
   }
@@ -166,11 +166,11 @@ object composite {
   // to a single column, we will get only the atomic mapping, not the multi-column one.
   trait LowerPriorityComposite extends EvenLower {
 
-    implicit def product[H, T <: HList](implicit H: Composite[H], T: Composite[T]): Composite[H :: T] =
+    implicit def product[H, T <: HList](implicit H: Lazy[Composite[H]], T: Lazy[Composite[T]]): Composite[H :: T] =
       new Composite[H :: T] {
-        val kernel = Kernel.hcons(H.kernel, T.kernel)
-        val meta   = H.meta ++ T.meta
-        val toList = (l: H :: T) => H.toList(l.head) ++ T.toList(l.tail)
+        val kernel = Kernel.hcons(H.value.kernel, T.value.kernel)
+        val meta   = H.value.meta ++ T.value.meta
+        val toList = (l: H :: T) => H.value.toList(l.head) ++ T.value.toList(l.tail)
       }
 
     implicit def emptyProduct: Composite[HNil] =
@@ -200,49 +200,49 @@ object composite {
       new Composite[Option[HNil]] {
         val kernel = Kernel.ohnil
         val meta   = Nil
-        val toList = _ => Nil
+        val toList = (_: Option[HNil]) => Nil
       }
 
     implicit def ohcons1[H, T <: HList](
-      implicit H: Composite[Option[H]],
-               T: Composite[Option[T]],
+      implicit H: Lazy[Composite[Option[H]]],
+               T: Lazy[Composite[Option[T]]],
                n: H <:!< Option[α] forSome { type α }
     ): Composite[Option[H :: T]] =
       new Composite[Option[H :: T]] {
-        val kernel = Kernel.ohcons1(H.kernel, T.kernel)
-        val meta   = H.meta ++ T.meta
+        val kernel = Kernel.ohcons1(H.value.kernel, T.value.kernel)
+        val meta   = H.value.meta ++ T.value.meta
         val toList = (o: Option[H :: T]) => o match {
-          case Some(h :: t) => H.toList(Some(h)) ++ T.toList(Some(t))
-          case None         => H.toList(None)    ++ T.toList(None)
+          case Some(h :: t) => H.value.toList(Some(h)) ++ T.value.toList(Some(t))
+          case None         => H.value.toList(None)    ++ T.value.toList(None)
         }
       }
 
     implicit def ohcons2[H, T <: HList](
-      implicit H: Composite[Option[H]],
-               T: Composite[Option[T]]
+      implicit H: Lazy[Composite[Option[H]]],
+               T: Lazy[Composite[Option[T]]]
     ): Composite[Option[Option[H] :: T]] =
       new Composite[Option[Option[H] :: T]] {
-        val kernel = Kernel.ohcons2(H.kernel, T.kernel)
-        val meta   = H.meta ++ T.meta
+        val kernel = Kernel.ohcons2(H.value.kernel, T.value.kernel)
+        val meta   = H.value.meta ++ T.value.meta
         val toList = (o: Option[Option[H] :: T]) => o match {
-          case Some(h :: t) => H.toList(h) ++ T.toList(Some(t))
-          case None         => H.toList(None) ++ T.toList(None)
+          case Some(h :: t) => H.value.toList(h) ++ T.value.toList(Some(t))
+          case None         => H.value.toList(None) ++ T.value.toList(None)
         }
       }
 
     implicit def ogeneric[A, Repr <: HList](
       implicit G: Generic.Aux[A, Repr],
-               B: Composite[Option[Repr]]
+               B: Lazy[Composite[Option[Repr]]]
     ): Composite[Option[A]] =
       new Composite[Option[A]] {
 #+scalaz
-        val kernel = B.kernel.xmap(_.map(G.from), _.map(G.to))
+        val kernel = B.value.kernel.xmap(_.map(G.from), (_: Option[A]).map(G.to))
 #-scalaz
 #+cats
-        val kernel = B.kernel.imap(_.map(G.from))(_.map(G.to))
+        val kernel = B.value.kernel.imap(_.map(G.from))(_.map(G.to))
 #-cats
-        val meta   = B.meta
-        val toList = oa => B.toList(oa.map(G.to))
+        val meta   = B.value.meta
+        val toList = (oa: Option[A]) => B.value.toList(oa.map(G.to))
       }
   }
 
