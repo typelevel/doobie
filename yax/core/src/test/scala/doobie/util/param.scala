@@ -21,8 +21,8 @@ object paramspec extends Specification {
       true
     }
 
-    "exist for any Atom" in {
-      def foo[A: Atom] = Param[A]
+    "exist for any Option of Meta" in {
+      def foo[A: Meta] = Param[Option[A]]
       true
     }
 
@@ -32,8 +32,8 @@ object paramspec extends Specification {
       true
     }
 
-    "exist for any HList with Atom for head" in {
-      def foo[A: Atom, B <: HList:  Param] = Param[A :: B]
+    "exist for any HList with Option of Meta for head" in {
+      def foo[A: Meta, B <: HList:  Param] = Param[Option[A] :: B]
       true
     }
 

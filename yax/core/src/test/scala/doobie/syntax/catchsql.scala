@@ -8,7 +8,6 @@ import cats.implicits._
 import fs2.interop.cats._
 #-cats
 import doobie.imports._
-import shapeless.test.illTyped
 import org.specs2.mutable.Specification
 
 object catchsqlspec extends Specification {

@@ -32,6 +32,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Updated to PostgreSQL JDBC driver 42.1.1, Hikari 2.6.1, and Circe 0.8.0.
 - `Suspendable` instance for `PGConnectionIO`
 - Added an `Unknown` constructor to `JdbcType` for JDBC type constants outside the spec and known extensions.
+- Generalized the underlying structure of `Meta`/`Composite` and eliminated `Atom`.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 

@@ -32,7 +32,7 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Atom](col: String, a: A) =
+  def inOut[A: Param: Composite](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
@@ -49,14 +49,6 @@ object pgtypesspec extends Specification {
       s"write+read $col as Option[${m.scalaType}] (None)" in {
         inOut[Option[A]](col, None).transact(xa).attempt.unsafePerformIO must_== \/-(None)
       }
-#+scalaz
-      s"write+read $col as Maybe[${m.scalaType}] (Just)" in {
-        inOut[Maybe[A]](col, Maybe.just(a)).transact(xa).attempt.unsafePerformIO must_== \/-(Maybe.Just(a))
-      }
-      s"write+read $col as Maybe[${m.scalaType}] (Empty)" in {
-        inOut[Maybe[A]](col, Maybe.empty[A]).transact(xa).attempt.unsafePerformIO must_== \/-(Maybe.Empty())
-      }
-#-scalaz
     }
 
   def skip(col: String, msg: String = "not yet implemented") =

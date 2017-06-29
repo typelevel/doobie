@@ -96,9 +96,6 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
 
-  /** @group Type Aliases */      type Atom[A] = doobie.util.atom.Atom[A]
-  /** @group Companion Aliases */ val  Atom    = doobie.util.atom.Atom
-
 #+scalaz
   /** @group Type Aliases */      type Capture[M[_]] = doobie.util.capture.Capture[M]
   /** @group Companion Aliases */ val  Capture       = doobie.util.capture.Capture

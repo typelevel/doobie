@@ -131,16 +131,10 @@ When we use the `sql` interpolator we require a `Param` instance for an `HList` 
 def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
 ```
 
-Ok, so the message suggests that we need an `Atom` instance for each type in the `HList`, so let's see which one is missing by trying to summon them in the REPL.
+Ok, so the message suggests that we need an `Meta[A]` for each `A` or `Option[A]` in the `HList`, so let's see which one is missing by trying to summon them in the REPL.
 
 ```tut:nofail:plain
-Atom[String]
-Atom[UUID]
-```
-
-Ok so we see that there is no `Atom[UUID]`, and as suggested we check to see if there is a `Meta` instance, which there isn't.
-
-```tut:nofail:plain
+Meta[String]
 Meta[UUID]
 ```
 
@@ -150,18 +144,17 @@ So what this means is that we have not defined a mapping for the `UUID` type to 
 import doobie.postgres.imports.UuidType
 ```
 
-Having done this, the `Meta`, `Atom`, and `Param` instances are now present and our code compiles.
+Having done this, the `Meta` and `Param` instances are now present and our code compiles.
 
 ```tut
 Meta[UUID]
-Atom[UUID]
 Param[String :: UUID :: HNil]
 def query(s: String, u: UUID) = sql"select ... where foo = $s and url = $u".query[Int]
 ```
 
 ### How do I resolve `error: Could not find or construct Composite[...]`?
 
-When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has an `Atom` instance, or is a product type whose elements have `Composite` instances.
+When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has a `Meta` instance, or is an option thereof, or a product type whose elements have `Composite` instances.
 
 ```tut:silent
 case class Point(lat: Double, lon: Double)
@@ -169,7 +162,7 @@ case class City(name: String, loc: Point)
 case class State(name: String, capitol: City)
 ```
 
-In this case if we were to say `.query[State]` the derivation would be automatic, because all elements of the "flattened" structure have `Atom` instances for free.
+In this case if we were to say `.query[State]` the derivation would be automatic, because all elements of the "flattened" structure have `Meta` instances for free.
 
 ```scala
 State(String, City(String, Point(Double, Double))) // our structure
@@ -190,7 +183,7 @@ The derivation now fails.
 sql"…".query[State]
 ```
 
-And if we look at the flat stucture it's clear that the culprit has to be `Point2D.Double` since we know `String` has a defined column mapping.
+And if we look at the flat structure it's clear that the culprit has to be `Point2D.Double` since we know `String` has a defined column mapping.
 
 ```scala
 State(String, City(String, Point2D.Double)) // our structure
@@ -254,14 +247,14 @@ implicit val XmlMeta: Meta[Elem] =
     NonEmptyList.of("xml"),
 #-cats    
     (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
-    (n,  e) => FPS.raw { ps =>
+    (ps, n,  e) => {
       val sqlXml = ps.getConnection.createSQLXML
       val osw = new java.io.OutputStreamWriter(sqlXml.setBinaryStream)
       XML.write(osw, e, "UTF-8", false, null)
       osw.close
       ps.setObject(n, sqlXml)
     },
-    (_,  _) => sys.error("update not supported, sorry")
+    (_, _,  _) => sys.error("update not supported, sorry")
   )
 ```
 

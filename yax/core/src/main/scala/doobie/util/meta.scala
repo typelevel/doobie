@@ -1,10 +1,10 @@
 package doobie.util
 
 import doobie.enum.jdbctype.{ Array => JdbcArray, Boolean => JdbcBoolean, _ }
-import doobie.free.{ connection => C, resultset => RS, preparedstatement => PS, statement => S }
-import doobie.util.invariant._
+import doobie.util.invariant.{ NonNullableColumnRead, NonNullableColumnUpdate, InvalidObjectMapping }
+import doobie.util.kernel.Kernel
 
-import java.sql.ResultSet
+import java.sql.{ PreparedStatement, ResultSet }
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeSet
@@ -17,10 +17,10 @@ import scalaz._, Scalaz._
 import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
 #-scalaz
 #+cats
-import cats._, cats.data.NonEmptyList, cats.free.Coyoneda
+import cats._, cats.data.NonEmptyList
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import cats.implicits._
-import scala.util. { Either => \/, Left => -\/, Right => \/- }
+import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 #-cats
 
 import shapeless._
@@ -42,15 +42,44 @@ object meta {
    * mapping nullable values to `Option` so these issues should not be a concern for casual users.
    */
   @implicitNotFound("Could not find an instance of Meta[${A}]; you can construct one based on a primitive instance via `xmap`.")
-  sealed trait Meta[A] {
+  sealed abstract class Meta[A] {
 
-    /**
-     * Get operation, split into the underlying column read (which must subsequently be checked for
-     * null) followed by the accumulated output map. Because the output map may be undefined for the
-     * null value of the underlying column type, it may not be possible to yield an `A`. Logic to
-     * handle this case correctly is provided in `Atom`.
-     */
-    def coyo: Coyoneda[(ResultSet, Int) => ?, A]
+    private[util] val kernel: Kernel[A]
+    import kernel._
+
+    final def unsafeGetNonNullable(rs: ResultSet, n: Int): A = {
+      val i = get(rs, n)
+      if (rs.wasNull) throw NonNullableColumnRead(n, jdbcSource.head)
+      else ia(i)
+    }
+
+    final def unsafeGetNullable(rs: ResultSet, n: Int): Option[A] = {
+      val i = get(rs, n)
+      if (rs.wasNull) None else Some(ia(i))
+    }
+
+    final def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
+      if (a == null) throw NonNullableColumnUpdate(n, jdbcTarget.head)
+      else set(ps, n, ai(a))
+
+    final def unsafeSetNullable(ps: PreparedStatement, n: Int, oa: Option[A]): Unit =
+      oa match {
+        case None    => setNull(ps, n)
+        case Some(a) => unsafeSetNonNullable(ps, n, a)
+      }
+
+    final def unsafeUpdateNonNullable(rs: ResultSet, n: Int, a: A): Unit =
+      if (a == null) throw NonNullableColumnUpdate(n, jdbcTarget.head)
+      else update(rs, n, ai(a))
+
+    final def unsafeUpdateNullable(rs: ResultSet, n: Int, oa: Option[A]): Unit =
+      oa match {
+        case None    => rs.updateNull(n)
+        case Some(a) => unsafeUpdateNonNullable(rs, n, a)
+      }
+
+    final def unsafeSetNull(ps: PreparedStatement, n: Int): Unit =
+      setNull(ps, n)
 
     /**
      * Name of the Scala type, for diagnostic purposes. Smart constructors require a `TypeTag` to
@@ -66,15 +95,6 @@ object meta {
 
     /** Switch on the flavor of this `Meta`. */
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B
-
-    /** Constructor for a `setXXX` operation for a given `A` at a given index. */
-    val set: (Int, A) => PS.PreparedStatementIO[Unit]
-
-    /** Constructor for an `updateXXX` operation for a given `A` at a given index. */
-    val update: (Int, A) => RS.ResultSetIO[Unit]
-
-    /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
-    val setNull: Int => PS.PreparedStatementIO[Unit]
 
     /** Invariant map. */
     def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B]
@@ -117,23 +137,22 @@ object meta {
     def mightReadFrom(jdbc: JdbcType): Boolean =
       jdbcSource.element(jdbc) || jdbcSourceSecondary.element(jdbc)
 
-    /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
-    val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
-      PS.setNull(i, jdbcTarget.head.toInt)
-
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B =
       f(this)
 
     def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
-      new BasicMeta[B] {
-        val coyo                = outer.coyo.map(f)
+      Meta.reg(new BasicMeta[B] {
+#+scalaz
+        val kernel              = outer.kernel.xmap(f, g)
+#-scalaz
+#+cats
+        val kernel              = outer.kernel.imap(f)(g)
+#-cats
         val jdbcSource          = outer.jdbcSource
         val jdbcTarget          = outer.jdbcTarget
         val scalaType           = ev.tpe.toString
-        val set                 = (n: Int, b: B) => outer.set(n, g(b))
-        val update              = (n: Int, b: B) => outer.update(n, g(b))
         val jdbcSourceSecondary = outer.jdbcSourceSecondary
-      } <| Meta.reg
+      })
 
   }
 
@@ -169,23 +188,22 @@ object meta {
     def canReadFrom(jdbc: JdbcType, schema: String): Boolean =
       schemaTypes.element(schema) && jdbcSource.element(jdbc)
 
-    /** Constructor for a `setNull` operation for the primary JDBC type, at a given index. */
-    val setNull: Int => PS.PreparedStatementIO[Unit] = i =>
-      PS.setNull(i, jdbcTarget.head.toInt, schemaTypes.head)
-
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B =
       g(this)
 
     def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
-      new AdvancedMeta[B] {
-        val coyo        = outer.coyo.map(f)
+      Meta.reg(new AdvancedMeta[B] {
+#+scalaz
+        val kernel      = outer.kernel.xmap(f, g)
+#-scalaz
+#+cats
+        val kernel      = outer.kernel.imap(f)(g)
+#-cats
         val jdbcSource  = outer.jdbcSource
         val jdbcTarget  = outer.jdbcTarget
         val scalaType   = ev.tpe.toString
-        val set         = (n: Int, b: B) => outer.set(n, g(b))
-        val update      = (n: Int, b: B) => outer.update(n, g(b))
         val schemaTypes = outer.schemaTypes
-      } <| Meta.reg
+      })
 
   }
 
@@ -221,8 +239,11 @@ object meta {
   } with LowPriorityImplicits with MetaInstances {
 
     // sorry
-    private[meta] def reg(m: Meta[_]): Unit =
-      synchronized { instances = instances + m }
+    private[meta] def reg[A](m: Meta[A]): m.type =
+      synchronized {
+        instances = instances + m
+        m
+      }
 
     implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
       IntMeta.xmap(doobie.enum.jdbctype.JdbcType.fromInt, _.toInt)
@@ -252,18 +273,25 @@ object meta {
       jdbcSource0: NonEmptyList[JdbcType],
       jdbcSourceSecondary0: List[JdbcType],
       get0: (ResultSet, Int) => A,
-      set0: (Int, A) => PS.PreparedStatementIO[Unit],
-      update0: (Int, A) => RS.ResultSetIO[Unit]
+      set0: (PreparedStatement, Int, A) => Unit,
+      update0: (ResultSet, Int, A) => Unit
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
-      new BasicMeta[A] {
+      Meta.reg(new BasicMeta[A] {
+        val kernel = new Kernel[A] {
+          type I = A
+          val ai      = (a: I) => a
+          val ia      = (i: I) => i
+          val get     = get0
+          val set     = set0
+          val setNull = (ps: PreparedStatement, n: Int) => ps.setNull(n, jdbcTarget0.head.toInt)
+          val update  = update0
+          val width   = 1
+        }
         val scalaType           = ev.tpe.toString
         val jdbcTarget          = jdbcTarget0
         val jdbcSource          = jdbcSource0
         val jdbcSourceSecondary = jdbcSourceSecondary0
-        val coyo                = Coyoneda.lift[(ResultSet, Int) => ?, A](get0)
-        val set                 = set0
-        val update              = update0
-      } <| reg
+      })
 
     /**
      * Construct a `BasicMeta` for the given type, with symmetric primary mappings.
@@ -273,8 +301,8 @@ object meta {
       jdbcType: JdbcType,
       jdbcSourceSecondary0: List[JdbcType],
       get0: (ResultSet, Int) => A,
-      set0: (Int, A) => PS.PreparedStatementIO[Unit],
-      update0: (Int, A) => RS.ResultSetIO[Unit]
+      set0: (PreparedStatement, Int, A) => Unit,
+      update0: (ResultSet, Int, A) => Unit
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
       basic(NonEmptyListOf(jdbcType), NonEmptyListOf(jdbcType), jdbcSourceSecondary0, get0, set0, update0)
 
@@ -285,77 +313,82 @@ object meta {
     def advanced[A](
       jdbcTypes: NonEmptyList[JdbcType],
       schemaTypes0: NonEmptyList[String],
-      get: (ResultSet, Int) => A,
-      set0: (Int, A) => PS.PreparedStatementIO[Unit],
-      update0: (Int, A) => RS.ResultSetIO[Unit]
+      get0: (ResultSet, Int) => A,
+      set0: (PreparedStatement, Int, A) => Unit,
+      update0: (ResultSet, Int, A) => Unit
     )(implicit ev: TypeTag[A]): AdvancedMeta[A] =
-      new AdvancedMeta[A] {
+      Meta.reg(new AdvancedMeta[A] {
+        val kernel = new Kernel[A] {
+          type I = A
+          val ai      = (a: I) => a
+          val ia      = (i: I) => i
+          val get     = get0
+          val set     = set0
+          val setNull = (ps: PreparedStatement, n: Int) => ps.setNull(n, jdbcTypes.head.toInt, schemaTypes0.head)
+          val update  = update0
+          val width   = 1
+        }
         val scalaType   = ev.tpe.toString
         val jdbcTarget  = jdbcTypes
         val jdbcSource  = jdbcTypes
         val schemaTypes = schemaTypes0
-        val coyo        = Coyoneda.lift[(ResultSet, Int) => ?, A](get)
-        val set         = set0
-        val update      = update0
-      } <| reg
+      })
 
     /**
      * Construct an `AdvancedMeta` for the given type, mapped as JDBC `Array`.
      * @group Constructors
      */
     def array[A >: Null <: AnyRef: TypeTag](elementType: String, schemaH: String, schemaT: String*): AdvancedMeta[Array[A]] =
-      advanced[Array[A]](NonEmptyListOf(JdbcArray), NonEmptyListOf(schemaH, schemaT : _*),
-        { (r, n) =>
+      advanced[Array[A]](
+        NonEmptyListOf(JdbcArray),
+        NonEmptyListOf(schemaH, schemaT : _*),
+        (r, n) => {
           val a = r.getArray(n)
           (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
         },
-        (n, a) =>
-          for {
-            conn <- PS.getConnection
-            arr  <- PS.lift(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
-            _    <- PS.setArray(n, arr)
-          } yield (),
-        (n, a) =>
-          for {
-            stmt <- RS.getStatement // somewhat irritating; no getConnection on ResultSet
-            conn <- RS.lift(stmt, S.getConnection)
-            arr  <- RS.lift(conn, C.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]]))
-            _    <- RS.updateArray(n, arr)
-          } yield ()
-        )
+        (ps, n, a) => {
+          val conn = ps.getConnection
+          val arr  = conn.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]])
+          ps.setArray(n, arr)
+        },
+        (rs, n, a) => {
+          val stmt = rs.getStatement
+          val conn = stmt.getConnection
+          val arr  = conn.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]])
+          rs.updateArray(n, arr)
+        }
+      )
 
     /**
      * Construct an `AdvancedMeta` for the given type, mapped as JDBC `Other,JavaObject`.
      * @group Constructors
      */
     def other[A >: Null <: AnyRef: TypeTag](schemaH: String, schemaT: String*)(implicit A: ClassTag[A]): AdvancedMeta[A] =
-      advanced[A](NonEmptyListOf(Other, JavaObject), NonEmptyListOf(schemaH, schemaT : _*),
-        _.getObject(_) match {
-          case null => null
-          case a    =>
-            // force the cast here rather than letting a potentially ill-typed value escape
-            try A.runtimeClass.cast(a).asInstanceOf[A]
-            catch {
-              case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, a.getClass)
-            }
+      advanced[A](
+        NonEmptyListOf(Other, JavaObject),
+        NonEmptyListOf(schemaH, schemaT : _*),
+        (rs, n) => {
+          rs.getObject(n) match {
+            case null => null
+            case a    =>
+              // force the cast here rather than letting a potentially ill-typed value escape
+              try A.runtimeClass.cast(a).asInstanceOf[A]
+              catch {
+                case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, a.getClass)
+              }
+          }
         },
-        PS.setObject(_: Int, _: A),
-        RS.updateObject(_: Int, _: A))
-
-    // /**
-    //  * Construct an `AdvancedMeta` for the given type, mapped as JDBC `Struct`.
-    //  * @group Constructors
-    //  */
-    // def struct[A: TypeTag](schemaH: String, schemaT: String*): AdvancedMeta[A] =
-    //   advanced[A](NonEmptyListOf(Struct), NonEmptyListOf(schemaH, schemaT : _*))
+        (ps, n, a) => ps.setObject(n, a),
+        (rs, n, a) => rs.updateObject(n, a)
+      )
 
     /** @group Instances */
     implicit def ArrayTypeAsListMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[List[A]] =
-      ev.xmap(a => if (a == null) null else a.toList, a => if (a == null) null else a.toArray)
+      ev.xmap(_.toList, _.toArray)
 
     /** @group Instances */
     implicit def ArrayTypeAsVectorMeta[A: ClassTag: TypeTag](implicit ev: Meta[Array[A]]): Meta[Vector[A]] =
-      ev.xmap(a => if (a == null) null else a.toVector  , a => if (a == null) null else a.toArray)
+      ev.xmap(_.toVector, _.toArray)
 
     /**
       * Derive Meta for nullable unary product types.
@@ -408,35 +441,35 @@ object meta {
       TinyInt,
       List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
-      _.getByte(_), PS.setByte, RS.updateByte)
+      _.getByte(_), _.setByte(_, _), _.updateByte(_, _))
 
     /** @group Instances */
     implicit val ShortMeta = Meta.basic1[Short](
       SmallInt,
       List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
-      _.getShort(_), PS.setShort, RS.updateShort)
+      _.getShort(_), _.setShort(_, _), _.updateShort(_, _))
 
     /** @group Instances */
     implicit val IntMeta = Meta.basic1[Int](
       Integer,
       List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
-      _.getInt(_), PS.setInt, RS.updateInt)
+      _.getInt(_), _.setInt(_, _), _.updateInt(_, _))
 
     /** @group Instances */
     implicit val LongMeta = Meta.basic1[Long](
       BigInt,
       List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
-      _.getLong(_), PS.setLong, RS.updateLong)
+      _.getLong(_), _.setLong(_, _), _.updateLong(_, _))
 
     /** @group Instances */
     implicit val FloatMeta = Meta.basic1[Float](
       Real,
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
-      _.getFloat(_), PS.setFloat, RS.updateFloat)
+      _.getFloat(_), _.setFloat(_, _), _.updateFloat(_, _))
 
     /** @group Instances */
     implicit val DoubleMeta = Meta.basic[Double](
@@ -444,7 +477,7 @@ object meta {
       NonEmptyListOf(Float, Double),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
-      _.getDouble(_), PS.setDouble, RS.updateDouble)
+      _.getDouble(_), _.setDouble(_, _), _.updateDouble(_, _))
 
     /** @group Instances */
     implicit val BigDecimalMeta = Meta.basic[java.math.BigDecimal](
@@ -452,7 +485,7 @@ object meta {
       NonEmptyListOf(Decimal, Numeric),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar,
         LongVarChar),
-      _.getBigDecimal(_), PS.setBigDecimal, RS.updateBigDecimal)
+      _.getBigDecimal(_), _.setBigDecimal(_, _), _.updateBigDecimal(_, _))
 
     /** @group Instances */
     implicit val BooleanMeta = Meta.basic[Boolean](
@@ -460,7 +493,7 @@ object meta {
       NonEmptyListOf(Bit, JdbcBoolean),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar,
         LongVarChar),
-      _.getBoolean(_), PS.setBoolean, RS.updateBoolean)
+      _.getBoolean(_), _.setBoolean(_, _), _.updateBoolean(_, _))
 
     /** @group Instances */
     implicit val StringMeta = Meta.basic[String](
@@ -468,56 +501,49 @@ object meta {
       NonEmptyListOf(Char, VarChar),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
         LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
-      _.getString(_), PS.setString, RS.updateString)
+      _.getString(_), _.setString(_, _), _.updateString(_, _))
 
     /** @group Instances */
     implicit val ByteArrayMeta = Meta.basic[Array[Byte]](
       NonEmptyListOf(Binary, VarBinary, LongVarBinary),
       NonEmptyListOf(Binary, VarBinary),
       List(LongVarBinary),
-      _.getBytes(_), PS.setBytes, RS.updateBytes)
+      _.getBytes(_), _.setBytes(_, _), _.updateBytes(_, _))
 
     /** @group Instances */
     implicit val DateMeta = Meta.basic1[java.sql.Date](
       Date,
       List(Char, VarChar, LongVarChar, Timestamp),
-      _.getDate(_), PS.setDate, RS.updateDate)
+      _.getDate(_), _.setDate(_, _), _.updateDate(_, _))
 
     /** @group Instances */
     implicit val TimeMeta = Meta.basic1[java.sql.Time](
       Time,
       List(Char, VarChar, LongVarChar, Timestamp),
-      _.getTime(_), PS.setTime, RS.updateTime)
+      _.getTime(_), _.setTime(_, _), _.updateTime(_, _))
 
     /** @group Instances */
     implicit val TimestampMeta = Meta.basic1[java.sql.Timestamp](
       Timestamp,
       List(Char, VarChar, LongVarChar, Date, Time),
-      _.getTimestamp(_), PS.setTimestamp, RS.updateTimestamp)
+      _.getTimestamp(_), _.setTimestamp(_, _), _.updateTimestamp(_, _))
 
     /** @group Instances */
     implicit val ScalaBigDecimalMeta: Meta[BigDecimal] =
-      BigDecimalMeta.xmap(
-        a => if (a == null) null else BigDecimal(a),
-        a => if (a == null) null else a.bigDecimal)
+      BigDecimalMeta.xmap(BigDecimal.apply, _.bigDecimal)
 
     /** @group Instances */
     implicit val JavaUtilDateMeta: Meta[java.util.Date] =
-      DateMeta.xmap(
-        a => a,
-        d => if (d == null) null else new java.sql.Date(d.getTime))
+      DateMeta.xmap(identity, d => new java.sql.Date(d.getTime))
 
     /** @group Instances */
     implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
-      TimestampMeta.xmap(
-        a => if (a == null) null else a.toInstant,
-        i => if (i == null) null else java.sql.Timestamp.from(i))
+      TimestampMeta.xmap(_.toInstant, java.sql.Timestamp.from)
 
     /** @group Instances */
     implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
-      DateMeta.xmap(
-        a => if (a == null) null else a.toLocalDate,
-        d => if (d == null) null else java.sql.Date.valueOf(d))
+      DateMeta.xmap(_.toLocalDate, java.sql.Date.valueOf)
+
   }
 
 }
