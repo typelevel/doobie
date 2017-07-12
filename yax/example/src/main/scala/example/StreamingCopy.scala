@@ -22,7 +22,7 @@ object StreamingCopy {
    */
   def fuseMap[F[_]: Monad, A, B](
     source: Stream[ConnectionIO, A],
-    sink:   A => ConnectionIO[B],
+    sink:   A => ConnectionIO[B]
   )(
     sourceXA: Transactor[F, _],
     sinkXA:   Transactor[F, _]
