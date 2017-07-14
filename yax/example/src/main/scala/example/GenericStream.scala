@@ -9,6 +9,10 @@ import scalaz.syntax.monad._
 import java.sql.{ PreparedStatement, ResultSet }
 import doobie.util.process.repeatEvalChunks
 
+/**
+ * From a user question on Gitter, how can we have an equivalent to `process[A]` that constructs a
+ * stream of untyped maps.
+ */
 object GenericStream extends TaskApp {
 
   type Row = Map[String, Any]
