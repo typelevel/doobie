@@ -1,12 +1,14 @@
 #+cats
 package doobie.example
 
-import cats._
+import cats.{ ~> => _, _ }
 import cats.data._
 import cats.implicits._
 import doobie.imports._
 import fs2.Stream
+import fs2.util.{ ~>, Catchable }
 import fs2.interop.cats._
+import fs2.interop.cats.reverse.functionKToUf1
 import java.sql.Connection
 
 /**
@@ -18,7 +20,7 @@ object StreamingCopy {
 
   /**
    * Stream from `source` through `sink`, where source and sink run on distinct transactors. To do
-   * this we have to wrap one transactor around the other, which is slightly involved.
+   * this we have to wrap one transactor around the other. Thanks to @wedens for
    */
   def fuseMap[F[_]: Monad, A, B](
     source: Stream[ConnectionIO, A],
@@ -63,7 +65,25 @@ object StreamingCopy {
 
   }
 
-
+  /**
+   * Stream from `source` into `sink`, where source and sink run on distinct transactors. Unlike
+   * fuseMap above, this doesn't return a stream. But it's a much simpler implementation. Thanks
+   * @wedens for this one.
+   */
+  def fuseMap2[F[_]: Catchable, A, B](
+    source: Stream[ConnectionIO, A],
+    sink: A => ConnectionIO[B]
+  )(
+    sourceXA: Transactor[F, _],
+    sinkXA: Transactor[F, _]
+  ): F[Unit] =
+    sinkXA.exec.apply {
+      source
+        .transact(sourceXA)
+        .translate(λ[F ~> Kleisli[F, Connection, ?]](a => Kleisli(_ => a)))
+        .evalMap(sink(_).foldMap(sinkXA.interpret))
+        .run
+    }
 
   // Everything below is code to demonstrate the combinator above.
 
@@ -130,7 +150,8 @@ object StreamingCopy {
   // Our main program
   val io: IOLite[Unit] =
     for {
-      _ <- fuseMap(read, write)(pg, h2).run // do the copy
+      _ <- fuseMap(read, write)(pg, h2).run // do the copy with fuseMap
+      _ <- fuseMap2(read, write)(pg, h2)    // again with fuseMap2
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IOLite.primitive(Console.println(s"Copied $n cities!"))
     } yield ()
