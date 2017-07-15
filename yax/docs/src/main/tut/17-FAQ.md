@@ -26,6 +26,17 @@ val xa = DriverManagerTransactor[IOLite](
 val y = xa.yolo; import y._
 ```
 
+### My IDE is freaking out! What can I do?
+
+Not much, sadly. Neither Scala's presentation compiler (used by Scala-IDE and ENSIME) nor Intellij's custom typechecker can deal with shapeless `ProductArgs` which is used by the `sql` and `fr/fr0` interpolators.
+
+There are open issues for IntelliJ that you can vote up if you like.
+
+- [SCL-10091](https://youtrack.jetbrains.com/issue/SCL-10091)
+- [SCL-10928](https://youtrack.jetbrains.com/issue/SCL-10928)
+
+It has been [reported](https://github.com/tpolecat/doobie/issues/508) that `-Ymacro-expand:none` improves the behavior of Scala-IDE, so you might investigate that (and please comment on the issue with your experience).
+
 ### How do I do an `IN` clause?
 
 This used to be very irritating, but as of 0.4.0 there is a good solution. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html) and [Chapter 8](08-Fragments.html) on statement fragments.
