@@ -17,7 +17,7 @@ import fs2.util.{ Catchable, Suspendable => Capture }
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
 object h2transactor {
 
-  type H2Transactor[M[_]] = Transactor[M, JdbcConnectionPool]
+  type H2Transactor[M[_]] = Transactor.Aux[M, JdbcConnectionPool]
 
   implicit class H2TransactorOps[M[_]: Capture](h2: H2Transactor[M]) {
 

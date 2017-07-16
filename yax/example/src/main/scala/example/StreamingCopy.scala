@@ -26,8 +26,8 @@ object StreamingCopy {
     source: Stream[ConnectionIO, A],
     sink:   A => ConnectionIO[B]
   )(
-    sourceXA: Transactor[F, _],
-    sinkXA:   Transactor[F, _]
+    sourceXA: Transactor[F],
+    sinkXA:   Transactor[F]
   ): Stream[F, B] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
@@ -74,8 +74,8 @@ object StreamingCopy {
     source: Stream[ConnectionIO, A],
     sink: A => ConnectionIO[B]
   )(
-    sourceXA: Transactor[F, _],
-    sinkXA: Transactor[F, _]
+    sourceXA: Transactor[F],
+    sinkXA: Transactor[F]
   ): F[Unit] =
     sinkXA.exec.apply {
       source
@@ -92,9 +92,9 @@ object StreamingCopy {
     HC.delay(Console.println(s"$tag: $s")) <* _
 
   /** Derive a new transactor that logs stuff. */
-  def addLogging[F[_], A](name: String)(xa: Transactor[F, A]): Transactor[F, A] = {
+  def addLogging[F[_], A](name: String)(xa: Transactor[F]): Transactor[F] = {
     import Transactor._ // bring the lenses into scope
-    val update: State[Transactor[F, A], Unit] =
+    val update: State[Transactor[F], Unit] =
       for {
         _ <- before %= printBefore(name, "before - setting up the connection")
         _ <- after  %= printBefore(name, "after - committing")
