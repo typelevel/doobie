@@ -34,6 +34,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Added an `Unknown` constructor to `JdbcType` for JDBC type constants outside the spec and known extensions.
 - Generalized the underlying structure of `Meta`/`Composite` and eliminated `Atom`.
 - Added `Fragment.const0` for constant fragments with no trailing space, while `const` now *does* add a trailing space. Users of `Fragment.const` may need/wish to change to `const0`.
+- `Manifest` replaced with `TypeTag` in `doobie.util.invariant`.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
