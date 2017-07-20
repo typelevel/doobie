@@ -193,6 +193,7 @@ Upgrades:
 - Updated to Scala 2.11.6.
 - Updated to scalaz 7.1.1 and scalaz-stream 0.6a
 - Updated to [tut](https://github.com/tpolecat/tut) 0.3.1 (build only; not user-facing).
+- Updated to Specs2 3.9.4
 
 Bug Fixes:
 
