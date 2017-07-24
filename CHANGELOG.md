@@ -6,7 +6,7 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.4.2"></a>Notable Work in Progress for Version 0.4.2
 
-non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, ChristopherDavenport, and Damir Vandic.
+non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, ChristopherDavenport, Damir Vandic, and Jacob Barber.
 
 - Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change. Book update TBD.
 - Switched to a new transactor design that makes it simple to customize behavior, and combined with new interpreter design makes it practical to use **doobie** types in free coproducts (see `coproduct.scala` in the `example` project). This is a **minor breaking change**:
@@ -34,6 +34,7 @@ non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickso
 - Added an `Unknown` constructor to `JdbcType` for JDBC type constants outside the spec and known extensions.
 - Generalized the underlying structure of `Meta`/`Composite` and eliminated `Atom`.
 - Added `Fragment.const0` for constant fragments with no trailing space, while `const` now *does* add a trailing space. Users of `Fragment.const` may need/wish to change to `const0`.
+- Improved H2 UUID Support.  Query analysis involving H2 and UUIDs should no longer show a type mismatch.
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
