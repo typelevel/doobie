@@ -10,12 +10,34 @@ import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
+#+scalaz
+import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
+#-scalaz
+#+cats
+import cats.data.NonEmptyList.{ of => NonEmptyListOf }
+#-cats
+
+
 /** `Meta` instances for H2 types. */
 object H2Types extends H2Types
 
 trait H2Types {
 
-  implicit val UuidType = Meta.other[UUID]("uuid")
+  implicit val UuidType =
+    Meta.advanced[UUID](
+      NonEmptyListOf(jdbctype.Binary),
+      NonEmptyListOf("uuid", "UUID"),
+      _.getObject(_) match {
+        case null => null
+        case uuidObj =>
+          try uuidObj.asInstanceOf[UUID]
+          catch {
+            case e: ClassCastException => throw InvalidObjectMapping(classOf[UUID], uuidObj.getClass)
+          }
+      },
+      (ps, n, a) => ps.setObject(n, a),
+      (rs, n, a) => rs.updateObject(n, a)
+    )
 
   // see postgres contrib for an explanation of array mapping; we may want to factor this out
 
