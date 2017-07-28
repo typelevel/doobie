@@ -15,6 +15,8 @@ fi
 if [[ "$TRAVIS_SCALA_VERSION" = "$MAIN_SCALA_VERSION" ]]; then
     echo "Testing with docs for Scala $MAIN_SCALA_VERSION"
     exec sbt ++$MAIN_SCALA_VERSION scalastyle compile test:compile test docs/tutQuick docs_cats/tutQuick
+    exec sbt ++$MAIN_SCALA_VERSION docs/tutQuick
+    exec sbt ++$MAIN_SCALA_VERSION docs_cats/tutQuick
 elif [[ "$TRAVIS_SCALA_VERSION" == 2.10.* ]]; then
     echo "Testing scalaz dialect without docs for Scala $MAIN_SCALA_VERSION"
     exec sbt ++$MAIN_SCALA_VERSION core/test h2/test hikari/test postgres/test specs2/test scalatest/test
