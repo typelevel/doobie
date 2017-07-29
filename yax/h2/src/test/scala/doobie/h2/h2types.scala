@@ -86,4 +86,14 @@ object h2typesspec extends Specification {
     }
   }
 
+  "Mapping for UUID" should {
+    "pass query analysis for unascribed UUID" in {
+      val a = sql"select random_uuid()".query[UUID].analysis.transact(xa).unsafePerformIO
+      a.alignmentErrors must_== Nil
+    }
+    "pass query analysis for ascribed UUID" in {
+      val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafePerformIO
+      a.alignmentErrors must_== Nil
+    }
+  }
 }

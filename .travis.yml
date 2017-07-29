@@ -16,6 +16,9 @@ env:
 
 addons:
   postgresql: "9.3"
+  apt:
+    packages:
+    - postgresql-9.3-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
 
 before_script:
   - project/travis-before-build.sh
@@ -47,3 +50,4 @@ before_cache:
   - find $HOME/.sbt -name "*.lock" -type f -delete
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
   - find $HOME/.coursier/cache -name "*.lock" -type f -delete
+
