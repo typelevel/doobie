@@ -29,14 +29,14 @@ object `262` extends Specification {
 
   }
 
-  val baseXa = DriverManagerTransactor[IOLite](
+  val baseXa = Transactor.fromDriverManager[IOLite](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
   )
 
   // A transactor that uses our interpreter above
-  val xa: Transactor[IOLite, _] =
+  val xa: Transactor[IOLite] =
     Transactor.interpret.set(baseXa, Interp.ConnectionInterpreter)
 
   "getColumnJdbcMeta" should {

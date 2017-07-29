@@ -67,7 +67,7 @@ object analysisspec {
 #-cats
     def unsafePerformIO[A](ma: M[A]): A
 
-    def transactor: Transactor[M, _]
+    def transactor: Transactor[M]
 
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
       checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)

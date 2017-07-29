@@ -62,7 +62,7 @@ trait Checker[M[_]] {
 #-cats
   def unsafePerformIO[A](ma: M[A]): A
 
-  def transactor: Transactor[M, _]
+  def transactor: Transactor[M]
 
 
   def check[A, B](q: Query[A, B])(implicit A: WeakTypeTag[A], B: WeakTypeTag[B]) =
