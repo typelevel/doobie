@@ -4,7 +4,7 @@ import ReleaseTransformations._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val scalaCheckVersion    = "1.13.5"
-lazy val specs2Version        = "3.8.9"
+lazy val specs2Version        = "3.9.4"
 lazy val si2712fixVersion     = "1.2.0"
 lazy val kindProjectorVersion = "0.9.3"
 lazy val shapelessVersion     = "2.3.2"
