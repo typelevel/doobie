@@ -1,5 +1,7 @@
 package doobie
 
+import scala.reflect.runtime.universe.TypeTag
+
 import doobie.imports._
 import doobie.util.invariant._
 
@@ -11,7 +13,7 @@ package object refined {
     implicit metaT:    Meta[T],
              validate: Validate[T, P],
              refType:  RefType[F],
-             manifest: Manifest[F[T,P]]
+             manifest: TypeTag[F[T,P]]
   ): Meta[F[T, P]] =
     metaT.xmap[F[T,P]](
       refineType[T,P,F],
@@ -22,7 +24,7 @@ package object refined {
     implicit compositeT: Composite[T],
              validate:   Validate[T, P],
              refType:    RefType[F],
-             manifest:   Manifest[F[T,P]]
+             manifest:   TypeTag[F[T,P]]
   ): Composite[F[T,P]] =
 #+scalaz
     compositeT.xmap[F[T,P]](refineType[T,P,F], unwrapRefinedType[T,P,F])
@@ -34,7 +36,7 @@ package object refined {
   private def refineType[T,P,F[_,_]](t: T)(
     implicit refType:  RefType[F],
              validate: Validate[T, P],
-             manifest: Manifest[F[T,P]]
+             manifest: TypeTag[F[T,P]]
   ): F[T,P] =
     rightOrException[F[T,P]](refType.refine[P](t)(validate))
 
@@ -44,7 +46,7 @@ package object refined {
     refType.unwrap(ftp)
 
   private def rightOrException[T](either: Either[String, T])(
-    implicit manifest: Manifest[T]
+    implicit manifest: TypeTag[T]
   ): T =
     either match {
       case Left(err) => throw new SecondaryValidationFailed[T](err)(manifest)

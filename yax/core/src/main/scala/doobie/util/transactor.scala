@@ -8,7 +8,7 @@ import doobie.util.yolo.Yolo
 #+scalaz
 import scalaz.syntax.monad._
 import scalaz.stream.Process
-import scalaz.stream.Process. { eval, eval_, halt }
+import scalaz.stream.Process. { eval, eval_ }
 import scalaz.{ Free, Monad, Catchable, Kleisli, ~> }
 import scalaz.stream.Process
 import doobie.util.capture._
@@ -116,20 +116,21 @@ object transactor  {
    * running programs, parameterized over a target monad `M` and an arbitrary wrapped value `A`.
    * Given a stream or program in `ConnectionIO` or a program in `Kleisli`, a `Transactor` can
    * discharge the doobie machinery and yield an effectful stream or program in `M`.
-   * @param kernel    an arbitrary value, meaningful to the instance
-   * @param connect   a program in `M` that can provide a database connection, given the kernel
-   * @param interpret a natural transformation for interpreting `ConnectionIO`
-   * @param strategy  a `Strategy` for running a program on a connection
    * @tparam M a target effect type; typically `IO` or `Task`
-   * @tparam A an arbitrary value that will be handed back to `connect`
    * @group Data Types
    */
-  case class Transactor[M[_], A](
-    kernel:    A,
-    connect:   A => M[Connection],
-    interpret: Interpreter[M],
-    strategy:  Strategy
-  ) {
+  sealed abstract class Transactor[M[_]] { self =>
+    /** An arbitrary value that will be handed back to `connect` **/
+    type A
+
+    /** An arbitrary value, meaningful to the instance **/
+    def kernel: A
+    /** A program in `M` that can provide a database connection, given the kernel **/
+    def connect: A => M[Connection]
+    /** A natural transformation for interpreting `ConnectionIO` **/
+    def interpret: Interpreter[M]
+    /** A `Strategy` for running a program on a connection **/
+    def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
     def yolo(implicit ev: Monad[M], ev1: Catchable[M], ev2: Capture[M]): Yolo[M] = new Yolo(this)
@@ -202,18 +203,45 @@ object transactor  {
     def transP(implicit ev: Monad[M]): Process[ConnectionIO, ?] ~> Process[M, ?] =
       strategy.wrapP andThen rawTransP
 
+    def copy(
+      kernel0: A = self.kernel,
+      connect0: A => M[Connection] = self.connect,
+      interpret0: Interpreter[M] = self.interpret,
+      strategy0: Strategy = self.strategy
+    ): Transactor.Aux[M, A] = new Transactor[M] {
+      type A = self.A
+      val kernel = kernel0
+      val connect = connect0
+      val interpret = interpret0
+      val strategy = strategy0
+    }
   }
 
   object Transactor {
 
-    /** @group Lenses */ def kernel   [M[_], A]: Transactor[M, A] Lens A                    = Lens(_.kernel,    (a, b) => a.copy(kernel    = b))
-    /** @group Lenses */ def connect  [M[_], A]: Transactor[M, A] Lens (A => M[Connection]) = Lens(_.connect,   (a, b) => a.copy(connect   = b))
-    /** @group Lenses */ def interpret[M[_], A]: Transactor[M, A] Lens Interpreter[M]       = Lens(_.interpret, (a, b) => a.copy(interpret = b))
-    /** @group Lenses */ def strategy [M[_], A]: Transactor[M, A] Lens Strategy             = Lens(_.strategy,  (a, b) => a.copy(strategy  = b))
-    /** @group Lenses */ def before   [M[_], A]: Transactor[M, A] Lens ConnectionIO[Unit]   = strategy[M, A] >=> Strategy.before
-    /** @group Lenses */ def after    [M[_], A]: Transactor[M, A] Lens ConnectionIO[Unit]   = strategy[M, A] >=> Strategy.after
-    /** @group Lenses */ def oops     [M[_], A]: Transactor[M, A] Lens ConnectionIO[Unit]   = strategy[M, A] >=> Strategy.oops
-    /** @group Lenses */ def always   [M[_], A]: Transactor[M, A] Lens ConnectionIO[Unit]   = strategy[M, A] >=> Strategy.always
+    def apply[M[_], A0](
+      kernel0: A0,
+      connect0: A0 => M[Connection],
+      interpret0: Interpreter[M],
+      strategy0: Strategy
+    ): Transactor.Aux[M, A0] = new Transactor[M] {
+      type A = A0
+      val kernel = kernel0
+      val connect = connect0
+      val interpret = interpret0
+      val strategy = strategy0
+    }
+
+    type Aux[M[_], A0] = Transactor[M] { type A = A0  }
+
+    /** @group Lenses */ def kernel   [M[_], A]: Transactor.Aux[M, A] Lens A                    = Lens(_.kernel,    (a, b) => a.copy(kernel0    = b))
+    /** @group Lenses */ def connect  [M[_], A]: Transactor.Aux[M, A] Lens (A => M[Connection]) = Lens(_.connect,   (a, b) => a.copy(connect0   = b))
+    /** @group Lenses */ def interpret[M[_]]: Transactor[M] Lens Interpreter[M]       = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
+    /** @group Lenses */ def strategy [M[_]]: Transactor[M] Lens Strategy             = Lens(_.strategy,  (a, b) => a.copy(strategy0  = b))
+    /** @group Lenses */ def before   [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.before
+    /** @group Lenses */ def after    [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.after
+    /** @group Lenses */ def oops     [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.oops
+    /** @group Lenses */ def always   [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.always
 
     /**
      * Construct a constructor of `Transactor[M, D]` for some `D <: DataSource` by partial
@@ -229,7 +257,7 @@ object transactor  {
        * @group Constructors (Partially Applied)
        */
       class FromDataSourceUnapplied[M[_]] {
-        def apply[A <: DataSource](a: A)(implicit ev0: Monad[M], ev1: Catchable[M], ev2: Capture[M]): Transactor[M, A] =
+        def apply[A <: DataSource](a: A)(implicit ev0: Monad[M], ev1: Catchable[M], ev2: Capture[M]): Transactor.Aux[M, A] =
           Transactor(a, a => ev2.delay(a.getConnection), KleisliInterpreter[M](ev0, implicitly, implicitly).ConnectionInterpreter, Strategy.default)
       }
     }
@@ -237,8 +265,8 @@ object transactor  {
     val DataSourceTransactor: fromDataSource.type = fromDataSource
 
     /** @group Constructors */
-    def fromConnection[M[_]: Catchable: Capture](a: Connection)(implicit M: Monad[M]): Transactor[M, Connection] =
-      apply(a, M.pure(_), KleisliInterpreter[M](M, implicitly, implicitly).ConnectionInterpreter, Strategy.default.copy(always = unit))
+    def fromConnection[M[_]: Catchable: Capture](a: Connection)(implicit M: Monad[M]): Transactor.Aux[M, Connection] =
+      Transactor(a, M.pure(_), KleisliInterpreter[M](M, implicitly, implicitly).ConnectionInterpreter, Strategy.default.copy(always = unit))
 
     /**
      * Construct a constructor of `Transactor[M, Unit]` backed by the JDBC DriverManager by partial
@@ -249,20 +277,20 @@ object transactor  {
     object fromDriverManager {
 
 #+scalaz
-      private def create[M[_]: Monad: Capture: Catchable](driver: String, conn: => Connection): Transactor[M, Unit] =
+      private def create[M[_]: Monad: Capture: Catchable](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
 #-scalaz
 #+cats
-      private def create[M[_]: Capture: Catchable](driver: String, conn: => Connection): Transactor[M, Unit] =
+      private def create[M[_]: Capture: Catchable](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
 #-cats
         Transactor((), u => Capture[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
 
-      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String): Transactor[M, Unit] =
+      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url))
 
-      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String, user: String, pass: String): Transactor[M, Unit] =
+      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String, user: String, pass: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, user, pass))
 
-      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String, info: java.util.Properties): Transactor[M, Unit] =
+      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String, info: java.util.Properties): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, info))
 
     }

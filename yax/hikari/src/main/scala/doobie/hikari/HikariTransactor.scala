@@ -18,7 +18,7 @@ import fs2.util.{ Catchable, Suspendable => Capture }
 
 object hikaritransactor {
 
-  type HikariTransactor[M[_]] = Transactor[M, HikariDataSource]
+  type HikariTransactor[M[_]] = Transactor.Aux[M, HikariDataSource]
 
   implicit class HikariTransactorOps[M[_]: Capture](xa: HikariTransactor[M]) {
     /** A program that shuts down this `HikariTransactor`. */

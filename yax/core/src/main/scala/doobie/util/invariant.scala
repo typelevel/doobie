@@ -1,6 +1,6 @@
 package doobie.util
 
-import scala.reflect.Manifest
+import scala.reflect.runtime.universe.TypeTag
 
 import doobie.enum.jdbctype.JdbcType
 
@@ -21,15 +21,15 @@ object invariant {
     extends UnexpectedCursorPosition("Expected ResultSet exhaustion, but more rows were available.")
 
   /** Unexpected ordinal value for an enumerated type. */
-  final case class InvalidOrdinal[A](value: Int)(implicit ev: Manifest[A]) 
-    extends InvariantViolation(s"${ev.runtimeClass.getName}: invalid ordinal: $value")
+  final case class InvalidOrdinal[A](value: Int)(implicit ev: TypeTag[A]) 
+    extends InvariantViolation(s"${ev.tpe.toString}: invalid ordinal: $value")
 
   /** Unexpected string value for an enumerated type. */
-  final case class InvalidEnum[A](value: String)(implicit ev: Manifest[A]) 
-    extends InvariantViolation(s"${ev.runtimeClass.getName}: invalid ordinal: $value")
+  final case class InvalidEnum[A](value: String)(implicit ev: TypeTag[A]) 
+    extends InvariantViolation(s"${ev.tpe.toString}: invalid ordinal: $value")
 
-  final case class SecondaryValidationFailed[A](value: String)(implicit ev: Manifest[A])
-    extends InvariantViolation(s"${ev.runtimeClass.getName}: validation failed: $value")
+  final case class SecondaryValidationFailed[A](value: String)(implicit ev: TypeTag[A])
+    extends InvariantViolation(s"${ev.tpe.toString}: validation failed: $value")
 
   /** The type of schema violations. */
   sealed abstract class MappingViolation(msg: String) extends InvariantViolation(msg) {

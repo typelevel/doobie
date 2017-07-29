@@ -13,7 +13,7 @@ import cats.Monad
 object connectionio {
 
   implicit class MoreConnectionIOOps[A](ma: ConnectionIO[A]) {
-    def transact[M[_]: Monad](xa: Transactor[M, _]): M[A] =
+    def transact[M[_]: Monad](xa: Transactor[M]): M[A] =
       xa.trans.apply(ma)
   }
 

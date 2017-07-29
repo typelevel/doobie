@@ -122,7 +122,7 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type Param[A] = doobie.util.param.Param[A]
   /** @group Companion Aliases */ val  Param    = doobie.util.param.Param
 
-  /** @group Type Aliases */      type Transactor[M[_], A] = doobie.util.transactor.Transactor[M, A]
+  /** @group Type Aliases */      type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
   /** @group Type Aliases */      val  Transactor          = doobie.util.transactor.Transactor
 
   /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.Transactor.DriverManagerTransactor
