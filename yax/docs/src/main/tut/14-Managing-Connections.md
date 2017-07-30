@@ -5,7 +5,7 @@ title: Managing Connections
 ---
 
 <div class="alert alert-warning" role="alert">
-<b>Note:</b> Doobie 0.4.2 introduced a new <code>Transactor</code> design that makes it simple to customize the behavior and, combined with new interpreter design, makes it practical to use doobie types in **free** coproducts (see coproduct.scala in the example project).
+<b>Note:</b> Doobie 0.4.2 introduced a new <code>Transactor</code> design that makes it simple to customize the behavior and, combined with new interpreter design, makes it practical to use doobie types in free coproducts (see `coproduct.scala` in the `example` project).
 </div>
 
 In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
@@ -25,7 +25,7 @@ import fs2.interop.cats._
 
 Most **doobie** programs are values of type `ConnectionIO[A]` or `Process[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
-A `Transactor` closes over some source of connections and configuration information (`A`). Based on this, it provides several natural transformations from `ConnectionIO` to `M`, where `M[_]` is the target monad.
+A `Transactor.Aux[M, A]` closes over some source of connections and configuration information (`A`). Based on this, it provides several natural transformations from `ConnectionIO` to `M`, where `M[_]` is the target monad.
 
 A `Strategy`, which represents the common setup, error-handling, and cleanup strategy associated with a SQL transaction, can also be configured for a `Transactor`, where sane defaults are provided. A `Transactor` uses a `Strategy` to wrap programs prior to execution.
 
@@ -108,14 +108,17 @@ val p: IOLite[Int] = for {
   _  <- xa.configure(ds => IOLite.primitive( /* do something with ds */ ()))
   a  <- q.transact(xa)
 } yield a
-
 ```
 
 The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
 
-### Building your own Transactor
+### Customizing Transactors
 
-If the provided `Transactor` implementations don't meet your needs, it is straightforward to build your own using any connection provider. At a minimum all you need to do is implement the `connect` method, which returns a [logically] fresh connection lifted into a target monad. See the source for existing implementations; it's likely that you can copy/paste your way to a custom `Transactor` without much trouble.
+If the default `Transactor` behavior don't meet your needs you can replace any member with one that does what you need. See the Scaladoc for `Transactor` and `Strategy` for details on the structure. Lenses are provided to make it straightforward to replace just the piece you're interested in. For example, to create a transactor that is the same as `xa` but always rolls back (for testing perhaps) you can say:
+
+```tut
+val testXa = Transactor.after.set(xa, HC.rollback)
+```
 
 ### Using an Existing JDBC Connection
 

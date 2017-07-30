@@ -125,10 +125,13 @@ object transactor  {
 
     /** An arbitrary value, meaningful to the instance **/
     def kernel: A
+
     /** A program in `M` that can provide a database connection, given the kernel **/
     def connect: A => M[Connection]
+
     /** A natural transformation for interpreting `ConnectionIO` **/
     def interpret: Interpreter[M]
+
     /** A `Strategy` for running a program on a connection **/
     def strategy: Strategy
 
