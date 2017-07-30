@@ -67,6 +67,9 @@ lazy val commonSettings = Seq(
       "-doc-source-url", "https://github.com/tpolecat/doobie/tree/v" + version.value + "€{FILE_PATH}.scala",
       "-skip-packages", "scalaz"
     ),
+    scalacOptions in (Compile, console) --= Seq(
+      "-Xlint"
+    ),
     libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
       "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
