@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.Reader
@@ -251,11 +253,15 @@ object sqlinput {
   val wasNull: SQLInputIO[Boolean] = FF.liftF(WasNull)
 
 // SQLInputIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableSQLInputIO: Catchable[SQLInputIO] with Capture[SQLInputIO] =
-    new Catchable[SQLInputIO] with Capture[SQLInputIO] {
+  implicit val CatchableSQLInputIO: Suspendable[SQLInputIO] with Catchable[SQLInputIO] =
+    new Suspendable[SQLInputIO] with Catchable[SQLInputIO] {
+      def pure[A](a: A): SQLInputIO[A] = sqlinput.delay(a)
+      override def map[A, B](fa: SQLInputIO[A])(f: A => B): SQLInputIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => SQLInputIO[A]): SQLInputIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): SQLInputIO[A] = sqlinput.delay(a)
       def attempt[A](f: SQLInputIO[A]): SQLInputIO[Throwable \/ A] = sqlinput.attempt(f)
       def fail[A](err: Throwable): SQLInputIO[A] = sqlinput.fail(err)
-      def apply[A](a: => A): SQLInputIO[A] = sqlinput.delay(a)
     }
 
 }

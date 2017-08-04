@@ -24,14 +24,11 @@ import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 
 import scala.Predef.{ intArrayOps, intWrapper }
 
-import scalaz.stream.Process
-import scalaz.stream.Process.{ bracket, eval_ }
-import scalaz.syntax.foldable._
-import scalaz.syntax.monad._
-import scalaz.syntax.align._
-import scalaz.std.list._
-import scalaz.Foldable
-import scalaz.\&/
+import cats.Foldable
+import cats.implicits._
+import cats.data.{ Ior => \&/ }
+import fs2.{ Stream => Process }
+import fs2.Stream.{ bracket }
 
 /**
  * Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not
@@ -44,14 +41,13 @@ object preparedstatement {
   implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
 
 
-  // scalaz handler, not public
+  // fs2 handler, not public
   private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Process[PreparedStatementIO, A] =
     repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
   def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    bracket(PS.executeQuery)(rs => eval_(PS.lift(rs, RS.close)))(unrolled[A](_, chunkSize))
-
+    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
 
   /**
    * Non-strict unit for capturing effects.
@@ -96,7 +92,7 @@ object preparedstatement {
 
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(rs => eval_(PS.lift(rs, RS.close)))(unrolled[A](_, chunkSize))
+    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata

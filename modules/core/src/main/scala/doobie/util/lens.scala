@@ -1,6 +1,6 @@
 package doobie.util
 
-import scalaz.State
+import cats.data.State
 
 // embarrassigly minimal lens implementation to avoid a lib conflict
 object lens {

@@ -4,6 +4,7 @@ import doobie.imports._
 
 import java.sql.DriverManager
 
+import fs2.interop.cats._
 
 /** Rough benchmark based on non/jawn */
 object bench {
@@ -69,15 +70,6 @@ object bench {
       .map(_.length)
       .unsafePerformIO
 
-  // Reading via .ilist, which uses a lower-level collector
-  def doobieBenchI(n: Int): Int =
-    HC.prepareStatement(s"select a.name, b.name, c.name from country a, country b, country c limit $n") {
-      HPS.executeQuery {
-        HRS.ilist[(String, String, String)]
-      }
-    } .transact(xa)
-      .map(_.length)
-      .unsafePerformIO
 
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
     def test[A](n: Int)(f: Int => A): Double = {
@@ -127,7 +119,6 @@ object bench {
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(
       bench.Case("process", doobieBenchP),
-      bench.Case("ilist",   doobieBenchI),
       bench.Case("list",    doobieBench),
       bench.Case("vector",  doobieBenchV),
       bench.Case("jdbc",    jdbcBench)

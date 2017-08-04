@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.Reader
@@ -1091,11 +1093,15 @@ object resultset {
   val wasNull: ResultSetIO[Boolean] = FF.liftF(WasNull)
 
 // ResultSetIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableResultSetIO: Catchable[ResultSetIO] with Capture[ResultSetIO] =
-    new Catchable[ResultSetIO] with Capture[ResultSetIO] {
+  implicit val CatchableResultSetIO: Suspendable[ResultSetIO] with Catchable[ResultSetIO] =
+    new Suspendable[ResultSetIO] with Catchable[ResultSetIO] {
+      def pure[A](a: A): ResultSetIO[A] = resultset.delay(a)
+      override def map[A, B](fa: ResultSetIO[A])(f: A => B): ResultSetIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => ResultSetIO[A]): ResultSetIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): ResultSetIO[A] = resultset.delay(a)
       def attempt[A](f: ResultSetIO[A]): ResultSetIO[Throwable \/ A] = resultset.attempt(f)
       def fail[A](err: Throwable): ResultSetIO[A] = resultset.fail(err)
-      def apply[A](a: => A): ResultSetIO[A] = resultset.delay(a)
     }
 
 }

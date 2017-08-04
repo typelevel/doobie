@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -168,11 +170,15 @@ object clob {
   def truncate(a: Long): ClobIO[Unit] = FF.liftF(Truncate(a))
 
 // ClobIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableClobIO: Catchable[ClobIO] with Capture[ClobIO] =
-    new Catchable[ClobIO] with Capture[ClobIO] {
+  implicit val CatchableClobIO: Suspendable[ClobIO] with Catchable[ClobIO] =
+    new Suspendable[ClobIO] with Catchable[ClobIO] {
+      def pure[A](a: A): ClobIO[A] = clob.delay(a)
+      override def map[A, B](fa: ClobIO[A])(f: A => B): ClobIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => ClobIO[A]): ClobIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): ClobIO[A] = clob.delay(a)
       def attempt[A](f: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(f)
       def fail[A](err: Throwable): ClobIO[A] = clob.fail(err)
-      def apply[A](a: => A): ClobIO[A] = clob.delay(a)
     }
 
 }

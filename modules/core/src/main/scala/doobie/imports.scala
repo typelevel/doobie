@@ -5,8 +5,10 @@ import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
 import doobie.syntax.foldable.ToDoobieFoldableOps
 
-import scalaz.{ Monad, Catchable, Leibniz, Free, Functor }
-import scalaz.stream.Process
+import cats.{ Monad, Functor }
+import cats.free.Free
+import fs2.util.{ Catchable, Suspendable }
+import fs2.{ Stream => Process }
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
 object imports extends ToDoobieCatchSqlOps
@@ -67,7 +69,7 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
 
   /** @group Syntax */
-  implicit def toProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
+  implicit def toProcessOps[F[_]: Catchable: Suspendable, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
@@ -81,8 +83,6 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
 
-  /** @group Type Aliases */      type Capture[M[_]] = doobie.util.capture.Capture[M]
-  /** @group Companion Aliases */ val  Capture       = doobie.util.capture.Capture
 
   /** @group Type Aliases */      type Composite[A] = doobie.util.composite.Composite[A]
   /** @group Companion Aliases */ val  Composite    = doobie.util.composite.Composite

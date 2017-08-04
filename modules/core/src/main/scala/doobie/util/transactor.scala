@@ -5,12 +5,15 @@ import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 
-import scalaz.syntax.monad._
-import scalaz.stream.Process
-import scalaz.stream.Process. { eval, eval_ }
-import scalaz.{ Free, Monad, Catchable, Kleisli, ~> }
-import scalaz.stream.Process
-import doobie.util.capture._
+import cats.{ Monad, ~> }
+import cats.data.Kleisli
+import cats.free.Free
+import cats.implicits._
+import fs2.{ Stream => Process }
+import fs2.Stream.{ eval, eval_ }
+import fs2.util.{ Catchable, Suspendable => Capture  }
+import fs2.interop.cats._
+import fs2.interop.cats.reverse.functionKToUf1
 
 import java.sql.{ Connection, DriverManager }
 import javax.sql.DataSource
@@ -50,7 +53,7 @@ object transactor  {
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
     val wrapP = λ[Process[ConnectionIO, ?] ~> Process[ConnectionIO, ?]] { pa =>
-        (before.p ++ pa ++ after.p) onFailure { e => oops.p ++ eval_(delay(throw e)) } onComplete always.p
+        (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
     }
 
     /**
@@ -175,7 +178,7 @@ object transactor  {
         λ[Free[F, ?] ~> G](_.foldMap(nat))
 
       def nat(c: Connection): ConnectionIO ~> M = liftF(interpret andThen applyKleisli(c))
-      eval(connect(kernel)).flatMap(c => pa.translate[M](nat(c)))
+      eval(connect(kernel)).flatMap(c => pa.translate[M](functionKToUf1(nat(c))))
      }
 
     def transP(implicit ev: Monad[M]): Process[ConnectionIO, ?] ~> Process[M, ?] =
@@ -254,7 +257,7 @@ object transactor  {
      */
     object fromDriverManager {
 
-      private def create[M[_]: Monad: Capture: Catchable](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
+      private def create[M[_]: Capture: Catchable](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
         Transactor((), u => Capture[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
 
       def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String): Transactor.Aux[M, Unit] =

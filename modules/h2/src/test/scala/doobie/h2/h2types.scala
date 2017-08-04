@@ -7,7 +7,8 @@ import java.util.UUID
 
 import org.specs2.mutable.Specification
 
-import scalaz.\/-
+import scala.util.{ Left => -\/, Right => \/- }
+import fs2.interop.cats._
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object h2typesspec extends Specification {

@@ -7,7 +7,9 @@ import doobie.postgres.imports._
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 
-import scalaz.Scalaz._
+import cats.implicits._
+import fs2.util.Suspendable
+import fs2.interop.cats._
 
 object pgnotifyspec extends Specification {
 
@@ -23,7 +25,7 @@ object pgnotifyspec extends Specification {
   def listen[A](channel: String, notify: ConnectionIO[A]): IOLite[List[PGNotification]] =
     (PHC.pgListen(channel) *> commit *>
      delay { Thread.sleep(50) } *>
-     Capture[ConnectionIO].apply(notify.transact(xa).unsafePerformIO) *>
+     Predef.implicitly[Suspendable[ConnectionIO]].delay(notify.transact(xa).unsafePerformIO) *>
      delay { Thread.sleep(50) } *>
      PHC.pgGetNotifications).transact(xa)
 

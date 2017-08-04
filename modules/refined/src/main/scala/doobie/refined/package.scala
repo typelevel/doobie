@@ -26,7 +26,7 @@ package object refined {
              refType:    RefType[F],
              manifest:   TypeTag[F[T,P]]
   ): Composite[F[T,P]] =
-    compositeT.xmap[F[T,P]](refineType[T,P,F], unwrapRefinedType[T,P,F])
+    compositeT.imap[F[T,P]](refineType[T,P,F])(unwrapRefinedType[T,P,F])
 
   private def refineType[T,P,F[_,_]](t: T)(
     implicit refType:  RefType[F],

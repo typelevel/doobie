@@ -13,7 +13,8 @@ Again we set up a transactor and pull in YOLO mode. We also need an import to ge
 ```tut:silent
 import doobie.imports._
 import doobie.postgres.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -74,19 +75,3 @@ sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafePerf
 sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafePerformIO
 ```
 
-### Diving Deep
-
-We can easily add support for other sequence types like `scalaz.IList` by invariant mapping. The `TypeTag` is required to provide better feedback when type mismatches are detected.
-
-```tut:silent
-import scala.reflect.runtime.universe.TypeTag
-
-implicit def IListMeta[A: TypeTag](implicit ev: Meta[List[A]]): Meta[IList[A]] =
-  ev.xmap[IList[A]](IList.fromList, _.toList)
-```
-
-Once this mapping is in scope we can map columns directly to `IList`.
-
-```tut
-sql"select pets from person where name = 'Bob'".query[IList[String]].quick.unsafePerformIO
-```

@@ -4,8 +4,8 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
-import scalaz.Equal
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Eq
+import cats.kernel.instances.int._
 
 object resultsettype {
 
@@ -29,8 +29,8 @@ object resultsettype {
     def unsafeFromInt(n: Int): ResultSetType =
       fromInt(n).getOrElse(throw InvalidOrdinal[ResultSetType](n))
 
-    implicit val EqualResultSetType: Equal[ResultSetType] =
-      Equal.equalBy(_.toInt)
+    implicit val EqResultSetType: Eq[ResultSetType] =
+      Eq.by(_.toInt)
   }
 
 }

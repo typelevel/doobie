@@ -1,6 +1,7 @@
 package doobie.syntax
 
-import scalaz._, Scalaz._
+import cats.implicits._
+import fs2.interop.cats._
 import doobie.imports._
 import org.specs2.mutable.Specification
 

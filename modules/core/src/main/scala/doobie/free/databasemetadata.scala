@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.lang.Class
 import java.lang.Object
@@ -992,11 +994,15 @@ object databasemetadata {
   val usesLocalFiles: DatabaseMetaDataIO[Boolean] = FF.liftF(UsesLocalFiles)
 
 // DatabaseMetaDataIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableDatabaseMetaDataIO: Catchable[DatabaseMetaDataIO] with Capture[DatabaseMetaDataIO] =
-    new Catchable[DatabaseMetaDataIO] with Capture[DatabaseMetaDataIO] {
+  implicit val CatchableDatabaseMetaDataIO: Suspendable[DatabaseMetaDataIO] with Catchable[DatabaseMetaDataIO] =
+    new Suspendable[DatabaseMetaDataIO] with Catchable[DatabaseMetaDataIO] {
+      def pure[A](a: A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
+      override def map[A, B](fa: DatabaseMetaDataIO[A])(f: A => B): DatabaseMetaDataIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
       def attempt[A](f: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Throwable \/ A] = databasemetadata.attempt(f)
       def fail[A](err: Throwable): DatabaseMetaDataIO[A] = databasemetadata.fail(err)
-      def apply[A](a: => A): DatabaseMetaDataIO[A] = databasemetadata.delay(a)
     }
 
 }

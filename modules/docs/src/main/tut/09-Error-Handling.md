@@ -10,7 +10,8 @@ In this chapter we examine a set of combinators that allow us to construct progr
 
 ```tut:silent
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -31,7 +32,9 @@ There are three main types of exceptions that are likely to arise:
 
 All **doobie** monads have associated instances of the `Catchable` typeclass, and the provided interpreter requires all target monads to have an instance as well. `Catchable` provides two operations:
 
-- `attempt` converts `M[A]` into `M[Throwable \/ A]`
+- `attempt` converts `M[A]` into `M[Either[Throwable, A]]`
+  - this method is provided by `ApplicativeError` in cats so you need to import cats (e.g., `cats.implicits._`)
+  - because doobie-cats relies on fs2 you also need to import `fs2.interop.cats._`
 - `fail` constructs an `M[A]` that fails with a provided `Throwable`
 
 So any **doobie** program can be lifted into a disjunction simply by adding `.attempt`.
@@ -58,7 +61,7 @@ From these we can derive combinators that only pay attention to `SQLException`:
 
 And finally we have a set of combinators that focus on `SQLState`s.
 
-- `attemptSqlState` is like `attemptSql` but yields `M[SQLState \/ A]`.
+- `attemptSqlState` is like `attemptSql` but yields `M[Either[SQLState, A]]`.
 - `attemptSomeSqlState` traps only specified `SQLState`s.
 - `exceptSqlState` recovers from an `SQLState` with a new action.
 - `exceptSomeSqlState`  recovers from specified `SQLState`s with a new action.
@@ -113,7 +116,7 @@ So let's change our method to return a `String \/ Person` by using the `attemptS
 ```tut:silent
 import doobie.postgres.imports._
 
-def safeInsert(s: String): ConnectionIO[String \/ Person] =
+def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
   insert(s).attemptSomeSqlState {
     case sqlstate.class23.UNIQUE_VIOLATION => "Oops!"
   }

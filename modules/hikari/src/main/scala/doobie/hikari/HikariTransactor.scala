@@ -3,8 +3,10 @@ package doobie.hikari
 import com.zaxxer.hikari.HikariDataSource
 import doobie.imports._
 
-import scalaz.{ Catchable, Monad }
-import scalaz.syntax.monad._
+import cats.Monad
+import cats.implicits._
+import fs2.interop.cats.reverse._
+import fs2.util.{ Catchable, Suspendable => Capture }
 
 object hikaritransactor {
 

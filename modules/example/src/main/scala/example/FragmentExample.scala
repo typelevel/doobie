@@ -1,7 +1,8 @@
 package doobie.example
 
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.implicits._
+import fs2.interop.cats._ // for Monad[IOLite]
 
 object FragmentExample extends App {
 

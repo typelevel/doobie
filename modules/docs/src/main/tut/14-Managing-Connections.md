@@ -12,7 +12,8 @@ In this chapter we discuss several ways to manage connections in applications th
 
 ```tut:silent
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 ```
 
 ### About Transactors
@@ -29,8 +30,8 @@ These are the natural transformations that a `Transactor` provides:
   - e.g., `xa.trans.apply(program1)`
   - you can also use the syntax `program1.transact(xa)`, which runs `xa.trans` under the hood
 - `rawTrans` natural transformation equivalent to `trans` but one that does not use the provided `Strategy` to wrap the given program with additional operations. This can be useful in cases where transactional handling is unsupported or undesired.
-- `rawTransP: Process[ConnectionIO, ?] ~> Process[M, ?]` equivalent to `rawTrans` but expressed using `Process`
-- `transP: Process[ConnectionIO, ?] ~> Process[M, ?]` equivalent to `trans` but expressed using `Process`
+- `rawTransP: Process[ConnectionIO, ?] ~> Process[M, ?]` equivalent to `rawTrans` but expressed using `Process` (which is an alias for `fs2.Stream`)
+- `transP: Process[ConnectionIO, ?] ~> Process[M, ?]` equivalent to `trans` but expressed using `Process` (which is an alias for `fs2.Stream`)
 streaming fashion
 - `exec: Kleisli[M, Connection, ?] ~> M` equivalent to `trans` except it transforms a `Kleisli` that expects a `java.sql.Connection` and not a `ConnectionIO`. This can be used in combination with the doobie interpreters, which can transform doobie programs (e.g., `ConnectionIO`) to `Kleisli` effects, in order to implement your own logic for running doobie programs.
 - `rawExec` natural transformation equivalent to `exec` but one that does not use the provided `Strategy` to wrap the given program with additional operations.

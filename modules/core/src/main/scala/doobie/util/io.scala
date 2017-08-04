@@ -3,8 +3,12 @@ package doobie.util
 import doobie.imports._
 import java.io.{ Console => _, _ }
 
-import scalaz.{ Monad, Catchable }
-import scalaz.syntax.monad._
+import doobie.util.catchable._
+import doobie.util.compat.cats.monad._
+import cats.Monad
+import cats.implicits._
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Suspendable }
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {
@@ -15,9 +19,9 @@ object io {
    * used with caution; they are mostly intended for library authors who wish to integrate vendor-
    * specific behavior that relies on JDK IO.
    */
-  class IOActions[M[_]: Monad: Catchable: Capture] {
+  class IOActions[M[_]: Catchable: Suspendable] {
 
-    private def delay[A](a: => A): M[A] = Capture[M].apply(a)
+    private def delay[A](a: => A): M[A] = Predef.implicitly[Suspendable[M]].delay(a)
 
     /**
      * Print to `Console.out`
@@ -38,7 +42,7 @@ object io {
      * @group Stream Operations
      */
     def copyBlock(buf: Array[Byte])(is: InputStream, os: OutputStream): M[Int] =
-      delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenM(n >= 0).as(n) }
+      delay(is.read(buf)) flatMap { n => delay(os.write(buf, 0, n)).whenA(n >= 0).as(n) }
 
     /** 
      * Copy the contents of `file` to a `os` in blocks of size `bufSize`. 

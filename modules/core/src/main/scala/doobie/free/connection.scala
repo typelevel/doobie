@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.lang.Class
 import java.lang.Object
@@ -379,11 +381,15 @@ object connection {
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
 // ConnectionIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableConnectionIO: Catchable[ConnectionIO] with Capture[ConnectionIO] =
-    new Catchable[ConnectionIO] with Capture[ConnectionIO] {
+  implicit val CatchableConnectionIO: Suspendable[ConnectionIO] with Catchable[ConnectionIO] =
+    new Suspendable[ConnectionIO] with Catchable[ConnectionIO] {
+      def pure[A](a: A): ConnectionIO[A] = connection.delay(a)
+      override def map[A, B](fa: ConnectionIO[A])(f: A => B): ConnectionIO[B] = fa.map(f)
+      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => ConnectionIO[A]): ConnectionIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): ConnectionIO[A] = connection.delay(a)
       def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
       def fail[A](err: Throwable): ConnectionIO[A] = connection.fail(err)
-      def apply[A](a: => A): ConnectionIO[A] = connection.delay(a)
     }
 
 }

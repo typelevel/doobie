@@ -1,7 +1,11 @@
 package doobie.postgres.free
 
-import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.syntax.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Suspendable }
 
 import doobie.util.capture._
 
@@ -85,18 +89,13 @@ object copyout extends CopyOutIOInstances {
    */
   implicit val CatchableCopyOutIO: Catchable[CopyOutIO] =
     new Catchable[CopyOutIO] {
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
       def attempt[A](f: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(f)
       def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
     }
 
-  /**
-   * Capture instance for [[CopyOutIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CaptureCopyOutIO: Capture[CopyOutIO] =
-    new Capture[CopyOutIO] {
-      def apply[A](a: => A): CopyOutIO[A] = copyout.delay(a)
-    }
 
   /**
    * @group Constructors (Lifting)
@@ -164,13 +163,13 @@ object copyout extends CopyOutIOInstances {
   * Natural transformation from `CopyOutOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyOut`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
    new (CopyOutOp ~> Kleisli[M, CopyOut, ?]) {
 
-     val L = Predef.implicitly[Capture[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
-       Kleisli(s => L.apply(f(s)))
+       Kleisli(s => L.delay(f(s)))
 
      def apply[A](op: CopyOutOp[A]): Kleisli[M, CopyOut, A] = 
        op match {
@@ -180,7 +179,7 @@ object copyout extends CopyOutIOInstances {
   
         // Combinators
         case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
+        case Attempt(a) => kleisliCatchableInstance[M, CopyOut].attempt(a.transK[M])
 
         // Primitive Operations
         case CancelCopy => primitive(_.cancelCopy)
@@ -200,11 +199,23 @@ object copyout extends CopyOutIOInstances {
    * @group Algebra
    */
   implicit class CopyOutIOOps[A](ma: CopyOutIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyOut, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyOut, A] =
       ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
   }
 
 }
 
 private[free] trait CopyOutIOInstances {
+  /**
+   * Suspendable instance for [[CopyOutIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCopyOutIO: Suspendable[CopyOutIO] =
+    new Suspendable[CopyOutIO] {
+      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
+      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CopyOutIO[A]): CopyOutIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CopyOutIO[A] = copyout.delay(a)
+    }
 }

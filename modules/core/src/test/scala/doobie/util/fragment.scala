@@ -3,7 +3,8 @@ package doobie.util
 import doobie.imports._
 import org.specs2.mutable.Specification
 import shapeless._
-import scalaz._, Scalaz._
+import cats._, cats.implicits._
+import fs2.interop.cats._
 
 
 object fragmentspec extends Specification {

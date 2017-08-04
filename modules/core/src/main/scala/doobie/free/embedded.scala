@@ -1,6 +1,6 @@
 package doobie.free
 
-import scalaz.Free
+import cats.free.Free
 
 import nclob.NClobIO
 import blob.BlobIO

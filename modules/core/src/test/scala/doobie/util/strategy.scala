@@ -1,8 +1,9 @@
 package doobie.util
 
-import scalaz._
-import Scalaz._
-import doobie.util.capture.Capture
+import cats.Monad
+import cats.implicits._
+import fs2.util.{ Catchable, Suspendable => Capture }
+import fs2.interop.cats._
 import doobie.imports._
 import org.specs2.mutable.Specification
 import Predef._

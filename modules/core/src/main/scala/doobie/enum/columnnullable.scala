@@ -5,8 +5,8 @@ import doobie.enum.{ nullability => N }
 
 import java.sql.ResultSetMetaData._
 
-import scalaz.Equal
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Eq
+import cats.kernel.instances.int._
 
 object columnnullable {
 
@@ -40,8 +40,8 @@ object columnnullable {
     def unsafeFromInt(n: Int): ColumnNullable =
       fromInt(n).getOrElse(throw InvalidOrdinal[ColumnNullable](n))
 
-    implicit val EqualColumnNullable: Equal[ColumnNullable] =
-      Equal.equalBy(_.toInt)
+    implicit val EqColumnNullable: Eq[ColumnNullable] =
+      Eq.by(_.toInt)
 
   }
 

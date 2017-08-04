@@ -8,22 +8,29 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 
 ### Setting Up
 
-The examples in this chapter require the `doobie-postgres` add-on, as well as the [argonaut](http://argonaut.io/) JSON library, which you can add to your build thus:
+The examples in this chapter require the `doobie-postgres-cats` add-on, as well as the [circe](http://circe.io/) JSON library, which you can add to your build thus:
 
 ```scala
-libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-RC1" // as of date of publication
+val circeVersion = "0.7.0"
+
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
 ```
 
 In our REPL we have the same setup as before, plus a few extra imports.
 
 ```tut:silent
-import argonaut._, Argonaut._
+import io.circe._, io.circe.jawn._, io.circe.syntax._
 import doobie.imports._
 import java.awt.Point
 import org.postgresql.util.PGobject
 import scala.reflect.runtime.universe.TypeTag
 import scala.util.Try
-import scalaz._, Scalaz._
+import cats._, cats.implicits._
+import fs2.interop.cats._
 
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -120,18 +127,18 @@ Note that the `Composite` width is now a single column. The rule is: if there ex
 
 Some modern databases support a `json` column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.
 
-We can construct a `Meta` instance for the argonaut `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value.
+We can construct a `Meta` instance for the circe `Json` type by using the `Meta.other` constructor, which constructs a direct object mapping via JDBC's `.getObject` and `.setObject`. In the case of PostgreSQL the JSON values are marshalled via the `PGObject` type, which encapsulates an uninspiring `(String, String)` pair representing the schema type and its string value.
 
 Here we go:
 
 ```tut:silent
 implicit val JsonMeta: Meta[Json] =
   Meta.other[PGobject]("json").xmap[Json](
-    a => Parse.parse(a.getValue).leftMap[Json](sys.error).merge, // failure raises an exception
+    a => parse(a.getValue).leftMap[Json](e => throw e).merge, // failure raises an exception
     a => {
       val o = new PGobject
       o.setType("json")
-      o.setValue(a.nospaces)
+      o.setValue(a.noSpaces)
       o
     }
   )
@@ -144,20 +151,21 @@ implicit val JsonMeta: Meta[Json] =
 Given this mapping to and from `Json` we can construct a *further* mapping to any type that has an `EncodeJson` and `DecodeJson` instances. On failure we throw an exception; this indicates a logic or schema problem.
 
 ```tut:silent
-def codecMeta[A : EncodeJson : DecodeJson : TypeTag]: Meta[A] =
+def codecMeta[A : Encoder : Decoder : TypeTag]: Meta[A] =
   Meta[Json].xmap[A](
-    _.as[A].result.fold(p => sys.error(p._1), identity),
+    _.as[A].fold[A](throw _, identity),
     _.asJson
   )
 ```
 
-Let's make sure it works. Here is a simple data type with an argonaut encoder, taken straight from the website, and a `Meta` instance derived from the code above.
+Let's make sure it works. Here is a simple data type with a circe encoder, taken straight from the website, and a `Meta` instance derived from the code above.
 
 ```tut:silent
 case class Person(name: String, age: Int, things: List[String])
 
-implicit val PersonCodecJson =
-  casecodec3(Person.apply, Person.unapply)("name", "age", "things")
+implicit val (personEncodeJson, personDecodeJson) =
+  (Encoder.forProduct3("name", "age", "things")((p: Person) => (p.name, p.age, p.things)),
+   Decoder.forProduct3("name", "age", "things")((name: String, age: Int, things: List[String]) => Person(name, age, things)))
 
 implicit val PersonMeta = codecMeta[Person]
 ```
@@ -205,8 +213,8 @@ We get `Composite[A]` and `Composite[Option[A]]` for free given `Meta[A]`, or fo
 
 ```tut:silent
 implicit val Point2DComposite: Composite[Point] =
-  Composite[(Int, Int)].xmap(
-    (t: (Int,Int)) => new Point(t._1, t._2),
+  Composite[(Int, Int)].imap(
+    (t: (Int,Int)) => new Point(t._1, t._2))(
     (p: Point) => (p.x, p.y)
   )
 ```

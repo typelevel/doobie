@@ -1,14 +1,15 @@
 package doobie.syntax
 
-import scalaz.{ Monad, Catchable, \/ }
 import doobie.util.{ catchsql => C }
+import scala.util.{ Either => \/ }
+import fs2.util.Catchable
 import doobie.enum.sqlstate.SqlState
 import java.sql.SQLException
 
 /** Syntax for `Catchable` combinators defined in `util.catchsql`. */
 object catchsql {
 
-  class DoobieCatchSqlOps[M[_]: Monad: Catchable, A](self: M[A]) {
+  class DoobieCatchSqlOps[M[_]: Catchable, A](self: M[A]) {
 
     def attemptSql: M[SQLException \/ A] =
       C.attemptSql(self)
@@ -36,7 +37,7 @@ object catchsql {
   trait ToDoobieCatchSqlOps {
 
     /** @group Syntax */
-    implicit def toDoobieCatchSqlOps[M[_]: Monad: Catchable, A](ma: M[A]): DoobieCatchSqlOps[M, A] =
+    implicit def toDoobieCatchSqlOps[M[_]: Catchable, A](ma: M[A]): DoobieCatchSqlOps[M, A] =
       new DoobieCatchSqlOps(ma)
 
   }

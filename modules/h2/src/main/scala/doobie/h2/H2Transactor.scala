@@ -4,7 +4,8 @@ import doobie.imports._
 
 import org.h2.jdbcx.JdbcConnectionPool
 
-import scalaz.{ Catchable, Monad }
+import cats.Monad
+import fs2.util.{ Catchable, Suspendable => Capture }
 
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
 object h2transactor {

@@ -4,6 +4,7 @@ import shapeless.test._
 import doobie.imports._
 import doobie.enum.jdbctype._
 import org.specs2.mutable.Specification
+import fs2.interop.cats._
 
 object metaspec extends Specification {
   case class X(x: Int)

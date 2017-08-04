@@ -1,7 +1,8 @@
 package doobie.util
 
-import scalaz._
-import Scalaz._
+import scala.util.{ Left => -\/, Right => \/- }
+import cats.implicits._
+import fs2.interop.cats._
 import doobie.imports._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification

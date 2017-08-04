@@ -1,5 +1,6 @@
 package doobie.syntax
 
+import fs2.interop.cats._
 
 import doobie.imports._
 import shapeless.test.illTyped

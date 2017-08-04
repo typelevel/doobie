@@ -8,6 +8,8 @@ import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 import doobie.free.{ databasemetadata => DMD }
 
+import cats.data.{ Ior => \&/ }
+import cats.data.Ior. { Left => This, Both, Right => That }
 
 /**
  * High-level database API. The constructors here are defined
@@ -36,5 +38,17 @@ package object hi {
   /** @group Aliases */  type DatabaseMetaDataIO[A]  = DMD.DatabaseMetaDataIO[A]
   /** @group Aliases */  type ResultSetIO[A]         = RS.ResultSetIO[A]
 
+  implicit class AlignSyntax[A](as: List[A]) {
+    def align[B](bs: List[B]): List[A \&/ B] = {
+      def go(as: List[A], bs: List[B], acc: List[A \&/ B]): List[A \&/ B] =
+        (as, bs) match {
+          case (a :: as, b :: bs) => go(as , bs , Both(a, b) :: acc)
+          case (a :: as, Nil    ) => go(as , Nil, This(a)    :: acc)
+          case (Nil    , b :: bs) => go(Nil, bs , That(b)    :: acc)
+          case (Nil    , Nil    ) => acc.reverse
+        }
+      go(as, bs, Nil)
+    }
+  }
 
 }

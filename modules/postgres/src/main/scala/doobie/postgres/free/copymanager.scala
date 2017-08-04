@@ -1,7 +1,11 @@
 package doobie.postgres.free
 
-import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.syntax.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Suspendable }
 
 import doobie.util.capture._
 
@@ -91,20 +95,6 @@ object copymanager extends CopyManagerIOInstances {
    * Catchable instance for [[CopyManagerIO]].
    * @group Typeclass Instances
    */
-  implicit val CatchableCopyManagerIO: Catchable[CopyManagerIO] =
-    new Catchable[CopyManagerIO] {
-      def attempt[A](f: CopyManagerIO[A]): CopyManagerIO[Throwable \/ A] = copymanager.attempt(f)
-      def fail[A](err: Throwable): CopyManagerIO[A] = copymanager.delay(throw err)
-    }
-
-  /**
-   * Capture instance for [[CopyManagerIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CaptureCopyManagerIO: Capture[CopyManagerIO] =
-    new Capture[CopyManagerIO] {
-      def apply[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
-    }
 
   /**
    * Lift a CopyManagerIO[A] into an exception-capturing CopyManagerIO[Throwable \/ A].
@@ -172,13 +162,13 @@ object copymanager extends CopyManagerIOInstances {
   * Natural transformation from `CopyManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyManager`.
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: CopyManagerOp ~> Kleisli[M, CopyManager, ?] =
    new (CopyManagerOp ~> Kleisli[M, CopyManager, ?]) {
 
-     val L = Predef.implicitly[Capture[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: CopyManager => A): Kleisli[M, CopyManager, A] =
-       Kleisli(s => L.apply(f(s)))
+       Kleisli(s => L.delay(f(s)))
 
      def apply[A](op: CopyManagerOp[A]): Kleisli[M, CopyManager, A] =
        op match {
@@ -188,7 +178,7 @@ object copymanager extends CopyManagerIOInstances {
 
         // Combinators
         case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
+        case Attempt(a) => kleisliCatchableInstance[M, CopyManager].attempt(a.transK[M])
 
         // Primitive Operations
         case CopyIn(a, b, c) => primitive(_.copyIn(a, b, c))
@@ -209,11 +199,23 @@ object copymanager extends CopyManagerIOInstances {
    * @group Algebra
    */
   implicit class CopyManagerIOOps[A](ma: CopyManagerIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, CopyManager, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyManager, A] =
       ma.foldMap[Kleisli[M, CopyManager, ?]](kleisliTrans[M])
   }
 
 }
 
 private[free] trait CopyManagerIOInstances {
+  /**
+   * Suspendable instance for [[CopyManagerIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableCopyManagerIO: Suspendable[CopyManagerIO] =
+    new Suspendable[CopyManagerIO] {
+      def pure[A](a: A): CopyManagerIO[A] = copymanager.delay(a)
+      override def map[A, B](fa: CopyManagerIO[A])(f: A => B): CopyManagerIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CopyManagerIO[A]): CopyManagerIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): CopyManagerIO[A] = copymanager.delay(a)
+    }
 }

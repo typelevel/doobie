@@ -4,8 +4,8 @@ import doobie.util.invariant._
 
 import java.sql.ParameterMetaData._
 
-import scalaz.Equal
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Eq
+import cats.kernel.instances.int._
 
 object parametermode {
 
@@ -31,8 +31,8 @@ object parametermode {
     def unsafeFromInt(n: Int): ParameterMode =
       fromInt(n).getOrElse(throw InvalidOrdinal[ParameterMode](n))
 
-    implicit val EqualParameterMode: Equal[ParameterMode] =
-      Equal.equalBy(_.toInt)
+    implicit val EqParameterMode: Eq[ParameterMode] =
+      Eq.by(_.toInt)
   }
 
 }

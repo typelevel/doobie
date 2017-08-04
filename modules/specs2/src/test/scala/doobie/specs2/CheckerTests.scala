@@ -4,8 +4,7 @@ import doobie.imports._
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
 
-import scalaz.concurrent.Task
-import scalaz.effect.IO
+import fs2.Task
 
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
   lazy val transactor = DriverManagerTransactor[M](
@@ -18,4 +17,3 @@ trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
 class IOLiteCheckerCheck extends CheckerChecks[IOLite] with IOLiteChecker
 class TaskCheckerCheck   extends CheckerChecks[Task]   with TaskChecker
-class IOCheckerCheck     extends CheckerChecks[IO]     with IOChecker

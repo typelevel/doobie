@@ -1,5 +1,7 @@
 package doobie.util
 
+import cats.Cartesian
+import cats.functor.{ Invariant => InvariantFunctor }
 
 import doobie.enum.nullability.{ NullabilityKnown, Nullable, NoNulls }
 import doobie.free.{ preparedstatement => FPS }
@@ -14,7 +16,6 @@ import shapeless.labelled.FieldType
 
 import scala.annotation.implicitNotFound
 
-import scalaz.InvariantFunctor
 
 
 /**
@@ -54,9 +55,9 @@ object composite {
     val unsafeSet: (PreparedStatement, Int, A) => Unit =
       (ps, n, a) => kernel.set(ps, n, kernel.ai(a))
 
-    def xmap[B](f: A => B, g: B => A): Composite[B] =
+    def imap[B](f: A => B)(g: B => A): Composite[B] =
       new Composite[B] {
-        val kernel = c.kernel.xmap(f, g)
+        val kernel = c.kernel.imap(f)(g)
         val meta   = c.meta
         val toList = (b: B) => c.toList(g(b))
       }
@@ -77,13 +78,18 @@ object composite {
 
     implicit val compositeInvariantFunctor: InvariantFunctor[Composite] =
       new InvariantFunctor[Composite] {
-        def xmap[A, B](ma: Composite[A], f: A => B, g: B => A): Composite[B] =
-          ma.xmap(f, g)
+        def imap[A, B](ma: Composite[A])(f: A => B)(g: B => A): Composite[B] =
+          ma.imap(f)(g)
       }
 
+    implicit val compositeCartesian: Cartesian[Composite] =
+      new Cartesian[Composite] {
+        def product[A, B](a: Composite[A], b: Composite[B]): Composite[(A, B)] =
+          a.zip(b)
+      }
 
     implicit val unitComposite: Composite[Unit] =
-      emptyProduct.xmap(_ => (), _ => HNil)
+      emptyProduct.imap(_ => ())(_ => HNil)
 
     implicit def fromMeta[A](implicit A: Meta[A]): Composite[A] =
       new Composite[A] {
@@ -148,7 +154,7 @@ object composite {
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
       new Composite[F] {
-        val kernel = G.value.kernel.xmap(gen.from, gen.to)
+        val kernel = G.value.kernel.imap(gen.from)(gen.to)
         val meta   = G.value.meta
         val toList = (f: F) => G.value.toList(gen.to(f))
       }

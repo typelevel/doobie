@@ -15,7 +15,8 @@ import org.postgresql.geometric._
 
 import org.specs2.mutable.Specification
 
-import scalaz.{ Maybe, \/- }
+import scala.util.{ Left => -\/, Right => \/- }
+import fs2.interop.cats._
 
 // Establish that we can write and read various types.
 object pgtypesspec extends Specification {

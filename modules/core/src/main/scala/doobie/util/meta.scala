@@ -12,8 +12,10 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.ClassTag
 import scala.Predef._
 
-import scalaz._, Scalaz._
-import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
+import cats._, cats.data.NonEmptyList
+import cats.data.NonEmptyList.{ of => NonEmptyListOf }
+import cats.implicits._
+import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 
 import shapeless._
 import shapeless.ops.hlist.IsHCons
@@ -134,7 +136,7 @@ object meta {
 
     def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
       Meta.reg(new BasicMeta[B] {
-        val kernel              = outer.kernel.xmap(f, g)
+        val kernel              = outer.kernel.imap(f)(g)
         val jdbcSource          = outer.jdbcSource
         val jdbcTarget          = outer.jdbcTarget
         val scalaType           = ev.tpe.toString
@@ -180,7 +182,7 @@ object meta {
 
     def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
       Meta.reg(new AdvancedMeta[B] {
-        val kernel      = outer.kernel.xmap(f, g)
+        val kernel      = outer.kernel.imap(f)(g)
         val jdbcSource  = outer.jdbcSource
         val jdbcTarget  = outer.jdbcTarget
         val scalaType   = ev.tpe.toString
@@ -195,13 +197,15 @@ object meta {
 
     /** @group Typeclass Instances */
     implicit val MetaOrder: Order[Meta[_]] =
-      Order.orderBy(_.fold(
+      // Type argument necessary to avoid spurious "illegal cyclic reference involving object Meta"
+      // only in Scala 2.11, and only with cats for whatever reason. Confidence high!
+      Order.by[Meta[_], (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], List[JdbcType]) \/ (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], NonEmptyList[String])](_.fold(
         b => -\/((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
         a => \/-((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
 
     /** @group Typeclass Instances */
     implicit val MetaOrdering: scala.Ordering[Meta[_]] =
-      MetaOrder.toScalaOrdering
+      MetaOrder.toOrdering
 
     // See note on trait Meta above
     private var instances: TreeSet[Meta[_]] = TreeSet.empty // scalastyle:ignore

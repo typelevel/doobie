@@ -7,7 +7,8 @@ import doobie.util.log.LogHandler
 import doobie.util.pos.Pos
 import shapeless.HNil
 
-import scalaz.Monoid
+import cats.Monoid
+import fs2.interop.cats._
 
 /** Module defining the `Fragment` data type. */
 object fragment {
@@ -105,7 +106,10 @@ object fragment {
 
     /** Statement fragments form a monoid. */
     implicit val FragmentMonoid: Monoid[Fragment] =
-        Monoid.instance(_ ++ _, empty)
+      new Monoid[Fragment] {
+        val empty = Fragment.empty
+        def combine(a: Fragment, b: Fragment) = a ++ b
+      }
 
   }
 

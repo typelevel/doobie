@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.lang.Class
 import java.lang.Object
@@ -362,11 +364,15 @@ object statement {
   def unwrap[T](a: Class[T]): StatementIO[T] = FF.liftF(Unwrap(a))
 
 // StatementIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableStatementIO: Catchable[StatementIO] with Capture[StatementIO] =
-    new Catchable[StatementIO] with Capture[StatementIO] {
+  implicit val CatchableStatementIO: Suspendable[StatementIO] with Catchable[StatementIO] =
+    new Suspendable[StatementIO] with Catchable[StatementIO] {
+      def pure[A](a: A): StatementIO[A] = statement.delay(a)
+      override def map[A, B](fa: StatementIO[A])(f: A => B): StatementIO[B] = fa.map(f)
+      def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => StatementIO[A]): StatementIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): StatementIO[A] = statement.delay(a)
       def attempt[A](f: StatementIO[A]): StatementIO[Throwable \/ A] = statement.attempt(f)
       def fail[A](err: Throwable): StatementIO[A] = statement.fail(err)
-      def apply[A](a: => A): StatementIO[A] = statement.delay(a)
     }
 
 }

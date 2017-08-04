@@ -2,7 +2,7 @@ package doobie.util
 
 import doobie.imports._
 import org.specs2.mutable.Specification
-import scalaz._, Scalaz._
+import cats.{ Reducible => Foldable1, _}, cats.implicits._
 
 object fragmentsspec extends Specification {
   import Fragments._

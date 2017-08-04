@@ -1,6 +1,8 @@
 package doobie.postgres
 
-import scalaz.{ Monad, Catchable }
+import cats.{ Monad }
+import fs2.util.Catchable
+import doobie.util.catchable._
 
 import doobie.postgres.sqlstate._
 import doobie.util.catchsql.exceptSomeSqlState

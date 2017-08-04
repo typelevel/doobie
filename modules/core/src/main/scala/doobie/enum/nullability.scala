@@ -3,8 +3,8 @@ package doobie.enum
 import doobie.enum.{ parameternullable => P }
 import doobie.enum.{ columnnullable => C }
 
-import scalaz.Equal
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Eq
+import cats.kernel.instances.int._
 
 /** Generic nullability that subsumes JDBC's distinct parameter and column nullability. */
 object nullability {
@@ -46,8 +46,8 @@ object nullability {
         case C.NullableUnknown => NullableUnknown
       }
 
-    implicit val EqualNullability: Equal[Nullability] =
-      Equal.equalA
+    implicit val EqNullability: Eq[Nullability] =
+      Eq.fromUniversalEquals
 
   }
 

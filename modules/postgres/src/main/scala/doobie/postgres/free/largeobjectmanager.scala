@@ -1,7 +1,11 @@
 package doobie.postgres.free
 
-import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.syntax.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Suspendable }
 
 import doobie.util.capture._
 
@@ -87,18 +91,13 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
    */
   implicit val CatchableLargeObjectManagerIO: Catchable[LargeObjectManagerIO] =
     new Catchable[LargeObjectManagerIO] {
+      def pure[A](a: A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
+      override def map[A, B](fa: LargeObjectManagerIO[A])(f: A => B): LargeObjectManagerIO[B] = fa.map(f)
+      def flatMap[A, B](fa: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = fa.flatMap(f)
       def attempt[A](f: LargeObjectManagerIO[A]): LargeObjectManagerIO[Throwable \/ A] = largeobjectmanager.attempt(f)
       def fail[A](err: Throwable): LargeObjectManagerIO[A] = largeobjectmanager.delay(throw err)
     }
 
-  /**
-   * Capture instance for [[LargeObjectManagerIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CaptureLargeObjectManagerIO: Capture[LargeObjectManagerIO] =
-    new Capture[LargeObjectManagerIO] {
-      def apply[A](a: => A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
-    }
 
   /**
    * @group Constructors (Lifting)
@@ -160,13 +159,13 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
   * Natural transformation from `LargeObjectManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObjectManager`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?] =
    new (LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?]) {
 
-     val L = Predef.implicitly[Capture[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] =
-       Kleisli(s => L.apply(f(s)))
+       Kleisli(s => L.delay(f(s)))
 
      def apply[A](op: LargeObjectManagerOp[A]): Kleisli[M, LargeObjectManager, A] = 
        op match {
@@ -176,7 +175,7 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
   
         // Combinators
         case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
+        case Attempt(a) => kleisliCatchableInstance[M, LargeObjectManager].attempt(a.transK[M])
   
         // Primitive Operations
         case CreateLO => primitive(_.createLO)
@@ -195,11 +194,23 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
    * @group Algebra
    */
   implicit class LargeObjectManagerIOOps[A](ma: LargeObjectManagerIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, LargeObjectManager, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, LargeObjectManager, A] =
       ma.foldMap[Kleisli[M, LargeObjectManager, ?]](kleisliTrans[M])
   }
 
 }
 
 private[free] trait LargeObjectManagerIOInstances {
+  /**
+   * Suspendable instance for [[LargeObjectManagerIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableLargeObjectManagerIO: Suspendable[LargeObjectManagerIO] =
+    new Suspendable[LargeObjectManagerIO] {
+      def pure[A](a: A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
+      override def map[A, B](fa: LargeObjectManagerIO[A])(f: A => B): LargeObjectManagerIO[B] = fa.map(f)
+      def flatMap[A, B](fa: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): LargeObjectManagerIO[A] = largeobjectmanager.delay(a)
+    }
 }

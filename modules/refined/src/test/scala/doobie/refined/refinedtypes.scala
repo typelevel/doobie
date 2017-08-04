@@ -7,6 +7,7 @@ import eu.timepit.refined._
 import doobie.imports._
 import doobie.util.invariant._
 
+import fs2.interop.cats._
 
 object refinedtypes extends Specification {
 
@@ -31,10 +32,7 @@ object refinedtypes extends Specification {
 
   implicit val PointComposite: Composite[Point] =
     Composite[(Int, Int)]
-      .xmap(
-        (t: (Int,Int)) => new Point(t._1, t._2),
-        (p: Point) => (p.x, p.y)
-      )
+      .imap((t: (Int,Int)) => new Point(t._1, t._2))((p: Point) => (p.x, p.y))
 
   implicit val quadrant1Validate: Validate.Plain[Point, Quadrant1] =
     Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => s"($p is in quadrant 1)", Quadrant1())

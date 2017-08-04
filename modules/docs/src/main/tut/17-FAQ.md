@@ -10,7 +10,8 @@ In this chapter we address some frequently-asked questions, in no particular ord
 import doobie.imports._
 import java.awt.geom.Point2D
 import java.util.UUID
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 import shapeless._
 
 val xa = DriverManagerTransactor[IOLite](
@@ -113,7 +114,7 @@ val join: Query0[(Country, Option[City])] =
     left outer join city k
     on c.capital = k.id
   """.query[(Country, Option[String], Option[String])].map {
-    case (c, n, d) => (c, (n |@| d)(City))
+    case (c, n, d) => (c, (n |@| d).map(City))
   }
 ```
 
@@ -201,8 +202,8 @@ If this were an atomic type it would be a matter of importing or defining a `Met
 
 ```tut:silent
 implicit val Point2DComposite: Composite[Point2D.Double] =
-  Composite[(Double, Double)].xmap(
-    (t: (Double, Double)) => new Point2D.Double(t._1, t._2),
+  Composite[(Double, Double)].imap(
+    (t: (Double, Double)) => new Point2D.Double(t._1, t._2))(
     (p: Point2D.Double) => (p.x, p.y)
   )
 ```
@@ -230,8 +231,8 @@ import scala.xml.{ XML, Elem }
 
 implicit val XmlMeta: Meta[Elem] =
   Meta.advanced[Elem](
-    NonEmptyList(Other),
-    NonEmptyList("xml"),
+    NonEmptyList.of(Other),
+    NonEmptyList.of("xml"),
     (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
     (ps, n,  e) => {
       val sqlXml = ps.getConnection.createSQLXML

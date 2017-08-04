@@ -12,7 +12,6 @@ import doobie.syntax.process._
 
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
-import doobie.util.capture.Capture
 import doobie.util.process.repeatEvalChunks
 
 import doobie.free.{ connection => C }
@@ -30,10 +29,11 @@ import java.sql.{ Connection, Savepoint, PreparedStatement, ResultSet }
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
 
-import scalaz.stream.Process
-import scalaz.stream.Process. { emitAll, eval, eval_, halt, bracket }
-import scalaz.{ Monad, ~>, Catchable, Foldable }
-import scalaz.syntax.monad._
+import cats.Foldable
+import cats.implicits._
+import fs2.{ Stream => Process }
+import fs2.util.{ Catchable, Suspendable, ~> }
+import fs2.Stream.{ attemptEval, eval, empty, fail, emits, repeatEval, bracket }
 
 /**
  * Module of high-level constructors for `ConnectionIO` actions.
@@ -48,7 +48,6 @@ object connection {
   def delay[A](a: => A): ConnectionIO[A] =
     C.delay(a)
 
-  // TODO: make this public if the API sticks; still iffy
   private def liftProcess[A: Composite](
     chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
@@ -65,10 +64,10 @@ object connection {
       repeatEvalChunks(C.lift(rs, resultset.getNextChunk[A](chunkSize)))
 
     val preparedStatement: Process[ConnectionIO, PreparedStatement] =
-      bracket(create)(ps => eval_(C.lift(ps, PS.close)))(prepared)
+      bracket(create)(prepared, C.lift(_, PS.close))
 
     def results(ps: PreparedStatement): Process[ConnectionIO, A] =
-      bracket(C.lift(ps, exec))(rs => eval_(C.lift(rs, RS.close)))(unrolled)
+      bracket(C.lift(ps, exec))(unrolled, C.lift(_, RS.close))
 
     preparedStatement.flatMap(results)
 
@@ -106,7 +105,7 @@ object connection {
    */
   def prepareQueryAnalysis[A: Composite, B: Composite](sql: String): ConnectionIO[Analysis] =
     nativeTypeMap flatMap (m => prepareStatement(sql) {
-      (HPS.getParameterMappings[A] |@| HPS.getColumnMappings[B])(Analysis(sql, m, _, _))
+      (HPS.getParameterMappings[A] |@| HPS.getColumnMappings[B]) map (Analysis(sql, m, _, _))
     })
 
   def prepareQueryAnalysis0[B: Composite](sql: String): ConnectionIO[Analysis] =

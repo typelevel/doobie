@@ -1,12 +1,13 @@
 package doobie.syntax
 
-import scalaz.{ Monad, Catchable, \/ }
 import doobie.util.{ catchable => C }
+import scala.{ Either => \/ }
+import fs2.util.Catchable
 
 /** Syntax for `Catchable` combinators defined in `util.catchable`. */
 object catchable {
 
-  class DoobieCatchableOps[M[_]: Monad, A](self: M[A])(implicit c: Catchable[M]) {
+  class DoobieCatchableOps[M[_], A](self: M[A])(implicit c: Catchable[M]) {
 
     def attemptSome[B](handler: PartialFunction[Throwable, B]): M[B \/ A] =
       C.attemptSome(self)(handler)
@@ -28,7 +29,7 @@ object catchable {
   trait ToDoobieCatchableOps {
 
     /** @group Syntax */
-    implicit def toDoobieCatchableOps[M[_]: Monad: Catchable, A](ma: M[A]): DoobieCatchableOps[M, A] =
+    implicit def toDoobieCatchableOps[M[_]: Catchable, A](ma: M[A]): DoobieCatchableOps[M, A] =
       new DoobieCatchableOps(ma)
 
   }

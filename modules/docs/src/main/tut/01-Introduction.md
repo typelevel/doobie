@@ -73,20 +73,20 @@ scalaVersion := "2.12.2" // or scala 2.11.11
 lazy val doobieVersion = "0.4.2"
 
 libraryDependencies ++= Seq(
-  "org.tpolecat" %% "doobie-core"       % doobieVersion,
-  "org.tpolecat" %% "doobie-postgres"   % doobieVersion,
-  "org.tpolecat" %% "doobie-specs2"     % doobieVersion
+  "org.tpolecat" %% "doobie-core-cats"       % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres-cats"   % doobieVersion,
+  "org.tpolecat" %% "doobie-specs2-cats"     % doobieVersion
 )
 ```
 
-If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
+If you are not using PostgreSQL you can omit `doobie-postgres-cats` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2-cats` add-on if you happen to be using [H2](http://www.h2database.com/).
 
 ### Conventions
 
 Each page begins with some imports, like this.
 
 ```tut:silent
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
 import doobie.imports._
 ```
 
@@ -96,7 +96,7 @@ After that there is text interspersed with code examples. Sometimes definitions 
 
 case class Person(name: String, age: Int)
 
-val nel = NonEmptyList(Person("Bob", 12), Person("Alice", 14))
+val nel = NonEmptyList.of(Person("Bob", 12), Person("Alice", 14))
 ```
 And sometimes they will appear as a REPL interaction.
 

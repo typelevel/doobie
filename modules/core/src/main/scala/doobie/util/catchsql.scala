@@ -1,9 +1,10 @@
 package doobie.util
 
 import java.sql.SQLException
-import scalaz.{ Monad, Catchable, \/ }
-import scalaz.syntax.bifunctor._
-import scalaz.syntax.monad._
+import cats.implicits._
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Monad }
 
 import doobie.enum.sqlstate.SqlState
 import doobie.syntax.catchable._

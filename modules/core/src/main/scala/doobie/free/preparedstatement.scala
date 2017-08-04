@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.Reader
@@ -666,11 +668,15 @@ object preparedstatement {
   def unwrap[T](a: Class[T]): PreparedStatementIO[T] = FF.liftF(Unwrap(a))
 
 // PreparedStatementIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchablePreparedStatementIO: Catchable[PreparedStatementIO] with Capture[PreparedStatementIO] =
-    new Catchable[PreparedStatementIO] with Capture[PreparedStatementIO] {
+  implicit val CatchablePreparedStatementIO: Suspendable[PreparedStatementIO] with Catchable[PreparedStatementIO] =
+    new Suspendable[PreparedStatementIO] with Catchable[PreparedStatementIO] {
+      def pure[A](a: A): PreparedStatementIO[A] = preparedstatement.delay(a)
+      override def map[A, B](fa: PreparedStatementIO[A])(f: A => B): PreparedStatementIO[B] = fa.map(f)
+      def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): PreparedStatementIO[A] = preparedstatement.delay(a)
       def attempt[A](f: PreparedStatementIO[A]): PreparedStatementIO[Throwable \/ A] = preparedstatement.attempt(f)
       def fail[A](err: Throwable): PreparedStatementIO[A] = preparedstatement.fail(err)
-      def apply[A](a: => A): PreparedStatementIO[A] = preparedstatement.delay(a)
     }
 
 }

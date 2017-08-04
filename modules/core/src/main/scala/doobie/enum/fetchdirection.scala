@@ -4,8 +4,8 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
-import scalaz.Equal
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Eq
+import cats.kernel.instances.int._
 
 object fetchdirection {
 
@@ -29,8 +29,8 @@ object fetchdirection {
     def unsafeFromInt(n: Int): FetchDirection =
       fromInt(n).getOrElse(throw InvalidOrdinal[FetchDirection](n))
 
-    implicit val EqualFetchDirection: Equal[FetchDirection] =
-      Equal.equalBy(_.toInt)
+    implicit val EqFetchDirection: Eq[FetchDirection] =
+      Eq.by(_.toInt)
 
   }
 

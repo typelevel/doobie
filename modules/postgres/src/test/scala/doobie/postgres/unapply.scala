@@ -6,7 +6,7 @@ import doobie.postgres.imports._
 import shapeless._, shapeless.test._
 import org.specs2.mutable.Specification
 
-import scalaz.syntax.monad._
+import cats.implicits._
 
 object unapplyspec extends Specification {
 

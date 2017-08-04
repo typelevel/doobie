@@ -6,6 +6,7 @@ import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
+import fs2.interop.cats._
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
 object beforeall extends Specification with AnalysisSpec with BeforeAll {

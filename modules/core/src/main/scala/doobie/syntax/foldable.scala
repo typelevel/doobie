@@ -2,12 +2,15 @@ package doobie.syntax
 
 import doobie.util.{ foldable => F }
 
-import scalaz._, Scalaz._
+import cats._, cats.implicits._
 
 /** Module of additional functions for `Foldable`. */
 object foldable {
 
   class DoobieFoldableOps[F[_]: Foldable, A](self: F[A]) {
+
+    def empty: Boolean =
+      self.isEmpty
 
     def foldSmash(prefix: A, delim: A, suffix: A)(implicit ev: Monoid[A]): A =
       F.foldSmash(self)(prefix, delim, suffix)

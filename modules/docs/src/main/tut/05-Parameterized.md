@@ -12,7 +12,8 @@ Same as last chapter, so if you're still set up you can skip this section. Other
 
 ```tut:silent
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -109,7 +110,7 @@ Note that the `IN` clause must be non-empty, so `codes` is a `NonEmptyList`.
 Running this query gives us the desired result.
 
 ```tut
-populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).quick.unsafePerformIO
+populationIn(100000000 to 300000000, NonEmptyList.of("USA", "BRA", "PAK", "GBR")).quick.unsafePerformIO
 ```
 
 ### Diving Deeper
@@ -117,7 +118,7 @@ populationIn(100000000 to 300000000, NonEmptyList("USA", "BRA", "PAK", "GBR")).q
 In the previous chapter's *Diving Deeper* we saw how a query constructed with the `sql` interpolator is just sugar for the `process` constructor defined in the `doobie.hi.connection` module (aliased as `HC`). Here we see that the second parameter, a `PreparedStatementIO` program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.
 
 ```tut:silent
-import scalaz.stream.Process
+import fs2.Stream
 
 val q = """
   select code, name, population, gnp
@@ -126,7 +127,7 @@ val q = """
   and   population < ?
   """
 
-def proc(range: Range): Process[ConnectionIO, Country] =
+def proc(range: Range): Stream[ConnectionIO, Country] =
   HC.process[Country](q, HPS.set((range.min, range.max)), 512)
 ```
 

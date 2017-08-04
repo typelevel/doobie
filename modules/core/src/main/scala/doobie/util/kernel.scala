@@ -2,7 +2,8 @@ package doobie.util
 
 import java.sql.{ ResultSet, PreparedStatement }
 
-import scalaz.InvariantFunctor
+import cats.Cartesian
+import cats.functor.{ Invariant => InvariantFunctor }
 
 import shapeless._
 import shapeless.labelled.{ field, FieldType }
@@ -26,7 +27,7 @@ object kernel {
     val update: (ResultSet, Int, I) => Unit
     val width: Int
 
-    def xmap[B](f: A => B, g: B => A): Kernel[B] =
+    def imap[B](f: A => B)(g: B => A): Kernel[B] =
       new Kernel[B] {
         type I      = outer.I
         val ia      = outer.ia andThen f
@@ -112,10 +113,15 @@ object kernel {
 
     implicit val kernelInvariantFunctor: InvariantFunctor[Kernel] =
       new InvariantFunctor[Kernel] {
-        def xmap[A, B](ma: Kernel[A], f: A => B, g: B => A): Kernel[B] =
-          ma.xmap(f, g)
+        def imap[A, B](ma: Kernel[A])(f: A => B)(g: B => A): Kernel[B] =
+          ma.imap(f)(g)
       }
 
+    implicit val kernelCarterisn: Cartesian[Kernel] =
+      new Cartesian[Kernel] {
+        def product[A, B](fa: Kernel[A], fb: Kernel[B]): Kernel[(A, B)] =
+          Kernel.product(fa, fb)
+      }
 
   }
 

@@ -1,7 +1,11 @@
 package doobie.postgres.free
 
-import scalaz.{ Catchable, Free => F, Kleisli, Monad, ~>, \/ }
-import scalaz.syntax.catchable._
+import cats.~>
+import cats.free.{ Free => F }
+import cats.data.Kleisli
+import scala.util.{ Either => \/ }
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Suspendable }
 
 import doobie.util.capture._
 
@@ -89,18 +93,13 @@ object fastpath extends FastpathIOInstances { self =>
    */
   implicit val CatchableFastpathIO: Catchable[FastpathIO] =
     new Catchable[FastpathIO] {
+      def pure[A](a: A): FastpathIO[A] = self.delay(a)
+      override def map[A, B](fa: FastpathIO[A])(f: A => B): FastpathIO[B] = fa.map(f)
+      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = fa.flatMap(f)
       def attempt[A](f: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(f)
       def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
     }
 
-  /**
-   * Capture instance for [[FastpathIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CaptureFastpathIO: Capture[FastpathIO] =
-    new Capture[FastpathIO] {
-      def apply[A](a: => A): FastpathIO[A] = self.delay(a)
-    }
 
   /** 
    * Lift a FastpathIO[A] into an exception-capturing FastpathIO[Throwable \/ A].
@@ -168,13 +167,13 @@ object fastpath extends FastpathIOInstances { self =>
   * Natural transformation from `FastpathOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.fastpath.Fastpath`. 
   * @group Algebra
   */
- def kleisliTrans[M[_]: Monad: Catchable: Capture]: FastpathOp ~> Kleisli[M, PGFastpath, ?] =
+ def kleisliTrans[M[_]: Catchable: Suspendable]: FastpathOp ~> Kleisli[M, PGFastpath, ?] =
    new (FastpathOp ~> Kleisli[M, PGFastpath, ?]) {
 
-     val L = Predef.implicitly[Capture[M]]
+     val L = Predef.implicitly[Suspendable[M]]
 
      def primitive[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] =
-       Kleisli(s => L.apply(f(s)))
+       Kleisli(s => L.delay(f(s)))
 
      def apply[A](op: FastpathOp[A]): Kleisli[M, PGFastpath, A] = 
        op match {
@@ -184,7 +183,7 @@ object fastpath extends FastpathIOInstances { self =>
   
         // Combinators
         case Pure(a) => primitive(_ => a())
-        case Attempt(a) => a.transK[M].attempt
+        case Attempt(a) => kleisliCatchableInstance[M, PGFastpath].attempt(a.transK[M])
   
         // Primitive Operations
         case AddFunction(a, b) => primitive(_.addFunction(a, b))
@@ -205,11 +204,23 @@ object fastpath extends FastpathIOInstances { self =>
    * @group Algebra
    */
   implicit class FastpathIOOps[A](ma: FastpathIO[A]) {
-    def transK[M[_]: Monad: Catchable: Capture]: Kleisli[M, PGFastpath, A] =
+    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGFastpath, A] =
       ma.foldMap[Kleisli[M, PGFastpath, ?]](kleisliTrans[M])
   }
 
 }
 
 private[free] trait FastpathIOInstances {
+  /**
+   * Suspendable instance for [[FastpathIO]].
+   * @group Typeclass Instances
+   */
+  implicit val SuspendableFastpathIO: Suspendable[FastpathIO] =
+    new Suspendable[FastpathIO] {
+      def pure[A](a: A): FastpathIO[A] = fastpath.delay(a)
+      override def map[A, B](fa: FastpathIO[A])(f: A => B): FastpathIO[B] = fa.map(f)
+      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => FastpathIO[A]): FastpathIO[A] = F.suspend(fa)
+      override def delay[A](a: => A): FastpathIO[A] = fastpath.delay(a)
+    }
 }

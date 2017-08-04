@@ -112,8 +112,8 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
-  .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
+  .dependsOn(core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
+  .aggregate(core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
   .settings(freeGen2Settings)
   .settings(
     freeGen2Dir := file("modules/core/src/main/scala/doobie/free"),
@@ -182,19 +182,8 @@ def coreSettings(mod: String) =
     }.taskValue
   )
 
-lazy val core = project.in(file("modules/core"))
-  .settings(
-    coreSettings("core"),
-    libraryDependencies ++= Seq(
-      "org.scalaz"        %% "scalaz-core"   % scalazVersion,
-      "org.scalaz"        %% "scalaz-effect" % scalazVersion,
-      "org.scalaz.stream" %% "scalaz-stream" % scalazStreamVersion,
-      "com.h2database"    %  "h2"            % h2Version % "test"
-    )
-  )
-
 val catsVersion = "0.9.0"
-lazy val core_cats = project.in(file("modules-cats/core"))
+lazy val core = project.in(file("modules/core"))
   .settings(
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
@@ -214,10 +203,6 @@ lazy val core_cats = project.in(file("modules-cats/core"))
 lazy val example = project.in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
-
-lazy val example_cats = project.in(file("modules-cats/example"))
-  .settings(doobieSettings ++ noPublishSettings)
-  .dependsOn(core_cats, postgres_cats, specs2_cats, scalatest_cats, hikari_cats, h2_cats)
 
 ///
 /// POSTGRES
@@ -248,15 +233,9 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
 
 lazy val postgres = project.in(file("modules/postgres"))
   .settings(
-    postgresSettings("postgres")
-  )
-  .dependsOn(core)
-
-lazy val postgres_cats = project.in(file("modules-cats/postgres"))
-  .settings(
     postgresSettings("postgres-cats")
   )
-  .dependsOn(core_cats)
+  .dependsOn(core)
 
 ///
 /// H2
@@ -272,15 +251,9 @@ def h2Settings(mod: String): Seq[Setting[_]] =
 
 lazy val h2 = project.in(file("modules/h2"))
   .settings(
-    h2Settings("h2")
-  )
-  .dependsOn(core)
-
-lazy val h2_cats = project.in(file("modules-cats/h2"))
-  .settings(
     h2Settings("h2-cats")
   )
-  .dependsOn(core_cats)
+  .dependsOn(core)
 
 ///
 /// HIKARI
@@ -296,15 +269,9 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
 
 lazy val hikari = project.in(file("modules/hikari"))
   .settings(
-    hikariSettings("hikari")
-  )
-  .dependsOn(core)
-
-lazy val hikari_cats = project.in(file("modules-cats/hikari"))
-  .settings(
     hikariSettings("hikari-cats")
   )
-  .dependsOn(core_cats)
+  .dependsOn(core)
 
 ///
 /// SPECS2
@@ -320,17 +287,10 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
 
 lazy val specs2 = project.in(file("modules/specs2"))
   .settings(
-    specs2Settings("specs2")
+    specs2Settings("specs2-cats")
   )
   .dependsOn(core)
   .dependsOn(h2 % "test")
-
-lazy val specs2_cats = project.in(file("modules-cats/specs2"))
-  .settings(
-    specs2Settings("specs2-cats")
-  )
-  .dependsOn(core_cats)
-  .dependsOn(h2_cats % "test")
 
 ///
 /// SCALATEST
@@ -349,15 +309,9 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
 
 lazy val scalatest = project.in(file("modules/scalatest"))
   .settings(
-    scalaTestSettings("scalatest")
-  )
-  .dependsOn(core)
-
-lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
-  .settings(
     scalaTestSettings("scalatest-cats")
   )
-  .dependsOn(core_cats)
+  .dependsOn(core)
 
 ///
 /// BENCH
@@ -366,10 +320,6 @@ lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
 lazy val bench = project.in(file("modules/bench"))
   .settings(doobieSettings ++ noPublishSettings)
   .dependsOn(core, postgres)
-
-lazy val bench_cats = project.in(file("modules-cats/bench"))
-  .settings(doobieSettings ++ noPublishSettings)
-  .dependsOn(core_cats, postgres_cats)
 
 ///
 /// DOCS
@@ -405,9 +355,7 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
   )
 
 lazy val docs = project.in(file("modules/docs"))
-  .settings(
-    docsSettings("scalaz")
-  )
+  .settings(docsSettings("cats", "fs2"))
   .dependsOn(
     core,
     postgres,
@@ -415,17 +363,6 @@ lazy val docs = project.in(file("modules/docs"))
     hikari,
     h2,
     scalatest
-  )
-
-lazy val docs_cats = project.in(file("modules-cats/docs"))
-  .settings(docsSettings("cats", "fs2"))
-  .dependsOn(
-    core_cats,
-    postgres_cats,
-    specs2_cats,
-    hikari_cats,
-    h2_cats,
-    scalatest_cats
   )
 
 ///
@@ -445,9 +382,5 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val refined = project.in(file("modules/refined"))
-  .settings(refinedSettings("refined"))
-  .dependsOn(core)
-
-lazy val refined_cats = project.in(file("modules-cats/refined"))
   .settings(refinedSettings("refined-cats"))
-  .dependsOn(core_cats)
+  .dependsOn(core)

@@ -2,8 +2,8 @@ package doobie.enum
 
 import java.sql.Types._
 
-import scalaz.Order
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Order
+import cats.kernel.instances.int._
 
 object jdbctype {
 
@@ -117,7 +117,7 @@ object jdbctype {
       }
 
     implicit val OrderJdbcType: Order[JdbcType] =
-      Order.orderBy(_.toInt)
+      Order.by(_.toInt)
 
   }
 

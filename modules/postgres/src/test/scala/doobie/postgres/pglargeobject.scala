@@ -9,7 +9,8 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 
-import scalaz._, Scalaz._
+import cats.implicits._
+import fs2.interop.cats._
 
 object pglargeobjectspec extends Specification with FileEquality {
 

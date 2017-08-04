@@ -2,7 +2,7 @@ package doobie.util
 
 import doobie.imports._
 
-import scalaz._, Scalaz._
+import cats.{ Reducible => Foldable1, _}, cats.implicits._
 
 /** Module of `Fragment` constructors. */
 object fragments {

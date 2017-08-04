@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.lang.Object
 import java.lang.String
@@ -121,11 +123,15 @@ object ref {
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
 // RefIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableRefIO: Catchable[RefIO] with Capture[RefIO] =
-    new Catchable[RefIO] with Capture[RefIO] {
+  implicit val CatchableRefIO: Suspendable[RefIO] with Catchable[RefIO] =
+    new Suspendable[RefIO] with Catchable[RefIO] {
+      def pure[A](a: A): RefIO[A] = ref.delay(a)
+      override def map[A, B](fa: RefIO[A])(f: A => B): RefIO[B] = fa.map(f)
+      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => RefIO[A]): RefIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): RefIO[A] = ref.delay(a)
       def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
       def fail[A](err: Throwable): RefIO[A] = ref.fail(err)
-      def apply[A](a: => A): RefIO[A] = ref.delay(a)
     }
 
 }

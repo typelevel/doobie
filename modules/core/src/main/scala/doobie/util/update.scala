@@ -14,12 +14,12 @@ import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
 
-import scalaz.{ Contravariant, Foldable, Catchable, -\/, \/- }
-import scalaz.std.list._
-import scalaz.stream.Process
-import scalaz.syntax.catchable._
-import scalaz.syntax.monad._
-import scalaz.syntax.foldable._
+import cats.Foldable
+import cats.functor.Contravariant
+import cats.implicits._
+import scala.{ Left => -\/, Right => \/- }
+import fs2.util.Catchable
+import fs2.{ Stream => Process }
 
 /** Module defining updates parameterized by input type. */
 object update {

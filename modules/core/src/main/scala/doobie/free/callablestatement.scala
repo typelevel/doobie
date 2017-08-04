@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.Reader
@@ -1272,11 +1274,15 @@ object callablestatement {
   val wasNull: CallableStatementIO[Boolean] = FF.liftF(WasNull)
 
 // CallableStatementIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableCallableStatementIO: Catchable[CallableStatementIO] with Capture[CallableStatementIO] =
-    new Catchable[CallableStatementIO] with Capture[CallableStatementIO] {
+  implicit val CatchableCallableStatementIO: Suspendable[CallableStatementIO] with Catchable[CallableStatementIO] =
+    new Suspendable[CallableStatementIO] with Catchable[CallableStatementIO] {
+      def pure[A](a: A): CallableStatementIO[A] = callablestatement.delay(a)
+      override def map[A, B](fa: CallableStatementIO[A])(f: A => B): CallableStatementIO[B] = fa.map(f)
+      def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => CallableStatementIO[A]): CallableStatementIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
       def attempt[A](f: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(f)
       def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.fail(err)
-      def apply[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
     }
 
 }

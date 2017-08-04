@@ -12,7 +12,8 @@ First let's get our imports out of the way and set up a `Transactor` as we did b
 
 ```tut:silent
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -49,7 +50,6 @@ Let's break this down a bit.
 - `.list` is a convenience method that streams the results, accumulating them in a `List`, in this case yielding a `ConnectionIO[List[String]]`. Similar methods are:
   - `.vector`, which accumulates to a `Vector`
   - `.to[Coll]`, which accumulates to a type `Coll`, given an implicit `CanBuildFrom`. This works with Scala standard library collections.
-  - `.accumulate[M[_]: MonadPlus]` which accumulates to a universally quantified monoid `M`. This works with many scalaz collections, as well as standard library collections with `MonadPlus` instances.
   - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
   - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
   - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
@@ -70,12 +70,13 @@ This is ok, but there's not much point reading all the results from the database
 ```
 
 The difference here is that `process` gives us a
-`scalaz.stream.Process[ConnectionIO, String]`
+`Process[ConnectionIO, String]` (an alias for `fs2.Stream[ConnectionIO, String]`)
 that emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
+> From this point on we use the alias `Process[A, B]` for `fs2.Stream[A, B]`
 
 Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Process` is a very general and powerful tool.
-For more information see the [scalaz-stream](https://github.com/scalaz/scalaz-stream) repo, which has a good list of learning resources.
+For more information see the [fs2](https://github.com/functional-streams-for-scala/fs2) repo, which has a good list of learning resources.
 
 ### YOLO Mode
 

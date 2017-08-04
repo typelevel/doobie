@@ -6,7 +6,7 @@ import doobie.postgres.imports._
 
 import java.io.{File, InputStream, OutputStream}
 
-import scalaz.syntax.apply._
+import cats.implicits._
 
 object largeobject {
 

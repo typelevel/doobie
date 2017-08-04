@@ -3,8 +3,9 @@ package doobie.util
 import scala.annotation.tailrec
 import scala.language.higherKinds
 
-import scalaz.{ Monad, Catchable, \/, -\/, \/- }
-import doobie.util.capture.Capture
+import scala.util.{ Either => \/ }
+import scala.util.{ Left => -\/, Right => \/- }
+import fs2.util.{ Catchable, Suspendable, Monad }
 
 object iolite {
   sealed abstract class IOLite[A] { self =>
@@ -90,25 +91,25 @@ object iolite {
 
   trait IOInstances extends IOInstances0 {
 
-    implicit val MonadIOLite: Monad[IOLite] =
-      new Monad[IOLite] {
-        def bind[A, B](fa: IOLite[A])(f: A => IOLite[B]): IOLite[B] = fa.flatMap(f)
-        def point[A](a: => A): IOLite[A] = IOLite.pure(a)
-      }
-
-    implicit val CaptureIOLite: Capture[IOLite] =
-      new Capture[IOLite] {
-        def apply[A](a: => A) = IOLite.primitive(a)
-      }
 
     implicit val CatchableIOLite: Catchable[IOLite] =
       new Catchable[IOLite] {
+        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
+        override def map[A, B](ma: IOLite[A])(f: A => B): IOLite[B] = ma.map(f)
+        def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
         def attempt[A](fa: IOLite[A]): IOLite[Throwable \/ A] = fa.attempt
         def fail[A](t: Throwable): IOLite[A] = IOLite.fail(t)
       }
   }
 
   private[iolite] trait IOInstances0 {
+    implicit val SuspendableIOLite: Suspendable[IOLite] =
+      new Suspendable[IOLite] {
+        def pure[A](a: A): IOLite[A] = IOLite.pure(a)
+        override def map[A, B](ma: IOLite[A])(f: A => B): IOLite[B] = ma.map(f)
+        def flatMap[A, B](ma: IOLite[A])(f: A => IOLite[B]): IOLite[B] = ma.flatMap(f)
+        def suspend[A](ma: => IOLite[A]): IOLite[A] = IOLite.unit.flatMap(_ => ma)
+      }
   }
 
   trait IOFunctions {

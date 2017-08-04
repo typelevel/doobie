@@ -6,6 +6,7 @@ import doobie.postgres.imports._
 
 import org.postgresql.geometric.PGpoint
 
+import fs2.interop.cats._
 
 object PostgresPoint extends App {
 

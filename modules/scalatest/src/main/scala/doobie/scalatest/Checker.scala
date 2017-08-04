@@ -13,8 +13,10 @@ import org.scalatest.Assertions
 
 import scala.reflect.runtime.universe.WeakTypeTag
 
-import doobie.util.capture.Capture
-import scalaz.{ Monad, Catchable, \/, -\/, \/- }
+import scala.util.{ Either => \/, Left => -\/, Right => \/- }
+import cats.Monad
+import fs2.util.{ Catchable, Suspendable }
+import fs2.interop.cats._
 
 /**
   * Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -46,7 +48,7 @@ trait Checker[M[_]] {
   // Effect type, required instances, unsafe run
   implicit val monadM: Monad[M]
   implicit val catchableM: Catchable[M]
-  implicit val captureM: Capture[M]
+  implicit val captureM: Suspendable[M]
   def unsafePerformIO[A](ma: M[A]): A
 
   def transactor: Transactor[M]
@@ -137,28 +139,20 @@ trait IOLiteChecker extends Checker[IOLite] {
   self: Assertions =>
   val monadM: Monad[IOLite] = implicitly
   val catchableM: Catchable[IOLite] = implicitly
-  val captureM: Capture[IOLite] = implicitly
+  val captureM: Suspendable[IOLite] = implicitly
   def unsafePerformIO[A](ma: IOLite[A]) = ma.unsafePerformIO
 }
 
+import fs2.Task
+import scala.concurrent.duration.Duration
+import scala.concurrent.Await
 
-import scalaz.concurrent.Task
-import scalaz.effect.IO
-
-/** Implementation of Checker[scalaz.concurrent.Task] */
+/** Implementation of Checker[fs2.Task] */
 trait TaskChecker extends Checker[Task] {
   self: Assertions =>
   val monadM: Monad[Task] = implicitly
   val catchableM: Catchable[Task] = implicitly
-  val captureM: Capture[Task] = implicitly
-  def unsafePerformIO[A](ma: Task[A]) = ma.unsafePerformSync
+  val captureM: Suspendable[Task] = implicitly
+  def unsafePerformIO[A](ma: Task[A]) = ma.unsafeRun
 }
 
-/** Implementation of Checker[scalaz.effect.IO] */
-trait IOChecker extends Checker[IO] {
-  self: Assertions =>
-  val monadM: Monad[IO] = implicitly
-  val catchableM: Catchable[IO] = implicitly
-  val captureM: Capture[IO] = implicitly
-  def unsafePerformIO[A](ma: IO[A]) = ma.unsafePerformIO
-}

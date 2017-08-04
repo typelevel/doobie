@@ -3,7 +3,7 @@ package doobie.syntax
 import doobie.free.connection.ConnectionIO
 import doobie.util.transactor.Transactor
 
-import scalaz.Monad
+import cats.Monad
 
 object connectionio {
 

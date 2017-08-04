@@ -4,7 +4,8 @@ import shapeless._, shapeless.test._
 import doobie.imports._
 import org.specs2.mutable.Specification
 
-import scalaz.{ Free, Coyoneda, Monad }
+import cats.Monad
+import cats.free.{ Free, Coyoneda }
 
 object unapplyspec extends Specification {
 

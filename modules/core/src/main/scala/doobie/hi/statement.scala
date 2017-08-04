@@ -17,6 +17,7 @@ import doobie.free.{ databasemetadata => DMD }
 
 import doobie.util.composite._
 
+import fs2.util.Catchable
 
 import java.net.URL
 import java.util.{ Date, Calendar }

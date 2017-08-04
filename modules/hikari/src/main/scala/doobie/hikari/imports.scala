@@ -1,6 +1,6 @@
 package doobie.hikari
 
-import doobie.util.capture.Capture
+import fs2.util.{ Suspendable => Capture }
 
 
 object imports {

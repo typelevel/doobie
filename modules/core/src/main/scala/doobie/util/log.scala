@@ -1,7 +1,7 @@
 package doobie.util
 
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._, cats.functor.Contravariant
 import java.util.logging.{ Logger, Level }
 import scala.concurrent.duration.{ FiniteDuration => FD }
 import scala.Predef.augmentString

@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -168,11 +170,15 @@ object nclob {
   def truncate(a: Long): NClobIO[Unit] = FF.liftF(Truncate(a))
 
 // NClobIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableNClobIO: Catchable[NClobIO] with Capture[NClobIO] =
-    new Catchable[NClobIO] with Capture[NClobIO] {
+  implicit val CatchableNClobIO: Suspendable[NClobIO] with Catchable[NClobIO] =
+    new Suspendable[NClobIO] with Catchable[NClobIO] {
+      def pure[A](a: A): NClobIO[A] = nclob.delay(a)
+      override def map[A, B](fa: NClobIO[A])(f: A => B): NClobIO[B] = fa.map(f)
+      def flatMap[A, B](fa: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => NClobIO[A]): NClobIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): NClobIO[A] = nclob.delay(a)
       def attempt[A](f: NClobIO[A]): NClobIO[Throwable \/ A] = nclob.attempt(f)
       def fail[A](err: Throwable): NClobIO[A] = nclob.fail(err)
-      def apply[A](a: => A): NClobIO[A] = nclob.delay(a)
     }
 
 }

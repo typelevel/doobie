@@ -12,7 +12,8 @@ Again we set up a transactor and pull in YOLO mode, but this time we're not usin
 
 ```tut:silent
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -191,9 +192,9 @@ insertMany(data).quick.unsafePerformIO
 For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
 
 ```tut:silent
-import scalaz.stream.Process
+import fs2.Stream
 
-def insertMany2(ps: List[PersonInfo]): Process[ConnectionIO, Person] = {
+def insertMany2(ps: List[PersonInfo]): Stream[ConnectionIO, Person] = {
   val sql = "insert into person (name, age) values (?, ?)"
   Update[PersonInfo](sql).updateManyWithGeneratedKeys[Person]("id", "name", "age")(ps)
 }

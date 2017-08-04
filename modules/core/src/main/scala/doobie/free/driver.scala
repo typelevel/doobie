@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.lang.String
 import java.sql.Blob
@@ -137,11 +139,15 @@ object driver {
   val jdbcCompliant: DriverIO[Boolean] = FF.liftF(JdbcCompliant)
 
 // DriverIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableDriverIO: Catchable[DriverIO] with Capture[DriverIO] =
-    new Catchable[DriverIO] with Capture[DriverIO] {
+  implicit val CatchableDriverIO: Suspendable[DriverIO] with Catchable[DriverIO] =
+    new Suspendable[DriverIO] with Catchable[DriverIO] {
+      def pure[A](a: A): DriverIO[A] = driver.delay(a)
+      override def map[A, B](fa: DriverIO[A])(f: A => B): DriverIO[B] = fa.map(f)
+      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => DriverIO[A]): DriverIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): DriverIO[A] = driver.delay(a)
       def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
       def fail[A](err: Throwable): DriverIO[A] = driver.fail(err)
-      def apply[A](a: => A): DriverIO[A] = driver.delay(a)
     }
 
 }

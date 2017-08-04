@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.io.InputStream
 import java.io.Reader
@@ -252,11 +254,15 @@ object sqloutput {
   def writeURL(a: URL): SQLOutputIO[Unit] = FF.liftF(WriteURL(a))
 
 // SQLOutputIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableSQLOutputIO: Catchable[SQLOutputIO] with Capture[SQLOutputIO] =
-    new Catchable[SQLOutputIO] with Capture[SQLOutputIO] {
+  implicit val CatchableSQLOutputIO: Suspendable[SQLOutputIO] with Catchable[SQLOutputIO] =
+    new Suspendable[SQLOutputIO] with Catchable[SQLOutputIO] {
+      def pure[A](a: A): SQLOutputIO[A] = sqloutput.delay(a)
+      override def map[A, B](fa: SQLOutputIO[A])(f: A => B): SQLOutputIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => SQLOutputIO[A]): SQLOutputIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): SQLOutputIO[A] = sqloutput.delay(a)
       def attempt[A](f: SQLOutputIO[A]): SQLOutputIO[Throwable \/ A] = sqloutput.attempt(f)
       def fail[A](err: Throwable): SQLOutputIO[A] = sqloutput.fail(err)
-      def apply[A](a: => A): SQLOutputIO[A] = sqloutput.delay(a)
     }
 
 }

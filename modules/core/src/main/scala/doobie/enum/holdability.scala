@@ -4,8 +4,8 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
-import scalaz.Equal
-import scalaz.std.anyVal.intInstance
+import cats.kernel.Eq
+import cats.kernel.instances.int._
 
 object holdability {
 
@@ -27,8 +27,8 @@ object holdability {
     def unsafeFromInt(n:Int): Holdability =
       fromInt(n).getOrElse(throw InvalidOrdinal[Holdability](n))
 
-    implicit val EqualHoldability: Equal[Holdability] =
-      Equal.equalBy(_.toInt)
+    implicit val EqHoldability: Eq[Holdability] =
+      Eq.by(_.toInt)
 
   }
 

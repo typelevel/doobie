@@ -18,8 +18,10 @@ import org.specs2.specification.create.{ FormattingFragments => Format }
 
 import scala.reflect.runtime.universe.TypeTag
 
-import doobie.util.capture.Capture
-import scalaz.{ Monad, Catchable, -\/, \/- }
+import scala.util.{ Left => -\/, Right => \/- }
+import cats.Monad
+import fs2.util.{ Catchable, Suspendable }
+import fs2.interop.cats._
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -51,7 +53,7 @@ object analysisspec {
     // Effect type, required instances, unsafe run
     implicit val monadM: Monad[M]
     implicit val catchableM: Catchable[M]
-    implicit val captureM: Capture[M]
+    implicit val captureM: Suspendable[M]
     def unsafePerformIO[A](ma: M[A]): A
 
     def transactor: Transactor[M]
@@ -122,28 +124,19 @@ object analysisspec {
   trait IOLiteChecker extends Checker[IOLite] { this: Specification =>
     val monadM: Monad[IOLite] = implicitly
     val catchableM: Catchable[IOLite] = implicitly
-    val captureM: Capture[IOLite] = implicitly
+    val captureM: Suspendable[IOLite] = implicitly
     def unsafePerformIO[A](ma: IOLite[A]) = ma.unsafePerformIO
   }
 
+  import fs2.Task
 
-  import scalaz.concurrent.Task
-  import scalaz.effect.IO
-
-  /** Implementation of Checker[scalaz.concurrent.Task] */
+  /** Implementation of Checker[fs2.Task] */
   trait TaskChecker extends Checker[Task] { this: Specification =>
     val monadM: Monad[Task] = implicitly
     val catchableM: Catchable[Task] = implicitly
-    val captureM: Capture[Task] = implicitly
-    def unsafePerformIO[A](ma: Task[A]) = ma.unsafePerformSync
+    val captureM: Suspendable[Task] = implicitly
+    def unsafePerformIO[A](ma: Task[A]) = ma.unsafeRun
   }
 
-  /** Implementation of Checker[scalaz.effect.IO] */
-  trait IOChecker extends Checker[IO] { this: Specification =>
-    val monadM: Monad[IO] = implicitly
-    val catchableM: Catchable[IO] = implicitly
-    val captureM: Capture[IO] = implicitly
-    def unsafePerformIO[A](ma: IO[A]) = ma.unsafePerformIO
-  }
 
 }

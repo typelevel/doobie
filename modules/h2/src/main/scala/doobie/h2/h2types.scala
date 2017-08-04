@@ -10,7 +10,7 @@ import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
+import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
 
 /** `Meta` instances for H2 types. */

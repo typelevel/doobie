@@ -26,10 +26,14 @@ import scala.collection.JavaConverters._
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.intArrayOps
 
-import scalaz.{ Monad, MonadPlus, IList, NonEmptyList }
-import scalaz.syntax.id._
-import scalaz.syntax.monadPlus._
-import scalaz.stream.Process
+import cats.{ Monad, MonadCombine => MonadPlus }
+import cats.data.NonEmptyList
+import cats.implicits._
+import doobie.util.compat.cats.monad._
+import fs2.{ Stream => Process }
+import fs2.Stream.{ eval, repeatEval }
+import fs2.pipe.unNoneTerminate
+import fs2.util.Catchable
 
 /**
  * Module of high-level constructors for `ResultSetIO` actions.
@@ -89,18 +93,6 @@ object resultset {
   def get[A](implicit A: Composite[A]): ResultSetIO[A] =
     get(1)
 
-  /**
-   * Consumes the remainder of the resultset, reading each row as a value of type `A` and
-   * accumulating them in an `IList`.
-   * @group Results
-   */
-  def ilist[A](implicit A: Composite[A]): ResultSetIO[IList[A]] =
-    RS.raw { rs =>
-      var as = IList.empty[A]
-      while (rs.next)
-        as ::= A.unsafeGet(rs, 1)
-      as.reverse
-    }
 
   /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A` and
@@ -210,7 +202,7 @@ object resultset {
    * @group Results
    */
   def getUnique[A: Composite]: ResultSetIO[A] =
-    (getNext[A] |@| next) {
+    (getNext[A] |@| next) map {
       case (Some(a), false) => a
       case (Some(a), true)  => throw UnexpectedContinuation
       case (None, _)        => throw UnexpectedEnd
@@ -222,7 +214,7 @@ object resultset {
    * @group Results
    */
   def getOption[A: Composite]: ResultSetIO[Option[A]] =
-    (getNext[A] |@| next) {
+    (getNext[A] |@| next) map {
       case (a @ Some(_), false) => a
       case (Some(a), true)      => throw UnexpectedContinuation
       case (None, _)            => None
@@ -234,8 +226,8 @@ object resultset {
     * @group Results
     */
   def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
-    (getNext[A] |@| ilist) {
-      case (Some(a), as) => NonEmptyList.nel(a, as)
+    (getNext[A] |@| list) map {
+      case (Some(a), as) => NonEmptyList(a, as)
       case (None, _)     => throw UnexpectedEnd
     }
 

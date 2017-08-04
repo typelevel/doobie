@@ -1,6 +1,6 @@
 package doobie.util
 
-import scalaz.{ -\/, \/- }
+import scala.util.{ Left => -\/, Right => \/- }
 
 import doobie.util.iolite.IOLite
 import doobie.syntax.catchable._

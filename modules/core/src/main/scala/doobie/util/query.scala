@@ -25,10 +25,13 @@ import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import java.sql.ResultSet
 
-import scalaz.{ Catchable, MonadPlus, Profunctor, Contravariant, Functor, NonEmptyList, -\/, \/- }
-import scalaz.stream.Process
-import scalaz.syntax.monad._
-import scalaz.syntax.catchable._
+import cats.implicits._
+import cats.{ Functor, MonadCombine => MonadPlus }
+import cats.functor.{ Contravariant, Profunctor }
+import cats.data.NonEmptyList
+import scala.{ Left => -\/, Right => \/- }
+import fs2.{ Stream => Process }
+import fs2.util.Catchable
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -277,17 +280,23 @@ object query {
     /** @group Typeclass Instances */
     implicit val queryProfunctor: Profunctor[Query] =
       new Profunctor[Query] {
-        def mapfst[A, B, C](fab: Query[A,B])(f: C => A) = fab contramap f
-        def mapsnd[A, B, C](fab: Query[A,B])(f: B => C) = fab map f
+        def dimap[A, B, C, D](fab: Query[A,B])(f: C => A)(g: B => D): Query[C,D] =
+          fab.contramap(f).map(g)
       }
 
     /** @group Typeclass Instances */
     implicit def queryCovariant[A]: Functor[Query[A, ?]] =
-      queryProfunctor.covariantInstance[A]
+      new Functor[Query[A, ?]] {
+        def map[B, C](fa: Query[A, B])(f: B => C): Query[A, C] =
+          fa.map(f)
+      }
 
     /** @group Typeclass Instances */
     implicit def queryContravariant[B]: Contravariant[Query[?, B]] =
-      queryProfunctor.contravariantInstance[B]
+      new Contravariant[Query[?, B]] {
+        def contramap[A, C](fa: Query[A, B])(f: C => A): Query[C, B] =
+          fa.contramap(f)
+      }
 
   }
 

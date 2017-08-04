@@ -15,7 +15,7 @@ import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-import scalaz.NonEmptyList.{ apply => NonEmptyListOf }
+import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
 /** `Meta` and `Atom` instances for PostgreSQL types. */
 object PGTypes extends PGTypes

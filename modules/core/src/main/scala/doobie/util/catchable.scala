@@ -1,8 +1,9 @@
 package doobie.util
 
-import scalaz.{ Monad, Catchable, \/ }
-import scalaz.syntax.bifunctor._
-import scalaz.syntax.monad._
+import scala.{ Either => \/ }
+import cats.implicits._
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Monad }
 
 /**
  * Module of additional combinators for `Catchable`, all defined in terms of `attempt`. Similar to 

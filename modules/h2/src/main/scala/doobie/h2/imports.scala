@@ -1,6 +1,6 @@
 package doobie.h2
 
-import doobie.util.capture.Capture
+import fs2.util.{ Suspendable => Capture }
 
 object imports extends H2Types {
 

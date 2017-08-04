@@ -11,8 +11,11 @@ import doobie.util.meta._
 import scala.Predef._ // TODO: minimize
 import scala.reflect.runtime.universe.TypeTag
 
-import scalaz._, Scalaz._
-import scalaz.\&/._
+import scala.util.{ Either => \/ }
+import scala.util.{ Left => -\/, Right => \/- }
+import cats.implicits._
+import cats.data.{ Ior => \&/ }
+import cats.data.Ior. { Left => This, Both, Right => That }
 
 /** Module defining a type for analyzing the type alignment of prepared statements. */
 object analysis {

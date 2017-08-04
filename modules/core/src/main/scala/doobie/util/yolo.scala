@@ -6,7 +6,6 @@ import doobie.syntax.process._
 import doobie.syntax.catchable._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
-import doobie.util.capture._
 import doobie.util.query._
 import doobie.util.update._
 import doobie.util.transactor._
@@ -14,9 +13,12 @@ import doobie.util.pretty.wrap
 
 import scala.reflect.runtime.universe.TypeTag
 
-import scalaz._,Scalaz._
-import scalaz.stream.Process
-import scalaz.stream.Process. { eval, eval_, halt }
+import scala.util.{ Left => -\/, Right => \/- }
+import cats.Monad
+import cats.implicits._
+import fs2.interop.cats._
+import fs2.util.{ Catchable, Suspendable }
+import fs2.{ Stream => Process }
 
 import java.sql.Connection
 import Predef._
@@ -24,7 +26,7 @@ import Predef._
 /** Module for implicit syntax useful in REPL session. */
 object yolo {
 
-  class Yolo[M[_]: Monad: Catchable: Capture](xa: Transactor[M]) {
+  class Yolo[M[_]: Catchable: Suspendable](xa: Transactor[M]) {
 
     private def out(s: String): ConnectionIO[Unit] =
       delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))

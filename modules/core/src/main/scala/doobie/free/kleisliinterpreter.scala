@@ -1,8 +1,12 @@
 package doobie.free
 
-// Library imports required for the scalaz implementation.
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free, Kleisli, Monad, ~>, \/ }
+// Library imports required for the Cats implementation.
+import cats.{ Monad, ~> }
+import cats.data.Kleisli
+import cats.free.Free
+import fs2.util.{ Catchable, Suspendable => Capture }
+import fs2.interop.cats._
+import scala.util.{ Either => \/ }
 
 // Types referenced in the JDBC API
 import java.io.InputStream

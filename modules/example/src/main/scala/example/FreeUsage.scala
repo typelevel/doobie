@@ -9,7 +9,8 @@ import doobie.free.{ resultset => RS }
 import doobie.syntax.catchable.ToDoobieCatchableOps._
 import doobie.util.transactor.Transactor
 
-import scalaz.Scalaz._
+import cats.implicits._
+import fs2.interop.cats._
 
 // JDBC program using the low-level API
 object FreeUsage {

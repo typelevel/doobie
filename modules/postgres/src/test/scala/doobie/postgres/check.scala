@@ -3,6 +3,8 @@ package doobie.postgres
 import doobie.imports._
 import doobie.postgres.imports._
 
+import fs2.util.Suspendable
+import fs2.interop.cats._
 
 import org.specs2.mutable.Specification
 

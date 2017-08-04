@@ -8,11 +8,12 @@ The YOLO-mode query checking feature demonstated in an earlier chapter is also a
 
 ### Setting Up
 
-As with earlier chapters we set up a `Transactor` and YOLO mode. We will also use the `doobie-specs2` and `doobie-scalatest` add-ons.
+As with earlier chapters we set up a `Transactor` and YOLO mode. We will also use the `doobie-specs2-cats` and `doobie-scalatest-cats` add-ons.
 
 ```tut:silent
 import doobie.imports._
-import scalaz._, Scalaz._
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 val xa = DriverManagerTransactor[IOLite](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -53,7 +54,7 @@ def update(oldName: String, newName: String) = sql"""
 
 ### The Specs2 Package
 
-The `doobie-specs2` add-on provides a mix-in trait that we can add to a `Specification` to allow for typechecking of queries, interpreted as a set of specifications.
+The `doobie-specs2-cats` add-on provides a mix-in trait that we can add to a `Specification` to allow for typechecking of queries, interpreted as a set of specifications.
 
 Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IOLite]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
 
@@ -83,7 +84,7 @@ When we run the test we get output similar to what we saw in the previous chapte
 
 ### The ScalaTest Package
 
-The `doobie-scalatest` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the Specs2 package above.
+The `doobie-scalatest-cats` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the Specs2 package above.
 
 ```tut:silent
 import doobie.scalatest.imports._

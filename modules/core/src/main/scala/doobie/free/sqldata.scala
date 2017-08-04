@@ -1,7 +1,9 @@
 package doobie.free
 
-import doobie.util.capture.Capture
-import scalaz.{ Catchable, Free => FF, Monad, ~>, \/ }
+import cats.{ Monad, ~> }
+import cats.free.{ Free => FF }
+import scala.util.{ Either => \/ }
+import fs2.util.{ Catchable, Suspendable }
 
 import java.lang.String
 import java.sql.Blob
@@ -114,11 +116,15 @@ object sqldata {
   def writeSQL(a: SQLOutput): SQLDataIO[Unit] = FF.liftF(WriteSQL(a))
 
 // SQLDataIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableSQLDataIO: Catchable[SQLDataIO] with Capture[SQLDataIO] =
-    new Catchable[SQLDataIO] with Capture[SQLDataIO] {
+  implicit val CatchableSQLDataIO: Suspendable[SQLDataIO] with Catchable[SQLDataIO] =
+    new Suspendable[SQLDataIO] with Catchable[SQLDataIO] {
+      def pure[A](a: A): SQLDataIO[A] = sqldata.delay(a)
+      override def map[A, B](fa: SQLDataIO[A])(f: A => B): SQLDataIO[B] = fa.map(f)
+      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = fa.flatMap(f)
+      def suspend[A](fa: => SQLDataIO[A]): SQLDataIO[A] = FF.suspend(fa)
+      override def delay[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
       def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
       def fail[A](err: Throwable): SQLDataIO[A] = sqldata.fail(err)
-      def apply[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
     }
 
 }

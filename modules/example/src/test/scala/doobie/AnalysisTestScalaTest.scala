@@ -4,6 +4,7 @@ import doobie.imports._
 import doobie.scalatest.imports._
 import org.scalatest._
 
+import fs2.interop.cats._
 
 class AnalysisTestScalaCheck extends FunSuite with Matchers with IOLiteChecker {
   val transactor = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")

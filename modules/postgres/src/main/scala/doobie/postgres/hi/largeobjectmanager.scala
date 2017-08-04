@@ -5,7 +5,7 @@ import doobie.postgres.imports._
 
 import java.io.{File, OutputStream, InputStream}
 
-import scalaz.syntax.monad._
+import cats.implicits._
 
 object largeobjectmanager {
 

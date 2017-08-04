@@ -1,19 +1,20 @@
 package doobie.syntax
 
 import doobie.util.transactor.Transactor
-import doobie.util.capture.Capture
 import doobie.free.connection.ConnectionIO
 
 import scala.Predef.=:=
 
-import scalaz.{ Catchable, DList, Monad }
-import scalaz.stream.Process
-import scalaz.syntax.monad._
+import cats.Monad
+import cats.implicits._
+import fs2.interop.cats._
+import fs2.{ Stream => Process }
+import fs2.util.{ Catchable, Suspendable }
 
 /** Syntax for `Process` operations defined in `util.process`. */
 object process {
 
-  implicit class ProcessOps[F[_]: Monad: Catchable: Capture, A](fa: Process[F, A]) {
+  implicit class ProcessOps[F[_]: Catchable: Suspendable, A](fa: Process[F, A]) {
 
     def vector: F[Vector[A]] =
       fa.runLog.map(_.toVector)

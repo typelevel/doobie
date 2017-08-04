@@ -4,7 +4,7 @@ import doobie.util.lens._
 
 import org.specs2.mutable.Specification
 
-import scalaz.State
+import cats.data.State
 
 object lensspec extends Specification {
 
@@ -25,7 +25,7 @@ object lensspec extends Specification {
   val bob = Address(Name("Bob", "Dole"), "123 Foo St.")
 
   def exec[S](st: State[S, _], s: S): S =
-    st.exec(s)
+    st.runS(s).value
 
   import Address._
 
