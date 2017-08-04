@@ -21,6 +21,9 @@ lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
 lazy val monixVersion         = "2.3.0"
+lazy val catsVersion          = "0.9.0"
+
+val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
@@ -141,16 +144,12 @@ lazy val noPublishSettings = Seq(
   publishArtifact := false
 )
 
-lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
-
-///
-/// CORE
-///
-
-def coreSettings(mod: String) =
-  doobieSettings  ++
-  publishSettings ++ Seq(
-    name := "doobie-" + mod,
+lazy val core = project
+  .in(file("modules/core"))
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
@@ -176,13 +175,7 @@ def coreSettings(mod: String) =
             |}
             |""".stripMargin)
       Seq(outFile)
-    }.taskValue
-  )
-
-val catsVersion = "0.9.0"
-lazy val core = project.in(file("modules/core"))
-  .settings(
-    coreSettings("core"),
+    }.taskValue,
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
       "co.fs2"         %% "fs2-cats"  % fs2CatsVersion,
@@ -193,24 +186,18 @@ lazy val core = project.in(file("modules/core"))
     )
   )
 
-///
-/// EXAMPLE
-///
-
-lazy val example = project.in(file("modules/example"))
+lazy val example = project
+  .in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
 
-///
-/// POSTGRES
-///
-
-val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
-
-def postgresSettings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++
-  publishSettings ++ Seq(
-    name  := "doobie-" + mod,
+lazy val postgres = project
+  .in(file("modules/postgres"))
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name  := "doobie-postgres",
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
       "org.postgresql" % "postgresql" % postgresVersion,
@@ -228,75 +215,47 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
       """
   )
 
-lazy val postgres = project.in(file("modules/postgres"))
-  .settings(
-    postgresSettings("postgres")
-  )
+lazy val h2 = project
+  .in(file("modules/h2"))
+  .settings(doobieSettings)
+  .settings(publishSettings)
   .dependsOn(core)
-
-///
-/// H2
-///
-
-def h2Settings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++
-  publishSettings ++ Seq(
-    name  := "doobie-" + mod,
+  .settings(
+    name  := "doobie-h2",
     description := "H2 support for doobie.",
     libraryDependencies += "com.h2database" % "h2"  % h2Version
   )
 
-lazy val h2 = project.in(file("modules/h2"))
-  .settings(
-    h2Settings("h2")
-  )
+lazy val hikari = project
+  .in(file("modules/hikari"))
   .dependsOn(core)
-
-///
-/// HIKARI
-///
-
-def hikariSettings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++
-  publishSettings ++ Seq(
-    name := "doobie-" + mod,
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-hikari",
     description := "Hikari support for doobie.",
     libraryDependencies += "com.zaxxer" % "HikariCP" % hikariVersion
   )
 
-lazy val hikari = project.in(file("modules/hikari"))
-  .settings(
-    hikariSettings("hikari")
-  )
+lazy val specs2 = project
+  .in(file("modules/specs2"))
   .dependsOn(core)
-
-///
-/// SPECS2
-///
-
-def specs2Settings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++
-  publishSettings ++ Seq(
-    name := s"doobie-$mod",
+  .dependsOn(h2 % "test")
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-specs2",
     description := "Specs2 support for doobie.",
     libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
   )
 
-lazy val specs2 = project.in(file("modules/specs2"))
-  .settings(
-    specs2Settings("specs2")
-  )
+lazy val scalatest = project
+  .in(file("modules/scalatest"))
   .dependsOn(core)
-  .dependsOn(h2 % "test")
-
-///
-/// SCALATEST
-///
-
-def scalaTestSettings(mod: String): Seq[Setting[_]] =
-  doobieSettings ++
-  publishSettings ++ Seq(
-    name := s"doobie-$mod",
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := s"doobie-scalatest",
     description := "Scalatest support for doobie.",
     libraryDependencies ++= Seq(
       "org.scalatest"  %% "scalatest" % scalatestVersion,
@@ -304,28 +263,19 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
     )
   )
 
-lazy val scalatest = project.in(file("modules/scalatest"))
-  .settings(
-    scalaTestSettings("scalatest")
-  )
-  .dependsOn(core)
-
-///
-/// BENCH
-///
-
-lazy val bench = project.in(file("modules/bench"))
-  .settings(doobieSettings ++ noPublishSettings)
+lazy val bench = project
+  .in(file("modules/bench"))
   .dependsOn(core, postgres)
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
 
-///
-/// DOCS
-///
-
-def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
-  doobieSettings    ++
-  noPublishSettings ++
-  tutSettings       ++ Seq(
+lazy val docs = project
+  .in(file("modules/docs"))
+  .dependsOn(core, postgres, specs2, hikari, h2, scalatest)
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
+  .settings(tutSettings)
+  .settings(
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
@@ -333,51 +283,22 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
       "io.argonaut" %% "argonaut"      % argonautVersion,
       "io.monix"    %% "monix-eval"    % monixVersion
     ),
-    ctut := {
-      val src = crossTarget.value / "tut"
-      val dst = file("../tpolecat.github.io/_doobie-" + token + "-" + version.value + "/")
-      if (!src.isDirectory) {
-        println("Input directory " + src + " not found.")
-      } else if (!dst.isDirectory) {
-        println("Output directory " + dst + " not found.")
-      } else {
-        println("Copying to " + dst.getPath)
-        val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
-        IO.copy(map, overwrite = true, preserveLastModified = false)
-      }
-    },
     fork in Test := true,
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep
   )
 
-lazy val docs = project.in(file("modules/docs"))
-  .settings(docsSettings("cats", "fs2"))
-  .dependsOn(
-    core,
-    postgres,
-    specs2,
-    hikari,
-    h2,
-    scalatest
-  )
-
-///
-/// REFINED
-///
-
-def refinedSettings(mod: String): Seq[Setting[_]] =
-  doobieSettings  ++
-    publishSettings ++ Seq(
-    name := "doobie-" + mod,
+lazy val refined = project
+  .in(file("modules/refined"))
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-refined",
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"     %% "refined" % refinedVersion,
-      scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
-      "com.h2database" %  "h2"      % h2Version % "test"
+      "eu.timepit"            %% "refined"        % refinedVersion,
+      scalaOrganization.value %  "scala-compiler" % scalaVersion.value % Provided,
+      "com.h2database"        %  "h2"             % h2Version          % "test"
     )
   )
-
-lazy val refined = project.in(file("modules/refined"))
-  .settings(refinedSettings("refined"))
-  .dependsOn(core)
