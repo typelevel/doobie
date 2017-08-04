@@ -1,9 +1,8 @@
 package doobie.util
 
 
-import doobie.free.connection.{ ConnectionIO, setAutoCommit, commit, rollback, close, delay }
+import doobie.free.connection.{ ConnectionIO, delay }
 import doobie.syntax.process._
-import doobie.syntax.catchable._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
 import doobie.util.query._
@@ -11,16 +10,12 @@ import doobie.util.update._
 import doobie.util.transactor._
 import doobie.util.pretty.wrap
 
-import scala.reflect.runtime.universe.TypeTag
-
 import scala.util.{ Left => -\/, Right => \/- }
-import cats.Monad
 import cats.implicits._
 import fs2.interop.cats._
 import fs2.util.{ Catchable, Suspendable }
 import fs2.{ Stream => Process }
 
-import java.sql.Connection
 import Predef._
 
 /** Module for implicit syntax useful in REPL session. */
@@ -119,11 +114,6 @@ object yolo {
     private def assertEmpty(name: String, es: List[AlignmentError]) =
       if (es.isEmpty) success(name, None)
       else failure(name, es.map(formatError).mkString("\n"))
-
-    private val packagePrefix = "\\b[a-z]+\\.".r
-
-    private def typeName[A](tag: TypeTag[A]): String =
-      packagePrefix.replaceAllIn(tag.tpe.toString, "")
 
     private def formatError(e: AlignmentError): String =
       formatError(e.msg)

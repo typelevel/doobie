@@ -1,14 +1,14 @@
 package doobie.util
 
+import cats.Monoid
+
 import doobie.util.composite.Composite
 import doobie.util.query.{ Query, Query0 }
 import doobie.util.update.{ Update, Update0 }
 import doobie.util.log.LogHandler
 import doobie.util.pos.Pos
-import shapeless.HNil
 
-import cats.Monoid
-import fs2.interop.cats._
+import shapeless.HNil
 
 /** Module defining the `Fragment` data type. */
 object fragment {

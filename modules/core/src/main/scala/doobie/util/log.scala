@@ -1,12 +1,8 @@
 package doobie.util
 
-import doobie.imports._
-import cats._, cats.data._, cats.implicits._, cats.functor.Contravariant
-import java.util.logging.{ Logger, Level }
+import java.util.logging.Logger
 import scala.concurrent.duration.{ FiniteDuration => FD }
 import scala.Predef.augmentString
-import shapeless.HList
-import shapeless.ops.hlist.ToTraversable
 
 /** A module of types and instances for logged statements. */
 object log {

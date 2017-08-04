@@ -119,7 +119,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev: Monad[M], ev1: Catchable[M], ev2: Capture[M]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev1: Catchable[M], ev2: Capture[M]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to peform arbitrary configuration on the kernel value (changing the
@@ -242,8 +242,6 @@ object transactor  {
           Transactor(a, a => ev2.delay(a.getConnection), KleisliInterpreter[M](ev0, implicitly, implicitly).ConnectionInterpreter, Strategy.default)
       }
     }
-    @deprecated("use Transactor.fromDataSource", "0.4.2")
-    val DataSourceTransactor: fromDataSource.type = fromDataSource
 
     /** @group Constructors */
     def fromConnection[M[_]: Catchable: Capture](a: Connection)(implicit M: Monad[M]): Transactor.Aux[M, Connection] =
@@ -270,8 +268,6 @@ object transactor  {
         create(driver, DriverManager.getConnection(url, info))
 
     }
-    @deprecated("use Transactor.fromDriverManager", "0.4.2")
-    val DriverManagerTransactor: fromDriverManager.type = fromDriverManager
 
   }
 

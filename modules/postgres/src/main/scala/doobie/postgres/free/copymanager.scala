@@ -7,14 +7,10 @@ import scala.util.{ Either => \/ }
 import fs2.interop.cats._
 import fs2.util.{ Catchable, Suspendable }
 
-import doobie.util.capture._
-
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
-import java.lang.Class
-import java.lang.Object
 import java.lang.String
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.CopyManager

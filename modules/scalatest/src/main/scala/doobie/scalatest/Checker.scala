@@ -17,6 +17,7 @@ import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 import cats.Monad
 import fs2.util.{ Catchable, Suspendable }
 import fs2.interop.cats._
+import fs2.Task
 
 /**
   * Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -66,16 +67,16 @@ trait Checker[M[_]] {
   def check[A](q: Update[A])(implicit A: WeakTypeTag[A]) =
     checkAnalysis(s"Update[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
-  def check[A](q: Update0)(implicit A: WeakTypeTag[A]) =
+  def check[A](q: Update0) =
     checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
   /** Check if the analysis has an error */
   private def hasError(analysisAttempt: Throwable \/ Analysis): Boolean =
     analysisAttempt match {
-      case -\/(e) => true
+      case -\/(_) => true
       case \/-(a) =>
-        !(a.paramDescriptions.map { case (s, es) => es.isEmpty } ++ a.columnDescriptions.map {
-          case (s, es)                           => es.isEmpty
+        !(a.paramDescriptions.map { case (_, es) => es.isEmpty } ++ a.columnDescriptions.map {
+          case (_, es)                           => es.isEmpty
         }).forall(x => x)
     }
 
@@ -143,10 +144,6 @@ trait IOLiteChecker extends Checker[IOLite] {
   def unsafePerformIO[A](ma: IOLite[A]) = ma.unsafePerformIO
 }
 
-import fs2.Task
-import scala.concurrent.duration.Duration
-import scala.concurrent.Await
-
 /** Implementation of Checker[fs2.Task] */
 trait TaskChecker extends Checker[Task] {
   self: Assertions =>
@@ -155,4 +152,3 @@ trait TaskChecker extends Checker[Task] {
   val captureM: Suspendable[Task] = implicitly
   def unsafePerformIO[A](ma: Task[A]) = ma.unsafeRun
 }
-

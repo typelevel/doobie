@@ -1,6 +1,5 @@
 package doobie.postgres.hi
 
-import doobie.imports._
 import doobie.util.io.IOActions
 import doobie.postgres.imports._
 

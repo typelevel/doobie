@@ -27,7 +27,7 @@ trait H2Types {
         case uuidObj =>
           try uuidObj.asInstanceOf[UUID]
           catch {
-            case e: ClassCastException => throw InvalidObjectMapping(classOf[UUID], uuidObj.getClass)
+            case _: ClassCastException => throw InvalidObjectMapping(classOf[UUID], uuidObj.getClass)
           }
       },
       (ps, n, a) => ps.setObject(n, a),

@@ -3,11 +3,11 @@ package doobie.util
 /** Module for source positions. */
 object pos {
 
-  /** A source position. */ 
+  /** A source position. */
   case class Pos(path: String, line: Int) {
 
     def file: String =
-      path.lastIndexOf(java.io.File.separatorChar) match {
+      path.lastIndexOf(java.io.File.separatorChar.toString) match {
         case -1 => path
         case n  => path.substring(n + 1)
       }

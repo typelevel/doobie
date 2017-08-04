@@ -80,7 +80,7 @@ object coproduct {
 
   // Exec it!
   def main(args: Array[String]): Unit = {
-    val xa = DriverManagerTransactor[IOLite](
+    val xa = Transactor.fromDriverManager[IOLite](
       "org.postgresql.Driver",
       "jdbc:postgresql:world",
       "postgres", ""
@@ -100,4 +100,3 @@ object coproduct {
   // United States Minor Outlying Islands
 
 }
-

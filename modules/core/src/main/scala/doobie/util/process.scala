@@ -1,7 +1,6 @@
 package doobie.util
 
-import cats.{ Applicative, Functor }
-import cats.implicits._
+import cats.Applicative
 import fs2.{ Stream => Process, Sink }
 import fs2.Stream.{ attemptEval, fail, emits, empty }
 
@@ -13,7 +12,7 @@ object process {
     _.flatMap(a => Process.eval(f(a)))
 
   /** Stream constructor for effectful source of chunks. */
-  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] = 
+  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Process[F, T] =
     attemptEval(fa) flatMap {
       case Left(e)    => fail(e)
       case Right(seq) => if (seq.isEmpty) empty else (emits(seq) ++ repeatEvalChunks(fa))

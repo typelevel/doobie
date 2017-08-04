@@ -93,7 +93,7 @@ object analysisspec {
       f.map(f => s"${f.file}:${f.line}").getOrElse("(source location unknown)")
 
     private def assertEmpty(es: List[AlignmentError], f: Option[Pos]) =
-      if (es.isEmpty) success
+      if (es.isEmpty) (f, success)._2 // use f to stop warning ... todo, use it!
       else new Failure(es.map(formatError).mkString("\n"), "", Nil)
 
     private val packagePrefix = "\\b[a-z]+\\.".r

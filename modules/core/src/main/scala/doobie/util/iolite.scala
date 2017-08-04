@@ -1,11 +1,10 @@
 package doobie.util
 
 import scala.annotation.tailrec
-import scala.language.higherKinds
 
 import scala.util.{ Either => \/ }
 import scala.util.{ Left => -\/, Right => \/- }
-import fs2.util.{ Catchable, Suspendable, Monad }
+import fs2.util.{ Catchable, Suspendable }
 
 object iolite {
   sealed abstract class IOLite[A] { self =>

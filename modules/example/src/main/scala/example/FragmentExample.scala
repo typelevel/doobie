@@ -1,7 +1,7 @@
 package doobie.example
 
 import doobie.imports._
-import cats._, cats.implicits._
+import cats.implicits._
 import fs2.interop.cats._ // for Monad[IOLite]
 
 object FragmentExample extends App {
@@ -32,7 +32,7 @@ object FragmentExample extends App {
   }
 
   // Our world database
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IOLite](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""

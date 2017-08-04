@@ -7,11 +7,6 @@ import scala.util.{ Either => \/ }
 import fs2.interop.cats._
 import fs2.util.{ Catchable, Suspendable }
 
-import doobie.util.capture._
-
-import java.lang.Class
-import java.lang.Object
-import java.lang.String
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
@@ -20,25 +15,25 @@ import largeobject.LargeObjectIO
 
 /**
  * Algebra and free monad for primitive operations over a `org.postgresql.largeobject.LargeObjectManager`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
- * for library developers. End users will prefer a safer, higher-level API such as that provided 
+ * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
+ * for library developers. End users will prefer a safer, higher-level API such as that provided
  * in the `doobie.hi` package.
  *
  * `LargeObjectManagerIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `LargeObjectManagerOp` to another monad via
- * `Free#foldMap`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, LargeObjectManager, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
+ * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
  * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
  * val a: LargeObjectManagerIO[Foo] = ...
- * 
- * // A JDBC object 
+ *
+ * // A JDBC object
  * val s: LargeObjectManager = ...
- * 
+ *
  * // Unfolding into a Task
  * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
@@ -46,20 +41,20 @@ import largeobject.LargeObjectIO
  * @group Modules
  */
 object largeobjectmanager extends LargeObjectManagerIOInstances {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `org.postgresql.largeobject.LargeObjectManager`.
-   * @group Algebra 
+   * @group Algebra
    */
   sealed trait LargeObjectManagerOp[A]
 
-  /** 
+  /**
    * Module of constructors for `LargeObjectManagerOp`. These are rarely useful outside of the implementation;
    * prefer the smart constructors provided by the `largeobjectmanager` module.
-   * @group Algebra 
+   * @group Algebra
    */
   object LargeObjectManagerOp {
-    
+
     // Lifting
     case class LiftLargeObjectIO[A](s: LargeObject, action: LargeObjectIO[A]) extends LargeObjectManagerOp[A]
 
@@ -79,9 +74,9 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
   import LargeObjectManagerOp._ // We use these immediately
 
   /**
-   * Free monad over a free functor of [[LargeObjectManagerOp]]; abstractly, a computation that consumes 
-   * a `org.postgresql.largeobject.LargeObjectManager` and produces a value of type `A`. 
-   * @group Algebra 
+   * Free monad over a free functor of [[LargeObjectManagerOp]]; abstractly, a computation that consumes
+   * a `org.postgresql.largeobject.LargeObjectManager` and produces a value of type `A`.
+   * @group Algebra
    */
   type LargeObjectManagerIO[A] = F[LargeObjectManagerOp, A]
 
@@ -105,13 +100,13 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
   def liftLargeObject[A](s: LargeObject, action: LargeObjectIO[A]): LargeObjectManagerIO[A] =
     F.liftF(LiftLargeObjectIO(s, action))
 
-  /** 
+  /**
    * Lift a LargeObjectManagerIO[A] into an exception-capturing LargeObjectManagerIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: LargeObjectManagerIO[A]): LargeObjectManagerIO[Throwable \/ A] =
     F.liftF[LargeObjectManagerOp, Throwable \/ A](Attempt(a))
- 
+
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
@@ -119,44 +114,44 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
   def delay[A](a: => A): LargeObjectManagerIO[A] =
     F.liftF(Pure(a _))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val createLO: LargeObjectManagerIO[Long] =
     F.liftF(CreateLO)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def createLO(a: Int): LargeObjectManagerIO[Long] =
     F.liftF(CreateLO1(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def delete(a: Long): LargeObjectManagerIO[Unit] =
     F.liftF(Delete(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def open(a: Long, b: Int): LargeObjectManagerIO[LargeObject] =
     F.liftF(Open(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def open(a: Long): LargeObjectManagerIO[LargeObject] =
     F.liftF(Open1(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def unlink(a: Long): LargeObjectManagerIO[Unit] =
     F.liftF(Unlink(a))
 
- /** 
-  * Natural transformation from `LargeObjectManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObjectManager`. 
+ /**
+  * Natural transformation from `LargeObjectManagerOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObjectManager`.
   * @group Algebra
   */
  def kleisliTrans[M[_]: Catchable: Suspendable]: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?] =
@@ -167,16 +162,16 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
      def primitive[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] =
        Kleisli(s => L.delay(f(s)))
 
-     def apply[A](op: LargeObjectManagerOp[A]): Kleisli[M, LargeObjectManager, A] = 
+     def apply[A](op: LargeObjectManagerOp[A]): Kleisli[M, LargeObjectManager, A] =
        op match {
 
         // Lifting
         case LiftLargeObjectIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
+
         // Combinators
         case Pure(a) => primitive(_ => a())
         case Attempt(a) => kleisliCatchableInstance[M, LargeObjectManager].attempt(a.transK[M])
-  
+
         // Primitive Operations
         case CreateLO => primitive(_.createLO)
         case CreateLO1(a) => primitive(_.createLO(a))
@@ -184,9 +179,9 @@ object largeobjectmanager extends LargeObjectManagerIOInstances {
         case Open(a, b) => primitive(_.open(a, b))
         case Open1(a) => primitive(_.open(a))
         case Unlink(a) => primitive(_.unlink(a))
-  
+
       }
-  
+
     }
 
   /**

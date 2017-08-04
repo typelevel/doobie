@@ -1,9 +1,7 @@
 package doobie.postgres.hi
 
-import org.postgresql.{ PGConnection, PGNotification }
-import org.postgresql.fastpath.Fastpath
+import org.postgresql.PGNotification
 
-import doobie.imports._
 import doobie.postgres.imports._
 
 object pgconnection {

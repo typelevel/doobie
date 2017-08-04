@@ -7,38 +7,33 @@ import scala.util.{ Either => \/ }
 import fs2.interop.cats._
 import fs2.util.{ Catchable, Suspendable }
 
-import doobie.util.capture._
-
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.Class
-import java.lang.Object
-import java.lang.String
 import org.postgresql.largeobject.LargeObject
 
 import largeobject.LargeObjectIO
 
 /**
  * Algebra and free monad for primitive operations over a `org.postgresql.largeobject.LargeObject`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
- * for library developers. End users will prefer a safer, higher-level API such as that provided 
+ * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
+ * for library developers. End users will prefer a safer, higher-level API such as that provided
  * in the `doobie.hi` package.
  *
  * `LargeObjectIO` is a free monad that must be run via an interpreter, most commonly via
  * natural transformation of its underlying algebra `LargeObjectOp` to another monad via
- * `Free#foldMap`. 
+ * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, LargeObject, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
+ * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
  * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
  * val a: LargeObjectIO[Foo] = ...
- * 
- * // A JDBC object 
+ *
+ * // A JDBC object
  * val s: LargeObject = ...
- * 
+ *
  * // Unfolding into a Task
  * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
@@ -46,22 +41,22 @@ import largeobject.LargeObjectIO
  * @group Modules
  */
 object largeobject extends LargeObjectIOInstances {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `org.postgresql.largeobject.LargeObject`.
-   * @group Algebra 
+   * @group Algebra
    */
   sealed trait LargeObjectOp[A]
 
-  /** 
+  /**
    * Module of constructors for `LargeObjectOp`. These are rarely useful outside of the implementation;
    * prefer the smart constructors provided by the `largeobject` module.
-   * @group Algebra 
+   * @group Algebra
    */
   object LargeObjectOp {
-    
+
     // Lifting
-    
+
 
     // Combinators
     case class Attempt[A](action: LargeObjectIO[A]) extends LargeObjectOp[Throwable \/ A]
@@ -88,9 +83,9 @@ object largeobject extends LargeObjectIOInstances {
   import LargeObjectOp._ // We use these immediately
 
   /**
-   * Free monad over a free functor of [[LargeObjectOp]]; abstractly, a computation that consumes 
-   * a `org.postgresql.largeobject.LargeObject` and produces a value of type `A`. 
-   * @group Algebra 
+   * Free monad over a free functor of [[LargeObjectOp]]; abstractly, a computation that consumes
+   * a `org.postgresql.largeobject.LargeObject` and produces a value of type `A`.
+   * @group Algebra
    */
   type LargeObjectIO[A] = F[LargeObjectOp, A]
 
@@ -108,13 +103,13 @@ object largeobject extends LargeObjectIOInstances {
     }
 
 
-  /** 
+  /**
    * Lift a LargeObjectIO[A] into an exception-capturing LargeObjectIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: LargeObjectIO[A]): LargeObjectIO[Throwable \/ A] =
     F.liftF[LargeObjectOp, Throwable \/ A](Attempt(a))
- 
+
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
@@ -122,98 +117,98 @@ object largeobject extends LargeObjectIOInstances {
   def delay[A](a: => A): LargeObjectIO[A] =
     F.liftF(Pure(a _))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val close: LargeObjectIO[Unit] =
     F.liftF(Close)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val copy: LargeObjectIO[LargeObject] =
     F.liftF(Copy)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getInputStream: LargeObjectIO[InputStream] =
     F.liftF(GetInputStream)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getLongOID: LargeObjectIO[Long] =
     F.liftF(GetLongOID)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getOID: LargeObjectIO[Int] =
     F.liftF(GetOID)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getOutputStream: LargeObjectIO[OutputStream] =
     F.liftF(GetOutputStream)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def read(a: Int): LargeObjectIO[Array[Byte]] =
     F.liftF(Read(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def read(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Int] =
     F.liftF(Read1(a, b, c))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def seek(a: Int): LargeObjectIO[Unit] =
     F.liftF(Seek(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def seek(a: Int, b: Int): LargeObjectIO[Unit] =
     F.liftF(Seek1(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val size: LargeObjectIO[Int] =
     F.liftF(Size)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val tell: LargeObjectIO[Int] =
     F.liftF(Tell)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def truncate(a: Int): LargeObjectIO[Unit] =
     F.liftF(Truncate(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] =
     F.liftF(Write(a, b, c))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def write(a: Array[Byte]): LargeObjectIO[Unit] =
     F.liftF(Write1(a))
 
- /** 
-  * Natural transformation from `LargeObjectOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObject`. 
+ /**
+  * Natural transformation from `LargeObjectOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.largeobject.LargeObject`.
   * @group Algebra
   */
  def kleisliTrans[M[_]: Catchable: Suspendable]: LargeObjectOp ~> Kleisli[M, LargeObject, ?] =
@@ -224,16 +219,16 @@ object largeobject extends LargeObjectIOInstances {
      def primitive[A](f: LargeObject => A): Kleisli[M, LargeObject, A] =
        Kleisli(s => L.delay(f(s)))
 
-     def apply[A](op: LargeObjectOp[A]): Kleisli[M, LargeObject, A] = 
+     def apply[A](op: LargeObjectOp[A]): Kleisli[M, LargeObject, A] =
        op match {
 
         // Lifting
-        
-  
+
+
         // Combinators
         case Pure(a) => primitive(_ => a())
         case Attempt(a) => kleisliCatchableInstance[M, LargeObject].attempt(a.transK[M])
-  
+
         // Primitive Operations
         case Close => primitive(_.close)
         case Copy => primitive(_.copy)
@@ -250,9 +245,9 @@ object largeobject extends LargeObjectIOInstances {
         case Truncate(a) => primitive(_.truncate(a))
         case Write(a, b, c) => primitive(_.write(a, b, c))
         case Write1(a) => primitive(_.write(a))
-  
+
       }
-  
+
     }
 
   /**

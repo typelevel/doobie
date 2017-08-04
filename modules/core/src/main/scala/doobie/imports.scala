@@ -5,8 +5,6 @@ import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.catchable.ToDoobieCatchableOps
 import doobie.syntax.foldable.ToDoobieFoldableOps
 
-import cats.{ Monad, Functor }
-import cats.free.Free
 import fs2.util.{ Catchable, Suspendable }
 import fs2.{ Stream => Process }
 
@@ -107,9 +105,6 @@ object imports extends ToDoobieCatchSqlOps
 
   /** @group Type Aliases */      type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
   /** @group Type Aliases */      val  Transactor          = doobie.util.transactor.Transactor
-
-  /** @group Companion Aliases */ val DriverManagerTransactor = doobie.util.transactor.Transactor.DriverManagerTransactor
-  /** @group Companion Aliases */ val DataSourceTransactor = doobie.util.transactor.Transactor.DataSourceTransactor
 
   /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
   /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite

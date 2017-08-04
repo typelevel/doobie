@@ -1,39 +1,22 @@
 package doobie.hi
 
+import cats.{ Monad, MonadCombine => MonadPlus }
+import cats.data.NonEmptyList
+import cats.implicits._
+
 import doobie.enum.holdability._
-import doobie.enum.transactionisolation._
 import doobie.enum.fetchdirection._
-
-import doobie.syntax.catchable.ToDoobieCatchableOps._
-
-import doobie.free.{ connection => C }
-import doobie.free.{ preparedstatement => PS }
-import doobie.free.{ callablestatement => CS }
 import doobie.free.{ resultset => RS }
-import doobie.free.{ statement => S }
-import doobie.free.{ databasemetadata => DMD }
-
+import doobie.util.compat.cats.monad._
 import doobie.util.composite._
 import doobie.util.invariant._
 import doobie.util.process.repeatEvalChunks
 
-import java.net.URL
-import java.util.{ Date, Calendar }
-import java.sql.{ ParameterMetaData, ResultSet, ResultSetMetaData, SQLWarning, Time, Timestamp, Ref, RowId }
-
-import scala.collection.immutable.Map
-import scala.collection.JavaConverters._
-import scala.collection.generic.CanBuildFrom
-import scala.Predef.intArrayOps
-
-import cats.{ Monad, MonadCombine => MonadPlus }
-import cats.data.NonEmptyList
-import cats.implicits._
-import doobie.util.compat.cats.monad._
 import fs2.{ Stream => Process }
-import fs2.Stream.{ eval, repeatEval }
-import fs2.pipe.unNoneTerminate
-import fs2.util.Catchable
+
+import java.sql.{ ResultSetMetaData, SQLWarning }
+
+import scala.collection.generic.CanBuildFrom
 
 /**
  * Module of high-level constructors for `ResultSetIO` actions.
@@ -204,7 +187,7 @@ object resultset {
   def getUnique[A: Composite]: ResultSetIO[A] =
     (getNext[A] |@| next) map {
       case (Some(a), false) => a
-      case (Some(a), true)  => throw UnexpectedContinuation
+      case (Some(_), true)  => throw UnexpectedContinuation
       case (None, _)        => throw UnexpectedEnd
     }
 
@@ -216,7 +199,7 @@ object resultset {
   def getOption[A: Composite]: ResultSetIO[Option[A]] =
     (getNext[A] |@| next) map {
       case (a @ Some(_), false) => a
-      case (Some(a), true)      => throw UnexpectedContinuation
+      case (Some(_), true)      => throw UnexpectedContinuation
       case (None, _)            => None
     }
 

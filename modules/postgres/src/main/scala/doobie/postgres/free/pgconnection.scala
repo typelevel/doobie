@@ -7,8 +7,6 @@ import scala.util.{ Either => \/ }
 import fs2.interop.cats._
 import fs2.util.{ Catchable, Suspendable }
 
-import doobie.util.capture._
-
 import java.lang.Class
 import java.lang.String
 
@@ -26,8 +24,8 @@ import largeobjectmanager.LargeObjectManagerIO
 
 /**
  * Algebra and free monad for primitive operations over a `org.postgresql.PGConnection`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
- * for library developers. End users will prefer a safer, higher-level API such as that provided 
+ * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
+ * for library developers. End users will prefer a safer, higher-level API such as that provided
  * in the `doobie.postgres.hi` package.
  *
  * `PGConnectionIO` is a free monad that must be run via an interpreter, most commonly via
@@ -35,16 +33,16 @@ import largeobjectmanager.LargeObjectManagerIO
  * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, PGConnection, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
+ * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
  * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
  * val a: PGConnectionIO[Foo] = ...
- * 
- * // A JDBC object 
+ *
+ * // A JDBC object
  * val s: PGConnection = ...
- * 
+ *
  * // Unfolding into a Task
  * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
@@ -52,20 +50,20 @@ import largeobjectmanager.LargeObjectManagerIO
  * @group Modules
  */
 object pgconnection extends PGConnectionIOInstances {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `org.postgresql.PGConnection`.
-   * @group Algebra 
+   * @group Algebra
    */
   sealed trait PGConnectionOp[A]
 
-  /** 
+  /**
    * Module of constructors for `PGConnectionOp`. These are rarely useful outside of the implementation;
    * prefer the smart constructors provided by the `pgconnection` module.
-   * @group Algebra 
+   * @group Algebra
    */
   object PGConnectionOp {
-    
+
     // Lifting
     case class LiftCopyManagerIO[A](s: CopyManager, action: CopyManagerIO[A]) extends PGConnectionOp[A]
     case class LiftFastpathIO[A](s: Fastpath, action: FastpathIO[A]) extends PGConnectionOp[A]
@@ -90,9 +88,9 @@ object pgconnection extends PGConnectionIOInstances {
   import PGConnectionOp._ // We use these immediately
 
   /**
-   * Free monad over a free functor of [[PGConnectionOp]]; abstractly, a computation that consumes 
-   * a `org.postgresql.PGConnection` and produces a value of type `A`. 
-   * @group Algebra 
+   * Free monad over a free functor of [[PGConnectionOp]]; abstractly, a computation that consumes
+   * a `org.postgresql.PGConnection` and produces a value of type `A`.
+   * @group Algebra
    */
   type PGConnectionIO[A] = F[PGConnectionOp, A]
 
@@ -128,13 +126,13 @@ object pgconnection extends PGConnectionIOInstances {
   def liftLargeObjectManager[A](s: LargeObjectManager, action: LargeObjectManagerIO[A]): PGConnectionIO[A] =
     F.liftF(LiftLargeObjectManagerIO(s, action))
 
-  /** 
+  /**
    * Lift a PGConnectionIO[A] into an exception-capturing PGConnectionIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] =
     F.liftF[PGConnectionOp, Throwable \/ A](Attempt(a))
- 
+
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
@@ -142,62 +140,62 @@ object pgconnection extends PGConnectionIOInstances {
   def delay[A](a: => A): PGConnectionIO[A] =
     F.liftF(Pure(a _))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def addDataType(a: String, b: String): PGConnectionIO[Unit] =
     F.liftF(AddDataType(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def addDataType(a: String, b: Class[_ <: PGobject]): PGConnectionIO[Unit] =
     F.liftF(AddDataType1(a, b))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getBackendPID: PGConnectionIO[Int] =
     F.liftF(GetBackendPID)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getCopyAPI: PGConnectionIO[CopyManager] =
     F.liftF(GetCopyAPI)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getFastpathAPI: PGConnectionIO[Fastpath] =
     F.liftF(GetFastpathAPI)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] =
     F.liftF(GetLargeObjectAPI)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getNotifications: PGConnectionIO[Array[PGNotification]] =
     F.liftF(GetNotifications)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getPrepareThreshold: PGConnectionIO[Int] =
     F.liftF(GetPrepareThreshold)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def setPrepareThreshold(a: Int): PGConnectionIO[Unit] =
     F.liftF(SetPrepareThreshold(a))
 
- /** 
-  * Natural transformation from `PGConnectionOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.PGConnection`. 
+ /**
+  * Natural transformation from `PGConnectionOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.PGConnection`.
   * @group Algebra
   */
  def kleisliTrans[M[_]: Catchable: Suspendable]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
@@ -208,7 +206,7 @@ object pgconnection extends PGConnectionIOInstances {
      def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
        Kleisli(s => L.delay(f(s)))
 
-     def apply[A](op: PGConnectionOp[A]): Kleisli[M, PGConnection, A] = 
+     def apply[A](op: PGConnectionOp[A]): Kleisli[M, PGConnection, A] =
        op match {
 
         // Lifting
@@ -219,7 +217,7 @@ object pgconnection extends PGConnectionIOInstances {
         // Combinators
         case Pure(a) => primitive(_ => a())
         case Attempt(a) => kleisliCatchableInstance[M, PGConnection].attempt(a.transK[M])
-  
+
         // Primitive Operations
         case AddDataType(a, b) => primitive(_.addDataType(a, b))
         case AddDataType1(a, b) => primitive(_.addDataType(a, b))
@@ -230,9 +228,9 @@ object pgconnection extends PGConnectionIOInstances {
         case GetNotifications => primitive(_.getNotifications)
         case GetPrepareThreshold => primitive(_.getPrepareThreshold)
         case SetPrepareThreshold(a) => primitive(_.setPrepareThreshold(a))
-  
+
       }
-  
+
     }
 
   /**

@@ -7,9 +7,8 @@ import fs2.interop.cats._
 import fs2.util.{ Catchable, Monad }
 
 import doobie.enum.sqlstate.SqlState
-import doobie.syntax.catchable._
 
-/** 
+/**
  * Module of additional combinators for `Catchable`, specific to `SQLException`.
  */
 object catchsql {
@@ -45,4 +44,3 @@ object catchsql {
     exceptSql(ma)(e => action *> c.fail(e))
 
 }
-

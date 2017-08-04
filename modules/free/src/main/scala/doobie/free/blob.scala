@@ -1,6 +1,6 @@
 package doobie.free
 
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => FF }
 import scala.util.{ Either => \/ }
 import fs2.util.{ Catchable, Suspendable }
@@ -8,34 +8,6 @@ import fs2.util.{ Catchable, Suspendable }
 import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
-import java.sql.CallableStatement
-import java.sql.Clob
-import java.sql.Connection
-import java.sql.DatabaseMetaData
-import java.sql.Driver
-import java.sql.NClob
-import java.sql.PreparedStatement
-import java.sql.Ref
-import java.sql.ResultSet
-import java.sql.SQLData
-import java.sql.SQLInput
-import java.sql.SQLOutput
-import java.sql.Statement
-
-import nclob.NClobIO
-import blob.BlobIO
-import clob.ClobIO
-import databasemetadata.DatabaseMetaDataIO
-import driver.DriverIO
-import ref.RefIO
-import sqldata.SQLDataIO
-import sqlinput.SQLInputIO
-import sqloutput.SQLOutputIO
-import connection.ConnectionIO
-import statement.StatementIO
-import preparedstatement.PreparedStatementIO
-import callablestatement.CallableStatementIO
-import resultset.ResultSetIO
 
 object blob {
 

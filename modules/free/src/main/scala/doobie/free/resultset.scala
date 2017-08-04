@@ -1,6 +1,6 @@
 package doobie.free
 
-import cats.{ Monad, ~> }
+import cats.~>
 import cats.free.{ Free => FF }
 import scala.util.{ Either => \/ }
 import fs2.util.{ Catchable, Suspendable }
@@ -8,26 +8,17 @@ import fs2.util.{ Catchable, Suspendable }
 import java.io.InputStream
 import java.io.Reader
 import java.lang.Class
-import java.lang.Object
 import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
 import java.sql.Blob
-import java.sql.CallableStatement
 import java.sql.Clob
-import java.sql.Connection
-import java.sql.DatabaseMetaData
 import java.sql.Date
-import java.sql.Driver
 import java.sql.NClob
-import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 import java.sql.RowId
-import java.sql.SQLData
-import java.sql.SQLInput
-import java.sql.SQLOutput
 import java.sql.SQLType
 import java.sql.SQLWarning
 import java.sql.SQLXML
@@ -37,21 +28,6 @@ import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
-
-import nclob.NClobIO
-import blob.BlobIO
-import clob.ClobIO
-import databasemetadata.DatabaseMetaDataIO
-import driver.DriverIO
-import ref.RefIO
-import sqldata.SQLDataIO
-import sqlinput.SQLInputIO
-import sqloutput.SQLOutputIO
-import connection.ConnectionIO
-import statement.StatementIO
-import preparedstatement.PreparedStatementIO
-import callablestatement.CallableStatementIO
-import resultset.ResultSetIO
 
 object resultset {
 

@@ -10,7 +10,7 @@ import fs2.interop.cats._
 
 object PostgresPoint extends App {
 
-  val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // A custom Point type with a Meta instance xmapped from the PostgreSQL native type (which
   // would be weird to use directly in a data model). Note that the presence of this `Meta`

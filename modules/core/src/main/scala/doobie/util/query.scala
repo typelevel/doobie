@@ -20,7 +20,6 @@ import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
 
 import doobie.syntax.process._
-import doobie.syntax.catchable._
 import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import java.sql.ResultSet
@@ -193,7 +192,7 @@ object query {
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.nel[O])).map(_.map(ob))
-    
+
     /**
      * Convenience method; equivalent to `to[List]`
      * @group Results

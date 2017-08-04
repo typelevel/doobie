@@ -3,7 +3,7 @@ package doobie.util
 object compat {
 
   object cats {
-    import _root_.cats.{ Applicative, FlatMap, Monad, MonadCombine }
+    import _root_.cats.{ Applicative, Monad, MonadCombine }
     import _root_.cats.instances.list._
 
     object applicative {

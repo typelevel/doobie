@@ -7,8 +7,6 @@ import scala.util.{ Either => \/ }
 import fs2.interop.cats._
 import fs2.util.{ Catchable, Suspendable }
 
-import doobie.util.capture._
-
 import org.postgresql.copy.CopyIn
 import org.postgresql.copy.CopyOut
 
@@ -17,8 +15,8 @@ import copyout.CopyOutIO
 
 /**
  * Algebra and free monad for primitive operations over a `org.postgresql.copy.CopyOut`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly 
- * for library developers. End users will prefer a safer, higher-level API such as that provided 
+ * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
+ * for library developers. End users will prefer a safer, higher-level API such as that provided
  * in the `doobie.hi` package.
  *
  * `CopyOutIO` is a free monad that must be run via an interpreter, most commonly via
@@ -26,16 +24,16 @@ import copyout.CopyOutIO
  * `Free#foldMap`.
  *
  * The library provides a natural transformation to `Kleisli[M, CopyOut, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is 
+ * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
  * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
  *
  * {{{
  * // An action to run
  * val a: CopyOutIO[Foo] = ...
- * 
- * // A JDBC object 
+ *
+ * // A JDBC object
  * val s: CopyOut = ...
- * 
+ *
  * // Unfolding into a Task
  * val ta: Task[A] = a.transK[Task].run(s)
  * }}}
@@ -43,20 +41,20 @@ import copyout.CopyOutIO
  * @group Modules
  */
 object copyout extends CopyOutIOInstances {
-  
-  /** 
+
+  /**
    * Sum type of primitive operations over a `org.postgresql.copy.CopyOut`.
-   * @group Algebra 
+   * @group Algebra
    */
   sealed trait CopyOutOp[A]
 
-  /** 
+  /**
    * Module of constructors for `CopyOutOp`. These are rarely useful outside of the implementation;
    * prefer the smart constructors provided by the `copyout` module.
-   * @group Algebra 
+   * @group Algebra
    */
   object CopyOutOp {
-    
+
     // Lifting
     case class LiftCopyInIO[A](s: CopyIn, action: CopyInIO[A]) extends CopyOutOp[A]
 
@@ -77,9 +75,9 @@ object copyout extends CopyOutIOInstances {
   import CopyOutOp._ // We use these immediately
 
   /**
-   * Free monad over a free functor of [[CopyOutOp]]; abstractly, a computation that consumes 
-   * a `org.postgresql.copy.CopyOut` and produces a value of type `A`. 
-   * @group Algebra 
+   * Free monad over a free functor of [[CopyOutOp]]; abstractly, a computation that consumes
+   * a `org.postgresql.copy.CopyOut` and produces a value of type `A`.
+   * @group Algebra
    */
   type CopyOutIO[A] = F[CopyOutOp, A]
 
@@ -103,13 +101,13 @@ object copyout extends CopyOutIOInstances {
   def liftCopyIn[A](s: CopyIn, k: CopyInIO[A]): CopyOutIO[A] =
     F.liftF(LiftCopyInIO(s, k))
 
-  /** 
+  /**
    * Lift a CopyOutIO[A] into an exception-capturing CopyOutIO[Throwable \/ A].
    * @group Constructors (Lifting)
    */
   def attempt[A](a: CopyOutIO[A]): CopyOutIO[Throwable \/ A] =
     F.liftF[CopyOutOp, Throwable \/ A](Attempt(a))
- 
+
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
@@ -117,50 +115,50 @@ object copyout extends CopyOutIOInstances {
   def delay[A](a: => A): CopyOutIO[A] =
     F.liftF(Pure(a _))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val cancelCopy: CopyOutIO[Unit] =
     F.liftF(CancelCopy)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getFieldCount: CopyOutIO[Int] =
     F.liftF(GetFieldCount)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   def getFieldFormat(a: Int): CopyOutIO[Int] =
     F.liftF(GetFieldFormat(a))
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getFormat: CopyOutIO[Int] =
     F.liftF(GetFormat)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val getHandledRowCount: CopyOutIO[Long] =
     F.liftF(GetHandledRowCount)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val isActive: CopyOutIO[Boolean] =
     F.liftF(IsActive)
 
-  /** 
+  /**
    * @group Constructors (Primitives)
    */
   val readFromCopy: CopyOutIO[Array[Byte]] =
     F.liftF(ReadFromCopy)
 
- /** 
-  * Natural transformation from `CopyOutOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyOut`. 
+ /**
+  * Natural transformation from `CopyOutOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyOut`.
   * @group Algebra
   */
  def kleisliTrans[M[_]: Catchable: Suspendable]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
@@ -171,12 +169,12 @@ object copyout extends CopyOutIOInstances {
      def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
        Kleisli(s => L.delay(f(s)))
 
-     def apply[A](op: CopyOutOp[A]): Kleisli[M, CopyOut, A] = 
+     def apply[A](op: CopyOutOp[A]): Kleisli[M, CopyOut, A] =
        op match {
 
         // Lifting
         case LiftCopyInIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-  
+
         // Combinators
         case Pure(a) => primitive(_ => a())
         case Attempt(a) => kleisliCatchableInstance[M, CopyOut].attempt(a.transK[M])
@@ -189,9 +187,9 @@ object copyout extends CopyOutIOInstances {
         case GetHandledRowCount => primitive(_.getHandledRowCount)
         case IsActive => primitive(_.isActive)
         case ReadFromCopy => primitive(_.readFromCopy)
-  
+
       }
-  
+
     }
 
   /**

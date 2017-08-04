@@ -9,7 +9,7 @@ import fs2.interop.cats._
 /** Rough benchmark based on non/jawn */
 object bench {
 
-  val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // Baseline hand-written JDBC code
   def jdbcBench(n: Int): Int = {

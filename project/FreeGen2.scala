@@ -164,10 +164,10 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
   // All types referenced by all methods on A, superclasses, interfaces, etc.
   def imports[A](implicit ev: ClassTag[A]): List[String] =
     (s"import ${ev.runtimeClass.getName}" :: ctors.map(_.method).flatMap { m =>
-      m.getReturnType :: managed.toList.filterNot(_ == ev.runtimeClass) ::: m.getParameterTypes.toList
+      m.getReturnType :: m.getParameterTypes.toList
     }.map { t =>
       if (t.isArray) t.getComponentType else t
-    }.filterNot(t => t.isPrimitive).map { c =>
+    }.filterNot(t => t.isPrimitive || t == classOf[Object]).map { c =>
       val sn = c.getSimpleName
       val an = renames.getOrElse(c, sn)
       if (sn == an) s"import ${c.getName}"
@@ -183,14 +183,12 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
    s"""
     |package doobie.free
     |
-    |import cats.{ Monad, ~> }
+    |import cats.~>
     |import cats.free.{ Free => FF }
     |import scala.util.{ Either => \\/ }
     |import fs2.util.{ Catchable, Suspendable }
     |
     |${imports[A].mkString("\n")}
-    |
-    |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.${c}IO").mkString("\n")}
     |
     |object ${sname.toLowerCase} {
     |

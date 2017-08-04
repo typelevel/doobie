@@ -7,7 +7,6 @@ import doobie.imports._
 import fs2.Stream
 import fs2.util.{ ~>, Catchable }
 import fs2.interop.cats._
-import fs2.interop.cats.reverse.functionKToUf1
 import java.sql.Connection
 
 /**
@@ -160,4 +159,3 @@ object StreamingCopy {
     io.unsafePerformIO
 
 }
-
