@@ -116,7 +116,7 @@ lazy val doobie = project.in(file("."))
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
   .settings(freeGen2Settings)
   .settings(
-    freeGen2Dir := file("yax/core/src/main/scala/doobie/free"),
+    freeGen2Dir := file("modules/core/src/main/scala/doobie/free"),
     freeGen2Classes := {
       import java.sql._
       List[Class[_]](
@@ -184,7 +184,6 @@ def coreSettings(mod: String) =
 
 lazy val core = project.in(file("modules/core"))
   .settings(
-    yax(file("yax/core"), "scalaz"),
     coreSettings("core"),
     libraryDependencies ++= Seq(
       "org.scalaz"        %% "scalaz-core"   % scalazVersion,
@@ -197,7 +196,6 @@ lazy val core = project.in(file("modules/core"))
 val catsVersion = "0.9.0"
 lazy val core_cats = project.in(file("modules-cats/core"))
   .settings(
-    yax(file("yax/core"), "cats", "fs2"),
     coreSettings("core-cats"),
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
@@ -215,14 +213,10 @@ lazy val core_cats = project.in(file("modules-cats/core"))
 
 lazy val example = project.in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(
-    yax(file("yax/example"), "scalaz")
-  )
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
 
 lazy val example_cats = project.in(file("modules-cats/example"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/example"), "cats", "fs2"))
   .dependsOn(core_cats, postgres_cats, specs2_cats, scalatest_cats, hikari_cats, h2_cats)
 
 ///
@@ -254,14 +248,12 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
 
 lazy val postgres = project.in(file("modules/postgres"))
   .settings(
-    yax(file("yax/postgres"), "scalaz"),
     postgresSettings("postgres")
   )
   .dependsOn(core)
 
 lazy val postgres_cats = project.in(file("modules-cats/postgres"))
   .settings(
-    yax(file("yax/postgres"), "cats", "fs2"),
     postgresSettings("postgres-cats")
   )
   .dependsOn(core_cats)
@@ -280,14 +272,12 @@ def h2Settings(mod: String): Seq[Setting[_]] =
 
 lazy val h2 = project.in(file("modules/h2"))
   .settings(
-    yax(file("yax/h2"), "scalaz"),
     h2Settings("h2")
   )
   .dependsOn(core)
 
 lazy val h2_cats = project.in(file("modules-cats/h2"))
   .settings(
-    yax(file("yax/h2"), "cats", "fs2"),
     h2Settings("h2-cats")
   )
   .dependsOn(core_cats)
@@ -306,14 +296,12 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
 
 lazy val hikari = project.in(file("modules/hikari"))
   .settings(
-    yax(file("yax/hikari"), "scalaz"),
     hikariSettings("hikari")
   )
   .dependsOn(core)
 
 lazy val hikari_cats = project.in(file("modules-cats/hikari"))
   .settings(
-    yax(file("yax/hikari"), "cats", "fs2"),
     hikariSettings("hikari-cats")
   )
   .dependsOn(core_cats)
@@ -332,7 +320,6 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
 
 lazy val specs2 = project.in(file("modules/specs2"))
   .settings(
-    yax(file("yax/specs2"), "scalaz"),
     specs2Settings("specs2")
   )
   .dependsOn(core)
@@ -340,7 +327,6 @@ lazy val specs2 = project.in(file("modules/specs2"))
 
 lazy val specs2_cats = project.in(file("modules-cats/specs2"))
   .settings(
-    yax(file("yax/specs2"), "cats", "fs2"),
     specs2Settings("specs2-cats")
   )
   .dependsOn(core_cats)
@@ -363,14 +349,12 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
 
 lazy val scalatest = project.in(file("modules/scalatest"))
   .settings(
-    yax(file("yax/scalatest"), "scalaz"),
     scalaTestSettings("scalatest")
   )
   .dependsOn(core)
 
 lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
   .settings(
-    yax(file("yax/scalatest"), "cats", "fs2"),
     scalaTestSettings("scalatest-cats")
   )
   .dependsOn(core_cats)
@@ -381,14 +365,10 @@ lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
 
 lazy val bench = project.in(file("modules/bench"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(
-    yax(file("yax/bench"), "scalaz")
-  )
   .dependsOn(core, postgres)
 
 lazy val bench_cats = project.in(file("modules-cats/bench"))
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(yax(file("yax/bench"), "cats", "fs2"))
   .dependsOn(core_cats, postgres_cats)
 
 ///
@@ -418,12 +398,6 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
         val map = src.listFiles.filter(_.getName.endsWith(".md")).map(f => (f, new File(dst, f.getName)))
         IO.copy(map, overwrite = true, preserveLastModified = false)
       }
-    },
-    tutSourceDirectory := sourceManaged.value / "main" / "tut",
-    tutPluginJars := {
-      // piggyback on a task tut depends on, so yax runs first
-      yax.walk(file("yax/docs/src/main/tut"), sourceManaged.value / "main", tokens.toSet + token)
-      tutPluginJars.value
     },
     fork in Test := true,
     // postgis is `provided` dependency for users, and section from book of doobie needs it
@@ -471,15 +445,9 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val refined = project.in(file("modules/refined"))
-  .settings(
-    yax(file("yax/refined"), "scalaz"),
-    refinedSettings("refined")
-  )
+  .settings(refinedSettings("refined"))
   .dependsOn(core)
 
 lazy val refined_cats = project.in(file("modules-cats/refined"))
-  .settings(
-    yax(file("yax/refined"), "cats", "fs2"),
-    refinedSettings("refined-cats")
-  )
+  .settings(refinedSettings("refined-cats"))
   .dependsOn(core_cats)
