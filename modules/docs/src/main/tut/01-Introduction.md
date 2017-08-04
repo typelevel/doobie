@@ -13,7 +13,7 @@ This book is organized cookbook-style: we demonstrate a common task and then exp
 
 ### Target Audience
 
-This library is designed for people who are interested in typed, pure functional programming. If you are not a [scalaz](https://github.com/scalaz/scalaz) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
+This library is designed for people who are interested in typed, pure functional programming. If you are not a [cats](https://github.com/typelevel/cats) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
 Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) or `#scala` (FreeNode IRC) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated for each release** to address problems and omissions.
 

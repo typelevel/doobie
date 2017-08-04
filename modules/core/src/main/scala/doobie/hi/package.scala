@@ -23,8 +23,6 @@ import cats.data.Ior. { Left => This, Both, Right => That }
  *    take a continuation in the resource's monad.
  *  - Actions that compute values of impure types (`CLOB`, `InputStream`, etc.) do not appear in this API.
  *    They are available in the low-level API but must be used with considerable caution.
- *  - An exception to the above rule is that actions consuming or returning Scala `Array` are available
- *    here but use `scalaz.ImmutableArray` or `List`, depending on usage.
  *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear
  *    in this API.
  */

@@ -37,7 +37,7 @@ val xa = DriverManagerTransactor[IOLite](
 
 A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IOLite`, which gives us something we can run. Specifically it gives us an `IOLite` that, when run, will connect to the database and run our program in a single transaction.
 
-Scala does not have a standard IO, so the examples in this book use the simple `IOLite` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar monadic types like `scalaz.effect.IO`, `scalaz.concurrent.Task`, `fs2.Task`, and `monix.Task` will also work fine.
+Scala does not have a standard IO, so the examples in this book use the simple `IOLite` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar monadic types like `cats.effect.IO`, `fs2.Task`, and `monix.Task` will also work fine.
 In fact, you can use any Monad `M[_]` as long as there is a `fs2.util.Catchable[M]` and `fs2.util.Suspendable[M]` available. See *Using Your Own Target Monad* at the end of this capter for more details.
 
 The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.
@@ -111,7 +111,7 @@ result.unsafePerformIO.foreach(println)
 
 ### Diving Deeper
 
-*You do not need to know this, but if you're a scalaz user you might find it helpful.*
+*You do not need to know this, but if you're a cats user you might find it helpful.*
 
 All of the **doobie** monads are implemented via `Free` and have no operational semantics; we can only "run" a **doobie** program by transforming `FooIO` (for some carrier type `java.sql.Foo`) to a monad that actually has some meaning.
 
@@ -135,7 +135,7 @@ The `Transactor` that we defined at the beginning of this chapter is basically a
 
 There is a bit more going on when calling `transact` (we add commit/rollback handling and ensure that the connection is closed in all cases) but fundamentally it's just a natural transformation and a bind.
 
-Currently scalaz has no typeclass for monads with **effect-capturing unit**, so that's all `Capture` does; it's simply `(=> A) => M[A]` that is referentially transparent for *all* expressions, even those with side-effects. This allows us to sequence the same effect multiple times in the same program. This is exactly the behavior you expect from `IO` for example.
+Currently cats has no typeclass for monads with **effect-capturing unit**, so that's all `Capture` does; it's simply `(=> A) => M[A]` that is referentially transparent for *all* expressions, even those with side-effects. This allows us to sequence the same effect multiple times in the same program. This is exactly the behavior you expect from `IO` for example.
 
 **doobie** provides `Capture` instances for `Task` and `IO`, and the implementations are simply `delay` and `apply`, respectively.
 #### The Suspendable Typeclass

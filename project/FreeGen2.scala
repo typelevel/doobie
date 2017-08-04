@@ -183,16 +183,10 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
    s"""
     |package doobie.free
     |
-    |#+scalaz
-    |import doobie.util.capture.Capture
-    |import scalaz.{ Catchable, Free => FF, Monad, ~>, \\/ }
-    |#-scalaz
-    |#+cats
     |import cats.{ Monad, ~> }
     |import cats.free.{ Free => FF }
     |import scala.util.{ Either => \\/ }
     |import fs2.util.{ Catchable, Suspendable }
-    |#-cats
     |
     |${imports[A].mkString("\n")}
     |
@@ -266,15 +260,6 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n  ")}
     |
     |// ${sname}IO can capture side-effects, and can trap and raise exceptions.
-    |#+scalaz
-    |  implicit val Catchable${sname}IO: Catchable[${sname}IO] with Capture[${sname}IO] =
-    |    new Catchable[${sname}IO] with Capture[${sname}IO] {
-    |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
-    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.fail(err)
-    |      def apply[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
-    |    }
-    |#-scalaz
-    |#+fs2
     |  implicit val Catchable${sname}IO: Suspendable[${sname}IO] with Catchable[${sname}IO] =
     |    new Suspendable[${sname}IO] with Catchable[${sname}IO] {
     |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
@@ -285,7 +270,6 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
     |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.fail(err)
     |    }
-    |#-fs2
     |
     |}
     |""".trim.stripMargin
@@ -301,12 +285,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     s"""
      |package doobie.free
      |
-     |#+scalaz
-     |import scalaz.Free
-     |#-scalaz
-     |#+cats
      |import cats.free.Free
-     |#-cats
      |
      |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.${c}IO").mkString("\n")}
      |
@@ -342,12 +321,6 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      s"""
       |package doobie.free
       |
-      |#+scalaz
-      |// Library imports required for the scalaz implementation.
-      |import doobie.util.capture.Capture
-      |import scalaz.{ Catchable, Free, Kleisli, Monad, ~>, \\/ }
-      |#-scalaz
-      |#+cats
       |// Library imports required for the Cats implementation.
       |import cats.{ Monad, ~> }
       |import cats.data.Kleisli
@@ -355,7 +328,6 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |import fs2.util.{ Catchable, Suspendable => Capture }
       |import fs2.interop.cats._
       |import scala.util.{ Either => \\/ }
-      |#-cats
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }

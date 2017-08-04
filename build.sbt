@@ -9,8 +9,6 @@ lazy val si2712fixVersion     = "1.2.0"
 lazy val kindProjectorVersion = "0.9.3"
 lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.3"
-lazy val scalazVersion        = "7.2.12"
-lazy val scalazStreamVersion  = "0.8.6a"
 lazy val h2Version            = "1.4.195"
 lazy val postgresVersion      = "42.1.1"
 lazy val fs2CoreVersion       = "0.9.6"
@@ -50,8 +48,7 @@ lazy val commonSettings = Seq(
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
-      "-doc-source-url", "https://github.com/tpolecat/doobie/tree/v" + version.value + "€{FILE_PATH}.scala",
-      "-skip-packages", "scalaz"
+      "-doc-source-url", "https://github.com/tpolecat/doobie/tree/v" + version.value + "€{FILE_PATH}.scala"
     ),
     scalacOptions in (Compile, console) --= Seq(
       "-Xlint"

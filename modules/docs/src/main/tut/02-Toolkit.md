@@ -41,12 +41,11 @@ The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-
 - Trivial custom two-way row/column mapping via invariant functors.
 - Nullability via `Option` (SQL `NULL` cannot be observed).
 - Proper enumerated types for all JDBC constants.
-- Result sets as scalaz streams.
+- Result sets as fs2 streams.
 - Typesafe string interpolator for SQL literals.
 
 The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the `doobie.hi` API can use constructors from `doobie.free` to implement advanced or vendor-specific behavior directly, without translation or lifting.
 
 ### Vendor Extensions
 
-The 0.2.0 release introduced small add-on libraries to support vendor-specific features outside the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), [PostgreSQL](http://www.postgresql.org/), and [Specs2](http://etorreborre.github.io/specs2/) are available and are described in later chapters. This is an area of active development and contributions are especially welcome. 
-
+The 0.2.0 release introduced small add-on libraries to support vendor-specific features outside the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), [PostgreSQL](http://www.postgresql.org/), and [Specs2](http://etorreborre.github.io/specs2/) are available and are described in later chapters. This is an area of active development and contributions are especially welcome.

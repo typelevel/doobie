@@ -109,7 +109,7 @@ object kernel {
   }
 
   trait KernelInstances {
-    // TODO: InvariantFunctor (scalaz), Invariant and Cartesian (cats)
+    // TODO: Invariant and Cartesian (cats)
 
     implicit val kernelInvariantFunctor: InvariantFunctor[Kernel] =
       new InvariantFunctor[Kernel] {
