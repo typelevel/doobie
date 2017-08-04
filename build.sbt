@@ -101,22 +101,24 @@ lazy val publishSettings = Seq(
       </developer>
     </developers>
   ),
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
+)
+
+lazy val releaseSettings = Seq(
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
-    runClean,
-    ReleaseStep(action = Command.process("package", _)),
+    releaseStepCommandAndRemaining("+clean"),
+    releaseStepCommandAndRemaining("+test"),
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _)),
+    releaseStepCommandAndRemaining("+publishSigned"),
     setNextVersion,
     commitNextVersion,
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
-    pushChanges),
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
+    pushChanges
+  )
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -124,6 +126,7 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
+  .settings(releaseSettings)
   .dependsOn(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
   .aggregate(core, core_cats, h2, h2_cats, hikari, hikari_cats, postgres, postgres_cats, specs2, specs2_cats, example, example_cats, bench, bench_cats, scalatest, scalatest_cats, docs, docs_cats, refined, refined_cats)
   .settings(freeGen2Settings)
