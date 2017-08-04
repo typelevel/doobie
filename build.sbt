@@ -185,7 +185,7 @@ def coreSettings(mod: String) =
 val catsVersion = "0.9.0"
 lazy val core = project.in(file("modules/core"))
   .settings(
-    coreSettings("core-cats"),
+    coreSettings("core"),
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
       "co.fs2"         %% "fs2-cats"  % fs2CatsVersion,
@@ -233,7 +233,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
 
 lazy val postgres = project.in(file("modules/postgres"))
   .settings(
-    postgresSettings("postgres-cats")
+    postgresSettings("postgres")
   )
   .dependsOn(core)
 
@@ -251,7 +251,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
 
 lazy val h2 = project.in(file("modules/h2"))
   .settings(
-    h2Settings("h2-cats")
+    h2Settings("h2")
   )
   .dependsOn(core)
 
@@ -269,7 +269,7 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
 
 lazy val hikari = project.in(file("modules/hikari"))
   .settings(
-    hikariSettings("hikari-cats")
+    hikariSettings("hikari")
   )
   .dependsOn(core)
 
@@ -287,7 +287,7 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
 
 lazy val specs2 = project.in(file("modules/specs2"))
   .settings(
-    specs2Settings("specs2-cats")
+    specs2Settings("specs2")
   )
   .dependsOn(core)
   .dependsOn(h2 % "test")
@@ -309,7 +309,7 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
 
 lazy val scalatest = project.in(file("modules/scalatest"))
   .settings(
-    scalaTestSettings("scalatest-cats")
+    scalaTestSettings("scalatest")
   )
   .dependsOn(core)
 
@@ -382,5 +382,5 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
   )
 
 lazy val refined = project.in(file("modules/refined"))
-  .settings(refinedSettings("refined-cats"))
+  .settings(refinedSettings("refined"))
   .dependsOn(core)
