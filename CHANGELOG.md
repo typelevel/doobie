@@ -6,8 +6,9 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
-Sparkly contributors for this release are n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, Christopher Davenport, Damir Vandic, Jacob Barber, and tpolecat. Noteworthy changes:
+Sparkly contributors for this release are :sparkles: n4to4, :sparkles: Alexa DeWit, :sparkles: wedens, :sparkles: Colt Frederickson, :sparkles: Benjamin Trenker, :sparkles: nigredo-tori, :sparkles: Suhas Gaddam, :sparkles: Christopher Davenport, :sparkles: Damir Vandic, :sparkles: Jacob Barber, and :chicken: tpolecat. Noteworthy changes:
 
+- Dropped support for 2.10 because I can't figure out how to publish it.
 - Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change.
 - Switched to a new transactor design that makes it simple to customize behavior, and combined with new interpreter design makes it practical to use **doobie** types in free coproducts (see `coproduct.scala` in the `example` project). This is a **minor breaking change**:
   - The `yolo` member on `Transactor` is no longer stable, so you cannot `import xa.yolo._` anymore; instead you must say `val y = xa.yolo; import y._`. Because this is typically done with `initialCommands` in sbt it's unlikely to be a big deal.
@@ -31,7 +32,7 @@ Sparkly contributors for this release are n4to4, Alexa DeWit, wedens, Colt Frede
 In addition the following libraries were updated:
 
 - sbt 0.13.15
-- Scala 2.10.6, 2.11.11, 2.12.2
+- Scala 2.10.6, 2.11.11, 2.12.3
 - scalaz 7.2.9
 - PostgreSQL JDBC driver 42.1.1
 - Hikari 2.6.1
