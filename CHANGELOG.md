@@ -4,38 +4,38 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
-### <a name="0.4.2"></a>Notable Work in Progress for Version 0.4.2
+### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
-non-tpolecat contributors thus far: n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, ChristopherDavenport, Damir Vandic, and Jacob Barber.
+Sparkly contributors for this release are n4to4, Alexa DeWit, wedens, Colt Frederickson, Benjamin Trenker, nigredo-tori, Suhas Gaddam, Christopher Davenport, Damir Vandic, Jacob Barber, and tpolecat. Noteworthy changes:
 
-- Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change. Book update TBD.
+- Replaced all the `doobie.free` internals with a new design that makes it practical to write your own interpreter (or, more commonly, subclass the default one) which is very useful for testing and who knows what else. For most users this will not be an observable change.
 - Switched to a new transactor design that makes it simple to customize behavior, and combined with new interpreter design makes it practical to use **doobie** types in free coproducts (see `coproduct.scala` in the `example` project). This is a **minor breaking change**:
   - The `yolo` member on `Transactor` is no longer stable, so you cannot `import xa.yolo._` anymore; instead you must say `val y = xa.yolo; import y._`. Because this is typically done with `initialCommands` in sbt it's unlikely to be a big deal.
-  - `Transactor` is now a final case class with two type parameters which means existing declarations will be wrong. Book update TBD.
+  - `Transactor` is now a final case class with an extra type member for the underlying pool or other connection source.
 - Note that the interpreter/transactor changes require `Monad` instances at a few more call sites, which should be transparent in most cases but may require Cats users to `import fs2.interop.cats._` here and there … if scalac is claiming there's no instance available after upgrading that's probably why.
-- Added `list` and `vector` convenience methods to `Query`.
-- Updated Posgtgres JDBC driver to v42.0.0.
-- Added `set` and `setOpt` combinators for building fragments which contain `SET` operations.
-- Updated build to sbt 0.13.15
-- Updated to scalaz 7.2.9
-- Added support for type refinements (refined library)
+- Added support for type refinements (refined library). See the `doobie-refined` and `doobie-refined-cats` modules.
 - Added a `fail` constructor to all the `F*` modules.
 - Made `Meta.nxmap` unnecessary and fixed issues with mappings that are undefined for zero values of underlying unboxed types.
-- Added `Composite` instance for `Unit`.
-- Fix execution flow for AnalysisSpec checks.
 - Added mapping for Postgres `hstore` type.
 - Make postgres enums nullable (change `Atom` instance to `Meta`).
 - Generalized `QueryChecker` and `AnalysisSpec` to allow any effect type.
 - Added `stream` and `streamWithChunkSize` as fs2 friendly aliases on `Query`.
 - Fix parsing of JDBC type TimestampWithTimezone (introduced in JDK 8).
-- Updated to Scala 2.10.6, 2.11.11, and 2.12.2. The Scala 2.11.x build no longer uses the Typelevel distribution of Scala because partial unification is natively supported since Scala 2.11.9.
-- Updated to PostgreSQL JDBC driver 42.1.1, Hikari 2.6.1, and Circe 0.8.0.
-- `Suspendable` instance for `PGConnectionIO`
+- Added `Suspendable` instance for `PGConnectionIO`
 - Added an `Unknown` constructor to `JdbcType` for JDBC type constants outside the spec and known extensions.
-- Generalized the underlying structure of `Meta`/`Composite` and eliminated `Atom`.
+- Generalized the underlying structure of `Meta`/`Composite` and eliminated `Atom`. Client code that uses `Atom` will need to be re-implemented in terms of `Meta` or `Composite`.
 - Added `Fragment.const0` for constant fragments with no trailing space, while `const` now *does* add a trailing space. Users of `Fragment.const` may need/wish to change to `const0`.
 - `Manifest` replaced with `TypeTag` in `doobie.util.invariant`.
 - Improved H2 UUID Support.  Query analysis involving H2 and UUIDs should no longer show a type mismatch.
+
+In addition the following libraries were updated:
+
+- sbt 0.13.15
+- Scala 2.10.6, 2.11.11, 2.12.2
+- scalaz 7.2.9
+- PostgreSQL JDBC driver 42.1.1
+- Hikari 2.6.1
+- Circe 0.8.0
 
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
