@@ -23,23 +23,12 @@ lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
 lazy val monixVersion         = "2.3.0"
-/**
- * This build now depends on partial unification. It's built into 2.12 and from 2.11.9. For 2.10 we
- * need the plugin. In addition the cats/fs2 build isn't available for 2.10 because there's no fs2
- * for 2.10, so we need sbt-doge to support that. Whee.
- */
-
-enablePlugins(CrossPerProjectPlugin)
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.2",
+  scalaVersion := "2.12.3",
   crossScalaVersions := Seq("2.11.11", scalaVersion.value)
-)
-
-lazy val scalazCrossSettings = Seq(
-  crossScalaVersions := "2.10.6" +: crossScalaVersions.value
 )
 
 lazy val commonSettings = Seq(
@@ -55,11 +44,8 @@ lazy val commonSettings = Seq(
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Ywarn-value-discard"
-    ) ++ (
-      if (scalaVersion.value.startsWith("2.12") ||
-          scalaVersion.value.startsWith("2.11")) Seq("-Ypartial-unification")
-      else Nil
+      "-Ywarn-value-discard",
+      "-Ypartial-unification"
     ),
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
@@ -70,15 +56,10 @@ lazy val commonSettings = Seq(
     scalacOptions in (Compile, console) --= Seq(
       "-Xlint"
     ),
-    libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
+    libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
-    ) ++ (
-      if (scalaVersion.value startsWith "2.10") Seq(
-        compilerPlugin("com.milessabin" % "si2712fix-plugin_2.10.6" % si2712fixVersion)
-      )
-      else Nil
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion)
 )
@@ -163,10 +144,6 @@ lazy val noPublishSettings = Seq(
   publishArtifact := false
 )
 
-def macroParadise(v: String): List[ModuleID] =
-  if (v.startsWith("2.10")) List(compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch))
-  else Nil
-
 lazy val ctut = taskKey[Unit]("Copy tut output to blog repo nearby.")
 
 ///
@@ -214,8 +191,7 @@ lazy val core = project.in(file("modules/core"))
       "org.scalaz"        %% "scalaz-effect" % scalazVersion,
       "org.scalaz.stream" %% "scalaz-stream" % scalazStreamVersion,
       "com.h2database"    %  "h2"            % h2Version % "test"
-    ),
-    scalazCrossSettings
+    )
   )
 
 val catsVersion = "0.9.0"
@@ -240,8 +216,7 @@ lazy val core_cats = project.in(file("modules-cats/core"))
 lazy val example = project.in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(
-    yax(file("yax/example"), "scalaz"),
-    scalazCrossSettings
+    yax(file("yax/example"), "scalaz")
   )
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
 
@@ -280,8 +255,7 @@ def postgresSettings(mod: String): Seq[Setting[_]] =
 lazy val postgres = project.in(file("modules/postgres"))
   .settings(
     yax(file("yax/postgres"), "scalaz"),
-    postgresSettings("postgres"),
-    scalazCrossSettings
+    postgresSettings("postgres")
   )
   .dependsOn(core)
 
@@ -307,8 +281,7 @@ def h2Settings(mod: String): Seq[Setting[_]] =
 lazy val h2 = project.in(file("modules/h2"))
   .settings(
     yax(file("yax/h2"), "scalaz"),
-    h2Settings("h2"),
-    scalazCrossSettings
+    h2Settings("h2")
   )
   .dependsOn(core)
 
@@ -334,8 +307,7 @@ def hikariSettings(mod: String): Seq[Setting[_]] =
 lazy val hikari = project.in(file("modules/hikari"))
   .settings(
     yax(file("yax/hikari"), "scalaz"),
-    hikariSettings("hikari"),
-    scalazCrossSettings
+    hikariSettings("hikari")
   )
   .dependsOn(core)
 
@@ -361,8 +333,7 @@ def specs2Settings(mod: String): Seq[Setting[_]] =
 lazy val specs2 = project.in(file("modules/specs2"))
   .settings(
     yax(file("yax/specs2"), "scalaz"),
-    specs2Settings("specs2"),
-    scalazCrossSettings
+    specs2Settings("specs2")
   )
   .dependsOn(core)
   .dependsOn(h2 % "test")
@@ -393,8 +364,7 @@ def scalaTestSettings(mod: String): Seq[Setting[_]] =
 lazy val scalatest = project.in(file("modules/scalatest"))
   .settings(
     yax(file("yax/scalatest"), "scalaz"),
-    scalaTestSettings("scalatest"),
-    scalazCrossSettings
+    scalaTestSettings("scalatest")
   )
   .dependsOn(core)
 
@@ -412,8 +382,7 @@ lazy val scalatest_cats = project.in(file("modules-cats/scalatest"))
 lazy val bench = project.in(file("modules/bench"))
   .settings(doobieSettings ++ noPublishSettings)
   .settings(
-    yax(file("yax/bench"), "scalaz"),
-    scalazCrossSettings
+    yax(file("yax/bench"), "scalaz")
   )
   .dependsOn(core, postgres)
 
@@ -463,8 +432,7 @@ def docsSettings(token: String, tokens: String*): Seq[Setting[_]] =
 
 lazy val docs = project.in(file("modules/docs"))
   .settings(
-    docsSettings("scalaz"),
-    scalazCrossSettings
+    docsSettings("scalaz")
   )
   .dependsOn(
     core,
@@ -505,8 +473,7 @@ def refinedSettings(mod: String): Seq[Setting[_]] =
 lazy val refined = project.in(file("modules/refined"))
   .settings(
     yax(file("yax/refined"), "scalaz"),
-    refinedSettings("refined"),
-    scalazCrossSettings
+    refinedSettings("refined")
   )
   .dependsOn(core)
 

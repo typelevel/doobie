@@ -68,10 +68,9 @@ You can of course change this setup if you like, but you will need to adjust you
 On the Scala side you just need a console with the proper dependencies. A minimal `build.sbt` would look something like this.
 
 ```scala
-scalaVersion := "2.12.2" // or scala 2.11.11 or 2.10.6
+scalaVersion := "2.12.2" // or scala 2.11.11
 
-lazy val doobieVersion = "0.4.2-SNAPSHOT"
-resolvers += Resolver.sonatypeRepo("snapshots")
+lazy val doobieVersion = "0.4.2"
 
 #+scalaz
 libraryDependencies ++= Seq(

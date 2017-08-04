@@ -6,9 +6,8 @@ jdk:
   - oraclejdk8
 
 scala:
-  - 2.10.6
   - 2.11.11
-  - 2.12.2
+  - 2.12.3
 
 env:
   global:
@@ -50,4 +49,3 @@ before_cache:
   - find $HOME/.sbt -name "*.lock" -type f -delete
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
   - find $HOME/.coursier/cache -name "*.lock" -type f -delete
-

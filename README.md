@@ -32,12 +32,13 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-Recent releases and dependencies are shown below. The current release is **0.4.1** … if you wish to use an older version please switch to the associated tag. The remainder of this document assumes you're using the current release.
+Recent releases and dependencies are shown below. The current release is **0.4.2** … if you wish to use an older version please switch to the associated tag. The remainder of this document assumes you're using the current release.
 
 | doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats | fs2 | shapeless |
 |:------:|:-------:|:----:|------------------|:------:|:-------------:|:----:|:---:|:---------:|
-|  0.4.1 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.9  | 0.9 |    2.3    |
-|  0.4.0 | current | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8  | 0.9 |    2.3    |
+|  0.4.2 | current | 1.8+ |       2.11, 2.12 |   7.2  |      0.8      | 0.9  | 0.9 |    2.3    |
+|  0.4.1 | eol | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.9  | 0.9 |    2.3    |
+|  0.4.0 | eol | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8  | 0.9 |    2.3    |
 |  0.3.0 | eol     | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | --   | --  |    2.3    |
 |  0.2.4 | eol     | 1.7+ | 2.10, 2.11       |   7.1  |      0.8      | --   | --  |    2.2    |
 |  0.2.3 | eol     | 1.6+ | 2.10, 2.11       |   7.1  |      0.7      | --   | --  |    2.2    |
@@ -45,8 +46,8 @@ Recent releases and dependencies are shown below. The current release is **0.4.1
 To use **doobie** you need to add **one of the following** to your `build.sbt`.
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.4.1" // scalaz + scalaz-stream
-                       "org.tpolecat" %% "doobie-core-cats" % "0.4.1" // cats   + fs2
+libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.4.2" // scalaz + scalaz-stream
+                       "org.tpolecat" %% "doobie-core-cats" % "0.4.2" // cats   + fs2
 ```
 
 If you are using Scala 2.10 you must also add the paradise compiler plugin.
@@ -69,14 +70,10 @@ See the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-
 
 Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
 
-## Development Version
-
-The active development version is **0.4.2-SNAPSHOT**. It is updated sporadically and is subject to unannounced changes. See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.2) for information on work in progress.
-
 ## Documentation and Support
 
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.1) for an overview of changes in this and previous versions.
-- Behold the **book of doobie** for [**scalaz**](http://tpolecat.github.io/doobie-scalaz-0.4.0/00-index.html) and [**cats**](http://tpolecat.github.io/doobie-cats-0.4.0/00-index.html) ← start here
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.2) for an overview of changes in this and previous versions.
+- Behold the **book of doobie** for [**scalaz**](http://tpolecat.github.io/doobie-scalaz-0.4.2/00-index.html) and [**cats**](http://tpolecat.github.io/doobie-cats-0.4.2/00-index.html) ← start here
 - There is a [**Scala Exercises**](https://www.scala-exercises.org/) module, courtesy of our friends at 47 Degrees!
 - The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
 - There is also the source. If you're here you know where to look. Check the examples.

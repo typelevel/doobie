@@ -24,6 +24,8 @@ git checkout -b 0.2.4-staging
 - Stage the tut doc in `tpolecat.github.io`:
 
 ```
+> ++2.11.11 // to avoid warnings about unused imports
+...
 > tut
 ...
 > ctut
