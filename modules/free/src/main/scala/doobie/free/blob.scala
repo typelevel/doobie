@@ -8,7 +8,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
 
-object blob {
+object blob { module =>
 
   // Algebra of operations for Blob. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait BlobOp[A] {
@@ -136,12 +136,12 @@ object blob {
     new Async[BlobIO] {
       val M = FF.catsFreeMonadForFree[BlobOp]
       def pure[A](x: A): BlobIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = blob.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): BlobIO[A] = blob.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): BlobIO[A] = blob.async(k)
+      def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): BlobIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): BlobIO[A] = module.async(k)
       def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => BlobIO[A]): BlobIO[A] = M.flatten(blob.delay(thunk))
+      def suspend[A](thunk: => BlobIO[A]): BlobIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

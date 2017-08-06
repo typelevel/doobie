@@ -11,7 +11,7 @@ import java.sql.DriverPropertyInfo
 import java.util.Properties
 import java.util.logging.Logger
 
-object driver {
+object driver { module =>
 
   // Algebra of operations for Driver. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait DriverOp[A] {
@@ -119,12 +119,12 @@ object driver {
     new Async[DriverIO] {
       val M = FF.catsFreeMonadForFree[DriverOp]
       def pure[A](x: A): DriverIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = driver.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): DriverIO[A] = driver.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): DriverIO[A] = driver.async(k)
+      def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): DriverIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): DriverIO[A] = module.async(k)
       def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = M.flatten(driver.delay(thunk))
+      def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

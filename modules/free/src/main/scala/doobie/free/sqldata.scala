@@ -9,7 +9,7 @@ import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
-object sqldata {
+object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait SQLDataOp[A] {
@@ -97,12 +97,12 @@ object sqldata {
     new Async[SQLDataIO] {
       val M = FF.catsFreeMonadForFree[SQLDataOp]
       def pure[A](x: A): SQLDataIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = sqldata.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): SQLDataIO[A] = sqldata.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLDataIO[A] = sqldata.async(k)
+      def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): SQLDataIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLDataIO[A] = module.async(k)
       def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = M.flatten(sqldata.delay(thunk))
+      def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

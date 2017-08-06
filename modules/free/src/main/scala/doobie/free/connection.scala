@@ -23,7 +23,7 @@ import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
 
-object connection {
+object connection { module =>
 
   // Algebra of operations for Connection. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait ConnectionOp[A] {
@@ -366,12 +366,12 @@ object connection {
     new Async[ConnectionIO] {
       val M = FF.catsFreeMonadForFree[ConnectionOp]
       def pure[A](x: A): ConnectionIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = connection.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): ConnectionIO[A] = connection.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ConnectionIO[A] = connection.async(k)
+      def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): ConnectionIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ConnectionIO[A] = module.async(k)
       def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = M.flatten(connection.delay(thunk))
+      def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

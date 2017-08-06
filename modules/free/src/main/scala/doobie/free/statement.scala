@@ -11,7 +11,7 @@ import java.sql.ResultSet
 import java.sql.SQLWarning
 import java.sql.Statement
 
-object statement {
+object statement { module =>
 
   // Algebra of operations for Statement. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait StatementOp[A] {
@@ -344,12 +344,12 @@ object statement {
     new Async[StatementIO] {
       val M = FF.catsFreeMonadForFree[StatementOp]
       def pure[A](x: A): StatementIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = statement.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): StatementIO[A] = statement.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): StatementIO[A] = statement.async(k)
+      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): StatementIO[A] = module.async(k)
       def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => StatementIO[A]): StatementIO[A] = M.flatten(statement.delay(thunk))
+      def suspend[A](thunk: => StatementIO[A]): StatementIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

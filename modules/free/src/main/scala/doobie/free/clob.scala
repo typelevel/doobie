@@ -11,7 +11,7 @@ import java.io.Writer
 import java.lang.String
 import java.sql.Clob
 
-object clob {
+object clob { module =>
 
   // Algebra of operations for Clob. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait ClobOp[A] {
@@ -149,12 +149,12 @@ object clob {
     new Async[ClobIO] {
       val M = FF.catsFreeMonadForFree[ClobOp]
       def pure[A](x: A): ClobIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = clob.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): ClobIO[A] = clob.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ClobIO[A] = clob.async(k)
+      def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): ClobIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ClobIO[A] = module.async(k)
       def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => ClobIO[Either[A, B]]): ClobIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => ClobIO[A]): ClobIO[A] = M.flatten(clob.delay(thunk))
+      def suspend[A](thunk: => ClobIO[A]): ClobIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

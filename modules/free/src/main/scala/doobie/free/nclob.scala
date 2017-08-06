@@ -12,7 +12,7 @@ import java.lang.String
 import java.sql.Clob
 import java.sql.NClob
 
-object nclob {
+object nclob { module =>
 
   // Algebra of operations for NClob. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait NClobOp[A] {
@@ -150,12 +150,12 @@ object nclob {
     new Async[NClobIO] {
       val M = FF.catsFreeMonadForFree[NClobOp]
       def pure[A](x: A): NClobIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]): NClobIO[A] = nclob.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): NClobIO[A] = nclob.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): NClobIO[A] = nclob.async(k)
+      def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]): NClobIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): NClobIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): NClobIO[A] = module.async(k)
       def flatMap[A, B](fa: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => NClobIO[Either[A, B]]): NClobIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => NClobIO[A]): NClobIO[A] = M.flatten(nclob.delay(thunk))
+      def suspend[A](thunk: => NClobIO[A]): NClobIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

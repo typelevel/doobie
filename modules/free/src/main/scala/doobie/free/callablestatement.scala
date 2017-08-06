@@ -30,7 +30,7 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
-object callablestatement {
+object callablestatement { module =>
 
   // Algebra of operations for CallableStatement. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait CallableStatementOp[A] {
@@ -1258,12 +1258,12 @@ object callablestatement {
     new Async[CallableStatementIO] {
       val M = FF.catsFreeMonadForFree[CallableStatementOp]
       def pure[A](x: A): CallableStatementIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = callablestatement.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): CallableStatementIO[A] = callablestatement.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CallableStatementIO[A] = callablestatement.async(k)
+      def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): CallableStatementIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CallableStatementIO[A] = module.async(k)
       def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => CallableStatementIO[Either[A, B]]): CallableStatementIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => CallableStatementIO[A]): CallableStatementIO[A] = M.flatten(callablestatement.delay(thunk))
+      def suspend[A](thunk: => CallableStatementIO[A]): CallableStatementIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

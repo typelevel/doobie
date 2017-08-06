@@ -22,7 +22,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
-object sqlinput {
+object sqlinput { module =>
 
   // Algebra of operations for SQLInput. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait SQLInputOp[A] {
@@ -235,12 +235,12 @@ object sqlinput {
     new Async[SQLInputIO] {
       val M = FF.catsFreeMonadForFree[SQLInputOp]
       def pure[A](x: A): SQLInputIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = sqlinput.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): SQLInputIO[A] = sqlinput.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLInputIO[A] = sqlinput.async(k)
+      def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): SQLInputIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLInputIO[A] = module.async(k)
       def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => SQLInputIO[A]): SQLInputIO[A] = M.flatten(sqlinput.delay(thunk))
+      def suspend[A](thunk: => SQLInputIO[A]): SQLInputIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

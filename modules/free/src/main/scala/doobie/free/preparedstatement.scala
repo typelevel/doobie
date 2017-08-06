@@ -29,7 +29,7 @@ import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 
-object preparedstatement {
+object preparedstatement { module =>
 
   // Algebra of operations for PreparedStatement. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait PreparedStatementOp[A] {
@@ -652,12 +652,12 @@ object preparedstatement {
     new Async[PreparedStatementIO] {
       val M = FF.catsFreeMonadForFree[PreparedStatementOp]
       def pure[A](x: A): PreparedStatementIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = preparedstatement.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): PreparedStatementIO[A] = preparedstatement.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): PreparedStatementIO[A] = preparedstatement.async(k)
+      def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): PreparedStatementIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): PreparedStatementIO[A] = module.async(k)
       def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => PreparedStatementIO[A]): PreparedStatementIO[A] = M.flatten(preparedstatement.delay(thunk))
+      def suspend[A](thunk: => PreparedStatementIO[A]): PreparedStatementIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

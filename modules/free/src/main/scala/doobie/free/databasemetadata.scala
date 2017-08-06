@@ -11,7 +11,7 @@ import java.sql.DatabaseMetaData
 import java.sql.ResultSet
 import java.sql.RowIdLifetime
 
-object databasemetadata {
+object databasemetadata { module =>
 
   // Algebra of operations for DatabaseMetaData. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait DatabaseMetaDataOp[A] {
@@ -974,12 +974,12 @@ object databasemetadata {
     new Async[DatabaseMetaDataIO] {
       val M = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
       def pure[A](x: A): DatabaseMetaDataIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = databasemetadata.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): DatabaseMetaDataIO[A] = databasemetadata.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): DatabaseMetaDataIO[A] = databasemetadata.async(k)
+      def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): DatabaseMetaDataIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): DatabaseMetaDataIO[A] = module.async(k)
       def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => DatabaseMetaDataIO[Either[A, B]]): DatabaseMetaDataIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = M.flatten(databasemetadata.delay(thunk))
+      def suspend[A](thunk: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

@@ -8,7 +8,7 @@ import java.lang.String
 import java.sql.Ref
 import java.util.Map
 
-object ref {
+object ref { module =>
 
   // Algebra of operations for Ref. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait RefOp[A] {
@@ -101,12 +101,12 @@ object ref {
     new Async[RefIO] {
       val M = FF.catsFreeMonadForFree[RefOp]
       def pure[A](x: A): RefIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = ref.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): RefIO[A] = ref.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): RefIO[A] = ref.async(k)
+      def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): RefIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): RefIO[A] = module.async(k)
       def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => RefIO[A]): RefIO[A] = M.flatten(ref.delay(thunk))
+      def suspend[A](thunk: => RefIO[A]): RefIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

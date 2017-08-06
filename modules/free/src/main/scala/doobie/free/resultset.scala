@@ -28,7 +28,7 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
-object resultset {
+object resultset { module =>
 
   // Algebra of operations for ResultSet. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait ResultSetOp[A] {
@@ -1076,12 +1076,12 @@ object resultset {
     new Async[ResultSetIO] {
       val M = FF.catsFreeMonadForFree[ResultSetOp]
       def pure[A](x: A): ResultSetIO[A] = M.pure(x)
-      def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = resultset.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): ResultSetIO[A] = resultset.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ResultSetIO[A] = resultset.async(k)
+      def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): ResultSetIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ResultSetIO[A] = module.async(k)
       def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = M.flatten(resultset.delay(thunk))
+      def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = M.flatten(module.delay(thunk))
     }
 
 }
