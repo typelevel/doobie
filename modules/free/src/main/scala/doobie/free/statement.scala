@@ -340,7 +340,7 @@ object statement {
   def unwrap[T](a: Class[T]): StatementIO[T] = FF.liftF(Unwrap(a))
 
   // StatementIO is an Async
-  implicit lazy val AsyncStatementIO: Async[StatementIO] =
+  implicit val AsyncStatementIO: Async[StatementIO] =
     new Async[StatementIO] {
       val M = FF.catsFreeMonadForFree[StatementOp]
       def pure[A](x: A): StatementIO[A] = M.pure(x)

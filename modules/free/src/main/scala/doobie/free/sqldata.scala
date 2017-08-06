@@ -93,7 +93,7 @@ object sqldata {
   def writeSQL(a: SQLOutput): SQLDataIO[Unit] = FF.liftF(WriteSQL(a))
 
   // SQLDataIO is an Async
-  implicit lazy val AsyncSQLDataIO: Async[SQLDataIO] =
+  implicit val AsyncSQLDataIO: Async[SQLDataIO] =
     new Async[SQLDataIO] {
       val M = FF.catsFreeMonadForFree[SQLDataOp]
       def pure[A](x: A): SQLDataIO[A] = M.pure(x)

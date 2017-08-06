@@ -231,7 +231,7 @@ object sqlinput {
   val wasNull: SQLInputIO[Boolean] = FF.liftF(WasNull)
 
   // SQLInputIO is an Async
-  implicit lazy val AsyncSQLInputIO: Async[SQLInputIO] =
+  implicit val AsyncSQLInputIO: Async[SQLInputIO] =
     new Async[SQLInputIO] {
       val M = FF.catsFreeMonadForFree[SQLInputOp]
       def pure[A](x: A): SQLInputIO[A] = M.pure(x)

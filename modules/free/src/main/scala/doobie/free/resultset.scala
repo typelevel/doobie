@@ -1072,7 +1072,7 @@ object resultset {
   val wasNull: ResultSetIO[Boolean] = FF.liftF(WasNull)
 
   // ResultSetIO is an Async
-  implicit lazy val AsyncResultSetIO: Async[ResultSetIO] =
+  implicit val AsyncResultSetIO: Async[ResultSetIO] =
     new Async[ResultSetIO] {
       val M = FF.catsFreeMonadForFree[ResultSetOp]
       def pure[A](x: A): ResultSetIO[A] = M.pure(x)

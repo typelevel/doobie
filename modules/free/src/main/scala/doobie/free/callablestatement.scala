@@ -1254,7 +1254,7 @@ object callablestatement {
   val wasNull: CallableStatementIO[Boolean] = FF.liftF(WasNull)
 
   // CallableStatementIO is an Async
-  implicit lazy val AsyncCallableStatementIO: Async[CallableStatementIO] =
+  implicit val AsyncCallableStatementIO: Async[CallableStatementIO] =
     new Async[CallableStatementIO] {
       val M = FF.catsFreeMonadForFree[CallableStatementOp]
       def pure[A](x: A): CallableStatementIO[A] = M.pure(x)

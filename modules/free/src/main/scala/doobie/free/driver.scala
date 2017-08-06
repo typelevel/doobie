@@ -115,7 +115,7 @@ object driver {
   val jdbcCompliant: DriverIO[Boolean] = FF.liftF(JdbcCompliant)
 
   // DriverIO is an Async
-  implicit lazy val AsyncDriverIO: Async[DriverIO] =
+  implicit val AsyncDriverIO: Async[DriverIO] =
     new Async[DriverIO] {
       val M = FF.catsFreeMonadForFree[DriverOp]
       def pure[A](x: A): DriverIO[A] = M.pure(x)

@@ -362,7 +362,7 @@ object connection {
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
   // ConnectionIO is an Async
-  implicit lazy val AsyncConnectionIO: Async[ConnectionIO] =
+  implicit val AsyncConnectionIO: Async[ConnectionIO] =
     new Async[ConnectionIO] {
       val M = FF.catsFreeMonadForFree[ConnectionOp]
       def pure[A](x: A): ConnectionIO[A] = M.pure(x)

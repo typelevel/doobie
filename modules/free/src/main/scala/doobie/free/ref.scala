@@ -97,7 +97,7 @@ object ref {
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
   // RefIO is an Async
-  implicit lazy val AsyncRefIO: Async[RefIO] =
+  implicit val AsyncRefIO: Async[RefIO] =
     new Async[RefIO] {
       val M = FF.catsFreeMonadForFree[RefOp]
       def pure[A](x: A): RefIO[A] = M.pure(x)

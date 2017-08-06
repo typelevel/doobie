@@ -132,7 +132,7 @@ object blob {
   def truncate(a: Long): BlobIO[Unit] = FF.liftF(Truncate(a))
 
   // BlobIO is an Async
-  implicit lazy val AsyncBlobIO: Async[BlobIO] =
+  implicit val AsyncBlobIO: Async[BlobIO] =
     new Async[BlobIO] {
       val M = FF.catsFreeMonadForFree[BlobOp]
       def pure[A](x: A): BlobIO[A] = M.pure(x)

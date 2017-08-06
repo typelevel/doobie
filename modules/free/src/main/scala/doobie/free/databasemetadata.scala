@@ -970,7 +970,7 @@ object databasemetadata {
   val usesLocalFiles: DatabaseMetaDataIO[Boolean] = FF.liftF(UsesLocalFiles)
 
   // DatabaseMetaDataIO is an Async
-  implicit lazy val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
+  implicit val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
     new Async[DatabaseMetaDataIO] {
       val M = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
       def pure[A](x: A): DatabaseMetaDataIO[A] = M.pure(x)

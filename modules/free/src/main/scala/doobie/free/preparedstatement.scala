@@ -648,7 +648,7 @@ object preparedstatement {
   def unwrap[T](a: Class[T]): PreparedStatementIO[T] = FF.liftF(Unwrap(a))
 
   // PreparedStatementIO is an Async
-  implicit lazy val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
+  implicit val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
     new Async[PreparedStatementIO] {
       val M = FF.catsFreeMonadForFree[PreparedStatementOp]
       def pure[A](x: A): PreparedStatementIO[A] = M.pure(x)

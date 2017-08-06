@@ -145,7 +145,7 @@ object clob {
   def truncate(a: Long): ClobIO[Unit] = FF.liftF(Truncate(a))
 
   // ClobIO is an Async
-  implicit lazy val AsyncClobIO: Async[ClobIO] =
+  implicit val AsyncClobIO: Async[ClobIO] =
     new Async[ClobIO] {
       val M = FF.catsFreeMonadForFree[ClobOp]
       def pure[A](x: A): ClobIO[A] = M.pure(x)

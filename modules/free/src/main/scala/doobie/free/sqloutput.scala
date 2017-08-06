@@ -233,7 +233,7 @@ object sqloutput {
   def writeURL(a: URL): SQLOutputIO[Unit] = FF.liftF(WriteURL(a))
 
   // SQLOutputIO is an Async
-  implicit lazy val AsyncSQLOutputIO: Async[SQLOutputIO] =
+  implicit val AsyncSQLOutputIO: Async[SQLOutputIO] =
     new Async[SQLOutputIO] {
       val M = FF.catsFreeMonadForFree[SQLOutputOp]
       def pure[A](x: A): SQLOutputIO[A] = M.pure(x)
