@@ -13,7 +13,7 @@ import fs2.interop.cats._
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object h2typesspec extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",
     "sa", ""
@@ -29,13 +29,13 @@ object h2typesspec extends Specification {
   def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
     s"Mapping for $col as ${m.scalaType}" >> {
       s"write+read $col as ${m.scalaType}" in {
-        inOut(col, a).transact(xa).attempt.unsafePerformIO must_== \/-(a)
+        inOut(col, a).transact(xa).attempt.unsafeRunSync must_== \/-(a)
       }
       s"write+read $col as Option[${m.scalaType}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafePerformIO must_== \/-(Some(a))
+        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== \/-(Some(a))
       }
       s"write+read $col as Option[${m.scalaType}] (None)" in {
-        inOut[Option[A]](col, None).transact(xa).attempt.unsafePerformIO must_== \/-(None)
+        inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== \/-(None)
       }
     }
 
@@ -68,26 +68,26 @@ object h2typesspec extends Specification {
 
   "Mapping for Boolean" should {
     "pass query analysis for unascribed 'true'" in {
-      val a = sql"select true".query[Boolean].analysis.transact(xa).unsafePerformIO
+      val a = sql"select true".query[Boolean].analysis.transact(xa).unsafeRunSync
       a.alignmentErrors must_== Nil
     }
     "pass query analysis for ascribed BIT" in {
-      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafePerformIO
+      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync
       a.alignmentErrors must_== Nil
     }
     "pass query analysis for ascribed BOOLEAN" in {
-      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafePerformIO
+      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync
       a.alignmentErrors must_== Nil
     }
   }
 
   "Mapping for UUID" should {
     "pass query analysis for unascribed UUID" in {
-      val a = sql"select random_uuid()".query[UUID].analysis.transact(xa).unsafePerformIO
+      val a = sql"select random_uuid()".query[UUID].analysis.transact(xa).unsafeRunSync
       a.alignmentErrors must_== Nil
     }
     "pass query analysis for ascribed UUID" in {
-      val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafePerformIO
+      val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafeRunSync
       a.alignmentErrors must_== Nil
     }
   }

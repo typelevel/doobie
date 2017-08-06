@@ -64,7 +64,7 @@ This is probably the most important development for 0.4.0 and it is due in large
 - The **dynamic SQL** story is now slightly better with the introduction of **composable statement fragments**. These allow you to build statements from smaller pieces without having to track parameter placeholders/offsets by hand. See the book chapter for details and examples.
 - SQL `IN` clauses are now handled via `Fragments.in`, which is a **breaking change** relative to 0.3.0. See the book chapter on parameterized queries for an example.
 - Methods on `Query[0]/Update[0]` that construct streams (`.process`) now have variants that allow you to specify the **chunk size**, which by default is 512 rows.
-- There is now an `IOLite` data type that you can use if you're having a hard time settling on a target effect type. It works identically in Cats and scalaz and is what's used in the book.
+- There is now an `IO` data type that you can use if you're having a hard time settling on a target effect type. It works identically in Cats and scalaz and is what's used in the book.
 
 ##### Changes to Add-On Modules
 

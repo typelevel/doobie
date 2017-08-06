@@ -12,7 +12,7 @@ In this chapter we examine a set of combinators that allow us to construct progr
 import doobie.imports._
 import cats._, cats.data._, cats.implicits._
 import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -77,7 +77,7 @@ List(sql"""DROP TABLE IF EXISTS person""",
      sql"""CREATE TABLE person (
              id    SERIAL,
              name  VARCHAR NOT NULL UNIQUE
-           )""").traverse(_.update.quick).void.unsafePerformIO
+           )""").traverse(_.update.quick).void.unsafeRunSync
 ```
 
 Alright, let's define a `Person` data type and a way to insert instances.
@@ -95,14 +95,14 @@ def insert(s: String): ConnectionIO[Person] = {
 The first insert will work.
 
 ```tut
-insert("bob").quick.unsafePerformIO
+insert("bob").quick.unsafeRunSync
 ```
 
 The second will fail with a unique constraint violation.
 
 ```tut
 try {
-  insert("bob").quick.unsafePerformIO
+  insert("bob").quick.unsafeRunSync
 } catch {
   case e: java.sql.SQLException =>
     println(e.getMessage)
@@ -126,7 +126,7 @@ Given this definition we can safely attempt to insert duplicate records and get 
 
 
 ```tut
-safeInsert("bob").quick.unsafePerformIO
+safeInsert("bob").quick.unsafeRunSync
 
-safeInsert("steve").quick.unsafePerformIO
+safeInsert("steve").quick.unsafeRunSync
 ```

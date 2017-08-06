@@ -9,7 +9,7 @@ import fs2.interop.cats._
 
 object manyrows extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -20,7 +20,7 @@ object manyrows extends Specification {
     // TODO add timeout to test the server-side cursor
     "take consistent memory" in {
       val q = sql"""select a.name, b.name from city a, city b""".query[(String, String)]
-      q.process.take(5).transact(xa).run.unsafePerformIO
+      q.process.take(5).transact(xa).run.unsafeRunSync
       true
     }
   }

@@ -32,7 +32,7 @@ import scala.util.Try
 import cats._, cats.implicits._
 import fs2.interop.cats._
 
-val xa = DriverManagerTransactor[IOLite](
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
@@ -118,7 +118,7 @@ Now it compiles as a column value and as a `Composite` that maps to a *single* c
 ```tut
 sql"select * from person where id = $pid"
 Composite[PersonId].length
-sql"select 'podiatry:123'".query[PersonId].quick.unsafePerformIO
+sql"select 'podiatry:123'".query[PersonId].quick.unsafeRunSync
 ```
 
 Note that the `Composite` width is now a single column. The rule is: if there exists an instance `Meta[A]` in scope, it will take precedence over any automatic derivation of `Composite[A]`.
@@ -184,13 +184,13 @@ val create =
     )
   """.update.run
 
-(drop *> create).quick.unsafePerformIO
+(drop *> create).quick.unsafeRunSync
 ```
 
 Note that our `check` output now knows about the `Json` and `Person` mappings. This is a side-effect of constructing instance above, which isn't a good design. Will revisit this for 0.3.0; this information is only used for diagnostics so it's not critical.
 
 ```tut:plain
-sql"select owner from pet".query[Int].check.unsafePerformIO
+sql"select owner from pet".query[Int].check.unsafeRunSync
 ```
 
 And we can now use `Person` as a parameter type and as a column type.
@@ -198,13 +198,13 @@ And we can now use `Person` as a parameter type and as a column type.
 ```tut
 val p = Person("Steve", 10, List("Train", "Ball"))
 (sql"insert into pet (name, owner) values ('Bob', $p)"
-  .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.unsafePerformIO
+  .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.unsafeRunSync
 ```
 
 If we ask for the `owner` column as a string value we can see that it is in fact storing JSON data.
 
 ```tut
-sql"select name, owner from pet".query[(String,String)].quick.unsafePerformIO
+sql"select name, owner from pet".query[(String,String)].quick.unsafeRunSync
 ```
 
 ### Composite by Invariant Map
@@ -222,5 +222,5 @@ implicit val Point2DComposite: Composite[Point] =
 And it works!
 
 ```tut
-sql"select 'foo', 12, 42, true".query[(String, Point, Boolean)].unique.quick.unsafePerformIO
+sql"select 'foo', 12, 42, true".query[(String, Point, Boolean)].unique.quick.unsafeRunSync
 ```

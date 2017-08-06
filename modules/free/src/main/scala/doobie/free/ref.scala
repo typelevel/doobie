@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.String
 import java.sql.Ref
@@ -37,7 +36,8 @@ object ref {
       def raw[A](f: Ref => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: RefIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // Ref
       def getBaseTypeName: F[String]
@@ -54,11 +54,14 @@ object ref {
     case class Embed[A](e: Embedded[A]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends RefOp[A] {
+    case class Delay[A](a: () => A) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: RefIO[A]) extends RefOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Ref-specific operations.
@@ -82,10 +85,10 @@ object ref {
   val unit: RefIO[Unit] = FF.pure[RefOp, Unit](())
   def raw[A](f: Ref => A): RefIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = embed(j, fa)
   def delay[A](a: => A): RefIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: RefIO[A]): RefIO[Throwable \/ A] = FF.liftF[RefOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): RefIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): RefIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): RefIO[A] = FF.liftF[RefOp, A](Async1(k))
 
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
@@ -93,16 +96,17 @@ object ref {
   def getObject(a: Map[String, Class[_]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
-// RefIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableRefIO: Suspendable[RefIO] with Catchable[RefIO] =
-    new Suspendable[RefIO] with Catchable[RefIO] {
-      def pure[A](a: A): RefIO[A] = ref.delay(a)
-      override def map[A, B](fa: RefIO[A])(f: A => B): RefIO[B] = fa.map(f)
-      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => RefIO[A]): RefIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): RefIO[A] = ref.delay(a)
-      def attempt[A](f: RefIO[A]): RefIO[Throwable \/ A] = ref.attempt(f)
-      def fail[A](err: Throwable): RefIO[A] = ref.fail(err)
+  // RefIO is an Async
+  implicit lazy val AsyncRefIO: Async[RefIO] =
+    new Async[RefIO] {
+      val M = FF.catsFreeMonadForFree[RefOp]
+      def pure[A](x: A): RefIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = ref.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): RefIO[A] = ref.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): RefIO[A] = ref.async(k)
+      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => RefIO[A]): RefIO[A] = M.flatten(ref.delay(thunk))
     }
 
 }

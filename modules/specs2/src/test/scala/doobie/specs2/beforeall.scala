@@ -15,11 +15,11 @@ object beforeall extends Specification with AnalysisSpec with BeforeAll {
 
   val targetQ = sql"select value from some_table".query[String]
 
-  val transactor = H2Transactor[IOLite](
+  val transactor = H2Transactor[IO](
     "jdbc:h2:mem:",
     "sa",
     ""
-  ).unsafePerformIO
+  ).unsafeRunSync
 
   // The test itself
   check(targetQ)
@@ -28,7 +28,7 @@ object beforeall extends Specification with AnalysisSpec with BeforeAll {
   def beforeAll() = {
     initQ.run
       .transact(transactor)
-      .unsafePerformIO
+      .unsafeRunSync
     ()
   }
 }

@@ -10,7 +10,7 @@ import org.specs2.mutable.Specification
 
 object pgcheck extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -34,12 +34,12 @@ object pgcheck extends Specification {
   "pgEnumString" should {
 
     "check ok for read" in {
-      val a = sql"select 'foo' :: myenum".query[MyEnum].analysis.transact(xa).unsafePerformIO
+      val a = sql"select 'foo' :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync
       a.columnTypeErrors must_== Nil
     }
 
     "check ok for write" in {
-      val a = sql"select ${Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafePerformIO
+      val a = sql"select ${Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync
       a.parameterTypeErrors must_== Nil
     }
 

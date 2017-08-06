@@ -1,15 +1,15 @@
 package doobie.util
 
+import cats._
+import cats.implicits._
+import cats.effect.IO
 import doobie.imports._
 import org.specs2.mutable.Specification
 import shapeless._
-import cats._, cats.implicits._
-import fs2.interop.cats._
-
 
 object fragmentspec extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:fragmentspec;DB_CLOSE_DELAY=-1",
     "sa", ""
@@ -35,22 +35,22 @@ object fragmentspec extends Specification {
 
     "maintain parameter indexing (in-order)" in {
       val s = fr"select" ++ List(fra, frb, frc).intercalate(fr",")
-      s.query[(Int, String, Boolean)].unique.transact(xa).unsafePerformIO must_== ((a, b, c))
+      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
     }
 
     "maintain parameter indexing (out-of-order)" in {
       val s = fr"select" ++ List(frb, frc, fra).intercalate(fr",")
-      s.query[(String, Boolean, Int)].unique.transact(xa).unsafePerformIO must_== ((b, c, a))
+      s.query[(String, Boolean, Int)].unique.transact(xa).unsafeRunSync must_== ((b, c, a))
     }
 
     "maintain associativity (left)" in {
       val s = fr"select" ++ List(fra, fr",", frb, fr",", frc).foldLeft(Fragment.empty)(_ ++ _)
-      s.query[(Int, String, Boolean)].unique.transact(xa).unsafePerformIO must_== ((a, b, c))
+      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
     }
 
     "maintain associativity (right)" in {
       val s = fr"select" ++ List(fra, fr",", frb, fr",", frc).foldRight(Fragment.empty)(_ ++ _)
-      s.query[(Int, String, Boolean)].unique.transact(xa).unsafePerformIO must_== ((a, b, c))
+      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
     }
 
     "translate to and from Query0" in {

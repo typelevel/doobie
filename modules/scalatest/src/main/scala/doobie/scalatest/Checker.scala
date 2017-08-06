@@ -7,7 +7,7 @@ import doobie.util.pos.Pos
 import doobie.util.query.{Query, Query0}
 import doobie.util.transactor.Transactor
 import doobie.util.update.{Update, Update0}
-import doobie.util.iolite.IOLite
+import doobie.util.IO.IO
 
 import org.scalatest.Assertions
 
@@ -27,10 +27,10 @@ import fs2.Task
   *
   * {{{
   * // An example specification, taken from the examples project.
-  * class ExampleSpec extends FunSuite with IOLiteChecker {
+  * class ExampleSpec extends FunSuite with IOChecker {
   *
   *   // The transactor to use for the tests.
-  *   val transactor = DriverManagerTransactor[IOLite](
+  *   val transactor = Transactor.fromDriverManager[IO](
   *     "org.postgresql.Driver",
   *     "jdbc:postgresql:world",
   *     "postgres", ""
@@ -50,7 +50,7 @@ trait Checker[M[_]] {
   implicit val monadM: Monad[M]
   implicit val catchableM: Catchable[M]
   implicit val captureM: Suspendable[M]
-  def unsafePerformIO[A](ma: M[A]): A
+  def unsafeRunSync[A](ma: M[A]): A
 
   def transactor: Transactor[M]
 
@@ -86,7 +86,7 @@ trait Checker[M[_]] {
     sql:      String,
     analysis: ConnectionIO[Analysis]
   ) = {
-    val analysisAttempt = unsafePerformIO(catchableM.attempt(transactor.trans(monadM).apply(analysis)))
+    val analysisAttempt = unsafeRunSync(catchableM.attempt(transactor.trans(monadM).apply(analysis)))
     if (hasError(analysisAttempt)) {
       val analysisOutput = analysisAttempt match {
         case -\/(e) =>
@@ -135,13 +135,13 @@ trait Checker[M[_]] {
     s"${Console.GREEN}  ✓ ${Console.RESET}$name\n" + desc.mkString("\n")
 }
 
-/** Implementation of Checker[IOLite] */
-trait IOLiteChecker extends Checker[IOLite] {
+/** Implementation of Checker[IO] */
+trait IOChecker extends Checker[IO] {
   self: Assertions =>
-  val monadM: Monad[IOLite] = implicitly
-  val catchableM: Catchable[IOLite] = implicitly
-  val captureM: Suspendable[IOLite] = implicitly
-  def unsafePerformIO[A](ma: IOLite[A]) = ma.unsafePerformIO
+  val monadM: Monad[IO] = implicitly
+  val catchableM: Catchable[IO] = implicitly
+  val captureM: Suspendable[IO] = implicitly
+  def unsafeRunSync[A](ma: IO[A]) = ma.unsafeRunSync
 }
 
 /** Implementation of Checker[fs2.Task] */
@@ -150,5 +150,5 @@ trait TaskChecker extends Checker[Task] {
   val monadM: Monad[Task] = implicitly
   val catchableM: Catchable[Task] = implicitly
   val captureM: Suspendable[Task] = implicitly
-  def unsafePerformIO[A](ma: Task[A]) = ma.unsafeRun
+  def unsafeRunSync[A](ma: Task[A]) = ma.unsafeRun
 }

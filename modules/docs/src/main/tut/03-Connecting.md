@@ -30,14 +30,14 @@ val program1: ConnectionIO[Int] = 42.pure[ConnectionIO]
 This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
 ```tut:silent
-val xa = DriverManagerTransactor[IOLite](
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
 
-A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IOLite`, which gives us something we can run. Specifically it gives us an `IOLite` that, when run, will connect to the database and run our program in a single transaction.
+A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IO`, which gives us something we can run. Specifically it gives us an `IO` that, when run, will connect to the database and run our program in a single transaction.
 
-Scala does not have a standard IO, so the examples in this book use the simple `IOLite` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar monadic types like `cats.effect.IO`, `fs2.Task`, and `monix.Task` will also work fine.
+Scala does not have a standard IO, so the examples in this book use the simple `IO` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar monadic types like `cats.effect.IO`, `fs2.Task`, and `monix.Task` will also work fine.
 In fact, you can use any Monad `M[_]` as long as there is a `fs2.util.Catchable[M]` and `fs2.util.Suspendable[M]` available. See *Using Your Own Target Monad* at the end of this capter for more details.
 
 The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.
@@ -45,13 +45,13 @@ The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` t
 Right, so let's do this.
 
 ```tut
-val task: IOLite[Int] = program1.transact(xa)
-task.unsafePerformIO
+val task: IO[Int] = program1.transact(xa)
+task.unsafeRunSync
 ```
 
 Hooray! We have computed a constant. It's not very interesting because we never ask the database to perform any work, but it's a first step.
 
-> Keep in mind that all the code in this book is pure *except* the calls to `IOLite.unsafePerformIO`, which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
+> Keep in mind that all the code in this book is pure *except* the calls to `IO.unsafeRunSync`, which is the "end of the world" operation that typically appears only at your application's entry points. In the REPL we use it to force a computation to "happen".
 
 Right. Now let's try something more interesting.
 
@@ -61,8 +61,8 @@ Let's use the `sql` string interpolator to construct a query that asks the *data
 
 ```tut
 val program2: ConnectionIO[Int] = sql"select 42".query[Int].unique
-val task2: IOLite[Int] = program2.transact(xa)
-task2.unsafePerformIO
+val task2: IO[Int] = program2.transact(xa)
+task2.unsafeRunSync
 ```
 
 Ok! We have now connected to a database to compute a constant. Considerably more impressive.
@@ -82,7 +82,7 @@ val program3: ConnectionIO[(Int, Double)] =
 And behold!
 
 ```tut
-program3.transact(xa).unsafePerformIO
+program3.transact(xa).unsafeRunSync
 ```
 
 The astute among you will note that we don't actually need a monad to do this; an applicative functor is all we need here. So we could also write `program3` as:
@@ -98,15 +98,15 @@ val program3a = {
 And lo, it was good:
 
 ```tut
-program3a.transact(xa).unsafePerformIO
+program3a.transact(xa).unsafeRunSync
 ```
 
 And of course this composition can continue indefinitely.
 
 ```tut
 val valuesList: ConnectionIO[List[(Int, Double)]] = Applicative[ConnectionIO].replicateA(5, program3a)
-val result: IOLite[List[(Int, Double)]] = valuesList.transact(xa)
-result.unsafePerformIO.foreach(println)
+val result: IO[List[(Int, Double)]] = valuesList.transact(xa)
+result.unsafeRunSync.foreach(println)
 ```
 
 ### Diving Deeper
@@ -122,14 +122,14 @@ import cats.~>
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter: ConnectionOp ~> Kleisli[IOLite, Connection, ?] = KleisliInterpreter[IOLite].ConnectionInterpreter
-val kleisli: Kleisli[IOLite, Connection, Int] = program1.foldMap(interpreter)
-// >>= is simply flatMap and kleisli.run is (Connection) => IOLite[Int]
-val task: IOLite[Int] = IOLite.primitive(null: java.sql.Connection) >>= kleisli.run
-task.unsafePerformIO // sneaky; program1 never looks at the connection
+val interpreter: ConnectionOp ~> Kleisli[IO, Connection, ?] = KleisliInterpreter[IO].ConnectionInterpreter
+val kleisli: Kleisli[IO, Connection, Int] = program1.foldMap(interpreter)
+// >>= is simply flatMap and kleisli.run is (Connection) => IO[Int]
+val task: IO[Int] = IO(null: java.sql.Connection) >>= kleisli.run
+task.unsafeRunSync // sneaky; program1 never looks at the connection
 ```
 
-So the interpreter above is used to transform a `ConnectionIO[A]` program into a `Kleisli[IOLite, Connection, A]`. Then we construct an `IOLite[Connection]` (returning `null`) and bind it through the `Kleisli`, yielding our `IOLite[Int]`. This of course only works because `program1` is a pure value that does not look at the connection.
+So the interpreter above is used to transform a `ConnectionIO[A]` program into a `Kleisli[IO, Connection, A]`. Then we construct an `IO[Connection]` (returning `null`) and bind it through the `Kleisli`, yielding our `IO[Int]`. This of course only works because `program1` is a pure value that does not look at the connection.
 
 The `Transactor` that we defined at the beginning of this chapter is basically a utility that allows us to do the same as above using `program1.transact(xa)`.
 

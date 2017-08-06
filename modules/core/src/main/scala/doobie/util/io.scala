@@ -1,12 +1,11 @@
 package doobie.util
 
-import doobie.imports._
 import java.io.{ Console => _, _ }
 
 import doobie.util.compat.cats.monad._
+import doobie.util.monaderror._
 import cats.implicits._
-import fs2.interop.cats._
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Sync
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {
@@ -17,9 +16,9 @@ object io {
    * used with caution; they are mostly intended for library authors who wish to integrate vendor-
    * specific behavior that relies on JDK IO.
    */
-  class IOActions[M[_]: Catchable: Suspendable] {
+  class IOActions[M[_]: Sync] {
 
-    private def delay[A](a: => A): M[A] = Predef.implicitly[Suspendable[M]].delay(a)
+    private def delay[A](a: => A): M[A] = Predef.implicitly[Sync[M]].delay(a)
 
     /**
      * Print to `Console.out`
@@ -68,14 +67,14 @@ object io {
      * @group File Operations
      */
     def withFileInputStream[A](file: File)(f: FileInputStream => M[A]): M[A] =
-      delay(new FileInputStream(file)) flatMap { i => f(i) ensuring delay(i.close) }
+      delay(new FileInputStream(file)) flatMap { i => f(i) guarantee delay(i.close) }
 
     /**
      * Perform an operation with a `FileOutputStream`, which will be closed afterward.
      * @group File Operations
      */
     def withFileOutputStream[A](file: File)(f: FileOutputStream => M[A]): M[A] =
-      delay(new FileOutputStream(file)) flatMap { i => f(i) ensuring delay(i.close) }
+      delay(new FileOutputStream(file)) flatMap { i => f(i) guarantee delay(i.close) }
 
     /**
      * Flush `os`.

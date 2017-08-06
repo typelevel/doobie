@@ -5,16 +5,14 @@ import doobie.free.connection.ConnectionIO
 
 import scala.Predef.=:=
 
-import cats.Monad
+import cats.effect.{ Effect, Sync }
 import cats.implicits._
-import fs2.interop.cats._
-import fs2.{ Stream => Process }
-import fs2.util.{ Catchable, Suspendable }
+import fs2.Stream
 
-/** Syntax for `Process` operations defined in `util.process`. */
+/** Syntax for `Stream` operations defined in `util.process`. */
 object process {
 
-  implicit class ProcessOps[F[_]: Catchable: Suspendable, A](fa: Process[F, A]) {
+  implicit class ProcessOps[F[_]: Sync, A](fa: Stream[F, A]) {
 
     def vector: F[Vector[A]] =
       fa.runLog.map(_.toVector)
@@ -25,7 +23,7 @@ object process {
     def sink(f: A => F[Unit]): F[Unit] =
       fa.to(doobie.util.process.sink(f)).run
 
-    def transact[M[_]: Monad](xa: Transactor[M])(implicit ev: Process[F, A] =:= Process[ConnectionIO, A]): Process[M, A] =
+    def transact[M[_]: Effect](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] =
       xa.transP.apply(fa)
 
   }

@@ -3,9 +3,9 @@ package doobie.scalatest
 object imports {
 
   type Checker[M[_]] = doobie.scalatest.Checker[M]
-  type IOLiteChecker = doobie.scalatest.IOLiteChecker
+  type IOChecker = doobie.scalatest.IOChecker
 
-  @deprecated("Use IOLiteChecker.", "0.4.2")
-  type QueryChecker = IOLiteChecker
+  @deprecated("Use IOChecker.", "0.4.2")
+  type QueryChecker = IOChecker
 
 }

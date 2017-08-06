@@ -12,8 +12,7 @@ import doobie.util.pretty.wrap
 
 import scala.util.{ Left => -\/, Right => \/- }
 import cats.implicits._
-import fs2.interop.cats._
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect._
 import fs2.{ Stream => Process }
 
 import Predef._
@@ -21,7 +20,9 @@ import Predef._
 /** Module for implicit syntax useful in REPL session. */
 object yolo {
 
-  class Yolo[M[_]: Catchable: Suspendable](xa: Transactor[M]) {
+  import doobie.free.connection.AsyncConnectionIO
+
+  class Yolo[M[_]: Sync](xa: Transactor[M]) {
 
     private def out(s: String): ConnectionIO[Unit] =
       delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))

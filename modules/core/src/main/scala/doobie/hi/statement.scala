@@ -4,9 +4,10 @@ import doobie.enum.holdability.Holdability
 import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
-import doobie.syntax.catchable.ToDoobieCatchableOps._
 import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
+
+import doobie.util.monaderror._
 
 import java.sql.SQLWarning
 
@@ -17,9 +18,6 @@ import scala.Predef.intArrayOps
  * @group Modules
  */
 object statement {
-
-  /** @group Typeclass Instances */
-  implicit val CatchableStatementIO = S.CatchableStatementIO
 
   /** @group Batching */
   def addBatch(sql: String): StatementIO[Unit] =
@@ -35,7 +33,7 @@ object statement {
 
   /** @group Execution */
   def executeQuery[A](sql: String)(k: ResultSetIO[A]): StatementIO[A] =
-    S.executeQuery(sql).flatMap(s => S.lift(s, k ensuring RS.close))
+    S.executeQuery(sql).flatMap(s => S.embed(s, k guarantee RS.close))
 
   /** @group Execution */
   def executeUpdate(sql: String): StatementIO[Int] =
@@ -51,7 +49,7 @@ object statement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): StatementIO[A] =
-    S.getGeneratedKeys.flatMap(s => S.lift(s, k ensuring RS.close))
+    S.getGeneratedKeys.flatMap(s => S.embed(s, k guarantee RS.close))
 
   /** @group Properties */
   val getMaxFieldSize: StatementIO[Int] =
@@ -75,7 +73,7 @@ object statement {
 
   /** @group Batching */
   def getResultSet[A](k: ResultSetIO[A]): StatementIO[A] =
-    S.getResultSet.flatMap(s => S.lift(s, k))
+    S.getResultSet.flatMap(s => S.embed(s, k))
 
   /** @group Properties */
   val getResultSetConcurrency: StatementIO[ResultSetConcurrency] =

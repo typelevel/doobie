@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.Class
 import java.lang.String
@@ -40,7 +39,8 @@ object statement {
       def raw[A](f: Statement => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: StatementIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -105,11 +105,14 @@ object statement {
     case class Embed[A](e: Embedded[A]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends StatementOp[A] {
+    case class Delay[A](a: () => A) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: StatementIO[A]) extends StatementOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Statement-specific operations.
@@ -277,10 +280,10 @@ object statement {
   val unit: StatementIO[Unit] = FF.pure[StatementOp, Unit](())
   def raw[A](f: Statement => A): StatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = embed(j, fa)
   def delay[A](a: => A): StatementIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: StatementIO[A]): StatementIO[Throwable \/ A] = FF.liftF[StatementOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): StatementIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): StatementIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): StatementIO[A] = FF.liftF[StatementOp, A](Async1(k))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
@@ -336,16 +339,17 @@ object statement {
   def setQueryTimeout(a: Int): StatementIO[Unit] = FF.liftF(SetQueryTimeout(a))
   def unwrap[T](a: Class[T]): StatementIO[T] = FF.liftF(Unwrap(a))
 
-// StatementIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableStatementIO: Suspendable[StatementIO] with Catchable[StatementIO] =
-    new Suspendable[StatementIO] with Catchable[StatementIO] {
-      def pure[A](a: A): StatementIO[A] = statement.delay(a)
-      override def map[A, B](fa: StatementIO[A])(f: A => B): StatementIO[B] = fa.map(f)
-      def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => StatementIO[A]): StatementIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): StatementIO[A] = statement.delay(a)
-      def attempt[A](f: StatementIO[A]): StatementIO[Throwable \/ A] = statement.attempt(f)
-      def fail[A](err: Throwable): StatementIO[A] = statement.fail(err)
+  // StatementIO is an Async
+  implicit lazy val AsyncStatementIO: Async[StatementIO] =
+    new Async[StatementIO] {
+      val M = FF.catsFreeMonadForFree[StatementOp]
+      def pure[A](x: A): StatementIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = statement.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): StatementIO[A] = statement.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): StatementIO[A] = statement.async(k)
+      def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => StatementIO[A]): StatementIO[A] = M.flatten(statement.delay(thunk))
     }
 
 }

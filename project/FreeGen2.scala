@@ -184,9 +184,8 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |package doobie.free
     |
     |import cats.~>
-    |import cats.free.{ Free => FF }
-    |import scala.util.{ Either => \\/ }
-    |import fs2.util.{ Catchable, Suspendable }
+    |import cats.effect.Async
+    |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
     |
     |${imports[A].mkString("\n")}
     |
@@ -218,7 +217,8 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |      def raw[A](f: $sname => A): F[A]
     |      def embed[A](e: Embedded[A]): F[A]
     |      def delay[A](a: () => A): F[A]
-    |      def attempt[A](fa: ${sname}IO[A]): F[Throwable \\/ A]
+    |      def handleErrorWith[A](fa: ${sname}IO[A], f: Throwable => ${sname}IO[A]): F[A]
+    |      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
     |
     |      // $sname
           ${ctors[A].map(_.visitor).mkString("\n    ")}
@@ -232,11 +232,14 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |    case class Embed[A](e: Embedded[A]) extends ${sname}Op[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.embed(e)
     |    }
-    |    case class  Delay[A](a: () => A) extends ${sname}Op[A] {
+    |    case class Delay[A](a: () => A) extends ${sname}Op[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.delay(a)
     |    }
-    |    case class  Attempt[A](fa: ${sname}IO[A]) extends ${sname}Op[Throwable \\/ A] {
-    |      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    |    case class HandleErrorWith[A](fa: ${sname}IO[A], f: Throwable => ${sname}IO[A]) extends ${sname}Op[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    |    }
+    |    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${sname}Op[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.async(k)
     |    }
     |
     |    // $sname-specific operations.
@@ -249,24 +252,25 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |  val unit: ${sname}IO[Unit] = FF.pure[${sname}Op, Unit](())
     |  def raw[A](f: $sname => A): ${sname}IO[A] = FF.liftF(Raw(f))
     |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = FF.liftF(Embed(ev.embed(j, fa)))
-    |  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = embed(j, fa)
     |  def delay[A](a: => A): ${sname}IO[A] = FF.liftF(Delay(() => a))
-    |  def attempt[A](fa: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = FF.liftF[${sname}Op, Throwable \\/ A](Attempt(fa))
-    |  def fail[A](err: Throwable): ${sname}IO[A] = delay(throw err)
+    |  def handleErrorWith[A](fa: ${sname}IO[A], f: Throwable => ${sname}IO[A]): ${sname}IO[A] = FF.liftF[${sname}Op, A](HandleErrorWith(fa, f))
+    |  def raiseError[A](err: Throwable): ${sname}IO[A] = delay(throw err)
+    |  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ${sname}IO[A] = FF.liftF[${sname}Op, A](Async1(k))
     |
     |  // Smart constructors for $sname-specific operations.
     |  ${ctors[A].map(_.lifted(sname)).mkString("\n  ")}
     |
-    |// ${sname}IO can capture side-effects, and can trap and raise exceptions.
-    |  implicit val Catchable${sname}IO: Suspendable[${sname}IO] with Catchable[${sname}IO] =
-    |    new Suspendable[${sname}IO] with Catchable[${sname}IO] {
-    |      def pure[A](a: A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
-    |      override def map[A, B](fa: ${sname}IO[A])(f: A => B): ${sname}IO[B] = fa.map(f)
-    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = fa.flatMap(f)
-    |      def suspend[A](fa: => ${sname}IO[A]): ${sname}IO[A] = FF.suspend(fa)
-    |      override def delay[A](a: => A): ${sname}IO[A] = ${sname.toLowerCase}.delay(a)
-    |      def attempt[A](f: ${sname}IO[A]): ${sname}IO[Throwable \\/ A] = ${sname.toLowerCase}.attempt(f)
-    |      def fail[A](err: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.fail(err)
+    |  // ${sname}IO is an Async
+    |  implicit val Async${sname}IO: Async[${sname}IO] =
+    |    new Async[${sname}IO] {
+    |      val M = FF.catsFreeMonadForFree[${sname}Op]
+    |      def pure[A](x: A): ${sname}IO[A] = M.pure(x)
+    |      def handleErrorWith[A](fa: ${sname}IO[A])(f: Throwable => ${sname}IO[A]): ${sname}IO[A] = ${sname.toLowerCase}.handleErrorWith(fa, f)
+    |      def raiseError[A](e: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.raiseError(e)
+    |      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ${sname}IO[A] = ${sname.toLowerCase}.async(k)
+    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = M.flatMap(fa)(f)
+    |      def tailRecM[A, B](a: A)(f: A => ${sname}IO[Either[A, B]]): ${sname}IO[B] = M.tailRecM(a)(f)
+    |      def suspend[A](thunk: => ${sname}IO[A]): ${sname}IO[A] = M.flatten(${sname.toLowerCase}.delay(thunk))
     |    }
     |
     |}
@@ -303,13 +307,24 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      val n = toScalaType(ev.runtimeClass)
      s"""
        |  trait ${n}Interpreter extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] {
+       |
        |    // common operations delegate to outer interpeter
-       |    override def delay[A](a: () => A): Kleisli[M, ${n}, A] = outer.delay(a)
-       |    override def embed[A](e: Embedded[A]): Kleisli[M, ${n}, A] = outer.embed(e)
-       |    override def raw[A](f: ${n} => A) = outer.raw(f)
-       |    override def attempt[A](fa: ${n}IO[A]) = outer.attempt(fa)(this)
+       |    override def raw[A](f: $n => A): Kleisli[M, $n, A] = outer.raw(f)
+       |    override def embed[A](e: Embedded[A]): Kleisli[M, $n, A] = outer.embed(e)
+       |    override def delay[A](a: () => A): Kleisli[M, $n, A] = outer.delay(a)
+       |    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, $n, A] = outer.async(k)
+       |
+       |    // for handleErrorWith we must call ourself recursively
+       |    override def handleErrorWith[A](fa: ${n}IO[A], f: Throwable => ${n}IO[A]): Kleisli[M, $n, A] =
+       |      Kleisli { j =>
+       |        val faʹ = fa.foldMap(this).run(j)
+       |        val fʹ  = f.andThen(_.foldMap(this).run(j))
+       |        M.handleErrorWith(faʹ)(fʹ)
+       |      }
+       |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
+       |
        |  }
        |""".trim.stripMargin
     }
@@ -319,13 +334,10 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      s"""
       |package doobie.free
       |
-      |// Library imports required for the Cats implementation.
-      |import cats.{ Monad, ~> }
+      |// Library imports
+      |import cats.~>
       |import cats.data.Kleisli
-      |import cats.free.Free
-      |import fs2.util.{ Catchable, Suspendable => Capture }
-      |import fs2.interop.cats._
-      |import scala.util.{ Either => \\/ }
+      |import cats.effect.Async
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
@@ -334,33 +346,24 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |${managed.map(_.getSimpleName).map(c => s"import doobie.free.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
       |object KleisliInterpreter {
-      |  def apply[M[_]](
-      |    implicit M0: Monad[M],
-      |             C0: Capture[M],
-      |             K0: Catchable[M]
-      |  ): KleisliInterpreter[M] =
+      |  def apply[M[_]](implicit ev: Async[M]): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M] {
-      |      val M = M0
-      |      val C = C0
-      |      val K = K0
+      |      val M = ev
       |    }
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
       |trait KleisliInterpreter[M[_]] { outer =>
-      |  implicit val M: Monad[M]
-      |  implicit val C: Capture[M]
-      |  implicit val K: Catchable[M]
+      |  implicit val M: Async[M]
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(_.getSimpleName).map(n => s"lazy val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] = new ${n}Interpreter { }").mkString("\n  ")}
       |
       |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
-      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => C.delay(f(a)))
-      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = primitive(_ => a())
+      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => M.delay(f(a)))
+      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => M.delay(a()))
       |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
-      |  def attempt[F[_], J, A](fa: Free[F, A])(nat: F ~> Kleisli[M, J, ?]): Kleisli[M, J, Throwable \\/ A] =
-      |    Catchable[Kleisli[M, J, ?]].attempt(fa.foldMap(nat))
+      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => M.async(k))
       |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
       |    e match {
       |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}

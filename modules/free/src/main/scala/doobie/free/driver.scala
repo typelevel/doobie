@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.String
 import java.sql.Connection
@@ -40,7 +39,8 @@ object driver {
       def raw[A](f: Driver => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: DriverIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // Driver
       def acceptsURL(a: String): F[Boolean]
@@ -60,11 +60,14 @@ object driver {
     case class Embed[A](e: Embedded[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends DriverOp[A] {
+    case class Delay[A](a: () => A) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: DriverIO[A]) extends DriverOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Driver-specific operations.
@@ -97,10 +100,10 @@ object driver {
   val unit: DriverIO[Unit] = FF.pure[DriverOp, Unit](())
   def raw[A](f: Driver => A): DriverIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DriverOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DriverOp, A] = embed(j, fa)
   def delay[A](a: => A): DriverIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: DriverIO[A]): DriverIO[Throwable \/ A] = FF.liftF[DriverOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): DriverIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): DriverIO[A] = FF.liftF[DriverOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): DriverIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): DriverIO[A] = FF.liftF[DriverOp, A](Async1(k))
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))
@@ -111,16 +114,17 @@ object driver {
   def getPropertyInfo(a: String, b: Properties): DriverIO[Array[DriverPropertyInfo]] = FF.liftF(GetPropertyInfo(a, b))
   val jdbcCompliant: DriverIO[Boolean] = FF.liftF(JdbcCompliant)
 
-// DriverIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableDriverIO: Suspendable[DriverIO] with Catchable[DriverIO] =
-    new Suspendable[DriverIO] with Catchable[DriverIO] {
-      def pure[A](a: A): DriverIO[A] = driver.delay(a)
-      override def map[A, B](fa: DriverIO[A])(f: A => B): DriverIO[B] = fa.map(f)
-      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => DriverIO[A]): DriverIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): DriverIO[A] = driver.delay(a)
-      def attempt[A](f: DriverIO[A]): DriverIO[Throwable \/ A] = driver.attempt(f)
-      def fail[A](err: Throwable): DriverIO[A] = driver.fail(err)
+  // DriverIO is an Async
+  implicit lazy val AsyncDriverIO: Async[DriverIO] =
+    new Async[DriverIO] {
+      val M = FF.catsFreeMonadForFree[DriverOp]
+      def pure[A](x: A): DriverIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = driver.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): DriverIO[A] = driver.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): DriverIO[A] = driver.async(k)
+      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = M.flatten(driver.delay(thunk))
     }
 
 }

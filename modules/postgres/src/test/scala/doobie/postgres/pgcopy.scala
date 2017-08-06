@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 
 object pgcopyspec extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -47,7 +47,7 @@ object pgcopyspec extends Specification {
           _   <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
         } yield new String(out.toByteArray, "UTF-8")
 
-      prog.transact(xa).unsafePerformIO must_== fixture
+      prog.transact(xa).unsafeRunSync must_== fixture
 
     }
 

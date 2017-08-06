@@ -2,8 +2,7 @@ package doobie.issue
 
 import cats.Monad
 import cats.implicits._
-import fs2.util.{ Catchable, Suspendable => Capture }
-import fs2.interop.cats._
+import cats.effect.{ Async, IO }
 import doobie.imports._
 import org.specs2.mutable.Specification
 import Predef._
@@ -11,10 +10,8 @@ import Predef._
 object `262` extends Specification {
 
   // an interpreter that returns null when we ask for statement metadata
-  object Interp extends KleisliInterpreter[IOLite] {
-    val M = implicitly[Monad[IOLite]]
-    val C = implicitly[Capture[IOLite]]
-    val K = implicitly[Catchable[IOLite]]
+  object Interp extends KleisliInterpreter[IO] {
+    val M = implicitly[Async[IO]]
 
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {
@@ -23,20 +20,20 @@ object `262` extends Specification {
 
   }
 
-  val baseXa = Transactor.fromDriverManager[IOLite](
+  val baseXa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
   )
 
   // A transactor that uses our interpreter above
-  val xa: Transactor[IOLite] =
+  val xa: Transactor[IO] =
     Transactor.interpret.set(baseXa, Interp.ConnectionInterpreter)
 
   "getColumnJdbcMeta" should {
     "handle null metadata" in {
       val prog = HC.prepareStatement("select 1")(HPS.getColumnJdbcMeta)
-      prog.transact(xa).unsafePerformIO must_== Nil
+      prog.transact(xa).unsafeRunSync must_== Nil
     }
   }
 

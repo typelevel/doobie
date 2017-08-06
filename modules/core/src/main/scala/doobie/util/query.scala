@@ -6,7 +6,7 @@ import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 
 import doobie.free.connection.ConnectionIO
 import doobie.free.resultset.ResultSetIO
-import doobie.free.preparedstatement.{ PreparedStatementIO, CatchablePreparedStatementIO }
+import doobie.free.preparedstatement.{ PreparedStatementIO }
 import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
@@ -18,22 +18,24 @@ import doobie.util.analysis.Analysis
 import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
+import doobie.util.monaderror._
 
 import doobie.syntax.process._
-import doobie.syntax.catchable.ToDoobieCatchableOps._
 
 import java.sql.ResultSet
 
+import cats._, cats.effect._
 import cats.implicits._
 import cats.{ Functor, MonadCombine => MonadPlus }
 import cats.functor.{ Contravariant, Profunctor }
 import cats.data.NonEmptyList
 import scala.{ Left => -\/, Right => \/- }
 import fs2.{ Stream => Process }
-import fs2.util.Catchable
 
 /** Module defining queries parameterized by input and output types. */
 object query {
+
+  import doobie.free.preparedstatement.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
 
   val DefaultChunkSize = 512
 
@@ -63,7 +65,7 @@ object query {
     // Equivalent to HPS.executeQuery(k) but with logging
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       // N.B. the .attempt syntax isn't working in cats. unclear why
-      val c = Predef.implicitly[Catchable[PreparedStatementIO]]
+      val c = Predef.implicitly[Sync[PreparedStatementIO]]
       val args = ic.toList(ai(a))
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
@@ -75,7 +77,7 @@ object query {
                 case -\/(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[ResultSet](e)
                 case \/-(a) => a.pure[PreparedStatementIO]
               }
-        et <- c.attempt(FPS.lift(rs, k.ensuring(FRS.close)))
+        et <- c.attempt(FPS.embed(rs, k guarantee FRS.close))
         t2 <- now
         t  <- et match {
                 case -\/(e) => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) *> fail(e)

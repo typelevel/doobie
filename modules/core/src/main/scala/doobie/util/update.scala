@@ -14,15 +14,16 @@ import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
 
-import cats.Foldable
+import cats._
 import cats.functor.Contravariant
 import cats.implicits._
 import scala.{ Left => -\/, Right => \/- }
-import fs2.util.Catchable
 import fs2.{ Stream => Process }
 
 /** Module defining updates parameterized by input type. */
 object update {
+
+  import doobie.free.preparedstatement.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
 
   val DefaultChunkSize = query.DefaultChunkSize
 
@@ -57,7 +58,7 @@ object update {
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val args = ic.toList(ai(a))
-      val c = Predef.implicitly[Catchable[PreparedStatementIO]]
+      val c = Predef.implicitly[MonadError[PreparedStatementIO, Throwable]]
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {

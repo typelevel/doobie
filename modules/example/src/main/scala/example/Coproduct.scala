@@ -39,10 +39,10 @@ object coproduct {
     implicit def instance[F[_]](implicit ev: Inject[ConsoleOp, F]) = new ConsoleOps
   }
 
-  // An interpreter into IOLite
-  val consoleInterp = λ[ConsoleOp ~> IOLite] {
-    case ReadLn     => IOLite.primitive(StdIn.readLine)
-    case PrintLn(s) => IOLite.primitive(Console.println(s))
+  // An interpreter into IO
+  val consoleInterp = λ[ConsoleOp ~> IO] {
+    case ReadLn     => IO(StdIn.readLine)
+    case PrintLn(s) => IO(Console.println(s))
   }
 
   // A module of ConnectionOp programs, parameterized over a coproduct. The trick here is that these
@@ -72,20 +72,20 @@ object coproduct {
 
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
-  val interp: Cop ~> Kleisli[IOLite, Connection, ?] =
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IOLite].ConnectionInterpreter
+  val interp: Cop ~> Kleisli[IO, Connection, ?] =
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO].ConnectionInterpreter
 
   // Our interpreted program
-  val iprog: Kleisli[IOLite, Connection, Unit] = prog[Cop].foldMap(interp)
+  val iprog: Kleisli[IO, Connection, Unit] = prog[Cop].foldMap(interp)
 
   // Exec it!
   def main(args: Array[String]): Unit = {
-    val xa = Transactor.fromDriverManager[IOLite](
+    val xa = Transactor.fromDriverManager[IO](
       "org.postgresql.Driver",
       "jdbc:postgresql:world",
       "postgres", ""
     )
-    xa.exec.apply(iprog).unsafePerformIO
+    xa.exec.apply(iprog).unsafeRunSync
   }
 
   // Enter a pattern:

@@ -11,14 +11,13 @@ import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
 
-import doobie.syntax.catchable.ToDoobieCatchableOps._
-
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 
 import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.process.repeatEvalChunks
+import doobie.util.monaderror._
 
 import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 
@@ -37,17 +36,16 @@ import fs2.Stream.{ bracket }
  */
 object preparedstatement {
 
-  /** @group Typeclass Instances */
-  implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
-
+  import PS.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
+  import RS.AsyncResultSetIO
 
   // fs2 handler, not public
   private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Process[PreparedStatementIO, A] =
-    repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
+    repeatEvalChunks(PS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
   def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
+    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.embed(_, RS.close))
 
   /**
    * Non-strict unit for capturing effects.
@@ -80,7 +78,7 @@ object preparedstatement {
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.executeQuery.flatMap(s => PS.lift(s, k ensuring RS.close))
+    PS.executeQuery.flatMap(s => PS.embed(s, k guarantee RS.close))
 
   /** @group Execution */
   val executeUpdate: PreparedStatementIO[Int] =
@@ -92,7 +90,7 @@ object preparedstatement {
 
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
+    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.embed(_, RS.close))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata
@@ -128,7 +126,7 @@ object preparedstatement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.getGeneratedKeys.flatMap(s => PS.lift(s, k ensuring RS.close))
+    PS.getGeneratedKeys.flatMap(s => PS.embed(s, k guarantee RS.close))
 
   /** @group Results */
   def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =

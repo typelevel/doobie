@@ -6,8 +6,8 @@ import org.scalatest._
 
 import fs2.interop.cats._
 
-class AnalysisTestScalaCheck extends FunSuite with Matchers with IOLiteChecker {
-  val transactor = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
+  val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // Commented tests fail!
 //test("speakerQuery")  { check(AnalysisTest.speakerQuery(null, 0)) }

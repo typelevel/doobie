@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
 import java.io.Reader
@@ -51,7 +50,8 @@ object sqlinput {
       def raw[A](f: SQLInput => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: SQLInputIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // SQLInput
       def readArray: F[SqlArray]
@@ -92,11 +92,14 @@ object sqlinput {
     case class Embed[A](e: Embedded[A]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends SQLInputOp[A] {
+    case class Delay[A](a: () => A) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: SQLInputIO[A]) extends SQLInputOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // SQLInput-specific operations.
@@ -192,10 +195,10 @@ object sqlinput {
   val unit: SQLInputIO[Unit] = FF.pure[SQLInputOp, Unit](())
   def raw[A](f: SQLInput => A): SQLInputIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLInputOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLInputOp, A] = embed(j, fa)
   def delay[A](a: => A): SQLInputIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: SQLInputIO[A]): SQLInputIO[Throwable \/ A] = FF.liftF[SQLInputOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): SQLInputIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): SQLInputIO[A] = FF.liftF[SQLInputOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): SQLInputIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLInputIO[A] = FF.liftF[SQLInputOp, A](Async1(k))
 
   // Smart constructors for SQLInput-specific operations.
   val readArray: SQLInputIO[SqlArray] = FF.liftF(ReadArray)
@@ -227,16 +230,17 @@ object sqlinput {
   val readURL: SQLInputIO[URL] = FF.liftF(ReadURL)
   val wasNull: SQLInputIO[Boolean] = FF.liftF(WasNull)
 
-// SQLInputIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableSQLInputIO: Suspendable[SQLInputIO] with Catchable[SQLInputIO] =
-    new Suspendable[SQLInputIO] with Catchable[SQLInputIO] {
-      def pure[A](a: A): SQLInputIO[A] = sqlinput.delay(a)
-      override def map[A, B](fa: SQLInputIO[A])(f: A => B): SQLInputIO[B] = fa.map(f)
-      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => SQLInputIO[A]): SQLInputIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): SQLInputIO[A] = sqlinput.delay(a)
-      def attempt[A](f: SQLInputIO[A]): SQLInputIO[Throwable \/ A] = sqlinput.attempt(f)
-      def fail[A](err: Throwable): SQLInputIO[A] = sqlinput.fail(err)
+  // SQLInputIO is an Async
+  implicit lazy val AsyncSQLInputIO: Async[SQLInputIO] =
+    new Async[SQLInputIO] {
+      val M = FF.catsFreeMonadForFree[SQLInputOp]
+      def pure[A](x: A): SQLInputIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = sqlinput.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): SQLInputIO[A] = sqlinput.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLInputIO[A] = sqlinput.async(k)
+      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => SQLInputIO[A]): SQLInputIO[A] = M.flatten(sqlinput.delay(thunk))
     }
 
 }

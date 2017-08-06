@@ -24,8 +24,7 @@ import scala.collection.generic.CanBuildFrom
  */
 object resultset {
 
-  /** @group Typeclass Instances */
-  implicit val CatchableResultSetIO = RS.CatchableResultSetIO
+  import RS.AsyncResultSetIO // we need this instance ... TODO: re-org
 
   /**
    * Non-strict unit for capturing effects.

@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.Class
 import java.lang.String
@@ -52,7 +51,8 @@ object connection {
       def raw[A](f: Connection => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: ConnectionIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -119,11 +119,14 @@ object connection {
     case class Embed[A](e: Embedded[A]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends ConnectionOp[A] {
+    case class Delay[A](a: () => A) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: ConnectionIO[A]) extends ConnectionOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Connection-specific operations.
@@ -297,10 +300,10 @@ object connection {
   val unit: ConnectionIO[Unit] = FF.pure[ConnectionOp, Unit](())
   def raw[A](f: Connection => A): ConnectionIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ConnectionOp, A] = embed(j, fa)
   def delay[A](a: => A): ConnectionIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = FF.liftF[ConnectionOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): ConnectionIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): ConnectionIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ConnectionIO[A] = FF.liftF[ConnectionOp, A](Async1(k))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
@@ -358,16 +361,17 @@ object connection {
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
-// ConnectionIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableConnectionIO: Suspendable[ConnectionIO] with Catchable[ConnectionIO] =
-    new Suspendable[ConnectionIO] with Catchable[ConnectionIO] {
-      def pure[A](a: A): ConnectionIO[A] = connection.delay(a)
-      override def map[A, B](fa: ConnectionIO[A])(f: A => B): ConnectionIO[B] = fa.map(f)
-      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => ConnectionIO[A]): ConnectionIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): ConnectionIO[A] = connection.delay(a)
-      def attempt[A](f: ConnectionIO[A]): ConnectionIO[Throwable \/ A] = connection.attempt(f)
-      def fail[A](err: Throwable): ConnectionIO[A] = connection.fail(err)
+  // ConnectionIO is an Async
+  implicit lazy val AsyncConnectionIO: Async[ConnectionIO] =
+    new Async[ConnectionIO] {
+      val M = FF.catsFreeMonadForFree[ConnectionOp]
+      def pure[A](x: A): ConnectionIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = connection.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): ConnectionIO[A] = connection.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ConnectionIO[A] = connection.async(k)
+      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = M.flatten(connection.delay(thunk))
     }
 
 }

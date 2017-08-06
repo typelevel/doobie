@@ -2,7 +2,7 @@ package doobie.example
 
 import java.io.File
 
-import doobie.util.iolite.IOLite
+import doobie.util.IO.IO
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
@@ -18,8 +18,8 @@ object FreeUsage {
   case class CountryCode(code: String)
 
   def main(args: Array[String]): Unit = {
-    val db = Transactor.fromDriverManager[IOLite]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-    db.trans.apply(examples.void).unsafePerformIO
+    val db = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    db.trans.apply(examples.void).unsafeRunSync
   }
 
   def examples: C.ConnectionIO[String] =

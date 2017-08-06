@@ -20,7 +20,7 @@ The following examples require a few imports.
 import doobie.imports._
 import cats._, cats.data._, cats.implicits._
 import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -66,7 +66,7 @@ implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafePerformIO
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafeRunSync
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -112,7 +112,7 @@ implicit val FoobarMeta: Meta[FooBar] =
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafePerformIO
+sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafeRunSync
 ```
 
 
@@ -180,17 +180,17 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```tut
-p.attempt.quick.unsafePerformIO // attempt provided by Catchable instance
+p.attempt.quick.unsafeRunSync // attempt provided by Catchable instance
 
-p.attemptSqlState.quick.unsafePerformIO // this catches only SQL exceptions
+p.attemptSqlState.quick.unsafeRunSync // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafePerformIO // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafeRunSync // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafePerformIO // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafeRunSync // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .quick.unsafePerformIO // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .quick.unsafeRunSync // recover
 
-p.onSyntaxError("caught!".pure[ConnectionIO]).quick.unsafePerformIO // using recovery combinator
+p.onSyntaxError("caught!".pure[ConnectionIO]).quick.unsafeRunSync // using recovery combinator
 ```
 
 

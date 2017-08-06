@@ -10,8 +10,7 @@ lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.3"
 lazy val h2Version            = "1.4.195"
 lazy val postgresVersion      = "42.1.1"
-lazy val fs2CoreVersion       = "0.9.6"
-lazy val fs2CatsVersion       = "0.3.0"
+lazy val fs2CoreVersion       = "0.10.0-M4"
 lazy val postGisVersion       = "2.2.1"
 lazy val hikariVersion        = "2.6.1"
 lazy val scalatestVersion     = "3.0.3"
@@ -215,7 +214,6 @@ lazy val free = project
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
-      "co.fs2"         %% "fs2-cats"  % fs2CatsVersion,
       "org.typelevel"  %% "cats-core" % catsVersion,
       "org.typelevel"  %% "cats-free" % catsVersion
     )
@@ -232,7 +230,8 @@ lazy val core = project
     libraryDependencies ++= Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
-      "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion
+      "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
+      "com.h2database"        %  "h2"            % h2Version          % "test"
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {
@@ -277,7 +276,7 @@ lazy val postgres = project
     initialCommands := """
       import doobie.imports._
       import doobie.postgres.imports._
-      val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+      val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       val yolo = xa.yolo
       import yolo._
       import org.postgis._

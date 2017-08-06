@@ -15,7 +15,7 @@ import doobie.imports._
 import doobie.postgres.imports._
 import cats._, cats.data._, cats.implicits._
 import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -39,7 +39,7 @@ val create =
 ```
 
 ```tut
-(drop *> create).unsafePerformIO
+(drop *> create).unsafeRunSync
 ```
 
 **doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default. No special handling is required, other than importing the vendor-specific array support above.
@@ -56,8 +56,8 @@ def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
 Insert works fine, as does reading the result. No surprises.
 
 ```tut
-insert("Bob", List("Nixon", "Slappy")).quick.unsafePerformIO
-insert("Alice", Nil).quick.unsafePerformIO
+insert("Bob", List("Nixon", "Slappy")).quick.unsafeRunSync
+insert("Alice", Nil).quick.unsafeRunSync
 ```
 
 ### Lamentations of `NULL`
@@ -69,9 +69,9 @@ However there is another axis of variation here: the *array cells* themselves ma
 So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a `NULL` cell would result in a `NullableCellRead` exception.
 
 ```tut
-sql"select array['foo','bar','baz']".query[List[String]].quick.unsafePerformIO
-sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafePerformIO
-sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafePerformIO
-sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafePerformIO
+sql"select array['foo','bar','baz']".query[List[String]].quick.unsafeRunSync
+sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRunSync
+sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync
+sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync
 ```
 

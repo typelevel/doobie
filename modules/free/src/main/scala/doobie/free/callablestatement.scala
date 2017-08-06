@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
 import java.io.Reader
@@ -59,7 +58,8 @@ object callablestatement {
       def raw[A](f: CallableStatement => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: CallableStatementIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // CallableStatement
       def addBatch: F[Unit]
@@ -303,11 +303,14 @@ object callablestatement {
     case class Embed[A](e: Embedded[A]) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends CallableStatementOp[A] {
+    case class Delay[A](a: () => A) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: CallableStatementIO[A]) extends CallableStatementOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // CallableStatement-specific operations.
@@ -1012,10 +1015,10 @@ object callablestatement {
   val unit: CallableStatementIO[Unit] = FF.pure[CallableStatementOp, Unit](())
   def raw[A](f: CallableStatement => A): CallableStatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CallableStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CallableStatementOp, A] = embed(j, fa)
   def delay[A](a: => A): CallableStatementIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = FF.liftF[CallableStatementOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): CallableStatementIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): CallableStatementIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](Async1(k))
 
   // Smart constructors for CallableStatement-specific operations.
   val addBatch: CallableStatementIO[Unit] = FF.liftF(AddBatch)
@@ -1250,16 +1253,17 @@ object callablestatement {
   def unwrap[T](a: Class[T]): CallableStatementIO[T] = FF.liftF(Unwrap(a))
   val wasNull: CallableStatementIO[Boolean] = FF.liftF(WasNull)
 
-// CallableStatementIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableCallableStatementIO: Suspendable[CallableStatementIO] with Catchable[CallableStatementIO] =
-    new Suspendable[CallableStatementIO] with Catchable[CallableStatementIO] {
-      def pure[A](a: A): CallableStatementIO[A] = callablestatement.delay(a)
-      override def map[A, B](fa: CallableStatementIO[A])(f: A => B): CallableStatementIO[B] = fa.map(f)
-      def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => CallableStatementIO[A]): CallableStatementIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): CallableStatementIO[A] = callablestatement.delay(a)
-      def attempt[A](f: CallableStatementIO[A]): CallableStatementIO[Throwable \/ A] = callablestatement.attempt(f)
-      def fail[A](err: Throwable): CallableStatementIO[A] = callablestatement.fail(err)
+  // CallableStatementIO is an Async
+  implicit lazy val AsyncCallableStatementIO: Async[CallableStatementIO] =
+    new Async[CallableStatementIO] {
+      val M = FF.catsFreeMonadForFree[CallableStatementOp]
+      def pure[A](x: A): CallableStatementIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = callablestatement.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): CallableStatementIO[A] = callablestatement.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CallableStatementIO[A] = callablestatement.async(k)
+      def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => CallableStatementIO[Either[A, B]]): CallableStatementIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => CallableStatementIO[A]): CallableStatementIO[A] = M.flatten(callablestatement.delay(thunk))
     }
 
 }

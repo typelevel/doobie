@@ -2,15 +2,13 @@ package doobie
 
 import doobie.util.pos.Pos
 import doobie.syntax.catchsql.ToDoobieCatchSqlOps
-import doobie.syntax.catchable.ToDoobieCatchableOps
 import doobie.syntax.foldable.ToDoobieFoldableOps
 
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Sync
 import fs2.{ Stream => Process }
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
 object imports extends ToDoobieCatchSqlOps
-                  with ToDoobieCatchableOps
                   with ToDoobieFoldableOps {
 
   /**
@@ -18,24 +16,28 @@ object imports extends ToDoobieCatchSqlOps
    * @group Free Module Aliases
    */
   val FC   = doobie.free.connection
+  implicit val AsyncC = FC.AsyncConnectionIO
 
   /**
    * Alias for `doobie.free.statement`.
    * @group Free Module Aliases
    */
   val FS   = doobie.free.statement
+  implicit val AsyncS = FS.AsyncStatementIO
 
   /**
    * Alias for `doobie.free.preparedstatement`.
    * @group Free Module Aliases
    */
   val FPS  = doobie.free.preparedstatement
+  implicit val AsyncPS = FPS.AsyncPreparedStatementIO
 
   /**
    * Alias for `doobie.free.resultset`.
    * @group Free Module Aliases
    */
   val FRS  = doobie.free.resultset
+  implicit val AsyncRS = FRS.AsyncResultSetIO
 
   /**
    * Alias for `doobie.hi.connection`.
@@ -61,13 +63,13 @@ object imports extends ToDoobieCatchSqlOps
    */
   val HRS  = doobie.hi.resultset
 
-  /** @group Type Aliases */ type ConnectionIO[A]        = doobie.free.connection.ConnectionIO[A]
-  /** @group Type Aliases */ type StatementIO[A]         = doobie.free.statement.StatementIO[A]
-  /** @group Type Aliases */ type PreparedStatementIO[A] = doobie.free.preparedstatement.PreparedStatementIO[A]
-  /** @group Type Aliases */ type ResultSetIO[A]         = doobie.free.resultset.ResultSetIO[A]
+  /** @group Type Aliases */ type ConnectionIO[A]        =  FC.ConnectionIO[A]
+  /** @group Type Aliases */ type StatementIO[A]         =  FS.StatementIO[A]
+  /** @group Type Aliases */ type PreparedStatementIO[A] = FPS.PreparedStatementIO[A]
+  /** @group Type Aliases */ type ResultSetIO[A]         = FRS.ResultSetIO[A]
 
   /** @group Syntax */
-  implicit def toProcessOps[F[_]: Catchable: Suspendable, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
+  implicit def toProcessOps[F[_]: Sync, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
     new doobie.syntax.process.ProcessOps(fa)
 
   /** @group Syntax */
@@ -105,9 +107,6 @@ object imports extends ToDoobieCatchSqlOps
 
   /** @group Type Aliases */      type Transactor[M[_]] = doobie.util.transactor.Transactor[M]
   /** @group Type Aliases */      val  Transactor          = doobie.util.transactor.Transactor
-
-  /** @group Type Aliases */      type IOLite[A] = doobie.util.iolite.IOLite[A]
-  /** @group Companion Aliases */ val  IOLite    = doobie.util.iolite.IOLite
 
   /** @group Type Aliases */      type LogHandler = doobie.util.log.LogHandler
   /** @group Companion Aliases */ val  LogHandler = doobie.util.log.LogHandler

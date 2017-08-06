@@ -7,7 +7,7 @@ import org.specs2.mutable.Specification
 import fs2.interop.cats._
 
 object AnalysisTestSpecs2 extends Specification with AnalysisSpec {
-  val transactor = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   // Commented tests fail!
   // check(AnalysisTest.speakerQuery(null, 0))
   check(AnalysisTest.speakerQuery2)

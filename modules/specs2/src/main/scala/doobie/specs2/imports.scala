@@ -3,10 +3,10 @@ package doobie.specs2
 object imports {
 
   type Checker[M[_]] = analysisspec.Checker[M]
-  type IOLiteChecker = analysisspec.IOLiteChecker
+  type IOChecker = analysisspec.IOChecker
   type TaskChecker   = analysisspec.TaskChecker
 
-  @deprecated("Use IOLiteChecker.", "0.4.2")
-  type AnalysisSpec = IOLiteChecker
+  @deprecated("Use IOChecker.", "0.4.2")
+  type AnalysisSpec = IOChecker
 
 }
