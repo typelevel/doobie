@@ -316,7 +316,8 @@ lazy val h2 = project
   .settings(
     name  := "doobie-h2",
     description := "H2 support for doobie.",
-    libraryDependencies += "com.h2database" % "h2"  % h2Version
+    libraryDependencies += "com.h2database" % "h2"  % h2Version,
+    scalacOptions -= "-Xfatal-warnings" // we need to do deprecated things
   )
 
 lazy val hikari = project

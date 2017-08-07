@@ -1,13 +1,13 @@
 package doobie.h2
 
-import fs2.util.{ Suspendable => Capture }
+import cats.effect.Sync
 
 object imports extends H2Types {
 
   type H2Transactor[M[_]] = h2transactor.H2Transactor[M]
   val  H2Transactor       = h2transactor.H2Transactor
 
-  implicit def toH2TransactorOps[M[_]: Capture](h2: H2Transactor[M]) =
+  implicit def toH2TransactorOps[M[_]: Sync](h2: H2Transactor[M]) =
     new h2transactor.H2TransactorOps(h2)
 
 }
