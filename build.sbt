@@ -97,7 +97,8 @@ lazy val compilerFlags = Seq(
     }
   ),
   scalacOptions in (Compile, console) --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports"),
-  scalacOptions in (Tut, tut)         --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports")
+  scalacOptions in (Tut,     tut)     --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports"),
+  scalacOptions in (Compile, doc)     --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports")
 )
 
 lazy val buildSettings = Seq(
