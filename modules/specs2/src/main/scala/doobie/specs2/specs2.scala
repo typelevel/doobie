@@ -1,27 +1,17 @@
 package doobie.specs2
 
-import doobie.free.connection.ConnectionIO
-
-import doobie.util.transactor._
-import doobie.util.query._
-import doobie.util.update._
+import cats.effect.{ Async, IO }
+import doobie.imports._
 import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
-import doobie.util.IO.IO
-
 import org.specs2.mutable.Specification
 import org.specs2.execute.Failure
 import org.specs2.specification.core.{ Fragments, Fragment }
 import org.specs2.specification.dsl.Online._
 import org.specs2.specification.create.{ FormattingFragments => Format }
-
 import scala.reflect.runtime.universe.TypeTag
-
 import scala.util.{ Left => -\/, Right => \/- }
-import cats.Monad
-import fs2.util.{ Catchable, Suspendable }
-import fs2.interop.cats._
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -51,9 +41,7 @@ object analysisspec {
   trait Checker[M[_]] { this: Specification =>
 
     // Effect type, required instances, unsafe run
-    implicit val monadM: Monad[M]
-    implicit val catchableM: Catchable[M]
-    implicit val captureM: Suspendable[M]
+    implicit val M: Async[M]
     def unsafeRunSync[A](ma: M[A]): A
 
     def transactor: Transactor[M]
@@ -76,7 +64,7 @@ object analysisspec {
     private def checkAnalysis(typeName: String, pos: Option[Pos], sql: String, analysis: ConnectionIO[Analysis]): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early
       s"\n$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> ok.continueWith {
-        unsafeRunSync(catchableM.attempt(transactor.trans(monadM).apply(analysis))) match {
+        unsafeRunSync(M.attempt(transactor.trans(M).apply(analysis))) match {
           // We can't rely on mutable Specification DSL here!
           case -\/(e) => indentBlock(Seq(
             "SQL Compiles and Typechecks" ! failure(formatError(e.getMessage))
@@ -122,21 +110,8 @@ object analysisspec {
 
   /** Implementation of Checker[IO] */
   trait IOChecker extends Checker[IO] { this: Specification =>
-    val monadM: Monad[IO] = implicitly
-    val catchableM: Catchable[IO] = implicitly
-    val captureM: Suspendable[IO] = implicitly
+    val M: Async[IO] = implicitly
     def unsafeRunSync[A](ma: IO[A]) = ma.unsafeRunSync
   }
-
-  import fs2.Task
-
-  /** Implementation of Checker[fs2.Task] */
-  trait TaskChecker extends Checker[Task] { this: Specification =>
-    val monadM: Monad[Task] = implicitly
-    val catchableM: Catchable[Task] = implicitly
-    val captureM: Suspendable[Task] = implicitly
-    def unsafeRunSync[A](ma: Task[A]) = ma.unsafeRun
-  }
-
 
 }

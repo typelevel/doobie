@@ -1,10 +1,9 @@
 package doobie.specs2
 
+import cats.effect.IO
 import doobie.imports._
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
-
-import fs2.Task
 
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
   lazy val transactor = Transactor.fromDriverManager[M](
@@ -16,4 +15,3 @@ trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker
-class TaskCheckerCheck   extends CheckerChecks[Task]   with TaskChecker
