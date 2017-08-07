@@ -13,8 +13,7 @@ Again we set up a transactor and pull in YOLO mode. We also need an import to ge
 ```tut:silent
 import doobie.imports._
 import doobie.postgres.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -74,4 +73,3 @@ sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRun
 sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync
 sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync
 ```
-

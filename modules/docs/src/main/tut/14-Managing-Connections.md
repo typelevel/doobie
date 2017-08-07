@@ -12,8 +12,7 @@ In this chapter we discuss several ways to manage connections in applications th
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
 ```
 
 ### About Transactors
@@ -62,13 +61,14 @@ The `doobie-hikari-cats` add-on provides a `Transactor` implementation backed by
 
 ```tut:silent
 import doobie.hikari.imports._
+import doobie.util.monaderror._ // for `guarantee` combinator below
 
 val q = sql"select 42".query[Int].unique
 
 val p: IO[Int] = for {
   xa <- HikariTransactor[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   _  <- xa.configure(hx => IO( /* do something with hx */ ()))
-  a  <- q.transact(xa) ensuring xa.shutdown
+  a  <- q.transact(xa) guarantee xa.shutdown
 } yield a
 ```
 
@@ -87,7 +87,7 @@ If your application exposes an existing `javax.sql.DataSource` you can use it di
 ```tut:silent
 val ds: javax.sql.DataSource = null // pretending
 
-val xa = DataSourceTransactor[IO](ds)
+val xa = Transactor.fromDataSource[IO](ds)
 
 val p: IO[Int] = for {
   _  <- xa.configure(ds => IO( /* do something with ds */ ()))

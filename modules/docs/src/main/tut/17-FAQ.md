@@ -10,8 +10,7 @@ In this chapter we address some frequently-asked questions, in no particular ord
 import doobie.imports._
 import java.awt.geom.Point2D
 import java.util.UUID
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
 import shapeless._
 
 val xa = Transactor.fromDriverManager[IO](

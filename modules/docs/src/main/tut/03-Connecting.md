@@ -15,8 +15,7 @@ Before we can use **doobie** we need to import some symbols. We will use the `do
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.data._, cats.effect._, cats.implicits._
 ```
 
 In the **doobie** high level API the most common types we will deal with have the form `ConnectionIO[A]`, specifying computations that take place in a context where a `java.sql.Connection` is available, ultimately producing a value of type `A`.
@@ -144,9 +143,10 @@ Currently cats has no typeclass for monads with **effect-capturing unit**, so th
 > Note that `scala.concurrent.Future` does **not** have an effect-capturing constructor and thus cannot be used as a target type for **doobie** programs. Although `Future` is very commonly used for side-effecting operations, doing so is not referentially transparent. *`Future` has nothing at all to say about side-effects. It is well-behaved in a functional sense only for pure computations.*
 
 #### Using Your Own Target Monad
-As mentioned earlier, you can use any monad `M[_]` when using a `Transactor` as long as there is a `fs2.util.Catchable[M]` and `fs2.util.Suspendable[M]` available. For example, for `monix.eval.Task`, you could have the following:
+As mentioned earlier, you can use any monad `M[_]` when using a `Transactor` as long as there is a `cats.effect.Async[M]` available. For example. TODO: monix example
 
-```tut:silent
+```
+// TODO: NON-COMPILING
 import fs2.util.{Catchable, Suspendable}
 import monix.eval.Task
 import scala.util.{Failure, Success}

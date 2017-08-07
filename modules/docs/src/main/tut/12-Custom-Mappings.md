@@ -29,8 +29,7 @@ import java.awt.Point
 import org.postgresql.util.PGobject
 import scala.reflect.runtime.universe.TypeTag
 import scala.util.Try
-import cats._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.implicits._, cats.effect.IO
 
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

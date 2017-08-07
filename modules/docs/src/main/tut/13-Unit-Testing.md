@@ -12,8 +12,7 @@ As with earlier chapters we set up a `Transactor` and YOLO mode. We will also us
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -59,7 +58,6 @@ The `doobie-specs2-cats` add-on provides a mix-in trait that we can add to a `Sp
 Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IO]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
 
 ```tut:silent
-import doobie.util.IO.IO
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
 
