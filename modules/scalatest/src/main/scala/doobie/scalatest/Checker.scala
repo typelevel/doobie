@@ -1,5 +1,6 @@
 package doobie.scalatest
 
+import cats.effect.{ Async, IO }
 import doobie.free.connection._
 import doobie.util.analysis.{AlignmentError, Analysis}
 import doobie.util.pretty._
@@ -7,17 +8,8 @@ import doobie.util.pos.Pos
 import doobie.util.query.{Query, Query0}
 import doobie.util.transactor.Transactor
 import doobie.util.update.{Update, Update0}
-import doobie.util.IO.IO
-
 import org.scalatest.Assertions
-
 import scala.reflect.runtime.universe.WeakTypeTag
-
-import scala.util.{ Either => \/, Left => -\/, Right => \/- }
-import cats.Monad
-import fs2.util.{ Catchable, Suspendable }
-import fs2.interop.cats._
-import fs2.Task
 
 /**
   * Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -47,9 +39,7 @@ trait Checker[M[_]] {
   self: Assertions =>
 
   // Effect type, required instances, unsafe run
-  implicit val monadM: Monad[M]
-  implicit val catchableM: Catchable[M]
-  implicit val captureM: Suspendable[M]
+  implicit val M: Async[M]
   def unsafeRunSync[A](ma: M[A]): A
 
   def transactor: Transactor[M]
@@ -71,10 +61,10 @@ trait Checker[M[_]] {
     checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
   /** Check if the analysis has an error */
-  private def hasError(analysisAttempt: Throwable \/ Analysis): Boolean =
+  private def hasError(analysisAttempt: Either[Throwable, Analysis]): Boolean =
     analysisAttempt match {
-      case -\/(_) => true
-      case \/-(a) =>
+      case Left(_) => true
+      case Right(a) =>
         !(a.paramDescriptions.map { case (_, es) => es.isEmpty } ++ a.columnDescriptions.map {
           case (_, es)                           => es.isEmpty
         }).forall(x => x)
@@ -86,12 +76,12 @@ trait Checker[M[_]] {
     sql:      String,
     analysis: ConnectionIO[Analysis]
   ) = {
-    val analysisAttempt = unsafeRunSync(catchableM.attempt(transactor.trans(monadM).apply(analysis)))
+    val analysisAttempt = unsafeRunSync(M.attempt(transactor.trans(M).apply(analysis)))
     if (hasError(analysisAttempt)) {
       val analysisOutput = analysisAttempt match {
-        case -\/(e) =>
+        case Left(e) =>
           failure("SQL fails typechecking", formatError(e.getMessage))
-        case \/-(a) =>
+        case Right(a) =>
           success("SQL compiles and typechecks", None) +
             a.paramDescriptions.map { case (s, es) => assertEmpty(s, es) }
               .map(s => s"  $s")
@@ -138,17 +128,6 @@ trait Checker[M[_]] {
 /** Implementation of Checker[IO] */
 trait IOChecker extends Checker[IO] {
   self: Assertions =>
-  val monadM: Monad[IO] = implicitly
-  val catchableM: Catchable[IO] = implicitly
-  val captureM: Suspendable[IO] = implicitly
+  val M: Async[IO] = implicitly
   def unsafeRunSync[A](ma: IO[A]) = ma.unsafeRunSync
-}
-
-/** Implementation of Checker[fs2.Task] */
-trait TaskChecker extends Checker[Task] {
-  self: Assertions =>
-  val monadM: Monad[Task] = implicitly
-  val catchableM: Catchable[Task] = implicitly
-  val captureM: Suspendable[Task] = implicitly
-  def unsafeRunSync[A](ma: Task[A]) = ma.unsafeRun
 }

@@ -1,10 +1,9 @@
 package doobie.scalatest
 
+import cats.effect.IO
 import doobie.imports._
 import doobie.scalatest.imports._
 import org.scalatest._
-
-import fs2.Task
 
 trait CheckerChecks[M[_]] extends FunSuite with Matchers with Checker[M] {
   lazy val transactor = Transactor.fromDriverManager[M](
@@ -16,4 +15,3 @@ trait CheckerChecks[M[_]] extends FunSuite with Matchers with Checker[M] {
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker
-class TaskCheckerCheck   extends CheckerChecks[Task]   with TaskChecker
