@@ -61,26 +61,6 @@ object StreamingCopy {
 
   }
 
-  // /**
-  //  * Stream from `source` into `sink`, where source and sink run on distinct transactors. Unlike
-  //  * fuseMap above, this doesn't return a stream. But it's a much simpler implementation. Thanks
-  //  * @wedens for this one.
-  //  */
-  // def fuseMap2[F[_]: Async, A, B](
-  //   source: Stream[ConnectionIO, A],
-  //   sink: A => ConnectionIO[B]
-  // )(
-  //   sourceXA: Transactor[F],
-  //   sinkXA: Transactor[F]
-  // ): F[Unit] =
-  //   sinkXA.exec.apply {
-  //     source
-  //       .transact(sourceXA)
-  //       .translate(λ[F ~> Kleisli[F, Connection, ?]](a => Kleisli(_ => a)))
-  //       .evalMap(sink(_).foldMap(sinkXA.interpret))
-  //       .run
-  //   }
-
   // Everything below is code to demonstrate the combinator above.
 
   /** Prepend a ConnectionIO program with a log message. */
@@ -147,7 +127,6 @@ object StreamingCopy {
   val io: IO[Unit] =
     for {
       _ <- fuseMap(read, write)(pg, h2).run // do the copy with fuseMap
-      // _ <- fuseMap2(read, write)(pg, h2)    // again with fuseMap2
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IO(Console.println(s"Copied $n cities!"))
     } yield ()

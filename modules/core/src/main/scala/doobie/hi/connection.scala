@@ -101,7 +101,7 @@ object connection {
    */
   def prepareQueryAnalysis[A: Composite, B: Composite](sql: String): ConnectionIO[Analysis] =
     nativeTypeMap flatMap (m => prepareStatement(sql) {
-      (HPS.getParameterMappings[A] |@| HPS.getColumnMappings[B]) map (Analysis(sql, m, _, _))
+      (HPS.getParameterMappings[A], HPS.getColumnMappings[B]) mapN (Analysis(sql, m, _, _))
     })
 
   def prepareQueryAnalysis0[B: Composite](sql: String): ConnectionIO[Analysis] =

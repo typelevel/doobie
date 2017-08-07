@@ -6,7 +6,7 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import doobie.util.monaderror._
 
-import cats.{ Monad, ~> }
+import cats.{ Monad, MonadError, ~> }
 import cats.data.Kleisli
 import cats.free.Free
 import cats.implicits._
@@ -54,21 +54,18 @@ object transactor  {
         (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
     }
 
-    // /**
-    //  * Natural transformation that wraps a `Kleisli` program, using the provided interpreter to
-    //  * interpret the `before`/`after`/`oops`/`always` strategy.
-    //  */
-    // def wrapK[M[_]: MonadError[?[_], Throwable]](interp: Interpreter[M]) =
-    //   λ[Kleisli[M, Connection, ?] ~> Kleisli[M, Connection, ?]] { ka =>
-    //     val beforeʹ = before foldMap interp
-    //     val afterʹ  = after  foldMap interp
-    //     val oopsʹ   = oops   foldMap interp
-    //     val alwaysʹ = always foldMap interp
-    //     MonadError[M, Throwable]
-    //     type X[A] = Kleisli[M, Connection, A]
-    //     MonadError[X, Throwable] // why not?
-    //     (beforeʹ *> ka <* afterʹ) onError oopsʹ guarantee alwaysʹ
-    //   }
+    /**
+     * Natural transformation that wraps a `Kleisli` program, using the provided interpreter to
+     * interpret the `before`/`after`/`oops`/`always` strategy.
+     */
+    def wrapK[M[_]: MonadError[?[_], Throwable]](interp: Interpreter[M]) =
+      λ[Kleisli[M, Connection, ?] ~> Kleisli[M, Connection, ?]] { ka =>
+        val beforeʹ = before foldMap interp
+        val afterʹ  = after  foldMap interp
+        val oopsʹ   = oops   foldMap interp
+        val alwaysʹ = always foldMap interp
+        (beforeʹ *> ka <* afterʹ) onError oopsʹ guarantee alwaysʹ
+      }
 
   }
   object Strategy {
@@ -141,13 +138,13 @@ object transactor  {
     def rawExec(implicit ev: Monad[M]): Kleisli[M, Connection, ?] ~> M =
       λ[Kleisli[M, Connection, ?] ~> M](k => connect(kernel).flatMap(k.run))
 
-    // /**
-    //  * Natural transformation that provides a connection and binds through a `Kleisli` program
-    //  * using the given `Strategy`, yielding an independent program in `M`.
-    //  * @group Natural Transformations
-    //  */
-    // def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
-    //   strategy.wrapK(interpret) andThen rawExec(ev)
+    /**
+     * Natural transformation that provides a connection and binds through a `Kleisli` program
+     * using the given `Strategy`, yielding an independent program in `M`.
+     * @group Natural Transformations
+     */
+    def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
+      strategy.wrapK(interpret) andThen rawExec(ev)
 
     /**
      * Natural transformation equivalent to `trans` that does not use the provided `Strategy` and

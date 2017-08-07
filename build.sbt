@@ -10,7 +10,7 @@ lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.3"
 lazy val h2Version            = "1.4.195"
 lazy val postgresVersion      = "42.1.1"
-lazy val fs2CoreVersion       = "0.10.0-M4"
+lazy val fs2CoreVersion       = "0.10.0-M5"
 lazy val postGisVersion       = "2.2.1"
 lazy val hikariVersion        = "2.6.1"
 lazy val scalatestVersion     = "3.0.3"
@@ -19,7 +19,7 @@ lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
 lazy val monixVersion         = "2.3.0"
-lazy val catsVersion          = "0.9.0"
+lazy val catsVersion          = "1.0.0-MF"
 
 val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 

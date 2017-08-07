@@ -21,7 +21,7 @@ object FreeUsage {
       _ <- FC.delay(println("Loading database..."))
       _ <- loadDatabase(new File("example/world.sql"))
       s <- speakerQuery("English", 10)
-      _ <- s.traverseU(a => FC.delay(println(a)))
+      _ <- s.traverse(a => FC.delay(println(a)))
     } yield "Ok"
 
   def loadDatabase(f: File): ConnectionIO[Unit] =

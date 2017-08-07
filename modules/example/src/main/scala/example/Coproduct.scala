@@ -1,9 +1,9 @@
 package doobie.example
 
-import cats.~>
-import cats.data.{ Coproduct, Kleisli }
+import cats.{ ~>, InjectK }
+import cats.data.{ EitherK, Kleisli }
 import cats.effect.IO
-import cats.free.{ Free, Inject }
+import cats.free.Free
 import cats.implicits._
 import doobie.free.connection.ConnectionOp
 import doobie.imports._
@@ -14,7 +14,7 @@ object coproduct {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
-    def inject[G[_]](implicit ev: Inject[F, G]): Free[G, A] =
+    def inject[G[_]](implicit ev: InjectK[F, G]): Free[G, A] =
       fa.compile(λ[F ~> G](ev.inj(_)))
   }
 
@@ -29,12 +29,12 @@ object coproduct {
   case class  PrintLn(s: String) extends ConsoleOp[Unit]
 
   // A module of ConsoleOp constructors, parameterized over a coproduct
-  class ConsoleOps[F[_]](implicit ev: Inject[ConsoleOp, F]) {
+  class ConsoleOps[F[_]](implicit ev: InjectK[ConsoleOp, F]) {
     val readLn             = Free.inject[ConsoleOp, F](ReadLn)
     def printLn(s: String) = Free.inject[ConsoleOp, F](PrintLn(s))
   }
   object ConsoleOps {
-    implicit def instance[F[_]](implicit ev: Inject[ConsoleOp, F]) = new ConsoleOps
+    implicit def instance[F[_]](implicit ev: InjectK[ConsoleOp, F]) = new ConsoleOps
   }
 
   // An interpreter into IO
@@ -46,12 +46,12 @@ object coproduct {
   // A module of ConnectionOp programs, parameterized over a coproduct. The trick here is that these
   // are domain-specific operations that are injected as programs, not as constructors (which would
   // work but is too low-level to be useful).
-  class ConnectionOps[F[_]](implicit ev: Inject[ConnectionOp, F]) {
+  class ConnectionOps[F[_]](implicit ev: InjectK[ConnectionOp, F]) {
     def select(pat: String): Free[F, List[String]] =
       sql"select name from country where name like $pat".query[String].list.inject[F]
   }
   object ConnectionOps {
-    implicit def instance[F[_]](implicit ev: Inject[ConnectionOp, F]) = new ConnectionOps
+    implicit def instance[F[_]](implicit ev: InjectK[ConnectionOp, F]) = new ConnectionOps
   }
 
   // A program
@@ -66,7 +66,7 @@ object coproduct {
   }
 
   // Our coproduct
-  type Cop[A] = Coproduct[ConsoleOp, ConnectionOp, A]
+  type Cop[A] = EitherK[ConsoleOp, ConnectionOp, A]
 
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
@@ -78,13 +78,12 @@ object coproduct {
 
   // Exec it!
   def main(args: Array[String]): Unit = {
-    // val xa = Transactor.fromDriverManager[IO](
-    //   "org.postgresql.Driver",
-    //   "jdbc:postgresql:world",
-    //   "postgres", ""
-    // )
-    // xa.exec.apply(iprog).unsafeRunSync
-    () // TODO!
+    val xa = Transactor.fromDriverManager[IO](
+      "org.postgresql.Driver",
+      "jdbc:postgresql:world",
+      "postgres", ""
+    )
+    xa.exec.apply(iprog).unsafeRunSync
   }
 
   // Enter a pattern:

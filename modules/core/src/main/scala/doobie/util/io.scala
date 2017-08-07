@@ -2,7 +2,6 @@ package doobie.util
 
 import java.io.{ Console => _, _ }
 
-import doobie.util.compat.cats.monad._
 import doobie.util.monaderror._
 import cats.implicits._
 import cats.effect.Sync

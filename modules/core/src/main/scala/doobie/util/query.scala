@@ -2,7 +2,7 @@ package doobie.util
 
 import cats._, cats.effect._
 import cats.implicits._
-import cats.{ Functor, MonadCombine => MonadPlus }
+import cats.{ Functor, Alternative }
 import cats.functor.{ Contravariant, Profunctor }
 import cats.data.NonEmptyList
 
@@ -164,7 +164,7 @@ object query {
      * via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
-    def accumulate[F[_]: MonadPlus](a: A): ConnectionIO[F[B]] =
+    def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.accumulate[F, O].map(_.map(ob))))
 
     /**
@@ -246,7 +246,7 @@ object query {
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
         def processWithChunkSize(n: Int) = outer.processWithChunkSize(a, n)
-        def accumulate[F[_]: MonadPlus] = outer.accumulate[F](a)
+        def accumulate[F[_]: Alternative] = outer.accumulate[F](a)
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
         def option = outer.option(a)
@@ -378,7 +378,7 @@ object query {
      * accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
      */
-    def accumulate[F[_]: MonadPlus]: ConnectionIO[F[B]]
+    def accumulate[F[_]: Alternative]: ConnectionIO[F[B]]
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and
