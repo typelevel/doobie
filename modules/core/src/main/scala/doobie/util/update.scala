@@ -1,8 +1,8 @@
 package doobie.util
 
-import scala.Predef.longWrapper
-import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
-
+import cats._
+import cats.functor.Contravariant
+import cats.implicits._
 import doobie.free.connection.ConnectionIO
 import doobie.free.{ preparedstatement => FPS }
 import doobie.free.preparedstatement.PreparedStatementIO
@@ -13,16 +13,14 @@ import doobie.util.composite.Composite
 import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
-
-import cats.Foldable
-import cats.functor.Contravariant
-import cats.implicits._
-import scala.{ Left => -\/, Right => \/- }
-import fs2.util.Catchable
-import fs2.{ Stream => Process }
+import fs2.Stream
+import scala.Predef.longWrapper
+import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 
 /** Module defining updates parameterized by input type. */
 object update {
+
+  import doobie.free.preparedstatement.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
 
   val DefaultChunkSize = query.DefaultChunkSize
 
@@ -31,9 +29,9 @@ object update {
    * F[_] type argument explicitly.
    */
   trait UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
-    def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
+    def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K] =
       withChunkSize(as, DefaultChunkSize)
-    def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K]
+    def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K]
   }
 
   /**
@@ -57,7 +55,7 @@ object update {
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
       // N.B. the .attempt syntax isn't working in cats. unclear why
       val args = ic.toList(ai(a))
-      val c = Predef.implicitly[Catchable[PreparedStatementIO]]
+      val c = Predef.implicitly[MonadError[PreparedStatementIO, Throwable]]
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
@@ -65,8 +63,8 @@ object update {
         en <- c.attempt(FPS.executeUpdate)
         t1 <- now
         n  <- en match {
-                case -\/(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[Int](e)
-                case \/-(a) => a.pure[PreparedStatementIO]
+                case Left(e)  => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[Int](e)
+                case Right(a) => a.pure[PreparedStatementIO]
               }
         _  <- log(Success(sql, args, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
       } yield n
@@ -120,7 +118,7 @@ object update {
      */
     def updateManyWithGeneratedKeys[K](columns: String*): UpdateManyWithGeneratedKeysPartiallyApplied[A, K] =
       new UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
-        def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Process[ConnectionIO, K] =
+        def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K] =
           HC.updateManyWithGeneratedKeys[List,I,K](columns.toList)(sql, ().pure[PreparedStatementIO], as.toList.map(ai), chunkSize)
       }
 
@@ -130,7 +128,7 @@ object update {
      * drivers support generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Process[ConnectionIO, K] =
+    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Stream[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize[K](columns: _*)(a, DefaultChunkSize)
 
     /**
@@ -139,7 +137,7 @@ object update {
      * that not all drivers support generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Process[ConnectionIO, K] =
+    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Stream[ConnectionIO, K] =
       HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(ai(a)), chunkSize)
 
     /**
@@ -251,7 +249,7 @@ object update {
      * some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeys[K: Composite](columns: String*): Process[ConnectionIO, K] =
+    def withGeneratedKeys[K: Composite](columns: String*): Stream[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
 
     /**
@@ -260,7 +258,7 @@ object update {
      * generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): Process[ConnectionIO, K]
+    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): Stream[ConnectionIO, K]
 
     /**
      * Construct a program that performs the update, yielding a single set of generated keys of

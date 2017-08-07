@@ -33,18 +33,17 @@ See the previous chapter on **SQL Arrays** for usage examples.
 
 ### H2 Connection Pool
 
-**doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `Task`).
+**doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `IO`).
 
 ```tut:silent
+import cats.effect.IO
 import doobie.imports._
 import doobie.h2.imports._
-
-import fs2.interop.cats._
 
 val q = sql"select 42".query[Int].unique
 
 for {
-  xa <- H2Transactor[IOLite]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  xa <- H2Transactor[IO]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   _  <- xa.setMaxConnections(10) // and other ops; see scaladoc or source
   a  <- q.transact(xa)
 } yield a

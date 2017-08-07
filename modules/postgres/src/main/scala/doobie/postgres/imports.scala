@@ -18,42 +18,49 @@ object imports extends PGTypes
    * @group PostgreSQL Free Module Aliases
    */
   val PFCI = doobie.postgres.free.copyin
+  implicit val AsyncPFCI = PFCI.AsyncCopyInIO
 
   /**
    * Alias for `doobie.postgres.free.copymanager`
    * @group PostgreSQL Free Module Aliases
    */
   val PFCM = doobie.postgres.free.copymanager
+  implicit val AsyncPFCM = PFCM.AsyncCopyManagerIO
 
   /**
    * Alias for `doobie.postgres.free.copyout`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFCO = doobie.postgres.free.copyout
+   val PFCO = doobie.postgres.free.copyout
+   implicit val AsyncPFCO = PFCO.AsyncCopyOutIO
 
   /**
    * Alias for `doobie.postgres.free.fastpath`
    * @group PostgreSQL Free Module Aliases
    */
   val PFFP = doobie.postgres.free.fastpath
+  implicit val AsyncPFFP = PFFP.AsyncFastpathIO
 
   /**
    * Alias for `doobie.postgres.free.largeobject`
    * @group PostgreSQL Free Module Aliases
    */
   val PFLO = doobie.postgres.free.largeobject
+  implicit val AsyncPFLO = PFLO.AsyncLargeObjectIO
 
   /**
    * Alias for `doobie.postgres.free.largeobjectmanager`
    * @group PostgreSQL Free Module Aliases
    */
   val PFLOM = doobie.postgres.free.largeobjectmanager
+  implicit val AsyncPFLOM = PFLOM.AsyncLargeObjectManagerIO
 
   /**
    * Alias for `doobie.postgres.free.pgconnection`
    * @group PostgreSQL Free Module Aliases
    */
-  val PFPC = doobie.postgres.free.pgconnection
+   val PFPC = doobie.postgres.free.pgconnection
+   implicit val AsyncPFPC = PFPC.AsyncPGConnectionIO
 
   /**
    * Alias for `doobie.postgres.hi.pgconnection`

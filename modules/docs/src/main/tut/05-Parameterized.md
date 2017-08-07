@@ -12,9 +12,8 @@ Same as last chapter, so if you're still set up you can skip this section. Other
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -42,7 +41,7 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 
 ```tut
 (sql"select code, name, population, gnp from country"
-  .query[Country].process.take(5).quick.unsafePerformIO)
+  .query[Country].process.take(5).quick.unsafeRunSync)
 ```
 
 Still works. Ok.
@@ -60,7 +59,7 @@ def biggerThan(minPop: Int) = sql"""
 And when we run the query ... surprise, it works!
 
 ```tut
-biggerThan(150000000).quick.unsafePerformIO // Let's see them all
+biggerThan(150000000).quick.unsafeRunSync // Let's see them all
 ```
 
 So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a proper parameterized `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
@@ -86,7 +85,7 @@ def populationIn(range: Range) = sql"""
   and   population < ${range.max}
 """.query[Country]
 
-populationIn(150000000 to 200000000).quick.unsafePerformIO
+populationIn(150000000 to 200000000).quick.unsafeRunSync
 ```
 
 ### Dealing with `IN` Clauses
@@ -110,7 +109,7 @@ Note that the `IN` clause must be non-empty, so `codes` is a `NonEmptyList`.
 Running this query gives us the desired result.
 
 ```tut
-populationIn(100000000 to 300000000, NonEmptyList.of("USA", "BRA", "PAK", "GBR")).quick.unsafePerformIO
+populationIn(100000000 to 300000000, NonEmptyList.of("USA", "BRA", "PAK", "GBR")).quick.unsafeRunSync
 ```
 
 ### Diving Deeper
@@ -134,7 +133,7 @@ def proc(range: Range): Stream[ConnectionIO, Country] =
 Which produces the same output.
 
 ```tut
-proc(150000000 to 200000000).quick.unsafePerformIO
+proc(150000000 to 200000000).quick.unsafeRunSync
 ```
 
 But how does the `set` constructor work?

@@ -1,18 +1,15 @@
 package doobie.h2
 
+import cats.effect.{ Async, Sync }
 import doobie.imports._
-
 import org.h2.jdbcx.JdbcConnectionPool
-
-import cats.Monad
-import fs2.util.{ Catchable, Suspendable => Capture }
 
 /** Module for a `Transactor` backed by an H2 `JdbcConnectionPool`. */
 object h2transactor {
 
   type H2Transactor[M[_]] = Transactor.Aux[M, JdbcConnectionPool]
 
-  implicit class H2TransactorOps[M[_]: Capture](h2: H2Transactor[M]) {
+  implicit class H2TransactorOps[M[_]: Sync](h2: H2Transactor[M]) {
 
     /** A program that shuts down this `H2Transactor`. */
     val dispose: M[Unit] = h2.configure(_.dispose)
@@ -35,8 +32,8 @@ object h2transactor {
   }
 
   object H2Transactor {
-    def apply[M[_]: Monad : Catchable : Capture](url: String, user: String, pass: String): M[H2Transactor[M]] =
-      Capture[M].delay(Transactor.fromDataSource[M](JdbcConnectionPool.create(url, user, pass)))
+    def apply[M[_]: Async](url: String, user: String, pass: String): M[H2Transactor[M]] =
+      Async[M].delay(Transactor.fromDataSource[M](JdbcConnectionPool.create(url, user, pass)))
   }
 
 }

@@ -1,260 +1,190 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.free.{ Free => F }
-import cats.data.Kleisli
-import scala.util.{ Either => \/ }
-import fs2.interop.cats._
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.Class
 import java.lang.String
-
-import org.postgresql.util.PGobject
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
-import org.postgresql.copy.CopyManager
-import org.postgresql.fastpath.Fastpath
+import org.postgresql.copy.{ CopyManager => PGCopyManager }
+import org.postgresql.fastpath.{ Fastpath => PGFastpath }
+import org.postgresql.jdbc.AutoSave
+import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
+import org.postgresql.replication.PGReplicationConnection
 
-import pgconnection.PGConnectionIO
-import copymanager.CopyManagerIO
-import fastpath.FastpathIO
-import largeobjectmanager.LargeObjectManagerIO
+object pgconnection { module =>
 
-/**
- * Algebra and free monad for primitive operations over a `org.postgresql.PGConnection`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
- * for library developers. End users will prefer a safer, higher-level API such as that provided
- * in the `doobie.postgres.hi` package.
- *
- * `PGConnectionIO` is a free monad that must be run via an interpreter, most commonly via
- * natural transformation of its underlying algebra `PGConnectionOp` to another monad via
- * `Free#foldMap`.
- *
- * The library provides a natural transformation to `Kleisli[M, PGConnection, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
- * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
- *
- * {{{
- * // An action to run
- * val a: PGConnectionIO[Foo] = ...
- *
- * // A JDBC object
- * val s: PGConnection = ...
- *
- * // Unfolding into a Task
- * val ta: Task[A] = a.transK[Task].run(s)
- * }}}
- *
- * @group Modules
- */
-object pgconnection extends PGConnectionIOInstances {
+  // Algebra of operations for PGConnection. Each accepts a visitor as an alternatie to pattern-matching.
+  sealed trait PGConnectionOp[A] {
+    def visit[F[_]](v: PGConnectionOp.Visitor[F]): F[A]
+  }
 
-  /**
-   * Sum type of primitive operations over a `org.postgresql.PGConnection`.
-   * @group Algebra
-   */
-  sealed trait PGConnectionOp[A]
+  // Free monad over PGConnectionOp.
+  type PGConnectionIO[A] = FF[PGConnectionOp, A]
 
-  /**
-   * Module of constructors for `PGConnectionOp`. These are rarely useful outside of the implementation;
-   * prefer the smart constructors provided by the `pgconnection` module.
-   * @group Algebra
-   */
+  // Module of instances and constructors of PGConnectionOp.
   object PGConnectionOp {
 
-    // Lifting
-    case class LiftCopyManagerIO[A](s: CopyManager, action: CopyManagerIO[A]) extends PGConnectionOp[A]
-    case class LiftFastpathIO[A](s: Fastpath, action: FastpathIO[A]) extends PGConnectionOp[A]
-    case class LiftLargeObjectManagerIO[A](s: LargeObjectManager, action: LargeObjectManagerIO[A]) extends PGConnectionOp[A]
-
-    // Combinators
-    case class Attempt[A](action: PGConnectionIO[A]) extends PGConnectionOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends PGConnectionOp[A]
-
-    // Primitive Operations
-    case class  AddDataType(a: String, b: String) extends PGConnectionOp[Unit]
-    case class  AddDataType1(a: String, b: Class[_ <: PGobject]) extends PGConnectionOp[Unit]
-    case object GetBackendPID extends PGConnectionOp[Int]
-    case object GetCopyAPI extends PGConnectionOp[CopyManager]
-    case object GetFastpathAPI extends PGConnectionOp[Fastpath]
-    case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager]
-    case object GetNotifications extends PGConnectionOp[Array[PGNotification]]
-    case object GetPrepareThreshold extends PGConnectionOp[Int]
-    case class  SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit]
-
-  }
-  import PGConnectionOp._ // We use these immediately
-
-  /**
-   * Free monad over a free functor of [[PGConnectionOp]]; abstractly, a computation that consumes
-   * a `org.postgresql.PGConnection` and produces a value of type `A`.
-   * @group Algebra
-   */
-  type PGConnectionIO[A] = F[PGConnectionOp, A]
-
-  /**
-   * Catchable instance for [[PGConnectionIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CatchablePGConnectionIO: Catchable[PGConnectionIO] =
-    new Catchable[PGConnectionIO] {
-      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
-      override def map[A, B](fa: PGConnectionIO[A])(f: A => B): PGConnectionIO[B] = fa.map(f)
-      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = fa.flatMap(f)
-      def attempt[A](f: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] = pgconnection.attempt(f)
-      def fail[A](err: Throwable): PGConnectionIO[A] = pgconnection.delay(throw err)
-    }
-
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCopyManager[A](s: CopyManager, action: CopyManagerIO[A]): PGConnectionIO[A] =
-    F.liftF(LiftCopyManagerIO(s, action))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftFastpath[A](s: Fastpath, action: FastpathIO[A]): PGConnectionIO[A] =
-    F.liftF(LiftFastpathIO(s, action))
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftLargeObjectManager[A](s: LargeObjectManager, action: LargeObjectManagerIO[A]): PGConnectionIO[A] =
-    F.liftF(LiftLargeObjectManagerIO(s, action))
-
-  /**
-   * Lift a PGConnectionIO[A] into an exception-capturing PGConnectionIO[Throwable \/ A].
-   * @group Constructors (Lifting)
-   */
-  def attempt[A](a: PGConnectionIO[A]): PGConnectionIO[Throwable \/ A] =
-    F.liftF[PGConnectionOp, Throwable \/ A](Attempt(a))
-
-  /**
-   * Non-strict unit for capturing effects.
-   * @group Constructors (Lifting)
-   */
-  def delay[A](a: => A): PGConnectionIO[A] =
-    F.liftF(Pure(a _))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def addDataType(a: String, b: String): PGConnectionIO[Unit] =
-    F.liftF(AddDataType(a, b))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def addDataType(a: String, b: Class[_ <: PGobject]): PGConnectionIO[Unit] =
-    F.liftF(AddDataType1(a, b))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getBackendPID: PGConnectionIO[Int] =
-    F.liftF(GetBackendPID)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getCopyAPI: PGConnectionIO[CopyManager] =
-    F.liftF(GetCopyAPI)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getFastpathAPI: PGConnectionIO[Fastpath] =
-    F.liftF(GetFastpathAPI)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] =
-    F.liftF(GetLargeObjectAPI)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getNotifications: PGConnectionIO[Array[PGNotification]] =
-    F.liftF(GetNotifications)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getPrepareThreshold: PGConnectionIO[Int] =
-    F.liftF(GetPrepareThreshold)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def setPrepareThreshold(a: Int): PGConnectionIO[Unit] =
-    F.liftF(SetPrepareThreshold(a))
-
- /**
-  * Natural transformation from `PGConnectionOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.PGConnection`.
-  * @group Algebra
-  */
- def kleisliTrans[M[_]: Catchable: Suspendable]: PGConnectionOp ~> Kleisli[M, PGConnection, ?] =
-   new (PGConnectionOp ~> Kleisli[M, PGConnection, ?]) {
-
-     val L = Predef.implicitly[Suspendable[M]]
-
-     def primitive[A](f: PGConnection => A): Kleisli[M, PGConnection, A] =
-       Kleisli(s => L.delay(f(s)))
-
-     def apply[A](op: PGConnectionOp[A]): Kleisli[M, PGConnection, A] =
-       op match {
-
-        // Lifting
-        case LiftCopyManagerIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftFastpathIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-        case LiftLargeObjectManagerIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => kleisliCatchableInstance[M, PGConnection].attempt(a.transK[M])
-
-        // Primitive Operations
-        case AddDataType(a, b) => primitive(_.addDataType(a, b))
-        case AddDataType1(a, b) => primitive(_.addDataType(a, b))
-        case GetBackendPID => primitive(_.getBackendPID)
-        case GetCopyAPI => primitive(_.getCopyAPI)
-        case GetFastpathAPI => primitive(_.getFastpathAPI)
-        case GetLargeObjectAPI => primitive(_.getLargeObjectAPI)
-        case GetNotifications => primitive(_.getNotifications)
-        case GetPrepareThreshold => primitive(_.getPrepareThreshold)
-        case SetPrepareThreshold(a) => primitive(_.setPrepareThreshold(a))
-
+    // Given a PGConnection we can embed a PGConnectionIO program in any algebra that understands embedding.
+    implicit val PGConnectionOpEmbeddable: Embeddable[PGConnectionOp, PGConnection] =
+      new Embeddable[PGConnectionOp, PGConnection] {
+        def embed[A](j: PGConnection, fa: FF[PGConnectionOp, A]) = Embedded.PGConnection(j, fa)
       }
 
+    // Interface for a natural tansformation PGConnectionOp ~> F encoded via the visitor pattern.
+    // This approach is much more efficient than pattern-matching for large algebras.
+    trait Visitor[F[_]] extends (PGConnectionOp ~> F) {
+      final def apply[A](fa: PGConnectionOp[A]): F[A] = fa.visit(this)
+
+      // Common
+      def raw[A](f: PGConnection => A): F[A]
+      def embed[A](e: Embedded[A]): F[A]
+      def delay[A](a: () => A): F[A]
+      def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+
+      // PGConnection
+      def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
+      def addDataType(a: String, b: String): F[Unit]
+      def escapeIdentifier(a: String): F[String]
+      def escapeLiteral(a: String): F[String]
+      def getAutosave: F[AutoSave]
+      def getBackendPID: F[Int]
+      def getCopyAPI: F[PGCopyManager]
+      def getDefaultFetchSize: F[Int]
+      def getFastpathAPI: F[PGFastpath]
+      def getLargeObjectAPI: F[LargeObjectManager]
+      def getNotifications: F[Array[PGNotification]]
+      def getNotifications(a: Int): F[Array[PGNotification]]
+      def getPreferQueryMode: F[PreferQueryMode]
+      def getPrepareThreshold: F[Int]
+      def getReplicationAPI: F[PGReplicationConnection]
+      def setAutosave(a: AutoSave): F[Unit]
+      def setDefaultFetchSize(a: Int): F[Unit]
+      def setPrepareThreshold(a: Int): F[Unit]
+
     }
 
-  /**
-   * Syntax for `PGConnectionIO`.
-   * @group Algebra
-   */
-  implicit class PGConnectionIOOps[A](ma: PGConnectionIO[A]) {
-    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGConnection, A] =
-      ma.foldMap[Kleisli[M, PGConnection, ?]](kleisliTrans[M])
+    // Common operations for all algebras.
+    case class Raw[A](f: PGConnection => A) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raw(f)
+    }
+    case class Embed[A](e: Embedded[A]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.embed(e)
+    }
+    case class Delay[A](a: () => A) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.delay(a)
+    }
+    case class HandleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+
+    // PGConnection-specific operations.
+    case class  AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
+    }
+    case class  AddDataType1(a: String, b: String) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
+    }
+    case class  EscapeIdentifier(a: String) extends PGConnectionOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.escapeIdentifier(a)
+    }
+    case class  EscapeLiteral(a: String) extends PGConnectionOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.escapeLiteral(a)
+    }
+    case object GetAutosave extends PGConnectionOp[AutoSave] {
+      def visit[F[_]](v: Visitor[F]) = v.getAutosave
+    }
+    case object GetBackendPID extends PGConnectionOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getBackendPID
+    }
+    case object GetCopyAPI extends PGConnectionOp[PGCopyManager] {
+      def visit[F[_]](v: Visitor[F]) = v.getCopyAPI
+    }
+    case object GetDefaultFetchSize extends PGConnectionOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getDefaultFetchSize
+    }
+    case object GetFastpathAPI extends PGConnectionOp[PGFastpath] {
+      def visit[F[_]](v: Visitor[F]) = v.getFastpathAPI
+    }
+    case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager] {
+      def visit[F[_]](v: Visitor[F]) = v.getLargeObjectAPI
+    }
+    case object GetNotifications extends PGConnectionOp[Array[PGNotification]] {
+      def visit[F[_]](v: Visitor[F]) = v.getNotifications
+    }
+    case class  GetNotifications1(a: Int) extends PGConnectionOp[Array[PGNotification]] {
+      def visit[F[_]](v: Visitor[F]) = v.getNotifications(a)
+    }
+    case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
+      def visit[F[_]](v: Visitor[F]) = v.getPreferQueryMode
+    }
+    case object GetPrepareThreshold extends PGConnectionOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getPrepareThreshold
+    }
+    case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
+      def visit[F[_]](v: Visitor[F]) = v.getReplicationAPI
+    }
+    case class  SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setAutosave(a)
+    }
+    case class  SetDefaultFetchSize(a: Int) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setDefaultFetchSize(a)
+    }
+    case class  SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setPrepareThreshold(a)
+    }
+
   }
+  import PGConnectionOp._
 
-}
+  // Smart constructors for operations common to all algebras.
+  val unit: PGConnectionIO[Unit] = FF.pure[PGConnectionOp, Unit](())
+  def raw[A](f: PGConnection => A): PGConnectionIO[A] = FF.liftF(Raw(f))
+  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PGConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
+  def delay[A](a: => A): PGConnectionIO[A] = FF.liftF(Delay(() => a))
+  def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): PGConnectionIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](Async1(k))
 
-private[free] trait PGConnectionIOInstances {
-  /**
-   * Suspendable instance for [[PGConnectionIO]].
-   * @group Typeclass Instances
-   */
-  implicit val SuspendablePGConnectionIO: Suspendable[PGConnectionIO] =
-    new Suspendable[PGConnectionIO] {
-      def pure[A](a: A): PGConnectionIO[A] = pgconnection.delay(a)
-      override def map[A, B](fa: PGConnectionIO[A])(f: A => B): PGConnectionIO[B] = fa.map(f)
-      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => PGConnectionIO[A]): PGConnectionIO[A] = F.suspend(fa)
-      override def delay[A](a: => A): PGConnectionIO[A] = pgconnection.delay(a)
+  // Smart constructors for PGConnection-specific operations.
+  def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
+  def addDataType(a: String, b: String): PGConnectionIO[Unit] = FF.liftF(AddDataType1(a, b))
+  def escapeIdentifier(a: String): PGConnectionIO[String] = FF.liftF(EscapeIdentifier(a))
+  def escapeLiteral(a: String): PGConnectionIO[String] = FF.liftF(EscapeLiteral(a))
+  val getAutosave: PGConnectionIO[AutoSave] = FF.liftF(GetAutosave)
+  val getBackendPID: PGConnectionIO[Int] = FF.liftF(GetBackendPID)
+  val getCopyAPI: PGConnectionIO[PGCopyManager] = FF.liftF(GetCopyAPI)
+  val getDefaultFetchSize: PGConnectionIO[Int] = FF.liftF(GetDefaultFetchSize)
+  val getFastpathAPI: PGConnectionIO[PGFastpath] = FF.liftF(GetFastpathAPI)
+  val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] = FF.liftF(GetLargeObjectAPI)
+  val getNotifications: PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications)
+  def getNotifications(a: Int): PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications1(a))
+  val getPreferQueryMode: PGConnectionIO[PreferQueryMode] = FF.liftF(GetPreferQueryMode)
+  val getPrepareThreshold: PGConnectionIO[Int] = FF.liftF(GetPrepareThreshold)
+  val getReplicationAPI: PGConnectionIO[PGReplicationConnection] = FF.liftF(GetReplicationAPI)
+  def setAutosave(a: AutoSave): PGConnectionIO[Unit] = FF.liftF(SetAutosave(a))
+  def setDefaultFetchSize(a: Int): PGConnectionIO[Unit] = FF.liftF(SetDefaultFetchSize(a))
+  def setPrepareThreshold(a: Int): PGConnectionIO[Unit] = FF.liftF(SetPrepareThreshold(a))
+
+  // PGConnectionIO is an Async
+  implicit val AsyncPGConnectionIO: Async[PGConnectionIO] =
+    new Async[PGConnectionIO] {
+      val M = FF.catsFreeMonadForFree[PGConnectionOp]
+      def pure[A](x: A): PGConnectionIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): PGConnectionIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): PGConnectionIO[A] = module.async(k)
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => PGConnectionIO[A]): PGConnectionIO[A] = M.flatten(module.delay(thunk))
     }
+
 }
+

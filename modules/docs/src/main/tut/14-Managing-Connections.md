@@ -12,8 +12,7 @@ In this chapter we discuss several ways to manage connections in applications th
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
 ```
 
 ### About Transactors
@@ -36,7 +35,7 @@ streaming fashion
 - `exec: Kleisli[M, Connection, ?] ~> M` equivalent to `trans` except it transforms a `Kleisli` that expects a `java.sql.Connection` and not a `ConnectionIO`. This can be used in combination with the doobie interpreters, which can transform doobie programs (e.g., `ConnectionIO`) to `Kleisli` effects, in order to implement your own logic for running doobie programs.
 - `rawExec` natural transformation equivalent to `exec` but one that does not use the provided `Strategy` to wrap the given program with additional operations.
 
-So summarizing, once you have a `Transactor[M, A]` you have a way of discharging `ConnectionIO` and replacing it with some effectful `M` like `Task` or `IO`. In effect this turns a **doobie** program into a "real" program value that you can integrate with the rest of your application; all doobieness is left behind.
+So summarizing, once you have a `Transactor[M, A]` you have a way of discharging `ConnectionIO` and replacing it with some effectful `M` like `IO`. In effect this turns a **doobie** program into a "real" program value that you can integrate with the rest of your application; all doobieness is left behind.
 
 **doobie** provides several implementations, described below.
 
@@ -48,7 +47,7 @@ However, for experimentation as described in this book (and for situations where
 class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```tut:silent
-val xa = DriverManagerTransactor[IOLite](
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", // fully-qualified driver class name
   "jdbc:postgresql:world", // connect URL
   "jimmy",                 // user
@@ -62,20 +61,21 @@ The `doobie-hikari-cats` add-on provides a `Transactor` implementation backed by
 
 ```tut:silent
 import doobie.hikari.imports._
+import doobie.util.monaderror._ // for `guarantee` combinator below
 
 val q = sql"select 42".query[Int].unique
 
-val p: IOLite[Int] = for {
-  xa <- HikariTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-  _  <- xa.configure(hx => IOLite.primitive( /* do something with hx */ ()))
-  a  <- q.transact(xa) ensuring xa.shutdown
+val p: IO[Int] = for {
+  xa <- HikariTransactor[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  _  <- xa.configure(hx => IO( /* do something with hx */ ()))
+  a  <- q.transact(xa) guarantee xa.shutdown
 } yield a
 ```
 
-And running this `IOLite` gives us the desired result.
+And running this `IO` gives us the desired result.
 
 ```tut
-p.unsafePerformIO
+p.unsafeRunSync
 ```
 
 The returned instance is of type `HikariTransactor`, which provides a `shutdown` method, as well as a `configure` method that provides access to the underlying `HikariDataSource` if additional configuration is required.
@@ -87,10 +87,10 @@ If your application exposes an existing `javax.sql.DataSource` you can use it di
 ```tut:silent
 val ds: javax.sql.DataSource = null // pretending
 
-val xa = DataSourceTransactor[IOLite](ds)
+val xa = Transactor.fromDataSource[IO](ds)
 
-val p: IOLite[Int] = for {
-  _  <- xa.configure(ds => IOLite.primitive( /* do something with ds */ ()))
+val p: IO[Int] = for {
+  _  <- xa.configure(ds => IO( /* do something with ds */ ()))
   a  <- q.transact(xa)
 } yield a
 ```
@@ -112,9 +112,9 @@ If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an
 ```tut:silent
 val conn: java.sql.Connection = null     // Connection (pretending)
 val prog = 42.pure[ConnectionIO]         // ConnectionIO[Int]
-val int  = KleisliInterpreter[IOLite]    // KleisliInterpreter[IOLite]
-val nat  = int.ConnectionInterpreter     // ConnectionIO ~> Kleisli[IOLite, Connection, ?]
-val task = prog.foldMap(nat).run(conn)   // IOLite[Int]
+val int  = KleisliInterpreter[IO]    // KleisliInterpreter[IO]
+val nat  = int.ConnectionInterpreter     // ConnectionIO ~> Kleisli[IO, Connection, ?]
+val task = prog.foldMap(nat).run(conn)   // IO[Int]
 ```
 
 As an aside, this technique works for programs written in *any* of the provided contexts. For example, here we run a program in `ResultSetIO`.
@@ -122,8 +122,8 @@ As an aside, this technique works for programs written in *any* of the provided 
 ```tut:silent
 val rs: java.sql.ResultSet = null      // ResultSet (pretending)
 val prog = 42.pure[ResultSetIO]        // ResultSetIO[Int]
-val nat  = int.ResultSetInterpreter    // ResultSetIO ~> Kleisli[IOLite, ResultSet, ?]
-val task = prog.foldMap(nat).run(rs)   // IOLite[Int]
+val nat  = int.ResultSetInterpreter    // ResultSetIO ~> Kleisli[IO, ResultSet, ?]
+val task = prog.foldMap(nat).run(rs)   // IO[Int]
 ```
 
 This facility allows you to mix **doobie** programs into existing JDBC applications in a fine-grained manner if this meets your needs.

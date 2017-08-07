@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
 import java.io.Reader
@@ -29,7 +28,7 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
-object resultset {
+object resultset { module =>
 
   // Algebra of operations for ResultSet. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait ResultSetOp[A] {
@@ -57,7 +56,8 @@ object resultset {
       def raw[A](f: ResultSet => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: ResultSetIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -265,11 +265,14 @@ object resultset {
     case class Embed[A](e: Embedded[A]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends ResultSetOp[A] {
+    case class Delay[A](a: () => A) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: ResultSetIO[A]) extends ResultSetOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]) extends ResultSetOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ResultSetOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // ResultSet-specific operations.
@@ -866,10 +869,10 @@ object resultset {
   val unit: ResultSetIO[Unit] = FF.pure[ResultSetOp, Unit](())
   def raw[A](f: ResultSet => A): ResultSetIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ResultSetOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ResultSetOp, A] = embed(j, fa)
   def delay[A](a: => A): ResultSetIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: ResultSetIO[A]): ResultSetIO[Throwable \/ A] = FF.liftF[ResultSetOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): ResultSetIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): ResultSetIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ResultSetIO[A] = FF.liftF[ResultSetOp, A](Async1(k))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))
@@ -1068,16 +1071,17 @@ object resultset {
   def updateTimestamp(a: String, b: Timestamp): ResultSetIO[Unit] = FF.liftF(UpdateTimestamp1(a, b))
   val wasNull: ResultSetIO[Boolean] = FF.liftF(WasNull)
 
-// ResultSetIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableResultSetIO: Suspendable[ResultSetIO] with Catchable[ResultSetIO] =
-    new Suspendable[ResultSetIO] with Catchable[ResultSetIO] {
-      def pure[A](a: A): ResultSetIO[A] = resultset.delay(a)
-      override def map[A, B](fa: ResultSetIO[A])(f: A => B): ResultSetIO[B] = fa.map(f)
-      def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => ResultSetIO[A]): ResultSetIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): ResultSetIO[A] = resultset.delay(a)
-      def attempt[A](f: ResultSetIO[A]): ResultSetIO[Throwable \/ A] = resultset.attempt(f)
-      def fail[A](err: Throwable): ResultSetIO[A] = resultset.fail(err)
+  // ResultSetIO is an Async
+  implicit val AsyncResultSetIO: Async[ResultSetIO] =
+    new Async[ResultSetIO] {
+      val M = FF.catsFreeMonadForFree[ResultSetOp]
+      def pure[A](x: A): ResultSetIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): ResultSetIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ResultSetIO[A] = module.async(k)
+      def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

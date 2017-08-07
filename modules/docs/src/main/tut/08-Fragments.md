@@ -12,9 +12,8 @@ Same as last chapter, so if you're still set up you can skip this section. Other
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -40,7 +39,7 @@ SQL literals constructed with the `fr` interpolator behave just like the `sql` i
 val a = fr"select name from country"
 val b = fr"where code = 'USA'"
 val c = a ++ b // concatenation by ++
-c.query[String].unique.quick.unsafePerformIO
+c.query[String].unique.quick.unsafeRunSync
 ```
 
 Fragments can capture arguments of any type with a `Param` instance, just as the `sql` interpolator does.
@@ -48,14 +47,14 @@ Fragments can capture arguments of any type with a `Param` instance, just as the
 ```tut
 def whereCode(s: String) = fr"where code = $s"
 val fra = whereCode("FRA")
-(fr"select name from country" ++ fra).query[String].quick.unsafePerformIO
+(fr"select name from country" ++ fra).query[String].quick.unsafeRunSync
 ```
 
 You can lift an arbitrary string value via `Fragment.const`, which allows you to parameterize on things that aren't valid SQL parameters.
 
 ```tut
 def count(table: String) = (fr"select count(*) from" ++ Fragment.const(table)).query[Int].unique
-count("city").quick.unsafePerformIO
+count("city").quick.unsafeRunSync
 ```
 
 
@@ -109,7 +108,7 @@ We first construct three optional filters, the third of which uses the `in` comb
 Let's look at a few possibilities.
 
 ```tut
-select(None, None, Nil, 10).check.unsafePerformIO // no filters
-select(Some("U%"), None, Nil, 10).check.unsafePerformIO // one filter
-select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafePerformIO // three filters
+select(None, None, Nil, 10).check.unsafeRunSync // no filters
+select(Some("U%"), None, Nil, 10).check.unsafeRunSync // one filter
+select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync // three filters
 ```

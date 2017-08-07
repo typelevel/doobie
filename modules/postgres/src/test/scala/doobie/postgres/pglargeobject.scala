@@ -1,20 +1,16 @@
 package doobie.postgres
 
+import cats.effect.IO
+import cats.implicits._
 import doobie.imports._
 import doobie.postgres.imports._
-import doobie.util.iolite.IOLite
-
 import java.io.{File, FileInputStream, FileOutputStream}
-
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 
-import cats.implicits._
-import fs2.interop.cats._
-
 object pglargeobjectspec extends Specification with FileEquality {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -28,7 +24,7 @@ object pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
         PHLOM.createFileFromLO(1024 * 16, oid, out) *> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformIO
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync
       filesEqual(in, out)
       out.delete()
     }
@@ -41,7 +37,7 @@ object pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromStream(1024 * 16, is) >>= { oid =>
         PHLOM.createStreamFromLO(1024 * 16, oid, os) *> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafePerformIO
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync
       filesEqual(in, out)
       out.delete()
     }

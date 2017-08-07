@@ -1,17 +1,15 @@
 package doobie.util
 
-import scala.util.{ Left => -\/, Right => \/- }
 import cats.implicits._
-import fs2.interop.cats._
+import cats.effect.IO
 import doobie.imports._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification
 import shapeless._
 
-
 object logspec extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
@@ -21,7 +19,7 @@ object logspec extends Specification {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio     = Query[A, HNil](sql, None, handler).unique(arg)
-    cio.transact(xa).attempt.unsafePerformIO
+    cio.transact(xa).attempt.unsafeRunSync
     result
   }
 
@@ -30,7 +28,7 @@ object logspec extends Specification {
     val handler = LogHandler(result = _)
     val cio     = sql"create table if not exists foo (bar integer)".update.run *>
                   Update[A](sql, None, handler).run(arg)
-    cio.transact(xa).attempt.unsafePerformIO
+    cio.transact(xa).attempt.unsafeRunSync
     result
   }
 
@@ -45,7 +43,7 @@ object logspec extends Specification {
       var result  = null : LogEvent
       implicit val handler = LogHandler(result = _)
       val cio = sql"select 1".query[Int].unique
-      cio.transact(xa).attempt.unsafePerformIO
+      cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
         case Success(_, _, _, _) => ok
       }
@@ -55,7 +53,7 @@ object logspec extends Specification {
       var result  = null : LogEvent
       val handler = LogHandler(result = _)
       val cio = sql"select 1".queryWithLogHandler[Int](handler).unique
-      cio.transact(xa).attempt.unsafePerformIO
+      cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
         case Success(_, _, _, _) => ok
       }
@@ -112,7 +110,7 @@ object logspec extends Specification {
       var result  = null : LogEvent
       implicit val handler = LogHandler(result = _)
       val cio = sql"drop table if exists barf".update.run
-      cio.transact(xa).attempt.unsafePerformIO
+      cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
         case Success(_, _, _, _) => ok
       }
@@ -122,7 +120,7 @@ object logspec extends Specification {
       var result  = null : LogEvent
       val handler = LogHandler(result = _)
       val cio = sql"drop table if exists barf".updateWithLogHandler(handler).run
-      cio.transact(xa).attempt.unsafePerformIO
+      cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
         case Success(_, _, _, _) => ok
       }

@@ -12,9 +12,8 @@ Again we set up a transactor and pull in YOLO mode, but this time we're not usin
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -24,7 +23,7 @@ val y = xa.yolo; import y._
 
 It is uncommon to define database structures at runtime, but **doobie** handles it just fine and treats such operations like any other kind of update. And it happens to be useful here!
 
-Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `Task[Unit]` that prints out the row count.
+Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count.
 
 ```tut:silent
 val drop: Update0 =
@@ -45,7 +44,7 @@ val create: Update0 =
 We can compose these and run them together.
 
 ```tut
-(drop.run *> create.run).transact(xa).unsafePerformIO
+(drop.run *> create.run).transact(xa).unsafeRunSync
 ```
 
 
@@ -62,8 +61,8 @@ def insert1(name: String, age: Option[Short]): Update0 =
 Let's insert a few rows.
 
 ```tut
-insert1("Alice", Some(12)).run.transact(xa).unsafePerformIO
-insert1("Bob", None).quick.unsafePerformIO // switch to YOLO mode
+insert1("Alice", Some(12)).run.transact(xa).unsafeRunSync
+insert1("Bob", None).quick.unsafeRunSync // switch to YOLO mode
 ```
 
 And read them back.
@@ -73,7 +72,7 @@ case class Person(id: Long, name: String, age: Option[Short])
 ```
 
 ```tut
-sql"select id, name, age from person".query[Person].quick.unsafePerformIO
+sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 ```
 
 
@@ -83,8 +82,8 @@ sql"select id, name, age from person".query[Person].quick.unsafePerformIO
 Updating follows the same pattern. Here we update Alice's age.
 
 ```tut
-sql"update person set age = 15 where name = 'Alice'".update.quick.unsafePerformIO
-sql"select id, name, age from person".query[Person].quick.unsafePerformIO
+sql"update person set age = 15 where name = 'Alice'".update.quick.unsafeRunSync
+sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 ```
 
 ### Retrieving Results
@@ -101,7 +100,7 @@ def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
 ```
 
 ```tut
-insert2("Jimmy", Some(42)).quick.unsafePerformIO
+insert2("Jimmy", Some(42)).quick.unsafeRunSync
 ```
 
 This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor).
@@ -117,7 +116,7 @@ def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
 ```
 
 ```tut
-insert2_H2("Ramone", Some(42)).quick.unsafePerformIO
+insert2_H2("Ramone", Some(42)).quick.unsafeRunSync
 ```
 
 Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.
@@ -132,7 +131,7 @@ def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
 The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (otherwise an exception will be thrown), and requires a list of columns to return. This isn't the most beautiful API but it's what JDBC gives us. And it does work.
 
 ```tut
-insert3("Elvis", None).quick.unsafePerformIO
+insert3("Elvis", None).quick.unsafeRunSync
 ```
 
 This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit `unique` and get a `Process[ConnectionIO, Person]` back.
@@ -148,8 +147,8 @@ val up = {
 Running this process updates all rows with a non-`NULL` age and returns them.
 
 ```tut
-up.quick.unsafePerformIO
-up.quick.unsafePerformIO // and again!
+up.quick.unsafeRunSync
+up.quick.unsafeRunSync // and again!
 ```
 
 ### Batch Updates
@@ -186,7 +185,7 @@ val data = List[PersonInfo](
 Running this program yields the number of updated rows.
 
 ```tut
-insertMany(data).quick.unsafePerformIO
+insertMany(data).quick.unsafeRunSync
 ```
 
 For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
@@ -209,5 +208,5 @@ val data = List[PersonInfo](
 Running this program yields the updated instances.
 
 ```tut
-insertMany2(data).quick.unsafePerformIO
+insertMany2(data).quick.unsafeRunSync
 ```

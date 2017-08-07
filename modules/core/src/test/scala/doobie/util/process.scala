@@ -1,13 +1,11 @@
 package doobie.util
 
+import cats.effect.IO
 import doobie.imports._
-import doobie.util.process.repeatEvalChunks
-
+import doobie.util.stream.repeatEvalChunks
 import org.scalacheck.Prop.forAll
-
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
-
 import scala.Predef._
 
 object processspec extends Specification with ScalaCheck {
@@ -20,13 +18,13 @@ object processspec extends Specification with ScalaCheck {
       val data      = Seq.fill(dataSize)(util.Random.nextInt)
       val fa = {
         var temp = data
-        IOLite.primitive {
+        IO {
           val (h, t) = temp.splitAt(chunkSize)
           temp = t
           h
         }
       }
-      val result = repeatEvalChunks(fa).runLog.unsafePerformIO
+      val result = repeatEvalChunks(fa).runLog.unsafeRunSync
       result must_== data
     }
 

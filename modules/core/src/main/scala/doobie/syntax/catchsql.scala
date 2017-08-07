@@ -1,23 +1,22 @@
 package doobie.syntax
 
+import cats.MonadError
 import doobie.util.{ catchsql => C }
-import scala.util.{ Either => \/ }
-import fs2.util.Catchable
 import doobie.enum.sqlstate.SqlState
 import java.sql.SQLException
 
 /** Syntax for `Catchable` combinators defined in `util.catchsql`. */
 object catchsql {
 
-  class DoobieCatchSqlOps[M[_]: Catchable, A](self: M[A]) {
+  class DoobieCatchSqlOps[M[_]: MonadError[?[_], Throwable], A](self: M[A]) {
 
-    def attemptSql: M[SQLException \/ A] =
+    def attemptSql: M[Either[SQLException, A]] =
       C.attemptSql(self)
 
-    def attemptSqlState: M[SqlState \/ A] =
+    def attemptSqlState: M[Either[SqlState, A]] =
       C.attemptSqlState(self)
 
-    def attemptSomeSqlState[B](f: PartialFunction[SqlState, B]): M[B \/ A] =
+    def attemptSomeSqlState[B](f: PartialFunction[SqlState, B]): M[Either[B, A]] =
       C.attemptSomeSqlState(self)(f)
 
     def exceptSql(handler: SQLException => M[A]): M[A] =
@@ -37,7 +36,7 @@ object catchsql {
   trait ToDoobieCatchSqlOps {
 
     /** @group Syntax */
-    implicit def toDoobieCatchSqlOps[M[_]: Catchable, A](ma: M[A]): DoobieCatchSqlOps[M, A] =
+    implicit def toDoobieCatchSqlOps[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): DoobieCatchSqlOps[M, A] =
       new DoobieCatchSqlOps(ma)
 
   }

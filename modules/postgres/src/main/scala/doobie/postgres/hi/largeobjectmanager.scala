@@ -18,10 +18,10 @@ object largeobjectmanager {
     PFLOM.delete(a)
 
   def open[A](a: Long, b: Int)(k: LargeObjectIO[A]): LargeObjectManagerIO[A] =
-    PFLOM.open(a, b) >>= (PFLOM.liftLargeObject(_, k <* PFLO.close))
+    PFLOM.open(a, b) >>= (PFLOM.embed(_, k <* PFLO.close))
 
   def open[A](a: Long)(k: LargeObjectIO[A]): LargeObjectManagerIO[A] =
-    PFLOM.open(a) >>= (PFLOM.liftLargeObject(_, k <* PFLO.close))
+    PFLOM.open(a) >>= (PFLOM.embed(_, k <* PFLO.close))
 
   def unlink(a: Long): LargeObjectManagerIO[Unit] =
     PFLOM.unlink(a)

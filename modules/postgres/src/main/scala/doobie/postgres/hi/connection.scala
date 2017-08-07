@@ -1,18 +1,24 @@
 package doobie.postgres.hi
 
+import cats.~>
+import cats.data.Kleisli
 import org.postgresql.{ PGConnection, PGNotification }
-
 import doobie.imports._
+import doobie.postgres.free.KleisliInterpreter
 import doobie.postgres.imports._
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {
 
+  // An intepreter for lifting PGConnectionIO into ConnectionIO
+  val defaultInterpreter: PFPC.PGConnectionOp ~> Kleisli[ConnectionIO, PGConnection, ?] =
+    KleisliInterpreter[ConnectionIO].PGConnectionInterpreter
+
   val pgGetBackendPID: ConnectionIO[Int] =
     pgGetConnection(PFPC.getBackendPID)
 
   def pgGetConnection[A](k: PGConnectionIO[A]): ConnectionIO[A] =
-    FC.unwrap(classOf[PGConnection]).flatMap(k.transK[ConnectionIO].run)
+    FC.unwrap(classOf[PGConnection]).flatMap(k.foldMap(defaultInterpreter).run)
 
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getCopyAPI(k))

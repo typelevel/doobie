@@ -4,6 +4,15 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.4.2"></a>Work in Progress for Version 0.5.0
+
+This introduces the 0.5.x series which standardizes on cats, cats-effect, and fs2.
+
+- The `yax` preprocessor is gone. The new codebase is based on the cats output. All import renames have been resolved to cats names.
+- Updated to `fs2` 0.10 which uses cats-effect rather than its own effect stack. This is a huge simplification, both for the implementation and for users. All examples now use `cats.effect.IO`.
+- `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance).
+- Postgres free algebras and interpreters are now also generated with `FreeGen2`.
+
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
 Sparkly contributors for this release are :sparkles: n4to4, :sparkles: Alexa DeWit, :sparkles: wedens, :sparkles: Colt Frederickson, :sparkles: Benjamin Trenker, :sparkles: nigredo-tori, :sparkles: Suhas Gaddam, :sparkles: Christopher Davenport, :sparkles: Damir Vandic, :sparkles: Jacob Barber, and :chicken: tpolecat. Noteworthy changes:
@@ -64,7 +73,7 @@ This is probably the most important development for 0.4.0 and it is due in large
 - The **dynamic SQL** story is now slightly better with the introduction of **composable statement fragments**. These allow you to build statements from smaller pieces without having to track parameter placeholders/offsets by hand. See the book chapter for details and examples.
 - SQL `IN` clauses are now handled via `Fragments.in`, which is a **breaking change** relative to 0.3.0. See the book chapter on parameterized queries for an example.
 - Methods on `Query[0]/Update[0]` that construct streams (`.process`) now have variants that allow you to specify the **chunk size**, which by default is 512 rows.
-- There is now an `IOLite` data type that you can use if you're having a hard time settling on a target effect type. It works identically in Cats and scalaz and is what's used in the book.
+- There is now an `IO` data type that you can use if you're having a hard time settling on a target effect type. It works identically in Cats and scalaz and is what's used in the book.
 
 ##### Changes to Add-On Modules
 

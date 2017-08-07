@@ -1,15 +1,13 @@
 package doobie.bench
 
+import cats.effect.IO
 import doobie.imports._
-
 import java.sql.DriverManager
-
-import fs2.interop.cats._
 
 /** Rough benchmark based on non/jawn */
 object bench {
 
-  val xa = Transactor.fromDriverManager[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // Baseline hand-written JDBC code
   def jdbcBench(n: Int): Int = {
@@ -50,7 +48,7 @@ object bench {
       .list
       .transact(xa)
       .map(_.length)
-      .unsafePerformIO
+      .unsafeRunSync
 
   // Reading via .list, which uses a lower-level collector
   def doobieBench(n: Int): Int =
@@ -59,7 +57,7 @@ object bench {
       .list
       .transact(xa)
       .map(_.length)
-      .unsafePerformIO
+      .unsafeRunSync
 
   // Reading via .vector, which uses a lower-level collector
   def doobieBenchV(n: Int): Int =
@@ -68,7 +66,7 @@ object bench {
       .vector
       .transact(xa)
       .map(_.length)
-      .unsafePerformIO
+      .unsafeRunSync
 
 
   case class Bench(warmups: Int, runs: Int, ns: List[Int]) {
@@ -114,7 +112,7 @@ object bench {
 
 
   def main(args: Array[String]): Unit = {
-    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000, 1000000))
+    val bench    = Bench(2, 5, List(10, 100, 1000/*, 10000, 100000, 1000000*/))
     println("Warming up ...")
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(

@@ -1,27 +1,21 @@
 package doobie.postgres
 
+import cats.effect.IO
 import doobie.imports._
 import doobie.postgres.imports._
 import doobie.postgres.pgistypes._
-
-
 import java.net.InetAddress
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
-
 import org.specs2.mutable.Specification
-
-import scala.util.{ Left => -\/, Right => \/- }
-import fs2.interop.cats._
 
 // Establish that we can write and read various types.
 object pgtypesspec extends Specification {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -36,13 +30,13 @@ object pgtypesspec extends Specification {
   def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
     s"Mapping for $col as ${m.scalaType}" >> {
       s"write+read $col as ${m.scalaType}" in {
-        inOut(col, a).transact(xa).attempt.unsafePerformIO must_== \/-(a)
+        inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
       }
       s"write+read $col as Option[${m.scalaType}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafePerformIO must_== \/-(Some(a))
+        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
       }
       s"write+read $col as Option[${m.scalaType}] (None)" in {
-        inOut[Option[A]](col, None).transact(xa).attempt.unsafePerformIO must_== \/-(None)
+        inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
       }
     }
 

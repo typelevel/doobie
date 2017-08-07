@@ -1,223 +1,149 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.free.{ Free => F }
-import cats.data.Kleisli
-import scala.util.{ Either => \/ }
-import fs2.interop.cats._
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
-import java.lang.Object
 import java.lang.String
 import java.sql.ResultSet
-import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 import org.postgresql.fastpath.FastpathArg
+import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 
-import fastpath.FastpathIO
+object fastpath { module =>
 
-/**
- * Algebra and free monad for primitive operations over a `org.postgresql.fastpath.Fastpath`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
- * for library developers. End users will prefer a safer, higher-level API such as that provided
- * in the `doobie.hi` package.
- *
- * `FastpathIO` is a free monad that must be run via an interpreter, most commonly via
- * natural transformation of its underlying algebra `FastpathOp` to another monad via
- * `Free#foldMap`.
- *
- * The library provides a natural transformation to `Kleisli[M, Fastpath, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
- * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
- *
- * {{{
- * // An action to run
- * val a: FastpathIO[Foo] = ...
- *
- * // A JDBC object
- * val s: Fastpath = ...
- *
- * // Unfolding into a Task
- * val ta: Task[A] = a.transK[Task].run(s)
- * }}}
- *
- * @group Modules
- */
-object fastpath extends FastpathIOInstances { self =>
+  // Algebra of operations for PGFastpath. Each accepts a visitor as an alternatie to pattern-matching.
+  sealed trait FastpathOp[A] {
+    def visit[F[_]](v: FastpathOp.Visitor[F]): F[A]
+  }
 
-  /**
-   * Sum type of primitive operations over a `org.postgresql.fastpath.Fastpath`.
-   * @group Algebra
-   */
-  sealed trait FastpathOp[A]
+  // Free monad over FastpathOp.
+  type FastpathIO[A] = FF[FastpathOp, A]
 
-  /**
-   * Module of constructors for `FastpathOp`. These are rarely useful outside of the implementation;
-   * prefer the smart constructors provided by the `fastpath` module.
-   * @group Algebra
-   */
+  // Module of instances and constructors of FastpathOp.
   object FastpathOp {
 
-    // Lifting
-
-
-    // Combinators
-    case class Attempt[A](action: FastpathIO[A]) extends FastpathOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends FastpathOp[A]
-
-    // Primitive Operations
-    case class  AddFunction(a: String, b: Int) extends FastpathOp[Unit]
-    case class  AddFunctions(a: ResultSet) extends FastpathOp[Unit]
-    case class  Fastpath(a: String, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[Object]
-    case class  Fastpath1(a: Int, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[Object]
-    case class  GetData(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]]
-    case class  GetID(a: String) extends FastpathOp[Int]
-    case class  GetInteger(a: String, b: Array[FastpathArg]) extends FastpathOp[Int]
-    case class  GetOID(a: String, b: Array[FastpathArg]) extends FastpathOp[Long]
-
-  }
-  import FastpathOp._ // We use these immediately
-
-  /**
-   * Free monad over a free functor of [[FastpathOp]]; abstractly, a computation that consumes
-   * a `org.postgresql.fastpath.Fastpath` and produces a value of type `A`.
-   * @group Algebra
-   */
-  type FastpathIO[A] = F[FastpathOp, A]
-
-  /**
-   * Catchable instance for [[FastpathIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CatchableFastpathIO: Catchable[FastpathIO] =
-    new Catchable[FastpathIO] {
-      def pure[A](a: A): FastpathIO[A] = self.delay(a)
-      override def map[A, B](fa: FastpathIO[A])(f: A => B): FastpathIO[B] = fa.map(f)
-      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = fa.flatMap(f)
-      def attempt[A](f: FastpathIO[A]): FastpathIO[Throwable \/ A] = self.attempt(f)
-      def fail[A](err: Throwable): FastpathIO[A] = self.delay(throw err)
-    }
-
-
-  /**
-   * Lift a FastpathIO[A] into an exception-capturing FastpathIO[Throwable \/ A].
-   * @group Constructors (Lifting)
-   */
-  def attempt[A](a: FastpathIO[A]): FastpathIO[Throwable \/ A] =
-    F.liftF[FastpathOp, Throwable \/ A](Attempt(a))
-
-  /**
-   * Non-strict unit for capturing effects.
-   * @group Constructors (Lifting)
-   */
-  def delay[A](a: => A): FastpathIO[A] =
-    F.liftF(Pure(a _))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def addFunction(a: String, b: Int): FastpathIO[Unit] =
-    F.liftF(AddFunction(a, b))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def addFunctions(a: ResultSet): FastpathIO[Unit] =
-    F.liftF(AddFunctions(a))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def fastpath(a: String, b: Boolean, c: Array[FastpathArg]): FastpathIO[Object] =
-    F.liftF(Fastpath(a, b, c))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def fastpath(a: Int, b: Boolean, c: Array[FastpathArg]): FastpathIO[Object] =
-    F.liftF(Fastpath1(a, b, c))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def getData(a: String, b: Array[FastpathArg]): FastpathIO[Array[Byte]] =
-    F.liftF(GetData(a, b))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def getID(a: String): FastpathIO[Int] =
-    F.liftF(GetID(a))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def getInteger(a: String, b: Array[FastpathArg]): FastpathIO[Int] =
-    F.liftF(GetInteger(a, b))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def getOID(a: String, b: Array[FastpathArg]): FastpathIO[Long] =
-    F.liftF(GetOID(a, b))
-
- /**
-  * Natural transformation from `FastpathOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.fastpath.Fastpath`.
-  * @group Algebra
-  */
- def kleisliTrans[M[_]: Catchable: Suspendable]: FastpathOp ~> Kleisli[M, PGFastpath, ?] =
-   new (FastpathOp ~> Kleisli[M, PGFastpath, ?]) {
-
-     val L = Predef.implicitly[Suspendable[M]]
-
-     def primitive[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] =
-       Kleisli(s => L.delay(f(s)))
-
-     def apply[A](op: FastpathOp[A]): Kleisli[M, PGFastpath, A] =
-       op match {
-
-        // Lifting
-
-
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => kleisliCatchableInstance[M, PGFastpath].attempt(a.transK[M])
-
-        // Primitive Operations
-        case AddFunction(a, b) => primitive(_.addFunction(a, b))
-        case AddFunctions(a) => primitive(_.addFunctions(a))
-        case Fastpath(a, b, c) => primitive(_.fastpath(a, b, c))
-        case Fastpath1(a, b, c) => primitive(_.fastpath(a, b, c))
-        case GetData(a, b) => primitive(_.getData(a, b))
-        case GetID(a) => primitive(_.getID(a))
-        case GetInteger(a, b) => primitive(_.getInteger(a, b))
-        case GetOID(a, b) => primitive(_.getOID(a, b))
-
+    // Given a PGFastpath we can embed a FastpathIO program in any algebra that understands embedding.
+    implicit val FastpathOpEmbeddable: Embeddable[FastpathOp, PGFastpath] =
+      new Embeddable[FastpathOp, PGFastpath] {
+        def embed[A](j: PGFastpath, fa: FF[FastpathOp, A]) = Embedded.Fastpath(j, fa)
       }
 
+    // Interface for a natural tansformation FastpathOp ~> F encoded via the visitor pattern.
+    // This approach is much more efficient than pattern-matching for large algebras.
+    trait Visitor[F[_]] extends (FastpathOp ~> F) {
+      final def apply[A](fa: FastpathOp[A]): F[A] = fa.visit(this)
+
+      // Common
+      def raw[A](f: PGFastpath => A): F[A]
+      def embed[A](e: Embedded[A]): F[A]
+      def delay[A](a: () => A): F[A]
+      def handleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+
+      // PGFastpath
+      def addFunction(a: String, b: Int): F[Unit]
+      def addFunctions(a: ResultSet): F[Unit]
+      def fastpath(a: Int, b: Array[FastpathArg]): F[Array[Byte]]
+      def fastpath(a: Int, b: Boolean, c: Array[FastpathArg]): F[AnyRef]
+      def fastpath(a: String, b: Array[FastpathArg]): F[Array[Byte]]
+      def fastpath(a: String, b: Boolean, c: Array[FastpathArg]): F[AnyRef]
+      def getData(a: String, b: Array[FastpathArg]): F[Array[Byte]]
+      def getID(a: String): F[Int]
+      def getInteger(a: String, b: Array[FastpathArg]): F[Int]
+      def getLong(a: String, b: Array[FastpathArg]): F[Long]
+      def getOID(a: String, b: Array[FastpathArg]): F[Long]
+
     }
 
-  /**
-   * Syntax for `FastpathIO`.
-   * @group Algebra
-   */
-  implicit class FastpathIOOps[A](ma: FastpathIO[A]) {
-    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, PGFastpath, A] =
-      ma.foldMap[Kleisli[M, PGFastpath, ?]](kleisliTrans[M])
+    // Common operations for all algebras.
+    case class Raw[A](f: PGFastpath => A) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raw(f)
+    }
+    case class Embed[A](e: Embedded[A]) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.embed(e)
+    }
+    case class Delay[A](a: () => A) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.delay(a)
+    }
+    case class HandleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+
+    // PGFastpath-specific operations.
+    case class  AddFunction(a: String, b: Int) extends FastpathOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.addFunction(a, b)
+    }
+    case class  AddFunctions(a: ResultSet) extends FastpathOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.addFunctions(a)
+    }
+    case class  Fastpath(a: Int, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
+      def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b)
+    }
+    case class  Fastpath1(a: Int, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[AnyRef] {
+      def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b, c)
+    }
+    case class  Fastpath2(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
+      def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b)
+    }
+    case class  Fastpath3(a: String, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[AnyRef] {
+      def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b, c)
+    }
+    case class  GetData(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
+      def visit[F[_]](v: Visitor[F]) = v.getData(a, b)
+    }
+    case class  GetID(a: String) extends FastpathOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getID(a)
+    }
+    case class  GetInteger(a: String, b: Array[FastpathArg]) extends FastpathOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getInteger(a, b)
+    }
+    case class  GetLong(a: String, b: Array[FastpathArg]) extends FastpathOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.getLong(a, b)
+    }
+    case class  GetOID(a: String, b: Array[FastpathArg]) extends FastpathOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.getOID(a, b)
+    }
+
   }
+  import FastpathOp._
 
-}
+  // Smart constructors for operations common to all algebras.
+  val unit: FastpathIO[Unit] = FF.pure[FastpathOp, Unit](())
+  def raw[A](f: PGFastpath => A): FastpathIO[A] = FF.liftF(Raw(f))
+  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[FastpathOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
+  def delay[A](a: => A): FastpathIO[A] = FF.liftF(Delay(() => a))
+  def handleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]): FastpathIO[A] = FF.liftF[FastpathOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): FastpathIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): FastpathIO[A] = FF.liftF[FastpathOp, A](Async1(k))
 
-private[free] trait FastpathIOInstances {
-  /**
-   * Suspendable instance for [[FastpathIO]].
-   * @group Typeclass Instances
-   */
-  implicit val SuspendableFastpathIO: Suspendable[FastpathIO] =
-    new Suspendable[FastpathIO] {
-      def pure[A](a: A): FastpathIO[A] = fastpath.delay(a)
-      override def map[A, B](fa: FastpathIO[A])(f: A => B): FastpathIO[B] = fa.map(f)
-      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => FastpathIO[A]): FastpathIO[A] = F.suspend(fa)
-      override def delay[A](a: => A): FastpathIO[A] = fastpath.delay(a)
+  // Smart constructors for Fastpath-specific operations.
+  def addFunction(a: String, b: Int): FastpathIO[Unit] = FF.liftF(AddFunction(a, b))
+  def addFunctions(a: ResultSet): FastpathIO[Unit] = FF.liftF(AddFunctions(a))
+  def fastpath(a: Int, b: Array[FastpathArg]): FastpathIO[Array[Byte]] = FF.liftF(Fastpath(a, b))
+  def fastpath(a: Int, b: Boolean, c: Array[FastpathArg]): FastpathIO[AnyRef] = FF.liftF(Fastpath1(a, b, c))
+  def fastpath(a: String, b: Array[FastpathArg]): FastpathIO[Array[Byte]] = FF.liftF(Fastpath2(a, b))
+  def fastpath(a: String, b: Boolean, c: Array[FastpathArg]): FastpathIO[AnyRef] = FF.liftF(Fastpath3(a, b, c))
+  def getData(a: String, b: Array[FastpathArg]): FastpathIO[Array[Byte]] = FF.liftF(GetData(a, b))
+  def getID(a: String): FastpathIO[Int] = FF.liftF(GetID(a))
+  def getInteger(a: String, b: Array[FastpathArg]): FastpathIO[Int] = FF.liftF(GetInteger(a, b))
+  def getLong(a: String, b: Array[FastpathArg]): FastpathIO[Long] = FF.liftF(GetLong(a, b))
+  def getOID(a: String, b: Array[FastpathArg]): FastpathIO[Long] = FF.liftF(GetOID(a, b))
+
+  // FastpathIO is an Async
+  implicit val AsyncFastpathIO: Async[FastpathIO] =
+    new Async[FastpathIO] {
+      val M = FF.catsFreeMonadForFree[FastpathOp]
+      def pure[A](x: A): FastpathIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: FastpathIO[A])(f: Throwable => FastpathIO[A]): FastpathIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): FastpathIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): FastpathIO[A] = module.async(k)
+      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => FastpathIO[Either[A, B]]): FastpathIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => FastpathIO[A]): FastpathIO[A] = M.flatten(module.delay(thunk))
     }
+
 }
+

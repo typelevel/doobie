@@ -18,9 +18,8 @@ The following examples require a few imports.
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -66,7 +65,7 @@ implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafePerformIO
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafeRunSync
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -112,7 +111,7 @@ implicit val FoobarMeta: Meta[FooBar] =
 ```
 
 ```tut
-sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafePerformIO
+sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafeRunSync
 ```
 
 
@@ -180,17 +179,17 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```tut
-p.attempt.quick.unsafePerformIO // attempt provided by Catchable instance
+p.attempt.quick.unsafeRunSync // attempt provided by Catchable instance
 
-p.attemptSqlState.quick.unsafePerformIO // this catches only SQL exceptions
+p.attemptSqlState.quick.unsafeRunSync // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafePerformIO // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafeRunSync // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafePerformIO // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafeRunSync // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .quick.unsafePerformIO // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .quick.unsafeRunSync // recover
 
-p.onSyntaxError("caught!".pure[ConnectionIO]).quick.unsafePerformIO // using recovery combinator
+p.onSyntaxError("caught!".pure[ConnectionIO]).quick.unsafeRunSync // using recovery combinator
 ```
 
 
@@ -207,7 +206,7 @@ See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93
 
 PostgreSQL provides a simple transactional message queue that can be used to notify a connection that something interesting has happened. Such notifications can be tied to database triggers, which provides a way to notify clients that data has changed. Which is cool.
 
-**doobie** provides `ConnectionIO` constructors for SQL `LISTEN`, `UNLISTEN`, and `NOTIFY` in the `doobie.postgres.hi.connection` module. New notifications are retrieved (synchronously, sadly, that's all the driver provides) via `pgGetNotifications`. Note that all of the "listening" operations apply to the **current connection**, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must `setAutoCommit(false)` on this connection or `commit` between each call in order to retrieve messages. The `examples` project includes a program that demonstrates how to present a channel as a `Process[Task, PGNotification]`.
+**doobie** provides `ConnectionIO` constructors for SQL `LISTEN`, `UNLISTEN`, and `NOTIFY` in the `doobie.postgres.hi.connection` module. New notifications are retrieved (synchronously, sadly, that's all the driver provides) via `pgGetNotifications`. Note that all of the "listening" operations apply to the **current connection**, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must `setAutoCommit(false)` on this connection or `commit` between each call in order to retrieve messages. The `examples` project includes a program that demonstrates how to present a channel as a `Stream[IO, PGNotification]`.
 
 ### Large Objects
 

@@ -1,16 +1,15 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.String
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
-object sqldata {
+object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait SQLDataOp[A] {
@@ -38,7 +37,8 @@ object sqldata {
       def raw[A](f: SQLData => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: SQLDataIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // SQLData
       def getSQLTypeName: F[String]
@@ -54,11 +54,14 @@ object sqldata {
     case class Embed[A](e: Embedded[A]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends SQLDataOp[A] {
+    case class Delay[A](a: () => A) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: SQLDataIO[A]) extends SQLDataOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]) extends SQLDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // SQLData-specific operations.
@@ -79,26 +82,27 @@ object sqldata {
   val unit: SQLDataIO[Unit] = FF.pure[SQLDataOp, Unit](())
   def raw[A](f: SQLData => A): SQLDataIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLDataOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLDataOp, A] = embed(j, fa)
   def delay[A](a: => A): SQLDataIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = FF.liftF[SQLDataOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): SQLDataIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]): SQLDataIO[A] = FF.liftF[SQLDataOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): SQLDataIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLDataIO[A] = FF.liftF[SQLDataOp, A](Async1(k))
 
   // Smart constructors for SQLData-specific operations.
   val getSQLTypeName: SQLDataIO[String] = FF.liftF(GetSQLTypeName)
   def readSQL(a: SQLInput, b: String): SQLDataIO[Unit] = FF.liftF(ReadSQL(a, b))
   def writeSQL(a: SQLOutput): SQLDataIO[Unit] = FF.liftF(WriteSQL(a))
 
-// SQLDataIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableSQLDataIO: Suspendable[SQLDataIO] with Catchable[SQLDataIO] =
-    new Suspendable[SQLDataIO] with Catchable[SQLDataIO] {
-      def pure[A](a: A): SQLDataIO[A] = sqldata.delay(a)
-      override def map[A, B](fa: SQLDataIO[A])(f: A => B): SQLDataIO[B] = fa.map(f)
-      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => SQLDataIO[A]): SQLDataIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): SQLDataIO[A] = sqldata.delay(a)
-      def attempt[A](f: SQLDataIO[A]): SQLDataIO[Throwable \/ A] = sqldata.attempt(f)
-      def fail[A](err: Throwable): SQLDataIO[A] = sqldata.fail(err)
+  // SQLDataIO is an Async
+  implicit val AsyncSQLDataIO: Async[SQLDataIO] =
+    new Async[SQLDataIO] {
+      val M = FF.catsFreeMonadForFree[SQLDataOp]
+      def pure[A](x: A): SQLDataIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): SQLDataIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLDataIO[A] = module.async(k)
+      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

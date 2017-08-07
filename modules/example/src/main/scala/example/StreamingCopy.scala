@@ -1,12 +1,10 @@
 package doobie.example
 
-import cats.{ ~> => _, _ }
 import cats.data._
+import cats.effect._
 import cats.implicits._
 import doobie.imports._
 import fs2.Stream
-import fs2.util.{ ~>, Catchable }
-import fs2.interop.cats._
 import java.sql.Connection
 
 /**
@@ -20,7 +18,7 @@ object StreamingCopy {
    * Stream from `source` through `sink`, where source and sink run on distinct transactors. To do
    * this we have to wrap one transactor around the other. Thanks to @wedens for
    */
-  def fuseMap[F[_]: Monad, A, B](
+  def fuseMap[F[_]: Effect, A, B](
     source: Stream[ConnectionIO, A],
     sink:   A => ConnectionIO[B]
   )(
@@ -47,7 +45,7 @@ object StreamingCopy {
       val sinkʹ  = (a: A) => evalS(sink(a))
       val before = evalS(sinkXA.strategy.before)
       val after  = evalS(sinkXA.strategy.after )
-      def oops(t: Throwable) = evalS(sinkXA.strategy.oops <* FC.fail(t))
+      def oops(t: Throwable) = evalS(sinkXA.strategy.oops <* FC.raiseError(t))
 
       // And construct our final stream.
       (before ++ source.transact(sourceXA).flatMap(sinkʹ) ++ after).onError(oops)
@@ -62,26 +60,6 @@ object StreamingCopy {
     Stream.bracket(open)(mkStream, cleanup)
 
   }
-
-  /**
-   * Stream from `source` into `sink`, where source and sink run on distinct transactors. Unlike
-   * fuseMap above, this doesn't return a stream. But it's a much simpler implementation. Thanks
-   * @wedens for this one.
-   */
-  def fuseMap2[F[_]: Catchable, A, B](
-    source: Stream[ConnectionIO, A],
-    sink: A => ConnectionIO[B]
-  )(
-    sourceXA: Transactor[F],
-    sinkXA: Transactor[F]
-  ): F[Unit] =
-    sinkXA.exec.apply {
-      source
-        .transact(sourceXA)
-        .translate(λ[F ~> Kleisli[F, Connection, ?]](a => Kleisli(_ => a)))
-        .evalMap(sink(_).foldMap(sinkXA.interpret))
-        .run
-    }
 
   // Everything below is code to demonstrate the combinator above.
 
@@ -137,25 +115,24 @@ object StreamingCopy {
 
 
   // A postges transactor for our source. We assume the WORLD database is set up already.
-  val pg = addLogging("Postgres")(Transactor.fromDriverManager[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""))
+  val pg = addLogging("Postgres")(Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""))
 
   // An h2 transactor for our sink.
   val h2 = addLogging("H2") {
-    val xa = Transactor.fromDriverManager[IOLite]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    val xa = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
     Transactor.before.modify(xa, _ *> ddl) // Run our DDL on every connection
   }
 
   // Our main program
-  val io: IOLite[Unit] =
+  val io: IO[Unit] =
     for {
       _ <- fuseMap(read, write)(pg, h2).run // do the copy with fuseMap
-      _ <- fuseMap2(read, write)(pg, h2)    // again with fuseMap2
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
-      _ <- IOLite.primitive(Console.println(s"Copied $n cities!"))
+      _ <- IO(Console.println(s"Copied $n cities!"))
     } yield ()
 
   // Scala entry point
   def main(args: Array[String]): Unit =
-    io.unsafePerformIO
+    io.unsafeRunSync
 
 }

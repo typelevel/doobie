@@ -16,9 +16,8 @@ Our setup here is the same as last chapter, so if you're still running from last
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -58,7 +57,7 @@ def biggerThan(minPop: Short) = sql"""
 Now let's try the `check` method provided by YOLO and see what happens.
 
 ```tut:plain
-biggerThan(0).check.unsafePerformIO
+biggerThan(0).check.unsafeRunSync
 ```
 
 Yikes, there are quite a few problems, in several categories. In this case **doobie** found
@@ -83,7 +82,7 @@ def biggerThan(minPop: Int) = sql"""
 ```
 
 ```tut:plain
-biggerThan(0).check.unsafePerformIO
+biggerThan(0).check.unsafeRunSync
 ```
 
 **doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2` package, which allows checking to become part of your unit test suite. We will investigate this in the chapter on testing.
@@ -95,7 +94,7 @@ Some drivers do not implement the JDBC metadata specification very well, which l
 However a common case is that *parameter* metadata is unavailable but *output column* metadata is. And in these cases there is a workaround: use `checkOutput` rather than `check`. This instructs **doobie** to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.
 
 ```tut:plain
-biggerThan(0).checkOutput.unsafePerformIO
+biggerThan(0).checkOutput.unsafeRunSync
 ```
 
 This option is also available in the `doobie-specs2` package.

@@ -11,14 +11,13 @@ import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
 
-import doobie.syntax.catchable.ToDoobieCatchableOps._
-
 import doobie.free.{ preparedstatement => PS }
 import doobie.free.{ resultset => RS }
 
 import doobie.util.analysis._
 import doobie.util.composite._
-import doobie.util.process.repeatEvalChunks
+import doobie.util.stream.repeatEvalChunks
+import doobie.util.monaderror._
 
 import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 
@@ -26,9 +25,9 @@ import scala.Predef.{ intArrayOps, intWrapper }
 
 import cats.Foldable
 import cats.implicits._
-import cats.data.{ Ior => \&/ }
-import fs2.{ Stream => Process }
-import fs2.Stream.{ bracket }
+import cats.data.Ior
+import fs2.Stream
+import fs2.Stream.bracket
 
 /**
  * Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not
@@ -37,17 +36,16 @@ import fs2.Stream.{ bracket }
  */
 object preparedstatement {
 
-  /** @group Typeclass Instances */
-  implicit val CatchablePreparedStatementIO = PS.CatchablePreparedStatementIO
-
+  import PS.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
+  import RS.AsyncResultSetIO
 
   // fs2 handler, not public
-  private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Process[PreparedStatementIO, A] =
-    repeatEvalChunks(PS.lift(rs, resultset.getNextChunk[A](chunkSize)))
+  private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
+    repeatEvalChunks(PS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
-  def process[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
+  def process[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.embed(_, RS.close))
 
   /**
    * Non-strict unit for capturing effects.
@@ -80,7 +78,7 @@ object preparedstatement {
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.executeQuery.flatMap(s => PS.lift(s, k ensuring RS.close))
+    PS.executeQuery.flatMap(s => PS.embed(s, k guarantee RS.close))
 
   /** @group Execution */
   val executeUpdate: PreparedStatementIO[Int] =
@@ -91,8 +89,8 @@ object preparedstatement {
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
  /** @group Execution */
-  def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Process[PreparedStatementIO, A] =
-    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.lift(_, RS.close))
+  def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.embed(_, RS.close))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata
@@ -115,7 +113,7 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata
    */
-  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ColumnMeta]] =
+  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) Ior ColumnMeta]] =
     getColumnJdbcMeta.map(m => A.meta align m)
 
   /** @group Properties */
@@ -128,7 +126,7 @@ object preparedstatement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.getGeneratedKeys.flatMap(s => PS.lift(s, k ensuring RS.close))
+    PS.getGeneratedKeys.flatMap(s => PS.embed(s, k guarantee RS.close))
 
   /** @group Results */
   def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
@@ -154,7 +152,7 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata
    */
-  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) \&/ ParameterMeta]] =
+  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) Ior ParameterMeta]] =
     getParameterJdbcMeta.map(m => A.meta align m)
 
   /** @group Properties */

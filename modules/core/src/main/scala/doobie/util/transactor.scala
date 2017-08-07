@@ -4,24 +4,22 @@ import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commi
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
+import doobie.util.monaderror._
 
-import cats.{ Monad, ~> }
+import cats.{ Monad, MonadError, ~> }
 import cats.data.Kleisli
 import cats.free.Free
 import cats.implicits._
-import fs2.{ Stream => Process }
+import cats.effect.{ Effect, Sync, Async }
+import fs2.Stream
 import fs2.Stream.{ eval, eval_ }
-import fs2.util.{ Catchable, Suspendable => Capture  }
-import fs2.interop.cats._
-import fs2.interop.cats.reverse.functionKToUf1
 
 import java.sql.{ Connection, DriverManager }
 import javax.sql.DataSource
-import scala.Predef.implicitly
 
 object transactor  {
-  private val syntax = new doobie.syntax.catchable.ToDoobieCatchableOps {}
-  import syntax._
+
+  import doobie.free.connection.AsyncConnectionIO
 
   /** @group Type Aliases */
   type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Connection, ?]
@@ -42,17 +40,17 @@ object transactor  {
     always: ConnectionIO[Unit]
   ) {
 
-    private implicit class VoidProcessOps(ma: ConnectionIO[Unit]) {
-      def p: Process[ConnectionIO, Nothing] = eval_(ma) // empty effectful process
+    private implicit class VoidStreamOps(ma: ConnectionIO[Unit]) {
+      def p: Stream[ConnectionIO, Nothing] = eval_(ma) // empty effectful process
     }
 
     /** Natural transformation that wraps a `ConnectionIO` program. */
     val wrap = λ[ConnectionIO ~> ConnectionIO] { ma =>
-      (before *> ma <* after) onException oops ensuring always
+      (before *> ma <* after) onError oops guarantee always
     }
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
-    val wrapP = λ[Process[ConnectionIO, ?] ~> Process[ConnectionIO, ?]] { pa =>
+    val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
         (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
     }
 
@@ -60,13 +58,13 @@ object transactor  {
      * Natural transformation that wraps a `Kleisli` program, using the provided interpreter to
      * interpret the `before`/`after`/`oops`/`always` strategy.
      */
-    def wrapK[M[_]: Monad: Catchable](interp: Interpreter[M]) =
+    def wrapK[M[_]: MonadError[?[_], Throwable]](interp: Interpreter[M]) =
       λ[Kleisli[M, Connection, ?] ~> Kleisli[M, Connection, ?]] { ka =>
         val beforeʹ = before foldMap interp
         val afterʹ  = after  foldMap interp
         val oopsʹ   = oops   foldMap interp
         val alwaysʹ = always foldMap interp
-        (beforeʹ *> ka <* afterʹ) onException oopsʹ ensuring alwaysʹ
+        (beforeʹ *> ka <* afterʹ) onError oopsʹ guarantee alwaysʹ
       }
 
   }
@@ -99,7 +97,7 @@ object transactor  {
    * running programs, parameterized over a target monad `M` and an arbitrary wrapped value `A`.
    * Given a stream or program in `ConnectionIO` or a program in `Kleisli`, a `Transactor` can
    * discharge the doobie machinery and yield an effectful stream or program in `M`.
-   * @tparam M a target effect type; typically `IO` or `Task`
+   * @tparam M a target effect type; typically `IO`
    * @group Data Types
    */
   sealed abstract class Transactor[M[_]] { self =>
@@ -119,7 +117,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev1: Catchable[M], ev2: Capture[M]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to peform arbitrary configuration on the kernel value (changing the
@@ -128,7 +126,7 @@ object transactor  {
      * compatible `Transactor`s via implicit conversion.
      * @group Configuration
      */
-    def configure[B](f: A => B)(implicit ev: Capture[M]): M[B] =
+    def configure[B](f: A => B)(implicit ev: Sync[M]): M[B] =
       ev.delay(f(kernel))
 
     /**
@@ -145,8 +143,8 @@ object transactor  {
      * using the given `Strategy`, yielding an independent program in `M`.
      * @group Natural Transformations
      */
-    def exec(implicit ev: Monad[M], ev2: Catchable[M]): Kleisli[M, Connection, ?] ~> M =
-      strategy.wrapK(interpret)(ev, ev2) andThen rawExec(ev)
+    def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
+      strategy.wrapK(interpret) andThen rawExec(ev)
 
     /**
      * Natural transformation equivalent to `trans` that does not use the provided `Strategy` and
@@ -166,7 +164,7 @@ object transactor  {
     def trans(implicit ev: Monad[M]): ConnectionIO ~> M =
       strategy.wrap andThen rawTrans
 
-    def rawTransP(implicit ev: Monad[M]) = λ[Process[ConnectionIO, ?] ~> Process[M, ?]] { pa =>
+    def rawTransP(implicit ev: Effect[M]) = λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { pa =>
       // TODO: this can almost certainly be simplified
 
       // Natural transformation by Kleisli application.
@@ -177,11 +175,14 @@ object transactor  {
       def liftF[F[_], G[_]: Monad](nat: F ~> G) =
         λ[Free[F, ?] ~> G](_.foldMap(nat))
 
-      def nat(c: Connection): ConnectionIO ~> M = liftF(interpret andThen applyKleisli(c))
-      eval(connect(kernel)).flatMap(c => pa.translate[M](functionKToUf1(nat(c))))
+      def nat(c: Connection): ConnectionIO ~> M =
+        liftF(interpret andThen applyKleisli(c))
+
+      eval(connect(kernel)).flatMap(c => pa.translate[M](nat(c)))
+
      }
 
-    def transP(implicit ev: Monad[M]): Process[ConnectionIO, ?] ~> Process[M, ?] =
+    def transP(implicit ev: Effect[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       strategy.wrapP andThen rawTransP
 
     def copy(
@@ -238,14 +239,14 @@ object transactor  {
        * @group Constructors (Partially Applied)
        */
       class FromDataSourceUnapplied[M[_]] {
-        def apply[A <: DataSource](a: A)(implicit ev0: Monad[M], ev1: Catchable[M], ev2: Capture[M]): Transactor.Aux[M, A] =
-          Transactor(a, a => ev2.delay(a.getConnection), KleisliInterpreter[M](ev0, implicitly, implicitly).ConnectionInterpreter, Strategy.default)
+        def apply[A <: DataSource](a: A)(implicit ev: Async[M]): Transactor.Aux[M, A] =
+          Transactor(a, a => ev.delay(a.getConnection), KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
       }
     }
 
     /** @group Constructors */
-    def fromConnection[M[_]: Catchable: Capture](a: Connection)(implicit M: Monad[M]): Transactor.Aux[M, Connection] =
-      Transactor(a, M.pure(_), KleisliInterpreter[M](M, implicitly, implicitly).ConnectionInterpreter, Strategy.default.copy(always = unit))
+    def fromConnection[M[_]: Async](a: Connection): Transactor.Aux[M, Connection] =
+      Transactor(a, _.pure[M], KleisliInterpreter[M].ConnectionInterpreter, Strategy.default.copy(always = unit))
 
     /**
      * Construct a constructor of `Transactor[M, Unit]` backed by the JDBC DriverManager by partial
@@ -255,16 +256,16 @@ object transactor  {
      */
     object fromDriverManager {
 
-      private def create[M[_]: Capture: Catchable](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
-        Transactor((), u => Capture[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
+      private def create[M[_]: Async](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
+        Transactor((), u => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
 
-      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String): Transactor.Aux[M, Unit] =
+      def apply[M[_]: Async](driver: String, url: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url))
 
-      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String, user: String, pass: String): Transactor.Aux[M, Unit] =
+      def apply[M[_]: Async](driver: String, url: String, user: String, pass: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, user, pass))
 
-      def apply[M[_]: Monad: Capture: Catchable](driver: String, url: String, info: java.util.Properties): Transactor.Aux[M, Unit] =
+      def apply[M[_]: Async](driver: String, url: String, info: java.util.Properties): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, info))
 
     }

@@ -10,9 +10,8 @@ In this chapter we examine a set of combinators that allow us to construct progr
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 val y = xa.yolo; import y._
@@ -20,7 +19,7 @@ val y = xa.yolo; import y._
 
 ### About Exceptions
 
-Exceptions are a fact of life when interacting with databases, and they are largely nondeterministic; whether an operation will succeed or not depends on unpredictable factors like network health, the current contents of tables, locking state, and so on. So we must decide whether to compute everything in a disjunction like `EitherT[ConnectionIO, Throwable, A]` or allow exceptions to propagate until they are caught explicitly. **doobie** adopts the second strategy: exceptions are allowed to propagate and escape unless handled explicitly (exactly as `IO` and `Task` work). This means when a **doobie** action (transformed to some target monad) is executed, exceptions can escape.
+Exceptions are a fact of life when interacting with databases, and they are largely nondeterministic; whether an operation will succeed or not depends on unpredictable factors like network health, the current contents of tables, locking state, and so on. So we must decide whether to compute everything in a disjunction like `EitherT[ConnectionIO, Throwable, A]` or allow exceptions to propagate until they are caught explicitly. **doobie** adopts the second strategy: exceptions are allowed to propagate and escape unless handled explicitly (exactly as `IO` works). This means when a **doobie** action (transformed to some target monad) is executed, exceptions can escape.
 
 There are three main types of exceptions that are likely to arise:
 
@@ -77,7 +76,7 @@ List(sql"""DROP TABLE IF EXISTS person""",
      sql"""CREATE TABLE person (
              id    SERIAL,
              name  VARCHAR NOT NULL UNIQUE
-           )""").traverse(_.update.quick).void.unsafePerformIO
+           )""").traverse(_.update.quick).void.unsafeRunSync
 ```
 
 Alright, let's define a `Person` data type and a way to insert instances.
@@ -95,14 +94,14 @@ def insert(s: String): ConnectionIO[Person] = {
 The first insert will work.
 
 ```tut
-insert("bob").quick.unsafePerformIO
+insert("bob").quick.unsafeRunSync
 ```
 
 The second will fail with a unique constraint violation.
 
 ```tut
 try {
-  insert("bob").quick.unsafePerformIO
+  insert("bob").quick.unsafeRunSync
 } catch {
   case e: java.sql.SQLException =>
     println(e.getMessage)
@@ -110,7 +109,7 @@ try {
 }
 ```
 
-So let's change our method to return a `String \/ Person` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `doobie-postgres` add-on.
+So let's change our method to return an `Either[String, Person]` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `doobie-postgres` add-on.
 
 
 ```tut:silent
@@ -126,7 +125,7 @@ Given this definition we can safely attempt to insert duplicate records and get 
 
 
 ```tut
-safeInsert("bob").quick.unsafePerformIO
+safeInsert("bob").quick.unsafeRunSync
 
-safeInsert("steve").quick.unsafePerformIO
+safeInsert("steve").quick.unsafeRunSync
 ```

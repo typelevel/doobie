@@ -10,13 +10,13 @@ object pgconnection {
     PFPC.getBackendPID
 
   def getCopyAPI[A](k: CopyManagerIO[A]): PGConnectionIO[A] =
-    PFPC.getCopyAPI.flatMap(s => PFPC.liftCopyManager(s, k)) // N.B. no need to close()
+    PFPC.getCopyAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
 
   def getFastpathAPI[A](k: FastpathIO[A]): PGConnectionIO[A] =
-    PFPC.getFastpathAPI.flatMap(s => PFPC.liftFastpath(s, k)) // N.B. no need to close()
+    PFPC.getFastpathAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
 
   def getLargeObjectAPI[A](k: LargeObjectManagerIO[A]): PGConnectionIO[A] =
-    PFPC.getLargeObjectAPI.flatMap(s => PFPC.liftLargeObjectManager(s, k)) // N.B. no need to close()
+    PFPC.getLargeObjectAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
 
   val getNotifications: PGConnectionIO[List[PGNotification]] =
     PFPC.getNotifications map {

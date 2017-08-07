@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -12,7 +11,7 @@ import java.io.Writer
 import java.lang.String
 import java.sql.Clob
 
-object clob {
+object clob { module =>
 
   // Algebra of operations for Clob. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait ClobOp[A] {
@@ -40,7 +39,8 @@ object clob {
       def raw[A](f: Clob => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: ClobIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // Clob
       def free: F[Unit]
@@ -66,11 +66,14 @@ object clob {
     case class Embed[A](e: Embedded[A]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends ClobOp[A] {
+    case class Delay[A](a: () => A) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: ClobIO[A]) extends ClobOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Clob-specific operations.
@@ -121,10 +124,10 @@ object clob {
   val unit: ClobIO[Unit] = FF.pure[ClobOp, Unit](())
   def raw[A](f: Clob => A): ClobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ClobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ClobOp, A] = embed(j, fa)
   def delay[A](a: => A): ClobIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: ClobIO[A]): ClobIO[Throwable \/ A] = FF.liftF[ClobOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): ClobIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): ClobIO[A] = FF.liftF[ClobOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): ClobIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ClobIO[A] = FF.liftF[ClobOp, A](Async1(k))
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)
@@ -141,16 +144,17 @@ object clob {
   def setString(a: Long, b: String, c: Int, d: Int): ClobIO[Int] = FF.liftF(SetString1(a, b, c, d))
   def truncate(a: Long): ClobIO[Unit] = FF.liftF(Truncate(a))
 
-// ClobIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchableClobIO: Suspendable[ClobIO] with Catchable[ClobIO] =
-    new Suspendable[ClobIO] with Catchable[ClobIO] {
-      def pure[A](a: A): ClobIO[A] = clob.delay(a)
-      override def map[A, B](fa: ClobIO[A])(f: A => B): ClobIO[B] = fa.map(f)
-      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => ClobIO[A]): ClobIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): ClobIO[A] = clob.delay(a)
-      def attempt[A](f: ClobIO[A]): ClobIO[Throwable \/ A] = clob.attempt(f)
-      def fail[A](err: Throwable): ClobIO[A] = clob.fail(err)
+  // ClobIO is an Async
+  implicit val AsyncClobIO: Async[ClobIO] =
+    new Async[ClobIO] {
+      val M = FF.catsFreeMonadForFree[ClobOp]
+      def pure[A](x: A): ClobIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): ClobIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ClobIO[A] = module.async(k)
+      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => ClobIO[Either[A, B]]): ClobIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => ClobIO[A]): ClobIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

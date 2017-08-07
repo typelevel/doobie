@@ -10,8 +10,7 @@ lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.3"
 lazy val h2Version            = "1.4.195"
 lazy val postgresVersion      = "42.1.1"
-lazy val fs2CoreVersion       = "0.9.6"
-lazy val fs2CatsVersion       = "0.3.0"
+lazy val fs2CoreVersion       = "0.10.0-M5"
 lazy val postGisVersion       = "2.2.1"
 lazy val hikariVersion        = "2.6.1"
 lazy val scalatestVersion     = "3.0.3"
@@ -20,7 +19,7 @@ lazy val argonautVersion      = "6.2"
 lazy val paradiseVersion      = "2.1.0"
 lazy val circeVersion         = "0.8.0"
 lazy val monixVersion         = "2.3.0"
-lazy val catsVersion          = "0.9.0"
+lazy val catsVersion          = "1.0.0-MF"
 
 val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
@@ -172,11 +171,32 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .dependsOn(core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
-  .aggregate(core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
+  .dependsOn(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
+  .aggregate(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
+
+lazy val noPublishSettings = Seq(
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false
+)
+
+lazy val free = project
+  .in(file("modules/free"))
+  .settings(doobieSettings)
+  .settings(publishSettings)
   .settings(freeGen2Settings)
   .settings(
-    freeGen2Dir := file("modules/free/src/main/scala/doobie/free"),
+    name := "doobie-free",
+    description := "Pure functional JDBC layer for Scala.",
+    scalacOptions += "-Yno-predef",
+    scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
+    libraryDependencies ++= Seq(
+      "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
+      "org.typelevel"  %% "cats-core" % catsVersion,
+      "org.typelevel"  %% "cats-free" % catsVersion
+    ),
+    freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
+    freeGen2Package := "doobie.free",
     freeGen2Classes := {
       import java.sql._
       List[Class[_]](
@@ -198,28 +218,6 @@ lazy val doobie = project.in(file("."))
     }
   )
 
-lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false
-)
-
-lazy val free = project
-  .in(file("modules/free"))
-  .settings(doobieSettings)
-  .settings(publishSettings)
-  .settings(
-    name := "doobie-free",
-    description := "Pure functional JDBC layer for Scala.",
-    scalacOptions += "-Yno-predef",
-    scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
-    libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
-      "co.fs2"         %% "fs2-cats"  % fs2CatsVersion,
-      "org.typelevel"  %% "cats-core" % catsVersion,
-      "org.typelevel"  %% "cats-free" % catsVersion
-    )
-  )
 
 lazy val core = project
   .in(file("modules/core"))
@@ -232,7 +230,8 @@ lazy val core = project
     libraryDependencies ++= Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
-      "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion
+      "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
+      "com.h2database"        %  "h2"            % h2Version          % "test"
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {
@@ -266,6 +265,7 @@ lazy val postgres = project
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
+  .settings(freeGen2Settings)
   .settings(
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
@@ -274,16 +274,38 @@ lazy val postgres = project
       postgisDep % "provided"
     ),
     scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
+    freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "postgres" / "free",
+    freeGen2Package := "doobie.postgres.free",
+    freeGen2Classes := {
+      import java.sql._
+      List[Class[_]](
+        classOf[org.postgresql.copy.CopyIn],
+        classOf[org.postgresql.copy.CopyManager],
+        classOf[org.postgresql.copy.CopyOut],
+        classOf[org.postgresql.fastpath.Fastpath],
+        classOf[org.postgresql.largeobject.LargeObject],
+        classOf[org.postgresql.largeobject.LargeObjectManager],
+        classOf[org.postgresql.PGConnection]
+      )
+    },
+    freeGen2Renames ++= Map(
+      classOf[org.postgresql.copy.CopyDual]     -> "PGCopyDual",
+      classOf[org.postgresql.copy.CopyIn]       -> "PGCopyIn",
+      classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
+      classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
+      classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
+    ),
     initialCommands := """
       import doobie.imports._
       import doobie.postgres.imports._
-      val xa = DriverManagerTransactor[IOLite]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+      val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       val yolo = xa.yolo
       import yolo._
       import org.postgis._
       import org.postgresql.util._
       import org.postgresql.geometric._
-      """
+      """,
+    initialCommands in consoleQuick := ""
   )
 
 lazy val h2 = project
@@ -294,7 +316,8 @@ lazy val h2 = project
   .settings(
     name  := "doobie-h2",
     description := "H2 support for doobie.",
-    libraryDependencies += "com.h2database" % "h2"  % h2Version
+    libraryDependencies += "com.h2database" % "h2"  % h2Version,
+    scalacOptions -= "-Xfatal-warnings" // we need to do deprecated things
   )
 
 lazy val hikari = project

@@ -1,18 +1,17 @@
 package doobie.hi
 
-import cats.{ Monad, MonadCombine => MonadPlus }
+import cats.{ Alternative, Monad }
 import cats.data.NonEmptyList
 import cats.implicits._
 
 import doobie.enum.holdability._
 import doobie.enum.fetchdirection._
 import doobie.free.{ resultset => RS }
-import doobie.util.compat.cats.monad._
 import doobie.util.composite._
 import doobie.util.invariant._
-import doobie.util.process.repeatEvalChunks
+import doobie.util.stream.repeatEvalChunks
 
-import fs2.{ Stream => Process }
+import fs2.Stream
 
 import java.sql.{ ResultSetMetaData, SQLWarning }
 
@@ -24,8 +23,7 @@ import scala.collection.generic.CanBuildFrom
  */
 object resultset {
 
-  /** @group Typeclass Instances */
-  implicit val CatchableResultSetIO = RS.CatchableResultSetIO
+  import RS.AsyncResultSetIO // we need this instance ... TODO: re-org
 
   /**
    * Non-strict unit for capturing effects.
@@ -125,7 +123,7 @@ object resultset {
    * Like `getNext` but loops until the end of the resultset, gathering results in a `MonadPlus`.
    * @group Results
    */
-  def accumulate[G[_]: MonadPlus, A: Composite]: ResultSetIO[G[A]] =
+  def accumulate[G[_]: Alternative, A: Composite]: ResultSetIO[G[A]] =
     get[A].whileM(next)
 
   /**
@@ -185,7 +183,7 @@ object resultset {
    * @group Results
    */
   def getUnique[A: Composite]: ResultSetIO[A] =
-    (getNext[A] |@| next) map {
+    (getNext[A], next) mapN {
       case (Some(a), false) => a
       case (Some(_), true)  => throw UnexpectedContinuation
       case (None, _)        => throw UnexpectedEnd
@@ -197,7 +195,7 @@ object resultset {
    * @group Results
    */
   def getOption[A: Composite]: ResultSetIO[Option[A]] =
-    (getNext[A] |@| next) map {
+    (getNext[A], next) mapN {
       case (a @ Some(_), false) => a
       case (Some(_), true)      => throw UnexpectedContinuation
       case (None, _)            => None
@@ -209,17 +207,17 @@ object resultset {
     * @group Results
     */
   def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
-    (getNext[A] |@| list) map {
+    (getNext[A], list) mapN {
       case (Some(a), as) => NonEmptyList(a, as)
       case (None, _)     => throw UnexpectedEnd
     }
 
   /**
-   * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
+   * Stream that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
    * @group Results
    */
-  def process[A: Composite](chunkSize: Int): Process[ResultSetIO, A] =
+  def process[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
     repeatEvalChunks(getNextChunk[A](chunkSize))
 
   /** @group Properties */

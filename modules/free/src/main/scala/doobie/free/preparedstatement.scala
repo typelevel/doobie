@@ -1,9 +1,8 @@
 package doobie.free
 
 import cats.~>
-import cats.free.{ Free => FF }
-import scala.util.{ Either => \/ }
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
 import java.io.Reader
@@ -30,7 +29,7 @@ import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 
-object preparedstatement {
+object preparedstatement { module =>
 
   // Algebra of operations for PreparedStatement. Each accepts a visitor as an alternatie to pattern-matching.
   sealed trait PreparedStatementOp[A] {
@@ -58,7 +57,8 @@ object preparedstatement {
       def raw[A](f: PreparedStatement => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
-      def attempt[A](fa: PreparedStatementIO[A]): F[Throwable \/ A]
+      def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
 
       // PreparedStatement
       def addBatch: F[Unit]
@@ -181,11 +181,14 @@ object preparedstatement {
     case class Embed[A](e: Embedded[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class  Delay[A](a: () => A) extends PreparedStatementOp[A] {
+    case class Delay[A](a: () => A) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class  Attempt[A](fa: PreparedStatementIO[A]) extends PreparedStatementOp[Throwable \/ A] {
-      def visit[F[_]](v: Visitor[F]) = v.attempt(fa)
+    case class HandleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PreparedStatement-specific operations.
@@ -527,10 +530,10 @@ object preparedstatement {
   val unit: PreparedStatementIO[Unit] = FF.pure[PreparedStatementOp, Unit](())
   def raw[A](f: PreparedStatement => A): PreparedStatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def lift[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = embed(j, fa)
   def delay[A](a: => A): PreparedStatementIO[A] = FF.liftF(Delay(() => a))
-  def attempt[A](fa: PreparedStatementIO[A]): PreparedStatementIO[Throwable \/ A] = FF.liftF[PreparedStatementOp, Throwable \/ A](Attempt(fa))
-  def fail[A](err: Throwable): PreparedStatementIO[A] = delay(throw err)
+  def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): PreparedStatementIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](Async1(k))
 
   // Smart constructors for PreparedStatement-specific operations.
   val addBatch: PreparedStatementIO[Unit] = FF.liftF(AddBatch)
@@ -644,16 +647,17 @@ object preparedstatement {
   def setUnicodeStream(a: Int, b: InputStream, c: Int): PreparedStatementIO[Unit] = FF.liftF(SetUnicodeStream(a, b, c))
   def unwrap[T](a: Class[T]): PreparedStatementIO[T] = FF.liftF(Unwrap(a))
 
-// PreparedStatementIO can capture side-effects, and can trap and raise exceptions.
-  implicit val CatchablePreparedStatementIO: Suspendable[PreparedStatementIO] with Catchable[PreparedStatementIO] =
-    new Suspendable[PreparedStatementIO] with Catchable[PreparedStatementIO] {
-      def pure[A](a: A): PreparedStatementIO[A] = preparedstatement.delay(a)
-      override def map[A, B](fa: PreparedStatementIO[A])(f: A => B): PreparedStatementIO[B] = fa.map(f)
-      def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.suspend(fa)
-      override def delay[A](a: => A): PreparedStatementIO[A] = preparedstatement.delay(a)
-      def attempt[A](f: PreparedStatementIO[A]): PreparedStatementIO[Throwable \/ A] = preparedstatement.attempt(f)
-      def fail[A](err: Throwable): PreparedStatementIO[A] = preparedstatement.fail(err)
+  // PreparedStatementIO is an Async
+  implicit val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
+    new Async[PreparedStatementIO] {
+      val M = FF.catsFreeMonadForFree[PreparedStatementOp]
+      def pure[A](x: A): PreparedStatementIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): PreparedStatementIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): PreparedStatementIO[A] = module.async(k)
+      def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => PreparedStatementIO[A]): PreparedStatementIO[A] = M.flatten(module.delay(thunk))
     }
 
 }

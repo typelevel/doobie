@@ -12,9 +12,8 @@ As with earlier chapters we set up a `Transactor` and YOLO mode. We will also us
 
 ```tut:silent
 import doobie.imports._
-import cats._, cats.data._, cats.implicits._
-import fs2.interop.cats._
-val xa = DriverManagerTransactor[IOLite](
+import cats._, cats.data._, cats.effect.IO, cats.implicits._
+val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
@@ -56,16 +55,15 @@ def update(oldName: String, newName: String) = sql"""
 
 The `doobie-specs2-cats` add-on provides a mix-in trait that we can add to a `Specification` to allow for typechecking of queries, interpreted as a set of specifications.
 
-Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IOLite]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
+Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IO]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
 
 ```tut:silent
-import doobie.util.iolite.IOLite
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
 
 object AnalysisTestSpec extends Specification with AnalysisSpec {
 
-  val transactor = DriverManagerTransactor[IOLite](
+  val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
@@ -90,9 +88,9 @@ The `doobie-scalatest-cats` add-on provides a mix-in trait that we can add to an
 import doobie.scalatest.imports._
 import org.scalatest._
 
-class AnalysisTestScalaCheck extends FunSuite with Matchers with IOLiteChecker {
+class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
 
-  val transactor = DriverManagerTransactor[IOLite](
+  val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
