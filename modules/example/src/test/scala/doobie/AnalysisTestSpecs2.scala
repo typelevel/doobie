@@ -1,12 +1,11 @@
 package doobie.example
 
+import cats.effect.IO
 import doobie.imports._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 
-import fs2.interop.cats._
-
-object AnalysisTestSpecs2 extends Specification with AnalysisSpec {
+object AnalysisTestSpecs2 extends Specification with IOChecker {
   val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   // Commented tests fail!
   // check(AnalysisTest.speakerQuery(null, 0))

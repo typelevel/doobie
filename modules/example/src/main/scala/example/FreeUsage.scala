@@ -1,16 +1,10 @@
 package doobie.example
 
-import java.io.File
-
-import doobie.util.IO.IO
-import doobie.free.{ connection => C }
-import doobie.free.{ preparedstatement => PS }
-import doobie.free.{ resultset => RS }
-import doobie.syntax.catchable.ToDoobieCatchableOps._
-import doobie.util.transactor.Transactor
-
+import cats.effect.IO
 import cats.implicits._
-import fs2.interop.cats._
+import doobie.imports._
+import doobie.util.monaderror._
+import java.io.File
 
 // JDBC program using the low-level API
 object FreeUsage {
@@ -22,38 +16,38 @@ object FreeUsage {
     db.trans.apply(examples.void).unsafeRunSync
   }
 
-  def examples: C.ConnectionIO[String] =
+  def examples: ConnectionIO[String] =
     for {
-      _ <- C.delay(println("Loading database..."))
+      _ <- FC.delay(println("Loading database..."))
       _ <- loadDatabase(new File("example/world.sql"))
       s <- speakerQuery("English", 10)
-      _ <- s.traverseU(a => C.delay(println(a)))
+      _ <- s.traverseU(a => FC.delay(println(a)))
     } yield "Ok"
 
-  def loadDatabase(f: File): C.ConnectionIO[Unit] =
+  def loadDatabase(f: File): ConnectionIO[Unit] =
     for {
-      ps <- C.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")
-      _  <- C.lift(ps, (PS.setString(1, f.getName) >> PS.execute) ensuring PS.close)
+      ps <- FC.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")
+      _  <- FC.embed(ps, (FPS.setString(1, f.getName) >> FPS.execute) guarantee FPS.close)
     } yield ()
 
-  def speakerQuery(s: String, p: Double): C.ConnectionIO[List[CountryCode]] =
+  def speakerQuery(s: String, p: Double): ConnectionIO[List[CountryCode]] =
     for {
-      ps <- C.prepareStatement("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?")
-      l  <- C.lift(ps, speakerPS(s, p) ensuring PS.close)
+      ps <- FC.prepareStatement("SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = ? AND PERCENTAGE > ?")
+      l  <- FC.embed(ps, speakerPS(s, p) guarantee FPS.close)
     } yield l
 
-  def speakerPS(s: String, p: Double): PS.PreparedStatementIO[List[CountryCode]] =
+  def speakerPS(s: String, p: Double): PreparedStatementIO[List[CountryCode]] =
     for {
-      _  <- PS.setString(1, s)
-      _  <- PS.setDouble(2, p)
-      rs <- PS.executeQuery
-      l  <- PS.lift(rs, unroll(RS.getString(1).map(CountryCode(_))) ensuring RS.close)
+      _  <- FPS.setString(1, s)
+      _  <- FPS.setDouble(2, p)
+      rs <- FPS.executeQuery
+      l  <- FPS.embed(rs, unroll(FRS.getString(1).map(CountryCode(_))) guarantee FRS.close)
     } yield l
 
-  def unroll[A](a: RS.ResultSetIO[A]): RS.ResultSetIO[List[A]] = {
-    def unroll0(as: List[A]): RS.ResultSetIO[List[A]] =
-      RS.next >>= {
-        case false => as.pure[RS.ResultSetIO]
+  def unroll[A](a: ResultSetIO[A]): ResultSetIO[List[A]] = {
+    def unroll0(as: List[A]): ResultSetIO[List[A]] =
+      FRS.next >>= {
+        case false => as.pure[ResultSetIO]
         case true  => a >>= { a => unroll0(a :: as) }
       }
     unroll0(Nil).map(_.reverse)

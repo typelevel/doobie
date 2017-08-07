@@ -2,13 +2,11 @@ package doobie.example
 
 import cats.~>
 import cats.data.{ Coproduct, Kleisli }
+import cats.effect.IO
 import cats.free.{ Free, Inject }
 import cats.implicits._
-import fs2.interop.cats._
-
 import doobie.free.connection.ConnectionOp
 import doobie.imports._
-
 import java.sql.Connection
 import scala.io.StdIn
 
@@ -80,12 +78,13 @@ object coproduct {
 
   // Exec it!
   def main(args: Array[String]): Unit = {
-    val xa = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver",
-      "jdbc:postgresql:world",
-      "postgres", ""
-    )
-    xa.exec.apply(iprog).unsafeRunSync
+    // val xa = Transactor.fromDriverManager[IO](
+    //   "org.postgresql.Driver",
+    //   "jdbc:postgresql:world",
+    //   "postgres", ""
+    // )
+    // xa.exec.apply(iprog).unsafeRunSync
+    () // TODO!
   }
 
   // Enter a pattern:

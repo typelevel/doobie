@@ -1,8 +1,8 @@
 package doobie.example
 
-import doobie.imports._
+import cats.effect.IO
 import cats.implicits._
-import fs2.interop.cats._ // for Monad[IO]
+import doobie.imports._
 
 object FragmentExample extends App {
 

@@ -1,10 +1,9 @@
 package doobie.example
 
+import cats.effect.IO
 import doobie.imports._
 import doobie.scalatest.imports._
 import org.scalatest._
-
-import fs2.interop.cats._
 
 class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
   val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")

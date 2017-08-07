@@ -1,10 +1,8 @@
 package doobie.example
 
-
+import cats.effect.IO
 import doobie.imports._
 import doobie.hikari.imports._
-
-import fs2.interop.cats._
 
 object HikariExample {
 
