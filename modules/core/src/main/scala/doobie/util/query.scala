@@ -1,8 +1,10 @@
 package doobie.util
 
-import scala.collection.generic.CanBuildFrom
-import scala.Predef.longWrapper
-import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
+import cats._, cats.effect._
+import cats.implicits._
+import cats.{ Functor, MonadCombine => MonadPlus }
+import cats.functor.{ Contravariant, Profunctor }
+import cats.data.NonEmptyList
 
 import doobie.free.connection.ConnectionIO
 import doobie.free.resultset.ResultSetIO
@@ -12,25 +14,22 @@ import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
 import doobie.free.{ preparedstatement => FPS }
 import doobie.free.{ resultset => FRS }
-
 import doobie.util.composite.Composite
 import doobie.util.analysis.Analysis
 import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
 import doobie.util.monaderror._
+import doobie.syntax.stream._
 
-import doobie.syntax.process._
+import scala.collection.generic.CanBuildFrom
+import scala.Predef.longWrapper
+import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 
 import java.sql.ResultSet
 
-import cats._, cats.effect._
-import cats.implicits._
-import cats.{ Functor, MonadCombine => MonadPlus }
-import cats.functor.{ Contravariant, Profunctor }
-import cats.data.NonEmptyList
-import scala.{ Left => -\/, Right => \/- }
-import fs2.{ Stream => Process }
+
+import fs2.Stream
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -74,14 +73,14 @@ object query {
         er <- c.attempt(FPS.executeQuery)
         t1 <- now
         rs <- er match {
-                case -\/(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[ResultSet](e)
-                case \/-(a) => a.pure[PreparedStatementIO]
+                case Left(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[ResultSet](e)
+                case Right(a) => a.pure[PreparedStatementIO]
               }
         et <- c.attempt(FPS.embed(rs, k guarantee FRS.close))
         t2 <- now
         t  <- et match {
-                case -\/(e) => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
-                case \/-(a) => a.pure[PreparedStatementIO]
+                case Left(e) => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
+                case Right(a) => a.pure[PreparedStatementIO]
               }
         _  <- log(Success(sql, args, diff(t1, t0), diff(t2, t1)))
       } yield t
@@ -119,35 +118,35 @@ object query {
       HC.prepareQueryAnalysis0[O](sql)
 
     /**
-     * Apply the argument `a` to construct a `Process` with the given chunking factor, with
+     * Apply the argument `a` to construct a `Stream` with the given chunking factor, with
      * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
      * @group Results
      */
-    def processWithChunkSize(a: A, chunkSize: Int): Process[ConnectionIO, B] =
+    def processWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
       HC.process[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
 
     /**
      * FS2 Friendly Alias for processWithChunkSize.
      * @group Results
      */
-    def streamWithChunkSize(a: A, chunkSize: Int): Process[ConnectionIO, B] =
+    def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
       processWithChunkSize(a, chunkSize)
 
     /**
-     * Apply the argument `a` to construct a `Process` with `DefaultChunkSize`, with
+     * Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with
      * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
      * @group Results
      */
-    def process(a: A): Process[ConnectionIO, B] =
+    def process(a: A): Stream[ConnectionIO, B] =
       processWithChunkSize(a, DefaultChunkSize)
 
     /**
      * FS2 Friendly Alias for process.
      * @group Results
      */
-    def stream(a: A): Process[ConnectionIO, B] =
+    def stream(a: A): Stream[ConnectionIO, B] =
       process(a)
 
     /**
@@ -338,32 +337,32 @@ object query {
     def outputAnalysis: ConnectionIO[Analysis]
 
     /**
-     * `Process` with default chunk factor, with effect type
+     * `Stream` with default chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
-    def process: Process[ConnectionIO, B] =
+    def process: Stream[ConnectionIO, B] =
       processWithChunkSize(DefaultChunkSize)
 
     /**
      * FS2 Friendly Alias for process.
      * @group Results
      */
-    def stream : Process[ConnectionIO, B] =
+    def stream : Stream[ConnectionIO, B] =
       process
 
     /**
-     * `Process` with given chunk factor, with effect type
+     * `Stream` with given chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
-    def processWithChunkSize(n: Int): Process[ConnectionIO, B]
+    def processWithChunkSize(n: Int): Stream[ConnectionIO, B]
 
     /**
      * FS2 Friendly Alias for processWithChunkSize.
      * @group Results
      */
-    def streamWithChunkSize(n: Int): Process[ConnectionIO, B] =
+    def streamWithChunkSize(n: Int): Stream[ConnectionIO, B] =
       processWithChunkSize(n)
 
     /**

@@ -1,5 +1,9 @@
 package doobie.util
 
+import cats._
+import cats.data.NonEmptyList
+import cats.implicits._
+
 import doobie.enum.jdbctype.{ Array => JdbcArray, Boolean => JdbcBoolean, _ }
 import doobie.util.invariant.{ NonNullableColumnRead, NonNullableColumnUpdate, InvalidObjectMapping }
 import doobie.util.kernel.Kernel
@@ -11,11 +15,6 @@ import scala.collection.immutable.TreeSet
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.ClassTag
 import scala.Predef._
-
-import cats._, cats.data.NonEmptyList
-import cats.data.NonEmptyList.{ of => NonEmptyListOf }
-import cats.implicits._
-import scala.util.{ Either => \/, Left => -\/, Right => \/- }
 
 import shapeless._
 import shapeless.ops.hlist.IsHCons
@@ -199,9 +198,9 @@ object meta {
     implicit val MetaOrder: Order[Meta[_]] =
       // Type argument necessary to avoid spurious "illegal cyclic reference involving object Meta"
       // only in Scala 2.11, and only with cats for whatever reason. Confidence high!
-      Order.by[Meta[_], (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], List[JdbcType]) \/ (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], NonEmptyList[String])](_.fold(
-        b => -\/((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
-        a => \/-((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
+      Order.by[Meta[_], Either[(String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], List[JdbcType]), (String, NonEmptyList[JdbcType], NonEmptyList[JdbcType], NonEmptyList[String])]](_.fold(
+        b => Left((b.scalaType, b.jdbcTarget, b.jdbcSource, b.jdbcSourceSecondary)),
+        a => Right((a.scalaType, a.jdbcTarget, a.jdbcSource, a.schemaTypes))))
 
     /** @group Typeclass Instances */
     implicit val MetaOrdering: scala.Ordering[Meta[_]] =
@@ -278,7 +277,7 @@ object meta {
       set0: (PreparedStatement, Int, A) => Unit,
       update0: (ResultSet, Int, A) => Unit
     )(implicit ev: TypeTag[A]): BasicMeta[A] =
-      basic(NonEmptyListOf(jdbcType), NonEmptyListOf(jdbcType), jdbcSourceSecondary0, get0, set0, update0)
+      basic(NonEmptyList.of(jdbcType), NonEmptyList.of(jdbcType), jdbcSourceSecondary0, get0, set0, update0)
 
     /**
      * Construct an `AdvancedMeta` for the given type.
@@ -314,8 +313,8 @@ object meta {
      */
     def array[A >: Null <: AnyRef: TypeTag](elementType: String, schemaH: String, schemaT: String*): AdvancedMeta[Array[A]] =
       advanced[Array[A]](
-        NonEmptyListOf(JdbcArray),
-        NonEmptyListOf(schemaH, schemaT : _*),
+        NonEmptyList.of(JdbcArray),
+        NonEmptyList.of(schemaH, schemaT : _*),
         (r, n) => {
           val a = r.getArray(n)
           (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
@@ -339,8 +338,8 @@ object meta {
      */
     def other[A >: Null <: AnyRef: TypeTag](schemaH: String, schemaT: String*)(implicit A: ClassTag[A]): AdvancedMeta[A] =
       advanced[A](
-        NonEmptyListOf(Other, JavaObject),
-        NonEmptyListOf(schemaH, schemaT : _*),
+        NonEmptyList.of(Other, JavaObject),
+        NonEmptyList.of(schemaH, schemaT : _*),
         (rs, n) => {
           rs.getObject(n) match {
             case null => null
@@ -447,40 +446,40 @@ object meta {
 
     /** @group Instances */
     implicit val DoubleMeta = Meta.basic[Double](
-      NonEmptyListOf(Double),
-      NonEmptyListOf(Float, Double),
+      NonEmptyList.of(Double),
+      NonEmptyList.of(Float, Double),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
       _.getDouble(_), _.setDouble(_, _), _.updateDouble(_, _))
 
     /** @group Instances */
     implicit val BigDecimalMeta = Meta.basic[java.math.BigDecimal](
-      NonEmptyListOf(Numeric),
-      NonEmptyListOf(Decimal, Numeric),
+      NonEmptyList.of(Numeric),
+      NonEmptyList.of(Decimal, Numeric),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar,
         LongVarChar),
       _.getBigDecimal(_), _.setBigDecimal(_, _), _.updateBigDecimal(_, _))
 
     /** @group Instances */
     implicit val BooleanMeta = Meta.basic[Boolean](
-      NonEmptyListOf(Bit, JdbcBoolean),
-      NonEmptyListOf(Bit, JdbcBoolean),
+      NonEmptyList.of(Bit, JdbcBoolean),
+      NonEmptyList.of(Bit, JdbcBoolean),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar,
         LongVarChar),
       _.getBoolean(_), _.setBoolean(_, _), _.updateBoolean(_, _))
 
     /** @group Instances */
     implicit val StringMeta = Meta.basic[String](
-      NonEmptyListOf(VarChar, Char, LongVarChar),
-      NonEmptyListOf(Char, VarChar),
+      NonEmptyList.of(VarChar, Char, LongVarChar),
+      NonEmptyList.of(Char, VarChar),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
         LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
       _.getString(_), _.setString(_, _), _.updateString(_, _))
 
     /** @group Instances */
     implicit val ByteArrayMeta = Meta.basic[Array[Byte]](
-      NonEmptyListOf(Binary, VarBinary, LongVarBinary),
-      NonEmptyListOf(Binary, VarBinary),
+      NonEmptyList.of(Binary, VarBinary, LongVarBinary),
+      NonEmptyList.of(Binary, VarBinary),
       List(LongVarBinary),
       _.getBytes(_), _.setBytes(_, _), _.updateBytes(_, _))
 

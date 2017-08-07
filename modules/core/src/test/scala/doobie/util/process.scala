@@ -2,7 +2,7 @@ package doobie.util
 
 import cats.effect.IO
 import doobie.imports._
-import doobie.util.process.repeatEvalChunks
+import doobie.util.stream.repeatEvalChunks
 import org.scalacheck.Prop.forAll
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification

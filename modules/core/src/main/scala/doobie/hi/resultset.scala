@@ -10,9 +10,9 @@ import doobie.free.{ resultset => RS }
 import doobie.util.compat.cats.monad._
 import doobie.util.composite._
 import doobie.util.invariant._
-import doobie.util.process.repeatEvalChunks
+import doobie.util.stream.repeatEvalChunks
 
-import fs2.{ Stream => Process }
+import fs2.Stream
 
 import java.sql.{ ResultSetMetaData, SQLWarning }
 
@@ -214,11 +214,11 @@ object resultset {
     }
 
   /**
-   * Process that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
+   * Stream that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
    * mechanism for dealing with query results.
    * @group Results
    */
-  def process[A: Composite](chunkSize: Int): Process[ResultSetIO, A] =
+  def process[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
     repeatEvalChunks(getNextChunk[A](chunkSize))
 
   /** @group Properties */

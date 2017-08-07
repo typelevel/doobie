@@ -11,7 +11,6 @@ import org.specs2.specification.core.{ Fragments, Fragment }
 import org.specs2.specification.dsl.Online._
 import org.specs2.specification.create.{ FormattingFragments => Format }
 import scala.reflect.runtime.universe.TypeTag
-import scala.util.{ Left => -\/, Right => \/- }
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -66,10 +65,10 @@ object analysisspec {
       s"\n$typeName defined at ${loc(pos)}\n${sql.lines.map(s => "  " + s.trim).filterNot(_.isEmpty).mkString("\n")}" >> ok.continueWith {
         unsafeRunSync(M.attempt(transactor.trans(M).apply(analysis))) match {
           // We can't rely on mutable Specification DSL here!
-          case -\/(e) => indentBlock(Seq(
+          case Left(e) => indentBlock(Seq(
             "SQL Compiles and Typechecks" ! failure(formatError(e.getMessage))
           ))
-          case \/-(a) => indentBlock(
+          case Right(a) => indentBlock(
             ("SQL Compiles and Typechecks" ! ok) +:
               a.paramDescriptions.map{ case (s, es) => s ! assertEmpty(es, pos) } ++:
               a.columnDescriptions.map{ case (s, es) => s ! assertEmpty(es, pos) }

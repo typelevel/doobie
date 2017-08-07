@@ -1,11 +1,9 @@
 package doobie.util
 
 import cats.effect.IO
-import scala.util.{ Left => -\/, Right => \/- }
 import doobie.imports._
-
-import org.specs2.mutable.Specification
 import java.sql.SQLException
+import org.specs2.mutable.Specification
 
 object catchsqlpec extends Specification {
 
@@ -15,12 +13,12 @@ object catchsqlpec extends Specification {
   "attemptSql" should {
 
     "do nothing on success" in {
-      IO(3).attemptSql.unsafeRunSync must_== \/-(3)
+      IO(3).attemptSql.unsafeRunSync must_== Right(3)
     }
 
     "catch SQLException" in {
       val e = new SQLException
-      IO(throw e).attemptSql.unsafeRunSync must_== -\/(e)
+      IO(throw e).attemptSql.unsafeRunSync must_== Left(e)
     }
 
     "ignore non-SQLException" in {
@@ -34,12 +32,12 @@ object catchsqlpec extends Specification {
   "attemptSqlState" should {
 
     "do nothing on success" in {
-      IO(3).attemptSqlState.unsafeRunSync must_== \/-(3)
+      IO(3).attemptSqlState.unsafeRunSync must_== Right(3)
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO(throw e).attemptSqlState.unsafeRunSync must_== -\/(SQLSTATE_FOO)
+      IO(throw e).attemptSqlState.unsafeRunSync must_== Left(SQLSTATE_FOO)
     }
 
     "ignore non-SQLException" in {
@@ -55,7 +53,7 @@ object catchsqlpec extends Specification {
       IO(3).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.unsafeRunSync must_== \/-(3)
+      }.unsafeRunSync must_== Right(3)
     }
 
     "catch SQLException with matching state (1)" in {
@@ -63,7 +61,7 @@ object catchsqlpec extends Specification {
       IO(throw e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.unsafeRunSync must_== -\/(42)
+      }.unsafeRunSync must_== Left(42)
     }
 
     "catch SQLException with matching state (2)" in {
@@ -71,7 +69,7 @@ object catchsqlpec extends Specification {
       IO(throw e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.unsafeRunSync must_== -\/(66)
+      }.unsafeRunSync must_== Left(66)
     }
 
     "ignore SQLException with non-matching state" in {
@@ -166,14 +164,14 @@ object catchsqlpec extends Specification {
     "perform its effect on SQLException" in {
       var a = 1
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO[Int](throw e).onSqlException(IO(a += 1)).attempt.unsafeRunSync must_== -\/(e)
+      IO[Int](throw e).onSqlException(IO(a += 1)).attempt.unsafeRunSync must_== Left(e)
       a must_== 2
     }
 
     "ignore its effect on non-SQLException" in {
       var a = 1
       val e = new IllegalArgumentException
-      IO[Int](throw e).onSqlException(IO(a += 1)).attempt.unsafeRunSync must_== -\/(e)
+      IO[Int](throw e).onSqlException(IO(a += 1)).attempt.unsafeRunSync must_== Left(e)
       a must_== 1
     }
 

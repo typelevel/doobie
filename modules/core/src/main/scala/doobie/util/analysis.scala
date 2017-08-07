@@ -9,11 +9,8 @@ import doobie.util.meta._
 
 import scala.Predef._ // TODO: minimize
 
-import scala.util.{ Either => \/ }
-import scala.util.{ Left => -\/, Right => \/- }
 import cats.implicits._
-import cats.data.{ Ior => \&/ }
-import cats.data.Ior. { Left => This, Both, Right => That }
+import cats.data.Ior
 
 /** Module defining a type for analyzing the type alignment of prepared statements. */
 object analysis {
@@ -30,14 +27,14 @@ object analysis {
     def msg: String
   }
 
-  case class ParameterMisalignment(index: Int, alignment: (Meta[_], NullabilityKnown) \/ ParameterMeta) extends AlignmentError {
+  case class ParameterMisalignment(index: Int, alignment: Either[(Meta[_], NullabilityKnown), ParameterMeta]) extends AlignmentError {
     val tag = "P"
     override def msg = this match {
-      case ParameterMisalignment(_, -\/(_)) =>
+      case ParameterMisalignment(_, Left(_)) =>
         s"""|Interpolated value has no corresponding SQL parameter and likely appears inside a
-            |comment or quoted string. This will result in a runtime failure; fix this by removing
+            |comment or quoted string. Ior.Left will result in a runtime failure; fix this by removing
             |the parameter.""".stripMargin.lines.mkString(" ")
-      case ParameterMisalignment(_, \/-(pm)) =>
+      case ParameterMisalignment(_, Right(pm)) =>
         s"""|${pm.jdbcType.toString.toUpperCase} parameter is not set; this will result in a runtime
             |failure. Perhaps you used a literal ? rather than an interpolated value.""".stripMargin.lines.mkString(" ")
     }
@@ -53,13 +50,13 @@ object analysis {
           |or the Scala type to ${Meta.writersOf(jdbcType, vendorTypeName).toList.map(typeName(_, n)).mkString(" or ")}.""".stripMargin.lines.mkString(" ")
   }
 
-  case class ColumnMisalignment(index: Int, alignment: (Meta[_], NullabilityKnown) \/ ColumnMeta) extends AlignmentError {
+  case class ColumnMisalignment(index: Int, alignment: Either[(Meta[_], NullabilityKnown), ColumnMeta]) extends AlignmentError {
     override val tag = "C"
     override def msg = this match {
-      case ColumnMisalignment(_, -\/((j, n))) =>
+      case ColumnMisalignment(_, Left((j, n))) =>
         s"""|Too few columns are selected, which will result in a runtime failure. Add a column or
             |remove mapped ${typeName(j, n)} from the result type.""".stripMargin.lines.mkString(" ")
-      case ColumnMisalignment(_, \/-(_)) =>
+      case ColumnMisalignment(_, Right(_)) =>
         s"""Column is unused. Remove it from the SELECT statement."""
     }
   }
@@ -118,46 +115,46 @@ object analysis {
   final case class Analysis(
     sql:                String,
     nativeMap:          Map[String, JdbcType],
-    parameterAlignment: List[(Meta[_], NullabilityKnown) \&/ ParameterMeta],
-    columnAlignment:    List[(Meta[_], NullabilityKnown) \&/ ColumnMeta]) {
+    parameterAlignment: List[(Meta[_], NullabilityKnown) Ior ParameterMeta],
+    columnAlignment:    List[(Meta[_], NullabilityKnown) Ior ColumnMeta]) {
 
     def parameterMisalignments: List[ParameterMisalignment] =
       parameterAlignment.zipWithIndex.collect {
-        case (This(j), n) => ParameterMisalignment(n + 1, -\/(j))
-        case (That(p), n) => ParameterMisalignment(n + 1, \/-(p))
+        case (Ior.Left(j), n) => ParameterMisalignment(n + 1, Left(j))
+        case (Ior.Right(p), n) => ParameterMisalignment(n + 1, Right(p))
       }
 
     def parameterTypeErrors: List[ParameterTypeError] =
       parameterAlignment.zipWithIndex.collect {
-        case (Both((j, n1), p), n) if !j.jdbcTarget.element(p.jdbcType) =>
+        case (Ior.Both((j, n1), p), n) if !j.jdbcTarget.element(p.jdbcType) =>
           ParameterTypeError(n + 1, j, n1, p.jdbcType, p.vendorTypeName, nativeMap)
       }
 
     def columnMisalignments: List[ColumnMisalignment] =
       columnAlignment.zipWithIndex.collect {
-        case (This(j), n) => ColumnMisalignment(n + 1, -\/(j))
-        case (That(p), n) => ColumnMisalignment(n + 1, \/-(p))
+        case (Ior.Left(j), n) => ColumnMisalignment(n + 1, Left(j))
+        case (Ior.Right(p), n) => ColumnMisalignment(n + 1, Right(p))
       }
 
     def columnTypeErrors: List[ColumnTypeError] =
       columnAlignment.zipWithIndex.collect {
-        case (Both((j, n1), p), n) if !(j.jdbcSource.list.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).element(p.jdbcType) =>
+        case (Ior.Both((j, n1), p), n) if !(j.jdbcSource.list.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).element(p.jdbcType) =>
           ColumnTypeError(n + 1, j, n1, p)
-        case (Both((j, n1), p), n) if (p.jdbcType === JavaObject || p.jdbcType == Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
+        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JavaObject || p.jdbcType == Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
           ColumnTypeError(n + 1, j, n1, p)
       }
 
     def columnTypeWarnings: List[ColumnTypeWarning] =
       columnAlignment.zipWithIndex.collect {
-        case (Both((j, n1), p), n) if j.fold(_.jdbcSourceSecondary.toList, _ => Nil).element(p.jdbcType) =>
+        case (Ior.Both((j, n1), p), n) if j.fold(_.jdbcSourceSecondary.toList, _ => Nil).element(p.jdbcType) =>
           ColumnTypeWarning(n + 1, j, n1, p)
       }
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
       columnAlignment.zipWithIndex.collect {
         // We can't do anything helpful with NoNulls .. it means "might not be nullable"
-        // case (Both((st, Nullable), ColumnMeta(_, _, NoNulls, col)), n) => NullabilityMisalignment(n + 1, col, st, NoNulls, Nullable)
-        case (Both((st, NoNulls), ColumnMeta(_, _, Nullable, col)), n) => NullabilityMisalignment(n + 1, col, st, Nullable, NoNulls)
+        // case (Ior.Both((st, Nullable), ColumnMeta(_, _, NoNulls, col)), n) => NullabilityMisalignment(n + 1, col, st, NoNulls, Nullable)
+        case (Ior.Both((st, NoNulls), ColumnMeta(_, _, Nullable, col)), n) => NullabilityMisalignment(n + 1, col, st, Nullable, NoNulls)
         // N.B. if we had a warning mechanism we could issue a warning for NullableUnknown
       }
 
@@ -175,9 +172,9 @@ object analysis {
     lazy val paramDescriptions: List[(String, List[AlignmentError])] = {
       val params: Block =
         parameterAlignment.zipWithIndex.map {
-          case (Both((j1, n1), ParameterMeta(j2, s2, _, _)), i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase, s"($s2)")
-          case (This((j1, n1)),                              i) => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", "", "")
-          case (That(          ParameterMeta(j2, s2, _, _)), i) => List(f"P${i+1}%02d", "",                     " → ", j2.toString.toUpperCase, s"($s2)")
+          case (Ior.Both((j1, n1), ParameterMeta(j2, s2, _, _)), i)  => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", j2.toString.toUpperCase, s"($s2)")
+          case (Ior.Left((j1, n1)),                              i)  => List(f"P${i+1}%02d", s"${typeName(j1, n1)}", " → ", "", "")
+          case (Ior.Right(          ParameterMeta(j2, s2, _, _)), i) => List(f"P${i+1}%02d", "",                     " → ", j2.toString.toUpperCase, s"($s2)")
         } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
       params.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, parameterAlignmentErrors.filter(_.index == n + 1))
@@ -189,9 +186,9 @@ object analysis {
       import pretty._
       val cols: Block =
         columnAlignment.zipWithIndex.map {
-          case (Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", typeName(j1, n1))
-          case (This((j1, n1)),                            i) => List(f"C${i+1}%02d", "",          "", "",                       "",                    " → ", typeName(j1, n1))
-          case (That(          ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", "")
+          case (Ior.Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i)  => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", typeName(j1, n1))
+          case (Ior.Left((j1, n1)),                            i)  => List(f"C${i+1}%02d", "",          "", "",                       "",                    " → ", typeName(j1, n1))
+          case (Ior.Right(          ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.toString.toUpperCase, s"(${s2.toString})", formatNullability(n2), " → ", "")
         } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
       cols.toString.lines.toList.zipWithIndex.map { case (s, n) =>
         (s, columnAlignmentErrors.filter(_.index == n + 1))

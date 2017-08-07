@@ -33,7 +33,7 @@ See the previous chapter on **SQL Arrays** for usage examples.
 
 ### H2 Connection Pool
 
-**doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `Task`).
+**doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `IO`).
 
 ```tut:silent
 import cats.effect.IO

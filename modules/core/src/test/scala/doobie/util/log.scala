@@ -1,13 +1,11 @@
 package doobie.util
 
-import scala.util.{ Left => -\/, Right => \/- }
 import cats.implicits._
 import cats.effect.IO
 import doobie.imports._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification
 import shapeless._
-
 
 object logspec extends Specification {
 

@@ -1,11 +1,9 @@
 package doobie.util
 
-import java.sql.SQLException
 import cats.MonadError
 import cats.implicits._
-import scala.util.{ Either => \/ }
-
 import doobie.enum.sqlstate.SqlState
+import java.sql.SQLException
 
 /**
  * Module of additional combinators for `Catchable`, specific to `SQLException`.
@@ -13,17 +11,17 @@ import doobie.enum.sqlstate.SqlState
 object catchsql {
 
   /** Like `attempt` but catches only `SQLException`. */
-  def attemptSql[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): M[SQLException \/ A] =
+  def attemptSql[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): M[Either[SQLException, A]] =
     ma.attempt.map(_.leftMap {
       case sqle: SQLException => sqle
       case e                  => throw e
     })
 
   /** Like `attemptSql` but yields only the exception's `SqlState`. */
-  def attemptSqlState[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): M[SqlState \/ A] =
+  def attemptSqlState[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): M[Either[SqlState, A]] =
     attemptSql(ma).map(_.leftMap(e => SqlState(e.getSQLState)))
 
-  def attemptSomeSqlState[M[_]: MonadError[?[_], Throwable], A, B](ma: M[A])(f: PartialFunction[SqlState, B]): M[B \/ A] =
+  def attemptSomeSqlState[M[_]: MonadError[?[_], Throwable], A, B](ma: M[A])(f: PartialFunction[SqlState, B]): M[Either[B, A]] =
     attemptSql(ma).map(_.leftMap(sqle => f.lift(SqlState(sqle.getSQLState)).getOrElse(throw sqle)))
 
   /** Executes the handler, for exceptions propagating from `ma`. */

@@ -2,7 +2,6 @@ package doobie.syntax
 
 import cats.MonadError
 import doobie.util.{ catchsql => C }
-import scala.util.{ Either => \/ }
 import doobie.enum.sqlstate.SqlState
 import java.sql.SQLException
 
@@ -11,13 +10,13 @@ object catchsql {
 
   class DoobieCatchSqlOps[M[_]: MonadError[?[_], Throwable], A](self: M[A]) {
 
-    def attemptSql: M[SQLException \/ A] =
+    def attemptSql: M[Either[SQLException, A]] =
       C.attemptSql(self)
 
-    def attemptSqlState: M[SqlState \/ A] =
+    def attemptSqlState: M[Either[SqlState, A]] =
       C.attemptSqlState(self)
 
-    def attemptSomeSqlState[B](f: PartialFunction[SqlState, B]): M[B \/ A] =
+    def attemptSomeSqlState[B](f: PartialFunction[SqlState, B]): M[Either[B, A]] =
       C.attemptSomeSqlState(self)(f)
 
     def exceptSql(handler: SQLException => M[A]): M[A] =

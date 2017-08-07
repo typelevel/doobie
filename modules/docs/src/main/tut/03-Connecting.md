@@ -36,7 +36,7 @@ val xa = Transactor.fromDriverManager[IO](
 
 A `Transactor` is simply a structure that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IO`, which gives us something we can run. Specifically it gives us an `IO` that, when run, will connect to the database and run our program in a single transaction.
 
-Scala does not have a standard IO, so the examples in this book use the simple `IO` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar monadic types like `cats.effect.IO`, `fs2.Task`, and `monix.Task` will also work fine.
+Scala does not have a standard IO, so the examples in this book use the simple `IO` data type provided by **doobie**. This type is not very feature-rich but is safe and performant and fine to use. Similar monadic types like `cats.effect.IO` and `monix.Task` will also work fine.
 In fact, you can use any Monad `M[_]` as long as there is a `fs2.util.Catchable[M]` and `fs2.util.Suspendable[M]` available. See *Using Your Own Target Monad* at the end of this capter for more details.
 
 The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.

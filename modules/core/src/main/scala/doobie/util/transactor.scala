@@ -11,7 +11,7 @@ import cats.data.Kleisli
 import cats.free.Free
 import cats.implicits._
 import cats.effect.{ Effect, Sync, Async }
-import fs2.{ Stream => Process }
+import fs2.Stream
 import fs2.Stream.{ eval, eval_ }
 
 import java.sql.{ Connection, DriverManager }
@@ -40,8 +40,8 @@ object transactor  {
     always: ConnectionIO[Unit]
   ) {
 
-    private implicit class VoidProcessOps(ma: ConnectionIO[Unit]) {
-      def p: Process[ConnectionIO, Nothing] = eval_(ma) // empty effectful process
+    private implicit class VoidStreamOps(ma: ConnectionIO[Unit]) {
+      def p: Stream[ConnectionIO, Nothing] = eval_(ma) // empty effectful process
     }
 
     /** Natural transformation that wraps a `ConnectionIO` program. */
@@ -50,7 +50,7 @@ object transactor  {
     }
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
-    val wrapP = λ[Process[ConnectionIO, ?] ~> Process[ConnectionIO, ?]] { pa =>
+    val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
         (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
     }
 
@@ -100,7 +100,7 @@ object transactor  {
    * running programs, parameterized over a target monad `M` and an arbitrary wrapped value `A`.
    * Given a stream or program in `ConnectionIO` or a program in `Kleisli`, a `Transactor` can
    * discharge the doobie machinery and yield an effectful stream or program in `M`.
-   * @tparam M a target effect type; typically `IO` or `Task`
+   * @tparam M a target effect type; typically `IO`
    * @group Data Types
    */
   sealed abstract class Transactor[M[_]] { self =>
@@ -167,7 +167,7 @@ object transactor  {
     def trans(implicit ev: Monad[M]): ConnectionIO ~> M =
       strategy.wrap andThen rawTrans
 
-    def rawTransP(implicit ev: Effect[M]) = λ[Process[ConnectionIO, ?] ~> Process[M, ?]] { pa =>
+    def rawTransP(implicit ev: Effect[M]) = λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { pa =>
       // TODO: this can almost certainly be simplified
 
       // Natural transformation by Kleisli application.
@@ -185,7 +185,7 @@ object transactor  {
 
      }
 
-    def transP(implicit ev: Effect[M]): Process[ConnectionIO, ?] ~> Process[M, ?] =
+    def transP(implicit ev: Effect[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       strategy.wrapP andThen rawTransP
 
     def copy(

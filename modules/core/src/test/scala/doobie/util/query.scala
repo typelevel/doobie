@@ -4,8 +4,6 @@ import cats.effect.IO
 import doobie.imports._
 import org.specs2.mutable.Specification
 import scala.Predef._
-import scala.util.{ Left => -\/, Right => \/- }
-
 
 object queryspec extends Specification {
 
@@ -40,7 +38,7 @@ object queryspec extends Specification {
       q.to[List]("bar").transact(xa).unsafeRunSync must_=== Nil
     }
     "unique" in {
-      q.unique("bar").transact(xa).attempt.unsafeRunSync must_=== -\/(invariant.UnexpectedEnd)
+      q.unique("bar").transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
     }
     "option" in {
       q.option("bar").transact(xa).unsafeRunSync must_=== None
@@ -73,7 +71,7 @@ object queryspec extends Specification {
       q.toQuery0("bar").to[List].transact(xa).unsafeRunSync must_=== Nil
     }
     "unique" in {
-      q.toQuery0("bar").unique.transact(xa).attempt.unsafeRunSync must_=== -\/(invariant.UnexpectedEnd)
+      q.toQuery0("bar").unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
     }
     "option" in {
       q.toQuery0("bar").option.transact(xa).unsafeRunSync must_=== None
@@ -107,7 +105,7 @@ object queryspec extends Specification {
       q0e.to[List].transact(xa).unsafeRunSync must_=== Nil
     }
     "unique" in {
-      q0e.unique.transact(xa).attempt.unsafeRunSync must_=== -\/(invariant.UnexpectedEnd)
+      q0e.unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
     }
     "option" in {
       q0e.option.transact(xa).unsafeRunSync must_=== None

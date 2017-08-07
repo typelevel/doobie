@@ -51,7 +51,7 @@ You can use a `for` comprehension to compose any number of `ConnectionIO` progra
 
 ### How do I run something outside of a transaction?
 
-`Transactor.transact` takes a `ConnectionIO` and constructs a `Task` or similar that will run it in a single transaction, but it is also possible to include transaction boundaries *within* a `ConnectionIO`, and to disable transaction handling altogether. Some kinds of DDL statements may require this for some databases. You can define a combinator to do this for you.
+`Transactor.transact` takes a `ConnectionIO` and constructs an `IO` or similar that will run it in a single transaction, but it is also possible to include transaction boundaries *within* a `ConnectionIO`, and to disable transaction handling altogether. Some kinds of DDL statements may require this for some databases. You can define a combinator to do this for you.
 
 ```tut:silent
 /**

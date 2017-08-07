@@ -1,21 +1,17 @@
 package doobie.util
 
-
+import cats.implicits._
+import cats.effect._
 import doobie.free.connection.{ ConnectionIO, delay }
-import doobie.syntax.process._
+import doobie.syntax.stream._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
 import doobie.util.query._
 import doobie.util.update._
 import doobie.util.transactor._
 import doobie.util.pretty.wrap
-
-import scala.util.{ Left => -\/, Right => \/- }
-import cats.implicits._
-import cats.effect._
-import fs2.{ Stream => Process }
-
-import Predef._
+import fs2.Stream
+import scala.Predef._
 
 /** Module for implicit syntax useful in REPL session. */
 object yolo {
@@ -40,8 +36,8 @@ object yolo {
 
       private def doCheck(a: ConnectionIO[Analysis]): M[Unit] =
         (delay(showSql(q.sql)) *> a.attempt.flatMap {
-          case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
-          case \/-(a) => delay {
+          case Left(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
+          case Right(a) => delay {
             success("SQL Compiles and Typechecks", None)
             a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
             a.columnDescriptions.foreach { case (s, es) => assertEmpty(s, es) }
@@ -63,8 +59,8 @@ object yolo {
 
       private def doCheck(a: ConnectionIO[Analysis]): M[Unit] =
         (delay(showSql(q.sql)) *> a.attempt.flatMap {
-          case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
-          case \/-(a) => delay {
+          case Left(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
+          case Right(a) => delay {
             success("SQL Compiles and Typechecks", None)
             a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
             a.columnDescriptions.foreach { case (s, es) => assertEmpty(s, es) }
@@ -80,8 +76,8 @@ object yolo {
 
       def check: M[Unit] =
         (delay(showSql(u.sql)) *> u.analysis.attempt.flatMap {
-          case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
-          case \/-(a) => delay {
+          case Left(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
+          case Right(a) => delay {
             success("SQL Compiles and Typechecks", None)
             a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
           }
@@ -96,8 +92,8 @@ object yolo {
 
       def check: M[Unit] =
         (delay(showSql(u.sql)) *> u.analysis.attempt.flatMap {
-          case -\/(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
-          case \/-(a) => delay {
+          case Left(e) => delay(failure("SQL Compiles and Typechecks", formatError(e.getMessage)))
+          case Right(a) => delay {
             success("SQL Compiles and Typechecks", None)
             a.paramDescriptions.foreach  { case (s, es) => assertEmpty(s, es) }
           }
@@ -108,7 +104,7 @@ object yolo {
       def quick: M[Unit] = ca.flatMap(a => out(a.toString)).transact(xa)
     }
 
-    implicit class ProcessYoloOps[A](pa: Process[ConnectionIO, A]) {
+    implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
       def quick: M[Unit] = pa.sink(a => out(a.toString)).transact(xa)
     }
 

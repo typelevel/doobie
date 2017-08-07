@@ -5,7 +5,7 @@ import doobie.syntax.catchsql.ToDoobieCatchSqlOps
 import doobie.syntax.foldable.ToDoobieFoldableOps
 
 import cats.effect.Sync
-import fs2.{ Stream => Process }
+import fs2.Stream
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
 object imports extends ToDoobieCatchSqlOps
@@ -69,8 +69,8 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */ type ResultSetIO[A]         = FRS.ResultSetIO[A]
 
   /** @group Syntax */
-  implicit def toProcessOps[F[_]: Sync, A](fa: Process[F, A]): doobie.syntax.process.ProcessOps[F, A] =
-    new doobie.syntax.process.ProcessOps(fa)
+  implicit def toStreamOps[F[_]: Sync, A](fa: Stream[F, A]): doobie.syntax.stream.StreamOps[F, A] =
+    new doobie.syntax.stream.StreamOps(fa)
 
   /** @group Syntax */
   implicit def toSqlInterpolator(sc: StringContext)(implicit pos: Pos): doobie.syntax.string.SqlInterpolator =

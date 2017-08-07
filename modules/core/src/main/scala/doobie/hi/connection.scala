@@ -9,7 +9,7 @@ import doobie.enum.jdbctype.JdbcType
 
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
-import doobie.util.process.repeatEvalChunks
+import doobie.util.stream.repeatEvalChunks
 import doobie.util.monaderror._
 
 import doobie.free.{ connection => C }
@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
 
 import cats.Foldable
 import cats.implicits._
-import fs2.{ Stream => Process }
+import fs2.Stream
 import fs2.Stream.{ eval, bracket }
 
 /**
@@ -44,25 +44,25 @@ object connection {
   def delay[A](a: => A): ConnectionIO[A] =
     C.delay(a)
 
-  private def liftProcess[A: Composite](
+  private def liftStream[A: Composite](
     chunkSize: Int,
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit],
-    exec:   PreparedStatementIO[ResultSet]): Process[ConnectionIO, A] = {
+    exec:   PreparedStatementIO[ResultSet]): Stream[ConnectionIO, A] = {
 
-    def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
+    def prepared(ps: PreparedStatement): Stream[ConnectionIO, PreparedStatement] =
       eval[ConnectionIO, PreparedStatement] {
         val fs = PS.setFetchSize(chunkSize)
         C.embed(ps, fs *> prep).map(_ => ps)
       }
 
-    def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
+    def unrolled(rs: ResultSet): Stream[ConnectionIO, A] =
       repeatEvalChunks(C.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] =
+    val preparedStatement: Stream[ConnectionIO, PreparedStatement] =
       bracket(create)(prepared, C.embed(_, PS.close))
 
-    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+    def results(ps: PreparedStatement): Stream[ConnectionIO, A] =
       bracket(C.embed(ps, exec))(unrolled, C.embed(_, RS.close))
 
     preparedStatement.flatMap(results)
@@ -71,25 +71,25 @@ object connection {
 
   /**
    * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
-   * action, and return results via a `Process`.
+   * action, and return results via a `Stream`.
    * @group Prepared Statements
    */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
-    liftProcess(chunkSize, C.prepareStatement(sql), prep, PS.executeQuery)
+  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
+    liftStream(chunkSize, C.prepareStatement(sql), prep, PS.executeQuery)
 
   /**
    * Construct a prepared update statement with the given return columns (and composite destination
    * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return
    * the generated key results via a
-   * `Process`.
+   * `Stream`.
    * @group Prepared Statements
    */
-  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Process[ConnectionIO, A] =
-    liftProcess(chunkSize, C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
+  def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
+    liftStream(chunkSize, C.prepareStatement(sql, cols.toArray), prep, PS.executeUpdate >> PS.getGeneratedKeys)
 
   /** @group Prepared Statements */
-  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A], chunkSize: Int): Process[ConnectionIO, B] =
-    liftProcess[B](chunkSize, C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
+  def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A], chunkSize: Int): Stream[ConnectionIO, B] =
+    liftStream[B](chunkSize, C.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> PS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
