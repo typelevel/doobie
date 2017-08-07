@@ -1,15 +1,11 @@
 package doobie.postgres
 
+import cats.effect.{ IO, Sync }
+import cats.implicits._
 import doobie.imports._
 import doobie.postgres.imports._
-
-
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
-
-import cats.implicits._
-import fs2.util.Suspendable
-import fs2.interop.cats._
 
 object pgnotifyspec extends Specification {
 
@@ -25,7 +21,7 @@ object pgnotifyspec extends Specification {
   def listen[A](channel: String, notify: ConnectionIO[A]): IO[List[PGNotification]] =
     (PHC.pgListen(channel) *> commit *>
      delay { Thread.sleep(50) } *>
-     Predef.implicitly[Suspendable[ConnectionIO]].delay(notify.transact(xa).unsafeRunSync) *>
+     Sync[ConnectionIO].delay(notify.transact(xa).unsafeRunSync) *>
      delay { Thread.sleep(50) } *>
      PHC.pgGetNotifications).transact(xa)
 

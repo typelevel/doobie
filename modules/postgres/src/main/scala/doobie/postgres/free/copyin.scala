@@ -1,235 +1,136 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.free.{ Free => F }
-import cats.data.Kleisli
-import scala.util.{ Either => \/ }
-import fs2.interop.cats._
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
-import org.postgresql.copy.CopyIn
-import org.postgresql.copy.CopyOut
+import org.postgresql.copy.{ CopyIn => PGCopyIn }
 
-import copyin.CopyInIO
-import copyout.CopyOutIO
+object copyin { module =>
 
-/**
- * Algebra and free monad for primitive operations over a `org.postgresql.copy.CopyIn`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
- * for library developers. End users will prefer a safer, higher-level API such as that provided
- * in the `doobie.hi` package.
- *
- * `CopyInIO` is a free monad that must be run via an interpreter, most commonly via
- * natural transformation of its underlying algebra `CopyInOp` to another monad via
- * `Free#foldMap`.
- *
- * The library provides a natural transformation to `Kleisli[M, CopyIn, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
- * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
- *
- * {{{
- * // An action to run
- * val a: CopyInIO[Foo] = ...
- *
- * // A JDBC object
- * val s: CopyIn = ...
- *
- * // Unfolding into a Task
- * val ta: Task[A] = a.transK[Task].run(s)
- * }}}
- *
- * @group Modules
- */
-object copyin extends CopyInIOInstances {
+  // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternatie to pattern-matching.
+  sealed trait CopyInOp[A] {
+    def visit[F[_]](v: CopyInOp.Visitor[F]): F[A]
+  }
 
-  /**
-   * Sum type of primitive operations over a `org.postgresql.copy.CopyIn`.
-   * @group Algebra
-   */
-  sealed trait CopyInOp[A]
+  // Free monad over CopyInOp.
+  type CopyInIO[A] = FF[CopyInOp, A]
 
-  /**
-   * Module of constructors for `CopyInOp`. These are rarely useful outside of the implementation;
-   * prefer the smart constructors provided by the `copyin` module.
-   * @group Algebra
-   */
+  // Module of instances and constructors of CopyInOp.
   object CopyInOp {
 
-    // Lifting
-    case class LiftCopyOutIO[A](s: CopyOut, action: CopyOutIO[A]) extends CopyInOp[A]
-
-    // Combinators
-    case class Attempt[A](action: CopyInIO[A]) extends CopyInOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends CopyInOp[A]
-
-    // Primitive Operations
-    case object CancelCopy extends CopyInOp[Unit]
-    case object EndCopy extends CopyInOp[Long]
-    case object FlushCopy extends CopyInOp[Unit]
-    case object GetFieldCount extends CopyInOp[Int]
-    case class  GetFieldFormat(a: Int) extends CopyInOp[Int]
-    case object GetFormat extends CopyInOp[Int]
-    case object GetHandledRowCount extends CopyInOp[Long]
-    case object IsActive extends CopyInOp[Boolean]
-    case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit]
-
-  }
-  import CopyInOp._ // We use these immediately
-
-  /**
-   * Free monad over a free functor of [[CopyInOp]]; abstractly, a computation that consumes
-   * a `org.postgresql.copy.CopyIn` and produces a value of type `A`.
-   * @group Algebra
-   */
-  type CopyInIO[A] = F[CopyInOp, A]
-
-  /**
-   * Catchable instance for [[CopyInIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CatchableCopyInIO: Catchable[CopyInIO] =
-    new Catchable[CopyInIO] {
-      def pure[A](a: A): CopyInIO[A] = copyin.delay(a)
-      override def map[A, B](fa: CopyInIO[A])(f: A => B): CopyInIO[B] = fa.map(f)
-      def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = fa.flatMap(f)
-      def attempt[A](f: CopyInIO[A]): CopyInIO[Throwable \/ A] = copyin.attempt(f)
-      def fail[A](err: Throwable): CopyInIO[A] = copyin.delay(throw err)
-    }
-
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCopyOut[A](s: CopyOut, k: CopyOutIO[A]): CopyInIO[A] =
-    F.liftF(LiftCopyOutIO(s, k))
-
-  /**
-   * Lift a CopyInIO[A] into an exception-capturing CopyInIO[Throwable \/ A].
-   * @group Constructors (Lifting)
-   */
-  def attempt[A](a: CopyInIO[A]): CopyInIO[Throwable \/ A] =
-    F.liftF[CopyInOp, Throwable \/ A](Attempt(a))
-
-  /**
-   * Non-strict unit for capturing effects.
-   * @group Constructors (Lifting)
-   */
-  def delay[A](a: => A): CopyInIO[A] =
-    F.liftF(Pure(a _))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val cancelCopy: CopyInIO[Unit] =
-    F.liftF(CancelCopy)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val endCopy: CopyInIO[Long] =
-    F.liftF(EndCopy)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val flushCopy: CopyInIO[Unit] =
-    F.liftF(FlushCopy)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getFieldCount: CopyInIO[Int] =
-    F.liftF(GetFieldCount)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def getFieldFormat(a: Int): CopyInIO[Int] =
-    F.liftF(GetFieldFormat(a))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getFormat: CopyInIO[Int] =
-    F.liftF(GetFormat)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getHandledRowCount: CopyInIO[Long] =
-    F.liftF(GetHandledRowCount)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val isActive: CopyInIO[Boolean] =
-    F.liftF(IsActive)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def writeToCopy(a: Array[Byte], b: Int, c: Int): CopyInIO[Unit] =
-    F.liftF(WriteToCopy(a, b, c))
-
- /**
-  * Natural transformation from `CopyInOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyIn`.
-  * @group Algebra
-  */
- def kleisliTrans[M[_]: Catchable: Suspendable]: CopyInOp ~> Kleisli[M, CopyIn, ?] =
-   new (CopyInOp ~> Kleisli[M, CopyIn, ?]) {
-
-     val L = Predef.implicitly[Suspendable[M]]
-
-     def primitive[A](f: CopyIn => A): Kleisli[M, CopyIn, A] =
-       Kleisli(s => L.delay(f(s)))
-
-     def apply[A](op: CopyInOp[A]): Kleisli[M, CopyIn, A] =
-       op match {
-
-        // Lifting
-        case LiftCopyOutIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => kleisliCatchableInstance[M, CopyIn].attempt(a.transK[M])
-
-        // Primitive Operations
-        case CancelCopy => primitive(_.cancelCopy)
-        case EndCopy => primitive(_.endCopy)
-        case FlushCopy => primitive(_.flushCopy)
-        case GetFieldCount => primitive(_.getFieldCount)
-        case GetFieldFormat(a) => primitive(_.getFieldFormat(a))
-        case GetFormat => primitive(_.getFormat)
-        case GetHandledRowCount => primitive(_.getHandledRowCount)
-        case IsActive => primitive(_.isActive)
-        case WriteToCopy(a, b, c) => primitive(_.writeToCopy(a, b, c))
-
+    // Given a PGCopyIn we can embed a CopyInIO program in any algebra that understands embedding.
+    implicit val CopyInOpEmbeddable: Embeddable[CopyInOp, PGCopyIn] =
+      new Embeddable[CopyInOp, PGCopyIn] {
+        def embed[A](j: PGCopyIn, fa: FF[CopyInOp, A]) = Embedded.CopyIn(j, fa)
       }
 
+    // Interface for a natural tansformation CopyInOp ~> F encoded via the visitor pattern.
+    // This approach is much more efficient than pattern-matching for large algebras.
+    trait Visitor[F[_]] extends (CopyInOp ~> F) {
+      final def apply[A](fa: CopyInOp[A]): F[A] = fa.visit(this)
+
+      // Common
+      def raw[A](f: PGCopyIn => A): F[A]
+      def embed[A](e: Embedded[A]): F[A]
+      def delay[A](a: () => A): F[A]
+      def handleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+
+      // PGCopyIn
+      def cancelCopy: F[Unit]
+      def endCopy: F[Long]
+      def flushCopy: F[Unit]
+      def getFieldCount: F[Int]
+      def getFieldFormat(a: Int): F[Int]
+      def getFormat: F[Int]
+      def getHandledRowCount: F[Long]
+      def isActive: F[Boolean]
+      def writeToCopy(a: Array[Byte], b: Int, c: Int): F[Unit]
+
     }
 
-  /**
-   * Syntax for `CopyInIO`.
-   * @group Algebra
-   */
-  implicit class CopyInIOOps[A](ma: CopyInIO[A]) {
-    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyIn, A] =
-      ma.foldMap[Kleisli[M, CopyIn, ?]](kleisliTrans[M])
+    // Common operations for all algebras.
+    case class Raw[A](f: PGCopyIn => A) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raw(f)
+    }
+    case class Embed[A](e: Embedded[A]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.embed(e)
+    }
+    case class Delay[A](a: () => A) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.delay(a)
+    }
+    case class HandleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+
+    // PGCopyIn-specific operations.
+    case object CancelCopy extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.cancelCopy
+    }
+    case object EndCopy extends CopyInOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.endCopy
+    }
+    case object FlushCopy extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.flushCopy
+    }
+    case object GetFieldCount extends CopyInOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getFieldCount
+    }
+    case class  GetFieldFormat(a: Int) extends CopyInOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
+    }
+    case object GetFormat extends CopyInOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getFormat
+    }
+    case object GetHandledRowCount extends CopyInOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
+    }
+    case object IsActive extends CopyInOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isActive
+    }
+    case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a, b, c)
+    }
+
   }
+  import CopyInOp._
 
-}
+  // Smart constructors for operations common to all algebras.
+  val unit: CopyInIO[Unit] = FF.pure[CopyInOp, Unit](())
+  def raw[A](f: PGCopyIn => A): CopyInIO[A] = FF.liftF(Raw(f))
+  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyInOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
+  def delay[A](a: => A): CopyInIO[A] = FF.liftF(Delay(() => a))
+  def handleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]): CopyInIO[A] = FF.liftF[CopyInOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): CopyInIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyInIO[A] = FF.liftF[CopyInOp, A](Async1(k))
 
-private[free] trait CopyInIOInstances {
-  /**
-   * Suspendable instance for [[CopyInIO]].
-   * @group Typeclass Instances
-   */
-  implicit val SuspendableCopyInIO: Suspendable[CopyInIO] =
-    new Suspendable[CopyInIO] {
-      def pure[A](a: A): CopyInIO[A] = copyin.delay(a)
-      override def map[A, B](fa: CopyInIO[A])(f: A => B): CopyInIO[B] = fa.map(f)
-      def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => CopyInIO[A]): CopyInIO[A] = F.suspend(fa)
-      override def delay[A](a: => A): CopyInIO[A] = copyin.delay(a)
+  // Smart constructors for CopyIn-specific operations.
+  val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)
+  val endCopy: CopyInIO[Long] = FF.liftF(EndCopy)
+  val flushCopy: CopyInIO[Unit] = FF.liftF(FlushCopy)
+  val getFieldCount: CopyInIO[Int] = FF.liftF(GetFieldCount)
+  def getFieldFormat(a: Int): CopyInIO[Int] = FF.liftF(GetFieldFormat(a))
+  val getFormat: CopyInIO[Int] = FF.liftF(GetFormat)
+  val getHandledRowCount: CopyInIO[Long] = FF.liftF(GetHandledRowCount)
+  val isActive: CopyInIO[Boolean] = FF.liftF(IsActive)
+  def writeToCopy(a: Array[Byte], b: Int, c: Int): CopyInIO[Unit] = FF.liftF(WriteToCopy(a, b, c))
+
+  // CopyInIO is an Async
+  implicit val AsyncCopyInIO: Async[CopyInIO] =
+    new Async[CopyInIO] {
+      val M = FF.catsFreeMonadForFree[CopyInOp]
+      def pure[A](x: A): CopyInIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]): CopyInIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): CopyInIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyInIO[A] = module.async(k)
+      def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => CopyInIO[Either[A, B]]): CopyInIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => CopyInIO[A]): CopyInIO[A] = M.flatten(module.delay(thunk))
     }
+
 }
+

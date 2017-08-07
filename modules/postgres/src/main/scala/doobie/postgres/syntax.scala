@@ -1,8 +1,6 @@
 package doobie.postgres
 
-import cats.{ Monad }
-import fs2.util.Catchable
-
+import cats.MonadError
 import doobie.postgres.sqlstate._
 import doobie.util.catchsql.exceptSomeSqlState
 
@@ -11,10 +9,10 @@ object Syntax extends Syntax
 
 trait Syntax {
 
-  implicit def toSqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]): SqlStateOps[M, A] =
+  implicit def toSqlStateOps[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): SqlStateOps[M, A] =
     new SqlStateOps(ma)
 
-  class SqlStateOps[M[_]: Monad: Catchable, A](ma: M[A]) {
+  class SqlStateOps[M[_]: MonadError[?[_], Throwable], A](ma: M[A]) {
 
     def onSuccessfulCompletion(handler: => M[A]): M[A] =
       exceptSomeSqlState(ma) { case class00.SUCCESSFUL_COMPLETION => handler }

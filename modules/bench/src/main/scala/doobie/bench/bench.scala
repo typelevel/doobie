@@ -1,10 +1,8 @@
 package doobie.bench
 
+import cats.effect.IO
 import doobie.imports._
-
 import java.sql.DriverManager
-
-import fs2.interop.cats._
 
 /** Rough benchmark based on non/jawn */
 object bench {
@@ -114,7 +112,7 @@ object bench {
 
 
   def main(args: Array[String]): Unit = {
-    val bench    = Bench(2, 5, List(10, 100, 1000, 10000, 100000, 1000000))
+    val bench    = Bench(2, 5, List(10, 100, 1000/*, 10000, 100000, 1000000*/))
     println("Warming up ...")
     val baseline = bench.Case("jdbc", jdbcBench)
     val cases = List(

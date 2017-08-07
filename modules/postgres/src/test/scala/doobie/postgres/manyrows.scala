@@ -1,11 +1,9 @@
 package doobie.postgres
 
+import cats.effect.IO
 import doobie.imports._
-
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
-
-import fs2.interop.cats._
 
 object manyrows extends Specification {
 

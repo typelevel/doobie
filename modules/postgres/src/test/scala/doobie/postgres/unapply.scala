@@ -2,8 +2,6 @@ package doobie.postgres
 
 import doobie.imports._
 import doobie.postgres.imports._
-
-import shapeless._, shapeless.test._
 import org.specs2.mutable.Specification
 
 import cats.implicits._

@@ -1,219 +1,131 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.free.{ Free => F }
-import cats.data.Kleisli
-import scala.util.{ Either => \/ }
-import fs2.interop.cats._
-import fs2.util.{ Catchable, Suspendable }
+import cats.effect.Async
+import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
-import org.postgresql.copy.CopyIn
-import org.postgresql.copy.CopyOut
+import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
-import copyin.CopyInIO
-import copyout.CopyOutIO
+object copyout { module =>
 
-/**
- * Algebra and free monad for primitive operations over a `org.postgresql.copy.CopyOut`. This is
- * a low-level API that exposes lifecycle-managed JDBC objects directly and is intended mainly
- * for library developers. End users will prefer a safer, higher-level API such as that provided
- * in the `doobie.hi` package.
- *
- * `CopyOutIO` is a free monad that must be run via an interpreter, most commonly via
- * natural transformation of its underlying algebra `CopyOutOp` to another monad via
- * `Free#foldMap`.
- *
- * The library provides a natural transformation to `Kleisli[M, CopyOut, A]` for any
- * exception-trapping (`Catchable`) and effect-capturing (`Capture`) monad `M`. Such evidence is
- * provided for `Task`, `IO`, and stdlib `Future`; and `transK[M]` is provided as syntax.
- *
- * {{{
- * // An action to run
- * val a: CopyOutIO[Foo] = ...
- *
- * // A JDBC object
- * val s: CopyOut = ...
- *
- * // Unfolding into a Task
- * val ta: Task[A] = a.transK[Task].run(s)
- * }}}
- *
- * @group Modules
- */
-object copyout extends CopyOutIOInstances {
+  // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternatie to pattern-matching.
+  sealed trait CopyOutOp[A] {
+    def visit[F[_]](v: CopyOutOp.Visitor[F]): F[A]
+  }
 
-  /**
-   * Sum type of primitive operations over a `org.postgresql.copy.CopyOut`.
-   * @group Algebra
-   */
-  sealed trait CopyOutOp[A]
+  // Free monad over CopyOutOp.
+  type CopyOutIO[A] = FF[CopyOutOp, A]
 
-  /**
-   * Module of constructors for `CopyOutOp`. These are rarely useful outside of the implementation;
-   * prefer the smart constructors provided by the `copyout` module.
-   * @group Algebra
-   */
+  // Module of instances and constructors of CopyOutOp.
   object CopyOutOp {
 
-    // Lifting
-    case class LiftCopyInIO[A](s: CopyIn, action: CopyInIO[A]) extends CopyOutOp[A]
-
-    // Combinators
-    case class Attempt[A](action: CopyOutIO[A]) extends CopyOutOp[Throwable \/ A]
-    case class Pure[A](a: () => A) extends CopyOutOp[A]
-
-    // Primitive Operations
-    case object CancelCopy extends CopyOutOp[Unit]
-    case object GetFieldCount extends CopyOutOp[Int]
-    case class  GetFieldFormat(a: Int) extends CopyOutOp[Int]
-    case object GetFormat extends CopyOutOp[Int]
-    case object GetHandledRowCount extends CopyOutOp[Long]
-    case object IsActive extends CopyOutOp[Boolean]
-    case object ReadFromCopy extends CopyOutOp[Array[Byte]]
-
-  }
-  import CopyOutOp._ // We use these immediately
-
-  /**
-   * Free monad over a free functor of [[CopyOutOp]]; abstractly, a computation that consumes
-   * a `org.postgresql.copy.CopyOut` and produces a value of type `A`.
-   * @group Algebra
-   */
-  type CopyOutIO[A] = F[CopyOutOp, A]
-
-  /**
-   * Catchable instance for [[CopyOutIO]].
-   * @group Typeclass Instances
-   */
-  implicit val CatchableCopyOutIO: Catchable[CopyOutIO] =
-    new Catchable[CopyOutIO] {
-      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
-      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
-      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
-      def attempt[A](f: CopyOutIO[A]): CopyOutIO[Throwable \/ A] = copyout.attempt(f)
-      def fail[A](err: Throwable): CopyOutIO[A] = copyout.delay(throw err)
-    }
-
-
-  /**
-   * @group Constructors (Lifting)
-   */
-  def liftCopyIn[A](s: CopyIn, k: CopyInIO[A]): CopyOutIO[A] =
-    F.liftF(LiftCopyInIO(s, k))
-
-  /**
-   * Lift a CopyOutIO[A] into an exception-capturing CopyOutIO[Throwable \/ A].
-   * @group Constructors (Lifting)
-   */
-  def attempt[A](a: CopyOutIO[A]): CopyOutIO[Throwable \/ A] =
-    F.liftF[CopyOutOp, Throwable \/ A](Attempt(a))
-
-  /**
-   * Non-strict unit for capturing effects.
-   * @group Constructors (Lifting)
-   */
-  def delay[A](a: => A): CopyOutIO[A] =
-    F.liftF(Pure(a _))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val cancelCopy: CopyOutIO[Unit] =
-    F.liftF(CancelCopy)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getFieldCount: CopyOutIO[Int] =
-    F.liftF(GetFieldCount)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  def getFieldFormat(a: Int): CopyOutIO[Int] =
-    F.liftF(GetFieldFormat(a))
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getFormat: CopyOutIO[Int] =
-    F.liftF(GetFormat)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val getHandledRowCount: CopyOutIO[Long] =
-    F.liftF(GetHandledRowCount)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val isActive: CopyOutIO[Boolean] =
-    F.liftF(IsActive)
-
-  /**
-   * @group Constructors (Primitives)
-   */
-  val readFromCopy: CopyOutIO[Array[Byte]] =
-    F.liftF(ReadFromCopy)
-
- /**
-  * Natural transformation from `CopyOutOp` to `Kleisli` for the given `M`, consuming a `org.postgresql.copy.CopyOut`.
-  * @group Algebra
-  */
- def kleisliTrans[M[_]: Catchable: Suspendable]: CopyOutOp ~> Kleisli[M, CopyOut, ?] =
-   new (CopyOutOp ~> Kleisli[M, CopyOut, ?]) {
-
-     val L = Predef.implicitly[Suspendable[M]]
-
-     def primitive[A](f: CopyOut => A): Kleisli[M, CopyOut, A] =
-       Kleisli(s => L.delay(f(s)))
-
-     def apply[A](op: CopyOutOp[A]): Kleisli[M, CopyOut, A] =
-       op match {
-
-        // Lifting
-        case LiftCopyInIO(s, k) => Kleisli(_ => k.transK[M].run(s))
-
-        // Combinators
-        case Pure(a) => primitive(_ => a())
-        case Attempt(a) => kleisliCatchableInstance[M, CopyOut].attempt(a.transK[M])
-
-        // Primitive Operations
-        case CancelCopy => primitive(_.cancelCopy)
-        case GetFieldCount => primitive(_.getFieldCount)
-        case GetFieldFormat(a) => primitive(_.getFieldFormat(a))
-        case GetFormat => primitive(_.getFormat)
-        case GetHandledRowCount => primitive(_.getHandledRowCount)
-        case IsActive => primitive(_.isActive)
-        case ReadFromCopy => primitive(_.readFromCopy)
-
+    // Given a PGCopyOut we can embed a CopyOutIO program in any algebra that understands embedding.
+    implicit val CopyOutOpEmbeddable: Embeddable[CopyOutOp, PGCopyOut] =
+      new Embeddable[CopyOutOp, PGCopyOut] {
+        def embed[A](j: PGCopyOut, fa: FF[CopyOutOp, A]) = Embedded.CopyOut(j, fa)
       }
 
+    // Interface for a natural tansformation CopyOutOp ~> F encoded via the visitor pattern.
+    // This approach is much more efficient than pattern-matching for large algebras.
+    trait Visitor[F[_]] extends (CopyOutOp ~> F) {
+      final def apply[A](fa: CopyOutOp[A]): F[A] = fa.visit(this)
+
+      // Common
+      def raw[A](f: PGCopyOut => A): F[A]
+      def embed[A](e: Embedded[A]): F[A]
+      def delay[A](a: () => A): F[A]
+      def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): F[A]
+      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+
+      // PGCopyOut
+      def cancelCopy: F[Unit]
+      def getFieldCount: F[Int]
+      def getFieldFormat(a: Int): F[Int]
+      def getFormat: F[Int]
+      def getHandledRowCount: F[Long]
+      def isActive: F[Boolean]
+      def readFromCopy: F[Array[Byte]]
+      def readFromCopy(a: Boolean): F[Array[Byte]]
+
     }
 
-  /**
-   * Syntax for `CopyOutIO`.
-   * @group Algebra
-   */
-  implicit class CopyOutIOOps[A](ma: CopyOutIO[A]) {
-    def transK[M[_]: Catchable: Suspendable]: Kleisli[M, CopyOut, A] =
-      ma.foldMap[Kleisli[M, CopyOut, ?]](kleisliTrans[M])
+    // Common operations for all algebras.
+    case class Raw[A](f: PGCopyOut => A) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raw(f)
+    }
+    case class Embed[A](e: Embedded[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.embed(e)
+    }
+    case class Delay[A](a: () => A) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.delay(a)
+    }
+    case class HandleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+
+    // PGCopyOut-specific operations.
+    case object CancelCopy extends CopyOutOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.cancelCopy
+    }
+    case object GetFieldCount extends CopyOutOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getFieldCount
+    }
+    case class  GetFieldFormat(a: Int) extends CopyOutOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
+    }
+    case object GetFormat extends CopyOutOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getFormat
+    }
+    case object GetHandledRowCount extends CopyOutOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
+    }
+    case object IsActive extends CopyOutOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isActive
+    }
+    case object ReadFromCopy extends CopyOutOp[Array[Byte]] {
+      def visit[F[_]](v: Visitor[F]) = v.readFromCopy
+    }
+    case class  ReadFromCopy1(a: Boolean) extends CopyOutOp[Array[Byte]] {
+      def visit[F[_]](v: Visitor[F]) = v.readFromCopy(a)
+    }
+
   }
+  import CopyOutOp._
 
-}
+  // Smart constructors for operations common to all algebras.
+  val unit: CopyOutIO[Unit] = FF.pure[CopyOutOp, Unit](())
+  def raw[A](f: PGCopyOut => A): CopyOutIO[A] = FF.liftF(Raw(f))
+  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyOutOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
+  def delay[A](a: => A): CopyOutIO[A] = FF.liftF(Delay(() => a))
+  def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](HandleErrorWith(fa, f))
+  def raiseError[A](err: Throwable): CopyOutIO[A] = delay(throw err)
+  def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyOutIO[A] = FF.liftF[CopyOutOp, A](Async1(k))
 
-private[free] trait CopyOutIOInstances {
-  /**
-   * Suspendable instance for [[CopyOutIO]].
-   * @group Typeclass Instances
-   */
-  implicit val SuspendableCopyOutIO: Suspendable[CopyOutIO] =
-    new Suspendable[CopyOutIO] {
-      def pure[A](a: A): CopyOutIO[A] = copyout.delay(a)
-      override def map[A, B](fa: CopyOutIO[A])(f: A => B): CopyOutIO[B] = fa.map(f)
-      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = fa.flatMap(f)
-      def suspend[A](fa: => CopyOutIO[A]): CopyOutIO[A] = F.suspend(fa)
-      override def delay[A](a: => A): CopyOutIO[A] = copyout.delay(a)
+  // Smart constructors for CopyOut-specific operations.
+  val cancelCopy: CopyOutIO[Unit] = FF.liftF(CancelCopy)
+  val getFieldCount: CopyOutIO[Int] = FF.liftF(GetFieldCount)
+  def getFieldFormat(a: Int): CopyOutIO[Int] = FF.liftF(GetFieldFormat(a))
+  val getFormat: CopyOutIO[Int] = FF.liftF(GetFormat)
+  val getHandledRowCount: CopyOutIO[Long] = FF.liftF(GetHandledRowCount)
+  val isActive: CopyOutIO[Boolean] = FF.liftF(IsActive)
+  val readFromCopy: CopyOutIO[Array[Byte]] = FF.liftF(ReadFromCopy)
+  def readFromCopy(a: Boolean): CopyOutIO[Array[Byte]] = FF.liftF(ReadFromCopy1(a))
+
+  // CopyOutIO is an Async
+  implicit val AsyncCopyOutIO: Async[CopyOutIO] =
+    new Async[CopyOutIO] {
+      val M = FF.catsFreeMonadForFree[CopyOutOp]
+      def pure[A](x: A): CopyOutIO[A] = M.pure(x)
+      def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = module.handleErrorWith(fa, f)
+      def raiseError[A](e: Throwable): CopyOutIO[A] = module.raiseError(e)
+      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyOutIO[A] = module.async(k)
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = M.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = M.tailRecM(a)(f)
+      def suspend[A](thunk: => CopyOutIO[A]): CopyOutIO[A] = M.flatten(module.delay(thunk))
     }
+
 }
+

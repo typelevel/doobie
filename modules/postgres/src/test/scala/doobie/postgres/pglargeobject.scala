@@ -1,16 +1,12 @@
 package doobie.postgres
 
+import cats.effect.IO
+import cats.implicits._
 import doobie.imports._
 import doobie.postgres.imports._
-import doobie.util.IO.IO
-
 import java.io.{File, FileInputStream, FileOutputStream}
-
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
-
-import cats.implicits._
-import fs2.interop.cats._
 
 object pglargeobjectspec extends Specification with FileEquality {
 

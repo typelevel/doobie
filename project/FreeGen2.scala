@@ -6,18 +6,28 @@ import Predef._
 object FreeGen2 {
 
   lazy val freeGen2Classes = settingKey[List[Class[_]]]("classes for which free algebras should be generated")
-  lazy val freeGen2Dir = settingKey[File]("directory where free algebras go")
-  lazy val freeGen2 = taskKey[Seq[File]]("generate free algebras")
+  lazy val freeGen2Dir     = settingKey[File]("directory where free algebras go")
+  lazy val freeGen2Package = settingKey[String]("package where free algebras go")
+  lazy val freeGen2Renames = settingKey[Map[Class[_], String]]("map of imports that must be renamed")
+  lazy val freeGen2        = taskKey[Seq[File]]("generate free algebras")
 
   lazy val freeGen2Settings = Seq(
     freeGen2Classes := Nil,
-    freeGen2Dir := (sourceManaged in Compile).value,
-    freeGen2 := new FreeGen2(freeGen2Classes.value, state.value.log).gen(freeGen2Dir.value)
+    freeGen2Dir     := (sourceManaged in Compile).value,
+    freeGen2Package := "doobie.free",
+    freeGen2Renames := Map(classOf[java.sql.Array] -> "SqlArray"),
+    freeGen2        :=
+      new FreeGen2(
+        freeGen2Classes.value,
+        freeGen2Package.value,
+        freeGen2Renames.value,
+        state.value.log
+      ).gen(freeGen2Dir.value)
   )
 
 }
 
-class FreeGen2(managed: List[Class[_]], log: Logger) {
+class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], String], log: Logger) {
 
   // These Java classes will have non-Java names in our generated code
   val ClassBoolean  = classOf[Boolean]
@@ -29,9 +39,6 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
   val ClassDouble   = classOf[Double]
   val ClassObject   = classOf[Object]
   val ClassVoid     = Void.TYPE
-
-  val renames: Map[Class[_], String] =
-    Map(classOf[java.sql.Array] -> "SqlArray")
 
   def tparams(t: Type): List[String] =
     t match {
@@ -45,7 +52,12 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     t match {
       case t: GenericArrayType  => s"Array[${toScalaType(t.getGenericComponentType)}]"
       case t: ParameterizedType => s"${toScalaType(t.getRawType)}${t.getActualTypeArguments.map(toScalaType).mkString("[", ", ", "]")}"
-      case t: WildcardType      => "_" // not quite right but ok
+      case t: WildcardType      =>
+        t.getUpperBounds.toList.filterNot(_ == classOf[Object]) match {
+          case (c: Class[_]) :: Nil => s"_ <: ${c.getName}"
+          case      Nil => "_"
+          case cs       => sys.error("unhandled upper bounds: " + cs.toList)
+        }
       case t: TypeVariable[_]   => t.toString
       case ClassVoid            => "Unit"
       case ClassBoolean         => "Boolean"
@@ -96,11 +108,11 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
 
 
     // Case class/object declaration
-    def ctor(sname:String): String =
+    def ctor(opname:String): String =
       ("|case " + (cparams match {
         case Nil => s"object $cname"
         case ps  => s"class  $cname$ctparams(${cargs.mkString(", ")})"
-      }) + s""" extends ${sname}Op[$ret] {
+      }) + s""" extends ${opname}[$ret] {
         |      def visit[F[_]](v: Visitor[F]) = v.$mname${if (args.isEmpty) "" else s"($args)"}
         |    }""").trim.stripMargin
 
@@ -123,11 +135,11 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
         s"case $cname($args) => primitive(_.$mname($args))")
 
     // Smart constructor
-    def lifted(sname: String): String =
+    def lifted(ioname: String): String =
       if (cargs.isEmpty) {
-        s"val $mname: ${sname}IO[$ret] = FF.liftF(${cname})"
+        s"val $mname: ${ioname}[$ret] = FF.liftF(${cname})"
       } else {
-        s"def $mname$ctparams(${cargs.mkString(", ")}): ${sname}IO[$ret] = FF.liftF(${cname}($args))"
+        s"def $mname$ctparams(${cargs.mkString(", ")}): ${ioname}[$ret] = FF.liftF(${cname}($args))"
       }
 
     def visitor: String =
@@ -148,10 +160,16 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
   def closure(c: Class[_]): List[Class[_]] =
     (c :: (Option(c.getSuperclass).toList ++ c.getInterfaces.toList).flatMap(closure)).distinct
       .filterNot(_.getName == "java.lang.AutoCloseable") // not available in jdk1.6
+      .filterNot(_.getName == "java.lang.Object")        // we don't want .equals, etc.
+
+  implicit class MethodOps(m: Method) {
+    def isStatic: Boolean =
+      (m.getModifiers & Modifier.STATIC) != 0
+  }
 
   // All method for this class and any superclasses/interfaces
   def methods(c: Class[_]): List[Method] =
-    closure(c).flatMap(_.getMethods.toList).distinct
+    closure(c).flatMap(_.getDeclaredMethods.toList).distinct.filterNot(_.isStatic)
 
   // Ctor values for all methods in of A plus superclasses, interfaces, etc.
   def ctors[A](implicit ev: ClassTag[A]): List[Ctor] =
@@ -161,27 +179,33 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       }
     }.sortBy(c => (c.mname, c.index))
 
+  // Fully qualified rename, if any
+  def renameImport(c: Class[_]): String = {
+    val sn = c.getSimpleName
+    val an = renames.getOrElse(c, sn)
+    if (sn == an) s"import ${c.getName}"
+    else          s"import ${c.getPackage.getName}.{ $sn => $an }"
+  }
+
   // All types referenced by all methods on A, superclasses, interfaces, etc.
   def imports[A](implicit ev: ClassTag[A]): List[String] =
-    (s"import ${ev.runtimeClass.getName}" :: ctors.map(_.method).flatMap { m =>
+    (renameImport(ev.runtimeClass) :: ctors.map(_.method).flatMap { m =>
       m.getReturnType :: m.getParameterTypes.toList
     }.map { t =>
       if (t.isArray) t.getComponentType else t
     }.filterNot(t => t.isPrimitive || t == classOf[Object]).map { c =>
-      val sn = c.getSimpleName
-      val an = renames.getOrElse(c, sn)
-      if (sn == an) s"import ${c.getName}"
-      else          s"import ${c.getPackage.getName}.{ $sn => $an }"
+      renameImport(c)
     }).distinct.sorted
-
-
-
 
   // The algebra module for A
   def module[A](implicit ev: ClassTag[A]): String = {
+    val oname = ev.runtimeClass.getSimpleName // original name, without name mapping
     val sname = toScalaType(ev.runtimeClass)
+    val opname = s"${oname}Op"
+    val ioname = s"${oname}IO"
+    val mname  = oname.toLowerCase
    s"""
-    |package doobie.free
+    |package $pkg
     |
     |import cats.~>
     |import cats.effect.Async
@@ -189,35 +213,35 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |
     |${imports[A].mkString("\n")}
     |
-    |object ${sname.toLowerCase} {
+    |object $mname { module =>
     |
     |  // Algebra of operations for $sname. Each accepts a visitor as an alternatie to pattern-matching.
-    |  sealed trait ${sname}Op[A] {
-    |    def visit[F[_]](v: ${sname}Op.Visitor[F]): F[A]
+    |  sealed trait ${opname}[A] {
+    |    def visit[F[_]](v: ${opname}.Visitor[F]): F[A]
     |  }
     |
-    |  // Free monad over ${sname}Op.
-    |  type ${sname}IO[A] = FF[${sname}Op, A]
+    |  // Free monad over ${opname}.
+    |  type ${ioname}[A] = FF[${opname}, A]
     |
-    |  // Module of instances and constructors of ${sname}Op.
-    |  object ${sname}Op {
+    |  // Module of instances and constructors of ${opname}.
+    |  object ${opname} {
     |
-    |    // Given a $sname we can embed a ${sname}IO program in any algebra that understands embedding.
-    |    implicit val ${sname}OpEmbeddable: Embeddable[${sname}Op, ${sname}] =
-    |      new Embeddable[${sname}Op, ${sname}] {
-    |        def embed[A](j: ${sname}, fa: FF[${sname}Op, A]) = Embedded.${sname}(j, fa)
+    |    // Given a $sname we can embed a ${ioname} program in any algebra that understands embedding.
+    |    implicit val ${opname}Embeddable: Embeddable[${opname}, ${sname}] =
+    |      new Embeddable[${opname}, ${sname}] {
+    |        def embed[A](j: ${sname}, fa: FF[${opname}, A]) = Embedded.${oname}(j, fa)
     |      }
     |
-    |    // Interface for a natural tansformation ${sname}Op ~> F encoded via the visitor pattern.
+    |    // Interface for a natural tansformation ${opname} ~> F encoded via the visitor pattern.
     |    // This approach is much more efficient than pattern-matching for large algebras.
-    |    trait Visitor[F[_]] extends (${sname}Op ~> F) {
-    |      final def apply[A](fa: ${sname}Op[A]): F[A] = fa.visit(this)
+    |    trait Visitor[F[_]] extends (${opname} ~> F) {
+    |      final def apply[A](fa: ${opname}[A]): F[A] = fa.visit(this)
     |
     |      // Common
     |      def raw[A](f: $sname => A): F[A]
     |      def embed[A](e: Embedded[A]): F[A]
     |      def delay[A](a: () => A): F[A]
-    |      def handleErrorWith[A](fa: ${sname}IO[A], f: Throwable => ${sname}IO[A]): F[A]
+    |      def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): F[A]
     |      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
     |
     |      // $sname
@@ -226,51 +250,51 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
     |    }
     |
     |    // Common operations for all algebras.
-    |    case class Raw[A](f: $sname => A) extends ${sname}Op[A] {
+    |    case class Raw[A](f: $sname => A) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.raw(f)
     |    }
-    |    case class Embed[A](e: Embedded[A]) extends ${sname}Op[A] {
+    |    case class Embed[A](e: Embedded[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.embed(e)
     |    }
-    |    case class Delay[A](a: () => A) extends ${sname}Op[A] {
+    |    case class Delay[A](a: () => A) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.delay(a)
     |    }
-    |    case class HandleErrorWith[A](fa: ${sname}IO[A], f: Throwable => ${sname}IO[A]) extends ${sname}Op[A] {
+    |    case class HandleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     |    }
-    |    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${sname}Op[A] {
+    |    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.async(k)
     |    }
     |
     |    // $sname-specific operations.
-    |    ${ctors[A].map(_.ctor(sname)).mkString("\n    ")}
+    |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
     |
     |  }
-    |  import ${sname}Op._
+    |  import ${opname}._
     |
     |  // Smart constructors for operations common to all algebras.
-    |  val unit: ${sname}IO[Unit] = FF.pure[${sname}Op, Unit](())
-    |  def raw[A](f: $sname => A): ${sname}IO[A] = FF.liftF(Raw(f))
-    |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${sname}Op, A] = FF.liftF(Embed(ev.embed(j, fa)))
-    |  def delay[A](a: => A): ${sname}IO[A] = FF.liftF(Delay(() => a))
-    |  def handleErrorWith[A](fa: ${sname}IO[A], f: Throwable => ${sname}IO[A]): ${sname}IO[A] = FF.liftF[${sname}Op, A](HandleErrorWith(fa, f))
-    |  def raiseError[A](err: Throwable): ${sname}IO[A] = delay(throw err)
-    |  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ${sname}IO[A] = FF.liftF[${sname}Op, A](Async1(k))
+    |  val unit: ${ioname}[Unit] = FF.pure[${opname}, Unit](())
+    |  def raw[A](f: $sname => A): ${ioname}[A] = FF.liftF(Raw(f))
+    |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${opname}, A] = FF.liftF(Embed(ev.embed(j, fa)))
+    |  def delay[A](a: => A): ${ioname}[A] = FF.liftF(Delay(() => a))
+    |  def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): ${ioname}[A] = FF.liftF[${opname}, A](HandleErrorWith(fa, f))
+    |  def raiseError[A](err: Throwable): ${ioname}[A] = delay(throw err)
+    |  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ${ioname}[A] = FF.liftF[${opname}, A](Async1(k))
     |
-    |  // Smart constructors for $sname-specific operations.
-    |  ${ctors[A].map(_.lifted(sname)).mkString("\n  ")}
+    |  // Smart constructors for $oname-specific operations.
+    |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
     |
-    |  // ${sname}IO is an Async
-    |  implicit val Async${sname}IO: Async[${sname}IO] =
-    |    new Async[${sname}IO] {
-    |      val M = FF.catsFreeMonadForFree[${sname}Op]
-    |      def pure[A](x: A): ${sname}IO[A] = M.pure(x)
-    |      def handleErrorWith[A](fa: ${sname}IO[A])(f: Throwable => ${sname}IO[A]): ${sname}IO[A] = ${sname.toLowerCase}.handleErrorWith(fa, f)
-    |      def raiseError[A](e: Throwable): ${sname}IO[A] = ${sname.toLowerCase}.raiseError(e)
-    |      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ${sname}IO[A] = ${sname.toLowerCase}.async(k)
-    |      def flatMap[A, B](fa: ${sname}IO[A])(f: A => ${sname}IO[B]): ${sname}IO[B] = M.flatMap(fa)(f)
-    |      def tailRecM[A, B](a: A)(f: A => ${sname}IO[Either[A, B]]): ${sname}IO[B] = M.tailRecM(a)(f)
-    |      def suspend[A](thunk: => ${sname}IO[A]): ${sname}IO[A] = M.flatten(${sname.toLowerCase}.delay(thunk))
+    |  // ${ioname} is an Async
+    |  implicit val Async${ioname}: Async[${ioname}] =
+    |    new Async[${ioname}] {
+    |      val M = FF.catsFreeMonadForFree[${opname}]
+    |      def pure[A](x: A): ${ioname}[A] = M.pure(x)
+    |      def handleErrorWith[A](fa: ${ioname}[A])(f: Throwable => ${ioname}[A]): ${ioname}[A] = module.handleErrorWith(fa, f)
+    |      def raiseError[A](e: Throwable): ${ioname}[A] = module.raiseError(e)
+    |      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ${ioname}[A] = module.async(k)
+    |      def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = M.flatMap(fa)(f)
+    |      def tailRecM[A, B](a: A)(f: A => ${ioname}[Either[A, B]]): ${ioname}[B] = M.tailRecM(a)(f)
+    |      def suspend[A](thunk: => ${ioname}[A]): ${ioname}[A] = M.flatten(module.delay(thunk))
     |    }
     |
     |}
@@ -278,18 +302,24 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
   }
 
   def embed[A](implicit ev: ClassTag[A]): String = {
-    val sname = toScalaType(ev.runtimeClass)
-    s"final case class $sname[A](j: java.sql.$sname, fa: ${sname}IO[A]) extends Embedded[A]"
+    val sname = ev.runtimeClass.getSimpleName
+    s"final case class $sname[A](j: ${ev.runtimeClass.getName}, fa: ${sname}IO[A]) extends Embedded[A]"
+  }
+
+  // Import for the IO type for a carrer type, with renaming
+  def ioImport(c: Class[_]): String = {
+    val sn = c.getSimpleName
+    s"import ${sn.toLowerCase}.${sn}IO"
   }
 
   // The Embedded definition for all modules.
   def embeds: String =
     s"""
-     |package doobie.free
+     |package $pkg
      |
      |import cats.free.Free
      |
-     |${managed.map(_.getSimpleName).map(c => s"import ${c.toLowerCase}.${c}IO").mkString("\n")}
+     |${managed.map(ioImport).mkString("\n")}
      |
      |// A pair (J, Free[F, A]) with constructors that tie down J and F.
      |sealed trait Embedded[A]
@@ -304,18 +334,22 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
      |""".trim.stripMargin
 
    def interp[A](implicit ev: ClassTag[A]): String = {
-     val n = toScalaType(ev.runtimeClass)
+     val oname = ev.runtimeClass.getSimpleName // original name, without name mapping
+     val sname = toScalaType(ev.runtimeClass)
+     val opname = s"${oname}Op"
+     val ioname = s"${oname}IO"
+     val mname  = oname.toLowerCase
      s"""
-       |  trait ${n}Interpreter extends ${n}Op.Visitor[Kleisli[M, ${n}, ?]] {
+       |  trait ${oname}Interpreter extends ${oname}Op.Visitor[Kleisli[M, $sname, ?]] {
        |
        |    // common operations delegate to outer interpeter
-       |    override def raw[A](f: $n => A): Kleisli[M, $n, A] = outer.raw(f)
-       |    override def embed[A](e: Embedded[A]): Kleisli[M, $n, A] = outer.embed(e)
-       |    override def delay[A](a: () => A): Kleisli[M, $n, A] = outer.delay(a)
-       |    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, $n, A] = outer.async(k)
+       |    override def raw[A](f: $sname => A): Kleisli[M, $sname, A] = outer.raw(f)
+       |    override def embed[A](e: Embedded[A]): Kleisli[M, $sname, A] = outer.embed(e)
+       |    override def delay[A](a: () => A): Kleisli[M, $sname, A] = outer.delay(a)
+       |    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, $sname, A] = outer.async(k)
        |
        |    // for handleErrorWith we must call ourself recursively
-       |    override def handleErrorWith[A](fa: ${n}IO[A], f: Throwable => ${n}IO[A]): Kleisli[M, $n, A] =
+       |    override def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): Kleisli[M, $sname, A] =
        |      Kleisli { j =>
        |        val faʹ = fa.foldMap(this).run(j)
        |        val fʹ  = f.andThen(_.foldMap(this).run(j))
@@ -329,10 +363,20 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
        |""".trim.stripMargin
     }
 
+   def interpreterDef(c: Class[_]): String = {
+     val oname = c.getSimpleName // original name, without name mapping
+     val sname = toScalaType(c)
+     val opname = s"${oname}Op"
+     val ioname = s"${oname}IO"
+     val mname  = oname.toLowerCase
+     s"lazy val ${oname}Interpreter: ${opname} ~> Kleisli[M, $sname, ?] = new ${oname}Interpreter { }"
+   }
+
+
    // template for a kleisli interpreter
    def kleisliInterpreter: String =
      s"""
-      |package doobie.free
+      |package $pkg
       |
       |// Library imports
       |import cats.~>
@@ -343,7 +387,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
       |
       |// Algebras and free monads thereof referenced by our interpreter.
-      |${managed.map(_.getSimpleName).map(c => s"import doobie.free.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
       |object KleisliInterpreter {
       |  def apply[M[_]](implicit ev: Async[M]): KleisliInterpreter[M] =
@@ -357,7 +401,7 @@ class FreeGen2(managed: List[Class[_]], log: Logger) {
       |  implicit val M: Async[M]
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
-      |  ${managed.map(_.getSimpleName).map(n => s"lazy val ${n}Interpreter: ${n}Op ~> Kleisli[M, ${n}, ?] = new ${n}Interpreter { }").mkString("\n  ")}
+      |  ${managed.map(interpreterDef).mkString("\n  ")}
       |
       |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
       |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => M.delay(f(a)))
