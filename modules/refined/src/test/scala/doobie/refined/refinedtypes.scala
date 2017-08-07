@@ -1,13 +1,13 @@
 package doobie.refined
 
+import cats.effect.IO
+import cats.implicits._
 import org.specs2.mutable.Specification
 import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined._
 import doobie.imports._
 import doobie.util.invariant._
-
-import fs2.interop.cats._
 
 object refinedtypes extends Specification {
 
@@ -110,7 +110,7 @@ object refinedtypes extends Specification {
       query
       false
     } catch {
-      case e: SecondaryValidationFailed[_] => true
+      case _: SecondaryValidationFailed[_] => true
       case _: Throwable => false
     }
 
