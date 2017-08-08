@@ -34,7 +34,7 @@ object hikaritransactor {
 
     /** Constructs a program that yields a `HikariTransactor` from an existing `HikariDatasource`. */
     def apply[M[_]: Catchable: Capture](hikariDataSource : HikariDataSource)(implicit M: Monad[M]): HikariTransactor[M] =
-      Transactor.fromDataSource[M](new HikariDataSource)(M, implicitly, implicitly)
+      Transactor.fromDataSource[M](hikariDataSource)(M, implicitly, implicitly)
 
     /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
     def apply[M[_]: Monad : Catchable : Capture](driverClassName: String, url: String, user: String, pass: String): M[HikariTransactor[M]] =
