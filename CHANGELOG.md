@@ -8,9 +8,15 @@ This file summarizes **notable** changes for each release, but does not describe
 
 This introduces the 0.5.x series which standardizes on cats, cats-effect, and fs2. It will remain as a milestone-only release until cats 1.0.0 and fs2 0.10 final, and will track updates to those libraries.
 
+Current milestone is **0.5.0-M2** and is available for Scala 2.11 and 2.12.
+
+Notable changes thus far:
+
+- The `-cats` segment of the artifact names is gone now. `doobie-core` uses cats now, as does everything else.
 - 🎵 *Ding, dong the yax is dead!* 🎵 The new codebase is based on the cats output. All import renames have been resolved to cats names.
 - Updated to cats 1.0.0-MF and fs2 0.10-M5, removed some interim stubs, changed all doc and examples to use `IO`.
 - `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.
+
 
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
