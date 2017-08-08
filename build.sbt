@@ -297,6 +297,7 @@ lazy val postgres = project
       classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
     ),
     initialCommands := """
+      import cats._, cats.data._, cats.implicits._, cats.effect._
       import doobie.imports._
       import doobie.postgres.imports._
       val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
