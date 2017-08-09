@@ -2,24 +2,21 @@ import FreeGen2._
 import ReleaseTransformations._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val scalaCheckVersion    = "1.13.5"
-lazy val specs2Version        = "3.9.4"
-lazy val si2712fixVersion     = "1.2.0"
+lazy val catsVersion          = "1.0.0-MF"
+lazy val circeVersion         = "0.8.0"
+lazy val fs2CoreVersion       = "0.10.0-M5"
+lazy val h2Version            = "1.4.196"
+lazy val hikariVersion        = "2.6.3"
 lazy val kindProjectorVersion = "0.9.4"
+lazy val monixVersion         = "2.3.0"
+lazy val postGisVersion       = "2.2.1"
+lazy val postgresVersion      = "42.1.4"
+lazy val refinedVersion       = "0.8.2"
+lazy val scalaCheckVersion    = "1.13.5"
+lazy val scalatestVersion     = "3.0.3"
 lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.4"
-lazy val h2Version            = "1.4.196"
-lazy val postgresVersion      = "42.1.4"
-lazy val fs2CoreVersion       = "0.10.0-M5"
-lazy val postGisVersion       = "2.2.1"
-lazy val hikariVersion        = "2.6.3"
-lazy val scalatestVersion     = "3.0.3"
-lazy val refinedVersion       = "0.8.2"
-lazy val argonautVersion      = "6.2"
-lazy val paradiseVersion      = "2.1.0"
-lazy val circeVersion         = "0.8.0"
-lazy val monixVersion         = "2.3.0"
-lazy val catsVersion          = "1.0.0-MF"
+lazy val specs2Version        = "3.9.4"
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
@@ -380,7 +377,6 @@ lazy val docs = project
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
       "io.circe"    %% "circe-parser"  % circeVersion,
-      "io.argonaut" %% "argonaut"      % argonautVersion,
       "io.monix"    %% "monix-eval"    % monixVersion
     ),
     fork in Test := true,
