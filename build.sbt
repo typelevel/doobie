@@ -1,5 +1,6 @@
 import FreeGen2._
 import ReleaseTransformations._
+import microsites.ExtraMdFileConfig
 
 // Library versions all in one place, for convenience and sanity.
 lazy val scalaCheckVersion    = "1.13.5"
@@ -368,7 +369,7 @@ lazy val bench = project
 lazy val docs = project
   .in(file("modules/docs"))
   .dependsOn(core, postgres, specs2, hikari, h2, scalatest)
-  .enablePlugins(TutPlugin)
+  .enablePlugins(MicrositesPlugin)
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
@@ -380,8 +381,34 @@ lazy val docs = project
       "io.monix"    %% "monix-eval"    % monixVersion
     ),
     fork in Test := true,
+
     // postgis is `provided` dependency for users, and section from book of doobie needs it
-    libraryDependencies += postgisDep
+    libraryDependencies += postgisDep,
+
+    // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
+    micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
+    micrositeName             := "doobie",
+    micrositeDescription      := "A principled JDBC layer for Scala.",
+    micrositeAuthor           := "Rob Norris",
+    micrositeGithubOwner      := "tpolecat",
+    micrositeGithubRepo       := "doobie",
+    micrositeGitterChannel    := true,
+    micrositeBaseUrl          := "/doobie",
+    micrositeDocumentationUrl := "/doobie/docs/01-Introduction.html",
+    micrositeHighlightTheme   := "color-brewer",
+    micrositePalette := Map(
+      "brand-primary"     -> "#E35D31",
+      "brand-secondary"   -> "#B24916",
+      "brand-tertiary"    -> "#B24916",
+      "gray-dark"         -> "#453E46",
+      "gray"              -> "#837F84",
+      "gray-light"        -> "#E3E2E3",
+      "gray-lighter"      -> "#F4F3F4",
+      "white-color"       -> "#FFFFFF"
+    ),
+    micrositeExtraMdFiles := Map(
+      file("README.md") -> ExtraMdFileConfig("index.md", "home")
+    )
   )
 
 lazy val refined = project

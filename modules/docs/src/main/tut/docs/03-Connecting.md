@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 3
 title: Connecting to a Database
 ---
+
+## {{page.title}}
 
 Alright, let's get going.
 

@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 12
 title: Custom Mappings
 ---
+
+## {{page.title}}
 
 In this chapter we learn how to use custom `Meta` instances to map arbitrary data types as single-column values; and how to use custom `Composite` instances to map arbitrary types across multiple columns.
 

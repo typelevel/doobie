@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 1
 title: Introduction
 ---
+
+## {{page.title}}
 
 This is a very short book about **doobie**, which is a pure-functional JDBC layer for Scala.
 

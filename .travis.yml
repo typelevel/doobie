@@ -13,6 +13,15 @@ env:
   global:
     - MAIN_SCALA_VERSION=2.11.11
 
+before_install:
+ - export PATH=${PATH}:./vendor/bundle
+
+install:
+  - rvm use 2.2.3 --install --fuzzy
+  - gem update --system
+  - gem install sass
+  - gem install jekyll -v 3.2.1
+
 addons:
   postgresql: "9.3"
   apt:

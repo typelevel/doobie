@@ -1,12 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 6
 title: Typechecking Queries
 ---
 
-<div class="alert alert-warning" role="alert">
-<b>Warning:</b> The functionality described in this chapter is experimental and is likely to change in future versions. But it's still pretty freakin' cool.
-</div>
+## {{page.title}}
 
 In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that our type mappings are correct (and if not, get some hints on how to fix them).
 

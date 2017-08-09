@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 14
 title: Managing Connections
 ---
+
+## {{page.title}}
 
 <div class="alert alert-warning" role="alert">
 <b>Note:</b> Doobie 0.4.2 introduced a new <code>Transactor</code> design that makes it simple to customize the behavior and, combined with new interpreter design, makes it practical to use doobie types in free coproducts (see `coproduct.scala` in the `example` project).

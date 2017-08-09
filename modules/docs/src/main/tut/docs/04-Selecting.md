@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 4
 title: Selecting Data
 ---
+
+## {{page.title}}
 
 In this chapter we construct some programs that retrieve data from the database and stream it back, mapping to Scala types on the way. We also introduce YOLO mode for experimenting with **doobie** in the REPL.
 
