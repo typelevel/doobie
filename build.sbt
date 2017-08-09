@@ -21,7 +21,11 @@ lazy val circeVersion         = "0.8.0"
 lazy val monixVersion         = "2.3.0"
 lazy val catsVersion          = "1.0.0-MF"
 
-val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
+// This is used in a couple places. Might be nice to separate these things out.
+lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
+
+// run dependencyUpdates whenever we [re]load. Spooky eh?
+onLoad in Global := { s => "dependencyUpdates" :: s }
 
 lazy val compilerFlags = Seq(
   scalacOptions ++= (
