@@ -10,7 +10,7 @@ In this chapter we learn how to use custom `Meta` instances to map arbitrary dat
 
 ### Setting Up
 
-The examples in this chapter require the `doobie-postgres-cats` add-on, as well as the [circe](http://circe.io/) JSON library, which you can add to your build thus:
+The examples in this chapter require the `doobie-postgres` add-on, as well as the [circe](http://circe.io/) JSON library, which you can add to your build thus:
 
 ```scala
 val circeVersion = "0.7.0"

@@ -35,7 +35,6 @@ All **doobie** monads have associated instances of the `Catchable` typeclass, an
 
 - `attempt` converts `M[A]` into `M[Either[Throwable, A]]`
   - this method is provided by `ApplicativeError` in cats so you need to import cats (e.g., `cats.implicits._`)
-  - because doobie-cats relies on fs2 you also need to import `fs2.interop.cats._`
 - `fail` constructs an `M[A]` that fails with a provided `Throwable`
 
 So any **doobie** program can be lifted into a disjunction simply by adding `.attempt`.

@@ -8,19 +8,16 @@ title: Introduction
 
 This is a very short book about **doobie**, which is a pure-functional JDBC layer for Scala.
 
-**doobie** provides low-level access to everything in `java.sql` (as of JDK 1.6, JDBC 4.0), allowing you to write any JDBC program in a pure functional style. However the focus of this book is the **high-level API**, which is where most users will spend their time.
+**doobie** provides low-level access to everything in `java.sql` (as of Java 8), allowing you to write any JDBC program in a pure functional style. However the focus of this book is the **high-level API**, which is where most users will spend their time.
 
 This book is organized cookbook-style: we demonstrate a common task and then explain how it works, perhaps in more detail than you want right now. The goal is to get you up and running quickly, but give you a handle on the deeper stuff if you need it later.
 
 
 ### Target Audience
 
-This library is designed for people who are interested in typed, pure functional programming. If you are not a [cats](https://github.com/typelevel/cats) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
+This library is designed for people who are interested in typed, pure functional programming. If you are not a [Cats](https://github.com/typelevel/cats) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
-Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) or `#scala` (FreeNode IRC) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated for each release** to address problems and omissions.
-
-> Please take a moment to check the banner in the upper-right corner to ensure that you are reading the right version of this book! If not, use the **versions** menu above to select the one you want.
-
+Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated for each release** to address problems and omissions.
 
 ### The Setup
 
@@ -70,18 +67,18 @@ You can of course change this setup if you like, but you will need to adjust you
 On the Scala side you just need a console with the proper dependencies. A minimal `build.sbt` would look something like this.
 
 ```scala
-scalaVersion := "2.12.2" // or scala 2.11.11
+scalaVersion := "{{site.scalaVersion}}" // Scala {{site.scalaVersions}}
 
-lazy val doobieVersion = "0.4.2"
+lazy val doobieVersion = "{{site.doobieVersion}}"
 
 libraryDependencies ++= Seq(
-  "org.tpolecat" %% "doobie-core-cats"       % doobieVersion,
-  "org.tpolecat" %% "doobie-postgres-cats"   % doobieVersion,
-  "org.tpolecat" %% "doobie-specs2-cats"     % doobieVersion
+  "org.tpolecat" %% "doobie-core"     % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+  "org.tpolecat" %% "doobie-specs2"   % doobieVersion
 )
 ```
 
-If you are not using PostgreSQL you can omit `doobie-postgres-cats` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2-cats` add-on if you happen to be using [H2](http://www.h2database.com/).
+If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
 
 ### Conventions
 
@@ -95,9 +92,7 @@ import doobie.imports._
 After that there is text interspersed with code examples. Sometimes definitions will stand alone.
 
 ```tut:silent
-
 case class Person(name: String, age: Int)
-
 val nel = NonEmptyList.of(Person("Bob", 12), Person("Alice", 14))
 ```
 And sometimes they will appear as a REPL interaction.

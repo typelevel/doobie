@@ -1,6 +1,6 @@
 import FreeGen2._
 import ReleaseTransformations._
-import microsites.ExtraMdFileConfig
+import microsites._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val scalaCheckVersion    = "1.13.5"
@@ -392,7 +392,7 @@ lazy val docs = project
     micrositeAuthor           := "Rob Norris",
     micrositeGithubOwner      := "tpolecat",
     micrositeGithubRepo       := "doobie",
-    micrositeGitterChannel    := true,
+    micrositeGitterChannel    := false, // no me gusta
     micrositeBaseUrl          := "/doobie",
     micrositeDocumentationUrl := "/doobie/docs/01-Introduction.html",
     micrositeHighlightTheme   := "color-brewer",
@@ -406,9 +406,21 @@ lazy val docs = project
       "gray-lighter"      -> "#F4F3F4",
       "white-color"       -> "#FFFFFF"
     ),
-    micrositeExtraMdFiles := Map(
-      file("README.md") -> ExtraMdFileConfig("index.md", "home")
+    micrositeConfigYaml := ConfigYml(
+      yamlCustomProperties = Map(
+        "doobieVersion"    -> version.value,
+        "catsVersion"      -> catsVersion,
+        "fs2Version"       -> fs2CoreVersion,
+        "shapelessVersion" -> shapelessVersion,
+        "h2Version"        -> h2Version,
+        "postgresVersion"  -> postgresVersion,
+        "scalaVersion"     -> scalaVersion.value,
+        "scalaVersions"    -> crossScalaVersions.value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", "") // 2.11/12
+      )
     )
+    // micrositeExtraMdFiles := Map(
+    //   file("README.md") -> ExtraMdFileConfig("index.md", "home")
+    // )
   )
 
 lazy val refined = project
