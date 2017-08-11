@@ -8,9 +8,12 @@
 
 ### Choose Your Own Adventure
 
-You have washed up on the shores of the 0.5.x branch, which is unreleased and under heavy development. You smell smoke and hear rapid typing in the distance. How do you wish to proceed?
+You have washed up on the shores of the 0.5.x branch, which is unreleased and under heavy development. You smell smoke and hear rapid typing in the distance.
+
+A dish of milk is here.  
+A ball of yarn is here.
 
 - Retreat to the awkward comfort of the [**0.4.x branch**](https://github.com/tpolecat/doobie).
 - Continue to the :sparkles: [**0.5.x Microsite**]() :sparkles:
 - Watch a [**Shrimp listening to Curtis Mayfield**](https://www.youtube.com/watch?v=74_W_sOhMu4).
-- Peek at the [**Changelog**](CHANGELOG.md) for clues.
+- Peek at the [**Changelog**](CHANGELOG.md) for more clues.
