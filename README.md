@@ -14,6 +14,6 @@ A dish of milk is here.
 A ball of yarn is here.
 
 - Retreat to the awkward comfort of the [**0.4.x branch**](https://github.com/tpolecat/doobie).
-- Continue to the :sparkles: [**0.5.x Microsite**]() :sparkles:
+- Continue to the :sparkles: [**0.5.x Microsite**](http://tpolecat.github.io/doobie/) :sparkles:
 - Watch a [**Shrimp listening to Curtis Mayfield**](https://www.youtube.com/watch?v=74_W_sOhMu4).
 - Peek at the [**Changelog**](CHANGELOG.md) for more clues.
