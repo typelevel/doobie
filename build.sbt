@@ -363,6 +363,7 @@ lazy val scalatest = project
 
 lazy val bench = project
   .in(file("modules/bench"))
+  .enablePlugins(JmhPlugin)
   .dependsOn(core, postgres)
   .settings(doobieSettings)
   .settings(noPublishSettings)
