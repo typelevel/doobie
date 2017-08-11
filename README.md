@@ -4,7 +4,7 @@
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12)
 
-**doobie** is a pure functional JDBC layer for Scala and [Cats](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC.
+**doobie** is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC.
 
 ### Choose Your Own Adventure
 
