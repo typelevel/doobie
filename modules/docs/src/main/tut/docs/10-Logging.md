@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 10
 title: Logging
 ---
+
+## {{page.title}}
 
 In this chapter we discuss how to log statement execution and timing.
 

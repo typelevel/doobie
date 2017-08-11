@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 14
 title: Managing Connections
 ---
+
+## {{page.title}}
 
 <div class="alert alert-warning" role="alert">
 <b>Note:</b> Doobie 0.4.2 introduced a new <code>Transactor</code> design that makes it simple to customize the behavior and, combined with new interpreter design, makes it practical to use doobie types in free coproducts (see `coproduct.scala` in the `example` project).
@@ -57,7 +59,7 @@ val xa = Transactor.fromDriverManager[IO](
 
 ### Using a HikariCP Connection Pool
 
-The `doobie-hikari-cats` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
+The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
 ```tut:silent
 import doobie.hikari.imports._

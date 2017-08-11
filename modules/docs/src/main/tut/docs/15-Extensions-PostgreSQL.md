@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 15
 title: Extensions for PostgreSQL
 ---
+
+## {{page.title}}
 
 In this chapter we discuss the extended support that **doobie** offers for users of [PostgreSQL](http://www.postgresql.org/). To use these extensions you must add an additional dependency to your project:
 

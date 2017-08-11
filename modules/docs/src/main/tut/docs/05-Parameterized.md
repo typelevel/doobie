@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 5
 title: Parameterized Queries
 ---
+
+## {{page.title}}
 
 In this chapter we learn how to construct parameterized queries, and introduce the `Composite` typeclass.
 

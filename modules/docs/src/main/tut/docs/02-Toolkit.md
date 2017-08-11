@@ -1,8 +1,10 @@
 ---
-layout: book
+layout: docs
 number: 2
 title: Toolkit
 ---
+
+## {{page.title}}
 
 Before we get into writing **doobie** programs it's worth spending a moment to explain the big picture. The short explanation is:
 
