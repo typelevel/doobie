@@ -1,0 +1,259 @@
+<html><head><title>doobie</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A principled JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A principled JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie" /><meta name="twitter:image" content="img/poster.png" /><meta name="twitter:description" content="A principled JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/kazari-style.css" /><link rel="stylesheet" href="/doobie/css/monokai.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/doobie/" class="brand"><div class="brand-wrapper"><span>doobie</span></div></a></li><li><a href="/doobie/docs/01-Introduction.html" class="">Introduction</a></li><li><a href="/doobie/docs/02-Toolkit.html" class="">Toolkit</a></li><li><a href="/doobie/docs/03-Connecting.html" class="">Connecting to a Database</a></li><li><a href="/doobie/docs/04-Selecting.html" class="">Selecting Data</a></li><li><a href="/doobie/docs/05-Parameterized.html" class="">Parameterized Queries</a></li><li><a href="/doobie/docs/06-Checking.html" class="">Typechecking Queries</a></li><li><a href="/doobie/docs/07-Updating.html" class="">DDL, Inserting, and Updating</a></li><li><a href="/doobie/docs/08-Fragments.html" class="">Statement Fragments</a></li><li><a href="/doobie/docs/09-Error-Handling.html" class="">Error Handling</a></li><li><a href="/doobie/docs/10-Logging.html" class="">Logging</a></li><li><a href="/doobie/docs/11-Arrays.html" class="">SQL Arrays</a></li><li><a href="/doobie/docs/12-Custom-Mappings.html" class=" active ">Custom Mappings</a></li><li><a href="/doobie/docs/13-Unit-Testing.html" class="">Unit Testing</a></li><li><a href="/doobie/docs/14-Managing-Connections.html" class="">Managing Connections</a></li><li><a href="/doobie/docs/15-Extensions-PostgreSQL.html" class="">Extensions for PostgreSQL</a></li><li><a href="/doobie/docs/16-Extensions-H2.html" class="">Extensions for H2</a></li><li><a href="/doobie/docs/17-FAQ.html" class="">Frequently-Asked Questions</a></li><li><a href="/doobie/" class=""></a></li><li><a href="/doobie/css/palette.css" class=""></a></li><li><a href="/doobie/css/style.css" class=""></a></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('doobie A principled JDBC layer for Scala.');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('doobie A principled JDBC layer for Scala.');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="tpolecat" data-github-repo="doobie"><div class="content-wrapper"><section><h2 id="custom-mappings">Custom Mappings</h2>
+
+<p>In this chapter we learn how to use custom <code class="highlighter-rouge">Meta</code> instances to map arbitrary data types as single-column values; and how to use custom <code class="highlighter-rouge">Composite</code> instances to map arbitrary types across multiple columns.</p>
+
+<h3 id="setting-up">Setting Up</h3>
+
+<p>The examples in this chapter require the <code class="highlighter-rouge">doobie-postgres</code> add-on, as well as the <a href="http://circe.io/">circe</a> JSON library, which you can add to your build thus:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">circeVersion</span> <span class="k">=</span> <span class="s">"0.7.0"</span>
+
+<span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
+  <span class="s">"io.circe"</span> <span class="o">%%</span> <span class="s">"circe-core"</span><span class="o">,</span>
+  <span class="s">"io.circe"</span> <span class="o">%%</span> <span class="s">"circe-generic"</span><span class="o">,</span>
+  <span class="s">"io.circe"</span> <span class="o">%%</span> <span class="s">"circe-parser"</span>
+<span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="k">_</span> <span class="o">%</span> <span class="n">circeVersion</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>In our REPL we have the same setup as before, plus a few extra imports.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.circe._</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">jawn</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">syntax</span><span class="o">.</span><span class="k">_</span>
+<span class="k">import</span> <span class="nn">doobie.imports._</span>
+<span class="k">import</span> <span class="nn">java.awt.Point</span>
+<span class="k">import</span> <span class="nn">org.postgresql.util.PGobject</span>
+<span class="k">import</span> <span class="nn">scala.reflect.runtime.universe.TypeTag</span>
+<span class="k">import</span> <span class="nn">scala.util.Try</span>
+<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span>
+
+<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
+<span class="o">)</span>
+
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+</code></pre>
+</div>
+
+<h3 id="meta-and-composite">Meta and Composite</h3>
+
+<p>The <code class="highlighter-rouge">doobie.free</code> API provides constructors for JDBC actions like <code class="highlighter-rouge">setString(1, "foo")</code> and <code class="highlighter-rouge">getBoolean(4)</code>, which operate on single columns specified by name or offset. Query parameters are set and resulting rows are read by repeated applications of these low-level actions.</p>
+
+<p>The <code class="highlighter-rouge">doobie.hi</code> API abstracts the construction of these composite operations via the <code class="highlighter-rouge">Composite</code> typeclass, which provides actions to get or set a heterogeneous <strong>sequence</strong> of column values. For example, the following programs are equivalent:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Using doobie.free
+</span><span class="nc">FPS</span><span class="o">.</span><span class="n">setString</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="s">"foo"</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="nc">FPS</span><span class="o">.</span><span class="n">setInt</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="mi">42</span><span class="o">)</span>
+
+<span class="c1">// Using doobie.hi
+</span><span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="o">(</span><span class="s">"foo"</span><span class="o">,</span> <span class="mi">42</span><span class="o">))</span>
+
+<span class="c1">// Or leave the 1 out if you like, since we usually start there
+</span><span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">((</span><span class="s">"foo"</span><span class="o">,</span> <span class="mi">42</span><span class="o">))</span>
+
+<span class="c1">// Which simply delegates to the Composite instance
+</span><span class="nc">Composite</span><span class="o">[(</span><span class="kt">String</span>,<span class="kt">Int</span><span class="o">)].</span><span class="n">set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="o">(</span><span class="s">"foo"</span><span class="o">,</span> <span class="mi">42</span><span class="o">))</span>
+</code></pre>
+</div>
+
+<p><strong>doobie</strong> can derive <code class="highlighter-rouge">Composite</code> instances for primitive column types and options thereof, plus tuples, <code class="highlighter-rouge">HList</code>s, shapeless records, and case classes whose elements have <code class="highlighter-rouge">Composite</code> instances. These primitive column types are identified by <code class="highlighter-rouge">Meta</code> instances, which describe <code class="highlighter-rouge">null</code>-aware single-column mappings.</p>
+
+<p>So our strategy for mapping custom types is to construct a new <code class="highlighter-rouge">Meta</code> instance (given <code class="highlighter-rouge">Meta[A]</code> you get <code class="highlighter-rouge">Composite[A]</code> and <code class="highlighter-rouge">Composite[Option[A]]</code> for free); and our strategy for multi-column mappings is to construct a new <code class="highlighter-rouge">Composite</code> instance. We consider both cases below.</p>
+
+<h3 id="meta-by-invariant-map">Meta by Invariant Map</h3>
+
+<p>Let’s say we have a structured value that’s represented by a single string in a legacy database. We also have conversion methods to and from the legacy format.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">PersonId</span><span class="o">(</span><span class="n">department</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">number</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">toLegacy</span> <span class="k">=</span> <span class="n">department</span> <span class="o">+</span> <span class="s">":"</span> <span class="o">+</span> <span class="n">number</span>
+<span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">PersonId</span> <span class="o">{</span>
+
+  <span class="k">def</span> <span class="n">fromLegacy</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">]</span> <span class="k">=</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="o">(</span><span class="s">":"</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nc">Array</span><span class="o">(</span><span class="n">dept</span><span class="o">,</span> <span class="n">num</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Try</span><span class="o">(</span><span class="n">num</span><span class="o">.</span><span class="n">toInt</span><span class="o">).</span><span class="n">toOption</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">new</span> <span class="nc">PersonId</span><span class="o">(</span><span class="n">dept</span><span class="o">,</span> <span class="k">_</span><span class="o">))</span>
+      <span class="k">case</span> <span class="k">_</span>                <span class="k">=&gt;</span> <span class="nc">None</span>
+    <span class="o">}</span>
+
+  <span class="k">def</span> <span class="n">unsafeFromLegacy</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">PersonId</span> <span class="o">=</span>
+    <span class="n">fromLegacy</span><span class="o">(</span><span class="n">s</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">"Invalid format: "</span> <span class="o">+</span> <span class="n">s</span><span class="o">))</span>
+
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="n">pid</span> <span class="k">=</span> <span class="nc">PersonId</span><span class="o">.</span><span class="n">unsafeFromLegacy</span><span class="o">(</span><span class="s">"sales:42"</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Because <code class="highlighter-rouge">PersonId</code> is a case class of primitive column values, we can already map it across two columns. We can look at its <code class="highlighter-rouge">Composite</code> instance and see that its column span is two:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Composite</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">].</span><span class="n">length</span>
+<span class="n">res15</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">2</span>
+</code></pre>
+</div>
+
+<p>However if we try to use this type for a <em>single</em> column value (i.e., as a query parameter, which requires a <code class="highlighter-rouge">Param</code> instance - <code class="highlighter-rouge">Param</code> is like <code class="highlighter-rouge">Composite</code> but disallows nesting), it doesn’t compile.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; sql"select * from person where id = $pid"
+&lt;console&gt;:41: error: Could not find or construct Param[PersonId :: shapeless.HNil].
+Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
+have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom
+instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.
+       sql"select * from person where id = $pid"
+       ^
+</code></pre>
+</div>
+
+<p>According to the error message we need a <code class="highlighter-rouge">Param[PersonId :: HNil]</code> instance which requires a <code class="highlighter-rouge">Meta</code> instance for each member, which means we need a <code class="highlighter-rouge">Meta[PersonId]</code>.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">]</span>
+<span class="o">&lt;</span><span class="n">console</span><span class="k">&gt;:</span><span class="mi">42</span><span class="k">:</span> <span class="kt">error:</span> <span class="kt">Could</span> <span class="kt">not</span> <span class="kt">find</span> <span class="kt">an</span> <span class="kt">instance</span> <span class="kt">of</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">];</span> <span class="n">you</span> <span class="n">can</span> <span class="n">construct</span> <span class="n">one</span> <span class="n">based</span> <span class="n">on</span> <span class="n">a</span> <span class="n">primitive</span> <span class="n">instance</span> <span class="n">via</span> <span class="n">`xmap`</span><span class="o">.</span>
+       <span class="nc">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">]</span>
+           <span class="o">^</span>
+</code></pre>
+</div>
+
+<p>… and we don’t have one. So how do we get one? The simplest way is by basing it on an existing <code class="highlighter-rouge">Meta</code> instance, using <code class="highlighter-rouge">xmap</code>. So we simply provide <code class="highlighter-rouge">String =&gt; PersonId</code> and vice-versa and we’re good to go.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nc">PersonIdMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">]</span> <span class="k">=</span>
+  <span class="nc">Meta</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">xmap</span><span class="o">(</span><span class="nc">PersonId</span><span class="o">.</span><span class="n">unsafeFromLegacy</span><span class="o">,</span> <span class="k">_</span><span class="o">.</span><span class="n">toLegacy</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Now it compiles as a column value and as a <code class="highlighter-rouge">Composite</code> that maps to a <em>single</em> column:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select * from person where id = $pid"</span>
+<span class="n">res18</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"select * from person where id = ?"</span><span class="o">)</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Composite</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">].</span><span class="n">length</span>
+<span class="n">res19</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select 'podiatry:123'"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="nc">PersonId</span><span class="o">(</span><span class="n">podiatry</span><span class="o">,</span><span class="mi">123</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Note that the <code class="highlighter-rouge">Composite</code> width is now a single column. The rule is: if there exists an instance <code class="highlighter-rouge">Meta[A]</code> in scope, it will take precedence over any automatic derivation of <code class="highlighter-rouge">Composite[A]</code>.</p>
+
+<h3 id="meta-by-construction">Meta by Construction</h3>
+
+<p>Some modern databases support a <code class="highlighter-rouge">json</code> column type that can store structured data as a JSON document, along with various SQL extensions to allow querying and selecting arbitrary sub-structures. So an obvious thing we might want to do is provide a mapping from Scala model objects to JSON columns, via some kind of JSON serialization library.</p>
+
+<p>We can construct a <code class="highlighter-rouge">Meta</code> instance for the circe <code class="highlighter-rouge">Json</code> type by using the <code class="highlighter-rouge">Meta.other</code> constructor, which constructs a direct object mapping via JDBC’s <code class="highlighter-rouge">.getObject</code> and <code class="highlighter-rouge">.setObject</code>. In the case of PostgreSQL the JSON values are marshalled via the <code class="highlighter-rouge">PGObject</code> type, which encapsulates an uninspiring <code class="highlighter-rouge">(String, String)</code> pair representing the schema type and its string value.</p>
+
+<p>Here we go:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nc">JsonMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="k">=</span>
+  <span class="nc">Meta</span><span class="o">.</span><span class="n">other</span><span class="o">[</span><span class="kt">PGobject</span><span class="o">](</span><span class="s">"json"</span><span class="o">).</span><span class="n">xmap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span>
+    <span class="n">a</span> <span class="k">=&gt;</span> <span class="n">parse</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">getValue</span><span class="o">).</span><span class="n">leftMap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="k">throw</span> <span class="n">e</span><span class="o">).</span><span class="n">merge</span><span class="o">,</span> <span class="c1">// failure raises an exception
+</span>    <span class="n">a</span> <span class="k">=&gt;</span> <span class="o">{</span>
+      <span class="k">val</span> <span class="n">o</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PGobject</span>
+      <span class="n">o</span><span class="o">.</span><span class="n">setType</span><span class="o">(</span><span class="s">"json"</span><span class="o">)</span>
+      <span class="n">o</span><span class="o">.</span><span class="n">setValue</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">noSpaces</span><span class="o">)</span>
+      <span class="n">o</span>
+    <span class="o">}</span>
+  <span class="o">)</span>
+</code></pre>
+</div>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">res21</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">2</span>
+</code></pre>
+</div>
+
+<p>Given this mapping to and from <code class="highlighter-rouge">Json</code> we can construct a <em>further</em> mapping to any type that has an <code class="highlighter-rouge">EncodeJson</code> and <code class="highlighter-rouge">DecodeJson</code> instances. On failure we throw an exception; this indicates a logic or schema problem.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">codecMeta</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">Encoder</span> <span class="kt">:</span> <span class="kt">Decoder</span> <span class="kt">:</span> <span class="kt">TypeTag</span><span class="o">]</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+  <span class="nc">Meta</span><span class="o">[</span><span class="kt">Json</span><span class="o">].</span><span class="n">xmap</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span>
+    <span class="k">_</span><span class="o">.</span><span class="n">as</span><span class="o">[</span><span class="kt">A</span><span class="o">].</span><span class="n">fold</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="k">throw</span> <span class="k">_</span><span class="o">,</span> <span class="n">identity</span><span class="o">),</span>
+    <span class="k">_</span><span class="o">.</span><span class="n">asJson</span>
+  <span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Let’s make sure it works. Here is a simple data type with a circe encoder, taken straight from the website, and a <code class="highlighter-rouge">Meta</code> instance derived from the code above.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Person</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">things</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="o">(</span><span class="n">personEncodeJson</span><span class="o">,</span> <span class="n">personDecodeJson</span><span class="o">)</span> <span class="k">=</span>
+  <span class="o">(</span><span class="nc">Encoder</span><span class="o">.</span><span class="n">forProduct3</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">,</span> <span class="s">"things"</span><span class="o">)((</span><span class="n">p</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">age</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">things</span><span class="o">)),</span>
+   <span class="nc">Decoder</span><span class="o">.</span><span class="n">forProduct3</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">,</span> <span class="s">"things"</span><span class="o">)((</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">things</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=&gt;</span> <span class="nc">Person</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">age</span><span class="o">,</span> <span class="n">things</span><span class="o">)))</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nc">PersonMeta</span> <span class="k">=</span> <span class="n">codecMeta</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Now let’s create a table that has a <code class="highlighter-rouge">json</code> column to store a <code class="highlighter-rouge">Person</code>.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">drop</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"DROP TABLE IF EXISTS pet"</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">run</span>
+
+<span class="k">val</span> <span class="n">create</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    CREATE TABLE pet (
+      id    SERIAL,
+      name  VARCHAR NOT NULL UNIQUE,
+      owner JSON    NOT NULL
+    )
+  """</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">run</span>
+
+<span class="o">(</span><span class="n">drop</span> <span class="o">*&gt;</span> <span class="n">create</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+</code></pre>
+</div>
+
+<p>Note that our <code class="highlighter-rouge">check</code> output now knows about the <code class="highlighter-rouge">Json</code> and <code class="highlighter-rouge">Person</code> mappings. This is a side-effect of constructing instance above, which isn’t a good design. Will revisit this for 0.3.0; this information is only used for diagnostics so it’s not critical.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; sql"select owner from pet".query[Int].check.unsafeRunSync
+
+  select owner from pet
+
+  ✓ SQL Compiles and Typechecks
+  ✕ C01 owner OTHER (json) NOT NULL  →  Int
+    - OTHER (json) is not coercible to Int according to the JDBC specification or any
+      defined mapping. Fix this by changing the schema type to INTEGER, or the Scala
+      type to Person or Json or PGobject.
+</code></pre>
+</div>
+
+<p>And we can now use <code class="highlighter-rouge">Person</code> as a parameter type and as a column type.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">p</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"Steve"</span><span class="o">,</span> <span class="mi">10</span><span class="o">,</span> <span class="nc">List</span><span class="o">(</span><span class="s">"Train"</span><span class="o">,</span> <span class="s">"Ball"</span><span class="o">))</span>
+<span class="n">p</span><span class="k">:</span> <span class="kt">Person</span> <span class="o">=</span> <span class="nc">Person</span><span class="o">(</span><span class="nc">Steve</span><span class="o">,</span><span class="mi">10</span><span class="o">,</span><span class="nc">List</span><span class="o">(</span><span class="nc">Train</span><span class="o">,</span> <span class="nc">Ball</span><span class="o">))</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">sql</span><span class="s">"insert into pet (name, owner) values ('Bob', $p)"</span>
+     <span class="o">|</span>   <span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">String</span>, <span class="kt">Person</span><span class="o">)](</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"owner"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="nc">Bob</span><span class="o">,</span><span class="nc">Person</span><span class="o">(</span><span class="nc">Steve</span><span class="o">,</span><span class="mi">10</span><span class="o">,</span><span class="nc">List</span><span class="o">(</span><span class="nc">Train</span><span class="o">,</span> <span class="nc">Ball</span><span class="o">)))</span>
+</code></pre>
+</div>
+
+<p>If we ask for the <code class="highlighter-rouge">owner</code> column as a string value we can see that it is in fact storing JSON data.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select name, owner from pet"</span><span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">String</span>,<span class="kt">String</span><span class="o">)].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="o">(</span><span class="nc">Bob</span><span class="o">,{</span><span class="s">"name"</span><span class="k">:</span><span class="err">"</span><span class="kt">Steve</span><span class="err">"</span><span class="o">,</span><span class="s">"age"</span><span class="k">:</span><span class="err">10</span><span class="o">,</span><span class="s">"things"</span><span class="k">:</span><span class="err">["</span><span class="kt">Train</span><span class="err">"</span><span class="o">,</span><span class="s">"Ball"</span><span class="err">]</span><span class="o">})</span>
+</code></pre>
+</div>
+
+<h3 id="composite-by-invariant-map">Composite by Invariant Map</h3>
+
+<p>We get <code class="highlighter-rouge">Composite[A]</code> and <code class="highlighter-rouge">Composite[Option[A]]</code> for free given <code class="highlighter-rouge">Meta[A]</code>, or for tuples, <code class="highlighter-rouge">HList</code>s, shapeless records, and case classes whose fields have <code class="highlighter-rouge">Composite</code> instances. This covers a lot of cases, but we still need a way to map other types. For example, what if we wanted to map a <code class="highlighter-rouge">java.awt.Point</code> across two columns? Because it’s not a tuple or case class we can’t do it for free, but we can get there via invariant map. Here we map <code class="highlighter-rouge">Point</code> to a pair of <code class="highlighter-rouge">Int</code> columns.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nc">Point2DComposite</span><span class="k">:</span> <span class="kt">Composite</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
+  <span class="nc">Composite</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">imap</span><span class="o">(</span>
+    <span class="o">(</span><span class="n">t</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span><span class="kt">Int</span><span class="o">))</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Point</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="n">_1</span><span class="o">,</span> <span class="n">t</span><span class="o">.</span><span class="n">_2</span><span class="o">))(</span>
+    <span class="o">(</span><span class="n">p</span><span class="k">:</span> <span class="kt">Point</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">)</span>
+  <span class="o">)</span>
+</code></pre>
+</div>
+
+<p>And it works!</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select 'foo', 12, 42, true"</span><span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">Point</span>, <span class="kt">Boolean</span><span class="o">)].</span><span class="n">unique</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="o">(</span><span class="n">foo</span><span class="o">,</span><span class="n">java</span><span class="o">.</span><span class="n">awt</span><span class="o">.</span><span class="nc">Point</span><span class="o">[</span><span class="kt">x=</span><span class="err">12</span>,<span class="kt">y=</span><span class="err">42</span><span class="o">],</span><span class="kc">true</span><span class="o">)</span>
+</code></pre>
+</div>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
+languages:['scala','java','bash']
+});
+hljs.initHighlighting();
+             </script><script src="/doobie/js/main.js"></script><script src="/doobie/js/kazari.js"></script><script>
+$(document).ready(function() {
+	kazari.KazariPlugin().decorateCode('https://scala-evaluator-212.herokuapp.com/eval', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.S2F6YXJp.Jl2eqMfw8IakJF93PjxTbrf-8YUJgX5OoOfy5JHE8Yw', '', 'monokai')
+})
+    </script></body></html>
