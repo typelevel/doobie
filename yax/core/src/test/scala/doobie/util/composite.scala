@@ -49,6 +49,36 @@ object compositespec extends Specification {
       true
     }
 
+    "exist for option of some fancy types" in {
+      Composite[Option[Int]]
+      Composite[Option[(Int, Int)]]
+      Composite[Option[(Int, Int, String)]]
+      Composite[Option[(Int, (Int, String))]]
+      Composite[Option[(Int, Option[(Int, String)])]]
+      Composite[Option[Woozle]]
+      Composite[Option[(Woozle, String)]]
+      Composite[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
+      true
+    }
+
+    "exist for option of Unit" in {
+      Composite[Option[Unit]]
+      Composite[Option[(Int, Unit)]].length must_== 1
+    }
+
+    // This doesn't work because of the issue with tagged element as HList members.
+    // "exist for option of shapeless record types" in {
+    //
+    //   type DL = (Double, Long)
+    //   type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
+    //
+    //   Composite[Option[A]]
+    //   Composite[Option[(A, A)]]
+    //   Composite[Option[(A, Option[A])]]
+    //
+    //   true
+    // }
+
     "select multi-column instance by default" in {
       Composite[LenStr1].length must_== 2
     }

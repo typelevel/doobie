@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
       "-language:implicitConversions",
       "-language:experimental.macros",
       "-unchecked",
-      "-Xlint",
+      // "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Ywarn-value-discard",
