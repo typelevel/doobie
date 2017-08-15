@@ -4,6 +4,14 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.4.4"></a>New and Noteworthy for Version 0.4.4
+
+This release fixes an [issue](https://github.com/tpolecat/doobie/pull/569) with HikariTransactor (thanks Naoki Aoyama) and supersedes the botched 0.4.3 release.
+
+### <a name="0.4.3"></a>New and Noteworthy for Version 0.4.3
+
+This was a failed attempt to add back support for 2.10. Do not use this release.
+
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
 Sparkly contributors for this release are :sparkles: n4to4, :sparkles: Alexa DeWit, :sparkles: wedens, :sparkles: Colt Frederickson, :sparkles: Benjamin Trenker, :sparkles: nigredo-tori, :sparkles: Suhas Gaddam, :sparkles: Christopher Davenport, :sparkles: Damir Vandic, :sparkles: Jacob Barber, and :chicken: tpolecat. Noteworthy changes:
