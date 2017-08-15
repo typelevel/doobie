@@ -32,10 +32,12 @@ res0: Option[Country] = Some(Country(FRA,France,59225700))
 
 ## Quick Start
 
-Recent releases and dependencies are shown below. The current release is **0.4.2** … if you wish to use an older version please switch to the associated tag. The remainder of this document assumes you're using the current release.
+Recent releases and dependencies are shown below. The current release is **0.4.4** … if you wish to use an older version please switch to the associated tag.  The remainder of this document assumes you're using the current release.
 
 | doobie | status  |  jdk | scala            | scalaz | scalaz-stream | cats | fs2 | shapeless |
 |:------:|:-------:|:----:|------------------|:------:|:-------------:|:----:|:---:|:---------:|
+|  0.4.4 | current | 1.8+ |       2.11, 2.12 |   7.2  |      0.8      | 0.9  | 0.9 |    2.3    |
+|  ~~0.4.3~~ | ~~botched~~ |
 |  0.4.2 | current | 1.8+ |       2.11, 2.12 |   7.2  |      0.8      | 0.9  | 0.9 |    2.3    |
 |  0.4.1 | eol | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.9  | 0.9 |    2.3    |
 |  0.4.0 | eol | 1.8+ | 2.10, 2.11, 2.12 |   7.2  |      0.8      | 0.8  | 0.9 |    2.3    |
@@ -46,8 +48,8 @@ Recent releases and dependencies are shown below. The current release is **0.4.2
 To use **doobie** you need to add **one of the following** to your `build.sbt`.
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.4.2" // scalaz + scalaz-stream
-                       "org.tpolecat" %% "doobie-core-cats" % "0.4.2" // cats   + fs2
+libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.4.4" // scalaz + scalaz-stream
+                       "org.tpolecat" %% "doobie-core-cats" % "0.4.4" // cats   + fs2
 ```
 
 If you are using Scala 2.10 you must also add the paradise compiler plugin.
@@ -66,13 +68,13 @@ It is likely that you will want one or more add-on libraries. **doobie** provide
 | `doobie-specs2`    | `doobie-specs2-cats`    | [specs2](http://etorreborre.github.io/specs2/) support for typechecking queries.
 | `doobie-scalatest` | `doobie-scalatest-cats` | [ScalaTest](http://www.scalatest.org/) support for typechecking queries.
 
-See the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-0.4.0/00-index.html) or [cats](http://tpolecat.github.io/doobie-cats-0.4.0/00-index.html) for more information on these add-ons.
+See the **book of doobie** for [scalaz](http://tpolecat.github.io/doobie-scalaz-0.4.2/00-index.html) or [cats](http://tpolecat.github.io/doobie-cats-0.4.2/00-index.html) for more information on these add-ons.
 
-Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
+Note that **doobie** is pre-1.0 software and is still undergoing active development on [series/0.5.x](https://github.com/tpolecat/doobie/tree/series/0.5.x). New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible.
 
 ## Documentation and Support
 
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.2) for an overview of changes in this and previous versions.
+- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.4.x/CHANGELOG.md#0.4.4) for an overview of changes in this and previous versions.
 - Behold the **book of doobie** for [**scalaz**](http://tpolecat.github.io/doobie-scalaz-0.4.2/00-index.html) and [**cats**](http://tpolecat.github.io/doobie-cats-0.4.2/00-index.html) ← start here
 - There is a [**Scala Exercises**](https://www.scala-exercises.org/) module, courtesy of our friends at 47 Degrees!
 - The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
