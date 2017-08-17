@@ -183,7 +183,8 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand("docs/publishMicrosite"),
+      // no, "docs/publishMicrosite" doesn't work
+      releaseStepCommand(";project docs; publishMicrosite; project /"),
       setNextVersion,
       commitNextVersion,
       pushChanges
