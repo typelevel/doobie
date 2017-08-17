@@ -152,6 +152,7 @@ lazy val publishSettings = Seq(
     </developers>
   ),
   releaseProcess := Nil,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
 )
 
@@ -171,7 +172,6 @@ lazy val doobie = project.in(file("."))
   .aggregate(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
   .settings(
     releaseCrossBuild := true,
-    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
