@@ -1,0 +1,10 @@
+#page-content-wrapper section pre {
+  margin-bottom: 20px;
+  font-size: smaller;
+}
+#page-content-wrapper section pre .hljs {
+  padding: 15px;
+}
+pre .hljs {
+  padding: 15px;
+}
