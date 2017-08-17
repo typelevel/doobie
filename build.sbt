@@ -151,21 +151,23 @@ lazy val publishSettings = Seq(
       </developer>
     </developers>
   ),
-  releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
     runClean,
-    ReleaseStep(action = Command.process("package", _)),
+    runTest,
+    releaseStepCommand("tutQuick"),
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _)),
+    publishArtifacts,
+    releaseStepCommand("sonatypeReleaseAll"),
+    releaseStepTask(publishMicrosite),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
-    pushChanges),
+    pushChanges
+  ),
   mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
 )
 
