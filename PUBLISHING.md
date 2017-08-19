@@ -1,55 +1,43 @@
 
-> *These notes are for Rob ... right now nobody else can publish.*
+## Publishing - 0.5.x Branch
 
-### Publishing a Snapshot
+Despite a bunch of experimentation and reading a bunch of blog posts I still can't figure out how to do releases automatically. It's complicated as all fuck. So I'm giving up for now. It's not that hard to do it by hand. This is actually a lot simpler than it used to be.
 
-To publish a snapshot build all that is needed is:
+*Right now only tpolecat can do a release. Sorry.*
 
-```
-> +publish
-```
+#### Publishing a Snapshot
 
-### Publishing a Release
-
-This is more involved :-\
-
-- Create a staging branch from the series tip:
+- This can be done at any time. You'll be prompted for the **gpg pass phrase**.
 
 ```
-git checkout -b 0.2.4-staging
+> +publishSigned
 ```
 
-- Edit `README.md`, `CHANGELOG.md`, and `01-Introduction.md` to ensure that the versions, etc. are correct, notable changes are listed, and contributors are credited. Commit these changes.
+#### Publishing a Release
 
-- Stage the tut doc in `tpolecat.github.io`:
-
-```
-> ++2.11.11 // to avoid warnings about unused imports
-...
-> tut
-...
-> ctut
-```
-
-- Remove the `-SNAPSHOT` suffix from the tut doc root and then update `_config.yml`. Remove the warning block from the `00-index.md`.
-
-- Update the version in `projects.html`.
-
-- Commit and push the doc. Ensure that links from `projects.html` work, and that it looks generally ok. Note that source links won't work from the scaladoc until the tag is created.
-
-- Commit and push the staging branch and ensure that doc links work and go to the correct versions. The `CHANGELOG` link will be wrong.
-
-- Attempt to release.
-```
-> release cross
-```
-
-- If all goes well, which is unlikely, it will ask for PGP keys. These are in a secure note in your keychain called "Sonatype/SBT PGP Keys". Eventually the build will crap out after pushing the branch. Finish up with:
+- Create a staging branch with a name like `v0.5.1-staging`.
+- Make sure `CHANGELOG.md` looks ok and has a section for the release version, and make sure all contributors are recognized and thanked. Any last-minute changes can be pushed to the staging branch.
+- Release. You will be prompted for the **version** and later for **gpg pass phrase**.
 
 ```
-> sonatypeReleaseAll
+> release
+```
+
+- We can't publish the doc as an sbt-release step due to sbt-microsites [#210](https://github.com/47deg/sbt-microsites/issues/210) and related sbt limitations. So for now we need to say
+
+```
+> project docs
+> set version := "<the version we just released>"
+> publishMicrosite
+> ^D
 ```
 
 - Push the release branch, open a PR and merge.
 
-- Have a cocktail.
+#### Announcing the Release
+
+- Update the Gitter room header.
+- Tweet the release. Keep it simple:
+  - version
+  - thank contributors
+  - link to repo

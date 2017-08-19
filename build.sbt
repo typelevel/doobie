@@ -184,7 +184,8 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand(microsites.MicrositesPlugin.autoImport.publishMicrositeCommand),
+      // Doesn't work, rats. See https://github.com/47deg/sbt-microsites/issues/210
+      // releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
