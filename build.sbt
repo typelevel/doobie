@@ -126,7 +126,17 @@ lazy val commonSettings =
     addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion)
   )
 
+// Ok so for now if you're publishing you need to have signing keys locally. Note that the key
+// we're using (it's the only one in the ring but whatevs) is below in publishSettings.
+pgpPublicRing in Global := file(System.getProperty("user.home")) / ".sbt" / "gpg" / "doobie" / "pubring.gpg"
+pgpSecretRing in Global := file(System.getProperty("user.home")) / ".sbt" / "gpg" / "doobie" / "secring.gpg"
+
+// And if you wish you can pass the passphrase in the environment.
+pgpPassphrase in Global := sys.env.get("DOOBIE_PGP_PASS").map(_.toArray)
+
 lazy val publishSettings = Seq(
+  useGpg := false,
+  usePgpKeyHex("89B1B6AF25AA090C"),
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -177,14 +187,13 @@ lazy val doobie = project.in(file("."))
       inquireVersions,
       runClean,
       runTest,
-      releaseStepCommand("docs/tut"),
+      releaseStepCommand("docs/tut"), // annoying that we have to do this twice
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      // no, "docs/publishMicrosite" doesn't work
-      releaseStepCommand(";project docs; publishMicrosite; project /"),
+      releaseStepCommand(microsites.MicrositesPlugin.autoImport.publishMicrositeCommand),
       setNextVersion,
       commitNextVersion,
       pushChanges
