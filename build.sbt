@@ -127,6 +127,7 @@ lazy val commonSettings =
   )
 
 lazy val publishSettings = Seq(
+  useGpg := false,
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -151,22 +152,16 @@ lazy val publishSettings = Seq(
       </developer>
     </developers>
   ),
-  releaseCrossBuild := true,
+  releaseProcess := Nil,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    inquireVersions,
-    runClean,
-    ReleaseStep(action = Command.process("package", _)),
-    setReleaseVersion,
-    commitReleaseVersion,
-    tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _)),
-    setNextVersion,
-    commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
-    pushChanges),
   mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
+)
+
+lazy val noPublishSettings = Seq(
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false,
+  releaseProcess := Nil
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -176,12 +171,26 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   .dependsOn(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
   .aggregate(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
-
-lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false
-)
+  .settings(
+    releaseCrossBuild := true,
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      runTest,
+      releaseStepCommand("docs/tut"), // annoying that we have to do this twice
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      releaseStepCommand("sonatypeReleaseAll"),
+      // Doesn't work, rats. See https://github.com/47deg/sbt-microsites/issues/210
+      // releaseStepCommand("docs/publishMicrosite"),
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    )
+  )
 
 lazy val free = project
   .in(file("modules/free"))
