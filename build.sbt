@@ -404,7 +404,7 @@ lazy val docs = project
     micrositeGithubRepo       := "doobie",
     micrositeGitterChannel    := false, // no me gusta
     micrositeBaseUrl          := "/doobie",
-    micrositeDocumentationUrl := "/doobie/docs/01-Introduction.html",
+    micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12",
     micrositeHighlightTheme   := "color-brewer",
     micrositePalette := Map(
       "brand-primary"     -> "#E35D31",
@@ -427,10 +427,10 @@ lazy val docs = project
         "scalaVersion"     -> scalaVersion.value,
         "scalaVersions"    -> crossScalaVersions.value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", "") // 2.11/12
       )
+    ),
+    micrositeExtraMdFiles := Map(
+      file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "3"))
     )
-    // micrositeExtraMdFiles := Map(
-    //   file("README.md") -> ExtraMdFileConfig("index.md", "home")
-    // )
   )
 
 lazy val refined = project

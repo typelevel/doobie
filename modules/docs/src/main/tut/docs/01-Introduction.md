@@ -4,6 +4,8 @@ number: 1
 title: Introduction
 ---
 
+<div style="margin-bottom: 20px; text-align: center"><img src="../img/yeah.png"/></div>
+
 ## {{page.title}}
 
 This is a very short book about **doobie**, which is a pure-functional JDBC layer for Scala.

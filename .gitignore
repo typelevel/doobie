@@ -1,6 +1,9 @@
 *.class
 *.log
 
+# these are moved into the doc project by the build
+modules/docs/src/main/tut/changelog.md
+
 # sbt specific
 dist/*
 target/

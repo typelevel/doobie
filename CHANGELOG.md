@@ -6,7 +6,7 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.5.0"></a>Work in Progress for Version 0.5.0
 
-This introduces the 0.5.x series which standardizes on cats, cats-effect, and fs2. It will remain as a milestone-only release until cats 1.0.0 and fs2 0.10 final, and will track updates to those libraries.
+This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). It will remain as a milestone-only release until cats 1.0.0 and fs2 0.10 final, and will track updates to those libraries.
 
 Notable changes thus far:
 
@@ -18,6 +18,14 @@ Notable changes thus far:
 - The release process is somewhat better.
 - Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
 - Rather than `foo.imports._` for both names and implicits, there are now distinct imports `foo._, foo.implicits._`. The old `foo.imports._` still works but is deprecated.
+
+### <a name="0.4.4"></a>New and Noteworthy for Version 0.4.4
+
+This release fixes an [issue](https://github.com/tpolecat/doobie/pull/569) with HikariTransactor (thanks Naoki Aoyama) and supersedes the botched 0.4.3 release.
+
+### <a name="0.4.3"></a>New and Noteworthy for Version 0.4.3
+
+This was a failed attempt to add back support for 2.10. Do not use this release.
 
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 

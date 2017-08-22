@@ -20,7 +20,7 @@ If you want a slightly longer explanation in video form, you might enjoy this le
 
 **doobie** is a monadic API that provides a number of data types that all work the same way but describe computations in different contexts. For example `ConnectionIO` describes computations that take place in a context where a `java.sql.Connection` is available. Similar data types exist for each major type in `java.sql`. Programs written in these contexts compose naturally via lifting, mirroring the lifecycles of each contexts's carrier type.
 
-<p class="text-center"><img src="/assets/nesting.png"></p>
+<p class="text-center"><img src="../img/nesting.png"></p>
 
 Some patterns of composition are so common and generic that they can be provided for you, as **doobie** does with its high-level API. As a result many programs can be written entirely in terms of `ConnectionIO`. Some examples are:
 
