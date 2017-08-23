@@ -63,7 +63,6 @@ The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [H
 
 ```tut:silent
 import doobie.hikari.imports._
-import doobie.util.monaderror._ // for `guarantee` combinator below
 
 val q = sql"select 42".query[Int].unique
 

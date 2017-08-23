@@ -1,15 +1,9 @@
 package doobie
 
-import doobie.util.pos.Pos
-import doobie.syntax.catchsql.ToDoobieCatchSqlOps
-import doobie.syntax.foldable.ToDoobieFoldableOps
-
-import cats.effect.Sync
-import fs2.Stream
+import doobie.syntax.AllSyntax
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
-object imports extends ToDoobieCatchSqlOps
-                  with ToDoobieFoldableOps {
+object imports extends AllSyntax {
 
   /**
    * Alias for `doobie.free.connection`.
@@ -68,21 +62,8 @@ object imports extends ToDoobieCatchSqlOps
   /** @group Type Aliases */ type PreparedStatementIO[A] = FPS.PreparedStatementIO[A]
   /** @group Type Aliases */ type ResultSetIO[A]         = FRS.ResultSetIO[A]
 
-  /** @group Syntax */
-  implicit def toStreamOps[F[_]: Sync, A](fa: Stream[F, A]): doobie.syntax.stream.StreamOps[F, A] =
-    new doobie.syntax.stream.StreamOps(fa)
-
-  /** @group Syntax */
-  implicit def toSqlInterpolator(sc: StringContext)(implicit pos: Pos): doobie.syntax.string.SqlInterpolator =
-    new doobie.syntax.string.SqlInterpolator(sc)
-
-  /** @group Syntax */
-  implicit def toMoreConnectionIOOps[A](ma: ConnectionIO[A]): doobie.syntax.connectionio.MoreConnectionIOOps[A] =
-    new doobie.syntax.connectionio.MoreConnectionIOOps(ma)
-
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta
-
 
   /** @group Type Aliases */      type Composite[A] = doobie.util.composite.Composite[A]
   /** @group Companion Aliases */ val  Composite    = doobie.util.composite.Composite

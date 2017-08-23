@@ -1,9 +1,8 @@
 package doobie.util
 
-import doobie.imports._
-
 import cats.Reducible
 import cats.implicits._
+import doobie.imports._
 
 /** Module of `Fragment` constructors. */
 object fragments {

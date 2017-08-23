@@ -7,7 +7,7 @@ import doobie.enum.resultsettype.ResultSetType
 import doobie.free.{ resultset => RS }
 import doobie.free.{ statement => S }
 
-import doobie.util.monaderror._
+import doobie.syntax.monaderror._
 
 import java.sql.SQLWarning
 

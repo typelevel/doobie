@@ -3,7 +3,6 @@ package doobie.example
 import cats.effect.IO
 import cats.implicits._
 import doobie.imports._
-import doobie.util.monaderror._
 import java.io.File
 
 // JDBC program using the low-level API
