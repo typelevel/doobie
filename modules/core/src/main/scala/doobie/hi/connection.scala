@@ -10,7 +10,6 @@ import doobie.enum.jdbctype.JdbcType
 import doobie.util.analysis.Analysis
 import doobie.util.composite.Composite
 import doobie.util.stream.repeatEvalChunks
-import doobie.util.monaderror._
 
 import doobie.free.{ connection => C }
 import doobie.free.{ preparedstatement => PS }
@@ -21,6 +20,8 @@ import doobie.free.{ databasemetadata => DMD }
 
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.hi.{ resultset => HRS }
+
+import doobie.syntax.monaderror._
 
 import java.sql.{ Savepoint, PreparedStatement, ResultSet }
 

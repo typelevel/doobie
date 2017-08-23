@@ -17,7 +17,8 @@ import doobie.free.{ resultset => RS }
 import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.stream.repeatEvalChunks
-import doobie.util.monaderror._
+
+import doobie.syntax.monaderror._
 
 import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 

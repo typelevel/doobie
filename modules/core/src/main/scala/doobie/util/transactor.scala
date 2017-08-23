@@ -4,7 +4,7 @@ import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commi
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-import doobie.util.monaderror._
+import doobie.syntax.monaderror._
 
 import cats.{ Monad, MonadError, ~> }
 import cats.data.Kleisli

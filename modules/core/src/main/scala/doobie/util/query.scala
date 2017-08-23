@@ -19,7 +19,7 @@ import doobie.util.analysis.Analysis
 import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
-import doobie.util.monaderror._
+import doobie.syntax.monaderror._
 import doobie.syntax.stream._
 
 import scala.collection.generic.CanBuildFrom

@@ -16,6 +16,7 @@ Notable changes thus far:
 - `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.
 - The doc has been ported to [sbt-microsites](https://github.com/47deg/sbt-microsites) and is undergoing review (help wanted!).
 - The release process is somewhat better.
+- Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
 
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
