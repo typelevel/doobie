@@ -3,64 +3,8 @@ package doobie
 import doobie.syntax.AllSyntax
 
 /** Module of aliases for commonly-used types and syntax; use as `import doobie.imports._` */
-object imports extends AllSyntax {
+object imports extends AllSyntax with doobie.hi.Aliases {
 
-  /**
-   * Alias for `doobie.free.connection`.
-   * @group Free Module Aliases
-   */
-  val FC   = doobie.free.connection
-  implicit val AsyncC = FC.AsyncConnectionIO
-
-  /**
-   * Alias for `doobie.free.statement`.
-   * @group Free Module Aliases
-   */
-  val FS   = doobie.free.statement
-  implicit val AsyncS = FS.AsyncStatementIO
-
-  /**
-   * Alias for `doobie.free.preparedstatement`.
-   * @group Free Module Aliases
-   */
-  val FPS  = doobie.free.preparedstatement
-  implicit val AsyncPS = FPS.AsyncPreparedStatementIO
-
-  /**
-   * Alias for `doobie.free.resultset`.
-   * @group Free Module Aliases
-   */
-  val FRS  = doobie.free.resultset
-  implicit val AsyncRS = FRS.AsyncResultSetIO
-
-  /**
-   * Alias for `doobie.hi.connection`.
-   * @group Hi Module Aliases
-   */
-  val HC   = doobie.hi.connection
-
-  /**
-   * Alias for `doobie.hi.statement`.
-   * @group Hi Module Aliases
-   */
-  val HS   = doobie.hi.statement
-
-  /**
-   * Alias for `doobie.hi.preparedstatement`.
-   * @group Hi Module Aliases
-   */
-  val HPS  = doobie.hi.preparedstatement
-
-  /**
-   * Alias for `doobie.hi.resultset`.
-   * @group Hi Module Aliases
-   */
-  val HRS  = doobie.hi.resultset
-
-  /** @group Type Aliases */ type ConnectionIO[A]        =  FC.ConnectionIO[A]
-  /** @group Type Aliases */ type StatementIO[A]         =  FS.StatementIO[A]
-  /** @group Type Aliases */ type PreparedStatementIO[A] = FPS.PreparedStatementIO[A]
-  /** @group Type Aliases */ type ResultSetIO[A]         = FRS.ResultSetIO[A]
 
   /** @group Type Aliases */      type Meta[A] = doobie.util.meta.Meta[A]
   /** @group Companion Aliases */ val  Meta    = doobie.util.meta.Meta

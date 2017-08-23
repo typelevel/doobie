@@ -4,9 +4,6 @@ import doobie.enum.holdability.Holdability
 import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
-import doobie.free.{ resultset => RS }
-import doobie.free.{ statement => S }
-
 import doobie.syntax.monaderror._
 
 import java.sql.SQLWarning
@@ -18,46 +15,47 @@ import scala.Predef.intArrayOps
  * @group Modules
  */
 object statement {
+  import Aliases._
 
   /** @group Batching */
   def addBatch(sql: String): StatementIO[Unit] =
-    S.addBatch(sql)
+    FS.addBatch(sql)
 
   /** @group Batching */
   val clearBatch: StatementIO[Unit] =
-    S.clearBatch
+    FS.clearBatch
 
   /** @group Execution */
   val executeBatch: StatementIO[List[Int]] =
-    S.executeBatch.map(_.toList)
+    FS.executeBatch.map(_.toList)
 
   /** @group Execution */
   def executeQuery[A](sql: String)(k: ResultSetIO[A]): StatementIO[A] =
-    S.executeQuery(sql).flatMap(s => S.embed(s, k guarantee RS.close))
+    FS.executeQuery(sql).flatMap(s => FS.embed(s, k guarantee FRS.close))
 
   /** @group Execution */
   def executeUpdate(sql: String): StatementIO[Int] =
-    S.executeUpdate(sql)
+    FS.executeUpdate(sql)
 
   /** @group Properties */
   val getFetchDirection: StatementIO[FetchDirection] =
-    S.getFetchDirection.map(FetchDirection.unsafeFromInt)
+    FS.getFetchDirection.map(FetchDirection.unsafeFromInt)
 
   /** @group Properties */
   val getFetchSize: StatementIO[Int] =
-    S.getFetchSize
+    FS.getFetchSize
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): StatementIO[A] =
-    S.getGeneratedKeys.flatMap(s => S.embed(s, k guarantee RS.close))
+    FS.getGeneratedKeys.flatMap(s => FS.embed(s, k guarantee FRS.close))
 
   /** @group Properties */
   val getMaxFieldSize: StatementIO[Int] =
-    S.getMaxFieldSize
+    FS.getMaxFieldSize
 
   /** @group Properties */
   val getMaxRows: StatementIO[Int] =
-    S.getMaxRows
+    FS.getMaxRows
 
   // /** @group Batching */
   // def getMoreResults(a: Int): StatementIO[Boolean] =
@@ -65,62 +63,62 @@ object statement {
 
   /** @group Batching */
   val getMoreResults: StatementIO[Boolean] =
-    S.getMoreResults
+    FS.getMoreResults
 
   /** @group Properties */
   val getQueryTimeout: StatementIO[Int] =
-    S.getQueryTimeout
+    FS.getQueryTimeout
 
   /** @group Batching */
   def getResultSet[A](k: ResultSetIO[A]): StatementIO[A] =
-    S.getResultSet.flatMap(s => S.embed(s, k))
+    FS.getResultSet.flatMap(s => FS.embed(s, k))
 
   /** @group Properties */
   val getResultSetConcurrency: StatementIO[ResultSetConcurrency] =
-    S.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
+    FS.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
 
   /** @group Properties */
   val getResultSetHoldability: StatementIO[Holdability] =
-    S.getResultSetHoldability.map(Holdability.unsafeFromInt)
+    FS.getResultSetHoldability.map(Holdability.unsafeFromInt)
 
   /** @group Properties */
   val getResultSetType: StatementIO[ResultSetType] =
-    S.getResultSetType.map(ResultSetType.unsafeFromInt)
+    FS.getResultSetType.map(ResultSetType.unsafeFromInt)
 
   /** @group Results */
   val getUpdateCount: StatementIO[Int] =
-    S.getUpdateCount
+    FS.getUpdateCount
 
   /** @group Results */
   val getWarnings: StatementIO[SQLWarning] =
-    S.getWarnings
+    FS.getWarnings
 
   /** @group Properties */
   def setCursorName(name: String): StatementIO[Unit] =
-    S.setCursorName(name)
+    FS.setCursorName(name)
 
   /** @group Properties */
   def setEscapeProcessing(a: Boolean): StatementIO[Unit] =
-    S.setEscapeProcessing(a)
+    FS.setEscapeProcessing(a)
 
   /** @group Properties */
   def setFetchDirection(fd: FetchDirection): StatementIO[Unit] =
-    S.setFetchDirection(fd.toInt)
+    FS.setFetchDirection(fd.toInt)
 
   /** @group Properties */
   def setFetchSize(n: Int): StatementIO[Unit] =
-    S.setFetchSize(n)
+    FS.setFetchSize(n)
 
   /** @group Properties */
   def setMaxFieldSize(n: Int): StatementIO[Unit] =
-    S.setMaxFieldSize(n)
+    FS.setMaxFieldSize(n)
 
   /** @group Properties */
   def setMaxRows(n: Int): StatementIO[Unit] =
-    S.setMaxRows(n)
+    FS.setMaxRows(n)
 
   /** @group Properties */
   def setQueryTimeout(a: Int): StatementIO[Unit] =
-    S.setQueryTimeout(a)
+    FS.setQueryTimeout(a)
 
 }
