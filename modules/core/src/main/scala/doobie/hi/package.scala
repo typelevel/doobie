@@ -1,7 +1,5 @@
 package doobie
 
-import cats.data.Ior
-
 /**
  * High-level database API. The constructors here are defined
  * in terms of those in `doobie.free.connection` but differ in the following ways:
@@ -17,19 +15,10 @@ import cats.data.Ior
  *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear
  *    in this API.
  */
-package object hi {
+package object hi
+  extends Modules
+     with doobie.free.Aliases {
 
-  implicit class AlignSyntax[A](as: List[A]) {
-    def align[B](bs: List[B]): List[A Ior B] = {
-      def go(as: List[A], bs: List[B], acc: List[A Ior B]): List[A Ior B] =
-        (as, bs) match {
-          case (a :: as, b :: bs) => go(as , bs , Ior.Both(a, b) :: acc)
-          case (a :: as, Nil    ) => go(as , Nil, Ior.Left(a)    :: acc)
-          case (Nil    , b :: bs) => go(Nil, bs , Ior.Right(b)    :: acc)
-          case (Nil    , Nil    ) => acc.reverse
-        }
-      go(as, bs, Nil)
-    }
-  }
+  object implicits extends doobie.free.Instances
 
 }

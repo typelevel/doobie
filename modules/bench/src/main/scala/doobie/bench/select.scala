@@ -1,7 +1,7 @@
 package doobie.bench
 
 import cats.effect.IO
-import doobie.imports._
+import doobie._, doobie.implicits._
 import java.sql.DriverManager
 import org.openjdk.jmh.annotations._
 

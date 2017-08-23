@@ -1,4 +1,5 @@
-package doobie.util
+package doobie
+package util
 
 import cats._, cats.effect._
 import cats.implicits._
@@ -6,21 +7,10 @@ import cats.{ Functor, Alternative }
 import cats.functor.{ Contravariant, Profunctor }
 import cats.data.NonEmptyList
 
-import doobie.free.connection.ConnectionIO
-import doobie.free.resultset.ResultSetIO
-import doobie.free.preparedstatement.{ PreparedStatementIO }
-import doobie.hi.{ connection => HC }
-import doobie.hi.{ preparedstatement => HPS }
-import doobie.hi.{ resultset => HRS }
-import doobie.free.{ preparedstatement => FPS }
-import doobie.free.{ resultset => FRS }
-import doobie.util.composite.Composite
+import doobie.implicits._
 import doobie.util.analysis.Analysis
-import doobie.util.log._
+import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
 import doobie.util.pos.Pos
-import doobie.util.fragment.Fragment
-import doobie.syntax.monaderror._
-import doobie.syntax.stream._
 
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.longWrapper
@@ -33,8 +23,6 @@ import fs2.Stream
 
 /** Module defining queries parameterized by input and output types. */
 object query {
-
-  import doobie.free.preparedstatement.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
 
   val DefaultChunkSize = 512
 

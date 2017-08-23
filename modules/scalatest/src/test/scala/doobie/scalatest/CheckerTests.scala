@@ -1,7 +1,7 @@
-package doobie.scalatest
+package doobiescalatest
 
 import cats.effect.IO
-import doobie.imports._
+import doobie._, doobie.implicits._
 import doobie.scalatest.imports._
 import org.scalatest._
 

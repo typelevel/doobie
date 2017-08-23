@@ -1,8 +1,8 @@
 package doobie.util
 
 import cats.effect.IO
+import doobie._, doobie.implicits._
 import doobie.enum.jdbctype._
-import doobie.imports._
 import org.specs2.mutable.Specification
 import shapeless.test._
 

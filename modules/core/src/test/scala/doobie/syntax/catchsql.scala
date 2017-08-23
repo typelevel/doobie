@@ -1,7 +1,7 @@
 package doobie.syntax
 
 import cats.implicits._
-import doobie.imports._
+import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
 object catchsqlspec extends Specification {

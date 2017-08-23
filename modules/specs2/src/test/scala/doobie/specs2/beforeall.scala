@@ -1,8 +1,8 @@
 package doobie.specs2
 
 import cats.effect.IO
-import doobie.imports._
-import doobie.h2.imports._
+import doobie._, doobie.implicits._
+import doobie.h2._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll

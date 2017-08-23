@@ -1,8 +1,8 @@
 package doobie.example
 
 import cats.effect.IO
-import doobie.imports._
-import doobie.hikari.imports._
+import doobie.implicits._
+import doobie.hikari._, doobie.hikari.implicits._
 
 object HikariExample {
 

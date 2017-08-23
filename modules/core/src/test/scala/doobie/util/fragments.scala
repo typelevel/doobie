@@ -1,8 +1,8 @@
 package doobie.util
 
-import doobie.imports._
-import org.specs2.mutable.Specification
 import cats.{ Reducible => Foldable1, _}, cats.implicits._
+import doobie._, doobie.implicits._
+import org.specs2.mutable.Specification
 
 object fragmentsspec extends Specification {
   import Fragments._

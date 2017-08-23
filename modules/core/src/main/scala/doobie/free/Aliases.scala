@@ -1,62 +1,54 @@
 package doobie.free
 
-trait Aliases {
+trait Aliases extends Types with Modules
 
-  val FB = blob
-  implicit val AsyncBlobIO = FB.AsyncBlobIO
-  type BlobIO[A] = FB.BlobIO[A]
-
-  val FCS = callablestatement
-  implicit val AsyncCallableStatementIO = FCS.AsyncCallableStatementIO
-  type CallableStatementIO[A] = FCS.CallableStatementIO[A]
-
-  val FCL = clob
-  implicit val AsyncClobIO = FCL.AsyncClobIO
-  type ClobIO[A] = FCL.ClobIO[A]
-
-  val FC = connection
-  implicit val AsyncConnectionIO = FC.AsyncConnectionIO
-  type ConnectionIO[A] = FC.ConnectionIO[A]
-
-  val FDMD = databasemetadata
-  implicit val AsyncDatabaseMetaDataIO = FDMD.AsyncDatabaseMetaDataIO
-  type DatabaseMetaDataIO[A] = FDMD.DatabaseMetaDataIO[A]
-
-  val FD = driver
-  implicit val AsyncDriverIO = FD.AsyncDriverIO
-  type DriverIO[A] = FD.DriverIO[A]
-
-  val FNCL = nclob
-  implicit val AsyncNClobIO = FNCL.AsyncNClobIO
-  type NClobIO[A] = FNCL.NClobIO[A]
-
-  val FPS = preparedstatement
-  implicit val AsyncPreparedStatementIO = FPS.AsyncPreparedStatementIO
-  type PreparedStatementIO[A] = FPS.PreparedStatementIO[A]
-
-  val FREF = ref
-  implicit val AsyncRefIO = FREF.AsyncRefIO
-  type RefIO[A] = FREF.RefIO[A]
-
-  val FRS = resultset
-  implicit val AsyncResultSetIO = FRS.AsyncResultSetIO
-  type ResultSetIO[A] = FRS.ResultSetIO[A]
-
-  val FSD = sqldata
-  implicit val AsyncSQLDataIO = FSD.AsyncSQLDataIO
-  type SQLDataIO[A] = FSD.SQLDataIO[A]
-
-  val FSI = sqlinput
-  implicit val AsyncSQLInputIO = FSI.AsyncSQLInputIO
-  type SQLInputIO[A] = FSI.SQLInputIO[A]
-
-  val FSO = sqloutput
-  implicit val AsyncSQLOutputIO = FSO.AsyncSQLOutputIO
-  type SQLOutputIO[A] = FSO.SQLOutputIO[A]
-
-  val FS = statement
-  implicit val AsyncStatementIO = FS.AsyncStatementIO
-  type StatementIO[A] = FS.StatementIO[A]
-
+trait Types {
+  type BlobIO[A]              = blob.BlobIO[A]
+  type CallableStatementIO[A] = callablestatement.CallableStatementIO[A]
+  type ClobIO[A]              = clob.ClobIO[A]
+  type ConnectionIO[A]        = connection.ConnectionIO[A]
+  type DatabaseMetaDataIO[A]  = databasemetadata.DatabaseMetaDataIO[A]
+  type DriverIO[A]            = driver.DriverIO[A]
+  type NClobIO[A]             = nclob.NClobIO[A]
+  type PreparedStatementIO[A] = preparedstatement.PreparedStatementIO[A]
+  type RefIO[A]               = ref.RefIO[A]
+  type ResultSetIO[A]         = resultset.ResultSetIO[A]
+  type SQLDataIO[A]           = sqldata.SQLDataIO[A]
+  type SQLInputIO[A]          = sqlinput.SQLInputIO[A]
+  type SQLOutputIO[A]         = sqloutput.SQLOutputIO[A]
+  type StatementIO[A]         = statement.StatementIO[A]
 }
-object Aliases extends Aliases
+
+trait Modules {
+  val FB   = blob
+  val FCS  = callablestatement
+  val FCL  = clob
+  val FC   = connection
+  val FDMD = databasemetadata
+  val FD   = driver
+  val FNCL = nclob
+  val FPS  = preparedstatement
+  val FREF = ref
+  val FRS  = resultset
+  val FSD  = sqldata
+  val FSI  = sqlinput
+  val FSO  = sqloutput
+  val FS   = statement
+}
+
+trait Instances {
+  implicit val AsyncBlobIO              = blob.AsyncBlobIO
+  implicit val AsyncCallableStatementIO = callablestatement.AsyncCallableStatementIO
+  implicit val AsyncClobIO              = clob.AsyncClobIO
+  implicit val AsyncConnectionIO        = connection.AsyncConnectionIO
+  implicit val AsyncDatabaseMetaDataIO  = databasemetadata.AsyncDatabaseMetaDataIO
+  implicit val AsyncDriverIO            = driver.AsyncDriverIO
+  implicit val AsyncNClobIO             = nclob.AsyncNClobIO
+  implicit val AsyncPreparedStatementIO = preparedstatement.AsyncPreparedStatementIO
+  implicit val AsyncRefIO               = ref.AsyncRefIO
+  implicit val AsyncResultSetIO         = resultset.AsyncResultSetIO
+  implicit val AsyncSQLDataIO           = sqldata.AsyncSQLDataIO
+  implicit val AsyncSQLInputIO          = sqlinput.AsyncSQLInputIO
+  implicit val AsyncSQLOutputIO         = sqloutput.AsyncSQLOutputIO
+  implicit val AsyncStatementIO         = statement.AsyncStatementIO
+}

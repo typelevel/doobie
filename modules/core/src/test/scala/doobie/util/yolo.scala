@@ -1,7 +1,7 @@
-package doobie.util
+package doobie
+package util
 
 import cats.effect.IO
-import doobie.imports._
 import doobie.util.yolo._
 
 import org.specs2.mutable.Specification

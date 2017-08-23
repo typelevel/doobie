@@ -15,7 +15,6 @@ import scala.Predef.intArrayOps
  * @group Modules
  */
 object statement {
-  import Aliases._
 
   /** @group Batching */
   def addBatch(sql: String): StatementIO[Unit] =

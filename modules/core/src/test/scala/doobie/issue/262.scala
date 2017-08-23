@@ -3,7 +3,7 @@ package doobie.issue
 import cats.Monad
 import cats.implicits._
 import cats.effect.{ Async, IO }
-import doobie.imports._
+import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import Predef._
 

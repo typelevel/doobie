@@ -26,7 +26,7 @@ import fs2.Stream.{ eval, bracket }
  * @group Modules
  */
 object connection {
-  import Aliases._
+  import implicits._
 
   /** @group Lifting */
   def delay[A](a: => A): ConnectionIO[A] =

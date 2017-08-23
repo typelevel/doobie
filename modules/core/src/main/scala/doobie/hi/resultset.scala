@@ -21,7 +21,7 @@ import scala.collection.generic.CanBuildFrom
  * @group Modules
  */
 object resultset {
-  import Aliases._
+  import implicits._
 
   /**
    * Non-strict unit for capturing effects.

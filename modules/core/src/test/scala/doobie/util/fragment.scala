@@ -3,7 +3,7 @@ package doobie.util
 import cats._
 import cats.implicits._
 import cats.effect.IO
-import doobie.imports._
+import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import shapeless._
 

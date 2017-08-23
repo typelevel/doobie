@@ -15,6 +15,7 @@ import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.stream.repeatEvalChunks
 
+import doobie.syntax.align._
 import doobie.syntax.monaderror._
 
 import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
@@ -33,7 +34,7 @@ import fs2.Stream.bracket
  * @group Modules
  */
 object preparedstatement {
-  import Aliases._
+  import implicits._
 
   // fs2 handler, not public
   private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
