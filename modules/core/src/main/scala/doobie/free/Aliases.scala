@@ -1,7 +1,5 @@
 package doobie.free
 
-trait Aliases extends Types with Modules
-
 trait Types {
   type BlobIO[A]              = blob.BlobIO[A]
   type CallableStatementIO[A] = callablestatement.CallableStatementIO[A]

@@ -12,7 +12,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
-trait Metas {
+trait Instances {
 
   implicit val UuidType =
     Meta.advanced[UUID](

@@ -1,8 +1,8 @@
 package doobie.postgres
 
 import cats.effect.IO
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._, doobie.implicits._
+import doobie.postgres._, doobie.postgres.implicits._
 import doobie.postgres.pgistypes._
 import java.net.InetAddress
 import java.util.UUID
@@ -150,7 +150,7 @@ object pgtypesspec extends Specification {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double]     = Stream.continually(util.Random.nextDouble).iterator
+  lazy val rnd: Iterator[Double]     = Stream.continually(scala.util.Random.nextDouble).iterator
   lazy val pts: Iterator[Point]      = Stream.continually(new Point(rnd.next, rnd.next)).iterator
   lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator
   lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({ lazy val p = pts.next; Array(p, pts.next, pts.next, pts.next, p) })).iterator

@@ -1,6 +1,6 @@
 package doobie.postgres
 
-import doobie.imports._
+import doobie._
 import doobie.util.invariant._
 
 import org.postgis._
@@ -8,7 +8,7 @@ import org.postgis._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-object pgistypes {
+trait PgisInstances {
 
   // PostGIS outer types
   implicit val PGgeometryType = Meta.other[PGgeometry]("geometry")

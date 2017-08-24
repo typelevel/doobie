@@ -17,7 +17,8 @@ package doobie
  */
 package object hi
   extends Modules
-     with doobie.free.Aliases {
+     with doobie.free.Modules
+     with doobie.free.Types {
 
   object implicits extends doobie.free.Instances
 

@@ -1,7 +1,5 @@
 package doobie.hi
 
-trait Aliases extends Modules
-
 trait Modules {
   val HC  = doobie.hi.connection
   val HS  = doobie.hi.statement

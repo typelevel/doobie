@@ -1,8 +1,8 @@
 package doobie.postgres
 
 import cats.effect.{ IO, Sync }
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._, doobie.implicits._
+import doobie.postgres._, doobie.postgres.implicits._
 import java.io.ByteArrayOutputStream
 import org.specs2.mutable.Specification
 

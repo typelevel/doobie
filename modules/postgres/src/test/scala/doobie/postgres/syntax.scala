@@ -1,7 +1,7 @@
 package doobie.postgres
 
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._, doobie.implicits._
+import doobie.postgres._, doobie.postgres.implicits._
 import doobie.postgres.pgistypes._
 import org.specs2.mutable.Specification
 
