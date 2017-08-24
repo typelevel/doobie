@@ -3,6 +3,7 @@
 
 # these are moved into the doc project by the build
 modules/docs/src/main/tut/changelog.md
+modules/docs/src/main/tut/license.md
 
 # sbt specific
 dist/*

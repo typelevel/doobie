@@ -112,6 +112,16 @@ lazy val buildSettings = Seq(
 lazy val commonSettings =
   compilerFlags ++
   Seq(
+
+    // These sbt-header settings can't be set in ThisBuild for some reason
+    headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.CppStyleLineComment),
+    headerLicense  := Some(HeaderLicense.Custom(
+      """|Copyright (c) 2013-2017 Rob Norris
+         |This software is licensed under the MIT License (MIT).
+         |For more information see LICENSE or https://opensource.org/licenses/MIT
+         |""".stripMargin
+    )),
+
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
@@ -429,7 +439,8 @@ lazy val docs = project
       )
     ),
     micrositeExtraMdFiles := Map(
-      file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "3"))
+      file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "3")),
+      file("LICENSE")      -> ExtraMdFileConfig("license.md",   "page", Map("title" -> "license",   "section" -> "license",   "position" -> "4"))
     )
   )
 
