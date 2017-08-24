@@ -2,7 +2,7 @@ package doobie.postgres
 
 import doobie._, doobie.implicits._
 import doobie.postgres._, doobie.postgres.implicits._
-import doobie.postgres.pgistypes._
+import doobie.postgres.pgisimplicits._
 import org.specs2.mutable.Specification
 
 object syntaxspec extends Specification {

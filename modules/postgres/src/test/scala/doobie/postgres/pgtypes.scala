@@ -3,7 +3,7 @@ package doobie.postgres
 import cats.effect.IO
 import doobie._, doobie.implicits._
 import doobie.postgres._, doobie.postgres.implicits._
-import doobie.postgres.pgistypes._
+import doobie.postgres.pgisimplicits._
 import java.net.InetAddress
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger

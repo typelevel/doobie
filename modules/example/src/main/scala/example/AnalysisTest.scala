@@ -1,7 +1,7 @@
 package doobie.example
 
 import doobie._, doobie.implicits._
-import doobie.postgres.imports._
+import doobie.postgres.implicits._
 import org.postgresql.geometric._
 
 // Some queries to test using the AnalysisTestSpec in src/test
