@@ -4,7 +4,7 @@
 
 <h3 id="setting-up">Setting Up</h3>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -41,10 +41,10 @@
 <p>So any <strong>doobie</strong> program can be lifted into a disjunction simply by adding <code class="highlighter-rouge">.attempt</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">p</span> <span class="k">=</span> <span class="mf">42.</span><span class="n">pure</span><span class="o">[</span><span class="kt">ConnectionIO</span><span class="o">]</span>
-<span class="n">p</span><span class="k">:</span> <span class="kt">doobie.imports.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
+<span class="n">p</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attempt</span>
-<span class="n">res0</span><span class="k">:</span> <span class="kt">doobie.imports.ConnectionIO</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>,<span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
+<span class="n">res0</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>,<span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 </code></pre>
 </div>
 
@@ -127,7 +127,7 @@
 
 <p>So let’s change our method to return an <code class="highlighter-rouge">Either[String, Person]</code> by using the <code class="highlighter-rouge">attemptSomeSql</code> combinator. This allows us to specify the <code class="highlighter-rouge">SQLState</code> value that we want to trap. In this case the culprit <code class="highlighter-rouge">"23505"</code> (yes, it’s a string) is provided as a constant in the <code class="highlighter-rouge">doobie-postgres</code> add-on.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres._</span>
 
 <span class="k">def</span> <span class="n">safeInsert</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Person</span><span class="o">]]</span> <span class="k">=</span>
   <span class="n">insert</span><span class="o">(</span><span class="n">s</span><span class="o">).</span><span class="n">attemptSomeSqlState</span> <span class="o">{</span>

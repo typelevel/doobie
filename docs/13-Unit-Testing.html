@@ -6,7 +6,7 @@
 
 <p>As with earlier chapters we set up a <code class="highlighter-rouge">Transactor</code> and YOLO mode. We will also use the <code class="highlighter-rouge">doobie-specs2</code> and <code class="highlighter-rouge">doobie-scalatest</code> add-ons.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -53,10 +53,10 @@
 
 <p>Our unit test needs to extend <code class="highlighter-rouge">AnalysisSpec</code> and must define a <code class="highlighter-rouge">Transactor[IO]</code>. To construct a testcase for a query, pass it to the <code class="highlighter-rouge">check</code> method. Note that query arguments are never used, so they can be any values that typecheck.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.specs2.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.specs2._</span>
 <span class="k">import</span> <span class="nn">org.specs2.mutable.Specification</span>
 
-<span class="k">object</span> <span class="nc">AnalysisTestSpec</span> <span class="k">extends</span> <span class="nc">Specification</span> <span class="k">with</span> <span class="nc">AnalysisSpec</span> <span class="o">{</span>
+<span class="k">object</span> <span class="nc">AnalysisTestSpec</span> <span class="k">extends</span> <span class="nc">Specification</span> <span class="k">with</span> <span class="nc">IOChecker</span> <span class="o">{</span>
 
   <span class="k">val</span> <span class="n">transactor</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
     <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -72,18 +72,18 @@
 
 <p>When we run the test we get output similar to what we saw in the previous chapter on checking queries, but each item is now a test. Note that doing this in the REPL is a little awkward; in real source you would get the source file and line number associated with each query.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; { specs2 run AnalysisTestSpec; () } // pretend this is sbt&gt; test
-[info] $line10.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
+<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; { _root_.specs2.run(AnalysisTestSpec); () } // pretend this is sbt&gt; test
+[info] $line10.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
 [info] 
 [info] + 
-  Query0[(Int, String)] defined at &lt;console&gt;:26
+  Query0[(Int, String)] defined at &lt;console&gt;:29
     
     select 42, 'foo'::varchar
 [info]   + SQL Compiles and Typechecks
 [info]   + C01 ?column? INTEGER (int4)    NULL?  →  Int
 [info]   + C02 varchar  VARCHAR (varchar) NULL?  →  String
 [info] + 
-  Query0[Country] defined at &lt;console&gt;:28
+  Query0[Country] defined at &lt;console&gt;:31
     
     select code, name, population, gnp, indepyear
     from country
@@ -112,7 +112,7 @@
 [error]    x Column is unused. Remove it from the SELECT statement. (file:1)
 [info] 
 [info] + 
-  Update0 defined at &lt;console&gt;:26
+  Update0 defined at &lt;console&gt;:29
     
     update country set name = ? where name = ?
 [info]   + SQL Compiles and Typechecks
@@ -120,8 +120,8 @@
 [info]   + P02 String  →  VARCHAR (text)
 [info] 
 [info] 
-[info] Total for specification $line10.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
-[info] Finished in 710 ms
+[info] Total for specification $line10.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
+[info] Finished in 663 ms
 16 examples, 4 failures, 0 error
 [info] 
 </code></pre>
@@ -154,7 +154,7 @@
 AnalysisTestScalaCheck:
 - trivial
 - biggerThan *** FAILED ***
-  Query0[Country] defined at &lt;console&gt;:28
+  Query0[Country] defined at &lt;console&gt;:31
   
       select code, name, population, gnp, indepyear
       from country
@@ -177,7 +177,7 @@ AnalysisTestScalaCheck:
       - Reading a NULL value into Double will result in a runtime failure. Fix this by
         making the schema type NOT NULL or by changing the Scala type to Option[Double]
       ✕ C05 indepyear  SMALLINT (int2)    NULL      →  
-      - Column is unused. Remove it from the SELECT statement. (Checker.scala:93)
+      - Column is unused. Remove it from the SELECT statement. (Checker.scala:97)
 - update
 </code></pre>
 </div>

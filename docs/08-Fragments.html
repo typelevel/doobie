@@ -6,7 +6,7 @@
 
 <p>Same as last chapter, so if you’re still set up you can skip this section. Otherwise let’s set up a <code class="highlighter-rouge">Transactor</code> and YOLO mode.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -61,7 +61,7 @@
 <p>You can lift an arbitrary string value via <code class="highlighter-rouge">Fragment.const</code>, which allows you to parameterize on things that aren’t valid SQL parameters.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">count</span><span class="o">(</span><span class="n">table</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="n">fr</span><span class="s">"select count(*) from"</span> <span class="o">++</span> <span class="nc">Fragment</span><span class="o">.</span><span class="n">const</span><span class="o">(</span><span class="n">table</span><span class="o">)).</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">unique</span>
-<span class="n">count</span><span class="k">:</span> <span class="o">(</span><span class="kt">table:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">doobie.free.connection.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+<span class="n">count</span><span class="k">:</span> <span class="o">(</span><span class="kt">table:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">count</span><span class="o">(</span><span class="s">"city"</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
   <span class="mi">4079</span>

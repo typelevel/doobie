@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="n">doobieVersion</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.0-M6"</span>
 </code></pre>
 </div>
 
@@ -12,7 +12,7 @@
 
 <p>The following examples require a few imports.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -23,7 +23,7 @@
 
 <p><strong>doobie</strong> adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the <code class="highlighter-rouge">pgtypes</code> module.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">postgres</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 </code></pre>
 </div>
 
@@ -140,7 +140,7 @@
 </div>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Not provided via doobie.postgres.imports._; you must import them explicitly.
-</span><span class="k">import</span> <span class="nn">doobie.postgres.pgistypes._</span>
+</span><span class="k">import</span> <span class="nn">doobie.postgres.pgisimplicits._</span>
 </code></pre>
 </div>
 
@@ -177,9 +177,7 @@
 
 <p>A complete table of SQLSTATE values is provided in the <code class="highlighter-rouge">doobie.postgres.sqlstate</code> module. Recovery combinators for each of these states (<code class="highlighter-rouge">onUniqueViolation</code> for example) are provided in <code class="highlighter-rouge">doobie.postgres.syntax</code>.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres.imports._</span>
-
-<span class="k">val</span> <span class="n">p</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"oops"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">unique</span> <span class="c1">// this won't work
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">p</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"oops"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">unique</span> <span class="c1">// this won't work
 </span></code></pre>
 </div>
 
@@ -235,9 +233,7 @@
 
 <p>The PostgreSQL JDBC driver’s <a href="https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html">CopyManager</a> API provides a pass-through for the SQL <a href="http://www.postgresql.org/docs/9.3/static/sql-copy.html"><code class="highlighter-rouge">COPY</code></a> statement, allowing very fast data transfer via <code class="highlighter-rouge">java.io</code> streams. Here we construct a program that dumps a table to <code class="highlighter-rouge">Console.out</code> in CSV format, with quoted values.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres.imports._</span>
-
-<span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="s">"""
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="s">"""
   copy country (name, code, population)
   to stdout (
     encoding 'utf-8',

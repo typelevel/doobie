@@ -6,7 +6,7 @@
 
 <p>In this chapter we discuss several ways to manage connections in applications that use <strong>doobie</strong>, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 </code></pre>
 </div>
@@ -60,9 +60,8 @@ class and a connect URL. Normally you will also pass a user/password (the API pr
 
 <p>The <code class="highlighter-rouge">doobie-hikari</code> add-on provides a <code class="highlighter-rouge">Transactor</code> implementation backed by a <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a> connection pool. The connnection pool has internal state so constructing one is an effect:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.hikari.imports._</span>
-<span class="k">import</span> <span class="nn">doobie.util.monaderror._</span> <span class="c1">// for `guarantee` combinator below
-</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.hikari._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">hikari</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+
 <span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">unique</span>
 
 <span class="k">val</span> <span class="n">p</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
@@ -104,7 +103,7 @@ class and a connect URL. Normally you will also pass a user/password (the API pr
 <p>If the default <code class="highlighter-rouge">Transactor</code> behavior don’t meet your needs you can replace any member with one that does what you need. See the Scaladoc for <code class="highlighter-rouge">Transactor</code> and <code class="highlighter-rouge">Strategy</code> for details on the structure. Lenses are provided to make it straightforward to replace just the piece you’re interested in. For example, to create a transactor that is the same as <code class="highlighter-rouge">xa</code> but always rolls back (for testing perhaps) you can say:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">testXa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">after</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="n">xa</span><span class="o">,</span> <span class="nc">HC</span><span class="o">.</span><span class="n">rollback</span><span class="o">)</span>
-<span class="n">testXa</span><span class="k">:</span> <span class="kt">doobie.util.transactor.Transactor</span><span class="o">[</span><span class="kt">cats.effect.IO</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">transactor$Transactor$$anon$9</span><span class="k">@</span><span class="mi">58339904</span>
+<span class="n">testXa</span><span class="k">:</span> <span class="kt">doobie.util.transactor.Transactor</span><span class="o">[</span><span class="kt">cats.effect.IO</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">transactor$Transactor$$anon$9</span><span class="k">@</span><span class="mf">2f</span><span class="n">fce2a2</span>
 </code></pre>
 </div>
 

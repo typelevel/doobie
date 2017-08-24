@@ -36,8 +36,8 @@
 <p><strong>doobie</strong> provides a <code class="highlighter-rouge">Transactor</code> that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by <code class="highlighter-rouge">IO</code>).</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect.IO</span>
-<span class="k">import</span> <span class="nn">doobie.imports._</span>
-<span class="k">import</span> <span class="nn">doobie.h2.imports._</span>
+<span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<span class="k">import</span> <span class="nn">doobie.h2._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">h2</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 
 <span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">unique</span>
 

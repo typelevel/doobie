@@ -19,7 +19,7 @@
 <p>In our REPL we have the same setup as before, plus a few extra imports.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.circe._</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">jawn</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">syntax</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">doobie.imports._</span>
+<span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">java.awt.Point</span>
 <span class="k">import</span> <span class="nn">org.postgresql.util.PGobject</span>
 <span class="k">import</span> <span class="nn">scala.reflect.runtime.universe.TypeTag</span>
@@ -93,7 +93,7 @@
 <p>However if we try to use this type for a <em>single</em> column value (i.e., as a query parameter, which requires a <code class="highlighter-rouge">Param</code> instance - <code class="highlighter-rouge">Param</code> is like <code class="highlighter-rouge">Composite</code> but disallows nesting), it doesn’t compile.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; sql"select * from person where id = $pid"
-&lt;console&gt;:41: error: Could not find or construct Param[PersonId :: shapeless.HNil].
+&lt;console&gt;:44: error: Could not find or construct Param[PersonId :: shapeless.HNil].
 Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
 have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom
 instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.
@@ -105,7 +105,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 <p>According to the error message we need a <code class="highlighter-rouge">Param[PersonId :: HNil]</code> instance which requires a <code class="highlighter-rouge">Meta</code> instance for each member, which means we need a <code class="highlighter-rouge">Meta[PersonId]</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">]</span>
-<span class="o">&lt;</span><span class="n">console</span><span class="k">&gt;:</span><span class="mi">42</span><span class="k">:</span> <span class="kt">error:</span> <span class="kt">Could</span> <span class="kt">not</span> <span class="kt">find</span> <span class="kt">an</span> <span class="kt">instance</span> <span class="kt">of</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">];</span> <span class="n">you</span> <span class="n">can</span> <span class="n">construct</span> <span class="n">one</span> <span class="n">based</span> <span class="n">on</span> <span class="n">a</span> <span class="n">primitive</span> <span class="n">instance</span> <span class="n">via</span> <span class="n">`xmap`</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="n">console</span><span class="k">&gt;:</span><span class="mi">45</span><span class="k">:</span> <span class="kt">error:</span> <span class="kt">Could</span> <span class="kt">not</span> <span class="kt">find</span> <span class="kt">an</span> <span class="kt">instance</span> <span class="kt">of</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">];</span> <span class="n">you</span> <span class="n">can</span> <span class="n">construct</span> <span class="n">one</span> <span class="n">based</span> <span class="n">on</span> <span class="n">a</span> <span class="n">primitive</span> <span class="n">instance</span> <span class="n">via</span> <span class="n">`xmap`</span><span class="o">.</span>
        <span class="nc">Meta</span><span class="o">[</span><span class="kt">PersonId</span><span class="o">]</span>
            <span class="o">^</span>
 </code></pre>

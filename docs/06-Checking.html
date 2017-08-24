@@ -6,7 +6,7 @@
 
 <p>Our setup here is the same as last chapter, so if you’re still running from last chapter you can skip this section. Otherwise: imports, <code class="highlighter-rouge">Transactor</code>, and YOLO mode.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.imports._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
