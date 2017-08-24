@@ -4,8 +4,8 @@ import microsites._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.0.0-MF"
-lazy val circeVersion         = "0.8.0"
-lazy val fs2CoreVersion       = "0.10.0-M5"
+lazy val circeVersion         = "0.9.0-M1"
+lazy val fs2CoreVersion       = "0.10.0-M6"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.6.3"
 lazy val kindProjectorVersion = "0.9.4"
