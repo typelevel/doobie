@@ -1,8 +1,8 @@
 package doobie.h2
 
 import cats.effect.IO
-import doobie.h2.imports._
-import doobie.imports._
+import doobie._, doobie.implicits._
+import doobie.h2._, doobie.h2.implicits._
 import java.util.UUID
 import org.specs2.mutable.Specification
 

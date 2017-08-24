@@ -1,15 +1,5 @@
 package doobie
 
-import doobie.free.{ connection => C }
-import doobie.free.{ driver => D }
-import doobie.free.{ preparedstatement => PS }
-import doobie.free.{ callablestatement => CS }
-import doobie.free.{ resultset => RS }
-import doobie.free.{ statement => S }
-import doobie.free.{ databasemetadata => DMD }
-
-import cats.data.Ior
-
 /**
  * High-level database API. The constructors here are defined
  * in terms of those in `doobie.free.connection` but differ in the following ways:
@@ -25,27 +15,11 @@ import cats.data.Ior
  *  - Lifting actions, low-level type mapping actions, and resource management actions do not appear
  *    in this API.
  */
-package object hi {
+package object hi
+  extends Modules
+     with doobie.free.Modules
+     with doobie.free.Types {
 
-  /** @group Aliases */  type ConnectionIO[A]        = C.ConnectionIO[A]
-  /** @group Aliases */  type DriverIO[A]            = D.DriverIO[A]
-  /** @group Aliases */  type StatementIO[A]         = S.StatementIO[A]
-  /** @group Aliases */  type CallableStatementIO[A] = CS.CallableStatementIO[A]
-  /** @group Aliases */  type PreparedStatementIO[A] = PS.PreparedStatementIO[A]
-  /** @group Aliases */  type DatabaseMetaDataIO[A]  = DMD.DatabaseMetaDataIO[A]
-  /** @group Aliases */  type ResultSetIO[A]         = RS.ResultSetIO[A]
-
-  implicit class AlignSyntax[A](as: List[A]) {
-    def align[B](bs: List[B]): List[A Ior B] = {
-      def go(as: List[A], bs: List[B], acc: List[A Ior B]): List[A Ior B] =
-        (as, bs) match {
-          case (a :: as, b :: bs) => go(as , bs , Ior.Both(a, b) :: acc)
-          case (a :: as, Nil    ) => go(as , Nil, Ior.Left(a)    :: acc)
-          case (Nil    , b :: bs) => go(Nil, bs , Ior.Right(b)    :: acc)
-          case (Nil    , Nil    ) => acc.reverse
-        }
-      go(as, bs, Nil)
-    }
-  }
+  object implicits extends doobie.free.Instances
 
 }

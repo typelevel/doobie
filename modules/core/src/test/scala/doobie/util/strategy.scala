@@ -3,7 +3,7 @@ package doobie.util
 import cats.Monad
 import cats.effect.{ Async, IO }
 import cats.implicits._
-import doobie.imports._
+import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.Predef._
 

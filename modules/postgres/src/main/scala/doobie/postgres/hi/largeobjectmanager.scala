@@ -1,12 +1,10 @@
 package doobie.postgres.hi
 
-import doobie.postgres.imports._
-
-import java.io.{File, OutputStream, InputStream}
-
 import cats.implicits._
+import java.io.{ File, OutputStream, InputStream }
 
 object largeobjectmanager {
+  import implicits._
 
   val createLO: LargeObjectManagerIO[Long] =
     PFLOM.createLO

@@ -13,7 +13,7 @@ In this chapter we discuss how to log statement execution and timing.
 Once again we will set up our REPL with a transactor.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

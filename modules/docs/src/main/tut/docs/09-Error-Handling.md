@@ -11,7 +11,7 @@ In this chapter we examine a set of combinators that allow us to construct progr
 ### Setting Up
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -114,7 +114,7 @@ So let's change our method to return an `Either[String, Person]` by using the `a
 
 
 ```tut:silent
-import doobie.postgres.imports._
+import doobie.postgres._
 
 def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
   insert(s).attemptSomeSqlState {

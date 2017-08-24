@@ -1,7 +1,7 @@
 package doobie.example
 
 import cats.effect.IO
-import doobie.imports._
+import doobie._
 import doobie.scalatest.imports._
 import org.scalatest._
 

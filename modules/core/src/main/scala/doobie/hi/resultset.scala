@@ -6,7 +6,6 @@ import cats.implicits._
 
 import doobie.enum.holdability._
 import doobie.enum.fetchdirection._
-import doobie.free.{ resultset => RS }
 import doobie.util.composite._
 import doobie.util.invariant._
 import doobie.util.stream.repeatEvalChunks
@@ -22,43 +21,42 @@ import scala.collection.generic.CanBuildFrom
  * @group Modules
  */
 object resultset {
-
-  import RS.AsyncResultSetIO // we need this instance ... TODO: re-org
+  import implicits._
 
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): ResultSetIO[A] =
-    RS.delay(a)
+    FRS.delay(a)
 
   /** @group Cursor Control */
   def absolute(row: Int): ResultSetIO[Boolean] =
-    RS.absolute(row)
+    FRS.absolute(row)
 
   /** @group Cursor Control */
   val afterLast: ResultSetIO[Unit] =
-    RS.afterLast
+    FRS.afterLast
 
   /** @group Cursor Control */
   val beforeFirst: ResultSetIO[Unit] =
-    RS.beforeFirst
+    FRS.beforeFirst
 
   /** @group Updating */
   val cancelRowUpdates: ResultSetIO[Unit] =
-    RS.cancelRowUpdates
+    FRS.cancelRowUpdates
 
   /** @group Warnings */
   val clearWarnings: ResultSetIO[Unit] =
-    RS.clearWarnings
+    FRS.clearWarnings
 
   /** @group Updating */
   val deleteRow: ResultSetIO[Unit] =
-    RS.deleteRow
+    FRS.deleteRow
 
   /** @group Cursor Control */
   val first: ResultSetIO[Boolean] =
-    RS.first
+    FRS.first
 
   /**
    * Read a value of type `A` starting at column `n`.
@@ -81,7 +79,7 @@ object resultset {
    * @group Results
    */
   def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Composite[A]): ResultSetIO[F[A]] =
-    RS.raw { rs =>
+    FRS.raw { rs =>
       val b = C()
       while (rs.next)
         b += A.unsafeGet(rs, 1)
@@ -96,7 +94,7 @@ object resultset {
    * @group Results
    */
   def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Composite[A]): ResultSetIO[F[B]] =
-    RS.raw { rs =>
+    FRS.raw { rs =>
       val b = C()
       while (rs.next)
         b += f(A.unsafeGet(rs, 1))
@@ -167,7 +165,7 @@ object resultset {
    * @group Results
    */
   def getNextChunkV[A](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Vector[A]] =
-    RS.raw { rs =>
+    FRS.raw { rs =>
       var n = chunkSize
       val b = Vector.newBuilder[A]
       while (n > 0 && rs.next) {
@@ -222,94 +220,94 @@ object resultset {
 
   /** @group Properties */
   val getFetchDirection: ResultSetIO[FetchDirection] =
-    RS.getFetchDirection.map(FetchDirection.unsafeFromInt)
+    FRS.getFetchDirection.map(FetchDirection.unsafeFromInt)
 
   /** @group Properties */
   val getFetchSize: ResultSetIO[Int] =
-    RS.getFetchSize
+    FRS.getFetchSize
 
   /** @group Properties */
   val getHoldability: ResultSetIO[Holdability] =
-    RS.getHoldability.map(Holdability.unsafeFromInt)
+    FRS.getHoldability.map(Holdability.unsafeFromInt)
 
   /** @group Properties */
   val getMetaData: ResultSetIO[ResultSetMetaData] =
-    RS.getMetaData
+    FRS.getMetaData
 
   /** @group Cursor Control */
   val getRow: ResultSetIO[Int] =
-    RS.getRow
+    FRS.getRow
 
   /** @group Warnings */
   val getWarnings: ResultSetIO[Option[SQLWarning]] =
-    RS.getWarnings.map(Option(_))
+    FRS.getWarnings.map(Option(_))
 
   /** @group Updating */
   val insertRow: ResultSetIO[Unit] =
-    RS.insertRow
+    FRS.insertRow
 
   /** @group Cursor Control */
   val isAfterLast: ResultSetIO[Boolean] =
-    RS.isAfterLast
+    FRS.isAfterLast
 
   /** @group Cursor Control */
   val isBeforeFirst: ResultSetIO[Boolean] =
-    RS.isBeforeFirst
+    FRS.isBeforeFirst
 
   /** @group Cursor Control */
   val isFirst: ResultSetIO[Boolean] =
-    RS.isFirst
+    FRS.isFirst
 
   /** @group Cursor Control */
   val isLast: ResultSetIO[Boolean] =
-    RS.isLast
+    FRS.isLast
 
   /** @group Cursor Control */
   val last: ResultSetIO[Boolean] =
-    RS.last
+    FRS.last
 
   /** @group Cursor Control */
   val moveToCurrentRow: ResultSetIO[Unit] =
-    RS.moveToCurrentRow
+    FRS.moveToCurrentRow
 
   /** @group Cursor Control */
   val moveToInsertRow: ResultSetIO[Unit] =
-    RS.moveToInsertRow
+    FRS.moveToInsertRow
 
   /** @group Cursor Control */
   val next: ResultSetIO[Boolean] =
-    RS.next
+    FRS.next
 
   /** @group Cursor Control */
   val previous: ResultSetIO[Boolean] =
-    RS.previous
+    FRS.previous
 
   /** @group Cursor Control */
   val refreshRow: ResultSetIO[Unit] =
-    RS.refreshRow
+    FRS.refreshRow
 
   /** @group Cursor Control */
   def relative(n: Int): ResultSetIO[Boolean] =
-    RS.relative(n)
+    FRS.relative(n)
 
   /** @group Cursor Control */
   val rowDeleted: ResultSetIO[Boolean] =
-    RS.rowDeleted
+    FRS.rowDeleted
 
   /** @group Cursor Control */
   val rowInserted: ResultSetIO[Boolean] =
-    RS.rowInserted
+    FRS.rowInserted
 
   /** @group Cursor Control */
   val rowUpdated: ResultSetIO[Boolean] =
-    RS.rowUpdated
+    FRS.rowUpdated
 
   /** @group Properties */
   def setFetchDirection(fd: FetchDirection): ResultSetIO[Unit] =
-    RS.setFetchDirection(fd.toInt)
+    FRS.setFetchDirection(fd.toInt)
 
   /** @group Properties */
   def setFetchSize(n: Int): ResultSetIO[Unit] =
-    RS.setFetchSize(n)
+    FRS.setFetchSize(n)
 
 }

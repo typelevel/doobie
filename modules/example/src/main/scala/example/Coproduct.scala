@@ -5,8 +5,8 @@ import cats.data.{ EitherK, Kleisli }
 import cats.effect.IO
 import cats.free.Free
 import cats.implicits._
+import doobie._, doobie.implicits._
 import doobie.free.connection.ConnectionOp
-import doobie.imports._
 import java.sql.Connection
 import scala.io.StdIn
 

@@ -1,7 +1,7 @@
 package doobie.specs2
 
 import cats.effect.IO
-import doobie.imports._
+import doobie._, doobie.implicits._
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
 

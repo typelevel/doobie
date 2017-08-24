@@ -26,7 +26,7 @@ In our REPL we have the same setup as before, plus a few extra imports.
 
 ```tut:silent
 import io.circe._, io.circe.jawn._, io.circe.syntax._
-import doobie.imports._
+import doobie._, doobie.implicits._
 import java.awt.Point
 import org.postgresql.util.PGobject
 import scala.reflect.runtime.universe.TypeTag

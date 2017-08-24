@@ -1,8 +1,8 @@
 package doobie.example
 
 import cats.effect.IO
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._, doobie.implicits._
+import doobie.postgres.implicits._
 import org.postgresql.geometric.PGpoint
 
 object PostgresPoint extends App {

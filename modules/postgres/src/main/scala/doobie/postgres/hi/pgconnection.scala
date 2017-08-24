@@ -2,8 +2,6 @@ package doobie.postgres.hi
 
 import org.postgresql.PGNotification
 
-import doobie.postgres.imports._
-
 object pgconnection {
 
   val getBackendPID: PGConnectionIO[Int] =

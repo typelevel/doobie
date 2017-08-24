@@ -1,7 +1,7 @@
 package doobie.postgres
 
 import doobie.enum.jdbctype
-import doobie.imports._
+import doobie._
 import doobie.util.invariant._
 
 import java.util.{ UUID, Map => JMap }
@@ -17,10 +17,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
-/** `Meta` and `Atom` instances for PostgreSQL types. */
-object PGTypes extends PGTypes
-
-trait PGTypes {
+trait Instances {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
 

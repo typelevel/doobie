@@ -2,8 +2,8 @@ package doobie.postgres
 
 import cats.effect.IO
 import cats.implicits._
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._, doobie.implicits._
+import doobie.postgres._, doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification

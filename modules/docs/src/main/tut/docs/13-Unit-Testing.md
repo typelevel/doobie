@@ -13,7 +13,7 @@ The YOLO-mode query checking feature demonstated in an earlier chapter is also a
 As with earlier chapters we set up a `Transactor` and YOLO mode. We will also use the `doobie-specs2` and `doobie-scalatest` add-ons.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -60,10 +60,10 @@ The `doobie-specs2` add-on provides a mix-in trait that we can add to a `Specifi
 Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IO]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
 
 ```tut:silent
-import doobie.specs2.imports._
+import doobie.specs2._
 import org.specs2.mutable.Specification
 
-object AnalysisTestSpec extends Specification with AnalysisSpec {
+object AnalysisTestSpec extends Specification with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -79,7 +79,7 @@ object AnalysisTestSpec extends Specification with AnalysisSpec {
 When we run the test we get output similar to what we saw in the previous chapter on checking queries, but each item is now a test. Note that doing this in the REPL is a little awkward; in real source you would get the source file and line number associated with each query.
 
 ```tut:plain
-{ specs2 run AnalysisTestSpec; () } // pretend this is sbt> test
+{ _root_.specs2.run(AnalysisTestSpec); () } // pretend this is sbt> test
 ```
 
 ### The ScalaTest Package

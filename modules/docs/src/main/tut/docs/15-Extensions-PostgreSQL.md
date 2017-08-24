@@ -9,7 +9,7 @@ title: Extensions for PostgreSQL
 In this chapter we discuss the extended support that **doobie** offers for users of [PostgreSQL](http://www.postgresql.org/). To use these extensions you must add an additional dependency to your project:
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-postgres" % doobieVersion
+libraryDependencies += "org.tpolecat" %% "doobie-postgres" % "{{site.doobieVersion}}"
 ```
 
 This library pulls in [PostgreSQL JDBC Driver 9.4](https://jdbc.postgresql.org/documentation/94/index.html) as a transitive dependency.
@@ -19,7 +19,7 @@ This library pulls in [PostgreSQL JDBC Driver 9.4](https://jdbc.postgresql.org/d
 The following examples require a few imports.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -30,7 +30,7 @@ val y = xa.yolo; import y._
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
 
 ```tut:silent
-import doobie.postgres.imports._
+import doobie.postgres._, doobie.postgres.implicits._
 ```
 
 ### Array Types
@@ -142,7 +142,7 @@ libraryDependencies += "org.postgis" % "postgis-jdbc" % "1.3.3"
 
 ```tut:silent
 // Not provided via doobie.postgres.imports._; you must import them explicitly.
-import doobie.postgres.pgistypes._
+import doobie.postgres.pgisimplicits._
 ```
 
 - `PGgeometry`
@@ -173,8 +173,6 @@ In addition to the general types above, **doobie** provides mappings for the fol
 A complete table of SQLSTATE values is provided in the `doobie.postgres.sqlstate` module. Recovery combinators for each of these states (`onUniqueViolation` for example) are provided in `doobie.postgres.syntax`.
 
 ```tut:silent
-import doobie.postgres.imports._
-
 val p = sql"oops".query[String].unique // this won't work
 ```
 
@@ -223,8 +221,6 @@ Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat
 The PostgreSQL JDBC driver's [CopyManager](https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html) API provides a pass-through for the SQL [`COPY`](http://www.postgresql.org/docs/9.3/static/sql-copy.html) statement, allowing very fast data transfer via `java.io` streams. Here we construct a program that dumps a table to `Console.out` in CSV format, with quoted values.
 
 ```tut:silent
-import doobie.postgres.imports._
-
 val q = """
   copy country (name, code, population)
   to stdout (

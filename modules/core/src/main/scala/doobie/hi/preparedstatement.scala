@@ -11,13 +11,11 @@ import doobie.enum.fetchdirection.FetchDirection
 import doobie.enum.resultsetconcurrency.ResultSetConcurrency
 import doobie.enum.resultsettype.ResultSetType
 
-import doobie.free.{ preparedstatement => PS }
-import doobie.free.{ resultset => RS }
-
 import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.stream.repeatEvalChunks
 
+import doobie.syntax.align._
 import doobie.syntax.monaderror._
 
 import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
@@ -36,32 +34,30 @@ import fs2.Stream.bracket
  * @group Modules
  */
 object preparedstatement {
-
-  import PS.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
-  import RS.AsyncResultSetIO
+  import implicits._
 
   // fs2 handler, not public
   private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
-    repeatEvalChunks(PS.embed(rs, resultset.getNextChunk[A](chunkSize)))
+    repeatEvalChunks(FPS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
   def process[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
-    bracket(PS.executeQuery)(unrolled[A](_, chunkSize), PS.embed(_, RS.close))
+    bracket(FPS.executeQuery)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
 
   /**
    * Non-strict unit for capturing effects.
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): PreparedStatementIO[A] =
-    PS.delay(a)
+    FPS.delay(a)
 
   /** @group Batching */
   val executeBatch: PreparedStatementIO[List[Int]] =
-    PS.executeBatch.map(_.toList)
+    FPS.executeBatch.map(_.toList)
 
   /** @group Batching */
   val addBatch: PreparedStatementIO[Unit] =
-    PS.addBatch
+    FPS.addBatch
 
   /**
    * Add many sets of parameters and execute as a batch update, returning total rows updated.
@@ -79,11 +75,11 @@ object preparedstatement {
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.executeQuery.flatMap(s => PS.embed(s, k guarantee RS.close))
+    FPS.executeQuery.flatMap(s => FPS.embed(s, k guarantee FRS.close))
 
   /** @group Execution */
   val executeUpdate: PreparedStatementIO[Int] =
-    PS.executeUpdate
+    FPS.executeUpdate
 
   /** @group Execution */
   def executeUpdateWithUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
@@ -91,13 +87,13 @@ object preparedstatement {
 
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
-    bracket(PS.executeUpdate *> PS.getGeneratedKeys)(unrolled[A](_, chunkSize), PS.embed(_, RS.close))
+    bracket(FPS.executeUpdate *> FPS.getGeneratedKeys)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
-    PS.getMetaData.map {
+    FPS.getMetaData.map {
       case null => Nil // https://github.com/tpolecat/doobie/issues/262
       case md   =>
         (1 to md.getColumnCount).toList.map { i =>
@@ -119,15 +115,15 @@ object preparedstatement {
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
-    PS.getFetchDirection.map(FetchDirection.unsafeFromInt)
+    FPS.getFetchDirection.map(FetchDirection.unsafeFromInt)
 
   /** @group Properties */
   val getFetchSize: PreparedStatementIO[Int] =
-    PS.getFetchSize
+    FPS.getFetchSize
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    PS.getGeneratedKeys.flatMap(s => PS.embed(s, k guarantee RS.close))
+    FPS.getGeneratedKeys.flatMap(s => FPS.embed(s, k guarantee FRS.close))
 
   /** @group Results */
   def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
@@ -138,7 +134,7 @@ object preparedstatement {
    * @group Metadata
    */
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
-    PS.getParameterMetaData.map { md =>
+    FPS.getParameterMetaData.map { md =>
       (1 to md.getParameterCount).toList.map { i =>
         val j = JdbcType.fromInt(md.getParameterType(i))
         val s = md.getParameterTypeName(i)
@@ -158,39 +154,39 @@ object preparedstatement {
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =
-    PS.getMaxFieldSize
+    FPS.getMaxFieldSize
 
   /** @group Properties */
   val getMaxRows: PreparedStatementIO[Int] =
-    PS.getMaxRows
+    FPS.getMaxRows
 
   /** @group MetaData */
   val getMetaData: PreparedStatementIO[ResultSetMetaData] =
-    PS.getMetaData
+    FPS.getMetaData
 
   /** @group MetaData */
   val getParameterMetaData: PreparedStatementIO[ParameterMetaData] =
-    PS.getParameterMetaData
+    FPS.getParameterMetaData
 
   /** @group Properties */
   val getQueryTimeout: PreparedStatementIO[Int] =
-    PS.getQueryTimeout
+    FPS.getQueryTimeout
 
   /** @group Properties */
   val getResultSetConcurrency: PreparedStatementIO[ResultSetConcurrency] =
-    PS.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
+    FPS.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
 
   /** @group Properties */
   val getResultSetHoldability: PreparedStatementIO[Holdability] =
-    PS.getResultSetHoldability.map(Holdability.unsafeFromInt)
+    FPS.getResultSetHoldability.map(Holdability.unsafeFromInt)
 
   /** @group Properties */
   val getResultSetType: PreparedStatementIO[ResultSetType] =
-    PS.getResultSetType.map(ResultSetType.unsafeFromInt)
+    FPS.getResultSetType.map(ResultSetType.unsafeFromInt)
 
   /** @group Results */
   val getWarnings: PreparedStatementIO[SQLWarning] =
-    PS.getWarnings
+    FPS.getWarnings
 
   /**
    * Set the given composite value, starting at column `n`.
@@ -208,30 +204,30 @@ object preparedstatement {
 
   /** @group Properties */
   def setCursorName(name: String): PreparedStatementIO[Unit] =
-    PS.setCursorName(name)
+    FPS.setCursorName(name)
 
   /** @group Properties */
   def setEscapeProcessing(a: Boolean): PreparedStatementIO[Unit] =
-    PS.setEscapeProcessing(a)
+    FPS.setEscapeProcessing(a)
 
   /** @group Properties */
   def setFetchDirection(fd: FetchDirection): PreparedStatementIO[Unit] =
-    PS.setFetchDirection(fd.toInt)
+    FPS.setFetchDirection(fd.toInt)
 
   /** @group Properties */
   def setFetchSize(n: Int): PreparedStatementIO[Unit] =
-    PS.setFetchSize(n)
+    FPS.setFetchSize(n)
 
   /** @group Properties */
   def setMaxFieldSize(n: Int): PreparedStatementIO[Unit] =
-    PS.setMaxFieldSize(n)
+    FPS.setMaxFieldSize(n)
 
   /** @group Properties */
   def setMaxRows(n: Int): PreparedStatementIO[Unit] =
-    PS.setMaxRows(n)
+    FPS.setMaxRows(n)
 
   /** @group Properties */
   def setQueryTimeout(a: Int): PreparedStatementIO[Unit] =
-    PS.setQueryTimeout(a)
+    FPS.setQueryTimeout(a)
 
 }

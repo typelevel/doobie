@@ -1,9 +1,9 @@
 package doobie.util
 
 import cats.effect.{ Async, IO }
-import doobie.imports._
+import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
-import Predef._
+import scala.Predef._
 
 object transactorspec extends Specification {
 

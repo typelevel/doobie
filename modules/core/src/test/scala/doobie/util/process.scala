@@ -1,12 +1,13 @@
-package doobie.util
+package doobie
+package util
 
 import cats.effect.IO
-import doobie.imports._
 import doobie.util.stream.repeatEvalChunks
 import org.scalacheck.Prop.forAll
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 import scala.Predef._
+import scala.util.Random
 
 object processspec extends Specification with ScalaCheck {
 
@@ -15,7 +16,7 @@ object processspec extends Specification with ScalaCheck {
     "yield the same result irrespective of chunk size" ! forAll { (n0: Int) =>
       val dataSize  = 1000
       val chunkSize = (n0 % dataSize).abs max 1
-      val data      = Seq.fill(dataSize)(util.Random.nextInt)
+      val data      = Seq.fill(dataSize)(Random.nextInt)
       val fa = {
         var temp = data
         IO {

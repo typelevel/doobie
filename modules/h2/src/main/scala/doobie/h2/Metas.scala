@@ -12,11 +12,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
-
-/** `Meta` instances for H2 types. */
-object H2Types extends H2Types
-
-trait H2Types {
+trait Instances {
 
   implicit val UuidType =
     Meta.advanced[UUID](

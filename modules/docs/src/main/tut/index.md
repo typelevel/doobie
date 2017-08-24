@@ -16,7 +16,9 @@ layout: home
 For common use cases **doobie** provides a minimal but expressive high-level API:
 
 ```tut:silent
-import doobie.imports._, cats.effect.IO
+import doobie._
+import doobie.implicits._
+import cats.effect.IO
 
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

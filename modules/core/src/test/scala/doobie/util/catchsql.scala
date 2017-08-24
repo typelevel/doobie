@@ -1,7 +1,7 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie.imports._
+import doobie._, doobie.implicits._
 import java.sql.SQLException
 import org.specs2.mutable.Specification
 

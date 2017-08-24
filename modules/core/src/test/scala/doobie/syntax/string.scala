@@ -1,6 +1,6 @@
 package doobie.syntax
 
-import doobie.imports._
+import doobie._, doobie.implicits._
 import shapeless.test.illTyped
 import org.specs2.mutable.Specification
 

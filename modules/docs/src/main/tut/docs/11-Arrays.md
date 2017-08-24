@@ -13,8 +13,8 @@ This chapter shows how we can map Scala sequence types to SQL `ARRAY` types, for
 Again we set up a transactor and pull in YOLO mode. We also need an import to get PostgreSQL-specific type mappings.
 
 ```tut:silent
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._, doobie.implicits._
+import doobie.postgres._, doobie.postgres.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

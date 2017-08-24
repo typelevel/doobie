@@ -3,7 +3,7 @@ package doobie.example
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie.imports._
+import doobie._, doobie.implicits._
 import fs2.Stream
 import java.sql.Connection
 

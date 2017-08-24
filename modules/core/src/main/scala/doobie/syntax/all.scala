@@ -6,5 +6,6 @@ trait AllSyntax
      with ToConnectionIOOps
      with ToStreamOps
      with ToSqlInterpolator
+     with ToAlignSyntax
 
 object all extends AllSyntax

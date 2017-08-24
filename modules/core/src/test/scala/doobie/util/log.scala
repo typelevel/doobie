@@ -2,7 +2,7 @@ package doobie.util
 
 import cats.implicits._
 import cats.effect.IO
-import doobie.imports._
+import doobie._, doobie.implicits._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification
 import shapeless._

@@ -1,13 +1,12 @@
 package doobie.postgres.hi
 
+import cats.implicits._
 import doobie.util.io.IOActions
-import doobie.postgres.imports._
-
 import java.io.{File, InputStream, OutputStream}
 
-import cats.implicits._
 
 object largeobject {
+  import implicits._
 
   lazy val io = new IOActions[LargeObjectIO]
 
