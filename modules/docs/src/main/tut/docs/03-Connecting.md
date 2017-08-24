@@ -16,7 +16,7 @@ Before we can use **doobie** we need to import some symbols. We will use the `do
 [cats](https://github.com/typelevel/cats) core and `fs2.interop.cats._`, which provides implicit conversions from fs2 typeclasses to cats typeclasses.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect._, cats.implicits._
 ```
 
@@ -92,7 +92,7 @@ The astute among you will note that we don't actually need a monad to do this; a
 val program3a = {
   val a: ConnectionIO[Int] = sql"select 42".query[Int].unique
   val b: ConnectionIO[Double] = sql"select random()".query[Double].unique
-  (a |@| b).tupled
+  (a, b).tupled
 }
 ```
 

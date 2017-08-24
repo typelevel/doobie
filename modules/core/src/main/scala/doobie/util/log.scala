@@ -50,7 +50,6 @@ object log {
      * purposes and is not intended for production use.
      * @group Constructors
      */
-    @deprecated("This example LogHandler is not intended for production use. Write your own!", "0.4.0")
     val jdkLogHandler: LogHandler = {
       val jdkLogger = Logger.getLogger(getClass.getName)
       LogHandler {

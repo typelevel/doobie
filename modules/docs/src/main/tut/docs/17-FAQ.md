@@ -9,7 +9,7 @@ title: Frequently-Asked Questions
 In this chapter we address some frequently-asked questions, in no particular order. First a bit of set-up.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import java.awt.geom.Point2D
 import java.util.UUID
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
@@ -115,7 +115,7 @@ val join: Query0[(Country, Option[City])] =
     left outer join city k
     on c.capital = k.id
   """.query[(Country, Option[String], Option[String])].map {
-    case (c, n, d) => (c, (n |@| d).map(City))
+    case (c, n, d) => (c, (n, d).mapN(City))
   }
 ```
 
@@ -143,7 +143,7 @@ Meta[UUID]
 So what this means is that we have not defined a mapping for the `UUID` type to an underlying JDBC type, and **doobie** doesn't know how to set an argument of that type on the underlying `PreparedStatement`. So we have a few choices. We can `xmap` from an existing `Meta` instance, as described in [Chapter 10](10-Custom-Mappings.html); or we can import a provided mapping from a vendor-specific `contrib` package. Since we're using PostgreSQL here, let's do that.
 
 ```tut
-import doobie.postgres.imports.UuidType
+import doobie.postgres.implicits._
 ```
 
 Having done this, the `Meta` and `Param` instances are now present and our code compiles.

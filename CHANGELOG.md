@@ -17,6 +17,7 @@ Notable changes thus far:
 - The doc has been ported to [sbt-microsites](https://github.com/47deg/sbt-microsites) and is undergoing review (help wanted!).
 - The release process is somewhat better.
 - Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
+- Rather than `foo.imports._` for both names and implicits, there are now distinct imports `foo._, foo.imports._`. The old `foo.imports._` still works but is deprecated.
 
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 

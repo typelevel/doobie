@@ -1,8 +1,8 @@
 package doobie.hi
 
 trait Modules {
-  val HC  = doobie.hi.connection
-  val HS  = doobie.hi.statement
-  val HPS = doobie.hi.preparedstatement
-  val HRS = doobie.hi.resultset
+  lazy val HC  = doobie.hi.connection
+  lazy val HS  = doobie.hi.statement
+  lazy val HPS = doobie.hi.preparedstatement
+  lazy val HRS = doobie.hi.resultset
 }

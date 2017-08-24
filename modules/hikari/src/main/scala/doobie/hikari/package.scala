@@ -13,6 +13,7 @@ package object hikari {
   object imports
     extends syntax.ToHikariTransactorOps {
     type HikariTransactor[M[_]] = hikari.HikariTransactor[M]
+    val  HikariTransactor       = hikari.HikariTransactor
   }
 
 }

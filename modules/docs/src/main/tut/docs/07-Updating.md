@@ -13,7 +13,7 @@ In this chapter we examine operations that modify data in the database, and ways
 Again we set up a transactor and pull in YOLO mode, but this time we're not using the world database.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

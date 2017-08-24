@@ -99,7 +99,6 @@ lazy val compilerFlags = Seq(
     }
   ),
   scalacOptions in (Compile, console) --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports"),
-  scalacOptions in (Tut,     tut)     --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports"),
   scalacOptions in (Compile, doc)     --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports")
 )
 
@@ -384,6 +383,7 @@ lazy val docs = project
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
+    scalacOptions in (Compile, console) += "-Xfatal-warnings", // turn this back on for tut
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,

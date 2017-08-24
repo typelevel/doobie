@@ -11,21 +11,21 @@ trait Types {
 }
 
 trait Modules {
-  val PFCI  = copyin
-  val PFCM  = copymanager
-  val PFCO  = copyout
-  val PFFP  = fastpath
-  val PFLO  = largeobject
-  val PFLOM = largeobjectmanager
-  val PFPC  = pgconnection
+  lazy val PFCI  = copyin
+  lazy val PFCM  = copymanager
+  lazy val PFCO  = copyout
+  lazy val PFFP  = fastpath
+  lazy val PFLO  = largeobject
+  lazy val PFLOM = largeobjectmanager
+  lazy val PFPC  = pgconnection
 }
 
 trait Instances {
-  implicit val AsyncCopyInIO             = copyin.AsyncCopyInIO
-  implicit val AsyncCopyManagerIO        = copymanager.AsyncCopyManagerIO
-  implicit val AsyncCopyOutIO            = copyout.AsyncCopyOutIO
-  implicit val AsyncFastpathIO           = fastpath.AsyncFastpathIO
-  implicit val AsyncLargeObjectIO        = largeobject.AsyncLargeObjectIO
-  implicit val AsyncLargeObjectManagerIO = largeobjectmanager.AsyncLargeObjectManagerIO
-  implicit val AsyncPGConnectionIO       = pgconnection.AsyncPGConnectionIO
+  implicit lazy val AsyncCopyInIO             = copyin.AsyncCopyInIO
+  implicit lazy val AsyncCopyManagerIO        = copymanager.AsyncCopyManagerIO
+  implicit lazy val AsyncCopyOutIO            = copyout.AsyncCopyOutIO
+  implicit lazy val AsyncFastpathIO           = fastpath.AsyncFastpathIO
+  implicit lazy val AsyncLargeObjectIO        = largeobject.AsyncLargeObjectIO
+  implicit lazy val AsyncLargeObjectManagerIO = largeobjectmanager.AsyncLargeObjectManagerIO
+  implicit lazy val AsyncPGConnectionIO       = pgconnection.AsyncPGConnectionIO
 }

@@ -13,10 +13,6 @@ package object postgres
   object pgisimplicits
     extends PgisInstances
 
-  @deprecated(message = "import doobie.postgres.pgisimplicits._", since = "0.5.0")
-  val pgistypes: pgisimplicits.type =
-    pgisimplicits
-
   @deprecated(message = "import doobie.postgres._, doobie.postgres.implicits._", since = "0.5.0")
   object imports
   extends postgres.free.Types
@@ -24,6 +20,14 @@ package object postgres
      with postgres.hi.Modules
      with Instances
      with free.Instances
-     with syntax.ToPostgresMonadErrorOps
+     with syntax.ToPostgresMonadErrorOps {
+
+    val sqlstate = doobie.postgres.sqlstate
+
+    @deprecated(message = "import doobie.postgres.pgisimplicits._", since = "0.5.0")
+    val pgistypes: pgisimplicits.type =
+      pgisimplicits
+
+  }
 
 }

@@ -13,7 +13,7 @@ title: Managing Connections
 In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 ```
 
@@ -62,7 +62,7 @@ val xa = Transactor.fromDriverManager[IO](
 The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
 
 ```tut:silent
-import doobie.hikari.imports._
+import doobie.hikari._, doobie.hikari.implicits._
 
 val q = sql"select 42".query[Int].unique
 

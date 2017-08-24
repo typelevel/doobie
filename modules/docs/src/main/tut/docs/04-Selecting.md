@@ -13,7 +13,7 @@ In this chapter we construct some programs that retrieve data from the database 
 First let's get our imports out of the way and set up a `Transactor` as we did before. You can skip this step if you still have your REPL running from last chapter.
 
 ```tut:silent
-import doobie.imports._
+import doobie._, doobie.implicits._
 import cats._, cats.data._, cats.effect.IO, cats.implicits._
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

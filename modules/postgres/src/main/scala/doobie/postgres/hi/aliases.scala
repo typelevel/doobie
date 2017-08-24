@@ -1,8 +1,8 @@
 package doobie.postgres.hi
 
 trait Modules {
-  val PHPC  = pgconnection
-  val PHC   = connection
-  val PHLO  = largeobject
-  val PHLOM = largeobjectmanager
+  lazy val PHPC  = pgconnection
+  lazy val PHC   = connection
+  lazy val PHLO  = largeobject
+  lazy val PHLOM = largeobjectmanager
 }

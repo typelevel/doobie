@@ -18,35 +18,35 @@ trait Types {
 }
 
 trait Modules {
-  val FB   = blob
-  val FCS  = callablestatement
-  val FCL  = clob
-  val FC   = connection
-  val FDMD = databasemetadata
-  val FD   = driver
-  val FNCL = nclob
-  val FPS  = preparedstatement
-  val FREF = ref
-  val FRS  = resultset
-  val FSD  = sqldata
-  val FSI  = sqlinput
-  val FSO  = sqloutput
-  val FS   = statement
+  lazy val FB   = blob
+  lazy val FCS  = callablestatement
+  lazy val FCL  = clob
+  lazy val FC   = connection
+  lazy val FDMD = databasemetadata
+  lazy val FD   = driver
+  lazy val FNCL = nclob
+  lazy val FPS  = preparedstatement
+  lazy val FREF = ref
+  lazy val FRS  = resultset
+  lazy val FSD  = sqldata
+  lazy val FSI  = sqlinput
+  lazy val FSO  = sqloutput
+  lazy val FS   = statement
 }
 
 trait Instances {
-  implicit val AsyncBlobIO              = blob.AsyncBlobIO
-  implicit val AsyncCallableStatementIO = callablestatement.AsyncCallableStatementIO
-  implicit val AsyncClobIO              = clob.AsyncClobIO
-  implicit val AsyncConnectionIO        = connection.AsyncConnectionIO
-  implicit val AsyncDatabaseMetaDataIO  = databasemetadata.AsyncDatabaseMetaDataIO
-  implicit val AsyncDriverIO            = driver.AsyncDriverIO
-  implicit val AsyncNClobIO             = nclob.AsyncNClobIO
-  implicit val AsyncPreparedStatementIO = preparedstatement.AsyncPreparedStatementIO
-  implicit val AsyncRefIO               = ref.AsyncRefIO
-  implicit val AsyncResultSetIO         = resultset.AsyncResultSetIO
-  implicit val AsyncSQLDataIO           = sqldata.AsyncSQLDataIO
-  implicit val AsyncSQLInputIO          = sqlinput.AsyncSQLInputIO
-  implicit val AsyncSQLOutputIO         = sqloutput.AsyncSQLOutputIO
-  implicit val AsyncStatementIO         = statement.AsyncStatementIO
+  implicit lazy val AsyncBlobIO              = blob.AsyncBlobIO
+  implicit lazy val AsyncCallableStatementIO = callablestatement.AsyncCallableStatementIO
+  implicit lazy val AsyncClobIO              = clob.AsyncClobIO
+  implicit lazy val AsyncConnectionIO        = connection.AsyncConnectionIO
+  implicit lazy val AsyncDatabaseMetaDataIO  = databasemetadata.AsyncDatabaseMetaDataIO
+  implicit lazy val AsyncDriverIO            = driver.AsyncDriverIO
+  implicit lazy val AsyncNClobIO             = nclob.AsyncNClobIO
+  implicit lazy val AsyncPreparedStatementIO = preparedstatement.AsyncPreparedStatementIO
+  implicit lazy val AsyncRefIO               = ref.AsyncRefIO
+  implicit lazy val AsyncResultSetIO         = resultset.AsyncResultSetIO
+  implicit lazy val AsyncSQLDataIO           = sqldata.AsyncSQLDataIO
+  implicit lazy val AsyncSQLInputIO          = sqlinput.AsyncSQLInputIO
+  implicit lazy val AsyncSQLOutputIO         = sqloutput.AsyncSQLOutputIO
+  implicit lazy val AsyncStatementIO         = statement.AsyncStatementIO
 }

@@ -3,7 +3,7 @@ package doobie.postgres.hi
 import cats.~>
 import cats.data.Kleisli
 import org.postgresql.{ PGConnection, PGNotification }
-import doobie.imports._
+import doobie._, doobie.implicits._
 import doobie.postgres.free.KleisliInterpreter
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */

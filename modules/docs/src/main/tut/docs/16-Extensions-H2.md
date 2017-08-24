@@ -39,8 +39,8 @@ See the previous chapter on **SQL Arrays** for usage examples.
 
 ```tut:silent
 import cats.effect.IO
-import doobie.imports._
-import doobie.h2.imports._
+import doobie._, doobie.implicits._
+import doobie.h2._, doobie.h2.implicits._
 
 val q = sql"select 42".query[Int].unique
 
