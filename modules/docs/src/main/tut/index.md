@@ -11,9 +11,7 @@ layout: home
 [![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12)
 
 
-**doobie** is a pure functional JDBC layer for Scala and [Cats](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC. **doobie** introduces very few new abstractions; if you are familiar with core typeclasses like `Functor`, `Traverse`, and `Monad` you should have no trouble here.
-
-For common use cases **doobie** provides a minimal but expressive high-level API:
+**doobie** is a pure functional JDBC layer for Scala and [**Cats**](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC. For common use cases **doobie** provides a minimal but expressive high-level API:
 
 ```tut:silent
 import doobie._
@@ -36,7 +34,7 @@ And then …
 find("France").transact(xa).unsafeRunSync
 ```
 
-**doobie** is a [Typelevel](http://typelevel.org/) project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Typelevel [Code of Conduct](http://typelevel.org/conduct.html).
+**doobie** is a [**Typelevel**](http://typelevel.org/) project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Typelevel [**Code of Conduct**](http://typelevel.org/conduct.html).
 
 ## Quick Start
 
@@ -44,9 +42,9 @@ find("France").transact(xa).unsafeRunSync
 
 The current development version is **{{site.doobieVersion}}** for **Scala {{site.scalaVersions}}** with
 
-- [Cats](http://typelevel.org/cats/) {{site.catsVersion}}
-- [fs2](https://github.com/functional-streams-for-scala/fs2) {{site.fs2Version}}
-- [shapeless](https://github.com/milessabin/shapeless) {{site.shapelessVersion}}
+- [**cats**](http://typelevel.org/cats/) {{site.catsVersion}}
+- [**fs2**](https://github.com/functional-streams-for-scala/fs2) {{site.fs2Version}}
+- [**shapeless**](https://github.com/milessabin/shapeless) {{site.shapelessVersion}}
 
 To use **doobie** you need to add the following to your `build.sbt`. If you're not using the Postgres or H2 add-ons you'll also need to provide a JDBC driver for the database you're using.
 
@@ -66,19 +64,19 @@ libraryDependencies ++= Seq(
 )
 ```
 
-See the [documentation](docs/01-Introduction.html) for more information on these add-ons.
+See the [**documentation**](docs/01-Introduction.html) for more information on these add-ons.
 
 Note that **doobie** is pre-1.0 software and is still undergoing active development. New versions are **not** binary compatible with prior versions, although in most cases user code will be source compatible. Starting with the 0.5.x we're trying to be a bit more careful about versioning.
 
 ## Documentation and Support
 
+- Behold the sparkly [**documentation**](docs/01-Introduction.html) ← start here
+- The [**Scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
 - See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.5.x/CHANGELOG.md) for an overview of changes in this and previous versions.
-- Behold the lovely [documentation](docs/01-Introduction.html) ← start here
+- The [**Gitter Channel**](https://gitter.im/tpolecat/doobie) is a great place to chat!
 - There is a [**Scala Exercises**](https://www.scala-exercises.org/) module, courtesy of our friends at 47 Degrees!
-- The [**scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
-- There is also the source. If you're here you know where to look. Check the examples.
+- There is also the [**source**](https://github.com/tpolecat/doobie). Check out the examples too.
 - If you have comments or run into trouble, please file an issue.
-- Find **tpolecat** on the [**Gitter Channel**](https://gitter.im/tpolecat/doobie).
 
 ## Presentations, Blog Posts, etc.
 
