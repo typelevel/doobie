@@ -6,18 +6,25 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.5.0"></a>Work in Progress for Version 0.5.0
 
-This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). It will remain as a milestone-only release until cats 1.0.0 and fs2 0.10 final, and will track updates to those libraries.
+This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). It will remain as a milestone-only release until cats 1.0.0 and fs2 0.10 final, and will track updates to those libraries. Notable changes thus far:
 
-Notable changes thus far:
+##### Cats Standardization
 
-- The `-cats` segment of the artifact names is gone now. `doobie-core` uses cats now, as does everything else.
 - 🎵 *Ding, dong the yax is dead!* 🎵 The new codebase is based on the cats output. All import renames have been resolved to cats names.
-- Updated to cats 1.0.0-MF and fs2 0.10-M5, removed some interim stubs, changed all doc and examples to use `IO`.
-- `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.
-- The doc has been ported to [sbt-microsites](https://github.com/47deg/sbt-microsites) and is undergoing review (help wanted!).
-- The release process is somewhat better.
-- Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
+- The `-cats` segment of the artifact names is gone now. `doobie-core` uses cats now, as does everything else.
+
+##### API Changes
+
 - Rather than `foo.imports._` for both names and implicits, there are now distinct imports `foo._, foo.implicits._`. The old `foo.imports._` still works but is deprecated.
+- Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
+
+##### Project Structure, Build, Etc.
+
+- The doc has been ported to [sbt-microsites](https://github.com/47deg/sbt-microsites) and is undergoing review (help wanted!).
+- `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.
+- The release process is somewhat better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.
+
+
 
 ### <a name="0.4.4"></a>New and Noteworthy for Version 0.4.4
 
