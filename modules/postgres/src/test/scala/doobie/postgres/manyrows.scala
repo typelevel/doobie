@@ -6,6 +6,7 @@ import doobie.postgres._, doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object manyrows extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

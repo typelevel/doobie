@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.postgres.free
 
 import cats.~>
@@ -18,6 +14,7 @@ import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object copymanager { module =>
 
   // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternatie to pattern-matching.
@@ -63,48 +60,48 @@ object copymanager { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: PGCopyManager => A) extends CopyManagerOp[A] {
+    final case class Raw[A](f: PGCopyManager => A) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends CopyManagerOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends CopyManagerOp[A] {
+    final case class Delay[A](a: () => A) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]) extends CopyManagerOp[A] {
+    final case class HandleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyManagerOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGCopyManager-specific operations.
-    case class  CopyDual(a: String) extends CopyManagerOp[PGCopyDual] {
+    final case class  CopyDual(a: String) extends CopyManagerOp[PGCopyDual] {
       def visit[F[_]](v: Visitor[F]) = v.copyDual(a)
     }
-    case class  CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
+    final case class  CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a)
     }
-    case class  CopyIn1(a: String, b: InputStream) extends CopyManagerOp[Long] {
+    final case class  CopyIn1(a: String, b: InputStream) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    case class  CopyIn2(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
+    final case class  CopyIn2(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
-    case class  CopyIn3(a: String, b: Reader) extends CopyManagerOp[Long] {
+    final case class  CopyIn3(a: String, b: Reader) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    case class  CopyIn4(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
+    final case class  CopyIn4(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
-    case class  CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
+    final case class  CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a)
     }
-    case class  CopyOut1(a: String, b: OutputStream) extends CopyManagerOp[Long] {
+    final case class  CopyOut1(a: String, b: OutputStream) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a, b)
     }
-    case class  CopyOut2(a: String, b: Writer) extends CopyManagerOp[Long] {
+    final case class  CopyOut2(a: String, b: Writer) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a, b)
     }
 

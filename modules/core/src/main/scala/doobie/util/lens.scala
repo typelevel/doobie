@@ -9,7 +9,7 @@ import cats.data.State
 // embarrassigly minimal lens implementation to avoid a lib conflict
 object lens {
 
-  case class Lens[A, B](get: A => B, set: (A, B) => A) {
+  final case class Lens[A, B](get: A => B, set: (A, B) => A) {
 
     def andThen[C](bc: Lens[B, C]): Lens[A, C] =
       Lens(a => bc.get(get(a)), (a, c) => set(a, bc.set(get(a), c)))

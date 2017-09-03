@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.postgres.free
 
 import cats.~>
@@ -19,6 +15,7 @@ import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
 import org.postgresql.replication.PGReplicationConnection
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object pgconnection { module =>
 
   // Algebra of operations for PGConnection. Each accepts a visitor as an alternatie to pattern-matching.
@@ -73,75 +70,75 @@ object pgconnection { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: PGConnection => A) extends PGConnectionOp[A] {
+    final case class Raw[A](f: PGConnection => A) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends PGConnectionOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends PGConnectionOp[A] {
+    final case class Delay[A](a: () => A) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]) extends PGConnectionOp[A] {
+    final case class HandleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PGConnectionOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGConnection-specific operations.
-    case class  AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
+    final case class  AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
     }
-    case class  AddDataType1(a: String, b: String) extends PGConnectionOp[Unit] {
+    final case class  AddDataType1(a: String, b: String) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
     }
-    case class  EscapeIdentifier(a: String) extends PGConnectionOp[String] {
+    final case class  EscapeIdentifier(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.escapeIdentifier(a)
     }
-    case class  EscapeLiteral(a: String) extends PGConnectionOp[String] {
+    final case class  EscapeLiteral(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.escapeLiteral(a)
     }
-    case object GetAutosave extends PGConnectionOp[AutoSave] {
+    final case object GetAutosave extends PGConnectionOp[AutoSave] {
       def visit[F[_]](v: Visitor[F]) = v.getAutosave
     }
-    case object GetBackendPID extends PGConnectionOp[Int] {
+    final case object GetBackendPID extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getBackendPID
     }
-    case object GetCopyAPI extends PGConnectionOp[PGCopyManager] {
+    final case object GetCopyAPI extends PGConnectionOp[PGCopyManager] {
       def visit[F[_]](v: Visitor[F]) = v.getCopyAPI
     }
-    case object GetDefaultFetchSize extends PGConnectionOp[Int] {
+    final case object GetDefaultFetchSize extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDefaultFetchSize
     }
-    case object GetFastpathAPI extends PGConnectionOp[PGFastpath] {
+    final case object GetFastpathAPI extends PGConnectionOp[PGFastpath] {
       def visit[F[_]](v: Visitor[F]) = v.getFastpathAPI
     }
-    case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager] {
+    final case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeObjectAPI
     }
-    case object GetNotifications extends PGConnectionOp[Array[PGNotification]] {
+    final case object GetNotifications extends PGConnectionOp[Array[PGNotification]] {
       def visit[F[_]](v: Visitor[F]) = v.getNotifications
     }
-    case class  GetNotifications1(a: Int) extends PGConnectionOp[Array[PGNotification]] {
+    final case class  GetNotifications1(a: Int) extends PGConnectionOp[Array[PGNotification]] {
       def visit[F[_]](v: Visitor[F]) = v.getNotifications(a)
     }
-    case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
+    final case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
       def visit[F[_]](v: Visitor[F]) = v.getPreferQueryMode
     }
-    case object GetPrepareThreshold extends PGConnectionOp[Int] {
+    final case object GetPrepareThreshold extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getPrepareThreshold
     }
-    case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
+    final case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
       def visit[F[_]](v: Visitor[F]) = v.getReplicationAPI
     }
-    case class  SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
+    final case class  SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAutosave(a)
     }
-    case class  SetDefaultFetchSize(a: Int) extends PGConnectionOp[Unit] {
+    final case class  SetDefaultFetchSize(a: Int) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDefaultFetchSize(a)
     }
-    case class  SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit] {
+    final case class  SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setPrepareThreshold(a)
     }
 

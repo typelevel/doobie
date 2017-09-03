@@ -8,6 +8,7 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pglargeobjectspec extends Specification with FileEquality {
 
   val xa = Transactor.fromDriverManager[IO](
@@ -60,6 +61,7 @@ trait FileEquality {
       f(fis.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, file.length))
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def filesEqual(f1: File, f2: File): Boolean =
     mapIn(f1) { bb1 =>
     mapIn(f2) { bb2 =>

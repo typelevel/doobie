@@ -26,15 +26,15 @@ object log {
 
   }
 
-  /** @group Events */ case class Success          (sql: String, args: List[Any], exec: FD, processing: FD                    ) extends LogEvent
-  /** @group Events */ case class ProcessingFailure(sql: String, args: List[Any], exec: FD, processing: FD, failure: Throwable) extends LogEvent
-  /** @group Events */ case class ExecFailure      (sql: String, args: List[Any], exec: FD,                 failure: Throwable) extends LogEvent
+  /** @group Events */ final case class Success          (sql: String, args: List[Any], exec: FD, processing: FD                    ) extends LogEvent
+  /** @group Events */ final case class ProcessingFailure(sql: String, args: List[Any], exec: FD, processing: FD, failure: Throwable) extends LogEvent
+  /** @group Events */ final case class ExecFailure      (sql: String, args: List[Any], exec: FD,                 failure: Throwable) extends LogEvent
 
   /**
    * A sink for `LogEvent`s.
    * @group Handlers
    */
-  case class LogHandler(unsafeRun: LogEvent => Unit)
+  final case class LogHandler(unsafeRun: LogEvent => Unit)
 
   /**
    * Module of instances and constructors for `LogHandler`.

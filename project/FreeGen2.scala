@@ -109,7 +109,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
 
     // Case class/object declaration
     def ctor(opname:String): String =
-      ("|case " + (cparams match {
+      ("|final case " + (cparams match {
         case Nil => s"object $cname"
         case ps  => s"class  $cname$ctparams(${cargs.mkString(", ")})"
       }) + s""" extends ${opname}[$ret] {
@@ -213,6 +213,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |
     |${imports[A].mkString("\n")}
     |
+    |@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     |object $mname { module =>
     |
     |  // Algebra of operations for $sname. Each accepts a visitor as an alternatie to pattern-matching.
@@ -250,19 +251,19 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    }
     |
     |    // Common operations for all algebras.
-    |    case class Raw[A](f: $sname => A) extends ${opname}[A] {
+    |    final case class Raw[A](f: $sname => A) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.raw(f)
     |    }
-    |    case class Embed[A](e: Embedded[A]) extends ${opname}[A] {
+    |    final case class Embed[A](e: Embedded[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.embed(e)
     |    }
-    |    case class Delay[A](a: () => A) extends ${opname}[A] {
+    |    final case class Delay[A](a: () => A) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.delay(a)
     |    }
-    |    case class HandleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]) extends ${opname}[A] {
+    |    final case class HandleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     |    }
-    |    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${opname}[A] {
+    |    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.async(k)
     |    }
     |

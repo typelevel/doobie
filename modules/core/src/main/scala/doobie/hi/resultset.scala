@@ -24,6 +24,7 @@ import scala.collection.generic.CanBuildFrom
  * Module of high-level constructors for `ResultSetIO` actions.
  * @group Modules
  */
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object resultset {
   import implicits._
 
@@ -82,6 +83,7 @@ object resultset {
    * accumulating them in a standard library collection via `CanBuildFrom`.
    * @group Results
    */
+  @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Composite[A]): ResultSetIO[F[A]] =
     FRS.raw { rs =>
       val b = C()
@@ -97,6 +99,7 @@ object resultset {
    * instance.
    * @group Results
    */
+  @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Composite[A]): ResultSetIO[F[B]] =
     FRS.raw { rs =>
       val b = C()
@@ -168,6 +171,7 @@ object resultset {
    * be smaller). A non-positive `chunkSize` yields an empty `Vector` and consumes no rows.
    * @group Results
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def getNextChunkV[A](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Vector[A]] =
     FRS.raw { rs =>
       var n = chunkSize

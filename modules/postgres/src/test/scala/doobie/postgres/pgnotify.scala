@@ -7,6 +7,7 @@ import doobie.postgres._, doobie.postgres.implicits._
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgnotifyspec extends Specification {
 
   import FC.{commit, delay}
@@ -28,14 +29,14 @@ object pgnotifyspec extends Specification {
   "LISTEN/NOTIFY" should {
 
     "allow cross-connection notification" in  {
-      val channel = "cha" + System.nanoTime
+      val channel = "cha" + System.nanoTime.toString
       val notify  = PHC.pgNotify(channel)
       val test    = listen(channel, notify).map(_.length)
       test.unsafeRunSync must_== 1
     }
 
     "allow cross-connection notification with parameter" in  {
-      val channel  = "chb" + System.nanoTime
+      val channel  = "chb" + System.nanoTime.toString
       val messages = List("foo", "bar", "baz", "qux")
       val notify   = messages.traverse(PHC.pgNotify(channel, _))
       val test     = listen(channel, notify).map(_.map(_.getParameter))
@@ -43,7 +44,7 @@ object pgnotifyspec extends Specification {
     }
 
     "collapse identical notifications" in  {
-      val channel  = "chc" + System.nanoTime
+      val channel  = "chc" + System.nanoTime.toString
       val messages = List("foo", "bar", "bar", "baz", "qux", "foo")
       val notify   = messages.traverse(PHC.pgNotify(channel, _))
       val test     = listen(channel, notify).map(_.map(_.getParameter))

@@ -5,6 +5,7 @@ import doobie._, doobie.implicits._
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",

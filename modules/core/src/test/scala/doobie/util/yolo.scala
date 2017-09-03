@@ -6,6 +6,7 @@ import doobie.util.yolo._
 
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object yolospec extends Specification {
 
   // Kind of a bogus test; just checking for compilation

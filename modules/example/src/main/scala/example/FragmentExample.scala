@@ -8,13 +8,13 @@ import cats.effect.IO
 import cats.implicits._
 import doobie._, doobie.implicits._
 
-object FragmentExample extends App {
+object FragmentExample {
 
   // Import some convenience constructors.
   import Fragments.{ in, whereAndOpt }
 
   // Country Info
-  case class Info(name: String, code: String, population: Int)
+  final case class Info(name: String, code: String, population: Int)
 
   // Construct a Query0 with some optional filter conditions and a configurable LIMIT.
   def select(name: Option[String], pop: Option[Int], codes: List[String], limit: Long) = {
@@ -56,6 +56,7 @@ object FragmentExample extends App {
   }
 
   // End of the world
-  prog.unsafeRunSync
+  def main(args: Array[String]): Unit =
+    prog.void.unsafeRunSync
 
 }

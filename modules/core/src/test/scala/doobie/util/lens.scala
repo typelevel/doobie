@@ -6,15 +6,16 @@ import org.specs2.mutable.Specification
 
 import cats.data.State
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object lensspec extends Specification {
 
-  case class Name(first: String, last: String)
+  final case class Name(first: String, last: String)
   object Name {
     val first: Name @> String = Lens(_.first, (a, b) => a.copy(first = b))
     val last:  Name @> String = Lens(_.last, (a, b) => a.copy(last = b))
   }
 
-  case class Address(name: Name, street: String)
+  final case class Address(name: Name, street: String)
   object Address {
     val name:   Address @> Name   = Lens(_.name, (a, b) => a.copy(name = b))
     val street: Address @> String = Lens(_.street, (a, b) => a.copy(street = b))

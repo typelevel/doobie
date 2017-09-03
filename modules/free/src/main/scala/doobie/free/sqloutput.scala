@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.free
 
 import cats.~>
@@ -28,6 +24,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object sqloutput { module =>
 
   // Algebra of operations for SQLOutput. Each accepts a visitor as an alternatie to pattern-matching.
@@ -92,105 +89,105 @@ object sqloutput { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: SQLOutput => A) extends SQLOutputOp[A] {
+    final case class Raw[A](f: SQLOutput => A) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends SQLOutputOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends SQLOutputOp[A] {
+    final case class Delay[A](a: () => A) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]) extends SQLOutputOp[A] {
+    final case class HandleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLOutputOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // SQLOutput-specific operations.
-    case class  WriteArray(a: SqlArray) extends SQLOutputOp[Unit] {
+    final case class  WriteArray(a: SqlArray) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeArray(a)
     }
-    case class  WriteAsciiStream(a: InputStream) extends SQLOutputOp[Unit] {
+    final case class  WriteAsciiStream(a: InputStream) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeAsciiStream(a)
     }
-    case class  WriteBigDecimal(a: BigDecimal) extends SQLOutputOp[Unit] {
+    final case class  WriteBigDecimal(a: BigDecimal) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeBigDecimal(a)
     }
-    case class  WriteBinaryStream(a: InputStream) extends SQLOutputOp[Unit] {
+    final case class  WriteBinaryStream(a: InputStream) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeBinaryStream(a)
     }
-    case class  WriteBlob(a: Blob) extends SQLOutputOp[Unit] {
+    final case class  WriteBlob(a: Blob) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeBlob(a)
     }
-    case class  WriteBoolean(a: Boolean) extends SQLOutputOp[Unit] {
+    final case class  WriteBoolean(a: Boolean) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeBoolean(a)
     }
-    case class  WriteByte(a: Byte) extends SQLOutputOp[Unit] {
+    final case class  WriteByte(a: Byte) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeByte(a)
     }
-    case class  WriteBytes(a: Array[Byte]) extends SQLOutputOp[Unit] {
+    final case class  WriteBytes(a: Array[Byte]) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeBytes(a)
     }
-    case class  WriteCharacterStream(a: Reader) extends SQLOutputOp[Unit] {
+    final case class  WriteCharacterStream(a: Reader) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeCharacterStream(a)
     }
-    case class  WriteClob(a: Clob) extends SQLOutputOp[Unit] {
+    final case class  WriteClob(a: Clob) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeClob(a)
     }
-    case class  WriteDate(a: Date) extends SQLOutputOp[Unit] {
+    final case class  WriteDate(a: Date) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeDate(a)
     }
-    case class  WriteDouble(a: Double) extends SQLOutputOp[Unit] {
+    final case class  WriteDouble(a: Double) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeDouble(a)
     }
-    case class  WriteFloat(a: Float) extends SQLOutputOp[Unit] {
+    final case class  WriteFloat(a: Float) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeFloat(a)
     }
-    case class  WriteInt(a: Int) extends SQLOutputOp[Unit] {
+    final case class  WriteInt(a: Int) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeInt(a)
     }
-    case class  WriteLong(a: Long) extends SQLOutputOp[Unit] {
+    final case class  WriteLong(a: Long) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeLong(a)
     }
-    case class  WriteNClob(a: NClob) extends SQLOutputOp[Unit] {
+    final case class  WriteNClob(a: NClob) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeNClob(a)
     }
-    case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
+    final case class  WriteNString(a: String) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeNString(a)
     }
-    case class  WriteObject(a: AnyRef, b: SQLType) extends SQLOutputOp[Unit] {
+    final case class  WriteObject(a: AnyRef, b: SQLType) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeObject(a, b)
     }
-    case class  WriteObject1(a: SQLData) extends SQLOutputOp[Unit] {
+    final case class  WriteObject1(a: SQLData) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeObject(a)
     }
-    case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
+    final case class  WriteRef(a: Ref) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeRef(a)
     }
-    case class  WriteRowId(a: RowId) extends SQLOutputOp[Unit] {
+    final case class  WriteRowId(a: RowId) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeRowId(a)
     }
-    case class  WriteSQLXML(a: SQLXML) extends SQLOutputOp[Unit] {
+    final case class  WriteSQLXML(a: SQLXML) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeSQLXML(a)
     }
-    case class  WriteShort(a: Short) extends SQLOutputOp[Unit] {
+    final case class  WriteShort(a: Short) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeShort(a)
     }
-    case class  WriteString(a: String) extends SQLOutputOp[Unit] {
+    final case class  WriteString(a: String) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeString(a)
     }
-    case class  WriteStruct(a: Struct) extends SQLOutputOp[Unit] {
+    final case class  WriteStruct(a: Struct) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeStruct(a)
     }
-    case class  WriteTime(a: Time) extends SQLOutputOp[Unit] {
+    final case class  WriteTime(a: Time) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeTime(a)
     }
-    case class  WriteTimestamp(a: Timestamp) extends SQLOutputOp[Unit] {
+    final case class  WriteTimestamp(a: Timestamp) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeTimestamp(a)
     }
-    case class  WriteURL(a: URL) extends SQLOutputOp[Unit] {
+    final case class  WriteURL(a: URL) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeURL(a)
     }
 

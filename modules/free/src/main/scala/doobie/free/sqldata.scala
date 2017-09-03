@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.free
 
 import cats.~>
@@ -13,6 +9,7 @@ import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternatie to pattern-matching.
@@ -52,30 +49,30 @@ object sqldata { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: SQLData => A) extends SQLDataOp[A] {
+    final case class Raw[A](f: SQLData => A) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends SQLDataOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends SQLDataOp[A] {
+    final case class Delay[A](a: () => A) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]) extends SQLDataOp[A] {
+    final case class HandleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLDataOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // SQLData-specific operations.
-    case object GetSQLTypeName extends SQLDataOp[String] {
+    final case object GetSQLTypeName extends SQLDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLTypeName
     }
-    case class  ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
+    final case class  ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.readSQL(a, b)
     }
-    case class  WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
+    final case class  WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeSQL(a)
     }
 

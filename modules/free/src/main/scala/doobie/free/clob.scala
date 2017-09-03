@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.free
 
 import cats.~>
@@ -15,6 +11,7 @@ import java.io.Writer
 import java.lang.String
 import java.sql.Clob
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object clob { module =>
 
   // Algebra of operations for Clob. Each accepts a visitor as an alternatie to pattern-matching.
@@ -64,60 +61,60 @@ object clob { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: Clob => A) extends ClobOp[A] {
+    final case class Raw[A](f: Clob => A) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends ClobOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends ClobOp[A] {
+    final case class Delay[A](a: () => A) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]) extends ClobOp[A] {
+    final case class HandleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ClobOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Clob-specific operations.
-    case object Free extends ClobOp[Unit] {
+    final case object Free extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.free
     }
-    case object GetAsciiStream extends ClobOp[InputStream] {
+    final case object GetAsciiStream extends ClobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getAsciiStream
     }
-    case object GetCharacterStream extends ClobOp[Reader] {
+    final case object GetCharacterStream extends ClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream
     }
-    case class  GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
+    final case class  GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a, b)
     }
-    case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
+    final case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSubString(a, b)
     }
-    case object Length extends ClobOp[Long] {
+    final case object Length extends ClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.length
     }
-    case class  Position(a: Clob, b: Long) extends ClobOp[Long] {
+    final case class  Position(a: Clob, b: Long) extends ClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    case class  Position1(a: String, b: Long) extends ClobOp[Long] {
+    final case class  Position1(a: String, b: Long) extends ClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
+    final case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a)
     }
-    case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
+    final case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a)
     }
-    case class  SetString(a: Long, b: String) extends ClobOp[Int] {
+    final case class  SetString(a: Long, b: String) extends ClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
+    final case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b, c, d)
     }
-    case class  Truncate(a: Long) extends ClobOp[Unit] {
+    final case class  Truncate(a: Long) extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
 

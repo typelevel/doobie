@@ -37,7 +37,7 @@ object transactor  {
    * @param always a programe to run in all cases (finally)
    * @group Data Types
    */
-  case class Strategy(
+  final case class Strategy(
     before: ConnectionIO[Unit],
     after:  ConnectionIO[Unit],
     oops:   ConnectionIO[Unit],
@@ -189,6 +189,7 @@ object transactor  {
     def transP(implicit ev: Effect[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       strategy.wrapP andThen rawTransP
 
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
       kernel0: A = self.kernel,
       connect0: A => M[Connection] = self.connect,
@@ -258,8 +259,10 @@ object transactor  {
      * [here](http://tpolecat.github.io/2015/07/30/infer.html).
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     object fromDriverManager {
 
+      @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]: Async](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
         Transactor((), u => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
 

@@ -5,6 +5,7 @@ import doobie._, doobie.implicits._
 import doobie.postgres._, doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgcheck extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

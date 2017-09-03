@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.postgres.free
 
 import cats.~>
@@ -11,6 +7,7 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object largeobjectmanager { module =>
 
   // Algebra of operations for LargeObjectManager. Each accepts a visitor as an alternatie to pattern-matching.
@@ -63,69 +60,69 @@ object largeobjectmanager { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: LargeObjectManager => A) extends LargeObjectManagerOp[A] {
+    final case class Raw[A](f: LargeObjectManager => A) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends LargeObjectManagerOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends LargeObjectManagerOp[A] {
+    final case class Delay[A](a: () => A) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: LargeObjectManagerIO[A], f: Throwable => LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
+    final case class HandleErrorWith[A](fa: LargeObjectManagerIO[A], f: Throwable => LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectManagerOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // LargeObjectManager-specific operations.
-    case object Create extends LargeObjectManagerOp[Int] {
+    final case object Create extends LargeObjectManagerOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.create
     }
-    case class  Create1(a: Int) extends LargeObjectManagerOp[Int] {
+    final case class  Create1(a: Int) extends LargeObjectManagerOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.create(a)
     }
-    case object CreateLO extends LargeObjectManagerOp[Long] {
+    final case object CreateLO extends LargeObjectManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.createLO
     }
-    case class  CreateLO1(a: Int) extends LargeObjectManagerOp[Long] {
+    final case class  CreateLO1(a: Int) extends LargeObjectManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.createLO(a)
     }
-    case class  Delete(a: Int) extends LargeObjectManagerOp[Unit] {
+    final case class  Delete(a: Int) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.delete(a)
     }
-    case class  Delete1(a: Long) extends LargeObjectManagerOp[Unit] {
+    final case class  Delete1(a: Long) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.delete(a)
     }
-    case class  Open(a: Int) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open(a: Int) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a)
     }
-    case class  Open1(a: Int, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open1(a: Int, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    case class  Open2(a: Int, b: Int) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open2(a: Int, b: Int) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    case class  Open3(a: Int, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open3(a: Int, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b, c)
     }
-    case class  Open4(a: Long) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open4(a: Long) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a)
     }
-    case class  Open5(a: Long, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open5(a: Long, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    case class  Open6(a: Long, b: Int) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open6(a: Long, b: Int) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    case class  Open7(a: Long, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class  Open7(a: Long, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b, c)
     }
-    case class  Unlink(a: Int) extends LargeObjectManagerOp[Unit] {
+    final case class  Unlink(a: Int) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.unlink(a)
     }
-    case class  Unlink1(a: Long) extends LargeObjectManagerOp[Unit] {
+    final case class  Unlink1(a: Long) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.unlink(a)
     }
 

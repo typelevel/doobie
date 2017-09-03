@@ -7,6 +7,7 @@ import java.util.UUID
 import org.specs2.mutable.Specification
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object h2typesspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](
@@ -35,6 +36,7 @@ object h2typesspec extends Specification {
       }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def skip(col: String, msg: String = "not yet implemented") =
     s"Mapping for $col" >> {
       "PENDING:" in pending(msg)

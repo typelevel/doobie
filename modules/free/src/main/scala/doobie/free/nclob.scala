@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.free
 
 import cats.~>
@@ -16,6 +12,7 @@ import java.lang.String
 import java.sql.Clob
 import java.sql.NClob
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object nclob { module =>
 
   // Algebra of operations for NClob. Each accepts a visitor as an alternatie to pattern-matching.
@@ -65,60 +62,60 @@ object nclob { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: NClob => A) extends NClobOp[A] {
+    final case class Raw[A](f: NClob => A) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends NClobOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends NClobOp[A] {
+    final case class Delay[A](a: () => A) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]) extends NClobOp[A] {
+    final case class HandleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends NClobOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // NClob-specific operations.
-    case object Free extends NClobOp[Unit] {
+    final case object Free extends NClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.free
     }
-    case object GetAsciiStream extends NClobOp[InputStream] {
+    final case object GetAsciiStream extends NClobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getAsciiStream
     }
-    case object GetCharacterStream extends NClobOp[Reader] {
+    final case object GetCharacterStream extends NClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream
     }
-    case class  GetCharacterStream1(a: Long, b: Long) extends NClobOp[Reader] {
+    final case class  GetCharacterStream1(a: Long, b: Long) extends NClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a, b)
     }
-    case class  GetSubString(a: Long, b: Int) extends NClobOp[String] {
+    final case class  GetSubString(a: Long, b: Int) extends NClobOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSubString(a, b)
     }
-    case object Length extends NClobOp[Long] {
+    final case object Length extends NClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.length
     }
-    case class  Position(a: Clob, b: Long) extends NClobOp[Long] {
+    final case class  Position(a: Clob, b: Long) extends NClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    case class  Position1(a: String, b: Long) extends NClobOp[Long] {
+    final case class  Position1(a: String, b: Long) extends NClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
+    final case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a)
     }
-    case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
+    final case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a)
     }
-    case class  SetString(a: Long, b: String) extends NClobOp[Int] {
+    final case class  SetString(a: Long, b: String) extends NClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    case class  SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
+    final case class  SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b, c, d)
     }
-    case class  Truncate(a: Long) extends NClobOp[Unit] {
+    final case class  Truncate(a: Long) extends NClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
 

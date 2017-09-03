@@ -2,6 +2,7 @@ package doobie.util
 
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object invariantspec extends Specification {
   "NonNullableColumnRead" >> {
     "include a one-based indexing disclaimer" in {

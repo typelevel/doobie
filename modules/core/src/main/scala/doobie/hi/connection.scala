@@ -29,6 +29,7 @@ import fs2.Stream.{ eval, bracket }
  * Module of high-level constructors for `ConnectionIO` actions.
  * @group Modules
  */
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection {
   import implicits._
 

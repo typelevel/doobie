@@ -4,13 +4,14 @@ package util
 import shapeless._, shapeless.record._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object compositespec extends Specification {
 
-  case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
+  final case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
-  case class LenStr1(n: Int, s: String)
+  final case class LenStr1(n: Int, s: String)
 
-  case class LenStr2(n: Int, s: String)
+  final case class LenStr2(n: Int, s: String)
   object LenStr2 {
     implicit val LenStrMeta =
       Meta[String].xmap[LenStr2](s => LenStr2(s.length, s), _.s)

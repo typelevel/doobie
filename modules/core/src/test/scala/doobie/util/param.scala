@@ -4,9 +4,10 @@ package util
 import shapeless._, shapeless.test._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object paramspec extends Specification {
 
-  case class Z(i: Int, s: String)
+  final case class Z(i: Int, s: String)
   object S
 
   "Param" should {

@@ -10,6 +10,7 @@ import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined._
 import doobie.util.invariant._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object refinedtypes extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](
@@ -27,8 +28,8 @@ object refinedtypes extends Specification {
     }
   }
 
-  case class Point(x: Int, y: Int)
-  case class Quadrant1()
+  final case class Point(x: Int, y: Int)
+  final case class Quadrant1()
   type PointInQuadrant1 = Point Refined Quadrant1
 
   implicit val PointComposite: Composite[Point] =

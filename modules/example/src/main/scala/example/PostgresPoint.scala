@@ -16,7 +16,7 @@ object PostgresPoint extends App {
   // A custom Point type with a Meta instance xmapped from the PostgreSQL native type (which
   // would be weird to use directly in a data model). Note that the presence of this `Meta`
   // instance precludes mapping `Point` to two columns. If you want two mappings you need two types.
-  case class Point(x: Double, y: Double)
+  final case class Point(x: Double, y: Double)
   object Point {
     implicit val PointType: Meta[Point] =
       Meta[PGpoint].xmap(p => new Point(p.x, p.y), p => new PGpoint(p.x, p.y))

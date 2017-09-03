@@ -4,6 +4,7 @@ import doobie._, doobie.implicits._
 import shapeless.test.illTyped
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object stringspec extends Specification {
 
   "sql interpolator" should {

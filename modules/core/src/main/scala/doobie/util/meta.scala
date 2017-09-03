@@ -55,6 +55,7 @@ object meta {
       if (rs.wasNull) None else Some(ia(i))
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     final def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
       if (a == null) throw NonNullableColumnUpdate(n, jdbcTarget.head)
       else set(ps, n, ai(a))
@@ -65,6 +66,7 @@ object meta {
         case Some(a) => unsafeSetNonNullable(ps, n, a)
       }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     final def unsafeUpdateNonNullable(rs: ResultSet, n: Int, a: A): Unit =
       if (a == null) throw NonNullableColumnUpdate(n, jdbcTarget.head)
       else update(rs, n, ai(a))
@@ -137,6 +139,7 @@ object meta {
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B =
       f(this)
 
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
       Meta.reg(new BasicMeta[B] {
         val kernel              = outer.kernel.imap(f)(g)
@@ -183,6 +186,7 @@ object meta {
     def fold[B](f: BasicMeta[A] => B, g: AdvancedMeta[A] => B): B =
       g(this)
 
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     def xmap[B](f: A => B, g: B => A)(implicit ev: TypeTag[B]): Meta[B] =
       Meta.reg(new AdvancedMeta[B] {
         val kernel      = outer.kernel.imap(f)(g)
@@ -211,6 +215,7 @@ object meta {
       MetaOrder.toOrdering
 
     // See note on trait Meta above
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
     private var instances: TreeSet[Meta[_]] = TreeSet.empty // scalastyle:ignore
 
   } with LowPriorityImplicits with MetaInstances {
@@ -245,6 +250,7 @@ object meta {
      * Construct a `BasicMeta` for the given type.
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     def basic[A](
       jdbcTarget0: NonEmptyList[JdbcType],
       jdbcSource0: NonEmptyList[JdbcType],
@@ -287,6 +293,7 @@ object meta {
      * Construct an `AdvancedMeta` for the given type.
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     def advanced[A](
       jdbcTypes: NonEmptyList[JdbcType],
       schemaTypes0: NonEmptyList[String],
@@ -315,6 +322,7 @@ object meta {
      * Construct an `AdvancedMeta` for the given type, mapped as JDBC `Array`.
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
     def array[A >: Null <: AnyRef: TypeTag](elementType: String, schemaH: String, schemaT: String*): AdvancedMeta[Array[A]] =
       advanced[Array[A]](
         NonEmptyList.of(JdbcArray),
@@ -340,6 +348,7 @@ object meta {
      * Construct an `AdvancedMeta` for the given type, mapped as JDBC `Other,JavaObject`.
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     def other[A >: Null <: AnyRef: TypeTag](schemaH: String, schemaT: String*)(implicit A: ClassTag[A]): AdvancedMeta[A] =
       advanced[A](
         NonEmptyList.of(Other, JavaObject),

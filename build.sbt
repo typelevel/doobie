@@ -7,7 +7,7 @@ lazy val catsVersion          = "1.0.0-MF"
 lazy val circeVersion         = "0.9.0-M1"
 lazy val fs2CoreVersion       = "0.10.0-M6"
 lazy val h2Version            = "1.4.196"
-lazy val hikariVersion        = "2.6.3"
+lazy val hikariVersion        = "2.7.0"
 lazy val kindProjectorVersion = "0.9.4"
 lazy val monixVersion         = "2.3.0"
 lazy val postGisVersion       = "2.2.1"
@@ -17,7 +17,23 @@ lazy val scalaCheckVersion    = "1.13.5"
 lazy val scalatestVersion     = "3.0.4"
 lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.4"
-lazy val specs2Version        = "3.9.4"
+lazy val specs2Version        = "3.9.5"
+
+// Our set of warts
+lazy val doobieWarts =
+  Warts.allBut(
+    Wart.Any,                 // false positives
+    Wart.ArrayEquals,         // false positives
+    Wart.Nothing,             // false positives
+    Wart.Null,                // Java API under the hood; we have to deal with null
+    Wart.Product,             // false positives
+    Wart.Serializable,        // false positives
+    // Wart.Recursion,           // false positives
+    Wart.ImplicitConversion,  // we know what we're doing
+    Wart.Throw,               // TODO: switch to ApplicativeError.fail in most places
+    Wart.PublicInference,     // fails https://github.com/wartremover/wartremover/issues/398
+    Wart.ImplicitParameter    // only used for Pos, but evidently can't be suppressed
+  )
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
@@ -121,6 +137,10 @@ lazy val commonSettings =
          |For more information see LICENSE or https://opensource.org/licenses/MIT
          |""".stripMargin
     )),
+
+    // Wartremover in compile and test (not in Console)
+    wartremoverErrors in (Compile, compile) := doobieWarts,
+    wartremoverErrors in (Test,    compile) := doobieWarts,
 
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",

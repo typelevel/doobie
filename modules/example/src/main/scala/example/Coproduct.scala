@@ -30,7 +30,7 @@ object coproduct {
   // A console algebra
   sealed trait ConsoleOp[A]
   case object ReadLn             extends ConsoleOp[String]
-  case class  PrintLn(s: String) extends ConsoleOp[Unit]
+  final case class PrintLn(s: String) extends ConsoleOp[Unit]
 
   // A module of ConsoleOp constructors, parameterized over a coproduct
   class ConsoleOps[F[_]](implicit ev: InjectK[ConsoleOp, F]) {
@@ -38,7 +38,7 @@ object coproduct {
     def printLn(s: String) = Free.inject[ConsoleOp, F](PrintLn(s))
   }
   object ConsoleOps {
-    implicit def instance[F[_]](implicit ev: InjectK[ConsoleOp, F]) = new ConsoleOps
+    implicit def instance[F[_]](implicit ev: InjectK[ConsoleOp, F]): ConsoleOps[F] = new ConsoleOps
   }
 
   // An interpreter into IO
@@ -55,7 +55,7 @@ object coproduct {
       sql"select name from country where name like $pat".query[String].list.inject[F]
   }
   object ConnectionOps {
-    implicit def instance[F[_]](implicit ev: InjectK[ConnectionOp, F]) = new ConnectionOps
+    implicit def instance[F[_]](implicit ev: InjectK[ConnectionOp, F]): ConnectionOps[F] = new ConnectionOps
   }
 
   // A program

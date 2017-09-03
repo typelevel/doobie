@@ -2,21 +2,22 @@ package doobie.util
 
 import cats.effect.IO
 import doobie._, doobie.implicits._
-import doobie.enum.jdbctype._
+import doobie.enum.jdbctype.{ Array => _, _ }
 import org.specs2.mutable.Specification
 import shapeless.test._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
 object metaspec extends Specification {
-  case class X(x: Int)
-  case class Y(x: String) extends AnyVal
-  case class P(x: Int) extends AnyVal
-  case class Q(x: String)
+  final case class X(x: Int)
+  final case class Y(x: String) extends AnyVal
+  final case class P(x: Int) extends AnyVal
+  final case class Q(x: String)
 
-  case class Z(i: Int, s: String)
+  final case class Z(i: Int, s: String)
   object S
 
-  case class Reg1(x: Int)
-  case class Reg2(x: Int)
+  final case class Reg1(x: Int)
+  final case class Reg2(x: Int)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
@@ -24,8 +25,8 @@ object metaspec extends Specification {
     "sa", ""
   )
 
-  case class Foo(s: String)
-  case class Bar(n: Int)
+  final case class Foo(s: String)
+  final case class Bar(n: Int)
 
   "Meta" should {
 

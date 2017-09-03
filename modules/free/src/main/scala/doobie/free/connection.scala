@@ -1,7 +1,3 @@
-// Copyright (c) 2013-2017 Rob Norris
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
-
 package doobie.free
 
 import cats.~>
@@ -27,6 +23,7 @@ import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection { module =>
 
   // Algebra of operations for Connection. Each accepts a visitor as an alternatie to pattern-matching.
@@ -117,183 +114,183 @@ object connection { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: Connection => A) extends ConnectionOp[A] {
+    final case class Raw[A](f: Connection => A) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends ConnectionOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends ConnectionOp[A] {
+    final case class Delay[A](a: () => A) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]) extends ConnectionOp[A] {
+    final case class HandleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ConnectionOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Connection-specific operations.
-    case class  Abort(a: Executor) extends ConnectionOp[Unit] {
+    final case class  Abort(a: Executor) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.abort(a)
     }
-    case object ClearWarnings extends ConnectionOp[Unit] {
+    final case object ClearWarnings extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
     }
-    case object Close extends ConnectionOp[Unit] {
+    final case object Close extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    case object Commit extends ConnectionOp[Unit] {
+    final case object Commit extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.commit
     }
-    case class  CreateArrayOf(a: String, b: Array[AnyRef]) extends ConnectionOp[SqlArray] {
+    final case class  CreateArrayOf(a: String, b: Array[AnyRef]) extends ConnectionOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.createArrayOf(a, b)
     }
-    case object CreateBlob extends ConnectionOp[Blob] {
+    final case object CreateBlob extends ConnectionOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.createBlob
     }
-    case object CreateClob extends ConnectionOp[Clob] {
+    final case object CreateClob extends ConnectionOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.createClob
     }
-    case object CreateNClob extends ConnectionOp[NClob] {
+    final case object CreateNClob extends ConnectionOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.createNClob
     }
-    case object CreateSQLXML extends ConnectionOp[SQLXML] {
+    final case object CreateSQLXML extends ConnectionOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.createSQLXML
     }
-    case object CreateStatement extends ConnectionOp[Statement] {
+    final case object CreateStatement extends ConnectionOp[Statement] {
       def visit[F[_]](v: Visitor[F]) = v.createStatement
     }
-    case class  CreateStatement1(a: Int, b: Int) extends ConnectionOp[Statement] {
+    final case class  CreateStatement1(a: Int, b: Int) extends ConnectionOp[Statement] {
       def visit[F[_]](v: Visitor[F]) = v.createStatement(a, b)
     }
-    case class  CreateStatement2(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
+    final case class  CreateStatement2(a: Int, b: Int, c: Int) extends ConnectionOp[Statement] {
       def visit[F[_]](v: Visitor[F]) = v.createStatement(a, b, c)
     }
-    case class  CreateStruct(a: String, b: Array[AnyRef]) extends ConnectionOp[Struct] {
+    final case class  CreateStruct(a: String, b: Array[AnyRef]) extends ConnectionOp[Struct] {
       def visit[F[_]](v: Visitor[F]) = v.createStruct(a, b)
     }
-    case object GetAutoCommit extends ConnectionOp[Boolean] {
+    final case object GetAutoCommit extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getAutoCommit
     }
-    case object GetCatalog extends ConnectionOp[String] {
+    final case object GetCatalog extends ConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getCatalog
     }
-    case object GetClientInfo extends ConnectionOp[Properties] {
+    final case object GetClientInfo extends ConnectionOp[Properties] {
       def visit[F[_]](v: Visitor[F]) = v.getClientInfo
     }
-    case class  GetClientInfo1(a: String) extends ConnectionOp[String] {
+    final case class  GetClientInfo1(a: String) extends ConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getClientInfo(a)
     }
-    case object GetHoldability extends ConnectionOp[Int] {
+    final case object GetHoldability extends ConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getHoldability
     }
-    case object GetMetaData extends ConnectionOp[DatabaseMetaData] {
+    final case object GetMetaData extends ConnectionOp[DatabaseMetaData] {
       def visit[F[_]](v: Visitor[F]) = v.getMetaData
     }
-    case object GetNetworkTimeout extends ConnectionOp[Int] {
+    final case object GetNetworkTimeout extends ConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getNetworkTimeout
     }
-    case object GetSchema extends ConnectionOp[String] {
+    final case object GetSchema extends ConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSchema
     }
-    case object GetTransactionIsolation extends ConnectionOp[Int] {
+    final case object GetTransactionIsolation extends ConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getTransactionIsolation
     }
-    case object GetTypeMap extends ConnectionOp[Map[String, Class[_]]] {
+    final case object GetTypeMap extends ConnectionOp[Map[String, Class[_]]] {
       def visit[F[_]](v: Visitor[F]) = v.getTypeMap
     }
-    case object GetWarnings extends ConnectionOp[SQLWarning] {
+    final case object GetWarnings extends ConnectionOp[SQLWarning] {
       def visit[F[_]](v: Visitor[F]) = v.getWarnings
     }
-    case object IsClosed extends ConnectionOp[Boolean] {
+    final case object IsClosed extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isClosed
     }
-    case object IsReadOnly extends ConnectionOp[Boolean] {
+    final case object IsReadOnly extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isReadOnly
     }
-    case class  IsValid(a: Int) extends ConnectionOp[Boolean] {
+    final case class  IsValid(a: Int) extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isValid(a)
     }
-    case class  IsWrapperFor(a: Class[_]) extends ConnectionOp[Boolean] {
+    final case class  IsWrapperFor(a: Class[_]) extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
-    case class  NativeSQL(a: String) extends ConnectionOp[String] {
+    final case class  NativeSQL(a: String) extends ConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.nativeSQL(a)
     }
-    case class  PrepareCall(a: String) extends ConnectionOp[CallableStatement] {
+    final case class  PrepareCall(a: String) extends ConnectionOp[CallableStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareCall(a)
     }
-    case class  PrepareCall1(a: String, b: Int, c: Int) extends ConnectionOp[CallableStatement] {
+    final case class  PrepareCall1(a: String, b: Int, c: Int) extends ConnectionOp[CallableStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareCall(a, b, c)
     }
-    case class  PrepareCall2(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
+    final case class  PrepareCall2(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[CallableStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareCall(a, b, c, d)
     }
-    case class  PrepareStatement(a: String) extends ConnectionOp[PreparedStatement] {
+    final case class  PrepareStatement(a: String) extends ConnectionOp[PreparedStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareStatement(a)
     }
-    case class  PrepareStatement1(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
+    final case class  PrepareStatement1(a: String, b: Array[Int]) extends ConnectionOp[PreparedStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareStatement(a, b)
     }
-    case class  PrepareStatement2(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
+    final case class  PrepareStatement2(a: String, b: Array[String]) extends ConnectionOp[PreparedStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareStatement(a, b)
     }
-    case class  PrepareStatement3(a: String, b: Int) extends ConnectionOp[PreparedStatement] {
+    final case class  PrepareStatement3(a: String, b: Int) extends ConnectionOp[PreparedStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareStatement(a, b)
     }
-    case class  PrepareStatement4(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
+    final case class  PrepareStatement4(a: String, b: Int, c: Int) extends ConnectionOp[PreparedStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareStatement(a, b, c)
     }
-    case class  PrepareStatement5(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
+    final case class  PrepareStatement5(a: String, b: Int, c: Int, d: Int) extends ConnectionOp[PreparedStatement] {
       def visit[F[_]](v: Visitor[F]) = v.prepareStatement(a, b, c, d)
     }
-    case class  ReleaseSavepoint(a: Savepoint) extends ConnectionOp[Unit] {
+    final case class  ReleaseSavepoint(a: Savepoint) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.releaseSavepoint(a)
     }
-    case object Rollback extends ConnectionOp[Unit] {
+    final case object Rollback extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.rollback
     }
-    case class  Rollback1(a: Savepoint) extends ConnectionOp[Unit] {
+    final case class  Rollback1(a: Savepoint) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.rollback(a)
     }
-    case class  SetAutoCommit(a: Boolean) extends ConnectionOp[Unit] {
+    final case class  SetAutoCommit(a: Boolean) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAutoCommit(a)
     }
-    case class  SetCatalog(a: String) extends ConnectionOp[Unit] {
+    final case class  SetCatalog(a: String) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCatalog(a)
     }
-    case class  SetClientInfo(a: Properties) extends ConnectionOp[Unit] {
+    final case class  SetClientInfo(a: Properties) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClientInfo(a)
     }
-    case class  SetClientInfo1(a: String, b: String) extends ConnectionOp[Unit] {
+    final case class  SetClientInfo1(a: String, b: String) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClientInfo(a, b)
     }
-    case class  SetHoldability(a: Int) extends ConnectionOp[Unit] {
+    final case class  SetHoldability(a: Int) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setHoldability(a)
     }
-    case class  SetNetworkTimeout(a: Executor, b: Int) extends ConnectionOp[Unit] {
+    final case class  SetNetworkTimeout(a: Executor, b: Int) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNetworkTimeout(a, b)
     }
-    case class  SetReadOnly(a: Boolean) extends ConnectionOp[Unit] {
+    final case class  SetReadOnly(a: Boolean) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setReadOnly(a)
     }
-    case object SetSavepoint extends ConnectionOp[Savepoint] {
+    final case object SetSavepoint extends ConnectionOp[Savepoint] {
       def visit[F[_]](v: Visitor[F]) = v.setSavepoint
     }
-    case class  SetSavepoint1(a: String) extends ConnectionOp[Savepoint] {
+    final case class  SetSavepoint1(a: String) extends ConnectionOp[Savepoint] {
       def visit[F[_]](v: Visitor[F]) = v.setSavepoint(a)
     }
-    case class  SetSchema(a: String) extends ConnectionOp[Unit] {
+    final case class  SetSchema(a: String) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setSchema(a)
     }
-    case class  SetTransactionIsolation(a: Int) extends ConnectionOp[Unit] {
+    final case class  SetTransactionIsolation(a: Int) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTransactionIsolation(a)
     }
-    case class  SetTypeMap(a: Map[String, Class[_]]) extends ConnectionOp[Unit] {
+    final case class  SetTypeMap(a: Map[String, Class[_]]) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTypeMap(a)
     }
-    case class  Unwrap[T](a: Class[T]) extends ConnectionOp[T] {
+    final case class  Unwrap[T](a: Class[T]) extends ConnectionOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.unwrap(a)
     }
 

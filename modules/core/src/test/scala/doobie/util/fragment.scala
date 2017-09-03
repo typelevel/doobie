@@ -7,6 +7,7 @@ import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import shapeless._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object fragmentspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

@@ -6,6 +6,7 @@ import doobie.postgres._, doobie.postgres.implicits._
 import java.io.ByteArrayOutputStream
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgcopyspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

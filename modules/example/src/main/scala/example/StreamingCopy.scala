@@ -86,7 +86,7 @@ object StreamingCopy {
 
 
   // A data type to move.
-  case class City(id: Int, name: String, countrycode: String, district: String, population: Int)
+  final case class City(id: Int, name: String, countrycode: String, district: String, population: Int)
 
   // A producer of cities, to be run on database 1
   def read: Stream[ConnectionIO, City] =
@@ -97,6 +97,7 @@ object StreamingCopy {
     """.query[City].stream
 
   // A consumer of cities, to be run on database 2
+  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   def write(c: City): ConnectionIO[Unit] =
     printBefore("write", c.toString)(
       sql"""

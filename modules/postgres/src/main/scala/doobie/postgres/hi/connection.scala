@@ -46,6 +46,7 @@ object connection {
    * it cannot be passed as a parameter and is simply interpolated into the statement. DO NOT pass
    * user input here.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def pgNotify(channel: String): ConnectionIO[Unit] =
     execVoid("NOTIFY " + channel)
 
@@ -54,6 +55,7 @@ object connection {
    * channel nor the payload are sanitized; neither can be passed as parameters and are simply
    * interpolated into the statement. DO NOT pass user input here.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def pgNotify(channel: String, payload: String): ConnectionIO[Unit] =
     execVoid(s"NOTIFY $channel, '$payload'")
 

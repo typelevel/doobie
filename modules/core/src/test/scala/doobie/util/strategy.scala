@@ -7,7 +7,7 @@ import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.Predef._
 
-
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
 object strategyspec extends Specification {
 
   val baseXa = Transactor.fromDriverManager[IO](

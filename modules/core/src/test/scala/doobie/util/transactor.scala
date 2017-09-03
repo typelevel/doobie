@@ -5,6 +5,7 @@ import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.Predef._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object transactorspec extends Specification {
 
   val q = sql"select 42".query[Int].unique
