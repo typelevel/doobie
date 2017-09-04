@@ -423,96 +423,109 @@ object meta {
   trait MetaInstances {
 
     /** @group Instances */
-    implicit val ByteMeta = Meta.basic1[Byte](
-      TinyInt,
-      List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
-        LongVarChar),
-      _.getByte(_), _.setByte(_, _), _.updateByte(_, _))
+    implicit val ByteMeta: Meta[Byte] =
+      Meta.basic1[Byte](
+        TinyInt,
+        List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
+          LongVarChar),
+        _.getByte(_), _.setByte(_, _), _.updateByte(_, _))
 
     /** @group Instances */
-    implicit val ShortMeta = Meta.basic1[Short](
-      SmallInt,
-      List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
-        LongVarChar),
-      _.getShort(_), _.setShort(_, _), _.updateShort(_, _))
+    implicit val ShortMeta: Meta[Short] =
+      Meta.basic1[Short](
+        SmallInt,
+        List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
+          LongVarChar),
+        _.getShort(_), _.setShort(_, _), _.updateShort(_, _))
 
     /** @group Instances */
-    implicit val IntMeta = Meta.basic1[Int](
-      Integer,
-      List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
-        LongVarChar),
-      _.getInt(_), _.setInt(_, _), _.updateInt(_, _))
+    implicit val IntMeta: Meta[Int] =
+      Meta.basic1[Int](
+        Integer,
+        List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
+          LongVarChar),
+        _.getInt(_), _.setInt(_, _), _.updateInt(_, _))
 
     /** @group Instances */
-    implicit val LongMeta = Meta.basic1[Long](
-      BigInt,
-      List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
-        LongVarChar),
-      _.getLong(_), _.setLong(_, _), _.updateLong(_, _))
+    implicit val LongMeta: Meta[Long] =
+      Meta.basic1[Long](
+        BigInt,
+        List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
+          LongVarChar),
+        _.getLong(_), _.setLong(_, _), _.updateLong(_, _))
 
     /** @group Instances */
-    implicit val FloatMeta = Meta.basic1[Float](
-      Real,
-      List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
-        LongVarChar),
-      _.getFloat(_), _.setFloat(_, _), _.updateFloat(_, _))
+    implicit val FloatMeta: Meta[Float] =
+      Meta.basic1[Float](
+        Real,
+        List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
+          LongVarChar),
+        _.getFloat(_), _.setFloat(_, _), _.updateFloat(_, _))
 
     /** @group Instances */
-    implicit val DoubleMeta = Meta.basic[Double](
-      NonEmptyList.of(Double),
-      NonEmptyList.of(Float, Double),
-      List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar,
-        LongVarChar),
-      _.getDouble(_), _.setDouble(_, _), _.updateDouble(_, _))
+    implicit val DoubleMeta: Meta[Double] =
+      Meta.basic[Double](
+        NonEmptyList.of(Double),
+        NonEmptyList.of(Float, Double),
+        List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar,
+          LongVarChar),
+        _.getDouble(_), _.setDouble(_, _), _.updateDouble(_, _))
 
     /** @group Instances */
-    implicit val BigDecimalMeta = Meta.basic[java.math.BigDecimal](
-      NonEmptyList.of(Numeric),
-      NonEmptyList.of(Decimal, Numeric),
-      List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar,
-        LongVarChar),
-      _.getBigDecimal(_), _.setBigDecimal(_, _), _.updateBigDecimal(_, _))
+    implicit val BigDecimalMeta: Meta[java.math.BigDecimal] =
+      Meta.basic[java.math.BigDecimal](
+        NonEmptyList.of(Numeric),
+        NonEmptyList.of(Decimal, Numeric),
+        List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar,
+          LongVarChar),
+        _.getBigDecimal(_), _.setBigDecimal(_, _), _.updateBigDecimal(_, _))
 
     /** @group Instances */
-    implicit val BooleanMeta = Meta.basic[Boolean](
-      NonEmptyList.of(Bit, JdbcBoolean),
-      NonEmptyList.of(Bit, JdbcBoolean),
-      List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar,
-        LongVarChar),
-      _.getBoolean(_), _.setBoolean(_, _), _.updateBoolean(_, _))
+    implicit val BooleanMeta: Meta[Boolean] =
+      Meta.basic[Boolean](
+        NonEmptyList.of(Bit, JdbcBoolean),
+        NonEmptyList.of(Bit, JdbcBoolean),
+        List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar,
+          LongVarChar),
+        _.getBoolean(_), _.setBoolean(_, _), _.updateBoolean(_, _))
 
     /** @group Instances */
-    implicit val StringMeta = Meta.basic[String](
-      NonEmptyList.of(VarChar, Char, LongVarChar),
-      NonEmptyList.of(Char, VarChar),
-      List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
-        LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
-      _.getString(_), _.setString(_, _), _.updateString(_, _))
+    implicit val StringMeta: Meta[String] =
+      Meta.basic[String](
+        NonEmptyList.of(VarChar, Char, LongVarChar),
+        NonEmptyList.of(Char, VarChar),
+        List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
+          LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
+        _.getString(_), _.setString(_, _), _.updateString(_, _))
 
     /** @group Instances */
-    implicit val ByteArrayMeta = Meta.basic[Array[Byte]](
-      NonEmptyList.of(Binary, VarBinary, LongVarBinary),
-      NonEmptyList.of(Binary, VarBinary),
-      List(LongVarBinary),
-      _.getBytes(_), _.setBytes(_, _), _.updateBytes(_, _))
+    implicit val ByteArrayMeta: Meta[Array[Byte]] =
+      Meta.basic[Array[Byte]](
+        NonEmptyList.of(Binary, VarBinary, LongVarBinary),
+        NonEmptyList.of(Binary, VarBinary),
+        List(LongVarBinary),
+        _.getBytes(_), _.setBytes(_, _), _.updateBytes(_, _))
 
     /** @group Instances */
-    implicit val DateMeta = Meta.basic1[java.sql.Date](
-      Date,
-      List(Char, VarChar, LongVarChar, Timestamp),
-      _.getDate(_), _.setDate(_, _), _.updateDate(_, _))
+    implicit val DateMeta: Meta[java.sql.Date] =
+      Meta.basic1[java.sql.Date](
+        Date,
+        List(Char, VarChar, LongVarChar, Timestamp),
+        _.getDate(_), _.setDate(_, _), _.updateDate(_, _))
 
     /** @group Instances */
-    implicit val TimeMeta = Meta.basic1[java.sql.Time](
-      Time,
-      List(Char, VarChar, LongVarChar, Timestamp),
-      _.getTime(_), _.setTime(_, _), _.updateTime(_, _))
+    implicit val TimeMeta: Meta[java.sql.Time] =
+      Meta.basic1[java.sql.Time](
+        Time,
+        List(Char, VarChar, LongVarChar, Timestamp),
+        _.getTime(_), _.setTime(_, _), _.updateTime(_, _))
 
     /** @group Instances */
-    implicit val TimestampMeta = Meta.basic1[java.sql.Timestamp](
-      Timestamp,
-      List(Char, VarChar, LongVarChar, Date, Time),
-      _.getTimestamp(_), _.setTimestamp(_, _), _.updateTimestamp(_, _))
+    implicit val TimestampMeta: Meta[java.sql.Timestamp] =
+      Meta.basic1[java.sql.Timestamp](
+        Timestamp,
+        List(Char, VarChar, LongVarChar, Date, Time),
+        _.getTimestamp(_), _.setTimestamp(_, _), _.updateTimestamp(_, _))
 
     /** @group Instances */
     implicit val ScalaBigDecimalMeta: Meta[BigDecimal] =

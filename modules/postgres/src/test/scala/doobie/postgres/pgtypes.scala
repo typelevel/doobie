@@ -89,7 +89,7 @@ object pgtypesspec extends Specification {
   object MyEnum extends Enumeration { val foo, bar = Value }
 
   // as scala.Enumeration
-  implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
+  implicit val MyEnumMeta: Meta[MyEnum.Value] = pgEnum(MyEnum, "myenum")
   testInOut("myenum", MyEnum.foo)
 
   // // as java.lang.Enum

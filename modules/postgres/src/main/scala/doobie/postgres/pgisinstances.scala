@@ -12,6 +12,7 @@ import org.postgis._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
+@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
 trait PgisInstances {
 
   // PostGIS outer types

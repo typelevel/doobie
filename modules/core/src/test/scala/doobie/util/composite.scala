@@ -13,8 +13,8 @@ object compositespec extends Specification {
 
   final case class LenStr2(n: Int, s: String)
   object LenStr2 {
-    implicit val LenStrMeta =
-      Meta[String].xmap[LenStr2](s => LenStr2(s.length, s), _.s)
+    implicit val LenStrMeta: Meta[LenStr2] =
+      Meta[String].xmap(s => LenStr2(s.length, s), _.s)
   }
 
   "Composite" should {
