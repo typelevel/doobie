@@ -35,11 +35,11 @@ object analysis {
     val tag = "P"
     override def msg = this match {
       case ParameterMisalignment(_, Left(_)) =>
-        show"""|Interpolated value has no corresponding SQL parameter and likely appears inside a
+        s"""|Interpolated value has no corresponding SQL parameter and likely appears inside a
             |comment or quoted string. Ior.Left will result in a runtime failure; fix this by removing
             |the parameter.""".stripMargin.lines.mkString(" ")
       case ParameterMisalignment(_, Right(pm)) =>
-        show"""|${pm.jdbcType.show.toUpperCase} parameter is not set; this will result in a runtime
+        s"""|${pm.jdbcType.show.toUpperCase} parameter is not set; this will result in a runtime
             |failure. Perhaps you used a literal ? rather than an interpolated value.""".stripMargin.lines.mkString(" ")
     }
   }
@@ -47,7 +47,7 @@ object analysis {
   final case class ParameterTypeError(index: Int, scalaType: Meta[_], n: NullabilityKnown, jdbcType: JdbcType, vendorTypeName: String, nativeMap: Map[String, JdbcType]) extends AlignmentError {
     override val tag = "P"
     override def msg =
-      show"""|${typeName(scalaType, n)} is not coercible to ${jdbcType.show.toUpperCase}
+      s"""|${typeName(scalaType, n)} is not coercible to ${jdbcType.show.toUpperCase}
           |(${vendorTypeName})
           |according to the JDBC specification.
           |Fix this by changing the schema type to ${scalaType.jdbcTarget.head.show.toUpperCase},
@@ -58,10 +58,10 @@ object analysis {
     override val tag = "C"
     override def msg = this match {
       case ColumnMisalignment(_, Left((j, n))) =>
-        show"""|Too few columns are selected, which will result in a runtime failure. Add a column or
+        s"""|Too few columns are selected, which will result in a runtime failure. Add a column or
             |remove mapped ${typeName(j, n)} from the result type.""".stripMargin.lines.mkString(" ")
       case ColumnMisalignment(_, Right(_)) =>
-        show"""Column is unused. Remove it from the SELECT statement."""
+        s"""Column is unused. Remove it from the SELECT statement."""
     }
   }
 
@@ -70,9 +70,9 @@ object analysis {
     override def msg = this match {
       // https://github.com/tpolecat/doobie/issues/164 ... NoNulls means "maybe no nulls"  :-\
       // case NullabilityMisalignment(i, name, st, NoNulls, Nullable) =>
-      //   show"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
+      //   s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
       case NullabilityMisalignment(_, _, st, Nullable, NoNulls) =>
-        show"""|Reading a NULL value into ${typeName(st, NoNulls)} will result in a runtime failure.
+        s"""|Reading a NULL value into ${typeName(st, NoNulls)} will result in a runtime failure.
             |Fix this by making the schema type ${formatNullability(NoNulls)} or by changing the
             |Scala type to ${typeName(st, Nullable)}""".stripMargin.lines.mkString(" ")
       case _ => sys.error("unpossible, evidently")
@@ -84,7 +84,7 @@ object analysis {
     override def msg =
       Meta.readersOf(schema.jdbcType, schema.vendorTypeName).toList.map(typeName(_, n)) match {
         case Nil =>
-          show"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
+          s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
               |coercible to ${typeName(jdk, n)} according to the JDBC specification or any defined
               |mapping.
               |Fix this by changing the schema type to
@@ -93,7 +93,7 @@ object analysis {
               |type.
               |""".stripMargin.lines.mkString(" ")
         case ss =>
-          show"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
+          s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
               |coercible to ${typeName(jdk, n)} according to the JDBC specification or any defined
               |mapping.
               |Fix this by changing the schema type to
@@ -106,7 +106,7 @@ object analysis {
   final case class ColumnTypeWarning(index: Int, jdk: Meta[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
     override val tag = "C"
     override def msg =
-      show"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is ostensibly
+      s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is ostensibly
           |coercible to ${typeName(jdk, n)}
           |according to the JDBC specification but is not a recommended target type. Fix this by
           |changing the schema type to

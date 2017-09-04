@@ -28,7 +28,6 @@ lazy val doobieWarts =
     Wart.Null,                // Java API under the hood; we have to deal with null
     Wart.Product,             // false positives
     Wart.Serializable,        // false positives
-    // Wart.Recursion,           // false positives
     Wart.ImplicitConversion,  // we know what we're doing
     Wart.Throw,               // TODO: switch to ApplicativeError.fail in most places
     Wart.PublicInference,     // fails https://github.com/wartremover/wartremover/issues/398
