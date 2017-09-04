@@ -43,7 +43,7 @@ trait Modules {
 trait Instances {
 
   implicit lazy val AsyncBlobIO: Async[BlobIO] =
-    lob.AsyncBlobIO
+    blob.AsyncBlobIO
 
   implicit lazy val AsyncCallableStatementIO: Async[CallableStatementIO] =
     callablestatement.AsyncCallableStatementIO
