@@ -4,6 +4,8 @@
 
 package doobie.free
 
+import cats.effect.Async
+
 trait Types {
   type BlobIO[A]              = blob.BlobIO[A]
   type CallableStatementIO[A] = callablestatement.CallableStatementIO[A]
@@ -39,18 +41,46 @@ trait Modules {
 }
 
 trait Instances {
-  implicit lazy val AsyncBlobIO              = blob.AsyncBlobIO
-  implicit lazy val AsyncCallableStatementIO = callablestatement.AsyncCallableStatementIO
-  implicit lazy val AsyncClobIO              = clob.AsyncClobIO
-  implicit lazy val AsyncConnectionIO        = connection.AsyncConnectionIO
-  implicit lazy val AsyncDatabaseMetaDataIO  = databasemetadata.AsyncDatabaseMetaDataIO
-  implicit lazy val AsyncDriverIO            = driver.AsyncDriverIO
-  implicit lazy val AsyncNClobIO             = nclob.AsyncNClobIO
-  implicit lazy val AsyncPreparedStatementIO = preparedstatement.AsyncPreparedStatementIO
-  implicit lazy val AsyncRefIO               = ref.AsyncRefIO
-  implicit lazy val AsyncResultSetIO         = resultset.AsyncResultSetIO
-  implicit lazy val AsyncSQLDataIO           = sqldata.AsyncSQLDataIO
-  implicit lazy val AsyncSQLInputIO          = sqlinput.AsyncSQLInputIO
-  implicit lazy val AsyncSQLOutputIO         = sqloutput.AsyncSQLOutputIO
-  implicit lazy val AsyncStatementIO         = statement.AsyncStatementIO
+
+  implicit lazy val AsyncBlobIO: Async[BlobIO] =
+    blob.AsyncBlobIO
+
+  implicit lazy val AsyncCallableStatementIO: Async[CallableStatementIO] =
+    callablestatement.AsyncCallableStatementIO
+
+  implicit lazy val AsyncClobIO: Async[ClobIO] =
+    clob.AsyncClobIO
+
+  implicit lazy val AsyncConnectionIO: Async[ConnectionIO] =
+    connection.AsyncConnectionIO
+
+  implicit lazy val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
+    databasemetadata.AsyncDatabaseMetaDataIO
+  implicit lazy val AsyncDriverIO: Async[DriverIO] =
+    driver.AsyncDriverIO
+
+  implicit lazy val AsyncNClobIO: Async[NClobIO] =
+    nclob.AsyncNClobIO
+
+  implicit lazy val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
+    preparedstatement.AsyncPreparedStatementIO
+
+  implicit lazy val AsyncRefIO: Async[RefIO] =
+    ref.AsyncRefIO
+
+  implicit lazy val AsyncResultSetIO: Async[ResultSetIO] =
+    resultset.AsyncResultSetIO
+
+  implicit lazy val AsyncSQLDataIO: Async[SQLDataIO] =
+    sqldata.AsyncSQLDataIO
+
+  implicit lazy val AsyncSQLInputIO: Async[SQLInputIO] =
+    sqlinput.AsyncSQLInputIO
+
+  implicit lazy val AsyncSQLOutputIO: Async[SQLOutputIO] =
+    sqloutput.AsyncSQLOutputIO
+
+  implicit lazy val AsyncStatementIO: Async[StatementIO] =
+    statement.AsyncStatementIO
+
 }

@@ -33,6 +33,7 @@ import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object preparedstatement { module =>
 
   // Algebra of operations for PreparedStatement. Each accepts a visitor as an alternatie to pattern-matching.
@@ -179,351 +180,351 @@ object preparedstatement { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: PreparedStatement => A) extends PreparedStatementOp[A] {
+    final case class Raw[A](f: PreparedStatement => A) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends PreparedStatementOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends PreparedStatementOp[A] {
+    final case class Delay[A](a: () => A) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+    final case class HandleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PreparedStatementOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PreparedStatement-specific operations.
-    case object AddBatch extends PreparedStatementOp[Unit] {
+    final case object AddBatch extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addBatch
     }
-    case class  AddBatch1(a: String) extends PreparedStatementOp[Unit] {
+    final case class  AddBatch1(a: String) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addBatch(a)
     }
-    case object Cancel extends PreparedStatementOp[Unit] {
+    final case object Cancel extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancel
     }
-    case object ClearBatch extends PreparedStatementOp[Unit] {
+    final case object ClearBatch extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearBatch
     }
-    case object ClearParameters extends PreparedStatementOp[Unit] {
+    final case object ClearParameters extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearParameters
     }
-    case object ClearWarnings extends PreparedStatementOp[Unit] {
+    final case object ClearWarnings extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
     }
-    case object Close extends PreparedStatementOp[Unit] {
+    final case object Close extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    case object CloseOnCompletion extends PreparedStatementOp[Unit] {
+    final case object CloseOnCompletion extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
     }
-    case object Execute extends PreparedStatementOp[Boolean] {
+    final case object Execute extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute
     }
-    case class  Execute1(a: String) extends PreparedStatementOp[Boolean] {
+    final case class  Execute1(a: String) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a)
     }
-    case class  Execute2(a: String, b: Array[Int]) extends PreparedStatementOp[Boolean] {
+    final case class  Execute2(a: String, b: Array[Int]) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    case class  Execute3(a: String, b: Array[String]) extends PreparedStatementOp[Boolean] {
+    final case class  Execute3(a: String, b: Array[String]) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    case class  Execute4(a: String, b: Int) extends PreparedStatementOp[Boolean] {
+    final case class  Execute4(a: String, b: Int) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    case object ExecuteBatch extends PreparedStatementOp[Array[Int]] {
+    final case object ExecuteBatch extends PreparedStatementOp[Array[Int]] {
       def visit[F[_]](v: Visitor[F]) = v.executeBatch
     }
-    case object ExecuteLargeBatch extends PreparedStatementOp[Array[Long]] {
+    final case object ExecuteLargeBatch extends PreparedStatementOp[Array[Long]] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeBatch
     }
-    case object ExecuteLargeUpdate extends PreparedStatementOp[Long] {
+    final case object ExecuteLargeUpdate extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate
     }
-    case class  ExecuteLargeUpdate1(a: String) extends PreparedStatementOp[Long] {
+    final case class  ExecuteLargeUpdate1(a: String) extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a)
     }
-    case class  ExecuteLargeUpdate2(a: String, b: Array[Int]) extends PreparedStatementOp[Long] {
+    final case class  ExecuteLargeUpdate2(a: String, b: Array[Int]) extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    case class  ExecuteLargeUpdate3(a: String, b: Array[String]) extends PreparedStatementOp[Long] {
+    final case class  ExecuteLargeUpdate3(a: String, b: Array[String]) extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    case class  ExecuteLargeUpdate4(a: String, b: Int) extends PreparedStatementOp[Long] {
+    final case class  ExecuteLargeUpdate4(a: String, b: Int) extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    case object ExecuteQuery extends PreparedStatementOp[ResultSet] {
+    final case object ExecuteQuery extends PreparedStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.executeQuery
     }
-    case class  ExecuteQuery1(a: String) extends PreparedStatementOp[ResultSet] {
+    final case class  ExecuteQuery1(a: String) extends PreparedStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.executeQuery(a)
     }
-    case object ExecuteUpdate extends PreparedStatementOp[Int] {
+    final case object ExecuteUpdate extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate
     }
-    case class  ExecuteUpdate1(a: String) extends PreparedStatementOp[Int] {
+    final case class  ExecuteUpdate1(a: String) extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a)
     }
-    case class  ExecuteUpdate2(a: String, b: Array[Int]) extends PreparedStatementOp[Int] {
+    final case class  ExecuteUpdate2(a: String, b: Array[Int]) extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    case class  ExecuteUpdate3(a: String, b: Array[String]) extends PreparedStatementOp[Int] {
+    final case class  ExecuteUpdate3(a: String, b: Array[String]) extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    case class  ExecuteUpdate4(a: String, b: Int) extends PreparedStatementOp[Int] {
+    final case class  ExecuteUpdate4(a: String, b: Int) extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    case object GetConnection extends PreparedStatementOp[Connection] {
+    final case object GetConnection extends PreparedStatementOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.getConnection
     }
-    case object GetFetchDirection extends PreparedStatementOp[Int] {
+    final case object GetFetchDirection extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchDirection
     }
-    case object GetFetchSize extends PreparedStatementOp[Int] {
+    final case object GetFetchSize extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchSize
     }
-    case object GetGeneratedKeys extends PreparedStatementOp[ResultSet] {
+    final case object GetGeneratedKeys extends PreparedStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getGeneratedKeys
     }
-    case object GetLargeMaxRows extends PreparedStatementOp[Long] {
+    final case object GetLargeMaxRows extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeMaxRows
     }
-    case object GetLargeUpdateCount extends PreparedStatementOp[Long] {
+    final case object GetLargeUpdateCount extends PreparedStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeUpdateCount
     }
-    case object GetMaxFieldSize extends PreparedStatementOp[Int] {
+    final case object GetMaxFieldSize extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxFieldSize
     }
-    case object GetMaxRows extends PreparedStatementOp[Int] {
+    final case object GetMaxRows extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxRows
     }
-    case object GetMetaData extends PreparedStatementOp[ResultSetMetaData] {
+    final case object GetMetaData extends PreparedStatementOp[ResultSetMetaData] {
       def visit[F[_]](v: Visitor[F]) = v.getMetaData
     }
-    case object GetMoreResults extends PreparedStatementOp[Boolean] {
+    final case object GetMoreResults extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getMoreResults
     }
-    case class  GetMoreResults1(a: Int) extends PreparedStatementOp[Boolean] {
+    final case class  GetMoreResults1(a: Int) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getMoreResults(a)
     }
-    case object GetParameterMetaData extends PreparedStatementOp[ParameterMetaData] {
+    final case object GetParameterMetaData extends PreparedStatementOp[ParameterMetaData] {
       def visit[F[_]](v: Visitor[F]) = v.getParameterMetaData
     }
-    case object GetQueryTimeout extends PreparedStatementOp[Int] {
+    final case object GetQueryTimeout extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getQueryTimeout
     }
-    case object GetResultSet extends PreparedStatementOp[ResultSet] {
+    final case object GetResultSet extends PreparedStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSet
     }
-    case object GetResultSetConcurrency extends PreparedStatementOp[Int] {
+    final case object GetResultSetConcurrency extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetConcurrency
     }
-    case object GetResultSetHoldability extends PreparedStatementOp[Int] {
+    final case object GetResultSetHoldability extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetHoldability
     }
-    case object GetResultSetType extends PreparedStatementOp[Int] {
+    final case object GetResultSetType extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetType
     }
-    case object GetUpdateCount extends PreparedStatementOp[Int] {
+    final case object GetUpdateCount extends PreparedStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getUpdateCount
     }
-    case object GetWarnings extends PreparedStatementOp[SQLWarning] {
+    final case object GetWarnings extends PreparedStatementOp[SQLWarning] {
       def visit[F[_]](v: Visitor[F]) = v.getWarnings
     }
-    case object IsCloseOnCompletion extends PreparedStatementOp[Boolean] {
+    final case object IsCloseOnCompletion extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isCloseOnCompletion
     }
-    case object IsClosed extends PreparedStatementOp[Boolean] {
+    final case object IsClosed extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isClosed
     }
-    case object IsPoolable extends PreparedStatementOp[Boolean] {
+    final case object IsPoolable extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
     }
-    case class  IsWrapperFor(a: Class[_]) extends PreparedStatementOp[Boolean] {
+    final case class  IsWrapperFor(a: Class[_]) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
-    case class  SetArray(a: Int, b: SqlArray) extends PreparedStatementOp[Unit] {
+    final case class  SetArray(a: Int, b: SqlArray) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setArray(a, b)
     }
-    case class  SetAsciiStream(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
+    final case class  SetAsciiStream(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b)
     }
-    case class  SetAsciiStream1(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetAsciiStream1(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b, c)
     }
-    case class  SetAsciiStream2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetAsciiStream2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b, c)
     }
-    case class  SetBigDecimal(a: Int, b: BigDecimal) extends PreparedStatementOp[Unit] {
+    final case class  SetBigDecimal(a: Int, b: BigDecimal) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBigDecimal(a, b)
     }
-    case class  SetBinaryStream(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
+    final case class  SetBinaryStream(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b)
     }
-    case class  SetBinaryStream1(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetBinaryStream1(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b, c)
     }
-    case class  SetBinaryStream2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetBinaryStream2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b, c)
     }
-    case class  SetBlob(a: Int, b: Blob) extends PreparedStatementOp[Unit] {
+    final case class  SetBlob(a: Int, b: Blob) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b)
     }
-    case class  SetBlob1(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
+    final case class  SetBlob1(a: Int, b: InputStream) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b)
     }
-    case class  SetBlob2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetBlob2(a: Int, b: InputStream, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b, c)
     }
-    case class  SetBoolean(a: Int, b: Boolean) extends PreparedStatementOp[Unit] {
+    final case class  SetBoolean(a: Int, b: Boolean) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBoolean(a, b)
     }
-    case class  SetByte(a: Int, b: Byte) extends PreparedStatementOp[Unit] {
+    final case class  SetByte(a: Int, b: Byte) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setByte(a, b)
     }
-    case class  SetBytes(a: Int, b: Array[Byte]) extends PreparedStatementOp[Unit] {
+    final case class  SetBytes(a: Int, b: Array[Byte]) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b)
     }
-    case class  SetCharacterStream(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
+    final case class  SetCharacterStream(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b)
     }
-    case class  SetCharacterStream1(a: Int, b: Reader, c: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetCharacterStream1(a: Int, b: Reader, c: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b, c)
     }
-    case class  SetCharacterStream2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetCharacterStream2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b, c)
     }
-    case class  SetClob(a: Int, b: Clob) extends PreparedStatementOp[Unit] {
+    final case class  SetClob(a: Int, b: Clob) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b)
     }
-    case class  SetClob1(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
+    final case class  SetClob1(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b)
     }
-    case class  SetClob2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetClob2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b, c)
     }
-    case class  SetCursorName(a: String) extends PreparedStatementOp[Unit] {
+    final case class  SetCursorName(a: String) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCursorName(a)
     }
-    case class  SetDate(a: Int, b: Date) extends PreparedStatementOp[Unit] {
+    final case class  SetDate(a: Int, b: Date) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDate(a, b)
     }
-    case class  SetDate1(a: Int, b: Date, c: Calendar) extends PreparedStatementOp[Unit] {
+    final case class  SetDate1(a: Int, b: Date, c: Calendar) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDate(a, b, c)
     }
-    case class  SetDouble(a: Int, b: Double) extends PreparedStatementOp[Unit] {
+    final case class  SetDouble(a: Int, b: Double) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDouble(a, b)
     }
-    case class  SetEscapeProcessing(a: Boolean) extends PreparedStatementOp[Unit] {
+    final case class  SetEscapeProcessing(a: Boolean) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setEscapeProcessing(a)
     }
-    case class  SetFetchDirection(a: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetFetchDirection(a: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchDirection(a)
     }
-    case class  SetFetchSize(a: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetFetchSize(a: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchSize(a)
     }
-    case class  SetFloat(a: Int, b: Float) extends PreparedStatementOp[Unit] {
+    final case class  SetFloat(a: Int, b: Float) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFloat(a, b)
     }
-    case class  SetInt(a: Int, b: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetInt(a: Int, b: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setInt(a, b)
     }
-    case class  SetLargeMaxRows(a: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetLargeMaxRows(a: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setLargeMaxRows(a)
     }
-    case class  SetLong(a: Int, b: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetLong(a: Int, b: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setLong(a, b)
     }
-    case class  SetMaxFieldSize(a: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetMaxFieldSize(a: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setMaxFieldSize(a)
     }
-    case class  SetMaxRows(a: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetMaxRows(a: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setMaxRows(a)
     }
-    case class  SetNCharacterStream(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
+    final case class  SetNCharacterStream(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNCharacterStream(a, b)
     }
-    case class  SetNCharacterStream1(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetNCharacterStream1(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNCharacterStream(a, b, c)
     }
-    case class  SetNClob(a: Int, b: NClob) extends PreparedStatementOp[Unit] {
+    final case class  SetNClob(a: Int, b: NClob) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b)
     }
-    case class  SetNClob1(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
+    final case class  SetNClob1(a: Int, b: Reader) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b)
     }
-    case class  SetNClob2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
+    final case class  SetNClob2(a: Int, b: Reader, c: Long) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b, c)
     }
-    case class  SetNString(a: Int, b: String) extends PreparedStatementOp[Unit] {
+    final case class  SetNString(a: Int, b: String) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNString(a, b)
     }
-    case class  SetNull(a: Int, b: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetNull(a: Int, b: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNull(a, b)
     }
-    case class  SetNull1(a: Int, b: Int, c: String) extends PreparedStatementOp[Unit] {
+    final case class  SetNull1(a: Int, b: Int, c: String) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNull(a, b, c)
     }
-    case class  SetObject(a: Int, b: AnyRef) extends PreparedStatementOp[Unit] {
+    final case class  SetObject(a: Int, b: AnyRef) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b)
     }
-    case class  SetObject1(a: Int, b: AnyRef, c: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetObject1(a: Int, b: AnyRef, c: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c)
     }
-    case class  SetObject2(a: Int, b: AnyRef, c: Int, d: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetObject2(a: Int, b: AnyRef, c: Int, d: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c, d)
     }
-    case class  SetObject3(a: Int, b: AnyRef, c: SQLType) extends PreparedStatementOp[Unit] {
+    final case class  SetObject3(a: Int, b: AnyRef, c: SQLType) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c)
     }
-    case class  SetObject4(a: Int, b: AnyRef, c: SQLType, d: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetObject4(a: Int, b: AnyRef, c: SQLType, d: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c, d)
     }
-    case class  SetPoolable(a: Boolean) extends PreparedStatementOp[Unit] {
+    final case class  SetPoolable(a: Boolean) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setPoolable(a)
     }
-    case class  SetQueryTimeout(a: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetQueryTimeout(a: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setQueryTimeout(a)
     }
-    case class  SetRef(a: Int, b: Ref) extends PreparedStatementOp[Unit] {
+    final case class  SetRef(a: Int, b: Ref) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setRef(a, b)
     }
-    case class  SetRowId(a: Int, b: RowId) extends PreparedStatementOp[Unit] {
+    final case class  SetRowId(a: Int, b: RowId) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setRowId(a, b)
     }
-    case class  SetSQLXML(a: Int, b: SQLXML) extends PreparedStatementOp[Unit] {
+    final case class  SetSQLXML(a: Int, b: SQLXML) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setSQLXML(a, b)
     }
-    case class  SetShort(a: Int, b: Short) extends PreparedStatementOp[Unit] {
+    final case class  SetShort(a: Int, b: Short) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setShort(a, b)
     }
-    case class  SetString(a: Int, b: String) extends PreparedStatementOp[Unit] {
+    final case class  SetString(a: Int, b: String) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    case class  SetTime(a: Int, b: Time) extends PreparedStatementOp[Unit] {
+    final case class  SetTime(a: Int, b: Time) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTime(a, b)
     }
-    case class  SetTime1(a: Int, b: Time, c: Calendar) extends PreparedStatementOp[Unit] {
+    final case class  SetTime1(a: Int, b: Time, c: Calendar) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTime(a, b, c)
     }
-    case class  SetTimestamp(a: Int, b: Timestamp) extends PreparedStatementOp[Unit] {
+    final case class  SetTimestamp(a: Int, b: Timestamp) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTimestamp(a, b)
     }
-    case class  SetTimestamp1(a: Int, b: Timestamp, c: Calendar) extends PreparedStatementOp[Unit] {
+    final case class  SetTimestamp1(a: Int, b: Timestamp, c: Calendar) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTimestamp(a, b, c)
     }
-    case class  SetURL(a: Int, b: URL) extends PreparedStatementOp[Unit] {
+    final case class  SetURL(a: Int, b: URL) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setURL(a, b)
     }
-    case class  SetUnicodeStream(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
+    final case class  SetUnicodeStream(a: Int, b: InputStream, c: Int) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setUnicodeStream(a, b, c)
     }
-    case class  Unwrap[T](a: Class[T]) extends PreparedStatementOp[T] {
+    final case class  Unwrap[T](a: Class[T]) extends PreparedStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.unwrap(a)
     }
 

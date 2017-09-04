@@ -12,7 +12,7 @@ import java.io.File
 // JDBC program using the low-level API
 object FreeUsage {
 
-  case class CountryCode(code: String)
+  final case class CountryCode(code: String)
 
   def main(args: Array[String]): Unit = {
     val db = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
@@ -47,6 +47,7 @@ object FreeUsage {
       l  <- FPS.embed(rs, unroll(FRS.getString(1).map(CountryCode(_))) guarantee FRS.close)
     } yield l
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def unroll[A](a: ResultSetIO[A]): ResultSetIO[List[A]] = {
     def unroll0(as: List[A]): ResultSetIO[List[A]] =
       FRS.next >>= {

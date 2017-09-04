@@ -23,7 +23,7 @@ object param {
 Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
 have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom
 instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.""")
-  final case class Param[A](composite: Composite[A])
+  final class Param[A] private (val composite: Composite[A])
 
   /**
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
@@ -35,15 +35,15 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
     /** Each `Meta[A]` gives rise to a `Param[A]`. */
     implicit def fromMeta[A](implicit ev: Meta[A]): Param[A] =
-      Param[A](Composite.fromMeta(ev))
+      new Param[A](Composite.fromMeta(ev))
 
     /** Each `Meta[A]` gives rise to a `Param[Option[A]]`. */
     implicit def fromMetaOption[A](implicit ev: Meta[A]): Param[Option[A]] =
-      Param[Option[A]](Composite.fromMetaOption(ev))
+      new Param[Option[A]](Composite.fromMetaOption(ev))
 
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =
-      Param[HNil](Composite.emptyProduct)
+      new Param[HNil](Composite.emptyProduct)
 
     /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
     implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]): Param[H :: T] =

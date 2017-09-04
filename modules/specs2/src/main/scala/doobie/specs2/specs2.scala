@@ -49,18 +49,22 @@ object analysisspec {
 
     def transactor: Transactor[M]
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
       checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def check[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Query0[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
     def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def check[A](q: Update[A])(implicit A: TypeTag[A]): Fragments =
       checkAnalysis(s"Update[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def check(q: Update0): Fragments =
       checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
@@ -85,14 +89,15 @@ object analysisspec {
 
     private def assertEmpty(es: List[AlignmentError], f: Option[Pos]) =
       if (es.isEmpty) (f, success)._2 // use f to stop warning ... todo, use it!
-      else new Failure(es.map(formatError).mkString("\n"), "", Nil)
+      else new Failure(es.map(formatAlignmentError).mkString("\n"), "", Nil)
 
     private val packagePrefix = "\\b[a-z]+\\.".r
 
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     private def typeName[A](tag: TypeTag[A]): String =
       packagePrefix.replaceAllIn(tag.tpe.toString, "")
 
-    private def formatError(e: AlignmentError): String =
+    private def formatAlignmentError(e: AlignmentError): String =
       formatError(e.msg)
 
     private def formatError(s: String): String =

@@ -10,6 +10,7 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object copyout { module =>
 
   // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternatie to pattern-matching.
@@ -54,45 +55,45 @@ object copyout { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: PGCopyOut => A) extends CopyOutOp[A] {
+    final case class Raw[A](f: PGCopyOut => A) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends CopyOutOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends CopyOutOp[A] {
+    final case class Delay[A](a: () => A) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]) extends CopyOutOp[A] {
+    final case class HandleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyOutOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGCopyOut-specific operations.
-    case object CancelCopy extends CopyOutOp[Unit] {
+    final case object CancelCopy extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
     }
-    case object GetFieldCount extends CopyOutOp[Int] {
+    final case object GetFieldCount extends CopyOutOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldCount
     }
-    case class  GetFieldFormat(a: Int) extends CopyOutOp[Int] {
+    final case class  GetFieldFormat(a: Int) extends CopyOutOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
     }
-    case object GetFormat extends CopyOutOp[Int] {
+    final case object GetFormat extends CopyOutOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFormat
     }
-    case object GetHandledRowCount extends CopyOutOp[Long] {
+    final case object GetHandledRowCount extends CopyOutOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
     }
-    case object IsActive extends CopyOutOp[Boolean] {
+    final case object IsActive extends CopyOutOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isActive
     }
-    case object ReadFromCopy extends CopyOutOp[Array[Byte]] {
+    final case object ReadFromCopy extends CopyOutOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.readFromCopy
     }
-    case class  ReadFromCopy1(a: Boolean) extends CopyOutOp[Array[Byte]] {
+    final case class  ReadFromCopy1(a: Boolean) extends CopyOutOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.readFromCopy(a)
     }
 

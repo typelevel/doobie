@@ -1,17 +1,22 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.util
 
 import cats.{ Reducible => Foldable1, _}, cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object fragmentsspec extends Specification {
   import Fragments._
 
   "Fragments" >> {
 
-    val nel  = List(1,2,3).toNel.get
+    val nel  = List(1,2,3).toNel.getOrElse(sys.error("unpossible"))
     val fs   = List(1,2,3).map(n => fr"$n")
-    val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 != 0))
+    val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
 
     "in" in {
       in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "

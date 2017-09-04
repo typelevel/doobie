@@ -16,6 +16,7 @@ object stream {
     _.flatMap(a => Stream.eval(f(a)))
 
   /** Stream constructor for effectful source of chunks. */
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Stream[F, T] =
     attemptEval(fa) flatMap {
       case Left(e)    => fail(e)

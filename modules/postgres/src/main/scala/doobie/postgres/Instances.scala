@@ -21,6 +21,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
+@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
 trait Instances {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
@@ -75,6 +76,7 @@ trait Instances {
   // automatic lifting to Atom will give us lifted and unlifted arrays, for a total of four variants
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
+  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String, arrayType: String, arrayTypeT: String*): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
     val raw = Meta.array[A](elemType, arrayType, arrayTypeT: _*)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
@@ -101,6 +103,7 @@ trait Instances {
   // equivalent of A, otherwise this will fail in spectacular fashion, and we're using a cast in the
   // lifted case because the representation is identical, assuming no nulls. In the long run this
   // may need to become something slower but safer. Unclear.
+  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals", "org.wartremover.warts.AsInstanceOf"))
   private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag: TypeTag](f: A => B, g: B => A)(
     implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) =
     // TODO: assert, somehow, that A is the boxed version of B so we catch errors on instance
@@ -158,6 +161,7 @@ trait Instances {
   /**
    * Construct a `Meta` for value members of the given `Enumeration`.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.ToString"))
   def pgEnum(e: Enumeration, name: String): Meta[e.Value] =
     pgEnumString[e.Value](name,
       a => try e.withName(a) catch {
@@ -167,6 +171,7 @@ trait Instances {
   /**
    * Construct a `Meta` for value members of the given Jave `enum`.
    */
+   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Meta[E] = {
     val clazz = E.runtimeClass.asInstanceOf[Class[E]]
     pgEnumString[E](name,

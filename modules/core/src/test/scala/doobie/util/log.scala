@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.util
 
 import cats.implicits._
@@ -7,6 +11,7 @@ import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification
 import shapeless._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
 object logspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](
@@ -15,6 +20,7 @@ object logspec extends Specification {
     "sa", ""
   )
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def eventForUniqueQuery[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
@@ -23,6 +29,7 @@ object logspec extends Specification {
     result
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def eventForUniqueUpdate[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
@@ -41,7 +48,7 @@ object logspec extends Specification {
 
     "implicit handler" in {
       var result  = null : LogEvent
-      implicit val handler = LogHandler(result = _)
+      implicit val handler: LogHandler = LogHandler(result = _)
       val cio = sql"select 1".query[Int].unique
       cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
@@ -108,7 +115,7 @@ object logspec extends Specification {
 
     "implicit handler" in {
       var result  = null : LogEvent
-      implicit val handler = LogHandler(result = _)
+      implicit val handler: LogHandler = LogHandler(result = _)
       val cio = sql"drop table if exists barf".update.run
       cio.transact(xa).attempt.unsafeRunSync
       result must beLike {

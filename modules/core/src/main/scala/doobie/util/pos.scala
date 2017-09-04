@@ -8,7 +8,7 @@ package doobie.util
 object pos {
 
   /** A source position. */
-  case class Pos(path: String, line: Int) {
+  final case class Pos(path: String, line: Int) {
 
     def file: String =
       path.lastIndexOf(java.io.File.separatorChar.toString) match {

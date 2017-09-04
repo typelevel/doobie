@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.postgres
 
 import cats.effect.{ IO, Sync }
@@ -6,6 +10,7 @@ import doobie.postgres._, doobie.postgres.implicits._
 import java.io.ByteArrayOutputStream
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgcopyspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

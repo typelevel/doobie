@@ -37,6 +37,7 @@ import fs2.Stream.bracket
  * provided; see the `statement` module for this functionality.
  * @group Modules
  */
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object preparedstatement {
   import implicits._
 

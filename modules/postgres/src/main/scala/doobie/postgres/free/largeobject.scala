@@ -12,6 +12,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object largeobject { module =>
 
   // Algebra of operations for LargeObject. Each accepts a visitor as an alternatie to pattern-matching.
@@ -68,81 +69,81 @@ object largeobject { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
+    final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends LargeObjectOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends LargeObjectOp[A] {
+    final case class Delay[A](a: () => A) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]) extends LargeObjectOp[A] {
+    final case class HandleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // LargeObject-specific operations.
-    case object Close extends LargeObjectOp[Unit] {
+    final case object Close extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    case object Copy extends LargeObjectOp[LargeObject] {
+    final case object Copy extends LargeObjectOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.copy
     }
-    case object GetInputStream extends LargeObjectOp[InputStream] {
+    final case object GetInputStream extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream
     }
-    case class  GetInputStream1(a: Long) extends LargeObjectOp[InputStream] {
+    final case class  GetInputStream1(a: Long) extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream(a)
     }
-    case object GetLongOID extends LargeObjectOp[Long] {
+    final case object GetLongOID extends LargeObjectOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLongOID
     }
-    case object GetOID extends LargeObjectOp[Int] {
+    final case object GetOID extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getOID
     }
-    case object GetOutputStream extends LargeObjectOp[OutputStream] {
+    final case object GetOutputStream extends LargeObjectOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getOutputStream
     }
-    case class  Read(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Int] {
+    final case class  Read(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.read(a, b, c)
     }
-    case class  Read1(a: Int) extends LargeObjectOp[Array[Byte]] {
+    final case class  Read1(a: Int) extends LargeObjectOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.read(a)
     }
-    case class  Seek(a: Int) extends LargeObjectOp[Unit] {
+    final case class  Seek(a: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.seek(a)
     }
-    case class  Seek1(a: Int, b: Int) extends LargeObjectOp[Unit] {
+    final case class  Seek1(a: Int, b: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.seek(a, b)
     }
-    case class  Seek64(a: Long, b: Int) extends LargeObjectOp[Unit] {
+    final case class  Seek64(a: Long, b: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.seek64(a, b)
     }
-    case object Size extends LargeObjectOp[Int] {
+    final case object Size extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.size
     }
-    case object Size64 extends LargeObjectOp[Long] {
+    final case object Size64 extends LargeObjectOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.size64
     }
-    case object Tell extends LargeObjectOp[Int] {
+    final case object Tell extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.tell
     }
-    case object Tell64 extends LargeObjectOp[Long] {
+    final case object Tell64 extends LargeObjectOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.tell64
     }
-    case class  Truncate(a: Int) extends LargeObjectOp[Unit] {
+    final case class  Truncate(a: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
-    case class  Truncate64(a: Long) extends LargeObjectOp[Unit] {
+    final case class  Truncate64(a: Long) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate64(a)
     }
-    case class  Write(a: Array[Byte]) extends LargeObjectOp[Unit] {
+    final case class  Write(a: Array[Byte]) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.write(a)
     }
-    case class  Write1(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Unit] {
+    final case class  Write1(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.write(a, b, c)
     }
 

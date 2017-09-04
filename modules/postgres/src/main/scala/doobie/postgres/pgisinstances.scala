@@ -12,6 +12,7 @@ import org.postgis._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
+@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
 trait PgisInstances {
 
   // PostGIS outer types
@@ -20,12 +21,13 @@ trait PgisInstances {
   implicit val PGbox2dType    = Meta.other[PGbox2d]("box2d")
 
   // Constructor for geometry types via the `Geometry` member of PGgeometry
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def geometryType[A >: Null <: Geometry: TypeTag](implicit A: ClassTag[A]): Meta[A] =
-  PGgeometryType.xmap[A](g =>
-    try A.runtimeClass.cast(g.getGeometry).asInstanceOf[A]
-    catch {
-      case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, g.getGeometry.getClass)
-    }, new PGgeometry(_))
+    PGgeometryType.xmap[A](g =>
+      try A.runtimeClass.cast(g.getGeometry).asInstanceOf[A]
+      catch {
+        case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, g.getGeometry.getClass)
+      }, new PGgeometry(_))
 
   // PostGIS Geometry Types
   implicit val GeometryType           = geometryType[Geometry]

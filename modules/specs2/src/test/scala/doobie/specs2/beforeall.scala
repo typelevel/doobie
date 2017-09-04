@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.specs2
 
 import cats.effect.IO
@@ -8,6 +12,7 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object beforeall extends Specification with IOChecker with BeforeAll {
   // Setup
   val initQ = sql"create table some_table (value varchar not null)".update

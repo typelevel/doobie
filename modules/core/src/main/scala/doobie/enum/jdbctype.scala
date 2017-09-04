@@ -6,6 +6,7 @@ package doobie.enum
 
 import java.sql.Types._
 
+import cats.Show
 import cats.kernel.Order
 import cats.kernel.instances.int._
 
@@ -60,7 +61,7 @@ object jdbctype {
    * A catch-all constructor for JDBC type constants outside the specification and known extensions.
    * @group Values
    */
-  case class Unknown(override val toInt: Int) extends JdbcType(toInt)
+  final case class Unknown(override val toInt: Int) extends JdbcType(toInt)
 
   /** @group Implementation */
   object JdbcType {
@@ -122,6 +123,9 @@ object jdbctype {
 
     implicit val OrderJdbcType: Order[JdbcType] =
       Order.by(_.toInt)
+
+    implicit val ShowJdbcType: Show[JdbcType] =
+      Show.fromToString
 
   }
 

@@ -5,9 +5,11 @@
 package doobie.syntax
 
 import cats.data.Ior
+import scala.annotation.tailrec
 
 final class AlignSyntax[A](as: List[A]) {
   def align[B](bs: List[B]): List[A Ior B] = {
+    @tailrec
     def go(as: List[A], bs: List[B], acc: List[A Ior B]): List[A Ior B] =
       (as, bs) match {
         case (a :: as, b :: bs) => go(as , bs , Ior.Both(a, b) :: acc)
