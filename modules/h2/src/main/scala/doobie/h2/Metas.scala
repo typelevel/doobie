@@ -4,7 +4,7 @@
 
 package doobie.h2
 
-import doobie.enum.jdbctype
+import doobie.enum.JdbcType
 import doobie.util.meta._
 import doobie.util.invariant._
 
@@ -22,7 +22,7 @@ trait Instances {
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   implicit val UuidType =
     Meta.advanced[UUID](
-      NonEmptyListOf(jdbctype.Binary),
+      NonEmptyListOf(JdbcType.Binary),
       NonEmptyListOf("uuid", "UUID"),
       _.getObject(_) match {
         case null => null

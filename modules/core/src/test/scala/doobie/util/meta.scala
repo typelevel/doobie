@@ -6,7 +6,7 @@ package doobie.util
 
 import cats.effect.IO
 import doobie._, doobie.implicits._
-import doobie.enum.jdbctype.{ Array => _, _ }
+import doobie.enum.JdbcType.{ Array => _, _ }
 import org.specs2.mutable.Specification
 import shapeless.test._
 

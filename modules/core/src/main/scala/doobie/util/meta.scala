@@ -8,7 +8,8 @@ import cats._
 import cats.data.NonEmptyList
 import cats.implicits._
 
-import doobie.enum.jdbctype.{ Array => JdbcArray, Boolean => JdbcBoolean, _ }
+import doobie.enum.JdbcType
+import doobie.enum.JdbcType.{ Array => JdbcArray, Boolean => JdbcBoolean, _ }
 import doobie.util.invariant.{ NonNullableColumnRead, NonNullableColumnUpdate, InvalidObjectMapping }
 import doobie.util.kernel.Kernel
 
@@ -227,8 +228,8 @@ object meta {
         m
       }
 
-    implicit lazy val JdbcTypeMeta: Meta[doobie.enum.jdbctype.JdbcType] =
-      IntMeta.xmap(doobie.enum.jdbctype.JdbcType.fromInt, _.toInt)
+    implicit lazy val JdbcTypeMeta: Meta[JdbcType] =
+      IntMeta.xmap(JdbcType.fromInt, _.toInt)
 
     def apply[A](implicit A: Meta[A]): Meta[A] = A
 

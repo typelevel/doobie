@@ -8,8 +8,8 @@ import cats.{ Alternative, Monad }
 import cats.data.NonEmptyList
 import cats.implicits._
 
-import doobie.enum.holdability._
-import doobie.enum.fetchdirection._
+import doobie.enum.Holdability
+import doobie.enum.FetchDirection
 import doobie.util.composite._
 import doobie.util.invariant._
 import doobie.util.stream.repeatEvalChunks

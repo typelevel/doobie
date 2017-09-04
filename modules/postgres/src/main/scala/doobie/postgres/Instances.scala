@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import doobie.enum.jdbctype
+import doobie.enum.JdbcType
 import doobie._
 import doobie.util.invariant._
 
@@ -133,8 +133,8 @@ trait Instances {
 
   private def enumPartialMeta(name: String): Meta[String] =
     Meta.basic[String](
-      NonEmptyListOf(jdbctype.Other, jdbctype.VarChar), // https://github.com/tpolecat/doobie/issues/303
-      NonEmptyListOf(jdbctype.Other, jdbctype.VarChar),
+      NonEmptyListOf(JdbcType.Other, JdbcType.VarChar), // https://github.com/tpolecat/doobie/issues/303
+      NonEmptyListOf(JdbcType.Other, JdbcType.VarChar),
       Nil,
       (rs, n) => rs.getString(n),
       (ps, n, a) => {

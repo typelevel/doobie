@@ -6,7 +6,7 @@ package doobie.syntax
 
 import cats.MonadError
 import doobie.util.{ catchsql => C }
-import doobie.enum.sqlstate.SqlState
+import doobie.enum.SqlState
 import java.sql.SQLException
 
 class MonadErrorOps[M[_]: MonadError[?[_], Throwable], A](self: M[A]) {

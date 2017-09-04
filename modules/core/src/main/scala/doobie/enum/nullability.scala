@@ -4,24 +4,21 @@
 
 package doobie.enum
 
-import doobie.enum.{ parameternullable => P }
-import doobie.enum.{ columnnullable => C }
-
 import cats.kernel.Eq
 
 /** Generic nullability that subsumes JDBC's distinct parameter and column nullability. */
-object nullability {
+sealed abstract class Nullability {
 
-  /** @group Implementation */
-  sealed abstract class Nullability {
+  def toParameterNullable: ParameterNullable =
+    ParameterNullable.fromNullability(this)
 
-    def toParameterNullable: P.ParameterNullable =
-      P.ParameterNullable.fromNullability(this)
+  def toColumnNullable: ColumnNullable =
+    ColumnNullable.fromNullability(this)
 
-    def toColumnNullable: C.ColumnNullable =
-      C.ColumnNullable.fromNullability(this)
+}
 
-  }
+/** @group Implementation */
+object Nullability {
 
   sealed abstract class NullabilityKnown extends Nullability
 
@@ -29,29 +26,24 @@ object nullability {
   /** @group Values */ case object Nullable        extends NullabilityKnown
   /** @group Values */ case object NullableUnknown extends Nullability
 
-  /** @group Implementation */
-  object Nullability {
+  def fromBoolean(b: Boolean): Nullability =
+    if (b) Nullable else NoNulls
 
-    def fromBoolean(b: Boolean): Nullability =
-      if (b) Nullable else NoNulls
+  def fromParameterNullable(pn: ParameterNullable): Nullability =
+    pn match {
+      case ParameterNullable.NoNulls         => NoNulls
+      case ParameterNullable.Nullable        => Nullable
+      case ParameterNullable.NullableUnknown => NullableUnknown
+    }
 
-    def fromParameterNullable(pn: P.ParameterNullable): Nullability =
-      pn match {
-        case P.NoNulls         => NoNulls
-        case P.Nullable        => Nullable
-        case P.NullableUnknown => NullableUnknown
-      }
+  def fromColumnNullable(pn: ColumnNullable): Nullability =
+    pn match {
+      case ColumnNullable.NoNulls         => NoNulls
+      case ColumnNullable.Nullable        => Nullable
+      case ColumnNullable.NullableUnknown => NullableUnknown
+    }
 
-    def fromColumnNullable(pn: C.ColumnNullable): Nullability =
-      pn match {
-        case C.NoNulls         => NoNulls
-        case C.Nullable        => Nullable
-        case C.NullableUnknown => NullableUnknown
-      }
-
-    implicit val EqNullability: Eq[Nullability] =
-      Eq.fromUniversalEquals
-
-  }
+  implicit val EqNullability: Eq[Nullability] =
+    Eq.fromUniversalEquals
 
 }

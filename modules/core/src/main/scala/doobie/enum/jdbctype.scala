@@ -10,10 +10,11 @@ import cats.Show
 import cats.kernel.Order
 import cats.kernel.instances.int._
 
-object jdbctype {
+/** @group Implementation */
+sealed abstract class JdbcType(val toInt: Int) extends Product with Serializable
 
-  /** @group Implementation */
-  sealed abstract class JdbcType(val toInt: Int) extends Product with Serializable
+/** @group Implementation */
+object JdbcType {
 
   /** @group Values */ case object Array                  extends JdbcType(ARRAY)
   /** @group Values */ case object BigInt                 extends JdbcType(BIGINT)
@@ -63,70 +64,65 @@ object jdbctype {
    */
   final case class Unknown(override val toInt: Int) extends JdbcType(toInt)
 
-  /** @group Implementation */
-  object JdbcType {
+  def fromInt(n:Int): JdbcType =
+    n match {
+      case Array.toInt                 => Array
+      case BigInt.toInt                => BigInt
+      case Binary.toInt                => Binary
+      case Bit.toInt                   => Bit
+      case Blob.toInt                  => Blob
+      case Boolean.toInt               => Boolean
+      case Char.toInt                  => Char
+      case Clob.toInt                  => Clob
+      case DataLink.toInt              => DataLink
+      case Date.toInt                  => Date
+      case Decimal.toInt               => Decimal
+      case Distinct.toInt              => Distinct
+      case Double.toInt                => Double
+      case Float.toInt                 => Float
+      case Integer.toInt               => Integer
+      case JavaObject.toInt            => JavaObject
+      case LongnVarChar.toInt          => LongnVarChar
+      case LongVarBinary.toInt         => LongVarBinary
+      case LongVarChar.toInt           => LongVarChar
+      case NChar.toInt                 => NChar
+      case NClob.toInt                 => NClob
+      case Null.toInt                  => Null
+      case Numeric.toInt               => Numeric
+      case NVarChar.toInt              => NVarChar
+      case Other.toInt                 => Other
+      case Real.toInt                  => Real
+      case Ref.toInt                   => Ref
+      case RefCursor.toInt             => RefCursor
+      case RowId.toInt                 => RowId
+      case SmallInt.toInt              => SmallInt
+      case SqlXml.toInt                => SqlXml
+      case Struct.toInt                => Struct
+      case Time.toInt                  => Time
+      case Timestamp.toInt             => Timestamp
+      case TimestampWithTimezone.toInt => TimestampWithTimezone
+      case TinyInt.toInt               => TinyInt
+      case VarBinary.toInt             => VarBinary
+      case VarChar.toInt               => VarChar
 
-    def fromInt(n:Int): JdbcType =
-      n match {
-        case Array.toInt                 => Array
-        case BigInt.toInt                => BigInt
-        case Binary.toInt                => Binary
-        case Bit.toInt                   => Bit
-        case Blob.toInt                  => Blob
-        case Boolean.toInt               => Boolean
-        case Char.toInt                  => Char
-        case Clob.toInt                  => Clob
-        case DataLink.toInt              => DataLink
-        case Date.toInt                  => Date
-        case Decimal.toInt               => Decimal
-        case Distinct.toInt              => Distinct
-        case Double.toInt                => Double
-        case Float.toInt                 => Float
-        case Integer.toInt               => Integer
-        case JavaObject.toInt            => JavaObject
-        case LongnVarChar.toInt          => LongnVarChar
-        case LongVarBinary.toInt         => LongVarBinary
-        case LongVarChar.toInt           => LongVarChar
-        case NChar.toInt                 => NChar
-        case NClob.toInt                 => NClob
-        case Null.toInt                  => Null
-        case Numeric.toInt               => Numeric
-        case NVarChar.toInt              => NVarChar
-        case Other.toInt                 => Other
-        case Real.toInt                  => Real
-        case Ref.toInt                   => Ref
-        case RefCursor.toInt             => RefCursor
-        case RowId.toInt                 => RowId
-        case SmallInt.toInt              => SmallInt
-        case SqlXml.toInt                => SqlXml
-        case Struct.toInt                => Struct
-        case Time.toInt                  => Time
-        case Timestamp.toInt             => Timestamp
-        case TimestampWithTimezone.toInt => TimestampWithTimezone
-        case TinyInt.toInt               => TinyInt
-        case VarBinary.toInt             => VarBinary
-        case VarChar.toInt               => VarChar
+      // MS-SQL Specific values, sigh
+      case MsSqlDateTimeOffset.toInt   => MsSqlDateTimeOffset
+      case MsSqlVariant.toInt          => MsSqlVariant
 
-        // MS-SQL Specific values, sigh
-        case MsSqlDateTimeOffset.toInt   => MsSqlDateTimeOffset
-        case MsSqlVariant.toInt          => MsSqlVariant
+      // Gets a little iffy here. H2 reports NVarChar as -10 rather than -9 ... no idea. It's
+      // definitely not in the spec. So let's just accept it here and call it good. What's the
+      // worst thing that could happen? heh-heh
+      case -10                         => NVarChar
 
-        // Gets a little iffy here. H2 reports NVarChar as -10 rather than -9 ... no idea. It's
-        // definitely not in the spec. So let's just accept it here and call it good. What's the
-        // worst thing that could happen? heh-heh
-        case -10                         => NVarChar
+      // In the case of an unknown value we construct a catch-all
+      case n                           => Unknown(n)
 
-        // In the case of an unknown value we construct a catch-all
-        case n                           => Unknown(n)
+    }
 
-      }
+  implicit val OrderJdbcType: Order[JdbcType] =
+    Order.by(_.toInt)
 
-    implicit val OrderJdbcType: Order[JdbcType] =
-      Order.by(_.toInt)
-
-    implicit val ShowJdbcType: Show[JdbcType] =
-      Show.fromToString
-
-  }
+  implicit val ShowJdbcType: Show[JdbcType] =
+    Show.fromToString
 
 }

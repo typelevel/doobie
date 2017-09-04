@@ -7,9 +7,8 @@ package doobie.util
 import cats.Cartesian
 import cats.functor.{ Invariant => InvariantFunctor }
 
-import doobie.enum.nullability.{ NullabilityKnown, Nullable, NoNulls }
-import doobie.free.{ preparedstatement => FPS }
-import doobie.free.{ resultset => FRS }
+import doobie.enum.Nullability._
+import doobie.free._
 import doobie.util.kernel.Kernel
 import doobie.util.meta.Meta
 

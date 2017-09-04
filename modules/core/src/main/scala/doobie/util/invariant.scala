@@ -6,7 +6,7 @@ package doobie.util
 
 import scala.reflect.runtime.universe.TypeTag
 
-import doobie.enum.jdbctype.JdbcType
+import doobie.enum.JdbcType
 
 /**
  * Module defining the type of exceptions representing unmet expectations. These typically indicate a problem with

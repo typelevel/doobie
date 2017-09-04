@@ -13,7 +13,7 @@ trait Types {
   type Update[A]                = doobie.util.update.Update[A]
   type Query0[A]                = doobie.util.query.Query0[A]
   type Update0                  = doobie.util.update.Update0
-  type SqlState                 = doobie.enum.sqlstate.SqlState
+  type SqlState                 = doobie.enum.SqlState
   type Param[A]                 = doobie.util.param.Param[A]
   type Transactor[M[_]]         = doobie.util.transactor.Transactor[M]
   type LogHandler               = doobie.util.log.LogHandler
@@ -28,7 +28,7 @@ trait Modules {
   val  Update             = doobie.util.update.Update
   val  Query0             = doobie.util.query.Query0
   val  Update0            = doobie.util.update.Update0
-  val  SqlState           = doobie.enum.sqlstate.SqlState
+  val  SqlState           = doobie.enum.SqlState
   val  Param              = doobie.util.param.Param
   val  Transactor         = doobie.util.transactor.Transactor
   val  LogHandler         = doobie.util.log.LogHandler
