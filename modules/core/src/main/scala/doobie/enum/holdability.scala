@@ -11,10 +11,10 @@ import java.sql.ResultSet._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
+/** @group Types */
 sealed abstract class Holdability(val toInt: Int) extends Product with Serializable
 
-/** @group Implementation */
+/** @group Modules */
 object Holdability {
 
   /** @group Values */ case object HoldCursorsOverCommit extends Holdability(HOLD_CURSORS_OVER_COMMIT)

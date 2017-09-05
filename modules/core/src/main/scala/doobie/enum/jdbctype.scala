@@ -10,10 +10,10 @@ import cats.Show
 import cats.kernel.Order
 import cats.kernel.instances.int._
 
-/** @group Implementation */
+/** @group Types */
 sealed abstract class JdbcType(val toInt: Int) extends Product with Serializable
 
-/** @group Implementation */
+/** @group Modules */
 object JdbcType {
 
   /** @group Values */ case object Array                  extends JdbcType(ARRAY)

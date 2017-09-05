@@ -11,10 +11,10 @@ import java.sql.Connection._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
-sealed abstract class TransactionIsolation(val toInt: Int)
+/** @group Types */
+sealed abstract class TransactionIsolation(val toInt: Int) extends Product with Serializable
 
-/** @group Implementation */
+/** @group Modules */
 object TransactionIsolation {
 
   /** @group Values */ case object TransactionNone            extends TransactionIsolation(TRANSACTION_NONE)

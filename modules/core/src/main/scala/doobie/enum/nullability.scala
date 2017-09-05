@@ -6,8 +6,11 @@ package doobie.enum
 
 import cats.kernel.Eq
 
-/** Generic nullability that subsumes JDBC's distinct parameter and column nullability. */
-sealed abstract class Nullability {
+/**
+ * Generic nullability that subsumes JDBC's distinct parameter and column nullability.
+ * @group Types
+ */
+sealed abstract class Nullability  extends Product with Serializable {
 
   def toParameterNullable: ParameterNullable =
     ParameterNullable.fromNullability(this)
@@ -17,7 +20,7 @@ sealed abstract class Nullability {
 
 }
 
-/** @group Implementation */
+/** @group Modules */
 object Nullability {
 
   sealed abstract class NullabilityKnown extends Nullability

@@ -11,13 +11,13 @@ import java.sql.ResultSetMetaData._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
-sealed abstract class ColumnNullable(val toInt: Int) {
+/** @group Types */
+sealed abstract class ColumnNullable(val toInt: Int) extends Product with Serializable {
   def toNullability: Nullability =
     Nullability.fromColumnNullable(this)
 }
 
-/** @group Implementation */
+/** @group Modules */
 object ColumnNullable {
 
   /** @group Values */ case object NoNulls         extends ColumnNullable(columnNoNulls)

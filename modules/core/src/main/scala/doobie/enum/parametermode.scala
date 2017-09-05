@@ -11,10 +11,10 @@ import java.sql.ParameterMetaData._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
-sealed abstract class ParameterMode(val toInt: Int)
+/** @group Types */
+sealed abstract class ParameterMode(val toInt: Int) extends Product with Serializable
 
-/** @group Implementation */
+/** @group Modules */
 object ParameterMode {
 
   /** @group Values */ case object ModeIn      extends ParameterMode(parameterModeIn)

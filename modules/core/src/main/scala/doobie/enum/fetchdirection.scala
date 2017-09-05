@@ -11,10 +11,10 @@ import java.sql.ResultSet._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
-sealed abstract class FetchDirection(val toInt: Int)
+/** @group Types */
+sealed abstract class FetchDirection(val toInt: Int) extends Product with Serializable
 
-/** @group Implementation */
+/** @group Modules */
 object FetchDirection {
 
   /** @group Values */ case object Forward extends FetchDirection(FETCH_FORWARD)
