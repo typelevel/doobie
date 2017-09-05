@@ -4,9 +4,10 @@
 
 package doobie.util
 
-import doobie.enum.nullability._
-import doobie.enum.parametermode._
-import doobie.enum.jdbctype._
+import doobie.enum.Nullability
+import doobie.enum.Nullability._
+import doobie.enum.ParameterMode
+import doobie.enum.JdbcType
 import doobie.util.meta._
 import doobie.util.pretty._
 import doobie.util.meta._
@@ -89,7 +90,7 @@ object analysis {
               |mapping.
               |Fix this by changing the schema type to
               |${jdk.jdbcSource.list.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
-              |Scala type to an appropriate ${if (schema.jdbcType === Array) "array" else "object"}
+              |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
               |type.
               |""".stripMargin.lines.mkString(" ")
         case ss =>
@@ -144,7 +145,7 @@ object analysis {
       columnAlignment.zipWithIndex.collect {
         case (Ior.Both((j, n1), p), n) if !(j.jdbcSource.list.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).element(p.jdbcType) =>
           ColumnTypeError(n + 1, j, n1, p)
-        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JavaObject || p.jdbcType == Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
+        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType == JdbcType.Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
           ColumnTypeError(n + 1, j, n1, p)
       }
 

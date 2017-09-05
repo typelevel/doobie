@@ -4,16 +4,16 @@
 
 package doobie.hi
 
-import doobie.enum.jdbctype.JdbcType
+import doobie.enum.JdbcType
 import doobie.util.meta.Meta
-import doobie.enum.columnnullable.ColumnNullable
-import doobie.enum.parameternullable.ParameterNullable
-import doobie.enum.parametermode.ParameterMode
-import doobie.enum.holdability.Holdability
-import doobie.enum.nullability.NullabilityKnown
-import doobie.enum.fetchdirection.FetchDirection
-import doobie.enum.resultsetconcurrency.ResultSetConcurrency
-import doobie.enum.resultsettype.ResultSetType
+import doobie.enum.ColumnNullable
+import doobie.enum.ParameterNullable
+import doobie.enum.ParameterMode
+import doobie.enum.Holdability
+import doobie.enum.Nullability.NullabilityKnown
+import doobie.enum.FetchDirection
+import doobie.enum.ResultSetConcurrency
+import doobie.enum.ResultSetType
 
 import doobie.util.analysis._
 import doobie.util.composite._

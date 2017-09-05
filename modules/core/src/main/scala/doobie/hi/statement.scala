@@ -4,10 +4,10 @@
 
 package doobie.hi
 
-import doobie.enum.holdability.Holdability
-import doobie.enum.fetchdirection.FetchDirection
-import doobie.enum.resultsetconcurrency.ResultSetConcurrency
-import doobie.enum.resultsettype.ResultSetType
+import doobie.enum.Holdability
+import doobie.enum.FetchDirection
+import doobie.enum.ResultSetConcurrency
+import doobie.enum.ResultSetType
 import doobie.syntax.monaderror._
 
 import java.sql.SQLWarning

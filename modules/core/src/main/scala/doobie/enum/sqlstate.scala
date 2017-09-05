@@ -4,8 +4,4 @@
 
 package doobie.enum
 
-object sqlstate {
-
-  final case class SqlState(val value: String) extends AnyVal
-
-}
+final case class SqlState(val value: String) extends AnyVal
