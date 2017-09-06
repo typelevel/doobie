@@ -1,12 +1,13 @@
 package doobie.example
 
-import doobie.imports._
+import doobie._
+import doobie.implicits._
 import scalaz._, Scalaz._
 
 object Join {
 
-  case class Country(code: String, name: String)
-  case class City(id: Int, name: String)
+  final case class Country(code: String, name: String)
+  final case class City(id: Int, name: String)
 
   // Old style required examining joined columns individually
   def countriesAndCities1(filter: String): Query0[(Country, Option[City])] =
