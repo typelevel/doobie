@@ -11,13 +11,13 @@ import java.sql.ParameterMetaData._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
-sealed abstract class ParameterNullable(val toInt: Int) {
+/** @group Types */
+sealed abstract class ParameterNullable(val toInt: Int)  extends Product with Serializable {
   def toNullability: Nullability =
     Nullability.fromParameterNullable(this)
 }
 
-/** @group Implementation */
+/** @group Modules */
 object ParameterNullable {
 
   /** @group Values */ case object NoNulls         extends ParameterNullable(parameterNoNulls)

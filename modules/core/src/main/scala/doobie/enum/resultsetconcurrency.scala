@@ -11,10 +11,10 @@ import java.sql.ResultSet._
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
-/** @group Implementation */
-sealed abstract class ResultSetConcurrency(val toInt: Int)
+/** @group Types */
+sealed abstract class ResultSetConcurrency(val toInt: Int) extends Product with Serializable
 
-/** @group Implementation */
+/** @group Modules */
 object ResultSetConcurrency {
 
   /** @group Values */ case object ConcurReadOnly  extends ResultSetConcurrency(CONCUR_READ_ONLY)
