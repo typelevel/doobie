@@ -20,6 +20,7 @@
 <ul>
   <li>Rather than <code class="highlighter-rouge">foo.imports._</code> for both names and implicits, there are now distinct imports <code class="highlighter-rouge">foo._, foo.implicits._</code>. The old <code class="highlighter-rouge">foo.imports._</code> still works but is deprecated.</li>
   <li>Syntax classes are now organized as in cats. Much cleaner but end users probably won’t notice.</li>
+  <li><code class="highlighter-rouge">Composite[A]</code> now implies <code class="highlighter-rouge">Composite[Option[A]]</code> which is a very useful change. It means joins can be expressed much more easily. See <code class="highlighter-rouge">Join.scala</code> in the <code class="highlighter-rouge">example</code> project.</li>
 </ul>
 
 <h5 id="project-structure-build-etc">Project Structure, Build, Etc.</h5>
@@ -27,6 +28,7 @@
 <ul>
   <li>The doc has been ported to <a href="https://github.com/47deg/sbt-microsites">sbt-microsites</a> and is undergoing review (help wanted!).</li>
   <li><code class="highlighter-rouge">FreeGen2</code> code generator now generates all effect types with <code class="highlighter-rouge">cats.effect.Async</code> instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.</li>
+  <li>Added <a href="http://www.wartremover.org/">WartRemover</a> finally.</li>
   <li>The release process is somewhat better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.</li>
 </ul>
 

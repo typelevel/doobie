@@ -4,7 +4,8 @@
 
 <p><a href="https://travis-ci.org/tpolecat/doobie"><img src="https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.5.x" alt="Travis CI" /></a>
 <a href="https://gitter.im/tpolecat/doobie?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/tpolecat/doobie" /></a>
-<a href="https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12"><img src="https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg" alt="Maven Central" /></a></p>
+<a href="https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12"><img src="https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg" alt="Maven Central" /></a>
+<a href="https://javadoc.io/doc/org.tpolecat/doobie-core_2.12"><img src="https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg" alt="Javadocs" /></a></p>
 
 <p><strong>doobie</strong> is a pure functional JDBC layer for Scala and <a href="http://typelevel.org/cats/"><strong>Cats</strong></a>. It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC. For common use cases <strong>doobie</strong> provides a minimal but expressive high-level API:</p>
 
@@ -36,7 +37,7 @@
 
 <p><em>This is documentation site for the 0.5.x development branch, which is in early stages and is tracking the upcoming cats 1.0.0 release. If you are looking for current production versions please see the <a href="https://github.com/tpolecat/doobie">GitHub repository</a>.</em></p>
 
-<p>The current development version is <strong>0.5.0-M6</strong> for <strong>Scala 2.11/12</strong> with</p>
+<p>The current development version is <strong>0.5.0-M7</strong> for <strong>Scala 2.11/12</strong> with</p>
 
 <ul>
   <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 1.0.0-MF</li>
@@ -49,14 +50,14 @@
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
 
   <span class="c1">// Start with this one
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.5.0-M6"</span><span class="o">,</span>
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.5.0-M7"</span><span class="o">,</span>
 
   <span class="c1">// And add any of these as needed
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.5.0-M6"</span><span class="o">,</span> <span class="c1">// H2 driver 1.4.196 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.5.0-M6"</span><span class="o">,</span> <span class="c1">// HikariCP transactor.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.5.0-M6"</span><span class="o">,</span> <span class="c1">// Postgres driver 42.1.4 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.5.0-M6"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.5.0-M6"</span>  <span class="c1">// ScalaTest support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.5.0-M7"</span><span class="o">,</span> <span class="c1">// H2 driver 1.4.196 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.5.0-M7"</span><span class="o">,</span> <span class="c1">// HikariCP transactor.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.5.0-M7"</span><span class="o">,</span> <span class="c1">// Postgres driver 42.1.4 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.5.0-M7"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.5.0-M7"</span>  <span class="c1">// ScalaTest support for typechecking statements.
 </span>
 <span class="o">)</span>
 </code></pre>
