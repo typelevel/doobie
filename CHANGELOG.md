@@ -17,6 +17,7 @@ This introduces the **0.5.x** series which standardizes on [**cats**](http://typ
 
 - Rather than `foo.imports._` for both names and implicits, there are now distinct imports `foo._, foo.implicits._`. The old `foo.imports._` still works but is deprecated.
 - Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
+-  `Composite[A]` now implies `Composite[Option[A]]` which is a very useful change. It means joins can be expressed much more easily. See `Join.scala` in the `example` project.
 
 ##### Project Structure, Build, Etc.
 
