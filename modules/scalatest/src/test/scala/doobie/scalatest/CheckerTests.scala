@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobiescalatest
+package doobie.scalatest
 
 import cats.effect.IO
 import doobie._, doobie.implicits._
-import doobie.scalatest.imports._
+import doobie.scalatest._
 import org.scalatest._
 
 trait CheckerChecks[M[_]] extends FunSuite with Matchers with Checker[M] {

@@ -2,12 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
+
+import java.io.File
 
 import cats.effect.IO
 import cats.implicits._
-import doobie._, doobie.implicits._
-import java.io.File
+import doobie._
+import doobie.implicits._
 
 // JDBC program using the low-level API
 object FreeUsage {

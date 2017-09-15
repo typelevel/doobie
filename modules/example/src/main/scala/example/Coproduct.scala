@@ -2,16 +2,19 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
 
-import cats.{ ~>, InjectK }
-import cats.data.{ EitherK, Kleisli }
+import java.sql.Connection
+
+import cats.data.{EitherK, Kleisli}
 import cats.effect.IO
 import cats.free.Free
 import cats.implicits._
-import doobie._, doobie.implicits._
+import cats.{InjectK, ~>}
+import doobie._
 import doobie.free.connection.ConnectionOp
-import java.sql.Connection
+import doobie.implicits._
+
 import scala.io.StdIn
 
 object coproduct {
@@ -60,7 +63,8 @@ object coproduct {
 
   // A program
   def prog[F[_]](implicit ev1: ConsoleOps[F], ev2: ConnectionOps[F]): Free[F, Unit] = {
-    import ev1._, ev2._
+    import ev1._
+    import ev2._
     for {
       _   <- printLn("Enter a pattern:")
       pat <- readLn

@@ -2,11 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
 
-import doobie._, doobie.implicits._
-import doobie.postgres.implicits._
+import doobie._
+import doobie.implicits._
 import org.postgresql.geometric._
+import doobie.postgres.implicits._
 
 // Some queries to test using the AnalysisTestSpec in src/test
 object AnalysisTest {
