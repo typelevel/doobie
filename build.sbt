@@ -299,6 +299,12 @@ lazy val example = project
   .in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
+  .settings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-io"     % fs2CoreVersion,
+      "co.fs2" %% "fs2-scodec" % fs2CoreVersion
+    )
+  )
 
 lazy val postgres = project
   .in(file("modules/postgres"))

@@ -2,14 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
+
+import java.sql.Connection
 
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import fs2.Stream
-import java.sql.Connection
 
 /**
  * Example of resource-safe transactional database-to-database copy with fs2. If you induce failures
