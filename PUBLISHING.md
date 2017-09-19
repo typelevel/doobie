@@ -23,14 +23,7 @@ Despite a bunch of experimentation and reading a bunch of blog posts I still can
 > release
 ```
 
-- We can't publish the doc as an sbt-release step due to sbt-microsites [#210](https://github.com/47deg/sbt-microsites/issues/210) and related sbt limitations. So for now we need to say
-
-```
-> project docs
-> set version := "<the version we just released>"
-> publishMicrosite
-> ^D
-```
+This will also update the microsite.
 
 - Push the release branch, open a PR and merge.
 
