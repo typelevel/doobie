@@ -25,6 +25,7 @@ This introduces the **0.5.x** series which standardizes on [**cats**](http://typ
 - `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.
 - Added [WartRemover](http://www.wartremover.org/) finally.
 - The release process is somewhat better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.
+- Updated to sbt 1.0.2
 
 
 
