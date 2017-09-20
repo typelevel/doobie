@@ -151,24 +151,27 @@ lazy val commonSettings =
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion),
-    publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-    },
-    releaseProcess := Nil
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion)
   )
 
 lazy val publishSettings = Seq(
   useGpg := false,
   publishMavenStyle := true,
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  },
   publishArtifact in Test := false,
   homepage := Some(url("https://github.com/tpolecat/doobie")),
   pomIncludeRepository := Function.const(false),
   pomExtra := (
+    <scm>
+      <url>git@github.com:tpolecat/doobie.git</url>
+      <connection>scm:git:git@github.com:tpolecat/doobie.git</connection>
+    </scm>
     <developers>
       <developer>
         <id>tpolecat</id>
@@ -177,12 +180,16 @@ lazy val publishSettings = Seq(
       </developer>
     </developers>
   ),
+  releaseProcess := Nil,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala")
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
 )
 
 lazy val noPublishSettings = Seq(
-  skip in publish := true
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false,
+  releaseProcess := Nil
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -205,7 +212,8 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand("docs/publishMicrosite"),
+      // Doesn't work, rats. See https://github.com/47deg/sbt-microsites/issues/210
+      // releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
