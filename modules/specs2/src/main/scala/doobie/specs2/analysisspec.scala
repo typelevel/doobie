@@ -1,0 +1,94 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
+package doobie.specs2
+
+import cats.effect.{ Async, IO }
+import doobie.imports._
+import doobie.util.analysis._
+import doobie.specs2.util._
+import org.specs2.mutable.Specification
+import org.specs2.specification.core.{ Fragment, Fragments }
+import org.specs2.specification.create.{ FormattingFragments => Format }
+import org.specs2.specification.dsl.Online._
+import scala.reflect.runtime.universe.TypeTag
+
+/**
+ * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
+ * {{{
+ * // An example specification, taken from the examples project.
+ * object AnalysisTestSpec extends Specification with AnalysisSpec {
+ *
+ *   // The transactor to use for the tests.
+ *   val transactor = Transactor.fromDriverManager[IO](
+ *     "org.postgresql.Driver",
+ *     "jdbc:postgresql:world",
+ *     "postgres", ""
+ *   )
+ *
+ *   // Now just mention the queries. Arguments are not used.
+ *   check(MyDaoModule.findByNameAndAge(null, 0))
+ *   check(MyDaoModule.allWoozles)
+ *
+ * }
+ * }}}
+ */
+object analysisspec {
+
+  @deprecated("Use IOChecker.", "0.4.2")
+  type AnalysisSpec = IOChecker
+
+  trait Checker[M[_]] extends UnsafeTransactions[M] { this: Specification =>
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
+      checkImpl(Analyzable.unpack(q))
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def check[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
+      checkImpl(Analyzable.unpack(q))
+
+    def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
+      checkImpl(AnalysisArgs(
+        s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis
+      ))
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def check[A](q: Update[A])(implicit A: TypeTag[A]): Fragments =
+      checkImpl(Analyzable.unpack(q))
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def check(q: Update0): Fragments =
+      checkImpl(Analyzable.unpack(q))
+
+    private def checkImpl(args: AnalysisArgs): Fragments =
+      // continuesWith is necessary to make sure the query doesn't run too early
+      s"${args.header}\n\n${args.cleanedSql.padLeft("  ")}\n" >> ok.continueWith {
+        val report = analyze(args)
+        indentBlock(
+          report.items.map { item =>
+            item.description ! item.error.fold(ok) {
+              err => ko(err.wrap(80).toString)
+            }
+          }
+        )
+      }
+
+    private def indentBlock(fs: Seq[Fragment]): Fragments =
+      // intersperse fragments with newlines, and indent them.
+      // This differs from standard version (FragmentsDsl.fragmentsBlock()) in
+      // that any failure gets properly indented, too.
+      Fragments.empty
+        .append(Format.t)
+        .append(fs.flatMap(Seq(Format.br, _)))
+        .append(Format.bt)
+  }
+
+  /** Implementation of Checker[IO] */
+  trait IOChecker extends Checker[IO] { this: Specification =>
+    val M: Async[IO] = implicitly
+    def unsafeRunSync[A](ma: IO[A]) = ma.unsafeRunSync
+  }
+
+}
