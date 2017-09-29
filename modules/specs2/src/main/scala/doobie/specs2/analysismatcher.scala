@@ -47,7 +47,7 @@ object analysismatchers {
       val message =
         Block.fromString(r.header)
           .above(Block.fromString(""))
-          .above(r.sql.wrap(80).padLeft("  "))
+          .above(r.sql.wrap(70).padLeft("  "))
           .above(Block.fromString(""))
           .above(items)
           .toString
@@ -61,7 +61,7 @@ object analysismatchers {
           Block.fromString(s"+ ${item.description}")
         case Some(e) =>
           Block.fromString(s"x ${item.description}").above(
-            Block.fromString(" x ").leftOf(e.wrap(80))
+            Block.fromString(" x ").leftOf(e.wrap(70))
           )
       }
   }

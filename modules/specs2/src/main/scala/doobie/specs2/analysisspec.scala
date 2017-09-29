@@ -69,7 +69,7 @@ object analysisspec {
         indentBlock(
           report.items.map { item =>
             item.description ! item.error.fold(ok) {
-              err => ko(err.wrap(80).toString)
+              err => ko(err.wrap(70).toString)
             }
           }
         )
