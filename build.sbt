@@ -18,6 +18,8 @@ lazy val scalatestVersion     = "3.0.4"
 lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.4"
 lazy val specs2Version        = "3.9.5"
+lazy val scala211Version      = "2.11.11"
+lazy val scala212Version      = "2.12.4"
 
 // Our set of warts
 lazy val doobieWarts =
@@ -120,8 +122,8 @@ lazy val compilerFlags = Seq(
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.3",
-  crossScalaVersions := Seq("2.11.11", scalaVersion.value)
+  scalaVersion := scala212Version,
+  crossScalaVersions := Seq(scala211Version, scalaVersion.value)
 )
 
 lazy val commonSettings =
