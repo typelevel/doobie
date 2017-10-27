@@ -2,10 +2,12 @@ import FreeGen2._
 import ReleaseTransformations._
 import microsites._
 
+resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.0.0-MF"
 lazy val circeVersion         = "0.9.0-M1"
-lazy val fs2CoreVersion       = "0.10.0-M6"
+lazy val fs2CoreVersion       = "0.10.0-SNAPSHOT"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.2"
 lazy val kindProjectorVersion = "0.9.4"

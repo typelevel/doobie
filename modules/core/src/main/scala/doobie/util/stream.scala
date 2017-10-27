@@ -4,16 +4,11 @@
 
 package doobie.util
 
-import cats.Applicative
-import fs2.{ Stream, Sink }
+import fs2.Stream
 import fs2.Stream.{ attemptEval, fail, emits, empty }
 
 /** Additional functions for manipulating `Stream` values. */
 object stream {
-
-  /** Generalized `sink` constructor. */
-  def sink[F[_]: Applicative, A](f: A => F[Unit]): Sink[F, A] =
-    _.flatMap(a => Stream.eval(f(a)))
 
   /** Stream constructor for effectful source of chunks. */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
