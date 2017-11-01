@@ -78,11 +78,11 @@ object connection {
    * @group Prepared Statements
    */
   def updateWithGeneratedKeys[A: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
-    liftStream(chunkSize, FC.prepareStatement(sql, cols.toArray), prep, FPS.executeUpdate >> FPS.getGeneratedKeys)
+    liftStream(chunkSize, FC.prepareStatement(sql, cols.toArray), prep, FPS.executeUpdate *> FPS.getGeneratedKeys)
 
   /** @group Prepared Statements */
   def updateManyWithGeneratedKeys[F[_]: Foldable, A: Composite, B: Composite](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A], chunkSize: Int): Stream[ConnectionIO, B] =
-    liftStream[B](chunkSize, FC.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) >> FPS.getGeneratedKeys)
+    liftStream[B](chunkSize, FC.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) *> FPS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =

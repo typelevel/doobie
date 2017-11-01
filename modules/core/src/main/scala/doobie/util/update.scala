@@ -5,7 +5,6 @@
 package doobie.util
 
 import cats._
-import cats.functor.Contravariant
 import cats.implicits._
 import doobie.free.connection.ConnectionIO
 import doobie.free.{ preparedstatement => FPS }
