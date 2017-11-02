@@ -4,8 +4,8 @@
 
 package doobie.util
 
-import cats.Cartesian
-import cats.functor.{ Invariant => InvariantFunctor }
+import cats.Semigroupal
+import cats.{ Invariant => InvariantFunctor }
 
 import doobie.enum.Nullability._
 import doobie.free._
@@ -85,8 +85,8 @@ object composite {
           ma.imap(f)(g)
       }
 
-    implicit val compositeCartesian: Cartesian[Composite] =
-      new Cartesian[Composite] {
+    implicit val compositeSemigroupal: Semigroupal[Composite] =
+      new Semigroupal[Composite] {
         def product[A, B](a: Composite[A], b: Composite[B]): Composite[(A, B)] =
           a.zip(b)
       }

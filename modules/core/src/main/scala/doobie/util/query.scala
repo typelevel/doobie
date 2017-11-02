@@ -7,8 +7,8 @@ package util
 
 import cats._, cats.effect._
 import cats.implicits._
-import cats.{ Functor, Alternative }
-import cats.functor.{ Contravariant, Profunctor }
+import cats.{ Alternative, Contravariant, Functor }
+import cats.arrow.Profunctor
 import cats.data.NonEmptyList
 
 import doobie.implicits._

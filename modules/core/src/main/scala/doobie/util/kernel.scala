@@ -6,8 +6,7 @@ package doobie.util
 
 import java.sql.{ ResultSet, PreparedStatement }
 
-import cats.Cartesian
-import cats.functor.{ Invariant => InvariantFunctor }
+import cats.{ Semigroupal, Invariant => InvariantFunctor }
 import shapeless._
 import shapeless.labelled.{ field, FieldType }
 
@@ -164,7 +163,7 @@ object kernel {
   }
 
   trait KernelInstances {
-    // TODO: Invariant and Cartesian (cats)
+    // TODO: Invariant and Semigroupal (cats)
 
     implicit val kernelInvariantFunctor: InvariantFunctor[Kernel] =
       new InvariantFunctor[Kernel] {
@@ -172,8 +171,8 @@ object kernel {
           ma.imap(f)(g)
       }
 
-    implicit val kernelCarterisn: Cartesian[Kernel] =
-      new Cartesian[Kernel] {
+    implicit val kernelCarterisn: Semigroupal[Kernel] =
+      new Semigroupal[Kernel] {
         def product[A, B](fa: Kernel[A], fb: Kernel[B]): Kernel[(A, B)] =
           Kernel.product(fa, fb)
       }

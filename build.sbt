@@ -2,10 +2,12 @@ import FreeGen2._
 import ReleaseTransformations._
 import microsites._
 
+resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "1.0.0-MF"
-lazy val circeVersion         = "0.9.0-M1"
-lazy val fs2CoreVersion       = "0.10.0-M6"
+lazy val catsVersion          = "1.0.0-RC1"
+lazy val circeVersion         = "0.9.0-M2"
+lazy val fs2CoreVersion       = "0.10.0-M8"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.2"
 lazy val kindProjectorVersion = "0.9.4"
@@ -225,9 +227,9 @@ lazy val free = project
     scalacOptions += "-Yno-predef",
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
-      "org.typelevel"  %% "cats-core" % catsVersion,
-      "org.typelevel"  %% "cats-free" % catsVersion
+      "co.fs2"         %% "fs2-core"   % fs2CoreVersion,
+      "org.typelevel"  %% "cats-core"  % catsVersion,
+      "org.typelevel"  %% "cats-free"  % catsVersion
     ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
