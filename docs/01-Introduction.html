@@ -22,7 +22,7 @@
 
 <p>The example code assumes a local <a href="http://www.postgresql.org/">PostgreSQL</a> server with a <code class="highlighter-rouge">postgres</code> user with no password, <a href="http://postgis.net/">PostGIS</a> extensions (optional), and the sample <code class="highlighter-rouge">world</code> database loaded up. If you’re on a Mac you might check out the excellent <a href="http://postgresapp.com/">Postgres.app</a> if you don’t want to install PostgreSQL as a service. You can set up the user and sample database (and an <code class="highlighter-rouge">enum</code> we use in a few examples) as follows:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>$ curl -O https://raw.githubusercontent.com/tpolecat/doobie/master/world.sql
+<div class="highlighter-rouge"><pre class="highlight"><code>$ curl -O https://raw.githubusercontent.com/tpolecat/doobie/series/0.5.x/world.sql
 $ psql -c 'create user postgres createdb'
 $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
@@ -61,9 +61,9 @@ $
 
 <p>On the Scala side you just need a console with the proper dependencies. A minimal <code class="highlighter-rouge">build.sbt</code> would look something like this.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.12.3"</span> <span class="c1">// Scala 2.11/12
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.12.4"</span> <span class="c1">// Scala 2.11/12
 </span>
-<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.0-M8"</span>
+<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.0-M9"</span>
 
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
   <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>     <span class="o">%</span> <span class="n">doobieVersion</span><span class="o">,</span>

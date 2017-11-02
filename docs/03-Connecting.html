@@ -41,7 +41,7 @@ In fact, you can use any Monad <code class="highlighter-rouge">M[_]</code> as lo
 <p>Right, so let’s do this.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">task</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="n">program1</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="n">task</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$1895815941</span>
+<span class="n">task</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$1229190471</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">task</span><span class="o">.</span><span class="n">unsafeRunSync</span>
 <span class="n">res0</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
@@ -64,7 +64,7 @@ In fact, you can use any Monad <code class="highlighter-rouge">M[_]</code> as lo
 <span class="n">program2</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">task2</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="n">program2</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="n">task2</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$1157095840</span>
+<span class="n">task2</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$732463018</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">task2</span><span class="o">.</span><span class="n">unsafeRunSync</span>
 <span class="n">res1</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
@@ -88,7 +88,7 @@ In fact, you can use any Monad <code class="highlighter-rouge">M[_]</code> as lo
 <p>And behold!</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">program3</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res2</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.45631540566682816</span><span class="o">)</span>
+<span class="n">res2</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.4421308431774378</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -105,7 +105,7 @@ In fact, you can use any Monad <code class="highlighter-rouge">M[_]</code> as lo
 <p>And lo, it was good:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">program3a</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res3</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.44878203328698874</span><span class="o">)</span>
+<span class="n">res3</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.6076699756085873</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -115,14 +115,14 @@ In fact, you can use any Monad <code class="highlighter-rouge">M[_]</code> as lo
 <span class="n">valuesList</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="n">valuesList</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="n">result</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="nc">IO$1166687782</span>
+<span class="n">result</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="nc">IO$439267201</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">unsafeRunSync</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.3664965103380382</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.6935360813513398</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.16724553145468235</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.48447355162352324</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.9480490637943149</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.09637381276115775</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.5927240080200136</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.8201331063173711</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.3747990899719298</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.03633304499089718</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -144,14 +144,14 @@ In fact, you can use any Monad <code class="highlighter-rouge">M[_]</code> as lo
 <span class="k">import</span> <span class="nn">java.sql.Connection</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">interpreter</span><span class="k">:</span> <span class="kt">ConnectionOp</span> <span class="kt">~&gt;</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Connection</span>, <span class="kt">?</span><span class="o">]</span> <span class="k">=</span> <span class="nc">KleisliInterpreter</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="nc">ConnectionInterpreter</span>
-<span class="n">interpreter</span><span class="k">:</span> <span class="kt">doobie.free.connection.ConnectionOp</span> <span class="kt">~&gt;</span> <span class="err">[</span><span class="kt">γ$0$</span><span class="err">]</span><span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">γ$0$</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">free</span><span class="o">.</span><span class="nc">KleisliInterpreter$$anon$10</span><span class="k">@</span><span class="mf">436d</span><span class="n">baa</span>
+<span class="n">interpreter</span><span class="k">:</span> <span class="kt">doobie.free.connection.ConnectionOp</span> <span class="kt">~&gt;</span> <span class="err">[</span><span class="kt">γ$0$</span><span class="err">]</span><span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">γ$0$</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">free</span><span class="o">.</span><span class="nc">KleisliInterpreter$$anon$10</span><span class="k">@</span><span class="mf">7771d</span><span class="mi">00</span><span class="n">b</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">kleisli</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Connection</span>, <span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="n">program1</span><span class="o">.</span><span class="n">foldMap</span><span class="o">(</span><span class="n">interpreter</span><span class="o">)</span>
-<span class="n">kleisli</span><span class="k">:</span> <span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="nc">KleisliFlatMap$$Lambda$11447</span><span class="o">/</span><span class="mi">1937326397</span><span class="k">@</span><span class="mf">2394d</span><span class="mi">8</span><span class="n">c9</span><span class="o">)</span>
+<span class="n">kleisli</span><span class="k">:</span> <span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="nc">KleisliFlatMap$$Lambda$21547</span><span class="o">/</span><span class="mi">729782699</span><span class="k">@</span><span class="mi">81</span><span class="n">c391</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="c1">// &gt;&gt;= is simply flatMap and kleisli.run is (Connection) =&gt; IO[Int]
 </span>     <span class="o">|</span> <span class="k">val</span> <span class="n">task</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="kc">null</span><span class="k">:</span> <span class="kt">java.sql.Connection</span><span class="o">)</span> <span class="o">&gt;&gt;=</span> <span class="n">kleisli</span><span class="o">.</span><span class="n">run</span>
-<span class="n">task</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$442757287</span>
+<span class="n">task</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$182141448</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">task</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// sneaky; program1 never looks at the connection
 </span><span class="n">res6</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
