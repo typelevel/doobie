@@ -32,7 +32,7 @@ object FreeUsage {
   def loadDatabase(f: File): ConnectionIO[Unit] =
     for {
       ps <- FC.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")
-      _  <- FC.embed(ps, (FPS.setString(1, f.getName) >> FPS.execute) guarantee FPS.close)
+      _  <- FC.embed(ps, (FPS.setString(1, f.getName) *> FPS.execute) guarantee FPS.close)
     } yield ()
 
   def speakerQuery(s: String, p: Double): ConnectionIO[List[CountryCode]] =
