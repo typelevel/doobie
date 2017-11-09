@@ -498,9 +498,9 @@ object meta {
     /** @group Instances */
     implicit val StringMeta = Meta.basic[String](
       NonEmptyListOf(VarChar, Char, LongVarChar),
-      NonEmptyListOf(Char, VarChar),
+      NonEmptyListOf(Char, VarChar, LongVarChar),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
-        LongVarChar, Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
+        Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
       _.getString(_), _.setString(_, _), _.updateString(_, _))
 
     /** @group Instances */
