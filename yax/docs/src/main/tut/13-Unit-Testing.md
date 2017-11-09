@@ -14,6 +14,7 @@ As with earlier chapters we set up a `Transactor` and YOLO mode. We will also us
 #+cats
 As with earlier chapters we set up a `Transactor` and YOLO mode. We will also use the `doobie-specs2-cats` and `doobie-scalatest-cats` add-ons.
 #-cats
+If you run into any difficulties it may be useful to refer to the [Working Around Bad Metadata Section](06-Checking.html)
 
 ```tut:silent
 import doobie.imports._
