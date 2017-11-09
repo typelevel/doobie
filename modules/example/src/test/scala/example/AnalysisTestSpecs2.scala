@@ -10,7 +10,7 @@ import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-object AnalysisTestSpecs2 extends Specification with IOChecker {
+object AnalysisTestSpecs extends Specification with IOChecker {
   val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   // Commented tests fail!
   // check(AnalysisTest.speakerQuery(null, 0))

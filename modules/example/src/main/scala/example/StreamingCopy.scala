@@ -51,10 +51,10 @@ object StreamingCopy {
       val sinkʹ  = (a: A) => evalS(sink(a))
       val before = evalS(sinkXA.strategy.before)
       val after  = evalS(sinkXA.strategy.after )
-      def oops(t: Throwable) = evalS(sinkXA.strategy.oops <* FC.raiseError(t))
+      def oops(t: Throwable) = evalS(sinkXA.strategy.oops <* FC.raiseError(t)).covary[F]
 
       // And construct our final stream.
-      (before ++ source.transact(sourceXA).flatMap(sinkʹ) ++ after).onError(oops)
+      (before ++ source.transact(sourceXA).flatMap(sinkʹ) ++ after).handleErrorWith(oops)
 
     }
 
