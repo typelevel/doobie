@@ -13,6 +13,8 @@ package object postgres
     extends Instances
        with free.Instances
        with syntax.ToPostgresMonadErrorOps
+       with syntax.ToCsvOps
+       with syntax.ToFragmentOps
 
   object pgisimplicits
     extends PgisInstances
