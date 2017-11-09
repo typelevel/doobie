@@ -2,11 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
 
 import cats.effect.IO
+import doobie.hikari._
+import doobie.hikari.syntax.hikaritransactor._
 import doobie.implicits._
-import doobie.hikari._, doobie.hikari.implicits._
 
 object HikariExample {
 

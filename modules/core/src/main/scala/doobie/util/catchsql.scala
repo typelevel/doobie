@@ -6,7 +6,7 @@ package doobie.util
 
 import cats.MonadError
 import cats.implicits._
-import doobie.enum.sqlstate.SqlState
+import doobie.enum.SqlState
 import java.sql.SQLException
 
 /**

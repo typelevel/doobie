@@ -4,7 +4,7 @@
 
 package doobie.h2
 
-import doobie.enum.jdbctype
+import doobie.enum.JdbcType
 import doobie.util.meta._
 import doobie.util.invariant._
 
@@ -16,11 +16,13 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
+@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
 trait Instances {
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   implicit val UuidType =
     Meta.advanced[UUID](
-      NonEmptyListOf(jdbctype.Binary),
+      NonEmptyListOf(JdbcType.Binary),
       NonEmptyListOf("uuid", "UUID"),
       _.getObject(_) match {
         case null => null
@@ -36,6 +38,7 @@ trait Instances {
 
   // see postgres contrib for an explanation of array mapping; we may want to factor this out
 
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
     val raw = Meta.other[Array[Object]]("ARRAY").xmap[Array[A]](
       a => if (a == null) null else a.map(_.asInstanceOf[A]),
@@ -53,6 +56,7 @@ trait Instances {
   implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double]
   implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String]
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag: TypeTag](f: A => B, g: B => A)(
     implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) =
     (boxed.xmap(a => if (a == null) null else a.map(f), a => if (a == null) null else a.map(g)),

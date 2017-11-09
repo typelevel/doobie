@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.postgres
 
 import cats.effect.IO
@@ -6,6 +10,7 @@ import doobie.postgres._, doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object manyrows extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

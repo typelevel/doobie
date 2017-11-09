@@ -5,7 +5,6 @@
 package doobie.util
 
 import cats._
-import cats.functor.Contravariant
 import cats.implicits._
 import doobie.free.connection.ConnectionIO
 import doobie.free.{ preparedstatement => FPS }
@@ -194,6 +193,7 @@ object update {
      * for construction is the `sql/fr/fr0` interpolators.
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
       implicit C: Composite[A]
     ): Update[A] =

@@ -2,14 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
+
+import java.sql.Connection
 
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import fs2.Stream
-import java.sql.Connection
 
 /**
  * Example of resource-safe transactional database-to-database copy with fs2. If you induce failures
@@ -86,7 +88,7 @@ object StreamingCopy {
 
 
   // A data type to move.
-  case class City(id: Int, name: String, countrycode: String, district: String, population: Int)
+  final case class City(id: Int, name: String, countrycode: String, district: String, population: Int)
 
   // A producer of cities, to be run on database 1
   def read: Stream[ConnectionIO, City] =
@@ -97,6 +99,7 @@ object StreamingCopy {
     """.query[City].stream
 
   // A consumer of cities, to be run on database 2
+  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   def write(c: City): ConnectionIO[Unit] =
     printBefore("write", c.toString)(
       sql"""

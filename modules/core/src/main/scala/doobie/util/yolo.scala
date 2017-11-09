@@ -29,6 +29,7 @@ object yolo {
 
     implicit class Query0YoloOps[A](q: Query0[A]) {
 
+      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick: M[Unit] =
         q.sink(a => out(a.toString)).transact(xa)
 
@@ -105,18 +106,20 @@ object yolo {
 
     }
     implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
+      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick: M[Unit] = ca.flatMap(a => out(a.toString)).transact(xa)
     }
 
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
+      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick: M[Unit] = pa.sink(a => out(a.toString)).transact(xa)
     }
 
     private def assertEmpty(name: String, es: List[AlignmentError]) =
       if (es.isEmpty) success(name, None)
-      else failure(name, es.map(formatError).mkString("\n"))
+      else failure(name, es.map(formatAlignmentError).mkString("\n"))
 
-    private def formatError(e: AlignmentError): String =
+    private def formatAlignmentError(e: AlignmentError): String =
       formatError(e.msg)
 
     private def formatError(s: String): String =

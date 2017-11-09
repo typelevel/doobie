@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie
 package util
 
@@ -9,6 +13,7 @@ import org.specs2.mutable.Specification
 import scala.Predef._
 import scala.util.Random
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
 object processspec extends Specification with ScalaCheck {
 
   "repeatEvalChunks must" >> {

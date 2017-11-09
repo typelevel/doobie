@@ -14,11 +14,11 @@ object bench {
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 }
 
-/** Rough benchmark based on non/jawn */
 class bench {
   import bench._
 
   // Baseline hand-written JDBC code
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.While"))
   def jdbcBench(n: Int): Int = {
     Class.forName("org.postgresql.Driver")
     val co = DriverManager.getConnection("jdbc:postgresql:world", "postgres", "")

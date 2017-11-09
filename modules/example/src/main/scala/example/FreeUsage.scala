@@ -2,17 +2,19 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
+
+import java.io.File
 
 import cats.effect.IO
 import cats.implicits._
-import doobie._, doobie.implicits._
-import java.io.File
+import doobie._
+import doobie.implicits._
 
 // JDBC program using the low-level API
 object FreeUsage {
 
-  case class CountryCode(code: String)
+  final case class CountryCode(code: String)
 
   def main(args: Array[String]): Unit = {
     val db = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
@@ -30,7 +32,7 @@ object FreeUsage {
   def loadDatabase(f: File): ConnectionIO[Unit] =
     for {
       ps <- FC.prepareStatement("RUNSCRIPT FROM ? CHARSET 'UTF-8'")
-      _  <- FC.embed(ps, (FPS.setString(1, f.getName) >> FPS.execute) guarantee FPS.close)
+      _  <- FC.embed(ps, (FPS.setString(1, f.getName) *> FPS.execute) guarantee FPS.close)
     } yield ()
 
   def speakerQuery(s: String, p: Double): ConnectionIO[List[CountryCode]] =
@@ -47,6 +49,7 @@ object FreeUsage {
       l  <- FPS.embed(rs, unroll(FRS.getString(1).map(CountryCode(_))) guarantee FRS.close)
     } yield l
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def unroll[A](a: ResultSetIO[A]): ResultSetIO[List[A]] = {
     def unroll0(as: List[A]): ResultSetIO[List[A]] =
       FRS.next >>= {

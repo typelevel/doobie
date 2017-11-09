@@ -12,6 +12,7 @@ import java.lang.String
 import java.sql.Ref
 import java.util.Map
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object ref { module =>
 
   // Algebra of operations for Ref. Each accepts a visitor as an alternatie to pattern-matching.
@@ -52,33 +53,33 @@ object ref { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: Ref => A) extends RefOp[A] {
+    final case class Raw[A](f: Ref => A) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends RefOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends RefOp[A] {
+    final case class Delay[A](a: () => A) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]) extends RefOp[A] {
+    final case class HandleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends RefOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Ref-specific operations.
-    case object GetBaseTypeName extends RefOp[String] {
+    final case object GetBaseTypeName extends RefOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getBaseTypeName
     }
-    case object GetObject extends RefOp[AnyRef] {
+    final case object GetObject extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject
     }
-    case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
+    final case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    case class  SetObject(a: AnyRef) extends RefOp[Unit] {
+    final case class  SetObject(a: AnyRef) extends RefOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a)
     }
 

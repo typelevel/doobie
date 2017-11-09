@@ -1,10 +1,15 @@
-package doobie.example
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
+package example
 
 import cats.effect.IO
 import doobie._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object AnalysisTestSpecs2 extends Specification with IOChecker {
   val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
   // Commented tests fail!

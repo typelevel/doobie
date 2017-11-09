@@ -15,6 +15,7 @@ import java.sql.DatabaseMetaData
 import java.sql.ResultSet
 import java.sql.RowIdLifetime
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object databasemetadata { module =>
 
   // Algebra of operations for DatabaseMetaData. Each accepts a visitor as an alternatie to pattern-matching.
@@ -229,555 +230,555 @@ object databasemetadata { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: DatabaseMetaData => A) extends DatabaseMetaDataOp[A] {
+    final case class Raw[A](f: DatabaseMetaData => A) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends DatabaseMetaDataOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends DatabaseMetaDataOp[A] {
+    final case class Delay[A](a: () => A) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
+    final case class HandleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DatabaseMetaDataOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // DatabaseMetaData-specific operations.
-    case object AllProceduresAreCallable extends DatabaseMetaDataOp[Boolean] {
+    final case object AllProceduresAreCallable extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.allProceduresAreCallable
     }
-    case object AllTablesAreSelectable extends DatabaseMetaDataOp[Boolean] {
+    final case object AllTablesAreSelectable extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.allTablesAreSelectable
     }
-    case object AutoCommitFailureClosesAllResultSets extends DatabaseMetaDataOp[Boolean] {
+    final case object AutoCommitFailureClosesAllResultSets extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.autoCommitFailureClosesAllResultSets
     }
-    case object DataDefinitionCausesTransactionCommit extends DatabaseMetaDataOp[Boolean] {
+    final case object DataDefinitionCausesTransactionCommit extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.dataDefinitionCausesTransactionCommit
     }
-    case object DataDefinitionIgnoredInTransactions extends DatabaseMetaDataOp[Boolean] {
+    final case object DataDefinitionIgnoredInTransactions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.dataDefinitionIgnoredInTransactions
     }
-    case class  DeletesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  DeletesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.deletesAreDetected(a)
     }
-    case object DoesMaxRowSizeIncludeBlobs extends DatabaseMetaDataOp[Boolean] {
+    final case object DoesMaxRowSizeIncludeBlobs extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.doesMaxRowSizeIncludeBlobs
     }
-    case object GeneratedKeyAlwaysReturned extends DatabaseMetaDataOp[Boolean] {
+    final case object GeneratedKeyAlwaysReturned extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.generatedKeyAlwaysReturned
     }
-    case class  GetAttributes(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetAttributes(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getAttributes(a, b, c, d)
     }
-    case class  GetBestRowIdentifier(a: String, b: String, c: String, d: Int, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetBestRowIdentifier(a: String, b: String, c: String, d: Int, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getBestRowIdentifier(a, b, c, d, e)
     }
-    case object GetCatalogSeparator extends DatabaseMetaDataOp[String] {
+    final case object GetCatalogSeparator extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getCatalogSeparator
     }
-    case object GetCatalogTerm extends DatabaseMetaDataOp[String] {
+    final case object GetCatalogTerm extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getCatalogTerm
     }
-    case object GetCatalogs extends DatabaseMetaDataOp[ResultSet] {
+    final case object GetCatalogs extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getCatalogs
     }
-    case object GetClientInfoProperties extends DatabaseMetaDataOp[ResultSet] {
+    final case object GetClientInfoProperties extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getClientInfoProperties
     }
-    case class  GetColumnPrivileges(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetColumnPrivileges(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getColumnPrivileges(a, b, c, d)
     }
-    case class  GetColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getColumns(a, b, c, d)
     }
-    case object GetConnection extends DatabaseMetaDataOp[Connection] {
+    final case object GetConnection extends DatabaseMetaDataOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.getConnection
     }
-    case class  GetCrossReference(a: String, b: String, c: String, d: String, e: String, f: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetCrossReference(a: String, b: String, c: String, d: String, e: String, f: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getCrossReference(a, b, c, d, e, f)
     }
-    case object GetDatabaseMajorVersion extends DatabaseMetaDataOp[Int] {
+    final case object GetDatabaseMajorVersion extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDatabaseMajorVersion
     }
-    case object GetDatabaseMinorVersion extends DatabaseMetaDataOp[Int] {
+    final case object GetDatabaseMinorVersion extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDatabaseMinorVersion
     }
-    case object GetDatabaseProductName extends DatabaseMetaDataOp[String] {
+    final case object GetDatabaseProductName extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getDatabaseProductName
     }
-    case object GetDatabaseProductVersion extends DatabaseMetaDataOp[String] {
+    final case object GetDatabaseProductVersion extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getDatabaseProductVersion
     }
-    case object GetDefaultTransactionIsolation extends DatabaseMetaDataOp[Int] {
+    final case object GetDefaultTransactionIsolation extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDefaultTransactionIsolation
     }
-    case object GetDriverMajorVersion extends DatabaseMetaDataOp[Int] {
+    final case object GetDriverMajorVersion extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDriverMajorVersion
     }
-    case object GetDriverMinorVersion extends DatabaseMetaDataOp[Int] {
+    final case object GetDriverMinorVersion extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDriverMinorVersion
     }
-    case object GetDriverName extends DatabaseMetaDataOp[String] {
+    final case object GetDriverName extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getDriverName
     }
-    case object GetDriverVersion extends DatabaseMetaDataOp[String] {
+    final case object GetDriverVersion extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getDriverVersion
     }
-    case class  GetExportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetExportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getExportedKeys(a, b, c)
     }
-    case object GetExtraNameCharacters extends DatabaseMetaDataOp[String] {
+    final case object GetExtraNameCharacters extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getExtraNameCharacters
     }
-    case class  GetFunctionColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetFunctionColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getFunctionColumns(a, b, c, d)
     }
-    case class  GetFunctions(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetFunctions(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getFunctions(a, b, c)
     }
-    case object GetIdentifierQuoteString extends DatabaseMetaDataOp[String] {
+    final case object GetIdentifierQuoteString extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getIdentifierQuoteString
     }
-    case class  GetImportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetImportedKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getImportedKeys(a, b, c)
     }
-    case class  GetIndexInfo(a: String, b: String, c: String, d: Boolean, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetIndexInfo(a: String, b: String, c: String, d: Boolean, e: Boolean) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getIndexInfo(a, b, c, d, e)
     }
-    case object GetJDBCMajorVersion extends DatabaseMetaDataOp[Int] {
+    final case object GetJDBCMajorVersion extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getJDBCMajorVersion
     }
-    case object GetJDBCMinorVersion extends DatabaseMetaDataOp[Int] {
+    final case object GetJDBCMinorVersion extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getJDBCMinorVersion
     }
-    case object GetMaxBinaryLiteralLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxBinaryLiteralLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxBinaryLiteralLength
     }
-    case object GetMaxCatalogNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxCatalogNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxCatalogNameLength
     }
-    case object GetMaxCharLiteralLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxCharLiteralLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxCharLiteralLength
     }
-    case object GetMaxColumnNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxColumnNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxColumnNameLength
     }
-    case object GetMaxColumnsInGroupBy extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxColumnsInGroupBy extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxColumnsInGroupBy
     }
-    case object GetMaxColumnsInIndex extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxColumnsInIndex extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxColumnsInIndex
     }
-    case object GetMaxColumnsInOrderBy extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxColumnsInOrderBy extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxColumnsInOrderBy
     }
-    case object GetMaxColumnsInSelect extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxColumnsInSelect extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxColumnsInSelect
     }
-    case object GetMaxColumnsInTable extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxColumnsInTable extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxColumnsInTable
     }
-    case object GetMaxConnections extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxConnections extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxConnections
     }
-    case object GetMaxCursorNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxCursorNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxCursorNameLength
     }
-    case object GetMaxIndexLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxIndexLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxIndexLength
     }
-    case object GetMaxLogicalLobSize extends DatabaseMetaDataOp[Long] {
+    final case object GetMaxLogicalLobSize extends DatabaseMetaDataOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxLogicalLobSize
     }
-    case object GetMaxProcedureNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxProcedureNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxProcedureNameLength
     }
-    case object GetMaxRowSize extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxRowSize extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxRowSize
     }
-    case object GetMaxSchemaNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxSchemaNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxSchemaNameLength
     }
-    case object GetMaxStatementLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxStatementLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxStatementLength
     }
-    case object GetMaxStatements extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxStatements extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxStatements
     }
-    case object GetMaxTableNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxTableNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxTableNameLength
     }
-    case object GetMaxTablesInSelect extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxTablesInSelect extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxTablesInSelect
     }
-    case object GetMaxUserNameLength extends DatabaseMetaDataOp[Int] {
+    final case object GetMaxUserNameLength extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxUserNameLength
     }
-    case object GetNumericFunctions extends DatabaseMetaDataOp[String] {
+    final case object GetNumericFunctions extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getNumericFunctions
     }
-    case class  GetPrimaryKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetPrimaryKeys(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getPrimaryKeys(a, b, c)
     }
-    case class  GetProcedureColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetProcedureColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getProcedureColumns(a, b, c, d)
     }
-    case object GetProcedureTerm extends DatabaseMetaDataOp[String] {
+    final case object GetProcedureTerm extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getProcedureTerm
     }
-    case class  GetProcedures(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetProcedures(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getProcedures(a, b, c)
     }
-    case class  GetPseudoColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetPseudoColumns(a: String, b: String, c: String, d: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getPseudoColumns(a, b, c, d)
     }
-    case object GetResultSetHoldability extends DatabaseMetaDataOp[Int] {
+    final case object GetResultSetHoldability extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetHoldability
     }
-    case object GetRowIdLifetime extends DatabaseMetaDataOp[RowIdLifetime] {
+    final case object GetRowIdLifetime extends DatabaseMetaDataOp[RowIdLifetime] {
       def visit[F[_]](v: Visitor[F]) = v.getRowIdLifetime
     }
-    case object GetSQLKeywords extends DatabaseMetaDataOp[String] {
+    final case object GetSQLKeywords extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLKeywords
     }
-    case object GetSQLStateType extends DatabaseMetaDataOp[Int] {
+    final case object GetSQLStateType extends DatabaseMetaDataOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLStateType
     }
-    case object GetSchemaTerm extends DatabaseMetaDataOp[String] {
+    final case object GetSchemaTerm extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSchemaTerm
     }
-    case object GetSchemas extends DatabaseMetaDataOp[ResultSet] {
+    final case object GetSchemas extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getSchemas
     }
-    case class  GetSchemas1(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetSchemas1(a: String, b: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getSchemas(a, b)
     }
-    case object GetSearchStringEscape extends DatabaseMetaDataOp[String] {
+    final case object GetSearchStringEscape extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSearchStringEscape
     }
-    case object GetStringFunctions extends DatabaseMetaDataOp[String] {
+    final case object GetStringFunctions extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getStringFunctions
     }
-    case class  GetSuperTables(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetSuperTables(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getSuperTables(a, b, c)
     }
-    case class  GetSuperTypes(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetSuperTypes(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getSuperTypes(a, b, c)
     }
-    case object GetSystemFunctions extends DatabaseMetaDataOp[String] {
+    final case object GetSystemFunctions extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSystemFunctions
     }
-    case class  GetTablePrivileges(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetTablePrivileges(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getTablePrivileges(a, b, c)
     }
-    case object GetTableTypes extends DatabaseMetaDataOp[ResultSet] {
+    final case object GetTableTypes extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getTableTypes
     }
-    case class  GetTables(a: String, b: String, c: String, d: Array[String]) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetTables(a: String, b: String, c: String, d: Array[String]) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getTables(a, b, c, d)
     }
-    case object GetTimeDateFunctions extends DatabaseMetaDataOp[String] {
+    final case object GetTimeDateFunctions extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getTimeDateFunctions
     }
-    case object GetTypeInfo extends DatabaseMetaDataOp[ResultSet] {
+    final case object GetTypeInfo extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getTypeInfo
     }
-    case class  GetUDTs(a: String, b: String, c: String, d: Array[Int]) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetUDTs(a: String, b: String, c: String, d: Array[Int]) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getUDTs(a, b, c, d)
     }
-    case object GetURL extends DatabaseMetaDataOp[String] {
+    final case object GetURL extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getURL
     }
-    case object GetUserName extends DatabaseMetaDataOp[String] {
+    final case object GetUserName extends DatabaseMetaDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getUserName
     }
-    case class  GetVersionColumns(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
+    final case class  GetVersionColumns(a: String, b: String, c: String) extends DatabaseMetaDataOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getVersionColumns(a, b, c)
     }
-    case class  InsertsAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  InsertsAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.insertsAreDetected(a)
     }
-    case object IsCatalogAtStart extends DatabaseMetaDataOp[Boolean] {
+    final case object IsCatalogAtStart extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isCatalogAtStart
     }
-    case object IsReadOnly extends DatabaseMetaDataOp[Boolean] {
+    final case object IsReadOnly extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isReadOnly
     }
-    case class  IsWrapperFor(a: Class[_]) extends DatabaseMetaDataOp[Boolean] {
+    final case class  IsWrapperFor(a: Class[_]) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
-    case object LocatorsUpdateCopy extends DatabaseMetaDataOp[Boolean] {
+    final case object LocatorsUpdateCopy extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.locatorsUpdateCopy
     }
-    case object NullPlusNonNullIsNull extends DatabaseMetaDataOp[Boolean] {
+    final case object NullPlusNonNullIsNull extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.nullPlusNonNullIsNull
     }
-    case object NullsAreSortedAtEnd extends DatabaseMetaDataOp[Boolean] {
+    final case object NullsAreSortedAtEnd extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.nullsAreSortedAtEnd
     }
-    case object NullsAreSortedAtStart extends DatabaseMetaDataOp[Boolean] {
+    final case object NullsAreSortedAtStart extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.nullsAreSortedAtStart
     }
-    case object NullsAreSortedHigh extends DatabaseMetaDataOp[Boolean] {
+    final case object NullsAreSortedHigh extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.nullsAreSortedHigh
     }
-    case object NullsAreSortedLow extends DatabaseMetaDataOp[Boolean] {
+    final case object NullsAreSortedLow extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.nullsAreSortedLow
     }
-    case class  OthersDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  OthersDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.othersDeletesAreVisible(a)
     }
-    case class  OthersInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  OthersInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.othersInsertsAreVisible(a)
     }
-    case class  OthersUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  OthersUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.othersUpdatesAreVisible(a)
     }
-    case class  OwnDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  OwnDeletesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.ownDeletesAreVisible(a)
     }
-    case class  OwnInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  OwnInsertsAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.ownInsertsAreVisible(a)
     }
-    case class  OwnUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  OwnUpdatesAreVisible(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.ownUpdatesAreVisible(a)
     }
-    case object StoresLowerCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object StoresLowerCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.storesLowerCaseIdentifiers
     }
-    case object StoresLowerCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object StoresLowerCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.storesLowerCaseQuotedIdentifiers
     }
-    case object StoresMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object StoresMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.storesMixedCaseIdentifiers
     }
-    case object StoresMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object StoresMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.storesMixedCaseQuotedIdentifiers
     }
-    case object StoresUpperCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object StoresUpperCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.storesUpperCaseIdentifiers
     }
-    case object StoresUpperCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object StoresUpperCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.storesUpperCaseQuotedIdentifiers
     }
-    case object SupportsANSI92EntryLevelSQL extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsANSI92EntryLevelSQL extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsANSI92EntryLevelSQL
     }
-    case object SupportsANSI92FullSQL extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsANSI92FullSQL extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsANSI92FullSQL
     }
-    case object SupportsANSI92IntermediateSQL extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsANSI92IntermediateSQL extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsANSI92IntermediateSQL
     }
-    case object SupportsAlterTableWithAddColumn extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsAlterTableWithAddColumn extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsAlterTableWithAddColumn
     }
-    case object SupportsAlterTableWithDropColumn extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsAlterTableWithDropColumn extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsAlterTableWithDropColumn
     }
-    case object SupportsBatchUpdates extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsBatchUpdates extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsBatchUpdates
     }
-    case object SupportsCatalogsInDataManipulation extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCatalogsInDataManipulation extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCatalogsInDataManipulation
     }
-    case object SupportsCatalogsInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCatalogsInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCatalogsInIndexDefinitions
     }
-    case object SupportsCatalogsInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCatalogsInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCatalogsInPrivilegeDefinitions
     }
-    case object SupportsCatalogsInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCatalogsInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCatalogsInProcedureCalls
     }
-    case object SupportsCatalogsInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCatalogsInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCatalogsInTableDefinitions
     }
-    case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsColumnAliasing extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsColumnAliasing
     }
-    case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsConvert extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsConvert
     }
-    case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  SupportsConvert1(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsConvert(a, b)
     }
-    case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCoreSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCoreSQLGrammar
     }
-    case object SupportsCorrelatedSubqueries extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsCorrelatedSubqueries extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsCorrelatedSubqueries
     }
-    case object SupportsDataDefinitionAndDataManipulationTransactions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsDataDefinitionAndDataManipulationTransactions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsDataDefinitionAndDataManipulationTransactions
     }
-    case object SupportsDataManipulationTransactionsOnly extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsDataManipulationTransactionsOnly extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsDataManipulationTransactionsOnly
     }
-    case object SupportsDifferentTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsDifferentTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsDifferentTableCorrelationNames
     }
-    case object SupportsExpressionsInOrderBy extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsExpressionsInOrderBy extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsExpressionsInOrderBy
     }
-    case object SupportsExtendedSQLGrammar extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsExtendedSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsExtendedSQLGrammar
     }
-    case object SupportsFullOuterJoins extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsFullOuterJoins extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsFullOuterJoins
     }
-    case object SupportsGetGeneratedKeys extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsGetGeneratedKeys extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsGetGeneratedKeys
     }
-    case object SupportsGroupBy extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsGroupBy extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsGroupBy
     }
-    case object SupportsGroupByBeyondSelect extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsGroupByBeyondSelect extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsGroupByBeyondSelect
     }
-    case object SupportsGroupByUnrelated extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsGroupByUnrelated extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsGroupByUnrelated
     }
-    case object SupportsIntegrityEnhancementFacility extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsIntegrityEnhancementFacility extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsIntegrityEnhancementFacility
     }
-    case object SupportsLikeEscapeClause extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsLikeEscapeClause extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsLikeEscapeClause
     }
-    case object SupportsLimitedOuterJoins extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsLimitedOuterJoins extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsLimitedOuterJoins
     }
-    case object SupportsMinimumSQLGrammar extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsMinimumSQLGrammar extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsMinimumSQLGrammar
     }
-    case object SupportsMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsMixedCaseIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsMixedCaseIdentifiers
     }
-    case object SupportsMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsMixedCaseQuotedIdentifiers extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsMixedCaseQuotedIdentifiers
     }
-    case object SupportsMultipleOpenResults extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsMultipleOpenResults extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsMultipleOpenResults
     }
-    case object SupportsMultipleResultSets extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsMultipleResultSets extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsMultipleResultSets
     }
-    case object SupportsMultipleTransactions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsMultipleTransactions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsMultipleTransactions
     }
-    case object SupportsNamedParameters extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsNamedParameters extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsNamedParameters
     }
-    case object SupportsNonNullableColumns extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsNonNullableColumns extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsNonNullableColumns
     }
-    case object SupportsOpenCursorsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsOpenCursorsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsOpenCursorsAcrossCommit
     }
-    case object SupportsOpenCursorsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsOpenCursorsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsOpenCursorsAcrossRollback
     }
-    case object SupportsOpenStatementsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsOpenStatementsAcrossCommit extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsOpenStatementsAcrossCommit
     }
-    case object SupportsOpenStatementsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsOpenStatementsAcrossRollback extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsOpenStatementsAcrossRollback
     }
-    case object SupportsOrderByUnrelated extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsOrderByUnrelated extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsOrderByUnrelated
     }
-    case object SupportsOuterJoins extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsOuterJoins extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsOuterJoins
     }
-    case object SupportsPositionedDelete extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsPositionedDelete extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsPositionedDelete
     }
-    case object SupportsPositionedUpdate extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsPositionedUpdate extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsPositionedUpdate
     }
-    case object SupportsRefCursors extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsRefCursors extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsRefCursors
     }
-    case class  SupportsResultSetConcurrency(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  SupportsResultSetConcurrency(a: Int, b: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsResultSetConcurrency(a, b)
     }
-    case class  SupportsResultSetHoldability(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  SupportsResultSetHoldability(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsResultSetHoldability(a)
     }
-    case class  SupportsResultSetType(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  SupportsResultSetType(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsResultSetType(a)
     }
-    case object SupportsSavepoints extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSavepoints extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSavepoints
     }
-    case object SupportsSchemasInDataManipulation extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSchemasInDataManipulation extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSchemasInDataManipulation
     }
-    case object SupportsSchemasInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSchemasInIndexDefinitions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSchemasInIndexDefinitions
     }
-    case object SupportsSchemasInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSchemasInPrivilegeDefinitions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSchemasInPrivilegeDefinitions
     }
-    case object SupportsSchemasInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSchemasInProcedureCalls extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSchemasInProcedureCalls
     }
-    case object SupportsSchemasInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSchemasInTableDefinitions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSchemasInTableDefinitions
     }
-    case object SupportsSelectForUpdate extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSelectForUpdate extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSelectForUpdate
     }
-    case object SupportsStatementPooling extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsStatementPooling extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsStatementPooling
     }
-    case object SupportsStoredFunctionsUsingCallSyntax extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsStoredFunctionsUsingCallSyntax extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsStoredFunctionsUsingCallSyntax
     }
-    case object SupportsStoredProcedures extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsStoredProcedures extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsStoredProcedures
     }
-    case object SupportsSubqueriesInComparisons extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSubqueriesInComparisons extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSubqueriesInComparisons
     }
-    case object SupportsSubqueriesInExists extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSubqueriesInExists extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSubqueriesInExists
     }
-    case object SupportsSubqueriesInIns extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSubqueriesInIns extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSubqueriesInIns
     }
-    case object SupportsSubqueriesInQuantifieds extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsSubqueriesInQuantifieds extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSubqueriesInQuantifieds
     }
-    case object SupportsTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsTableCorrelationNames extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsTableCorrelationNames
     }
-    case class  SupportsTransactionIsolationLevel(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  SupportsTransactionIsolationLevel(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsTransactionIsolationLevel(a)
     }
-    case object SupportsTransactions extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsTransactions extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsTransactions
     }
-    case object SupportsUnion extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsUnion extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsUnion
     }
-    case object SupportsUnionAll extends DatabaseMetaDataOp[Boolean] {
+    final case object SupportsUnionAll extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsUnionAll
     }
-    case class  Unwrap[T](a: Class[T]) extends DatabaseMetaDataOp[T] {
+    final case class  Unwrap[T](a: Class[T]) extends DatabaseMetaDataOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.unwrap(a)
     }
-    case class  UpdatesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
+    final case class  UpdatesAreDetected(a: Int) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.updatesAreDetected(a)
     }
-    case object UsesLocalFilePerTable extends DatabaseMetaDataOp[Boolean] {
+    final case object UsesLocalFilePerTable extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.usesLocalFilePerTable
     }
-    case object UsesLocalFiles extends DatabaseMetaDataOp[Boolean] {
+    final case object UsesLocalFiles extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.usesLocalFiles
     }
 

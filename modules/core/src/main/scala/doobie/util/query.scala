@@ -7,8 +7,8 @@ package util
 
 import cats._, cats.effect._
 import cats.implicits._
-import cats.{ Functor, Alternative }
-import cats.functor.{ Contravariant, Profunctor }
+import cats.{ Alternative, Contravariant, Functor }
+import cats.arrow.Profunctor
 import cats.data.NonEmptyList
 
 import doobie.implicits._
@@ -230,6 +230,7 @@ object query {
      * Apply an argument, yielding a residual `[[Query0]]`.
      * @group Transformations
      */
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
         def sql = outer.sql
@@ -256,6 +257,7 @@ object query {
      * way to construct a `Query` is via the `sql` interpolator.
      * @group Constructors
      */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Composite[A], B: Composite[B]): Query[A, B] =
       new Query[A, B] {
         type I = A
@@ -424,6 +426,7 @@ object query {
      * `sql`interpolator.
      * @group Constructors
      */
+     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
      def apply[A: Composite](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
        Query[Unit, A](sql, pos, logHandler).toQuery0(())
 

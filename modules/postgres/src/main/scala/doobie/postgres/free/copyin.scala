@@ -10,6 +10,7 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object copyin { module =>
 
   // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternatie to pattern-matching.
@@ -55,48 +56,48 @@ object copyin { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: PGCopyIn => A) extends CopyInOp[A] {
+    final case class Raw[A](f: PGCopyIn => A) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends CopyInOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends CopyInOp[A] {
+    final case class Delay[A](a: () => A) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]) extends CopyInOp[A] {
+    final case class HandleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyInOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGCopyIn-specific operations.
-    case object CancelCopy extends CopyInOp[Unit] {
+    final case object CancelCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
     }
-    case object EndCopy extends CopyInOp[Long] {
+    final case object EndCopy extends CopyInOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.endCopy
     }
-    case object FlushCopy extends CopyInOp[Unit] {
+    final case object FlushCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.flushCopy
     }
-    case object GetFieldCount extends CopyInOp[Int] {
+    final case object GetFieldCount extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldCount
     }
-    case class  GetFieldFormat(a: Int) extends CopyInOp[Int] {
+    final case class  GetFieldFormat(a: Int) extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
     }
-    case object GetFormat extends CopyInOp[Int] {
+    final case object GetFormat extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFormat
     }
-    case object GetHandledRowCount extends CopyInOp[Long] {
+    final case object GetHandledRowCount extends CopyInOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
     }
-    case object IsActive extends CopyInOp[Boolean] {
+    final case object IsActive extends CopyInOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isActive
     }
-    case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
+    final case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a, b, c)
     }
 

@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.postgres
 
 import doobie._, doobie.implicits._
@@ -5,6 +9,7 @@ import doobie.postgres._, doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
 import org.specs2.mutable.Specification
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Recursion"))
 object syntaxspec extends Specification {
 
   "syntax" should {

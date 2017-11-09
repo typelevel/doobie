@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.util
 
 import cats.effect.IO
@@ -5,6 +9,7 @@ import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.Predef._
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object queryspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](

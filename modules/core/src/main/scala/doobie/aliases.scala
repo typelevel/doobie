@@ -4,35 +4,38 @@
 
 package doobie
 
+/** Mixin containing aliases for the most commonly used types and modules from doobie-core. */
 trait Aliases extends Types with Modules
 
+/** Mixin containing aliases for the most commonly used types from doobie-core. */
 trait Types {
-  type Meta[A]                  = doobie.util.meta.Meta[A]
-  type Composite[A]             = doobie.util.composite.Composite[A]
-  type Query[A,B]               = doobie.util.query.Query[A,B]
-  type Update[A]                = doobie.util.update.Update[A]
-  type Query0[A]                = doobie.util.query.Query0[A]
-  type Update0                  = doobie.util.update.Update0
-  type SqlState                 = doobie.enum.sqlstate.SqlState
-  type Param[A]                 = doobie.util.param.Param[A]
-  type Transactor[M[_]]         = doobie.util.transactor.Transactor[M]
-  type LogHandler               = doobie.util.log.LogHandler
-  type Fragment                 = doobie.util.fragment.Fragment
-  type KleisliInterpreter[F[_]] = doobie.free.KleisliInterpreter[F]
+  /** @group Type Aliases - Core */ type Meta[A]                  = doobie.util.meta.Meta[A]
+  /** @group Type Aliases - Core */ type Composite[A]             = doobie.util.composite.Composite[A]
+  /** @group Type Aliases - Core */ type Query[A,B]               = doobie.util.query.Query[A,B]
+  /** @group Type Aliases - Core */ type Update[A]                = doobie.util.update.Update[A]
+  /** @group Type Aliases - Core */ type Query0[A]                = doobie.util.query.Query0[A]
+  /** @group Type Aliases - Core */ type Update0                  = doobie.util.update.Update0
+  /** @group Type Aliases - Core */ type SqlState                 = doobie.enum.SqlState
+  /** @group Type Aliases - Core */ type Param[A]                 = doobie.util.param.Param[A]
+  /** @group Type Aliases - Core */ type Transactor[M[_]]         = doobie.util.transactor.Transactor[M]
+  /** @group Type Aliases - Core */ type LogHandler               = doobie.util.log.LogHandler
+  /** @group Type Aliases - Core */ type Fragment                 = doobie.util.fragment.Fragment
+  /** @group Type Aliases - Core */ type KleisliInterpreter[F[_]] = doobie.free.KleisliInterpreter[F]
 }
 
+/** Mixin containing aliases for the most commonly used modules from doobie-core. */
 trait Modules {
-  val  Meta               = doobie.util.meta.Meta
-  val  Composite          = doobie.util.composite.Composite
-  val  Query              = doobie.util.query.Query
-  val  Update             = doobie.util.update.Update
-  val  Query0             = doobie.util.query.Query0
-  val  Update0            = doobie.util.update.Update0
-  val  SqlState           = doobie.enum.sqlstate.SqlState
-  val  Param              = doobie.util.param.Param
-  val  Transactor         = doobie.util.transactor.Transactor
-  val  LogHandler         = doobie.util.log.LogHandler
-  val  Fragment           = doobie.util.fragment.Fragment
-  val  KleisliInterpreter = doobie.free.KleisliInterpreter
-  val  Fragments          = doobie.util.fragments
+  /** @group Module Aliases - Core */ val  Meta               = doobie.util.meta.Meta
+  /** @group Module Aliases - Core */ val  Composite          = doobie.util.composite.Composite
+  /** @group Module Aliases - Core */ val  Query              = doobie.util.query.Query
+  /** @group Module Aliases - Core */ val  Update             = doobie.util.update.Update
+  /** @group Module Aliases - Core */ val  Query0             = doobie.util.query.Query0
+  /** @group Module Aliases - Core */ val  Update0            = doobie.util.update.Update0
+  /** @group Module Aliases - Core */ val  SqlState           = doobie.enum.SqlState
+  /** @group Module Aliases - Core */ val  Param              = doobie.util.param.Param
+  /** @group Module Aliases - Core */ val  Transactor         = doobie.util.transactor.Transactor
+  /** @group Module Aliases - Core */ val  LogHandler         = doobie.util.log.LogHandler
+  /** @group Module Aliases - Core */ val  Fragment           = doobie.util.fragment.Fragment
+  /** @group Module Aliases - Core */ val  KleisliInterpreter = doobie.free.KleisliInterpreter
+  /** @group Module Aliases - Core */ val  Fragments          = doobie.util.fragments
 }

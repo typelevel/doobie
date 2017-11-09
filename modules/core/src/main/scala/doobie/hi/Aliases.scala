@@ -5,8 +5,8 @@
 package doobie.hi
 
 trait Modules {
-  lazy val HC  = doobie.hi.connection
-  lazy val HS  = doobie.hi.statement
-  lazy val HPS = doobie.hi.preparedstatement
-  lazy val HRS = doobie.hi.resultset
+  /** @group Module Aliases - Hi API */ lazy val HC  = doobie.hi.connection
+  /** @group Module Aliases - Hi API */ lazy val HS  = doobie.hi.statement
+  /** @group Module Aliases - Hi API */ lazy val HPS = doobie.hi.preparedstatement
+  /** @group Module Aliases - Hi API */ lazy val HRS = doobie.hi.resultset
 }

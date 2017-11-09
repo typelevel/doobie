@@ -13,6 +13,7 @@ import java.sql.ResultSet
 import org.postgresql.fastpath.FastpathArg
 import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object fastpath { module =>
 
   // Algebra of operations for PGFastpath. Each accepts a visitor as an alternatie to pattern-matching.
@@ -60,54 +61,54 @@ object fastpath { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: PGFastpath => A) extends FastpathOp[A] {
+    final case class Raw[A](f: PGFastpath => A) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends FastpathOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends FastpathOp[A] {
+    final case class Delay[A](a: () => A) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]) extends FastpathOp[A] {
+    final case class HandleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends FastpathOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGFastpath-specific operations.
-    case class  AddFunction(a: String, b: Int) extends FastpathOp[Unit] {
+    final case class  AddFunction(a: String, b: Int) extends FastpathOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addFunction(a, b)
     }
-    case class  AddFunctions(a: ResultSet) extends FastpathOp[Unit] {
+    final case class  AddFunctions(a: ResultSet) extends FastpathOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addFunctions(a)
     }
-    case class  Fastpath(a: Int, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
+    final case class  Fastpath(a: Int, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b)
     }
-    case class  Fastpath1(a: Int, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[AnyRef] {
+    final case class  Fastpath1(a: Int, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b, c)
     }
-    case class  Fastpath2(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
+    final case class  Fastpath2(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b)
     }
-    case class  Fastpath3(a: String, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[AnyRef] {
+    final case class  Fastpath3(a: String, b: Boolean, c: Array[FastpathArg]) extends FastpathOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.fastpath(a, b, c)
     }
-    case class  GetData(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
+    final case class  GetData(a: String, b: Array[FastpathArg]) extends FastpathOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getData(a, b)
     }
-    case class  GetID(a: String) extends FastpathOp[Int] {
+    final case class  GetID(a: String) extends FastpathOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getID(a)
     }
-    case class  GetInteger(a: String, b: Array[FastpathArg]) extends FastpathOp[Int] {
+    final case class  GetInteger(a: String, b: Array[FastpathArg]) extends FastpathOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getInteger(a, b)
     }
-    case class  GetLong(a: String, b: Array[FastpathArg]) extends FastpathOp[Long] {
+    final case class  GetLong(a: String, b: Array[FastpathArg]) extends FastpathOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLong(a, b)
     }
-    case class  GetOID(a: String, b: Array[FastpathArg]) extends FastpathOp[Long] {
+    final case class  GetOID(a: String, b: Array[FastpathArg]) extends FastpathOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getOID(a, b)
     }
 

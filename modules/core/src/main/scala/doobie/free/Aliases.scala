@@ -4,53 +4,83 @@
 
 package doobie.free
 
+import cats.effect.Async
+
 trait Types {
-  type BlobIO[A]              = blob.BlobIO[A]
-  type CallableStatementIO[A] = callablestatement.CallableStatementIO[A]
-  type ClobIO[A]              = clob.ClobIO[A]
-  type ConnectionIO[A]        = connection.ConnectionIO[A]
-  type DatabaseMetaDataIO[A]  = databasemetadata.DatabaseMetaDataIO[A]
-  type DriverIO[A]            = driver.DriverIO[A]
-  type NClobIO[A]             = nclob.NClobIO[A]
-  type PreparedStatementIO[A] = preparedstatement.PreparedStatementIO[A]
-  type RefIO[A]               = ref.RefIO[A]
-  type ResultSetIO[A]         = resultset.ResultSetIO[A]
-  type SQLDataIO[A]           = sqldata.SQLDataIO[A]
-  type SQLInputIO[A]          = sqlinput.SQLInputIO[A]
-  type SQLOutputIO[A]         = sqloutput.SQLOutputIO[A]
-  type StatementIO[A]         = statement.StatementIO[A]
+  /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]
+  /** @group Type Aliases - Free API */ type CallableStatementIO[A] = callablestatement.CallableStatementIO[A]
+  /** @group Type Aliases - Free API */ type ClobIO[A]              = clob.ClobIO[A]
+  /** @group Type Aliases - Free API */ type ConnectionIO[A]        = connection.ConnectionIO[A]
+  /** @group Type Aliases - Free API */ type DatabaseMetaDataIO[A]  = databasemetadata.DatabaseMetaDataIO[A]
+  /** @group Type Aliases - Free API */ type DriverIO[A]            = driver.DriverIO[A]
+  /** @group Type Aliases - Free API */ type NClobIO[A]             = nclob.NClobIO[A]
+  /** @group Type Aliases - Free API */ type PreparedStatementIO[A] = preparedstatement.PreparedStatementIO[A]
+  /** @group Type Aliases - Free API */ type RefIO[A]               = ref.RefIO[A]
+  /** @group Type Aliases - Free API */ type ResultSetIO[A]         = resultset.ResultSetIO[A]
+  /** @group Type Aliases - Free API */ type SQLDataIO[A]           = sqldata.SQLDataIO[A]
+  /** @group Type Aliases - Free API */ type SQLInputIO[A]          = sqlinput.SQLInputIO[A]
+  /** @group Type Aliases - Free API */ type SQLOutputIO[A]         = sqloutput.SQLOutputIO[A]
+  /** @group Type Aliases - Free API */ type StatementIO[A]         = statement.StatementIO[A]
 }
 
 trait Modules {
-  lazy val FB   = blob
-  lazy val FCS  = callablestatement
-  lazy val FCL  = clob
-  lazy val FC   = connection
-  lazy val FDMD = databasemetadata
-  lazy val FD   = driver
-  lazy val FNCL = nclob
-  lazy val FPS  = preparedstatement
-  lazy val FREF = ref
-  lazy val FRS  = resultset
-  lazy val FSD  = sqldata
-  lazy val FSI  = sqlinput
-  lazy val FSO  = sqloutput
-  lazy val FS   = statement
+  /** @group Module Aliases - Free API */ lazy val FB   = blob
+  /** @group Module Aliases - Free API */ lazy val FCS  = callablestatement
+  /** @group Module Aliases - Free API */ lazy val FCL  = clob
+  /** @group Module Aliases - Free API */ lazy val FC   = connection
+  /** @group Module Aliases - Free API */ lazy val FDMD = databasemetadata
+  /** @group Module Aliases - Free API */ lazy val FD   = driver
+  /** @group Module Aliases - Free API */ lazy val FNCL = nclob
+  /** @group Module Aliases - Free API */ lazy val FPS  = preparedstatement
+  /** @group Module Aliases - Free API */ lazy val FREF = ref
+  /** @group Module Aliases - Free API */ lazy val FRS  = resultset
+  /** @group Module Aliases - Free API */ lazy val FSD  = sqldata
+  /** @group Module Aliases - Free API */ lazy val FSI  = sqlinput
+  /** @group Module Aliases - Free API */ lazy val FSO  = sqloutput
+  /** @group Module Aliases - Free API */ lazy val FS   = statement
 }
 
 trait Instances {
-  implicit lazy val AsyncBlobIO              = blob.AsyncBlobIO
-  implicit lazy val AsyncCallableStatementIO = callablestatement.AsyncCallableStatementIO
-  implicit lazy val AsyncClobIO              = clob.AsyncClobIO
-  implicit lazy val AsyncConnectionIO        = connection.AsyncConnectionIO
-  implicit lazy val AsyncDatabaseMetaDataIO  = databasemetadata.AsyncDatabaseMetaDataIO
-  implicit lazy val AsyncDriverIO            = driver.AsyncDriverIO
-  implicit lazy val AsyncNClobIO             = nclob.AsyncNClobIO
-  implicit lazy val AsyncPreparedStatementIO = preparedstatement.AsyncPreparedStatementIO
-  implicit lazy val AsyncRefIO               = ref.AsyncRefIO
-  implicit lazy val AsyncResultSetIO         = resultset.AsyncResultSetIO
-  implicit lazy val AsyncSQLDataIO           = sqldata.AsyncSQLDataIO
-  implicit lazy val AsyncSQLInputIO          = sqlinput.AsyncSQLInputIO
-  implicit lazy val AsyncSQLOutputIO         = sqloutput.AsyncSQLOutputIO
-  implicit lazy val AsyncStatementIO         = statement.AsyncStatementIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncBlobIO: Async[BlobIO] =
+    blob.AsyncBlobIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncCallableStatementIO: Async[CallableStatementIO] =
+    callablestatement.AsyncCallableStatementIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncClobIO: Async[ClobIO] =
+    clob.AsyncClobIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncConnectionIO: Async[ConnectionIO] =
+    connection.AsyncConnectionIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
+    databasemetadata.AsyncDatabaseMetaDataIO
+  /** @group Typeclass Instances */  implicit lazy val AsyncDriverIO: Async[DriverIO] =
+    driver.AsyncDriverIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncNClobIO: Async[NClobIO] =
+    nclob.AsyncNClobIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
+    preparedstatement.AsyncPreparedStatementIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncRefIO: Async[RefIO] =
+    ref.AsyncRefIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncResultSetIO: Async[ResultSetIO] =
+    resultset.AsyncResultSetIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncSQLDataIO: Async[SQLDataIO] =
+    sqldata.AsyncSQLDataIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncSQLInputIO: Async[SQLInputIO] =
+    sqlinput.AsyncSQLInputIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncSQLOutputIO: Async[SQLOutputIO] =
+    sqloutput.AsyncSQLOutputIO
+
+  /** @group Typeclass Instances */  implicit lazy val AsyncStatementIO: Async[StatementIO] =
+    statement.AsyncStatementIO
+
 }

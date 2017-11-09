@@ -2,22 +2,41 @@ import FreeGen2._
 import ReleaseTransformations._
 import microsites._
 
+resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "1.0.0-MF"
-lazy val circeVersion         = "0.9.0-M1"
-lazy val fs2CoreVersion       = "0.10.0-M6"
+lazy val catsVersion          = "1.0.0-RC1"
+lazy val circeVersion         = "0.9.0-M2"
+lazy val fs2CoreVersion       = "0.10.0-M8"
 lazy val h2Version            = "1.4.196"
-lazy val hikariVersion        = "2.6.3"
+lazy val hikariVersion        = "2.7.2"
 lazy val kindProjectorVersion = "0.9.4"
 lazy val monixVersion         = "2.3.0"
 lazy val postGisVersion       = "2.2.1"
 lazy val postgresVersion      = "42.1.4"
-lazy val refinedVersion       = "0.8.2"
+lazy val refinedVersion       = "0.8.4"
 lazy val scalaCheckVersion    = "1.13.5"
 lazy val scalatestVersion     = "3.0.4"
 lazy val shapelessVersion     = "2.3.2"
 lazy val sourcecodeVersion    = "0.1.4"
-lazy val specs2Version        = "3.9.4"
+lazy val specs2Version        = "4.0.1"
+lazy val scala211Version      = "2.11.11"
+lazy val scala212Version      = "2.12.4"
+
+// Our set of warts
+lazy val doobieWarts =
+  Warts.allBut(
+    Wart.Any,                 // false positives
+    Wart.ArrayEquals,         // false positives
+    Wart.Nothing,             // false positives
+    Wart.Null,                // Java API under the hood; we have to deal with null
+    Wart.Product,             // false positives
+    Wart.Serializable,        // false positives
+    Wart.ImplicitConversion,  // we know what we're doing
+    Wart.Throw,               // TODO: switch to ApplicativeError.fail in most places
+    Wart.PublicInference,     // fails https://github.com/wartremover/wartremover/issues/398
+    Wart.ImplicitParameter    // only used for Pos, but evidently can't be suppressed
+  )
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
@@ -105,8 +124,8 @@ lazy val compilerFlags = Seq(
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.12.3",
-  crossScalaVersions := Seq("2.11.11", scalaVersion.value)
+  scalaVersion := scala212Version,
+  crossScalaVersions := Seq(scala211Version, scalaVersion.value)
 )
 
 lazy val commonSettings =
@@ -122,37 +141,38 @@ lazy val commonSettings =
          |""".stripMargin
     )),
 
+    // Wartremover in compile and test (not in Console)
+    wartremoverErrors in (Compile, compile) := doobieWarts,
+    wartremoverErrors in (Test,    compile) := doobieWarts,
+
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
-      "-doc-source-url", "https://github.com/tpolecat/doobie/tree/v" + version.value + "€{FILE_PATH}.scala"
+      "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion)
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion),
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
+    releaseProcess := Nil
   )
 
 lazy val publishSettings = Seq(
   useGpg := false,
   publishMavenStyle := true,
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  },
   publishArtifact in Test := false,
   homepage := Some(url("https://github.com/tpolecat/doobie")),
   pomIncludeRepository := Function.const(false),
   pomExtra := (
-    <scm>
-      <url>git@github.com:tpolecat/doobie.git</url>
-      <connection>scm:git:git@github.com:tpolecat/doobie.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>tpolecat</id>
@@ -161,16 +181,12 @@ lazy val publishSettings = Seq(
       </developer>
     </developers>
   ),
-  releaseProcess := Nil,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair relativeTo(sourceManaged.value / "main" / "scala")
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala")
 )
 
 lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false,
-  releaseProcess := Nil
+  skip in publish := true
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -193,8 +209,7 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      // Doesn't work, rats. See https://github.com/47deg/sbt-microsites/issues/210
-      // releaseStepCommand("docs/publishMicrosite"),
+      releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
@@ -212,9 +227,9 @@ lazy val free = project
     scalacOptions += "-Yno-predef",
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"  % fs2CoreVersion,
-      "org.typelevel"  %% "cats-core" % catsVersion,
-      "org.typelevel"  %% "cats-free" % catsVersion
+      "co.fs2"         %% "fs2-core"   % fs2CoreVersion,
+      "org.typelevel"  %% "cats-core"  % catsVersion,
+      "org.typelevel"  %% "cats-free"  % catsVersion
     ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
@@ -280,6 +295,12 @@ lazy val example = project
   .in(file("modules/example"))
   .settings(doobieSettings ++ noPublishSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
+  .settings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-io"     % fs2CoreVersion,
+      "co.fs2" %% "fs2-scodec" % fs2CoreVersion
+    )
+  )
 
 lazy val postgres = project
   .in(file("modules/postgres"))

@@ -6,9 +6,7 @@ package doobie.util
 
 import java.sql.{ ResultSet, PreparedStatement }
 
-import cats.Cartesian
-import cats.functor.{ Invariant => InvariantFunctor }
-
+import cats.{ Semigroupal, Invariant => InvariantFunctor }
 import shapeless._
 import shapeless.labelled.{ field, FieldType }
 
@@ -86,6 +84,58 @@ object kernel {
         val width   = h.width + t.width
       }
 
+    val ohnil: Kernel[Option[HNil]] =
+      new Kernel[Option[HNil]] {
+        type I      = Option[HNil]
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (_: ResultSet, _: Int) => Some(HNil)
+        val set     = (_: PreparedStatement, _: Int, _: I) => ()
+        val setNull = (_: PreparedStatement, _: Int) => ()
+        val update  = (_: ResultSet, _: Int, _: Option[HNil]) => ()
+        val width   = 0
+      }
+
+    def ohcons1[H, T <: HList](H: Kernel[Option[H]], T: Kernel[Option[T]]): Kernel[Option[H :: T]] =
+      new Kernel[Option[H :: T]]{
+
+        def split(i: I)(f: (Option[H], Option[T]) => Unit): Unit =
+          i match {
+            case Some(h :: t) => f(Some(h), Some(t))
+            case None         => f(None, None)
+          }
+
+        type I      = Option[H :: T]
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (rs: ResultSet, n: Int) => H.ia(H.get(rs, n)).flatMap(h => T.ia(T.get(rs, n + H.width)).map(h :: _))
+        val set     = (ps: PreparedStatement, n: Int, i: I) => split(i) { (h, t) => H.set(ps, n, H.ai(h)); T.set(ps, n + H.width, T.ai(t)) }
+        val update  = (rs: ResultSet, n: Int, i: I) => split(i) { (h, t) => H.update(rs, n, H.ai(h)); T.update(rs, n + H.width, T.ai(t)) }
+        val setNull = (ps: PreparedStatement, n: Int) => { H.setNull(ps, n); T.setNull(ps, n + H.width) }
+        val width   = H.width + T.width
+
+      }
+
+    def ohcons2[H, T <: HList](H: Kernel[Option[H]], T: Kernel[Option[T]]): Kernel[Option[Option[H] :: T]] =
+      new Kernel[Option[Option[H] :: T]]{
+
+        def split(i: I)(f: (Option[H], Option[T]) => Unit): Unit =
+          i match {
+            case Some(h :: t) => f(h, Some(t))
+            case None         => f(None, None)
+          }
+
+        type I      = Option[Option[H] :: T]
+        val ia      = (i: I) => i
+        val ai      = (a: I) => a
+        val get     = (rs: ResultSet, n: Int) => T.ia(T.get(rs, n + H.width)).map(H.ia(H.get(rs, n)) :: _)
+        val set     = (ps: PreparedStatement, n: Int, i: I) => split(i) { (h, t) => H.set(ps, n, H.ai(h)); T.set(ps, n + H.width, T.ai(t)) }
+        val update  = (rs: ResultSet, n: Int, i: I) => split(i) { (h, t) => H.update(rs, n, H.ai(h)); T.update(rs, n + H.width, T.ai(t)) }
+        val setNull = (ps: PreparedStatement, n: Int) => { H.setNull(ps, n); T.setNull(ps, n + H.width) }
+        val width   = H.width + T.width
+      }
+
+
     def product[A, B](a: Kernel[A], b: Kernel[B]): Kernel[(A, B)] =
       new Kernel[(A, B)] {
         type I      = (A, B)
@@ -113,7 +163,7 @@ object kernel {
   }
 
   trait KernelInstances {
-    // TODO: Invariant and Cartesian (cats)
+    // TODO: Invariant and Semigroupal (cats)
 
     implicit val kernelInvariantFunctor: InvariantFunctor[Kernel] =
       new InvariantFunctor[Kernel] {
@@ -121,8 +171,8 @@ object kernel {
           ma.imap(f)(g)
       }
 
-    implicit val kernelCarterisn: Cartesian[Kernel] =
-      new Cartesian[Kernel] {
+    implicit val kernelCarterisn: Semigroupal[Kernel] =
+      new Semigroupal[Kernel] {
         def product[A, B](fa: Kernel[A], fb: Kernel[B]): Kernel[(A, B)] =
           Kernel.product(fa, fb)
       }

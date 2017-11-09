@@ -4,11 +4,10 @@
 
 package doobie.postgres
 
+import doobie.enum.SqlState
+
 /** Module of SQLSTATE constants for PostgreSQL. */
 object sqlstate {
-
-  type SqlState = doobie.enum.sqlstate.SqlState
-  val  SqlState = doobie.enum.sqlstate.SqlState
 
   /** Class 00 — Successful Completion */
   object class00 {
@@ -215,7 +214,7 @@ object sqlstate {
   }
 
   /** Class 38 — External Routine Exception */
-  object class38 { 
+  object class38 {
     val EXTERNAL_ROUTINE_EXCEPTION = SqlState("38000")
     val CONTAINING_SQL_NOT_PERMITTED = SqlState("38001")
     val MODIFYING_SQL_DATA_NOT_PERMITTED = SqlState("38002")
@@ -368,5 +367,5 @@ object sqlstate {
     val DATA_CORRUPTED = SqlState("XX001")
     val INDEX_CORRUPTED = SqlState("XX002")
   }
-  
+
 }

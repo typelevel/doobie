@@ -45,6 +45,7 @@ object fragment {
       }
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def query[B: Composite](implicit h: LogHandler = LogHandler.nop): Query0[B] =
       queryWithLogHandler(h)
 
@@ -56,6 +57,7 @@ object fragment {
       Query[A, B](sql, pos, h)(ca, cb).toQuery0(a)
 
     /** Construct an [[Update0]] from this fragment. */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def update(implicit h: LogHandler = LogHandler.nop): Update0 =
       updateWithLogHandler(h)
 
@@ -67,6 +69,7 @@ object fragment {
       s"""Fragment("$sql")"""
 
     /** Used only for testing; this uses universal equality on the captured argument. */
+    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     private[util] def unsafeEquals(fb: Fragment): Boolean =
       fa.a == fb.a && fa.sql == fb.sql
 
@@ -79,6 +82,7 @@ object fragment {
      * placeholders to accommodate the fields of the given interpolated value. This is normally
      * accomplished via the string interpolator rather than direct construction.
      */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A0](sql0: String, a0: A0, pos0: Option[Pos] = None)(
       implicit ev: Composite[A0]
     ): Fragment =
@@ -94,6 +98,7 @@ object fragment {
      * Construct a statement fragment with no interpolated values and no trailing space; the
      * passed SQL string must not contain `?` placeholders.
      */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def const0(sql: String, pos: Option[Pos] = None): Fragment =
       Fragment[HNil](sql, HNil, pos)
 
@@ -101,7 +106,8 @@ object fragment {
      * Construct a statement fragment with no interpolated values and a trailing space; the
      * passed SQL string must not contain `?` placeholders.
      */
-    def const(sql: String, pos: Option[Pos] = None): Fragment =
+     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+     def const(sql: String, pos: Option[Pos] = None): Fragment =
       const0(sql + " ", pos)
 
     /** The empty fragment. Adding this to another fragment has no effect. */

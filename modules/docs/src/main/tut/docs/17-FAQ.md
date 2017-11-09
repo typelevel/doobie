@@ -226,7 +226,7 @@ As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentati
 There are a lot of ways to handle `SQLXML` so there is no pre-defined strategy, but here is one that maps `scala.xml.Elem` to `SQLXML` via streaming.
 
 ```tut:silent
-import doobie.enum.jdbctype.Other
+import doobie.enum.JdbcType.Other
 import java.sql.SQLXML
 import scala.xml.{ XML, Elem }
 

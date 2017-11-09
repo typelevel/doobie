@@ -15,6 +15,7 @@ import java.sql.DriverPropertyInfo
 import java.util.Properties
 import java.util.logging.Logger
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object driver { module =>
 
   // Algebra of operations for Driver. Each accepts a visitor as an alternatie to pattern-matching.
@@ -58,42 +59,42 @@ object driver { module =>
     }
 
     // Common operations for all algebras.
-    case class Raw[A](f: Driver => A) extends DriverOp[A] {
+    final case class Raw[A](f: Driver => A) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
-    case class Embed[A](e: Embedded[A]) extends DriverOp[A] {
+    final case class Embed[A](e: Embedded[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    case class Delay[A](a: () => A) extends DriverOp[A] {
+    final case class Delay[A](a: () => A) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.delay(a)
     }
-    case class HandleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]) extends DriverOp[A] {
+    final case class HandleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DriverOp[A] {
+    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Driver-specific operations.
-    case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
+    final case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.acceptsURL(a)
     }
-    case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
+    final case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.connect(a, b)
     }
-    case object GetMajorVersion extends DriverOp[Int] {
+    final case object GetMajorVersion extends DriverOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMajorVersion
     }
-    case object GetMinorVersion extends DriverOp[Int] {
+    final case object GetMinorVersion extends DriverOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMinorVersion
     }
-    case object GetParentLogger extends DriverOp[Logger] {
+    final case object GetParentLogger extends DriverOp[Logger] {
       def visit[F[_]](v: Visitor[F]) = v.getParentLogger
     }
-    case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
+    final case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
       def visit[F[_]](v: Visitor[F]) = v.getPropertyInfo(a, b)
     }
-    case object JdbcCompliant extends DriverOp[Boolean] {
+    final case object JdbcCompliant extends DriverOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.jdbcCompliant
     }
 

@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package doobie.postgres
 
 import cats.effect.IO
@@ -13,6 +17,7 @@ import org.postgresql.geometric._
 import org.specs2.mutable.Specification
 
 // Establish that we can write and read various types.
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgtypesspec extends Specification {
 
   val xa = Transactor.fromDriverManager[IO](
@@ -40,6 +45,7 @@ object pgtypesspec extends Specification {
       }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def skip(col: String, msg: String = "not yet implemented") =
     s"Mapping for $col" >> {
       "PENDING:" in pending(msg)
@@ -83,10 +89,11 @@ object pgtypesspec extends Specification {
 
   // 8.7 Enumerated Types
   // create type myenum as enum ('foo', 'bar') <-- part of setup
+  @SuppressWarnings(Array("org.wartremover.warts.Enumeration"))
   object MyEnum extends Enumeration { val foo, bar = Value }
 
   // as scala.Enumeration
-  implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
+  implicit val MyEnumMeta: Meta[MyEnum.Value] = pgEnum(MyEnum, "myenum")
   testInOut("myenum", MyEnum.foo)
 
   // // as java.lang.Enum

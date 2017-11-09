@@ -2,16 +2,17 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.example
+package example
 
-import doobie._, doobie.implicits._
-import doobie.postgres.implicits._
+import doobie._
+import doobie.implicits._
 import org.postgresql.geometric._
+import doobie.postgres.implicits._
 
 // Some queries to test using the AnalysisTestSpec in src/test
 object AnalysisTest {
 
-  case class Country(name: String, indepYear: Int)
+  final case class Country(name: String, indepYear: Int)
 
   def speakerQuery(lang: String, pct: Double): Query0[Country] =
     sql"""
@@ -41,6 +42,7 @@ object AnalysisTest {
       SELECT '(1, 2)'::point test
     """.query[PGpoint]
 
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   val pointTest2 = {
     Meta[PostgresPoint.Point] // why not? ... irritating that it must be instantiated. what to do?
     sql"""

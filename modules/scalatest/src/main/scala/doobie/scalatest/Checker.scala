@@ -48,19 +48,22 @@ trait Checker[M[_]] {
 
   def transactor: Transactor[M]
 
-
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def check[A, B](q: Query[A, B])(implicit A: WeakTypeTag[A], B: WeakTypeTag[B]) =
     checkAnalysis(s"Query[${typeName(A)}, ${typeName(B)}]", q.pos, q.sql, q.analysis)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def check[A](q: Query0[A])(implicit A: WeakTypeTag[A]) =
     checkAnalysis(s"Query0[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
   def checkOutput[A](q: Query0[A])(implicit A: WeakTypeTag[A]) =
     checkAnalysis(s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def check[A](q: Update[A])(implicit A: WeakTypeTag[A]) =
     checkAnalysis(s"Update[${typeName(A)}]", q.pos, q.sql, q.analysis)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def check[A](q: Update0) =
     checkAnalysis(s"Update0", q.pos, q.sql, q.analysis)
 
@@ -105,12 +108,13 @@ trait Checker[M[_]] {
 
   private def assertEmpty(name: String, es: List[AlignmentError]): String =
     if (es.isEmpty) success(name, None)
-    else failure(name, es.map(formatError).mkString("\n"))
+    else failure(name, es.map(formatAlignmentError).mkString("\n"))
 
+  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   private def typeName[A](tag: WeakTypeTag[A]): String =
     packagePrefix.replaceAllIn(tag.tpe.toString, "")
 
-  private def formatError(e: AlignmentError): String =
+  private def formatAlignmentError(e: AlignmentError): String =
     formatError(e.msg)
 
   private def formatError(s: String): String =
@@ -126,7 +130,7 @@ trait Checker[M[_]] {
     s"${Console.RED}  ✕ ${Console.RESET}$name\n" + desc.lines.map(s => s"  $s").mkString("", "\n", "\n")
 
   private def success(name: String, desc: Option[String]): String =
-    s"${Console.GREEN}  ✓ ${Console.RESET}$name\n" + desc.mkString("\n")
+    s"${Console.GREEN}  ✓ ${Console.RESET}$name\n" + desc.toList.mkString("\n")
 }
 
 /** Implementation of Checker[IO] */
