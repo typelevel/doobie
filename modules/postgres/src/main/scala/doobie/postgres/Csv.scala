@@ -26,7 +26,7 @@ object Csv extends CsvInstances {
 trait CsvInstances extends CsvInstances0 { this: Csv.type =>
 
   // String requires escaping
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
   implicit val stringInstance: Csv[String] =
     instance { (s, q, e) => sb =>
       sb.append(q)
