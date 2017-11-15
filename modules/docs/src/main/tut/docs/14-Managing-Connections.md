@@ -68,7 +68,7 @@ val q = sql"select 42".query[Int].unique
 
 val p: IO[Int] = for {
   xa <- HikariTransactor[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-  _  <- xa.configure(hx => IO( /* do something with hx */ ()))
+  _  <- xa.configure(hx => /* do something with hx */ ())
   a  <- q.transact(xa) guarantee xa.shutdown
 } yield a
 ```
