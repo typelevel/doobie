@@ -23,7 +23,7 @@ object param {
 Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
 have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom
 instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.""")
-  final class Param[A] private (val composite: Composite[A])
+  final class Param[A](val composite: Composite[A])
 
   /**
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
