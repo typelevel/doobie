@@ -138,8 +138,8 @@ object transactor  {
      * compatible `Transactor`s via implicit conversion.
      * @group Configuration
      */
-    def configure[B](f: A => B)(implicit ev: Sync[M]): M[B] =
-      ev.delay(f(kernel))
+    def configure[B](f: A => M[B]): M[B] =
+      f(kernel)
 
     /**
      * Natural transformation equivalent to `exec` that does not use the provided `Strategy` and

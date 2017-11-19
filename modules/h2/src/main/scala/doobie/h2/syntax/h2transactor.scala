@@ -7,25 +7,25 @@ package syntax
 
 import cats.effect.Sync
 
-final class H2TransactorOps[M[_]: Sync](h2: H2Transactor[M]) {
+final class H2TransactorOps[M[_]](h2: H2Transactor[M])(implicit ev: Sync[M]) {
 
   /** A program that shuts down this `H2Transactor`. */
-  val dispose: M[Unit] = h2.configure(_.dispose)
+  val dispose: M[Unit] = h2.configure(pool => ev.delay(pool.dispose))
 
   /** Returns the number of active (open) connections of the underlying `JdbcConnectionPool`. */
-  val getActiveConnections: M[Int] = h2.configure(_.getActiveConnections)
+  val getActiveConnections: M[Int] = h2.configure(pool => ev.delay(pool.getActiveConnections))
 
   /** Gets the maximum time in seconds to wait for a free connection. */
-  val getLoginTimeout: M[Int] = h2.configure(_.getLoginTimeout)
+  val getLoginTimeout: M[Int] = h2.configure(pool => ev.delay(pool.getLoginTimeout))
 
   /** Gets the maximum number of connections to use. */
-  val getMaxConnections: M[Int] = h2.configure(_.getMaxConnections)
+  val getMaxConnections: M[Int] = h2.configure(pool => ev.delay(pool.getMaxConnections))
 
   /** Sets the maximum time in seconds to wait for a free connection. */
-  def setLoginTimeout(seconds: Int): M[Unit] = h2.configure(_.setLoginTimeout(seconds))
+  def setLoginTimeout(seconds: Int): M[Unit] = h2.configure(pool => ev.delay(pool.setLoginTimeout(seconds)))
 
   /** Sets the maximum number of connections to use from now on. */
-  def setMaxConnections(max: Int): M[Unit] = h2.configure(_.setMaxConnections(max))
+  def setMaxConnections(max: Int): M[Unit] = h2.configure(pool => ev.delay(pool.setMaxConnections(max)))
 
 }
 

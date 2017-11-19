@@ -21,20 +21,28 @@ object HikariTransactor {
   def apply[M[_]: Async](hikariDataSource : HikariDataSource): HikariTransactor[M] =
     Transactor.fromDataSource[M](hikariDataSource)
 
-  /** Constructs a program that yields a `HikariTransactor` configured with the given info. */
+  /** Constructs a program that yields a new `HikariTransactor` configured with the given info. */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  @deprecated("This method has been renamed `newHikariTransactor` to help clarify usage", "doobie 0.5.0")
   def apply[M[_]: Async](driverClassName: String, url: String, user: String, pass: String): M[HikariTransactor[M]] =
+    newHikariTransactor(driverClassName, url, user, pass)
+
+  /** Constructs a program that yields a new `HikariTransactor` configured with the given info. */
+  def newHikariTransactor[M[_]: Async](driverClassName: String, url: String, user: String, pass: String): M[HikariTransactor[M]] =
     for {
       _ <- Async[M].delay(Class.forName(driverClassName))
       t <- initial[M]
       _ <- t.configure { ds =>
-        ds setJdbcUrl  url
-        ds setUsername user
-        ds setPassword pass
+        Async[M].delay {
+          ds setJdbcUrl  url
+          ds setUsername user
+          ds setPassword pass
+        }
       }
     } yield t
 
+  /** Constructs a stream that emits a single `HikariTransactor` with guaranteed cleanup. */
   def stream[M[_]: Async](driverClassName: String, url: String, user: String, pass: String) : Stream[M, HikariTransactor[M]] =
-    Stream.bracket(apply(driverClassName, url, user, pass))(Stream.emit(_), _.configure(_.close))
+    Stream.bracket(newHikariTransactor(driverClassName, url, user, pass))(Stream.emit(_), _.configure(ds => Async[M].delay(ds.close)))
 
 }
