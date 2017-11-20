@@ -55,7 +55,7 @@ object transactor  {
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
     val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
-        (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
+        (before.p ++ pa ++ after.p).handleErrorWith { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
     }
 
     /**
