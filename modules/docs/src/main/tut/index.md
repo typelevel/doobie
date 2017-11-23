@@ -50,6 +50,8 @@ The current development version is **{{site.doobieVersion}}** for **Scala {{site
 To use **doobie** you need to add the following to your `build.sbt`. If you're not using the Postgres or H2 add-ons you'll also need to provide a JDBC driver for the database you're using.
 
 ```scala
+scalacOptions += "-Ypartial-unification" // 2.11.9+
+
 libraryDependencies ++= Seq(
 
   // Start with this one
