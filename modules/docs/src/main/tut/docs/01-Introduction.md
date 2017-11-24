@@ -71,6 +71,8 @@ On the Scala side you just need a console with the proper dependencies. A minima
 ```scala
 scalaVersion := "{{site.scalaVersion}}" // Scala {{site.scalaVersions}}
 
+scalacOptions += "-Ypartial-unification" // 2.11.9+
+
 lazy val doobieVersion = "{{site.doobieVersion}}"
 
 libraryDependencies ++= Seq(
@@ -79,6 +81,7 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-specs2"   % doobieVersion
 )
 ```
+Partial unification is a type inference bug fix that makes working with functional code significantly easier. Please see the Cats [Readme](https://github.com/typelevel/cats#getting-started) for more info.
 
 If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
 
