@@ -493,8 +493,8 @@ object meta {
     /** @group Instances */
     implicit val StringMeta: Meta[String] =
       Meta.basic[String](
-        NonEmptyList.of(VarChar, Char, LongVarChar),
-        NonEmptyList.of(Char, VarChar, LongVarChar),
+        NonEmptyList.of(VarChar, Char, LongVarChar, NChar, NVarChar, LongnVarChar),
+        NonEmptyList.of(Char, VarChar, LongVarChar, NChar, NVarChar, LongnVarChar),
         List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
           Binary, VarBinary, LongVarBinary, Date, Time, Timestamp),
         _.getString(_), _.setString(_, _), _.updateString(_, _))
