@@ -1,6 +1,8 @@
 package doobie.specs2
 
 import cats.effect.{ Effect, IO }
+import cats.instances.list._
+import cats.syntax.foldable._
 import doobie.util.pretty._
 import doobie.util.testing.{
   AnalysisReport,
@@ -38,9 +40,7 @@ object analysismatchers {
     ): MatchResult[S] = {
       // We aim to produce the same format the fragment version does.
 
-      val items = r.items
-        .map(itemToBlock)
-        .foldLeft(Block.empty)(_ above _)
+      val items = r.items.foldMap(itemToBlock)
 
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       val message =

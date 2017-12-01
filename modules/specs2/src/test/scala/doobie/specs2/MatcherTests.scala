@@ -4,7 +4,6 @@
 
 package doobie.specs2
 
-import cats.{Id, ~>}
 import cats.effect.IO
 import doobie._, doobie.implicits._
 import doobie.specs2.imports._

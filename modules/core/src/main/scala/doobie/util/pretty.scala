@@ -4,6 +4,7 @@
 
 package doobie.util
 
+import cats.Monoid
 import scala.annotation.tailrec
 import scala.Predef._
 
@@ -52,6 +53,11 @@ object pretty {
     val empty = Block(Nil)
     def fromString(s: String) = Block(List(s))
     def fromLines(s: String) = Block(s.lines.toList)
+
+    implicit val BlockMonoid: Monoid[Block] = new Monoid[Block] {
+      def empty = Block.empty
+      def combine(a: Block, b: Block) = a.above(b)
+    }
   }
 
   def wrap(cols: Int)(s: String): List[String] = {
