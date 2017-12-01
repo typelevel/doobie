@@ -5,9 +5,7 @@
 package doobie.scalatest
 
 import cats.effect.{ Effect, IO }
-import cats.syntax.foldable._
-import cats.instances.list._
-import doobie.util.pretty._
+import doobie.scalatest.formatting.formatReport
 import doobie.util.query.{Query, Query0}
 import doobie.util.update.{Update, Update0}
 import doobie.util.testing._
@@ -64,22 +62,12 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
   private def checkImpl(args: AnalysisArgs) = {
     val report = analyzeIO(args, transactor).unsafeRunSync
     if (!report.succeeded) {
-      val sql = args.cleanedSql
-        .wrap(68)
-        .padLeft(s"  ${Console.RESET}")
-      val items = report.items.foldMap(formatItem)
-      fail(s"  ${args.header}\n$sql\n$items")
+      fail(
+        formatReport(args, report)
+          .padLeft("  ")
+          .toString
+      )
     }
-  }
-
-  private val formatItem: AnalysisReport.Item => Block = {
-    case AnalysisReport.Item(desc, None) =>
-      Block.fromString(s"  ${Console.GREEN}✓${Console.RESET} $desc")
-    case AnalysisReport.Item(desc, Some(err)) =>
-      Block.fromString(s"  ${Console.RED}✕${Console.RESET} $desc")
-        // No color for error details - ScalaTest paints each line of failure
-        // red by default.
-        .above(err.wrap(66).padLeft("    "))
   }
 }
 
