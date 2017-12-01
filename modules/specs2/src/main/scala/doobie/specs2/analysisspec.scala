@@ -4,7 +4,7 @@
 
 package doobie.specs2
 
-import cats.effect.{ Async, IO }
+import cats.effect.{ Effect, IO }
 import doobie.imports._
 import doobie.util.analysis._
 import doobie.specs2.util._
@@ -39,7 +39,7 @@ object analysisspec {
   @deprecated("Use IOChecker.", "0.4.2")
   type AnalysisSpec = IOChecker
 
-  trait Checker[M[_]] extends UnsafeTransactions[M] { this: Specification =>
+  trait Checker[M[_]] extends CheckerBase[M] { this: Specification =>
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
@@ -65,7 +65,7 @@ object analysisspec {
     private def checkImpl(args: AnalysisArgs): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early
       s"${args.header}\n\n${args.cleanedSql.padLeft("  ")}\n" >> ok.continueWith {
-        val report = analyze(args)
+        val report = analyzeIO(args, transactor).unsafeRunSync
         indentBlock(
           report.items.map { item =>
             item.description ! item.error.fold(ok) {
@@ -87,8 +87,6 @@ object analysisspec {
 
   /** Implementation of Checker[IO] */
   trait IOChecker extends Checker[IO] { this: Specification =>
-    val M: Async[IO] = implicitly
-    def unsafeRunSync[A](ma: IO[A]) = ma.unsafeRunSync
+    val M: Effect[IO] = implicitly
   }
-
 }

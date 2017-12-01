@@ -1,11 +1,12 @@
 package doobie.specs2
 
+import cats.effect.{ Effect, IO }
 import doobie.util.pretty._
 import doobie.specs2.util.{
   AnalysisReport,
   Analyzable,
-  analyze,
-  UnsafeTransactionSupport
+  analyzeIO,
+  CheckerBase
 }
 import org.specs2.matcher.{ Expectable, Matcher, MatchResult }
 
@@ -17,20 +18,18 @@ object analysismatchers {
     * {{{
     * sql"select 1".query[Int] must typecheck
     * }}}
-    *
-    * Requires [[doobie.specs2.util.UnsafeTransactionSupport]] instance in scope
-    * to work; the easiest way to get one is to implement
-    * [[doobie.specs2.util.UnsafeTransactions]] or
-    * [[doobie.specs2.analysisspec.Checker]].
     */
-  trait AnalysisMatchers {
-    def typecheck[T](
-      implicit support: UnsafeTransactionSupport,
-               analyzable: Analyzable[T]
-    ): Matcher[T] =
+  trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
+
+    def typecheck[T](implicit analyzable: Analyzable[T]): Matcher[T] =
       new Matcher[T] {
-        def apply[S <: T](t: Expectable[S]): MatchResult[S] =
-          reportToMatchResult(analyze(analyzable.unpack(t.value)), t)
+        def apply[S <: T](t: Expectable[S]): MatchResult[S] = {
+          val report = analyzeIO(
+            analyzable.unpack(t.value),
+            transactor
+          ).unsafeRunSync
+          reportToMatchResult(report, t)
+        }
       }
 
     private def reportToMatchResult[S](
@@ -66,5 +65,7 @@ object analysismatchers {
       }
   }
 
-  object AnalysisMatchers extends AnalysisMatchers
+  trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
+    implicit val M: Effect[IO] = implicitly
+  }
 }

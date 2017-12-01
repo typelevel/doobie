@@ -13,7 +13,7 @@ import org.specs2.mutable.Specification
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 trait MatcherChecks[M[_]] extends Specification
     with Checker[M]
-    with AnalysisMatchers {
+    with AnalysisMatchers[M] {
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",

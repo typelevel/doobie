@@ -1,11 +1,11 @@
 package doobie.specs2
 
-import cats.{Id, ~>}
-import cats.arrow.FunctionK
 import cats.data.NonEmptyList
-import cats.effect.{ Async }
+import cats.effect.{ Effect, IO }
 import cats.syntax.list._
-import doobie.imports._
+import cats.syntax.applicativeError._
+import doobie._
+import doobie.implicits._
 import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
@@ -14,21 +14,12 @@ import scala.reflect.runtime.universe.TypeTag
 package util {
 
   /**
-    * Provide support for unsafe transaction execution.
+    * Common base trait for varous checkers and matchers.
     */
-  trait UnsafeTransactions[M[_]] {
-
-    // Effect type, required instances, unsafe run
-    implicit val M: Async[M]
-    def unsafeRunSync[A](ma: M[A]): A
-
+  trait CheckerBase[M[_]] {
+    // Effect type, required instances
+    implicit def M: Effect[M]
     def transactor: Transactor[M]
-
-    implicit lazy val analysisSupport: UnsafeTransactionSupport =
-      UnsafeTransactionSupport.instance(
-        transactor,
-        λ[M ~> Id](unsafeRunSync(_))
-      )
   }
 
   /** Common data for all query-like types. */
@@ -64,24 +55,6 @@ package util {
 
   object AnalysisReport {
     final case class Item(description: String, error: Option[Block])
-  }
-
-  /** Allows unsafe SQL execution. */
-  trait UnsafeTransactionSupport {
-    def unsafeTransactSync[A](ma: ConnectionIO[A]): Either[Throwable, A]
-  }
-
-  object UnsafeTransactionSupport {
-    def apply(implicit ev: UnsafeTransactionSupport): UnsafeTransactionSupport = ev
-
-    def instance[F[_]](
-      transactor: Transactor[F],
-      unsafeRunSync: FunctionK[F, Id]
-    )(implicit F: Async[F]): UnsafeTransactionSupport =
-      new UnsafeTransactionSupport {
-        def unsafeTransactSync[A](ma: ConnectionIO[A]) =
-          unsafeRunSync(F.attempt(transactor.trans.apply(ma)))
-      }
   }
 
   /** Typeclass for query-like objects. */
@@ -142,26 +115,22 @@ package util {
 
 package object util {
 
-  def analyze(args: AnalysisArgs)(
-    implicit support: UnsafeTransactionSupport
-  ): AnalysisReport =
-    AnalysisReport (
-      args.header,
-      args.cleanedSql,
-      support.unsafeTransactSync(args.analysis) match {
-        case Left(e) =>
-          List(AnalysisReport.Item(
-            "SQL Compiles and TypeChecks",
-            Some(Block.fromLines(e.getMessage))
-          ))
-        case Right(a) =>
-          AnalysisReport.Item("SQL Compiles and TypeChecks", None) ::
-            (a.paramDescriptions ++ a.columnDescriptions)
-            .map { case (s, es) =>
-              AnalysisReport.Item(s, es.toNel.map(alignmentErrorsToBlock))
-            }
+  def analyze(args: AnalysisArgs): ConnectionIO[AnalysisReport] =
+    args.analysis.attempt
+      .map(buildItems)
+      .map { items =>
+        AnalysisReport (
+          args.header,
+          args.cleanedSql,
+          items
+        )
       }
-    )
+
+  def analyzeIO[F[_]: Effect](
+    args: AnalysisArgs,
+    xa: Transactor[F]
+  ): IO[AnalysisReport] =
+    toIO(analyze(args).transact(xa))
 
   private val packagePrefix = "\\b[a-z]+\\.".r
 
@@ -174,4 +143,26 @@ package object util {
     es: NonEmptyList[AlignmentError]
   ): Block =
     Block(es.toList.flatMap(_.msg.lines))
+
+  private def buildItems(
+    input: Either[Throwable, Analysis]
+  ): List[AnalysisReport.Item] = input match {
+    case Left(e) =>
+      List(AnalysisReport.Item(
+        "SQL Compiles and TypeChecks",
+        Some(Block.fromLines(e.getMessage))
+      ))
+    case Right(a) =>
+      AnalysisReport.Item("SQL Compiles and TypeChecks", None) ::
+        (a.paramDescriptions ++ a.columnDescriptions)
+        .map { case (s, es) =>
+          AnalysisReport.Item(s, es.toNel.map(alignmentErrorsToBlock))
+        }
+  }
+
+  private def toIO[F[_]: Effect, A](fa: F[A])(implicit F: Effect[F]): IO[A] =
+    IO.async { cb =>
+      F.runAsync(fa)(out => IO(cb(out)))
+        .unsafeRunSync
+    }
 }
