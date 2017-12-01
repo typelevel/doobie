@@ -7,7 +7,13 @@ package doobie.scalatest
 import cats.effect.{ Effect, IO }
 import doobie.scalatest.formatting.formatReport
 import doobie.util.testing._
-import org.scalatest.matchers.{ Matcher, MatchResult, LazyArg }
+import org.scalatest.matchers.{
+  Matcher,
+  MatcherFactory2,
+  MatchResult,
+  LazyArg
+}
+import scala.reflect.ClassTag
 
 /**
   * Provides matcher syntax for query checking:
@@ -18,25 +24,30 @@ import org.scalatest.matchers.{ Matcher, MatchResult, LazyArg }
   */
 trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
 
-  def typecheck[T](implicit analyzable: Analyzable[T]): Matcher[T] =
-    new Matcher[T] {
-      def apply(t: T): MatchResult = {
-        val args = analyzable.unpack(t)
-        val report = analyzeIO(args, transactor).unsafeRunSync
-
-        MatchResult(
-          report.succeeded,
-          s"${args.typeName} failed to typecheck:\n{}",
-          s"${args.typeName} did typecheck:\n{}",
-          Vector(
-            // Avoid formatting if the check performed as expected
-            LazyArg(()) { _ =>
-              formatReport(args, report).padLeft("  ").toString
-            }
-          )
-        )
-      }
+  val typecheck: MatcherFactory2[Any, Analyzable, ClassTag] =
+    new MatcherFactory2[Any, Analyzable, ClassTag] {
+      override def matcher[T: Analyzable: ClassTag]: Matcher[T] =
+        Matcher(matchTypecheck[T](_))
     }
+
+  private def matchTypecheck[T](t: T)(
+    implicit analyzable: Analyzable[T]
+  ): MatchResult = {
+    val args = analyzable.unpack(t)
+    val report = analyzeIO(args, transactor).unsafeRunSync
+
+    MatchResult(
+      report.succeeded,
+      s"${args.typeName} failed to typecheck:\n{0}",
+      s"${args.typeName} did typecheck:\n{0}",
+      Vector(
+        // Avoid formatting if the check performed as expected
+        LazyArg(()) { _ =>
+          formatReport(args, report).padLeft("  ").toString
+        }
+      )
+    )
+  }
 }
 
 trait IOAnalysisMatchers extends AnalysisMatchers[IO] {

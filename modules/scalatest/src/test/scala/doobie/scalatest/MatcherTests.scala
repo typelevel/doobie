@@ -21,15 +21,15 @@ trait MatcherChecks[M[_]] extends FunSuite
   )
 
   test("valid query should pass") {
-    sql"select 1".query[Int] must typecheck[Query0[Int]]
+    sql"select 1".query[Int] must typecheck
   }
 
   test("malformed sql should fail") {
-    sql"not a valid sql".query[Int].must(not(typecheck[Query0[Int]]))
+    sql"not a valid sql".query[Int].must(not(typecheck))
   }
 
   test("query with mismatched type should fail") {
-    sql"select 'foo'".query[Int].must(not(typecheck[Query0[Int]]))
+    sql"select 'foo'".query[Int].must(not(typecheck))
   }
 }
 
