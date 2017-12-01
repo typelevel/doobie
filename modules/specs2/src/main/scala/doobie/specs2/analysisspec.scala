@@ -7,7 +7,7 @@ package doobie.specs2
 import cats.effect.{ Effect, IO }
 import doobie.imports._
 import doobie.util.analysis._
-import doobie.specs2.util._
+import doobie.util.testing._
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{ Fragment, Fragments }
 import org.specs2.specification.create.{ FormattingFragments => Format }

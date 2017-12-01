@@ -1,4 +1,4 @@
-package doobie.specs2
+package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.{ Effect, IO }
@@ -9,9 +9,10 @@ import doobie.implicits._
 import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
+import scala.Predef.wrapString
 import scala.reflect.runtime.universe.TypeTag
 
-package util {
+package testing {
 
   /**
     * Common base trait for varous checkers and matchers.
@@ -113,7 +114,10 @@ package util {
   }
 }
 
-package object util {
+/**
+  * Common utilities for query testing
+  */
+package object testing {
 
   def analyze(args: AnalysisArgs): ConnectionIO[AnalysisReport] =
     args.analysis.attempt
@@ -135,9 +139,8 @@ package object util {
   private val packagePrefix = "\\b[a-z]+\\.".r
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def typeName[A](typeName: TypeTag[A]): String =
-    packagePrefix.replaceAllIn(typeName.tpe.toString, "")
-
+  def typeName[A](tag: TypeTag[A]): String =
+    packagePrefix.replaceAllIn(tag.tpe.toString, "")
 
   private def alignmentErrorsToBlock(
     es: NonEmptyList[AlignmentError]

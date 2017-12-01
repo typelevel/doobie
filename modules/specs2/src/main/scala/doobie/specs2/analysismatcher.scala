@@ -2,7 +2,7 @@ package doobie.specs2
 
 import cats.effect.{ Effect, IO }
 import doobie.util.pretty._
-import doobie.specs2.util.{
+import doobie.util.testing.{
   AnalysisReport,
   Analyzable,
   analyzeIO,
