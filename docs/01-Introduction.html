@@ -63,7 +63,9 @@ $
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.12.4"</span> <span class="c1">// Scala 2.11/12
 </span>
-<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.0-M9"</span>
+<span class="n">scalacOptions</span> <span class="o">+=</span> <span class="s">"-Ypartial-unification"</span> <span class="c1">// 2.11.9+
+</span>
+<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.0-M10"</span>
 
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
   <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>     <span class="o">%</span> <span class="n">doobieVersion</span><span class="o">,</span>
@@ -72,6 +74,7 @@ $
 <span class="o">)</span>
 </code></pre>
 </div>
+<p>Partial unification is a type inference bug fix that makes working with functional code significantly easier. Please see the Cats <a href="https://github.com/typelevel/cats#getting-started">Readme</a> for more info.</p>
 
 <p>If you are not using PostgreSQL you can omit <code class="highlighter-rouge">doobie-postgres</code> and will need to add the appropriate JDBC driver as a dependency. Note that there is a <code class="highlighter-rouge">doobie-h2</code> add-on if you happen to be using <a href="http://www.h2database.com/">H2</a>.</p>
 
