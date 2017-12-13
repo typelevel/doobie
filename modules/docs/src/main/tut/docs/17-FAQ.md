@@ -268,7 +268,7 @@ def string(name: String): Meta[String] =
     _.updateString(_, _)
   )
 
-sealed case class NonEmptyString(value: String)
+case class NonEmptyString(value: String)
 
 // If the domain for NonEmptyStrings is nes
 implicit val nesMeta: Meta[NonEmptyString] =
