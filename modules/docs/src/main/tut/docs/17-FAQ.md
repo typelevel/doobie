@@ -257,7 +257,7 @@ Domains with check constraints will type check as DISTINCT. For Doobie later tha
 ```tut:silent
 import cats.data.NonEmptyList
 import doobie.imports._
-import doobie.enum.jdbctype.{Distinct => JdbcDistinct, _}
+import doobie.enum.JdbcType.{Distinct => JdbcDistinct, _}
 
 def string(name: String): Meta[String] =
   Meta.advanced(
