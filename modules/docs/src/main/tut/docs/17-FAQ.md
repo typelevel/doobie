@@ -26,10 +26,8 @@ val y = xa.yolo; import y._
 
 Not much, sadly. Neither Scala's presentation compiler (used by Scala-IDE and ENSIME) nor Intellij's custom typechecker can deal with shapeless `ProductArgs` which is used by the `sql` and `fr/fr0` interpolators.
 
-There are open issues for IntelliJ that you can vote up if you like.
-
-- [SCL-10091](https://youtrack.jetbrains.com/issue/SCL-10091)
-- [SCL-10928](https://youtrack.jetbrains.com/issue/SCL-10928)
+There is an open issue for IntelliJ that you can vote up if you like, 
+[SCL-10928](https://youtrack.jetbrains.com/issue/SCL-10928).
 
 It has been [reported](https://github.com/tpolecat/doobie/issues/508) that `-Ymacro-expand:none` improves the behavior of Scala-IDE, so you might investigate that (and please comment on the issue with your experience).
 
