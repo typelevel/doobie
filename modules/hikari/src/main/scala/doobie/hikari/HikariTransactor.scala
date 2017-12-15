@@ -8,6 +8,7 @@ package hikari
 import cats.effect.Async
 import cats.implicits._
 import com.zaxxer.hikari.HikariDataSource
+import fs2.Stream
 
 object HikariTransactor {
 
@@ -32,5 +33,8 @@ object HikariTransactor {
         ds setPassword pass
       }
     } yield t
+
+  def stream[M[_]: Async](driverClassName: String, url: String, user: String, pass: String) : Stream[M, HikariTransactor[M]] =
+    Stream.bracket(apply(driverClassName, url, user, pass))(Stream.emit(_), _.configure(_.close))
 
 }
