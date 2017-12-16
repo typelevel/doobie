@@ -5,6 +5,7 @@
 package example
 
 import java.sql.Connection
+import scala.util.control.NonFatal
 
 import cats.data._
 import cats.effect._
@@ -54,7 +55,9 @@ object StreamingCopy {
       def oops(t: Throwable) = evalS(sinkXA.strategy.oops <* FC.raiseError(t))
 
       // And construct our final stream.
-      (before ++ source.transact(sourceXA).flatMap(sinkʹ) ++ after).onError(oops)
+      (before ++ source.transact(sourceXA).flatMap(sinkʹ) ++ after).onError {
+        case NonFatal(e) => oops(e)
+      }
 
     }
 

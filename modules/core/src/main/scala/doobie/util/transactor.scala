@@ -21,6 +21,8 @@ import fs2.Stream.{ eval, eval_ }
 import java.sql.{ Connection, DriverManager }
 import javax.sql.DataSource
 
+import scala.util.control.NonFatal
+
 object transactor  {
 
   import doobie.free.connection.AsyncConnectionIO
@@ -50,12 +52,16 @@ object transactor  {
 
     /** Natural transformation that wraps a `ConnectionIO` program. */
     val wrap = λ[ConnectionIO ~> ConnectionIO] { ma =>
-      (before *> ma <* after) onError oops guarantee always
+      (before *> ma <* after)
+        .onError { case NonFatal(_) => oops }
+        .guarantee(always)
     }
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
     val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
-        (before.p ++ pa ++ after.p) onError { e => oops.p ++ eval_(delay(throw e)) } onFinalize always
+      (before.p ++ pa ++ after.p)
+        .onError { case NonFatal(e) => oops.p ++ eval_(delay(throw e)) }
+        .onFinalize(always)
     }
 
     /**
@@ -68,7 +74,9 @@ object transactor  {
         val afterʹ  = after  foldMap interp
         val oopsʹ   = oops   foldMap interp
         val alwaysʹ = always foldMap interp
-        (beforeʹ *> ka <* afterʹ) onError oopsʹ guarantee alwaysʹ
+        (beforeʹ *> ka <* afterʹ)
+          .onError { case NonFatal(_) => oopsʹ }
+          .guarantee(alwaysʹ)
       }
 
   }
@@ -130,8 +138,8 @@ object transactor  {
      * compatible `Transactor`s via implicit conversion.
      * @group Configuration
      */
-    def configure[B](f: A => B)(implicit ev: Sync[M]): M[B] =
-      ev.delay(f(kernel))
+    def configure[B](f: A => M[B]): M[B] =
+      f(kernel)
 
     /**
      * Natural transformation equivalent to `exec` that does not use the provided `Strategy` and

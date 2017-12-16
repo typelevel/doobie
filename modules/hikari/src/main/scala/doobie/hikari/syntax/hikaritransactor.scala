@@ -10,7 +10,7 @@ import cats.effect.Sync
 
 final class HikariTransactorOps[M[_]: Sync](xa: HikariTransactor[M]) {
   /** A program that shuts down this `HikariTransactor`. */
-  val shutdown: M[Unit] = xa.configure(_.close)
+  val shutdown: M[Unit] = xa.configure(ds => Sync[M].delay(ds.close))
 }
 
 trait ToHikariTransactorOps {
