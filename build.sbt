@@ -414,7 +414,7 @@ lazy val docs = project
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
-    scalacOptions in (Compile, console) += "-Xfatal-warnings", // turn this back on for tut
+    scalacOptions in Tut --= Seq("-Ywarn-unused:imports", "-Yno-imports"),
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
