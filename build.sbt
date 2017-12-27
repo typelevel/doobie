@@ -6,7 +6,7 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.0.0"
-lazy val circeVersion         = "0.9.0-M2"
+lazy val circeVersion         = "0.9.0-M3"
 lazy val fs2CoreVersion       = "0.10.0-M10"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.4"
@@ -14,7 +14,7 @@ lazy val kindProjectorVersion = "0.9.5"
 lazy val monixVersion         = "2.3.2"
 lazy val postGisVersion       = "2.2.1"
 lazy val postgresVersion      = "42.1.4"
-lazy val refinedVersion       = "0.8.5"
+lazy val refinedVersion       = "0.8.6"
 lazy val scalaCheckVersion    = "1.13.5"
 lazy val scalatestVersion     = "3.0.4"
 lazy val shapelessVersion     = "2.3.2"
@@ -133,7 +133,7 @@ lazy val commonSettings =
   Seq(
 
     // These sbt-header settings can't be set in ThisBuild for some reason
-    headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.CppStyleLineComment),
+    headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
     headerLicense  := Some(HeaderLicense.Custom(
       """|Copyright (c) 2013-2017 Rob Norris
          |This software is licensed under the MIT License (MIT).
