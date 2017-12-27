@@ -2,7 +2,7 @@
 layout: page
 title:  "infographic"
 section: "infographic"
-position: 2
+position: 3
 ---
 
 # doobie infographic

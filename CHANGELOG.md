@@ -6,28 +6,29 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.5.0"></a>Work in Progress for Version 0.5.0
 
-This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). It will remain as a milestone-only release until cats 1.0.0 and fs2 0.10 final, and will track updates to those libraries. Notable changes thus far:
+This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). This is a big release that will make life much simpler for people who were using 0.4.x with cats. See the **migration** document on the microsite for more information.
+
+**Many thanks** to Andreas Svanberg, Bjørn Madsen, Christopher Davenport, Dale Wijnand, Devin Ekins, Earl St Sauver, Frank S. Thomas, Hossam Karim, Jisoo Park, Keir Lawson, Mads Hartmann, Rob Norris, Stephen Lazaro, Fabio Labella, sh0hei, tgalappathth, and x1- for their contributions to this release!
+
+Notable changes:
 
 ##### Cats Standardization
 
 - 🎵 *Ding, dong the yax is dead!* 🎵 The new codebase is based on the cats output. All import renames have been resolved to cats names.
-- The `-cats` segment of the artifact names is gone now. `doobie-core` uses cats now, as does everything else.
+- The `-cats` segment of artifact names is gone. `doobie-core` uses cats now, as does everything else.
 
 ##### API Changes
 
 - Rather than `foo.imports._` for both names and implicits, there are now distinct imports `foo._, foo.implicits._`. The old `foo.imports._` still works but is deprecated.
 - Syntax classes are now organized as in cats. Much cleaner but end users probably won't notice.
--  `Composite[A]` now implies `Composite[Option[A]]` which is a very useful change. It means joins can be expressed much more easily. See `Join.scala` in the `example` project.
+- `Composite[A]` now implies `Composite[Option[A]]` which is a very useful change. It means joins can be expressed much more easily. See `Join.scala` in the `example` project.
 
 ##### Project Structure, Build, Etc.
 
-- The doc has been ported to [sbt-microsites](https://github.com/47deg/sbt-microsites) and is undergoing review (help wanted!).
+- The doc has been ported to [sbt-microsites](https://github.com/47deg/sbt-microsites).
 - `FreeGen2` code generator now generates all effect types with `cats.effect.Async` instances, in preparation for transactors that can make use of distinct thread pools for certain operations (JDBC primitives for instance). Free algebras and interpreters for Postgres are also generated now.
 - Added [WartRemover](http://www.wartremover.org/) finally.
-- The release process is somewhat better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.
-- Updated to sbt 1.0.3.
-
-
+- The release process is much better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.
 
 ### <a name="0.4.4"></a>New and Noteworthy for Version 0.4.4
 
