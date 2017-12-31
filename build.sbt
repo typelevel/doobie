@@ -5,7 +5,7 @@ import microsites._
 resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "1.0.0"
+lazy val catsVersion          = "1.0.1"
 lazy val circeVersion         = "0.9.0-M3"
 lazy val fs2CoreVersion       = "0.10.0-M10"
 lazy val h2Version            = "1.4.196"
@@ -17,7 +17,7 @@ lazy val postgresVersion      = "42.1.4"
 lazy val refinedVersion       = "0.8.6"
 lazy val scalaCheckVersion    = "1.13.5"
 lazy val scalatestVersion     = "3.0.4"
-lazy val shapelessVersion     = "2.3.2"
+lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.4"
 lazy val specs2Version        = "4.0.2"
 lazy val scala211Version      = "2.11.11"
