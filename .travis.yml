@@ -50,6 +50,8 @@ cache:
   - $HOME/.sbt/launchers
   - $HOME/.ivy2
   - $HOME/.coursier
+  - $HOME/.rvm/
+  - vendor/bundle
 
 before_cache:
   - du -h -d 1 $HOME/.ivy2/
