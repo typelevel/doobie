@@ -172,7 +172,7 @@ And just for fun, since the `Code` values are constructed from the primary key, 
 
 ### Final Streaming
 
-In the examples above we construct a `Stream[ConnectionIO, A]` and discharge it via `.list` (which is just shorthand for `.runLog.map(_.toList)`), yielding a `ConnectionIO[List[A]]` which eventually becomes a `IO[List[A]]`. So the construction and execution of the `Stream` is entirely internal to the **doobie** program.
+In the examples above we construct a `Stream[ConnectionIO, A]` and discharge it via `.list` (which is just shorthand for `.compile.toList`), yielding a `ConnectionIO[List[A]]` which eventually becomes a `IO[List[A]]`. So the construction and execution of the `Stream` is entirely internal to the **doobie** program.
 
 However in some cases a stream is what we want as our "top level" type. For example, [http4s](https://github.com/http4s/http4s) can use a `Stream[IO, A]` directly as a response type, which could allow us to stream a resultset directly to the network socket. We can achieve this in **doobie** by calling `transact` directly on the `Stream[ConnectionIO, A]`.
 
@@ -184,7 +184,7 @@ val p = {
     .transact(xa)    // Stream[IO, Country]
  }
 
-p.take(5).runLog.unsafeRunSync.foreach(println)
+p.take(5).compile.toVector.unsafeRunSync.foreach(println)
 ```
 
 
