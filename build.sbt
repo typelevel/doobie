@@ -7,7 +7,7 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.0.1"
 lazy val circeVersion         = "0.9.0"
-lazy val fs2CoreVersion       = "0.10.0-M10"
+lazy val fs2CoreVersion       = "0.10.0-M11"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.4"
 lazy val kindProjectorVersion = "0.9.5"
@@ -20,7 +20,7 @@ lazy val scalatestVersion     = "3.0.4"
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.4"
 lazy val specs2Version        = "4.0.2"
-lazy val scala211Version      = "2.11.11"
+lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.4"
 
 // Our set of warts
