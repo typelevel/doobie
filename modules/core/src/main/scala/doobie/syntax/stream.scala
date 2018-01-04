@@ -9,15 +9,16 @@ import doobie.free.connection.ConnectionIO
 
 import scala.Predef.=:=
 
-import cats.effect.{ Effect, Sync }
+import cats.Monad
+import cats.effect.Sync
 import cats.implicits._
 import fs2.Stream
 
-class StreamOps[F[_]: Sync, A](fa: Stream[F, A]) {
-  def vector: F[Vector[A]] = fa.runLog.map(_.toVector)
-  def list: F[List[A]] = fa.runLog.map(_.toList)
-  def sink(f: A => F[Unit]): F[Unit] = fa.evalMap(f).run
-  def transact[M[_]: Effect](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
+class StreamOps[F[_], A](fa: Stream[F, A]) {
+  def vector(implicit ev: Sync[F]): F[Vector[A]] = fa.runLog.map(_.toVector)
+  def list(implicit ev: Sync[F]): F[List[A]] = fa.runLog.map(_.toList)
+  def sink(f: A => F[Unit])(implicit ev: Sync[F]): F[Unit] = fa.evalMap(f).run
+  def transact[M[_]: Monad](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
 }
 
 trait ToStreamOps {
