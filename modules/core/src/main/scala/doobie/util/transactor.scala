@@ -14,7 +14,7 @@ import cats.{ Monad, MonadError, ~> }
 import cats.data.Kleisli
 import cats.free.Free
 import cats.implicits._
-import cats.effect.{ Effect, Sync, Async }
+import cats.effect.{ Sync, Async }
 import fs2.Stream
 import fs2.Stream.{ eval, eval_ }
 
@@ -176,7 +176,7 @@ object transactor  {
     def trans(implicit ev: Monad[M]): ConnectionIO ~> M =
       strategy.wrap andThen rawTrans
 
-    def rawTransP(implicit ev: Effect[M]) = λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { pa =>
+    def rawTransP(implicit ev: Monad[M]) = λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { pa =>
       // TODO: this can almost certainly be simplified
 
       // Natural transformation by Kleisli application.
@@ -194,7 +194,7 @@ object transactor  {
 
      }
 
-    def transP(implicit ev: Effect[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
+    def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       strategy.wrapP andThen rawTransP
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
