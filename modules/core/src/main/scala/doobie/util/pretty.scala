@@ -4,6 +4,7 @@
 
 package doobie.util
 
+import cats.Monoid
 import scala.annotation.tailrec
 import scala.Predef._
 
@@ -30,6 +31,8 @@ object pretty {
       Block((lines.map(_.padTo(width, ' ')).padTo(h, " " * width), (other.lines.padTo(h, ""))).zipped.map(_ + padding + _))
     }
 
+    def padLeft(padding: String): Block = Block.empty.leftOfP(this, padding)
+
     def above(other: Block): Block =
       Block(lines ++ other.lines)
 
@@ -42,6 +45,19 @@ object pretty {
     def trimLeft(n: Int): Block =
       Block(lines.map(_ drop n))
 
+    def wrap(cols: Int): Block =
+      Block(lines.flatMap(pretty.wrap(cols)))
+  }
+
+  object Block {
+    val empty = Block(Nil)
+    def fromString(s: String) = Block(List(s))
+    def fromLines(s: String) = Block(s.lines.toList)
+
+    implicit val BlockMonoid: Monoid[Block] = new Monoid[Block] {
+      def empty = Block.empty
+      def combine(a: Block, b: Block) = a.above(b)
+    }
   }
 
   def wrap(cols: Int)(s: String): List[String] = {
