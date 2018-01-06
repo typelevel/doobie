@@ -43,8 +43,10 @@ trait Instances {
   //   org.postgresql.jdbc4.AbstractJdbc4ResultSet.internalGetObject(AbstractJdbc4ResultSet.java:300)
   //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.getObject(AbstractJdbc2ResultSet.java:2704)
 
-  // Interval Type (TODO)
-  // implicit val PGIntervalType = Meta.other[PGInterval]
+  // Interval Type
+  // There is no natural mapping to java.time types (https://github.com/tpolecat/doobie/pull/315)
+  // so we provide the bare mapping and leave it at that.
+  implicit val PGIntervalType = Meta.other[PGInterval]("interval")
 
   // UUID
   implicit val UuidType = Meta.other[UUID]("uuid")

@@ -26,10 +26,8 @@ val y = xa.yolo; import y._
 
 Not much, sadly. Neither Scala's presentation compiler (used by Scala-IDE and ENSIME) nor Intellij's custom typechecker can deal with shapeless `ProductArgs` which is used by the `sql` and `fr/fr0` interpolators.
 
-There are open issues for IntelliJ that you can vote up if you like.
-
-- [SCL-10091](https://youtrack.jetbrains.com/issue/SCL-10091)
-- [SCL-10928](https://youtrack.jetbrains.com/issue/SCL-10928)
+There is an open issue for IntelliJ that you can vote up if you like, 
+[SCL-10928](https://youtrack.jetbrains.com/issue/SCL-10928).
 
 It has been [reported](https://github.com/tpolecat/doobie/issues/508) that `-Ymacro-expand:none` improves the behavior of Scala-IDE, so you might investigate that (and please comment on the issue with your experience).
 
@@ -249,3 +247,30 @@ implicit val XmlMeta: Meta[Elem] =
 ## How do I set the chunk size for streaming results?
 
 By default streams constructed with the `sql` interpolator are fetched `Query.DefaultChunkSize` rows at a time (currently 512). If you wish to change this chunk size you can use `processWithChunkSize` for queries, and `withGeneratedKeysWithChunkSize` for updates that return results.
+
+## My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?
+
+Domains with check constraints will type check as DISTINCT. For Doobie later than 0.4.4, in order to get the type checks to pass, you can define a `Meta` of with target type Distinct and `xmap` that instances. For example,
+
+```tut:silent
+import cats.data.NonEmptyList
+import doobie._
+import doobie.enum.JdbcType.{Distinct => JdbcDistinct, _}
+
+object distinct {
+def string(name: String): Meta[String] =
+  Meta.advanced(
+    NonEmptyList.of(JdbcDistinct, VarChar),
+    NonEmptyList.of(name),
+    _ getString _,
+    _.setString(_, _),
+    _.updateString(_, _)
+  )
+
+case class NonEmptyString(value: String)
+
+// If the domain for NonEmptyStrings is nes
+implicit val nesMeta: Meta[NonEmptyString] =
+  string("nes").xmap(NonEmptyString.apply, _.value)
+  }
+```

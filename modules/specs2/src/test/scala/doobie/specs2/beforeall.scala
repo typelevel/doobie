@@ -19,7 +19,7 @@ object beforeall extends Specification with IOChecker with BeforeAll {
 
   val targetQ = sql"select value from some_table".query[String]
 
-  val transactor = H2Transactor[IO](
+  val transactor = H2Transactor.newH2Transactor[IO](
     "jdbc:h2:mem:",
     "sa",
     ""
