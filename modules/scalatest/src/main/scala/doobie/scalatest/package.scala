@@ -11,6 +11,8 @@ package object scalatest {
 
     type Checker[M[_]] = scalatest.Checker[M]
     type IOChecker     = scalatest.IOChecker
+    type AnalysisMatchers[M[_]] = scalatest.AnalysisMatchers[M]
+    type IOAnalysisMatchers = scalatest.IOAnalysisMatchers
 
     @deprecated("Use IOChecker.", "0.4.2")
     type QueryChecker = IOChecker
