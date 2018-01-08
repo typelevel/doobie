@@ -30,7 +30,7 @@ object processspec extends Specification with ScalaCheck {
           h
         }
       }
-      val result = repeatEvalChunks(fa).runLog.unsafeRunSync
+      val result = repeatEvalChunks(fa).compile.toVector.unsafeRunSync
       result must_== data
     }
 
