@@ -66,9 +66,14 @@ object composite {
       }
 
     /** Product of two Composites. */
+    @deprecated(message = "Use `product`", since = "0.5.0")
     def zip[B](cb: Composite[B]): Composite[(A, B)] =
+      product(cb)
+
+    /** Product of two Composites. */
+    def product[B](cb: Composite[B]): Composite[(A, B)] =
       new Composite[(A, B)] {
-        val kernel = c.kernel.zip(cb.kernel)
+        val kernel = c.kernel.product(cb.kernel)
         val meta   = c.meta ++ cb.meta
         val toList = (p: (A, B)) => c.toList(p._1) ++ cb.toList(p._2)
       }
@@ -88,7 +93,7 @@ object composite {
     implicit val compositeSemigroupal: Semigroupal[Composite] =
       new Semigroupal[Composite] {
         def product[A, B](a: Composite[A], b: Composite[B]): Composite[(A, B)] =
-          a.zip(b)
+          a.product(b)
       }
 
     implicit val unitComposite: Composite[Unit] =

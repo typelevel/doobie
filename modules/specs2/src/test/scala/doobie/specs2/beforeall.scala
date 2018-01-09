@@ -30,7 +30,7 @@ object beforeall extends Specification with IOChecker with BeforeAll {
 
   // A hook for database initialization
   def beforeAll() = {
-    initQ.run
+    initQ.compile
       .transact(transactor)
       .unsafeRunSync
     ()

@@ -25,7 +25,7 @@ val y = xa.yolo; import y._
 
 It is uncommon to define database structures at runtime, but **doobie** handles it just fine and treats such operations like any other kind of update. And it happens to be useful here!
 
-Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count.
+Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.compile` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count.
 
 ```tut:silent
 val drop: Update0 =
@@ -46,7 +46,7 @@ val create: Update0 =
 We can compose these and run them together.
 
 ```tut
-(drop.run *> create.run).transact(xa).unsafeRunSync
+(drop.compile *> create.compile).transact(xa).unsafeRunSync
 ```
 
 
@@ -63,7 +63,7 @@ def insert1(name: String, age: Option[Short]): Update0 =
 Let's insert a few rows.
 
 ```tut
-insert1("Alice", Some(12)).run.transact(xa).unsafeRunSync
+insert1("Alice", Some(12)).compile.transact(xa).unsafeRunSync
 insert1("Bob", None).quick.unsafeRunSync // switch to YOLO mode
 ```
 
@@ -95,7 +95,7 @@ When we insert we usually want the new row back, so let's do that. First we'll d
 ```tut:silent
 def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
   for {
-    _  <- sql"insert into person (name, age) values ($name, $age)".update.run
+    _  <- sql"insert into person (name, age) values ($name, $age)".update.compile
     id <- sql"select lastval()".query[Long].unique
     p  <- sql"select id, name, age from person where id = $id".query[Person].unique
   } yield p
@@ -146,7 +146,7 @@ val up = {
 }
 ```
 
-Running this process updates all rows with a non-`NULL` age and returns them.
+Running this stream updates all rows with a non-`NULL` age and returns them.
 
 ```tut
 up.quick.unsafeRunSync
@@ -155,7 +155,7 @@ up.quick.unsafeRunSync // and again!
 
 ### Batch Updates
 
-**doobie** supports batch updating via the `updateMany` and `updateManyWithGeneratedKeys` operations on the `Update` data type (which we haven't seen before). An `Update0`, which is the type of an `sql"..."` expression, represents a parameterized statement where the arguments are known. An `Update[A]` is more general, and represents a parameterized statement where the composite argument of type `A` is *not* known.
+**doobie** supports batch updating via the `compileMany` and `compileManyWithGeneratedKeys` operations on the `Update` data type (which we haven't seen before). An `Update0`, which is the type of an `sql"..."` expression, represents a parameterized statement where the arguments are known. An `Update[A]` is more general, and represents a parameterized statement where the composite argument of type `A` is *not* known.
 
 ```tut:silent
 // Given some values ...
@@ -165,7 +165,7 @@ val a = 1; val b = "foo"
 sql"... $a $b ..."
 
 // is syntactic sugar for this one, which is an Update applied to (a, b)
-Update[(Int, String)]("... ? ? ...").run((a, b))
+Update[(Int, String)]("... ? ? ...").compile((a, b))
 ```
 
 By using an `Update` directly we can apply *many* sets of arguments to the same statement, and execute it as a single batch operation.
@@ -175,7 +175,7 @@ type PersonInfo = (String, Option[Short])
 
 def insertMany(ps: List[PersonInfo]): ConnectionIO[Int] = {
   val sql = "insert into person (name, age) values (?, ?)"
-  Update[PersonInfo](sql).updateMany(ps)
+  Update[PersonInfo](sql).compileMany(ps)
 }
 
 // Some rows to insert
@@ -190,14 +190,14 @@ Running this program yields the number of updated rows.
 insertMany(data).quick.unsafeRunSync
 ```
 
-For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
+For databases that support it (such as PostgreSQL) we can use `compileManyWithGeneratedKeys` to return a stream of updated rows.
 
 ```tut:silent
 import fs2.Stream
 
 def insertMany2(ps: List[PersonInfo]): Stream[ConnectionIO, Person] = {
   val sql = "insert into person (name, age) values (?, ?)"
-  Update[PersonInfo](sql).updateManyWithGeneratedKeys[Person]("id", "name", "age")(ps)
+  Update[PersonInfo](sql).compileManyWithGeneratedKeys[Person]("id", "name", "age")(ps)
 }
 
 // Some rows to insert

@@ -93,8 +93,8 @@ cities(Code("USA"), true).check.unsafeRunSync
 And it works!
 
 ```tut
-cities(Code("USA"), true).process.take(5).quick.unsafeRunSync
-cities(Code("USA"), false).process.take(5).quick.unsafeRunSync
+cities(Code("USA"), true).stream.take(5).quick.unsafeRunSync
+cities(Code("USA"), false).stream.take(5).quick.unsafeRunSync
 ```
 
 ### How do I handle outer joins?
@@ -120,7 +120,7 @@ val join: Query0[(Country, Option[City])] =
 Some examples, filtered for size.
 
 ```tut
-join.process.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
+join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
 ```
 
 ### How do I resolve `error: Could not find or construct Param[...]`?
@@ -246,7 +246,7 @@ implicit val XmlMeta: Meta[Elem] =
 
 ## How do I set the chunk size for streaming results?
 
-By default streams constructed with the `sql` interpolator are fetched `Query.DefaultChunkSize` rows at a time (currently 512). If you wish to change this chunk size you can use `processWithChunkSize` for queries, and `withGeneratedKeysWithChunkSize` for updates that return results.
+By default streams constructed with the `sql` interpolator are fetched `Query.DefaultChunkSize` rows at a time (currently 512). If you wish to change this chunk size you can use `streamWithChunkSize` for queries, and `withGeneratedKeysWithChunkSize` for updates that return results.
 
 ## My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?
 

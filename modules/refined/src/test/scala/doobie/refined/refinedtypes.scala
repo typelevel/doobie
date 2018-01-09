@@ -87,8 +87,8 @@ object refinedtypes extends Specification {
 
     def insertOptionalPositiveInt(v: Option[PositiveInt]) = {
       val queryRes = for {
-        _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value INT)", None).run
-        _  <- sql"INSERT INTO TEST VALUES ($v)".update.run
+        _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value INT)", None).compile
+        _  <- sql"INSERT INTO TEST VALUES ($v)".update.compile
       } yield ()
       queryRes.transact(xa).unsafeRunSync
     }

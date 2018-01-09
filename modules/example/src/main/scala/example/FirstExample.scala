@@ -73,19 +73,19 @@ object FirstExample {
   object DAO {
 
     def coffeesLessThan(price: Double): Stream[ConnectionIO, (String, String)] =
-      Queries.coffeesLessThan(price).process
+      Queries.coffeesLessThan(price).stream
 
     def insertSuppliers(ss: List[Supplier]): ConnectionIO[Int] =
-      Queries.insertSupplier.updateMany(ss) // bulk insert (!)
+      Queries.insertSupplier.compileMany(ss) // bulk insert (!)
 
     def insertCoffees(cs: List[Coffee]): ConnectionIO[Int] =
-      Queries.insertCoffee.updateMany(cs)
+      Queries.insertCoffee.compileMany(cs)
 
     def allCoffees: Stream[ConnectionIO, Coffee] =
-      Queries.allCoffees.process
+      Queries.allCoffees.stream
 
     def create: ConnectionIO[Unit] =
-      Queries.create.run.void
+      Queries.create.compile.void
 
   }
 
