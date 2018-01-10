@@ -91,7 +91,7 @@ Each page begins with some imports, like this.
 
 ```tut:silent
 import cats._, cats.data._, cats.implicits._
-import doobie.imports._
+import doobie._
 ```
 
 After that there is text interspersed with code examples. Sometimes definitions will stand alone.
