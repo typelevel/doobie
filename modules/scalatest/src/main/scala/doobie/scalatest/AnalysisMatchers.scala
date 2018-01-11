@@ -51,5 +51,5 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
 }
 
 trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
-  implicit val M: Effect[IO] = implicitly
+  implicit val M: Effect[IO] = IO.ioEffect
 }

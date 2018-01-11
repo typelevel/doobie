@@ -87,6 +87,6 @@ object analysisspec {
 
   /** Implementation of Checker[IO] */
   trait IOChecker extends Checker[IO] { this: Specification =>
-    val M: Effect[IO] = implicitly
+    val M: Effect[IO] = IO.ioEffect
   }
 }
