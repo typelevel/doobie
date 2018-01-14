@@ -9,6 +9,7 @@ import cats.data.NonEmptyList
 import doobie.enum.JdbcType
 import doobie.util.meta.Meta
 import java.sql.{ PreparedStatement, ResultSet }
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }
 
 sealed abstract class Put[A](
@@ -167,10 +168,19 @@ object Put extends PutInstances {
 
 trait PutInstances {
 
+  /** @group Instances */
   implicit val ContravariantPut: Contravariant[Put] =
     new Contravariant[Put] {
       def contramap[A, B](fa: Put[A])(f: B => A): Put[B] =
         fa.contramap(f)
     }
+
+  /** @group Instances */
+  implicit def ArrayTypeAsListGet[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[List[A]] =
+    ev.tcontramap(_.toArray)
+
+  /** @group Instances */
+  implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
+    ev.tcontramap(_.toArray)
 
 }

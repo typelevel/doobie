@@ -161,11 +161,21 @@ object Get extends GetInstances {
 }
 
 trait GetInstances {
+  import Predef._ // for array ops
 
+  /** @group Instances */
   implicit val FunctorPut: Functor[Get] =
     new Functor[Get] {
       def map[A, B](fa: Get[A])(f: A => B): Get[B] =
         fa.map(f)
     }
+
+  /** @group Instances */
+  implicit def ArrayTypeAsListGet[A: ClassTag: TypeTag](implicit ev: Get[Array[A]]): Get[List[A]] =
+    ev.tmap(_.toList)
+
+  /** @group Instances */
+  implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeTag](implicit ev: Get[Array[A]]): Get[Vector[A]] =
+    ev.tmap(_.toVector)
 
 }

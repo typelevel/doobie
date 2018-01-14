@@ -10,7 +10,6 @@ import cats.{ Invariant => InvariantFunctor }
 import doobie.enum.Nullability._
 import doobie.free._
 import doobie.util.kernel.Kernel
-import doobie.util.meta.Meta
 
 import java.sql.{ PreparedStatement, ResultSet }
 
@@ -39,10 +38,8 @@ object composite {
     private[composite] val kernel: Kernel[A]
     final lazy val length: Int = kernel.width
 
-    val meta: List[(Meta[_], NullabilityKnown)]
-
-    def gets: List[(Get[_], NullabilityKnown)] = meta.map { case (a, b) => (a.get, b) }
-    def puts: List[(Put[_], NullabilityKnown)] = meta.map { case (a, b) => (a.put, b) }
+    def gets: List[(Get[_], NullabilityKnown)]
+    def puts: List[(Put[_], NullabilityKnown)]
 
     /** Flatten the composite into its untyped constituents. This is only useful for logging. */
     val toList: A => List[Any]
@@ -65,7 +62,8 @@ object composite {
     def imap[B](f: A => B)(g: B => A): Composite[B] =
       new Composite[B] {
         val kernel = c.kernel.imap(f)(g)
-        val meta   = c.meta
+        val gets   = c.gets
+        val puts   = c.puts
         val toList = (b: B) => c.toList(g(b))
       }
 
@@ -73,7 +71,8 @@ object composite {
     def zip[B](cb: Composite[B]): Composite[(A, B)] =
       new Composite[(A, B)] {
         val kernel = c.kernel.zip(cb.kernel)
-        val meta   = c.meta ++ cb.meta
+        val gets   = c.gets ++ cb.gets
+        val puts   = c.puts ++ cb.puts
         val toList = (p: (A, B)) => c.toList(p._1) ++ cb.toList(p._2)
       }
 
@@ -128,7 +127,8 @@ object composite {
           val update  = P.unsafeUpdateNonNullable _
           val width   = 1
         }
-        val meta   = Nil // List((A, NoNulls))
+        val gets   = List((G, NoNulls))
+        val puts   = List((P, NoNulls))
         val toList = (a: A) => List(a)
       }
 
@@ -144,7 +144,8 @@ object composite {
           val update  = P.unsafeUpdateNullable _
           val width   = 1
         }
-        val meta   = Nil //List((A, Nullable))
+        val gets   = List((G, Nullable))
+        val puts   = List((P, Nullable))
         val toList = (a: Option[A]) => List(a)
       }
 
@@ -155,7 +156,8 @@ object composite {
     ): Composite[FieldType[K, H] :: T] =
       new Composite[FieldType[K, H] :: T] {
         val kernel = Kernel.record(H.value.kernel, T.value.kernel): Kernel[FieldType[K,H] :: T] // ascription necessary in 2.11 for some reason
-        val meta   = H.value.meta ++ T.value.meta
+        val gets   = H.value.gets ++ T.value.gets
+        val puts   = H.value.puts ++ T.value.puts
         val toList = (l: FieldType[K, H] :: T) => H.value.toList(l.head) ++ T.value.toList(l.tail)
       }
 
@@ -172,14 +174,16 @@ object composite {
     ): Composite[H :: T] =
       new Composite[H :: T] {
         val kernel = Kernel.hcons(H.value.kernel, T.value.kernel)
-        val meta   = H.value.meta ++ T.value.meta
+        val gets   = H.value.gets ++ T.value.gets
+        val puts   = H.value.puts ++ T.value.puts
         val toList = (l: H :: T) => H.value.toList(l.head) ++ T.value.toList(l.tail)
       }
 
     implicit def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
         val kernel = Kernel.hnil
-        val meta   = Nil
+        val gets   = Nil
+        val puts   = Nil
         val toList = (_: HNil) => Nil
       }
 
@@ -193,7 +197,8 @@ object composite {
     implicit val ohnil: Composite[Option[HNil]] =
       new Composite[Option[HNil]] {
         val kernel = Kernel.ohnil
-        val meta   = Nil
+        val gets   = Nil
+        val puts   = Nil
         val toList = (_: Option[HNil]) => Nil
       }
 
@@ -204,7 +209,8 @@ object composite {
     ): Composite[Option[H :: T]] =
       new Composite[Option[H :: T]] {
         val kernel = Kernel.ohcons1(H.value.kernel, T.value.kernel)
-        val meta   = H.value.meta ++ (T.value.meta, n)._1 // just to fix the unused implicit warning for `n`
+        val gets   = H.value.gets ++ (T.value.gets, n)._1 // just to fix the unused implicit warning for `n`
+        val puts   = H.value.puts ++ (T.value.puts, n)._1 // just to fix the unused implicit warning for `n`
         val toList = (o: Option[H :: T]) => o match {
           case Some(h :: t) => H.value.toList(Some(h)) ++ T.value.toList(Some(t))
           case None         => H.value.toList(None)    ++ T.value.toList(None)
@@ -217,7 +223,8 @@ object composite {
     ): Composite[Option[Option[H] :: T]] =
       new Composite[Option[Option[H] :: T]] {
         val kernel = Kernel.ohcons2(H.value.kernel, T.value.kernel)
-        val meta   = H.value.meta ++ T.value.meta
+        val gets   = H.value.gets ++ T.value.gets
+        val puts   = H.value.puts ++ T.value.puts
         val toList = (o: Option[Option[H] :: T]) => o match {
           case Some(h :: t) => H.value.toList(h) ++ T.value.toList(Some(t))
           case None         => H.value.toList(None) ++ T.value.toList(None)
@@ -230,7 +237,8 @@ object composite {
     ): Composite[Option[A]] =
       new Composite[Option[A]] {
         val kernel = B.value.kernel.imap(_.map(G.from))(_.map(G.to))
-        val meta   = B.value.meta
+        val gets   = B.value.gets
+        val puts   = B.value.puts
         val toList = (oa: Option[A]) => B.value.toList(oa.map(G.to))
       }
   }
