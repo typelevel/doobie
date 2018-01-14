@@ -18,8 +18,8 @@ trait Instances {
              refType:  RefType[F],
              manifest: TypeTag[F[T,P]]
   ): Meta[F[T, P]] =
-    metaT.xmap[F[T,P]](
-      refineType[T,P,F],
+    metaT.timap[F[T,P]](
+      refineType[T,P,F])(
       unwrapRefinedType[T,P,F]
     )
 

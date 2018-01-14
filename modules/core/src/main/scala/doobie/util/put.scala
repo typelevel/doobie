@@ -102,6 +102,60 @@ object Put extends PutInstances {
       ps.setNull(n, jdbcTargets.head.toInt, schemaTypes.head)
 
   }
+  object Advanced {
+
+    def many[A](
+      jdbcTargets: NonEmptyList[JdbcType],
+      schemaTypes: NonEmptyList[String],
+      put:  (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    )(implicit ev: TypeTag[A]): Advanced[A] =
+      Advanced(
+        NonEmptyList.of(Some(ev.tpe)),
+        jdbcTargets,
+        schemaTypes,
+        ContravariantCoyoneda.lift[(PreparedStatement, Int, ?) => Unit, A](put),
+        ContravariantCoyoneda.lift[(ResultSet, Int, ?) => Unit, A](update)
+      )
+
+    def one[A: TypeTag](
+      jdbcTarget: JdbcType,
+      schemaTypes: NonEmptyList[String],
+      put:  (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    ): Advanced[A] =
+      many(NonEmptyList.of(jdbcTarget), schemaTypes, put, update)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
+    def array[A >: Null <: AnyRef: TypeTag](
+      schemaTypes: NonEmptyList[String],
+      elementType: String
+    ): Advanced[Array[A]] =
+      one(
+        JdbcType.Array,
+        schemaTypes,
+        (ps, n, a) => {
+          val conn = ps.getConnection
+          val arr  = conn.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]])
+          ps.setArray(n, arr)
+        },
+        (rs, n, a) => {
+          val stmt = rs.getStatement
+          val conn = stmt.getConnection
+          val arr  = conn.createArrayOf(elementType, a.asInstanceOf[Array[AnyRef]])
+          rs.updateArray(n, arr)
+        }
+      )
+
+    def other[A >: Null <: AnyRef: TypeTag](schemaTypes: NonEmptyList[String]): Advanced[A] =
+      many(
+        NonEmptyList.of(JdbcType.Other, JdbcType.JavaObject),
+        schemaTypes,
+        (ps, n, a) => ps.setObject(n, a),
+        (rs, n, a) => rs.updateObject(n, a)
+      )
+
+  }
 
   /** An implicit Meta[A] means we also have an implicit Put[A]. */
   implicit def metaProjectionWrite[A](

@@ -8,6 +8,7 @@ import cats.Invariant
 import cats.data.NonEmptyList
 import doobie.enum.JdbcType
 import java.sql.{ PreparedStatement, ResultSet }
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 object meta {
@@ -17,7 +18,7 @@ object meta {
     def imap[B](f: A => B)(g: B => A): Meta[B] =
       new Meta(get.map(f), put.contramap(g)) {}
 
-    def tmap[B: TypeTag](f: A => B)(g: B => A): Meta[B] =
+    def timap[B: TypeTag](f: A => B)(g: B => A): Meta[B] =
       new Meta(get.tmap(f), put.tcontramap(g)) {}
 
     @deprecated("Will be removed. Use Put#jdbcTargets", "0.5.0")
@@ -62,6 +63,37 @@ object meta {
       new Meta(
         Get.Basic.many(NonEmptyList.of(jdbcType), jdbcSourceSecondary, get),
         Put.Basic.many(NonEmptyList.of(jdbcType), put, update)
+      ) {}
+
+    def advanced[A: TypeTag](
+      jdbcTypes: NonEmptyList[JdbcType],
+      schemaTypes: NonEmptyList[String],
+      get: (ResultSet, Int) => A,
+      put: (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    ): Meta[A] =
+      new Meta(
+        Get.Advanced.many(jdbcTypes, schemaTypes, get),
+        Put.Advanced.many(jdbcTypes, schemaTypes, put, update)
+      ) {}
+
+    def array[A >: Null <: AnyRef: TypeTag](
+      elementType: String,
+      schemaH: String,
+      schemaT: String*
+    ): Meta[Array[A]] =
+      new Meta[Array[A]](
+        Get.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList)),
+        Put.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList), elementType)
+      ) {}
+
+    def other[A >: Null <: AnyRef: TypeTag: ClassTag](
+      schemaH: String,
+      schemaT: String*
+    ): Meta[A] =
+      new Meta(
+        Get.Advanced.other[A](NonEmptyList(schemaH, schemaT.toList)),
+        Put.Advanced.other[A](NonEmptyList(schemaH, schemaT.toList))
       ) {}
 
   }

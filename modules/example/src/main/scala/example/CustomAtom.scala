@@ -14,7 +14,7 @@ package example
 
    // Create our base Meta by invariant mapping an existing one.
    implicit val LongPosixTimeScalaType: Meta[PosixTime] =
-     Meta[Date].xmap(d => PosixTime(d.getTime), t => new Date(t.time))
+     Meta[Date].timap(d => PosixTime(d.getTime))(t => new Date(t.time))
 
    // What we just defined
    val m = Meta[PosixTime]

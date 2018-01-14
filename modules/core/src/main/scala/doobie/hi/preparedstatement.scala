@@ -5,7 +5,7 @@
 package doobie.hi
 
 import doobie.enum.JdbcType
-import doobie.util.meta.Meta
+import doobie.util.{ Get, Put }
 import doobie.enum.ColumnNullable
 import doobie.enum.ParameterNullable
 import doobie.enum.ParameterMode
@@ -119,8 +119,8 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata
    */
-  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) Ior ColumnMeta]] =
-    getColumnJdbcMeta.map(m => A.meta align m)
+  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Get[_], NullabilityKnown) Ior ColumnMeta]] =
+    getColumnJdbcMeta.map(m => A.gets align m)
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
@@ -158,8 +158,8 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata
    */
-  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) Ior ParameterMeta]] =
-    getParameterJdbcMeta.map(m => A.meta align m)
+  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Put[_], NullabilityKnown) Ior ParameterMeta]] =
+    getParameterJdbcMeta.map(m => A.puts align m)
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =

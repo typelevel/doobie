@@ -38,15 +38,15 @@ trait Instances {
 
   // see postgres contrib for an explanation of array mapping; we may want to factor this out
 
-  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
-    val raw = Meta.other[Array[Object]]("ARRAY").xmap[Array[A]](
-      a => if (a == null) null else a.map(_.asInstanceOf[A]),
+    val raw = Meta.other[Array[Object]]("ARRAY").timap[Array[A]](
+      a => if (a == null) null else a.map(_.asInstanceOf[A]))(
       a => if (a == null) null else a.map(_.asInstanceOf[Object]))
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a
-    (raw.xmap(checkNull(_, NullableCellRead), checkNull(_, NullableCellUpdate)),
-     raw.xmap[Array[Option[A]]](_.map(Option(_)), _.map(_.orNull).toArray))
+    (raw.timap(checkNull(_, NullableCellRead))(checkNull(_, NullableCellUpdate)),
+     raw.timap[Array[Option[A]]](_.map(Option(_)))(_.map(_.orNull).toArray))
   }
 
   implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]
@@ -59,8 +59,8 @@ trait Instances {
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag: TypeTag](f: A => B, g: B => A)(
     implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) =
-    (boxed.xmap(a => if (a == null) null else a.map(f), a => if (a == null) null else a.map(g)),
-     boxedLifted.xmap(_.asInstanceOf[Array[Option[B]]], _.asInstanceOf[Array[Option[A]]]))
+    (boxed.timap(a => if (a == null) null else a.map(f))(a => if (a == null) null else a.map(g)),
+     boxedLifted.timap(_.asInstanceOf[Array[Option[B]]])(_.asInstanceOf[Array[Option[A]]]))
 
   implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean, scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
   implicit val (unliftedUnboxedIntegerArrayType, liftedUnboxedIntegerArrayType) = unboxedPair[java.lang.Integer, scala.Int]    (_.intValue,     java.lang.Integer.valueOf)

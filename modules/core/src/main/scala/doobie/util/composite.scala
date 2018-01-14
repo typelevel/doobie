@@ -38,7 +38,11 @@ object composite {
 
     private[composite] val kernel: Kernel[A]
     final lazy val length: Int = kernel.width
+
     val meta: List[(Meta[_], NullabilityKnown)]
+
+    def gets: List[(Get[_], NullabilityKnown)] = meta.map { case (a, b) => (a.get, b) }
+    def puts: List[(Put[_], NullabilityKnown)] = meta.map { case (a, b) => (a.put, b) }
 
     /** Flatten the composite into its untyped constituents. This is only useful for logging. */
     val toList: A => List[Any]

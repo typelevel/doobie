@@ -51,7 +51,7 @@ object OtherSchema {
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   implicit val meta: Meta[ReturnStatus.Value] =
-    wackyPostgresMapping(""""returns_data"."return_status"""").xmap(ReturnStatus.withName, _.toString)
+    wackyPostgresMapping(""""returns_data"."return_status"""").timap(ReturnStatus.withName)(_.toString)
 
   def main(args: Array[String]): Unit = {
 
