@@ -7,7 +7,6 @@ package doobie.util
 import cats.Contravariant
 import cats.data.NonEmptyList
 import doobie.enum.JdbcType
-import doobie.util.meta.Meta
 import java.sql.{ PreparedStatement, ResultSet }
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }

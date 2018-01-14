@@ -9,7 +9,6 @@ import cats.data.NonEmptyList
 import cats.free.Coyoneda
 import doobie.enum.JdbcType
 import doobie.util.invariant.{ /*NonNullableColumnRead,*/ InvalidObjectMapping }
-import doobie.util.meta.Meta
 import java.sql.ResultSet
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }

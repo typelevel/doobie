@@ -9,7 +9,7 @@ trait Aliases extends Types with Modules
 
 /** Mixin containing aliases for the most commonly used types from doobie-core. */
 trait Types {
-  /** @group Type Aliases - Core */ type Meta[A]                  = doobie.util.meta.Meta[A]
+  /** @group Type Aliases - Core */ type Meta[A]                  = doobie.util.Meta[A]
   /** @group Type Aliases - Core */ type Get[A]                   = doobie.util.Get[A]
   /** @group Type Aliases - Core */ type Put[A]                   = doobie.util.Put[A]
   /** @group Type Aliases - Core */ type Composite[A]             = doobie.util.composite.Composite[A]
@@ -27,7 +27,7 @@ trait Types {
 
 /** Mixin containing aliases for the most commonly used modules from doobie-core. */
 trait Modules {
-  /** @group Module Aliases - Core */ val  Meta               = doobie.util.meta.Meta
+  /** @group Module Aliases - Core */ val  Meta               = doobie.util.Meta
   /** @group Module Aliases - Core */ val  Get                = doobie.util.Get
   /** @group Module Aliases - Core */ val  Put                = doobie.util.Put
   /** @group Module Aliases - Core */ val  Composite          = doobie.util.composite.Composite

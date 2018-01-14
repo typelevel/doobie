@@ -5,7 +5,7 @@
 package doobie.h2
 
 import doobie.enum.JdbcType
-import doobie.util.meta._
+import doobie.util.Meta
 import doobie.util.invariant._
 
 import java.util.UUID
