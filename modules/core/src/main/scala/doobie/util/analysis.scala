@@ -51,8 +51,7 @@ object analysis {
       s"""|${typeName(scalaType, n)} is not coercible to ${jdbcType.show.toUpperCase}
           |(${vendorTypeName})
           |according to the JDBC specification.
-          |Fix this by changing the schema type to ${scalaType.jdbcTarget.head.show.toUpperCase},
-          |or the Scala type to ${Meta.writersOf(jdbcType, vendorTypeName).toList.map(typeName(_, n)).mkString(" or ")}.""".stripMargin.lines.mkString(" ")
+          |Expected schema type was ${scalaType.jdbcTarget.head.show.toUpperCase}.""".stripMargin.lines.mkString(" ")
   }
 
   final case class ColumnMisalignment(index: Int, alignment: Either[(Meta[_], NullabilityKnown), ColumnMeta]) extends AlignmentError {
@@ -83,25 +82,14 @@ object analysis {
   final case class ColumnTypeError(index: Int, jdk: Meta[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
     override val tag = "C"
     override def msg =
-      Meta.readersOf(schema.jdbcType, schema.vendorTypeName).toList.map(typeName(_, n)) match {
-        case Nil =>
-          s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
-              |coercible to ${typeName(jdk, n)} according to the JDBC specification or any defined
-              |mapping.
-              |Fix this by changing the schema type to
-              |${jdk.jdbcSource.list.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
-              |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
-              |type.
-              |""".stripMargin.lines.mkString(" ")
-        case ss =>
-          s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
-              |coercible to ${typeName(jdk, n)} according to the JDBC specification or any defined
-              |mapping.
-              |Fix this by changing the schema type to
-              |${jdk.jdbcSource.list.map(_.show.toUpperCase).toList.mkString(" or ") }, or the
-              |Scala type to ${ss.mkString(" or ")}.
-              |""".stripMargin.lines.mkString(" ")
-      }
+      s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
+          |coercible to ${typeName(jdk, n)} according to the JDBC specification or any defined
+          |mapping.
+          |Fix this by changing the schema type to
+          |${jdk.jdbcSource.list.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
+          |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
+          |type.
+          |""".stripMargin.lines.mkString(" ")
   }
 
   final case class ColumnTypeWarning(index: Int, jdk: Meta[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
@@ -109,10 +97,9 @@ object analysis {
     override def msg =
       s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is ostensibly
           |coercible to ${typeName(jdk, n)}
-          |according to the JDBC specification but is not a recommended target type. Fix this by
-          |changing the schema type to
-          |${jdk.jdbcSource.list.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
-          |Scala type to ${Meta.readersOf(schema.jdbcType, schema.vendorTypeName).toList.map(typeName(_, n)).mkString(" or ")}.
+          |according to the JDBC specification but is not a recommended target type.
+          |Expected schema type was
+          |${jdk.jdbcSource.list.map(_.show.toUpperCase).toList.mkString(" or ") }.
           |""".stripMargin.lines.mkString(" ")
   }
 

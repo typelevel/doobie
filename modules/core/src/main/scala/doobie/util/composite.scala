@@ -112,35 +112,35 @@ object composite {
     implicit val unitComposite: Composite[Unit] =
       emptyProduct.imap(_ => ())(_ => HNil)
 
-    implicit def fromMeta[A](implicit A: Meta[A]): Composite[A] =
+    implicit def fromMeta[A](implicit G: Get[A], P: Put[A]): Composite[A] =
       new Composite[A] {
         val kernel = new Kernel[A] {
           type I      = A
           val ia      = (i: I) => i
           val ai      = (a: A) => a
-          val get     = A.unsafeGetNonNullable _
-          val set     = A.unsafeSetNonNullable _
-          val setNull = A.unsafeSetNull _
-          val update  = A.unsafeUpdateNonNullable _
-          val width   = A.kernel.width
+          val get     = G.unsafeGetNonNullable _
+          val set     = P.unsafeSetNonNullable _
+          val setNull = P.unsafeSetNull _
+          val update  = P.unsafeUpdateNonNullable _
+          val width   = 1
         }
-        val meta   = List((A, NoNulls))
+        val meta   = Nil // List((A, NoNulls))
         val toList = (a: A) => List(a)
       }
 
-    implicit def fromMetaOption[A](implicit A: Meta[A]): Composite[Option[A]] =
+    implicit def fromMetaOption[A](implicit G: Get[A], P: Put[A]): Composite[Option[A]] =
       new Composite[Option[A]] {
         val kernel = new Kernel[Option[A]] {
           type I      = Option[A]
           val ia      = (i: I) => i
           val ai      = (a: I) => a
-          val get     = A.unsafeGetNullable _
-          val set     = A.unsafeSetNullable _
-          val setNull = A.unsafeSetNull _
-          val update  = A.unsafeUpdateNullable _
-          val width   = A.kernel.width
+          val get     = G.unsafeGetNullable _
+          val set     = P.unsafeSetNullable _
+          val setNull = P.unsafeSetNull _
+          val update  = P.unsafeUpdateNullable _
+          val width   = 1
         }
-        val meta   = List((A, Nullable))
+        val meta   = Nil //List((A, Nullable))
         val toList = (a: Option[A]) => List(a)
       }
 

@@ -4,7 +4,6 @@
 
 package doobie.util
 
-import doobie.util.meta.Meta
 import doobie.util.composite.Composite
 
 import scala.annotation.implicitNotFound
@@ -34,12 +33,12 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     def apply[A](implicit ev: Param[A]): Param[A] = ev
 
     /** Each `Meta[A]` gives rise to a `Param[A]`. */
-    implicit def fromMeta[A](implicit ev: Meta[A]): Param[A] =
-      new Param[A](Composite.fromMeta(ev))
+    implicit def fromMeta[A: Get: Put]: Param[A] =
+      new Param[A](Composite.fromMeta[A])
 
     /** Each `Meta[A]` gives rise to a `Param[Option[A]]`. */
-    implicit def fromMetaOption[A](implicit ev: Meta[A]): Param[Option[A]] =
-      new Param[Option[A]](Composite.fromMetaOption(ev))
+    implicit def fromMetaOption[A: Get: Put]: Param[Option[A]] =
+      new Param[Option[A]](Composite.fromMetaOption[A])
 
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =
