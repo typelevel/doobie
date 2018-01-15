@@ -36,7 +36,7 @@ object meta {
    * unboxed types, and is not consistent with idiomatic Scala; so some discussion is required.
    * Scala values should never be `null`. Setting a `NULL` JDBC value is accomplished via the
    * `setNull` operation. Similarly when getting a JDBC value we must subsequently ask `.wasNull`
-   * on the JDBC resource and decide how to handle the value. The `Atom` typeclass takes care of
+   * on the JDBC resource and decide how to handle the value. The `Meta` typeclass takes care of
    * mapping nullable values to `Option` so these issues should not be a concern for casual users.
    */
   @implicitNotFound("Could not find an instance of Meta[${A}]; you can construct one based on a primitive instance via `xmap`.")

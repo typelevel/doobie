@@ -75,7 +75,7 @@ trait Instances {
 
   // Construct a pair of Meta instances for arrays of lifted (nullable) and unlifted (non-
   // nullable) reference types (as noted above, PostgreSQL doesn't ship arrays of primitives). The
-  // automatic lifting to Atom will give us lifted and unlifted arrays, for a total of four variants
+  // automatic lifting to Meta will give us lifted and unlifted arrays, for a total of four variants
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
   @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals"))
