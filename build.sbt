@@ -312,6 +312,7 @@ lazy val postgres = project
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-io"     % fs2CoreVersion,
       "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided"
     ),
