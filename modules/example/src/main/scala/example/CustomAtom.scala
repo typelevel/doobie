@@ -8,7 +8,7 @@
 
  import java.sql.Date
 
- object CustomAtom {
+ object CustomMeta {
 
    final case class PosixTime(time: Long)
 
