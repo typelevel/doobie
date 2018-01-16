@@ -46,10 +46,6 @@ object transactor  {
     always: ConnectionIO[Unit]
   ) {
 
-    private implicit class VoidStreamOps(ma: ConnectionIO[Unit]) {
-      def p: Stream[ConnectionIO, Nothing] = eval_(ma) // empty effectful process
-    }
-
     /** Natural transformation that wraps a `ConnectionIO` program. */
     val wrap = λ[ConnectionIO ~> ConnectionIO] { ma =>
       (before *> ma <* after)
@@ -59,8 +55,8 @@ object transactor  {
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
     val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
-      (before.p ++ pa ++ after.p)
-        .onError { case NonFatal(e) => oops.p ++ eval_(delay(throw e)) }
+      (eval_(before) ++ pa ++ eval_(after))
+        .onError { case NonFatal(e) => eval_(oops) ++ eval_(delay(throw e)) }
         .onFinalize(always)
     }
 
