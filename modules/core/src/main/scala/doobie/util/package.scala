@@ -20,4 +20,6 @@ package object util {
     def list: List[A] = as.head :: as.tail
   }
 
+  private[util] def void(a: Any*): Unit = (a, ())._2
+
 }

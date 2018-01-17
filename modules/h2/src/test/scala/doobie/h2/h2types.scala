@@ -20,7 +20,7 @@ object h2typesspec extends Specification {
     "sa", ""
   )
 
-  def inOut[A: Param: Composite](col: String, a: A) =
+  def inOut[A: Param: Read](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
       _  <- sql"INSERT INTO TEST VALUES ($a)".update.run

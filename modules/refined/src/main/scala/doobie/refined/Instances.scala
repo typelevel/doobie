@@ -31,6 +31,14 @@ trait Instances {
   ): Composite[F[T,P]] =
     compositeT.imap[F[T,P]](refineType[T,P,F])(unwrapRefinedType[T,P,F])
 
+  implicit def refinedRead[T, P, F[_,_]](
+    implicit readT: Read[T],
+             validate:   Validate[T, P],
+             refType:    RefType[F],
+             manifest:   TypeTag[F[T,P]]
+  ): Read[F[T,P]] =
+    readT.map[F[T,P]](refineType[T,P,F])
+
   private def refineType[T,P,F[_,_]](t: T)(
     implicit refType:  RefType[F],
              validate: Validate[T, P],

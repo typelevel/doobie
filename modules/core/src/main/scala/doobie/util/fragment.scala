@@ -66,14 +66,14 @@ object fragment {
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def query[B: Composite](implicit h: LogHandler = LogHandler.nop): Query0[B] =
+    def query[B: Read](implicit h: LogHandler = LogHandler.nop): Query0[B] =
       queryWithLogHandler(h)
 
     /**
      * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
      * `LogHandler`.
      */
-    def queryWithLogHandler[B](h: LogHandler)(implicit cb: Composite[B]): Query0[B] =
+    def queryWithLogHandler[B](h: LogHandler)(implicit cb: Read[B]): Query0[B] =
       Query[A, B](sql, pos, h)(ca, cb).toQuery0(a)
 
     /** Construct an [[Update0]] from this fragment. */

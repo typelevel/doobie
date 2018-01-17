@@ -15,6 +15,7 @@ import doobie.enum.FetchDirection
 import doobie.enum.ResultSetConcurrency
 import doobie.enum.ResultSetType
 
+import doobie.util.Read
 import doobie.util.analysis._
 import doobie.util.composite._
 import doobie.util.stream.repeatEvalChunks
@@ -42,11 +43,11 @@ object preparedstatement {
   import implicits._
 
   // fs2 handler, not public
-  private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
+  private def unrolled[A: Read](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
     repeatEvalChunks(FPS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
-  def stream[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+  def stream[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeQuery)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
 
   /**
@@ -91,11 +92,11 @@ object preparedstatement {
     FPS.executeUpdate
 
   /** @group Execution */
-  def executeUpdateWithUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
+  def executeUpdateWithUniqueGeneratedKeys[A: Read]: PreparedStatementIO[A] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
  /** @group Execution */
-  def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+  def executeUpdateWithGeneratedKeys[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeUpdate *> FPS.getGeneratedKeys)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
@@ -119,7 +120,7 @@ object preparedstatement {
    * with the `JdbcMeta` provided by a `Composite` instance.
    * @group Metadata
    */
-  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Get[_], NullabilityKnown) Ior ColumnMeta]] =
+  def getColumnMappings[A](implicit A: Read[A]): PreparedStatementIO[List[(Get[_], NullabilityKnown) Ior ColumnMeta]] =
     getColumnJdbcMeta.map(m => A.gets align m)
 
   /** @group Properties */
@@ -135,7 +136,7 @@ object preparedstatement {
     FPS.getGeneratedKeys.flatMap(s => FPS.embed(s, k guarantee FRS.close))
 
   /** @group Results */
-  def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
+  def getUniqueGeneratedKeys[A: Read]: PreparedStatementIO[A] =
     getGeneratedKeys(resultset.getUnique[A])
 
   /**

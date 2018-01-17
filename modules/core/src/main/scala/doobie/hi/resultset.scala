@@ -10,6 +10,7 @@ import cats.implicits._
 
 import doobie.enum.Holdability
 import doobie.enum.FetchDirection
+import doobie.util.Read
 import doobie.util.composite._
 import doobie.util.invariant._
 import doobie.util.stream.repeatEvalChunks
@@ -67,14 +68,14 @@ object resultset {
    * Read a value of type `A` starting at column `n`.
    * @group Results
    */
-  def get[A](n: Int)(implicit A: Composite[A]): ResultSetIO[A] =
+  def get[A](n: Int)(implicit A: Read[A]): ResultSetIO[A] =
     A.get(n)
 
   /**
    * Read a value of type `A` starting at column 1.
    * @group Results
    */
-  def get[A](implicit A: Composite[A]): ResultSetIO[A] =
+  def get[A: Read]: ResultSetIO[A] =
     get(1)
 
 
@@ -84,7 +85,7 @@ object resultset {
    * @group Results
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
-  def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Composite[A]): ResultSetIO[F[A]] =
+  def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Read[A]): ResultSetIO[F[A]] =
     FRS.raw { rs =>
       val b = C()
       while (rs.next)
@@ -100,7 +101,7 @@ object resultset {
    * @group Results
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
-  def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Composite[A]): ResultSetIO[F[B]] =
+  def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Read[A]): ResultSetIO[F[B]] =
     FRS.raw { rs =>
       val b = C()
       while (rs.next)
@@ -113,7 +114,7 @@ object resultset {
    * accumulating them in a `Vector`.
    * @group Results
    */
-  def vector[A: Composite]: ResultSetIO[Vector[A]] =
+  def vector[A: Read]: ResultSetIO[Vector[A]] =
     build[Vector, A]
 
   /**
@@ -121,14 +122,14 @@ object resultset {
    * accumulating them in a `List`.
    * @group Results
    */
-  def list[A: Composite]: ResultSetIO[List[A]] =
+  def list[A: Read]: ResultSetIO[List[A]] =
     build[List, A]
 
   /**
    * Like `getNext` but loops until the end of the resultset, gathering results in a `MonadPlus`.
    * @group Results
    */
-  def accumulate[G[_]: Alternative, A: Composite]: ResultSetIO[G[A]] =
+  def accumulate[G[_]: Alternative, A: Read]: ResultSetIO[G[A]] =
     get[A].whileM(next)
 
   /**
@@ -150,7 +151,7 @@ object resultset {
    * available.
    * @group Results
    */
-  def getNext[A: Composite]: ResultSetIO[Option[A]] =
+  def getNext[A: Read]: ResultSetIO[Option[A]] =
     next >>= {
       case true  => get[A].map(Some(_))
       case false => Monad[ResultSetIO].pure(None)
@@ -163,7 +164,7 @@ object resultset {
    * libraries that like `Seq` better.
    * @group Results
    */
-  def getNextChunk[A: Composite](chunkSize: Int): ResultSetIO[Seq[A]] =
+  def getNextChunk[A: Read](chunkSize: Int): ResultSetIO[Seq[A]] =
     getNextChunkV[A](chunkSize).widen[Seq[A]]
 
   /**
@@ -172,7 +173,7 @@ object resultset {
    * @group Results
    */
   @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
-  def getNextChunkV[A](chunkSize: Int)(implicit A: Composite[A]): ResultSetIO[Vector[A]] =
+  def getNextChunkV[A](chunkSize: Int)(implicit A: Read[A]): ResultSetIO[Vector[A]] =
     FRS.raw { rs =>
       var n = chunkSize
       val b = Vector.newBuilder[A]
@@ -188,7 +189,7 @@ object resultset {
    * @throws `UnexpectedCursorPosition` if there is not exactly one row remaining
    * @group Results
    */
-  def getUnique[A: Composite]: ResultSetIO[A] =
+  def getUnique[A: Read]: ResultSetIO[A] =
     (getNext[A], next) mapN {
       case (Some(a), false) => a
       case (Some(_), true)  => throw UnexpectedContinuation
@@ -200,7 +201,7 @@ object resultset {
    * @throws `UnexpectedContinuation` if there is more than one row remaining
    * @group Results
    */
-  def getOption[A: Composite]: ResultSetIO[Option[A]] =
+  def getOption[A: Read]: ResultSetIO[Option[A]] =
     (getNext[A], next) mapN {
       case (a @ Some(_), false) => a
       case (Some(_), true)      => throw UnexpectedContinuation
@@ -212,7 +213,7 @@ object resultset {
     * @throws `UnexpectedEnd` if there is not at least one row remaining
     * @group Results
     */
-  def nel[A: Composite]: ResultSetIO[NonEmptyList[A]] =
+  def nel[A: Read]: ResultSetIO[NonEmptyList[A]] =
     (getNext[A], list) mapN {
       case (Some(a), as) => NonEmptyList(a, as)
       case (None, _)     => throw UnexpectedEnd
@@ -223,7 +224,7 @@ object resultset {
    * mechanism for dealing with query results.
    * @group Results
    */
-  def stream[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
+  def stream[A: Read](chunkSize: Int): Stream[ResultSetIO, A] =
     repeatEvalChunks(getNextChunk[A](chunkSize))
 
   /** @group Properties */
