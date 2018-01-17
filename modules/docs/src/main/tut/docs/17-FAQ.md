@@ -189,17 +189,14 @@ State(String, City(String, Point2D.Double)) // our structure
 And indeed this type has no column vector mapping.
 
 ```tut:fail:plain
-Composite[Point2D.Double]
+Read[Point2D.Double]
 ```
 
-If this were an atomic type it would be a matter of importing or defining a `Meta` instance, but here we need to define a `Composite` directly because we're mapping a type with several members. As this type is isomorphic to `(Double, Double)` we can simply base our mapping off of the existing `Composite`.
+If this were an atomic type it would be a matter of importing or defining a `Meta` instance, but here we need to define a `Read` directly because we're mapping a type with several members. As this type is isomorphic to `(Double, Double)` we can simply base our mapping off of the existing `Read`.
 
 ```tut:silent
-implicit val Point2DComposite: Composite[Point2D.Double] =
-  Composite[(Double, Double)].imap(
-    (t: (Double, Double)) => new Point2D.Double(t._1, t._2))(
-    (p: Point2D.Double) => (p.x, p.y)
-  )
+implicit val Point2DComposite: Read[Point2D.Double] =
+  Read[(Double, Double)].map { case (x, y) => new Point2D.Double(x, y) }
 ```
 
 Our derivation now works and the code compiles.
@@ -266,6 +263,5 @@ case class NonEmptyString(value: String)
 
 // If the domain for NonEmptyStrings is nes
 implicit val nesMeta: Meta[NonEmptyString] =
-  string("nes").xmap(NonEmptyString.apply, _.value)
-  }
+  string("nes").imap(NonEmptyString.apply)(_.value)
 ```

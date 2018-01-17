@@ -158,8 +158,8 @@ When reading a row or setting parameters in the high-level API, we require an in
 `Composite` instances are derived automatically for column types (and options thereof) that have `Meta` instances, and for products of other composites (via `shapeless.ProductTypeclass`). We can summon their instances thus:
 
 ```tut
-Composite[(String, Boolean)]
-Composite[Country]
+Write[(String, Boolean)]
+Write[Country]
 ```
 
 The `set` constructor takes an argument of any type with a `Composite` instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.

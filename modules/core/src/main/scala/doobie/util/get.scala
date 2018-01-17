@@ -12,6 +12,8 @@ import doobie.util.invariant.{ /*NonNullableColumnRead,*/ InvalidObjectMapping }
 import java.sql.ResultSet
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }
+import shapeless._
+import shapeless.ops.hlist.IsHCons
 
 sealed abstract class Get[A](
   val typeStack: NonEmptyList[Option[Type]],
@@ -176,5 +178,16 @@ trait GetInstances {
   /** @group Instances */
   implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeTag](implicit ev: Get[Array[A]]): Get[Vector[A]] =
     ev.tmap(_.toVector)
+
+  /** @group Instances */
+  implicit def unaryProductGet[A: TypeTag, L <: HList, H, T <: HList](
+     implicit G: Generic.Aux[A, L],
+              C: IsHCons.Aux[L, H, T],
+              H: Lazy[Get[H]],
+              E: (H :: HNil) =:= L
+  ): Get[A] = {
+    void(C) // C drives inference but is not used directly
+    H.value.tmap[A](h => G.from(h :: HNil))
+  }
 
 }

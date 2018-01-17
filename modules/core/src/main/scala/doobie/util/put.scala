@@ -10,6 +10,8 @@ import doobie.enum.JdbcType
 import java.sql.{ PreparedStatement, ResultSet }
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }
+import shapeless._
+import shapeless.ops.hlist.IsHCons
 
 sealed abstract class Put[A](
   val typeStack: NonEmptyList[Option[Type]],
@@ -166,6 +168,7 @@ object Put extends PutInstances {
 }
 
 trait PutInstances {
+  import Predef.=:=
 
   /** @group Instances */
   implicit val ContravariantPut: Contravariant[Put] =
@@ -181,5 +184,16 @@ trait PutInstances {
   /** @group Instances */
   implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
     ev.tcontramap(_.toArray)
+
+  /** @group Instances */
+  implicit def unaryProductPut[A: TypeTag, L <: HList, H, T <: HList](
+     implicit G: Generic.Aux[A, L],
+              C: IsHCons.Aux[L, H, T],
+              H: Lazy[Put[H]],
+              E: (H :: HNil) =:= L
+  ): Put[A] = {
+    void(E) // E is a necessary constraint but isn't used directly
+    H.value.contramap[A](a => G.to(a).head)
+  }
 
 }
