@@ -12,7 +12,6 @@ import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.util.analysis.Analysis
-import doobie.util.composite.Composite
 import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
@@ -46,7 +45,7 @@ object update {
     // Contravariant coyoneda trick for A
     protected type I
     protected val ai: A => I
-    protected implicit val ic: Composite[I]
+    protected implicit val ic: Write[I]
 
     // LogHandler is protected for now.
     protected val logHandler: LogHandler
@@ -197,7 +196,7 @@ object update {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
-      implicit C: Composite[A]
+      implicit C: Write[A]
     ): Update[A] =
       new Update[A] {
         type I  = A

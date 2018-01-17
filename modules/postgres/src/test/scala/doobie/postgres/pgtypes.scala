@@ -26,7 +26,7 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Param: Composite: Read](col: String, a: A) =
+  def inOut[A: Param: Write: Read](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
@@ -142,7 +142,7 @@ object pgtypesspec extends Specification {
   testInOut("varchar[]", List[String]("foo", "bar"))
   testInOut("uuid[]", List[UUID](UUID.fromString("7af2cb9a-9aee-47bc-910b-b9f4d608afa0"), UUID.fromString("643a05f3-463f-4dab-916c-5af4a84c3e4a")))
 
-  // 8.16 Composite Types
+  // 8.16 Write Types
   skip("composite")
 
   // 8.17 Range Types

@@ -8,7 +8,7 @@ package example
 
  import java.sql.Date
 
- object CustomMeta {
+ object CustomReadWrite {
 
    final case class PosixTime(time: Long)
 
@@ -19,9 +19,9 @@ package example
    // What we just defined
    val m = Meta[PosixTime]
 
-   // Free derived composites containing atomic types
-   val c1 = Composite[(PosixTime, Int, String)]
-   val c2 = Composite[(Option[PosixTime], Int, String)]
+   // Free derived read/writes containing atomic types
+   val c1 = Read[(PosixTime, Int, String)]
+   val c2 = Write[(Option[PosixTime], Int, String)]
 
    // You can now use PosixTime as a column or parameter type (both demonstrated here)
    def query(lpt: PosixTime): Query0[(String, PosixTime)] =

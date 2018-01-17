@@ -10,8 +10,7 @@ import cats.implicits._
 
 import doobie.enum.Holdability
 import doobie.enum.FetchDirection
-import doobie.util.Read
-import doobie.util.composite._
+import doobie.util.{ Read, Write }
 import doobie.util.invariant._
 import doobie.util.stream.repeatEvalChunks
 
@@ -136,14 +135,14 @@ object resultset {
    * Updates a value of type `A` starting at column `n`.
    * @group Updating
    */
-  def update[A](n: Int, a:A)(implicit A: Composite[A]): ResultSetIO[Unit] =
+  def update[A](n: Int, a:A)(implicit A: Write[A]): ResultSetIO[Unit] =
     A.update(n, a)
 
   /**
    * Updates a value of type `A` starting at column 1.
    * @group Updating
    */
-  def update[A](a: A)(implicit A: Composite[A]): ResultSetIO[Unit] =
+  def update[A](a: A)(implicit A: Write[A]): ResultSetIO[Unit] =
     A.update(1, a)
 
   /**

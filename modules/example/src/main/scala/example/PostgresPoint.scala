@@ -28,7 +28,7 @@ object PostgresPoint extends App {
   val a = q.to[List].transact(xa).unsafeRunSync
   Console.println(a) // List(Point(1.0,2.0))
 
-  // Just to be clear; the Composite instance has width 1, not 2
-  Console.println(Composite[Point].length) // 1
+  // Just to be clear; the Write instance has width 1, not 2
+  Console.println(Write[Point].length) // 1
 
 }

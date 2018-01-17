@@ -31,6 +31,8 @@ final class Read[A](
 
 object Read extends LowerPriorityRead {
 
+  def apply[A](implicit ev: Read[A]): ev.type = ev
+
   implicit val ReadApply: Apply[Read] =
     new Apply[Read] {
       def ap[A, B](ff: Read[A => B])(fa: Read[A]): Read[B] = fa.ap(ff)
@@ -46,7 +48,7 @@ object Read extends LowerPriorityRead {
   implicit def fromGetOption[A](implicit ev: Get[A]): Read[Option[A]] =
     new Read(List((ev, Nullable)), ev.unsafeGetNullable)
 
-  implicit def recordComposite[K <: Symbol, H, T <: HList](
+  implicit def recordRead[K <: Symbol, H, T <: HList](
     implicit H: Lazy[Read[H]],
               T: Lazy[Read[T]]
   ): Read[FieldType[K, H] :: T] =

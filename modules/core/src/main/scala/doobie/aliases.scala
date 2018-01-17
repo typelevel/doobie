@@ -13,7 +13,7 @@ trait Types {
   /** @group Type Aliases - Core */ type Get[A]                   = doobie.util.Get[A]
   /** @group Type Aliases - Core */ type Put[A]                   = doobie.util.Put[A]
   /** @group Type Aliases - Core */ type Read[A]                  = doobie.util.Read[A]
-  /** @group Type Aliases - Core */ type Composite[A]             = doobie.util.composite.Composite[A]
+  /** @group Type Aliases - Core */ type Write[A]                 = doobie.util.Write[A]
   /** @group Type Aliases - Core */ type Query[A,B]               = doobie.util.query.Query[A,B]
   /** @group Type Aliases - Core */ type Update[A]                = doobie.util.update.Update[A]
   /** @group Type Aliases - Core */ type Query0[A]                = doobie.util.query.Query0[A]
@@ -32,7 +32,7 @@ trait Modules {
   /** @group Module Aliases - Core */ val  Get                = doobie.util.Get
   /** @group Module Aliases - Core */ val  Put                = doobie.util.Put
   /** @group Module Aliases - Core */ val  Read               = doobie.util.Read
-  /** @group Module Aliases - Core */ val  Composite          = doobie.util.composite.Composite
+  /** @group Module Aliases - Core */ val  Write              = doobie.util.Write
   /** @group Module Aliases - Core */ val  Query              = doobie.util.query.Query
   /** @group Module Aliases - Core */ val  Update             = doobie.util.update.Update
   /** @group Module Aliases - Core */ val  Query0             = doobie.util.query.Query0

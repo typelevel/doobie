@@ -44,7 +44,7 @@ object query {
     protected type O
     protected val ai: A => I
     protected val ob: O => B
-    protected implicit val ic: Composite[I]
+    protected implicit val ic: Write[I]
     protected implicit val oc: Read[O]
 
     // LogHandler is protected for now.
@@ -198,7 +198,7 @@ object query {
         type O = outer.O
         val ai = outer.ai
         val ob = outer.ob andThen f
-        val ic: Composite[I] = outer.ic
+        val ic: Write[I] = outer.ic
         val oc: Read[O] = outer.oc
         def sql = outer.sql
         def pos = outer.pos
@@ -212,7 +212,7 @@ object query {
         type O = outer.O
         val ai = outer.ai compose f
         val ob = outer.ob
-        val ic: Composite[I] = outer.ic
+        val ic: Write[I] = outer.ic
         val oc: Read[O] = outer.oc
         def sql = outer.sql
         def pos = outer.pos
@@ -251,13 +251,13 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Composite[A], B: Read[B]): Query[A, B] =
+    def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
       new Query[A, B] {
         type I = A
         type O = B
         val ai: A => I = a => a
         val ob: O => B = o => o
-        implicit val ic: Composite[I] = A
+        implicit val ic: Write[I] = A
         implicit val oc: Read[O] = B
         val sql = sql0
         val pos = pos0

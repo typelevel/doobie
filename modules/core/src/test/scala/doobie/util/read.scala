@@ -9,7 +9,7 @@ import shapeless._, shapeless.record._
 import org.specs2.mutable.Specification
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-object compositespec extends Specification {
+object readspec extends Specification {
 
   final case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
@@ -21,26 +21,26 @@ object compositespec extends Specification {
       Meta[String].timap(s => LenStr2(s.length, s))(_.s)
   }
 
-  "Composite" should {
+  "Read" should {
 
     "exist for some fancy types" in {
-      Composite[Int]
-      Composite[(Int, Int)]
-      Composite[(Int, Int, String)]
-      Composite[(Int, (Int, String))]
-      Composite[Woozle]
+      Read[Int]
+      Read[(Int, Int)]
+      Read[(Int, Int, String)]
+      Read[(Int, (Int, String))]
+      Read[Woozle]
 
       // https://github.com/tpolecat/doobie/pull/126 was reverted because these
       // derivations were failing with SOE
-      Composite[(Woozle, String)]
-      Composite[(Int, Woozle :: Woozle :: String :: HNil)]
+      Read[(Woozle, String)]
+      Read[(Int, Woozle :: Woozle :: String :: HNil)]
 
       true
     }
 
     "exist for Unit" in {
-      Composite[Unit]
-      Composite[(Int, Unit)].length must_== 1
+      Read[Unit]
+      Read[(Int, Unit)].length must_== 1
     }
 
     "exist for shapeless record types" in {
@@ -48,27 +48,27 @@ object compositespec extends Specification {
       type DL = (Double, Long)
       type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
 
-      Composite[A]
-      Composite[(A, A)]
+      Read[A]
+      Read[(A, A)]
 
       true
     }
 
     "exist for option of some fancy types" in {
-      Composite[Option[Int]]
-      Composite[Option[(Int, Int)]]
-      Composite[Option[(Int, Int, String)]]
-      Composite[Option[(Int, (Int, String))]]
-      Composite[Option[(Int, Option[(Int, String)])]]
-      Composite[Option[Woozle]]
-      Composite[Option[(Woozle, String)]]
-      Composite[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
+      Read[Option[Int]]
+      Read[Option[(Int, Int)]]
+      Read[Option[(Int, Int, String)]]
+      Read[Option[(Int, (Int, String))]]
+      Read[Option[(Int, Option[(Int, String)])]]
+      Read[Option[Woozle]]
+      Read[Option[(Woozle, String)]]
+      Read[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
       true
     }
 
     "exist for option of Unit" in {
-      Composite[Option[Unit]]
-      Composite[Option[(Int, Unit)]].length must_== 1
+      Read[Option[Unit]]
+      Read[Option[(Int, Unit)]].length must_== 1
     }
 
     // This doesn't work because of the issue with tagged element as HList members.
@@ -77,23 +77,23 @@ object compositespec extends Specification {
     //   type DL = (Double, Long)
     //   type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
     //
-    //   Composite[Option[A]]
-    //   Composite[Option[(A, A)]]
-    //   Composite[Option[(A, Option[A])]]
+    //   Read[Option[A]]
+    //   Read[Option[(A, A)]]
+    //   Read[Option[(A, Option[A])]]
     //
     //   true
     // }
 
     "select multi-column instance by default" in {
-      Composite[LenStr1].length must_== 2
+      Read[LenStr1].length must_== 2
     }
 
     "select 1-column instance when available" in {
-      Composite[LenStr2].length must_== 1
+      Read[LenStr2].length must_== 1
     }
 
     // "work for products of ludicrous size (128)" in {
-    //   Composite[
+    //   Read[
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
     //     Int :: Int :: Int :: Int :: Int :: Int :: Int :: Int ::
@@ -116,7 +116,7 @@ object compositespec extends Specification {
     // "work for specific example from #217" in {
     //   trait LocalDateTime
     //   implicit val MetaLocalDateTime: Meta[LocalDateTime] = null
-    //   Composite[
+    //   Read[
     //     Option[String] :: Option[String] :: Option[String] :: Option[LocalDateTime] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::
