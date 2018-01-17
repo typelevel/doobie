@@ -79,14 +79,14 @@ object Get extends GetInstances {
     def many[A](
       jdbcSources: NonEmptyList[JdbcType],
       jdbcSourceSecondary: List[JdbcType],
-      get: (ResultSet, Int) => A,
+      get: (ResultSet, Int) => A
     )(implicit ev: TypeTag[A]): Basic[A] =
       Basic(NonEmptyList.of(Some(ev.tpe)), jdbcSources, jdbcSourceSecondary, Coyoneda.lift(get))
 
     def one[A: TypeTag](
       jdbcSources: JdbcType,
       jdbcSourceSecondary: List[JdbcType],
-      get: (ResultSet, Int) => A,
+      get: (ResultSet, Int) => A
     ): Basic[A] =
       many(NonEmptyList.of(jdbcSources), jdbcSourceSecondary, get)
 
@@ -112,14 +112,14 @@ object Get extends GetInstances {
     def many[A](
       jdbcSources: NonEmptyList[JdbcType],
       schemaTypes: NonEmptyList[String],
-      get: (ResultSet, Int) => A,
+      get: (ResultSet, Int) => A
     )(implicit ev: TypeTag[A]): Advanced[A] =
       Advanced(NonEmptyList.of(Some(ev.tpe)), jdbcSources, schemaTypes, Coyoneda.lift(get))
 
     def one[A](
       jdbcSource: JdbcType,
       schemaTypes: NonEmptyList[String],
-      get: (ResultSet, Int) => A,
+      get: (ResultSet, Int) => A
     )(implicit ev: TypeTag[A]): Advanced[A] =
       Advanced(NonEmptyList.of(Some(ev.tpe)), NonEmptyList.of(jdbcSource), schemaTypes, Coyoneda.lift(get))
 

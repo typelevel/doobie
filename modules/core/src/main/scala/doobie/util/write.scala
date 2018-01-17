@@ -132,7 +132,7 @@ trait EvenLowerPriorityWrite {
       H.value.puts ++ T.value.puts,
       split(_) { (h, t) => H.value.toList(h) ++ T.value.toList(t) },
       (ps, n, i) => split(i) { (h, t) => H.value.unsafeSet(ps, n, h); T.value.unsafeSet(ps, n + H.value.length, t) },
-      (rs, n, i) => split(i) { (h, t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) },
+      (rs, n, i) => split(i) { (h, t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) }
     )
 
   }
@@ -149,7 +149,7 @@ trait EvenLowerPriorityWrite {
       H.value.puts ++ T.value.puts,
       split(_) { (h, t) => H.value.toList(h) ++ T.value.toList(t) },
       (ps, n, i) => split(i) { (h, t) => H.value.unsafeSet(ps, n, h); T.value.unsafeSet(ps, n + H.value.length, t) },
-      (rs, n, i) => split(i) { (h, t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) },
+      (rs, n, i) => split(i) { (h, t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) }
     )
 
   }

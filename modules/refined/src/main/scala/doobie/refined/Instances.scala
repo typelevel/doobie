@@ -24,16 +24,16 @@ trait Instances {
     )
 
   implicit def refinedWrite[T, P, F[_,_]](
-    implicit writeT: Write[T],
-             refType:    RefType[F],
+    implicit writeT:  Write[T],
+             refType: RefType[F]
   ): Write[F[T,P]] =
     writeT.contramap[F[T,P]](unwrapRefinedType[T,P,F])
 
   implicit def refinedRead[T, P, F[_,_]](
     implicit readT: Read[T],
-             validate:   Validate[T, P],
-             refType:    RefType[F],
-             manifest:   TypeTag[F[T,P]]
+             validate: Validate[T, P],
+             refType:  RefType[F],
+             manifest: TypeTag[F[T,P]]
   ): Read[F[T,P]] =
     readT.map[F[T,P]](refineType[T,P,F])
 
