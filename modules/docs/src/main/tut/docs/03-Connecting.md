@@ -145,31 +145,22 @@ Currently cats has no typeclass for monads with **effect-capturing unit**, so th
 > Note that `scala.concurrent.Future` does **not** have an effect-capturing constructor and thus cannot be used as a target type for **doobie** programs. Although `Future` is very commonly used for side-effecting operations, doing so is not referentially transparent. *`Future` has nothing at all to say about side-effects. It is well-behaved in a functional sense only for pure computations.*
 
 #### Using Your Own Target Monad
-As mentioned earlier, you can use any monad `M[_]` when using a `Transactor` as long as there is a `cats.effect.Async[M]` available. For example. TODO: monix example
-
+As mentioned earlier, you can use any monad `M[_]` when using a `Transactor` as long as there is a `cats.effect.Async[M]` available.
+For example:
 ```
-// TODO: NON-COMPILING
-import fs2.util.{Catchable, Suspendable}
 import monix.eval.Task
-import scala.util.{Failure, Success}
 
-implicit object monixTaskCatchableSuspendable extends Catchable[Task] with Suspendable[Task] {
-  def pure[A](a: A): Task[A] =
-    Task.pure(a)
+val xa = Transactor.fromDriverManager[Task](
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+)
+```
+Or, with Hikari:
+```
+import doobie.hikari.HikariTransactor
+import scala.concurrent.Future
 
-  def flatMap[A, B](a: Task[A])(f: A => Task[B]): Task[B] =
-    a.flatMap(f)
-
-  def fail[A](err: Throwable): Task[A] =
-    Task.raiseError(err)
-
-  def attempt[A](fa: Task[A]): Task[Either[Throwable,A]] =
-    fa.materialize.map({
-      case Success(v) => Right(v)
-      case Failure(err) => Left(err)
-    })
-
-  def suspend[A](fa: => Task[A]): Task[A] =
-    Task.suspend(fa)
-}
+// constructing it is a side-effect!
+val hxa: Future[Transactor[Task]] = HikariTransactor
+  .newHikariTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  .runAsync
 ```

@@ -7,11 +7,11 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.0.1"
 lazy val circeVersion         = "0.9.0"
-lazy val fs2CoreVersion       = "0.10.0-M11"
+lazy val fs2CoreVersion       = "0.10.0-RC1"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.4"
 lazy val kindProjectorVersion = "0.9.5"
-lazy val monixVersion         = "2.3.2"
+lazy val monixVersion         = "3.0.0-M3"
 lazy val postGisVersion       = "2.2.1"
 lazy val postgresVersion      = "42.1.4"
 lazy val refinedVersion       = "0.8.6"
