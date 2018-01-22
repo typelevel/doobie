@@ -14,9 +14,9 @@ import cats.effect.Sync
 import fs2.Stream
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
-  def vector(implicit ev: Sync[F]): F[Vector[A]] = fa.compile.toVector
-  def list(implicit ev: Sync[F]): F[List[A]] = fa.compile.toList
-  def sink(f: A => F[Unit])(implicit ev: Sync[F]): F[Unit] = fa.evalMap(f).compile.drain
+  def vector(implicit ev: Sync[F]): F[Vector[A]] = fa.runLog
+  def list(implicit ev: Sync[F]): F[List[A]] = ev.map(fa.runLog)(_.toList)
+  def sink(f: A => F[Unit])(implicit ev: Sync[F]): F[Unit] = fa.evalMap(f).run
   def transact[M[_]: Monad](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
 }
 

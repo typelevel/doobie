@@ -17,7 +17,7 @@ object lostreaming {
       Stream.bracket(openLO(oid))(
         lo => data.to(FS2IO.writeOutputStream(getOutputStream(lo))),
         closeLO
-      ).compile.drain.as(oid)
+      ).run.as(oid)
     }
 
   def createStreamFromLO(oid: Long, chunkSize: Int): Stream[ConnectionIO, Byte] =

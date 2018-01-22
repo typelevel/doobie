@@ -136,7 +136,7 @@ object StreamingCopy {
   // Our main program
   val io: IO[Unit] =
     for {
-      _ <- fuseMap(read, write)(pg, h2).compile.drain // do the copy with fuseMap
+      _ <- fuseMap(read, write)(pg, h2).run // do the copy with fuseMap
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IO(Console.println(s"Copied $n cities!"))
     } yield ()
