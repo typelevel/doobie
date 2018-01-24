@@ -34,7 +34,6 @@ The IO data types provided by fs2 and doobie have been subsumed by `cats.effect.
 |----------------------|------------------|
 | `fs2.Task`           | `cats.effect.IO` |
 | `doobie.util.IOLite` | `cats.effect.IO` |
-| `monix.eval.Task`    | `cats.effect.IO` |
 
 
 ## Typeclasses
