@@ -154,13 +154,3 @@ val xa = Transactor.fromDriverManager[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 ```
-Or, with Hikari:
-```
-import doobie.hikari.HikariTransactor
-import scala.concurrent.Future
-
-// constructing it is a side-effect!
-val hxa: Future[Transactor[Task]] = HikariTransactor
-  .newHikariTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-  .runAsync
-```
