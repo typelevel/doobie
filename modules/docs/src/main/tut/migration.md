@@ -28,7 +28,7 @@ Doobie imports have been split into normal and implicit slices, to mirror the pa
 
 ## Data Types
 
-The IO data types provided by fs2 and doobie have been subsumed by `cats.effect.IO` or any data type with a `cats.effect.Aync` instance, such as `monix.eval.Task`.
+The IO data types provided by fs2 and doobie have been subsumed by `cats.effect.IO` or any data type with a `cats.effect.Async` instance, such as `monix.eval.Task`.
 
 | 0.4.x Data Type      | 0.5.x Data Type  |
 |----------------------|------------------|
