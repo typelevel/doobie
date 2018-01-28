@@ -94,8 +94,8 @@
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; sql"select * from person where id = $pid"
 &lt;console&gt;:44: error: Could not find or construct Param[PersonId :: shapeless.HNil].
-Ensure that this type is an atomic type with an Atom instance in scope, or is an HList whose members
-have Atom instances in scope. You can usually diagnose this problem by trying to summon the Atom
+Ensure that this type is an atomic type with an Meta instance in scope, or is an HList whose members
+have Meta instances in scope. You can usually diagnose this problem by trying to summon the Meta
 instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.
        sql"select * from person where id = $pid"
        ^
