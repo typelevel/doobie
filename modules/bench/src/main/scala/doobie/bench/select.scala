@@ -49,7 +49,7 @@ class bench {
   def doobieBenchP(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
-      .process
+      .stream
       .list
       .transact(xa)
       .map(_.length)

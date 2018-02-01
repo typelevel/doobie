@@ -28,10 +28,10 @@ object update {
   val DefaultChunkSize = query.DefaultChunkSize
 
   /**
-   * Partial application hack to allow calling updateManyWithGeneratedKeys without passing the
+   * Partial application hack to allow calling compileManyWithGeneratedKeys without passing the
    * F[_] type argument explicitly.
    */
-  trait UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
+  trait CompileManyWithGeneratedKeysPartiallyApplied[A, K] {
     def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K] =
       withChunkSize(as, DefaultChunkSize)
     def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K]
@@ -52,7 +52,7 @@ object update {
     protected val logHandler: LogHandler
 
     private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
-    private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
+    private def raiseError[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
 
     // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
@@ -66,7 +66,7 @@ object update {
         en <- c.attempt(FPS.executeUpdate)
         t1 <- now
         n  <- en match {
-                case Left(e)  => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[Int](e)
+                case Left(e)  => log(ExecFailure(sql, args, diff(t1, t0), e)) *> raiseError[Int](e)
                 case Right(a) => a.pure[PreparedStatementIO]
               }
         _  <- log(Success(sql, args, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
@@ -103,24 +103,51 @@ object update {
      * composite argument `a`.
      * @group Execution
      */
+    @deprecated(message = "Use `compile`", since ="0.5.0")
     def run(a: A): ConnectionIO[Int] =
+      compile(a)
+
+    /**
+     * Construct a program to execute the update and yield a count of affected rows, given the
+     * composite argument `a`.
+     * @group Execution
+     */
+    def compile(a: A): ConnectionIO[Int] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeUpdate(a))
 
     /**
      * Program to execute a batch update and yield a count of affected rows.
      * @group Execution
      */
+    @deprecated(message = "Use `compileMany`", since ="0.5.0")
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
+      compileMany(fa)
+
+    /**
+     * Program to execute a batch update and yield a count of affected rows.
+     * @group Execution
+     */
+    def compileMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
       HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa.toList.map(ai)))
 
     /**
-     * Construct a stream that performs a batch update as with `updateMany`, yielding generated
+     * Construct a stream that performs a batch update as with `compileMany`, yielding generated
      * keys of composite type `K`, identified by the specified columns. Note that not all drivers
      * support generated keys, and some support only a single key column.
      * @group Execution
      */
-    def updateManyWithGeneratedKeys[K](columns: String*): UpdateManyWithGeneratedKeysPartiallyApplied[A, K] =
-      new UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
+    @deprecated(message = "Use `compileManyWithGeneratedKeys`", since = "0.5.0")
+    def updateManyWithGeneratedKeys[K](columns: String*): CompileManyWithGeneratedKeysPartiallyApplied[A, K] =
+      compileManyWithGeneratedKeys(columns: _*)
+
+    /**
+     * Construct a stream that performs a batch update as with `compileMany`, yielding generated
+     * keys of composite type `K`, identified by the specified columns. Note that not all drivers
+     * support generated keys, and some support only a single key column.
+     * @group Execution
+     */
+    def compileManyWithGeneratedKeys[K](columns: String*): CompileManyWithGeneratedKeysPartiallyApplied[A, K] =
+      new CompileManyWithGeneratedKeysPartiallyApplied[A, K] {
         def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K] =
           HC.updateManyWithGeneratedKeys[List,I,K](columns.toList)(sql, ().pure[PreparedStatementIO], as.toList.map(ai), chunkSize)
       }
@@ -176,7 +203,7 @@ object update {
         val pos = u.pos
         def toFragment = u.toFragment(a)
         def analysis = u.analysis
-        def run = u.run(a)
+        def compile = u.compile(a)
         def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
           u.withGeneratedKeysWithChunkSize[K](columns: _*)(a, chunkSize)
         def withUniqueGeneratedKeys[K: Composite](columns: String*) =
@@ -245,7 +272,15 @@ object update {
      * Program to execute the update and yield a count of affected rows.
      * @group Execution
      */
-    def run: ConnectionIO[Int]
+    @deprecated(message = "Use `compile'", since = "0.5.0")
+    def run: ConnectionIO[Int] =
+      compile
+
+    /**
+     * Program to execute the update and yield a count of affected rows.
+     * @group Execution
+     */
+    def compile: ConnectionIO[Int]
 
     /**
      * Construct a stream that performs the update, yielding generated keys of composite type `K`,

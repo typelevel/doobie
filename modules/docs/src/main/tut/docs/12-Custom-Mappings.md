@@ -174,7 +174,7 @@ implicit val PersonMeta = codecMeta[Person]
 Now let's create a table that has a `json` column to store a `Person`.
 
 ```tut:silent
-val drop = sql"DROP TABLE IF EXISTS pet".update.run
+val drop = sql"DROP TABLE IF EXISTS pet".update.compile
 
 val create =
   sql"""
@@ -183,7 +183,7 @@ val create =
       name  VARCHAR NOT NULL UNIQUE,
       owner JSON    NOT NULL
     )
-  """.update.run
+  """.update.compile
 
 (drop *> create).quick.unsafeRunSync
 ```

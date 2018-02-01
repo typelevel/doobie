@@ -67,7 +67,16 @@ object connection {
    * action, and return results via a `Stream`.
    * @group Prepared Statements
    */
+  @deprecated(message = "Use `stream`", since = "0.5.0")
   def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
+    stream(sql, prep, chunkSize)
+
+  /**
+   * Construct a prepared statement from the given `sql`, configure it with the given `PreparedStatementIO`
+   * action, and return results via a `Stream`.
+   * @group Prepared Statements
+   */
+  def stream[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
     liftStream(chunkSize, FC.prepareStatement(sql), prep, FPS.executeQuery)
 
   /**

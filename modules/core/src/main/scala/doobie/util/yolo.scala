@@ -77,7 +77,7 @@ object yolo {
     implicit class Update0YoloOps(u: Update0) {
 
       def quick: M[Unit] =
-        u.run.flatMap(a => out(s"$a row(s) updated")).transact(xa)
+        u.compile.flatMap(a => out(s"$a row(s) updated")).transact(xa)
 
       def check: M[Unit] =
         (delay(showSql(u.sql)) *> u.analysis.attempt.flatMap {

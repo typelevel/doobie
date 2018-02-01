@@ -115,15 +115,18 @@ object query {
      * type `B`.
      * @group Results
      */
+    @deprecated(message = "Use `streamWithChunkSize`", since = "0.5.0")
     def processWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      HC.process[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
+      streamWithChunkSize(a, chunkSize)
 
     /**
-     * FS2 Friendly Alias for processWithChunkSize.
+     * Apply the argument `a` to construct a `Stream` with the given chunking factor, with
+     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
+     * type `B`.
      * @group Results
      */
     def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      processWithChunkSize(a, chunkSize)
+      HC.stream[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
 
     /**
      * Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with
@@ -131,15 +134,18 @@ object query {
      * type `B`.
      * @group Results
      */
+    @deprecated(message = "Use `stream`", since = "0.5.0")
     def process(a: A): Stream[ConnectionIO, B] =
-      processWithChunkSize(a, DefaultChunkSize)
+      stream(a)
 
     /**
-     * FS2 Friendly Alias for process.
+     * Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with
+     * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
+     * type `B`.
      * @group Results
      */
     def stream(a: A): Stream[ConnectionIO, B] =
-      process(a)
+      streamWithChunkSize(a, DefaultChunkSize)
 
     /**
      * Apply the argument `a` to construct a program in
@@ -238,7 +244,7 @@ object query {
         def toFragment = outer.toFragment(a)
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
-        def processWithChunkSize(n: Int) = outer.processWithChunkSize(a, n)
+        def streamWithChunkSize(n: Int) = outer.streamWithChunkSize(a, n)
         def accumulate[F[_]: Alternative] = outer.accumulate[F](a)
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
@@ -335,29 +341,33 @@ object query {
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
+    @deprecated(message = "Use `stream`", since = "0.5.0")
     def process: Stream[ConnectionIO, B] =
-      processWithChunkSize(DefaultChunkSize)
+      stream
 
     /**
-     * FS2 Friendly Alias for process.
+     * `Stream` with default chunk factor, with effect type
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
     def stream : Stream[ConnectionIO, B] =
-      process
+      streamWithChunkSize(DefaultChunkSize)
 
     /**
      * `Stream` with given chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
-    def processWithChunkSize(n: Int): Stream[ConnectionIO, B]
+    @deprecated("Use `streamWithChunkSize`", since = "0.5.0")
+    def processWithChunkSize(n: Int): Stream[ConnectionIO, B] =
+      streamWithChunkSize(n)
 
     /**
-     * FS2 Friendly Alias for processWithChunkSize.
+     * `Stream` with given chunk factor, with effect type
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
-    def streamWithChunkSize(n: Int): Stream[ConnectionIO, B] =
-      processWithChunkSize(n)
+    def streamWithChunkSize(n: Int): Stream[ConnectionIO, B]
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`
@@ -399,10 +409,10 @@ object query {
     def map[C](f: B => C): Query0[C]
 
     /**
-     * Convenience method; equivalent to `process.sink(f)`
+     * Convenience method; equivalent to `stream.sink(f)`
      * @group Results
      */
-    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
+    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = stream.sink(f)
 
     /**
      * Convenience method; equivalent to `to[List]`

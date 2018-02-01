@@ -62,7 +62,7 @@ This is ok, but there's not much point reading all the results from the database
 ```tut
 (sql"select name from country"
   .query[String]     // Query0[String]
-  .process           // Stream[ConnectionIO, String]
+  .stream           // Stream[ConnectionIO, String]
   .take(5)           // Stream[ConnectionIO, String]
   .list              // ConnectionIO[List[String]]
   .transact(xa)      // IO[List[String]]
@@ -70,9 +70,9 @@ This is ok, but there's not much point reading all the results from the database
   .foreach(println))
 ```
 
-The difference here is that `process` gives us a
+The difference here is that `stream` gives us a
 `Stream[ConnectionIO, String]` (an alias for `fs2.Stream[ConnectionIO, String]`)
-that emits the results as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
+that emits the results as they arrive from the database. By applying `take(5)` we instruct the stream to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
 > From this point on we use the alias `Stream[A, B]` for `fs2.Stream[A, B]`
 
@@ -92,7 +92,7 @@ We can now run our previous query in an abbreviated form.
 ```tut
 (sql"select name from country"
   .query[String] // Query0[String]
-  .process       // Stream[ConnectionIO, String]
+  .stream        // Stream[ConnectionIO, String]
   .take(5)       // Stream[ConnectionIO, String]
   .quick         // IO[Unit]
   .unsafeRunSync)
@@ -110,7 +110,7 @@ We can select multiple columns, of course, and map them to a tuple. The `gnp` co
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[(String, String, Int, Option[Double])]
-  .process.take(5).quick.unsafeRunSync)
+  .stream.take(5).quick.unsafeRunSync)
 ```
 **doobie** automatically supports row mappings for atomic column types, as well as options, tuples, `HList`s, shapeless records, and case classes thereof. So let's try the same query with an `HList`:
 
@@ -119,7 +119,7 @@ import shapeless._
 
 (sql"select code, name, population, gnp from country"
   .query[String :: String :: Int :: Option[Double] :: HNil]
-  .process.take(5).quick.unsafeRunSync)
+  .stream.take(5).quick.unsafeRunSync)
 ```
 
 And with a shapeless record:
@@ -131,7 +131,7 @@ type Rec = Record.`'code -> String, 'name -> String, 'pop -> Int, 'gnp -> Option
 
 (sql"select code, name, population, gnp from country"
   .query[Rec]
-  .process.take(5).quick.unsafeRunSync)
+  .stream.take(5).quick.unsafeRunSync)
 ```
 
 And again, mapping rows to a case class.
@@ -143,7 +143,7 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[Country] // Query0[Country]
-  .process.take(5).quick.unsafeRunSync)
+  .stream.take(5).quick.unsafeRunSync)
 ```
 
 You can also nest case classes, `HList`s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
@@ -156,7 +156,7 @@ case class Country(name: String, pop: Int, gnp: Option[Double])
 ```tut
 (sql"select code, name, population, gnp from country"
   .query[(Code, Country)] // Query0[(Code, Country)]
-  .process.take(5).quick.unsafeRunSync)
+  .stream.take(5).quick.unsafeRunSync)
 ```
 
 And just for fun, since the `Code` values are constructed from the primary key, let's turn the results into a `Map`. Trivial but useful.
@@ -164,7 +164,7 @@ And just for fun, since the `Code` values are constructed from the primary key, 
 ```tut
 (sql"select code, name, population, gnp from country"
    .query[(Code, Country)] // Query0[(Code, Country)]
-   .process.take(5)        // Stream[ConnectionIO, (Code, Country)]
+   .stream.take(5)        // Stream[ConnectionIO, (Code, Country)]
    .list                   // ConnectionIO[List[(Code, Country)]]
    .map(_.toMap)           // ConnectionIO[Map[Code, Country]]
    .quick.unsafeRunSync)
@@ -180,7 +180,7 @@ However in some cases a stream is what we want as our "top level" type. For exam
 val p = {
   sql"select name, population, gnp from country"
     .query[Country]  // Query0[Country]
-    .process         // Stream[ConnectionIO, Country]
+    .stream         // Stream[ConnectionIO, Country]
     .transact(xa)    // Stream[IO, Country]
  }
 
@@ -196,7 +196,7 @@ The `sql` interpolator is sugar for constructors defined in the `doobie.hi.conne
 
 val sql = "select code, name, population, gnp from country"
 
-val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO], 512) // chunk size
+val proc = HC.stream[(Code, Country)](sql, ().pure[PreparedStatementIO], 512) // chunk size
 
 (proc.take(5)        // Stream[ConnectionIO, (Code, Country)]
      .list           // ConnectionIO[List[(Code, Country)]]
@@ -204,4 +204,4 @@ val proc = HC.process[(Code, Country)](sql, ().pure[PreparedStatementIO], 512) /
   .quick.unsafeRunSync)
 ```
 
-The `process` combinator is parameterized on the process element type and consumes an sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
+The `stream` combinator is parameterized on the stream element type and consumes an sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.

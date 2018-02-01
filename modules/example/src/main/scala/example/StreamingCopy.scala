@@ -108,7 +108,7 @@ object StreamingCopy {
       sql"""
         INSERT INTO city (id, name, countrycode, district, population)
         VALUES (${c.id}, ${c.name}, ${c.countrycode}, ${c.district}, ${c.population})
-      """.update.run.void
+      """.update.compile.void
     )
 
   /** Table creation for our destination DB. We assume the source is populated. */
@@ -121,7 +121,7 @@ object StreamingCopy {
           district varchar NOT NULL,
           population integer NOT NULL
       )
-    """.update.run.void
+    """.update.compile.void
 
 
   // A postges transactor for our source. We assume the WORLD database is set up already.

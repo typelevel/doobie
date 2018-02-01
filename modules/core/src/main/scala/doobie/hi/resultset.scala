@@ -223,7 +223,16 @@ object resultset {
    * mechanism for dealing with query results.
    * @group Results
    */
+  @deprecated(message = "Use `stream`", since = "0.5.0")
   def process[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
+    stream(chunkSize)
+
+  /**
+   * Stream that reads from the `ResultSet` and returns a stream of `A`s. This is the preferred
+   * mechanism for dealing with query results.
+   * @group Results
+   */
+  def stream[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
     repeatEvalChunks(getNextChunk[A](chunkSize))
 
   /** @group Properties */

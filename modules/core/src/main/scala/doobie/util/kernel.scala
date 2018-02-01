@@ -41,7 +41,11 @@ object kernel {
         val width   = outer.width
       }
 
+    @deprecated(message = "Use `product`", since = "0.5.0")
     def zip[B](b: Kernel[B]): Kernel[(A, B)] =
+      product(b)
+
+    def product[B](b: Kernel[B]): Kernel[(A, B)] =
       Kernel.product(this, b)
 
   }

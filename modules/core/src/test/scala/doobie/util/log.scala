@@ -33,8 +33,8 @@ object logspec extends Specification {
   def eventForUniqueUpdate[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
-    val cio     = sql"create table if not exists foo (bar integer)".update.run *>
-                  Update[A](sql, None, handler).run(arg)
+    val cio     = sql"create table if not exists foo (bar integer)".update.compile *>
+                  Update[A](sql, None, handler).compile(arg)
     cio.transact(xa).attempt.unsafeRunSync
     result
   }
@@ -116,7 +116,7 @@ object logspec extends Specification {
     "implicit handler" in {
       var result  = null : LogEvent
       implicit val handler: LogHandler = LogHandler(result = _)
-      val cio = sql"drop table if exists barf".update.run
+      val cio = sql"drop table if exists barf".update.compile
       cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
         case Success(_, _, _, _) => ok
@@ -126,7 +126,7 @@ object logspec extends Specification {
     "implicit handler" in {
       var result  = null : LogEvent
       val handler = LogHandler(result = _)
-      val cio = sql"drop table if exists barf".updateWithLogHandler(handler).run
+      val cio = sql"drop table if exists barf".updateWithLogHandler(handler).compile
       cio.transact(xa).attempt.unsafeRunSync
       result must beLike {
         case Success(_, _, _, _) => ok

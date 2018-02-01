@@ -38,7 +38,7 @@ object fragment {
     def ++(fb: Fragment): Fragment =
       new Fragment {
         type A  = (fa.A, fb.A)
-        val ca  = fa.ca zip fb.ca
+        val ca  = fa.ca product fb.ca
         val a   = (fa.a, fb.a)
         val sql = fa.sql + fb.sql
         val pos = fa.pos orElse fb.pos

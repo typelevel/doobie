@@ -46,7 +46,12 @@ object preparedstatement {
     repeatEvalChunks(FPS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
+  @deprecated(message = "Use `stream`", since = "0.5.0")
   def process[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+    stream(chunkSize)
+
+  /** @group Execution */
+  def stream[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeQuery)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
 
   /**
