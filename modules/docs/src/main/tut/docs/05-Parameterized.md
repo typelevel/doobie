@@ -6,19 +6,26 @@ title: Parameterized Queries
 
 ## {{page.title}}
 
-In this chapter we learn how to construct parameterized queries, and introduce the `Composite` typeclass.
+In this chapter we learn how to construct parameterized queries, and introduce the `Meta` and `Composite` typeclasses.
 
 ### Setting Up
 
 Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up a `Transactor` and YOLO mode.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import doobie._
+import doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-val y = xa.yolo; import y._
+
+val y = xa.yolo
+import y._
 ```
 
 We're still playing with the `country` table, shown here for reference.
@@ -42,8 +49,14 @@ case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```
 
 ```tut
-(sql"select code, name, population, gnp from country"
-  .query[Country].process.take(5).quick.unsafeRunSync)
+{
+  sql"select code, name, population, gnp from country"
+    .query[Country]
+    .stream
+    .take(5)
+    .quick
+    .unsafeRunSync
+}
 ```
 
 Still works. Ok.
@@ -64,7 +77,7 @@ And when we run the query ... surprise, it works!
 biggerThan(150000000).quick.unsafeRunSync // Let's see them all
 ```
 
-So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a proper parameterized `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
+So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
 
 **doobie** allows you to interpolate values of any type (and options thereof) with an `Meta` instance, which includes
 
