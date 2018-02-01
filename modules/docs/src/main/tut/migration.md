@@ -13,6 +13,21 @@ position: 2
 
 This guide covers the changes that are specific to **doobie**, but you will also need to deal with changes between cats 0.9 and cats 1.0 (the provided Scalafix rules may be helpful) and between fs2 0.9 and fs2 0.10. Please join the [gitter channel](https://gitter.im/tpolecat/doobie) if you run into trouble. We will update this document to reflect common issues as they arise.
 
+## Artifacts
+
+Artifact names have changed. The `-cats` segment is now redundant and has been removed.
+
+| 0.4.x Artifact          | 0.5.x Artifact     |
+|-------------------------|--------------------|
+| `"doobie-core-cats"`      | `"doobie-core"`      |
+| `"doobie-h2-cats"`        | `"doobie-h2"`        |
+| `"doobie-hikari-cats"`    | `"doobie-hikari"`    |
+| `"doobie-postgres-cats"`  | `"doobie-postgres"`  |
+| `"doobie-refined-cats"`   | `"doobie-refined"`   |
+| `"doobie-scalatest-cats"` | `"doobie-scalatest"` |
+| `"doobie-specs2-cats"`    | `"doobie-specs2"`    |
+
+
 ## Imports
 
 Doobie imports have been split into normal and implicit slices, to mirror the pattern in cats (old imports will work but are deprecated) and a few things have been renamed. fs2's interop layer for cats is gone.
