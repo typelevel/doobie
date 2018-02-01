@@ -7,7 +7,6 @@ package doobie.util
 import cats.implicits._
 import cats.effect._
 import doobie.free.connection.{ ConnectionIO, delay }
-import doobie.syntax.stream._
 import doobie.syntax.connectionio._
 import doobie.util.analysis._
 import doobie.util.query._
@@ -112,7 +111,7 @@ object yolo {
 
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-      def quick: M[Unit] = pa.sink(a => out(a.toString)).transact(xa)
+      def quick: M[Unit] = pa.evalMap(a => out(a.toString)).compile.drain.transact(xa)
     }
 
     private def assertEmpty(name: String, es: List[AlignmentError]) =

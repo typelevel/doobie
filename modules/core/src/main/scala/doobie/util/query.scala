@@ -402,7 +402,8 @@ object query {
      * Convenience method; equivalent to `process.sink(f)`
      * @group Results
      */
-    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] = process.sink(f)
+    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
+      process.evalMap(f).compile.drain
 
     /**
      * Convenience method; equivalent to `to[List]`

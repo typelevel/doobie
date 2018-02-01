@@ -23,7 +23,7 @@ object HiUsage {
 
   // An example action. Streams results to stdout
   lazy val example: ConnectionIO[Unit] =
-    speakerQuery("English", 10).sink(c => FC.delay(println("~> " + s"$c")))
+    speakerQuery("English", 10).evalMap(c => FC.delay(println("~> " + s"$c"))).compile.drain
 
   // Construct an action to find countries where more than `pct` of the population speaks `lang`.
   // The result is a scalaz.stream.Process that can be further manipulated by the caller.

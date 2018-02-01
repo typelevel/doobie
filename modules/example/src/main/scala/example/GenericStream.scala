@@ -76,7 +76,7 @@ object GenericStream {
 
   def runl(args: List[String]): IO[Unit] =
     args match {
-      case sql :: Nil => processGeneric(sql, ().pure[PreparedStatementIO], 100).transact(xa).sink(m => IO(Console.println(m)))
+      case sql :: Nil => processGeneric(sql, ().pure[PreparedStatementIO], 100).transact(xa).evalMap(m => IO(Console.println(m))).compile.drain
       case _          => IO(Console.println("expected on arg, a query"))
     }
 
