@@ -12,7 +12,7 @@ In this chapter we discuss the extended support that **doobie** offers for users
 libraryDependencies += "org.tpolecat" %% "doobie-h2" % doobieVersion
 ```
 
-This library pulls in [H2 Version 1.3.170](http://www.h2database.com/html/main.html) as a transitive dependency.
+This library pulls in H2 as a transitive dependency.
 
 ### Array Types
 
@@ -20,8 +20,8 @@ This library pulls in [H2 Version 1.3.170](http://www.h2database.com/html/main.h
 
 - `Boolean`
 - `Int`
-- `Long`   
-- `Float`  
+- `Long`
+- `Float`
 - `Double`
 - `String`
 
@@ -39,8 +39,10 @@ See the previous chapter on **SQL Arrays** for usage examples.
 
 ```tut:silent
 import cats.effect.IO
-import doobie._, doobie.implicits._
-import doobie.h2._, doobie.h2.implicits._
+import doobie._
+import doobie.h2._
+import doobie.h2.implicits._
+import doobie.implicits._
 
 val q = sql"select 42".query[Int].unique
 
