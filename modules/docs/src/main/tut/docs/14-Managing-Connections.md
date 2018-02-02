@@ -6,24 +6,24 @@ title: Managing Connections
 
 ## {{page.title}}
 
-<div class="alert alert-warning" role="alert">
-<b>Note:</b> Doobie 0.4.2 introduced a new <code>Transactor</code> design that makes it simple to customize the behavior and, combined with new interpreter design, makes it practical to use doobie types in free coproducts (see `coproduct.scala` in the `example` project).
-</div>
-
 In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+import doobie._
+import doobie.implicits._
 ```
 
 ### About Transactors
 
-Most **doobie** programs are values of type `ConnectionIO[A]` or `Process[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
+Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
-A `Transactor.Aux[M, A]` closes over some source of connections and configuration information (`A`). Based on this, it provides several natural transformations from `ConnectionIO` to `M`, where `M[_]` is the target monad.
+A `Transactor.Aux[M, A]` closes over some source of connections and configuration information (`A`). Based on this, it provides several natural transformations from `ConnectionIO ~> M`, where `M` is a target monad such as `IO`.
 
-A `Strategy`, which represents the common setup, error-handling, and cleanup strategy associated with a SQL transaction, can also be configured for a `Transactor`, where sane defaults are provided. A `Transactor` uses a `Strategy` to wrap programs prior to execution.
+A `Strategy`, which represents the setup, error-handling, and cleanup strategy associated with each database interation, can be configured for a `Transactor`, where reasonable defaults are provided. A `Transactor` uses a `Strategy` to wrap programs prior to execution.
 
 These are the natural transformations that a `Transactor` provides:
 
@@ -31,9 +31,8 @@ These are the natural transformations that a `Transactor` provides:
   - e.g., `xa.trans.apply(program1)`
   - you can also use the syntax `program1.transact(xa)`, which runs `xa.trans` under the hood
 - `rawTrans` natural transformation equivalent to `trans` but one that does not use the provided `Strategy` to wrap the given program with additional operations. This can be useful in cases where transactional handling is unsupported or undesired.
-- `rawTransP: Process[ConnectionIO, ?] ~> Process[M, ?]` equivalent to `rawTrans` but expressed using `Process` (which is an alias for `fs2.Stream`)
-- `transP: Process[ConnectionIO, ?] ~> Process[M, ?]` equivalent to `trans` but expressed using `Process` (which is an alias for `fs2.Stream`)
-streaming fashion
+- `rawTransP: Stream[ConnectionIO, ?] ~> Stream[M, ?]` equivalent to `rawTrans` but expressed using `Stream`.
+- `transP: Stream[ConnectionIO, ?] ~> Stream[M, ?]` equivalent to `trans` but expressed using `Stream`.
 - `exec: Kleisli[M, Connection, ?] ~> M` equivalent to `trans` except it transforms a `Kleisli` that expects a `java.sql.Connection` and not a `ConnectionIO`. This can be used in combination with the doobie interpreters, which can transform doobie programs (e.g., `ConnectionIO`) to `Kleisli` effects, in order to implement your own logic for running doobie programs.
 - `rawExec` natural transformation equivalent to `exec` but one that does not use the provided `Strategy` to wrap the given program with additional operations.
 
@@ -67,7 +66,12 @@ import doobie.hikari._, doobie.hikari.implicits._
 val q = sql"select 42".query[Int].unique
 
 val p: IO[Int] = for {
-  xa <- HikariTransactor.newHikariTransactor[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  xa <- HikariTransactor.newHikariTransactor[IO](
+          "org.postgresql.Driver",
+          "jdbc:postgresql:world",
+          "postgres",
+          ""
+        )
   _  <- xa.configure(hx => IO( /* do something with hx */ ()))
   a  <- q.transact(xa) guarantee xa.shutdown
 } yield a

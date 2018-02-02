@@ -50,7 +50,7 @@ class bench {
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
       .process
-      .list
+      .compile.toList
       .transact(xa)
       .map(_.length)
       .unsafeRunSync

@@ -19,7 +19,7 @@ This book is organized cookbook-style: we demonstrate a common task and then exp
 
 This library is designed for people who are interested in typed, pure functional programming. If you are not a [Cats](https://github.com/typelevel/cats) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
-Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) or find **tpolecat** on [Twitter](https://twitter.com/tpolecat) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated for each release** to address problems and omissions.
+Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated continuously** to address problems and omissions.
 
 ### The Setup
 
@@ -81,7 +81,8 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-specs2"   % doobieVersion
 )
 ```
-Partial unification is a type inference bug fix that makes working with functional code significantly easier. Please see the Cats [Readme](https://github.com/typelevel/cats#getting-started) for more info.
+
+The `-Ypartial-unification` compiler flag enables a bug fix that makes working with functional code significantly easier. See the Cats [Getting Started](https://github.com/typelevel/cats#getting-started) for more info on this if it interests you.
 
 If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
 
@@ -115,4 +116,4 @@ woozle(nel) // doesn't compile
 
 ### Feedback and Contributions
 
-Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or find and chat with **tpolecat** as mentioned above.
+Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or chat with us on [Gitter](https://gitter.im/tpolecat/doobie).

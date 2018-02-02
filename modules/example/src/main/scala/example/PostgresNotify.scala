@@ -55,7 +55,7 @@ object PostgresNotify {
     notificationStream("foo", 1000)
       .map(n => s"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
-      .sink(s => HC.delay(Console.println(s)))
+      .evalMap(s => HC.delay(Console.println(s))).compile.drain
       .transact(xa)
       .void
       .unsafeRunSync()

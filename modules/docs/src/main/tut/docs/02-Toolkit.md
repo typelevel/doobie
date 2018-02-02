@@ -26,7 +26,7 @@ Some patterns of composition are so common and generic that they can be provided
 
 - Performing a query and reading the results as a stream.
 - Performing an update and returning updated rows as a stream.
-- Validating a query or update in terms of the schema and JDBC ~ Scala type mappings.
+- Validating a query or update in terms of the schema and JDBC ⟷ Scala type mappings.
 
 This book largely focuses on these common interactions, but also explains their representation at lower levels in case you wish to do something other than what you get for free.
 
@@ -47,7 +47,3 @@ The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-
 - Typesafe string interpolator for SQL literals.
 
 The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the `doobie.hi` API can use constructors from `doobie.free` to implement advanced or vendor-specific behavior directly, without translation or lifting.
-
-### Vendor Extensions
-
-The 0.2.0 release introduced small add-on libraries to support vendor-specific features outside the JDBC specification. Initial support libraries for [Hikari](https://github.com/brettwooldridge/HikariCP), [H2](http://h2database.com), [PostgreSQL](http://www.postgresql.org/), and [Specs2](http://etorreborre.github.io/specs2/) are available and are described in later chapters. This is an area of active development and contributions are especially welcome.

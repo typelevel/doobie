@@ -13,8 +13,13 @@ The YOLO-mode query checking feature demonstated in an earlier chapter is also a
 As with earlier chapters we set up a `Transactor` and YOLO mode. We will also use the `doobie-specs2` and `doobie-scalatest` add-ons.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import doobie._
+import doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -38,19 +43,22 @@ So here are a few queries we would like to check. Note that we can only check va
 ```tut:silent
 case class Country(code: Int, name: String, pop: Int, gnp: Double)
 
-val trivial = sql"""
-  select 42, 'foo'::varchar
-""".query[(Int, String)]
+val trivial =
+  sql"""
+    select 42, 'foo'::varchar
+  """.query[(Int, String)]
 
-def biggerThan(minPop: Short) = sql"""
-  select code, name, population, gnp, indepyear
-  from country
-  where population > $minPop
-""".query[Country]
+def biggerThan(minPop: Short) =
+  sql"""
+    select code, name, population, gnp, indepyear
+    from country
+    where population > $minPop
+  """.query[Country]
 
-def update(oldName: String, newName: String) = sql"""
-  update country set name = $newName where name = $oldName
-""".update
+def update(oldName: String, newName: String) =
+  sql"""
+    update country set name = $newName where name = $oldName
+  """.update
 ```
 
 ### The Specs2 Package

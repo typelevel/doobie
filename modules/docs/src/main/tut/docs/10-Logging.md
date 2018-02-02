@@ -13,8 +13,13 @@ In this chapter we discuss how to log statement execution and timing.
 Once again we will set up our REPL with a transactor.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import doobie._
+import doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -86,7 +91,7 @@ def byName(pat: String) = {
 }
 ```
 
-### Writing Your `LogHandler`
+### Writing Your Own `LogHandler`
 
 If you use the `jdkLogHandler` you will be warned that it's just an example, write your own! So let's do that. `LogHandler` is a very simple data type:
 
@@ -161,7 +166,7 @@ val jdkLogHandler: LogHandler = {
 
 ### Caveats
 
-Logging is not yet supported for streaming (`.process` or YOLO mode's `.quick`).
+Logging is not yet supported for streaming (`.stream` or YOLO mode's `.quick`).
 
 Note that the `LogHandler` invocation is part of your `ConnectionIO` program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.
 

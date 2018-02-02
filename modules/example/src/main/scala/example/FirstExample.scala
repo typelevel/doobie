@@ -44,18 +44,18 @@ object FirstExample {
       _  <- putStrLn(s"Inserted $ns suppliers and $nc coffees.")
 
       // Select and stream the coffees to stdout
-      _ <- DAO.allCoffees.sink(c => putStrLn(s"$c"))
+      _ <- DAO.allCoffees.evalMap(c => putStrLn(s"$c")).compile.drain
 
       // Get the names and supplier names for all coffees costing less than $9.00,
       // again streamed directly to stdout
-      _ <- DAO.coffeesLessThan(9.0).sink(p => putStrLn(s"$p"))
+      _ <- DAO.coffeesLessThan(9.0).evalMap(p => putStrLn(s"$p")).compile.drain
 
       // Same thing, but read into a list this time
-      l <- DAO.coffeesLessThan(9.0).list
+      l <- DAO.coffeesLessThan(9.0).compile.toList
       _ <- putStrLn(l.toString)
 
       // Read into a vector this time, with some stream processing
-      v <- DAO.coffeesLessThan(9.0).take(2).map(p => p._1 + "*" + p._2).vector
+      v <- DAO.coffeesLessThan(9.0).take(2).map(p => p._1 + "*" + p._2).compile.toVector
       _ <- putStrLn(v.toString)
 
     } yield "All done!"
