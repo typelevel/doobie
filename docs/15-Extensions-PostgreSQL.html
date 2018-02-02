@@ -2,28 +2,36 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.0-M14"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.0-RC1"</span>
 </code></pre>
 </div>
 
-<p>This library pulls in <a href="https://jdbc.postgresql.org/documentation/94/index.html">PostgreSQL JDBC Driver 9.4</a> as a transitive dependency.</p>
+<p>This library pulls in <a href="https://jdbc.postgresql.org">PostgreSQL JDBC Driver</a> as a transitive dependency.</p>
 
 <h3 id="setting-up">Setting Up</h3>
 
 <p>The following examples require a few imports.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
 
 <p><strong>doobie</strong> adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the <code class="highlighter-rouge">pgtypes</code> module.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">postgres</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie.postgres._</span>
+<span class="k">import</span> <span class="nn">doobie.postgres.implicits._</span>
 </code></pre>
 </div>
 

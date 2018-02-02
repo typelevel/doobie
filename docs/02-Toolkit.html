@@ -23,7 +23,7 @@
 <ul>
   <li>Performing a query and reading the results as a stream.</li>
   <li>Performing an update and returning updated rows as a stream.</li>
-  <li>Validating a query or update in terms of the schema and JDBC ~ Scala type mappings.</li>
+  <li>Validating a query or update in terms of the schema and JDBC ⟷ Scala type mappings.</li>
 </ul>
 
 <p>This book largely focuses on these common interactions, but also explains their representation at lower levels in case you wish to do something other than what you get for free.</p>
@@ -47,10 +47,6 @@
 </ul>
 
 <p>The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the <code class="highlighter-rouge">doobie.hi</code> API can use constructors from <code class="highlighter-rouge">doobie.free</code> to implement advanced or vendor-specific behavior directly, without translation or lifting.</p>
-
-<h3 id="vendor-extensions">Vendor Extensions</h3>
-
-<p>The 0.2.0 release introduced small add-on libraries to support vendor-specific features outside the JDBC specification. Initial support libraries for <a href="https://github.com/brettwooldridge/HikariCP">Hikari</a>, <a href="http://h2database.com">H2</a>, <a href="http://www.postgresql.org/">PostgreSQL</a>, and <a href="http://etorreborre.github.io/specs2/">Specs2</a> are available and are described in later chapters. This is an area of active development and contributions are especially welcome.</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });

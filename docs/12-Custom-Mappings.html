@@ -18,19 +18,25 @@
 
 <p>In our REPL we have the same setup as before, plus a few extra imports.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.circe._</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">jawn</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">syntax</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">io.circe._</span>
+<span class="k">import</span> <span class="nn">io.circe.jawn._</span>
+<span class="k">import</span> <span class="nn">io.circe.syntax._</span>
 <span class="k">import</span> <span class="nn">java.awt.Point</span>
 <span class="k">import</span> <span class="nn">org.postgresql.util.PGobject</span>
 <span class="k">import</span> <span class="nn">scala.reflect.runtime.universe.TypeTag</span>
 <span class="k">import</span> <span class="nn">scala.util.Try</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span>
 
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
 
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
 
@@ -54,7 +60,7 @@
 </code></pre>
 </div>
 
-<p><strong>doobie</strong> can derive <code class="highlighter-rouge">Composite</code> instances for primitive column types and options thereof, plus tuples, <code class="highlighter-rouge">HList</code>s, shapeless records, and case classes whose elements have <code class="highlighter-rouge">Composite</code> instances. These primitive column types are identified by <code class="highlighter-rouge">Meta</code> instances, which describe <code class="highlighter-rouge">null</code>-aware single-column mappings.</p>
+<p><strong>doobie</strong> can derive <code class="highlighter-rouge">Composite</code> instances for primitive column types and options thereof, plus tuples, <code class="highlighter-rouge">HList</code>s, shapeless records, and case classes whose elements have <code class="highlighter-rouge">Composite</code> instances. These primitive column types are identified by <code class="highlighter-rouge">Meta</code> instances, which describe single-column mappings.</p>
 
 <p>So our strategy for mapping custom types is to construct a new <code class="highlighter-rouge">Meta</code> instance (given <code class="highlighter-rouge">Meta[A]</code> you get <code class="highlighter-rouge">Composite[A]</code> and <code class="highlighter-rouge">Composite[Option[A]]</code> for free); and our strategy for multi-column mappings is to construct a new <code class="highlighter-rouge">Composite</code> instance. We consider both cases below.</p>
 
@@ -90,7 +96,7 @@
 </code></pre>
 </div>
 
-<p>However if we try to use this type for a <em>single</em> column value (i.e., as a query parameter, which requires a <code class="highlighter-rouge">Param</code> instance - <code class="highlighter-rouge">Param</code> is like <code class="highlighter-rouge">Composite</code> but disallows nesting), it doesn’t compile.</p>
+<p>However if we try to use this type for a <em>single</em> column value (i.e., as a query parameter, it doesn’t compile.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; sql"select * from person where id = $pid"
 &lt;console&gt;:44: error: Could not find or construct Param[PersonId :: shapeless.HNil].
@@ -143,8 +149,8 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nc">JsonMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Meta</span><span class="o">.</span><span class="n">other</span><span class="o">[</span><span class="kt">PGobject</span><span class="o">](</span><span class="s">"json"</span><span class="o">).</span><span class="n">xmap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span>
-    <span class="n">a</span> <span class="k">=&gt;</span> <span class="n">parse</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">getValue</span><span class="o">).</span><span class="n">leftMap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="k">throw</span> <span class="n">e</span><span class="o">).</span><span class="n">merge</span><span class="o">,</span> <span class="c1">// failure raises an exception
-</span>    <span class="n">a</span> <span class="k">=&gt;</span> <span class="o">{</span>
+    <span class="n">a</span> <span class="k">=&gt;</span> <span class="n">parse</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">getValue</span><span class="o">).</span><span class="n">leftMap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="k">throw</span> <span class="n">e</span><span class="o">).</span><span class="n">merge</span><span class="o">,</span>
+    <span class="n">a</span> <span class="k">=&gt;</span> <span class="o">{</span>
       <span class="k">val</span> <span class="n">o</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PGobject</span>
       <span class="n">o</span><span class="o">.</span><span class="n">setType</span><span class="o">(</span><span class="s">"json"</span><span class="o">)</span>
       <span class="n">o</span><span class="o">.</span><span class="n">setValue</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">noSpaces</span><span class="o">)</span>
@@ -154,14 +160,9 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 </code></pre>
 </div>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span>
-<span class="n">res21</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">2</span>
-</code></pre>
-</div>
+<p>Given this mapping to and from <code class="highlighter-rouge">Json</code> we can construct a <em>further</em> mapping to any type that has <code class="highlighter-rouge">Encoder</code> and <code class="highlighter-rouge">Decoder</code> instances. On failure we throw an exception; this indicates a logic or schema problem.</p>
 
-<p>Given this mapping to and from <code class="highlighter-rouge">Json</code> we can construct a <em>further</em> mapping to any type that has an <code class="highlighter-rouge">EncodeJson</code> and <code class="highlighter-rouge">DecodeJson</code> instances. On failure we throw an exception; this indicates a logic or schema problem.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">codecMeta</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">Encoder</span> <span class="kt">:</span> <span class="kt">Decoder</span> <span class="kt">:</span> <span class="kt">TypeTag</span><span class="o">]</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">codecMeta</span><span class="o">[</span><span class="kt">A:</span> <span class="kt">Encoder</span> <span class="kt">:</span> <span class="kt">Decoder</span> <span class="kt">:</span> <span class="kt">TypeTag</span><span class="o">]</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Meta</span><span class="o">[</span><span class="kt">Json</span><span class="o">].</span><span class="n">xmap</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span>
     <span class="k">_</span><span class="o">.</span><span class="n">as</span><span class="o">[</span><span class="kt">A</span><span class="o">].</span><span class="n">fold</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="k">throw</span> <span class="k">_</span><span class="o">,</span> <span class="n">identity</span><span class="o">),</span>
     <span class="k">_</span><span class="o">.</span><span class="n">asJson</span>
@@ -173,9 +174,16 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Person</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">things</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span>
 
-<span class="k">implicit</span> <span class="k">val</span> <span class="o">(</span><span class="n">personEncodeJson</span><span class="o">,</span> <span class="n">personDecodeJson</span><span class="o">)</span> <span class="k">=</span>
-  <span class="o">(</span><span class="nc">Encoder</span><span class="o">.</span><span class="n">forProduct3</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">,</span> <span class="s">"things"</span><span class="o">)((</span><span class="n">p</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">age</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">things</span><span class="o">)),</span>
-   <span class="nc">Decoder</span><span class="o">.</span><span class="n">forProduct3</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">,</span> <span class="s">"things"</span><span class="o">)((</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">things</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=&gt;</span> <span class="nc">Person</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">age</span><span class="o">,</span> <span class="n">things</span><span class="o">)))</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="n">personEncodeJson</span> <span class="k">=</span>
+  <span class="nc">Encoder</span><span class="o">.</span><span class="n">forProduct3</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">,</span> <span class="s">"things"</span><span class="o">)</span> <span class="o">{</span> <span class="o">(</span><span class="n">p</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="k">=&gt;</span>
+    <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">age</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">things</span><span class="o">)</span>
+  <span class="o">}</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="n">personDecodeJson</span> <span class="k">=</span>
+  <span class="nc">Decoder</span><span class="o">.</span><span class="n">forProduct3</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">,</span> <span class="s">"things"</span><span class="o">)</span> <span class="o">{</span>
+    <span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">things</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=&gt;</span>
+      <span class="nc">Person</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">age</span><span class="o">,</span> <span class="n">things</span><span class="o">)</span>
+  <span class="o">}</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nc">PersonMeta</span> <span class="k">=</span> <span class="n">codecMeta</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span>
 </code></pre>
@@ -217,8 +225,13 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">p</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"Steve"</span><span class="o">,</span> <span class="mi">10</span><span class="o">,</span> <span class="nc">List</span><span class="o">(</span><span class="s">"Train"</span><span class="o">,</span> <span class="s">"Ball"</span><span class="o">))</span>
 <span class="n">p</span><span class="k">:</span> <span class="kt">Person</span> <span class="o">=</span> <span class="nc">Person</span><span class="o">(</span><span class="nc">Steve</span><span class="o">,</span><span class="mi">10</span><span class="o">,</span><span class="nc">List</span><span class="o">(</span><span class="nc">Train</span><span class="o">,</span> <span class="nc">Ball</span><span class="o">))</span>
 
-<span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">sql</span><span class="s">"insert into pet (name, owner) values ('Bob', $p)"</span>
-     <span class="o">|</span>   <span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">String</span>, <span class="kt">Person</span><span class="o">)](</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"owner"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="o">{</span>
+     <span class="o">|</span>   <span class="n">sql</span><span class="s">"insert into pet (name, owner) values ('Bob', $p)"</span>
+     <span class="o">|</span>     <span class="o">.</span><span class="n">update</span>
+     <span class="o">|</span>     <span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">String</span>, <span class="kt">Person</span><span class="o">)](</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"owner"</span><span class="o">)</span>
+     <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
+     <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
+     <span class="o">|</span> <span class="o">}</span>
   <span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="nc">Bob</span><span class="o">,</span><span class="nc">Person</span><span class="o">(</span><span class="nc">Steve</span><span class="o">,</span><span class="mi">10</span><span class="o">,</span><span class="nc">List</span><span class="o">(</span><span class="nc">Train</span><span class="o">,</span> <span class="nc">Ball</span><span class="o">)))</span>
 </code></pre>
 </div>

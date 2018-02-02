@@ -6,8 +6,13 @@
 
 <p>Once again we will set up our REPL with a transactor.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
@@ -44,7 +49,7 @@
 <p>When we run our program we get our result as expected.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">byName</span><span class="o">(</span><span class="s">"U%"</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res0</span><span class="k">:</span> <span class="kt">List</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">)]</span> <span class="k">=</span> <span class="nc">List</span><span class="o">((</span><span class="nc">United</span> <span class="nc">Arab</span> <span class="nc">Emirates</span><span class="o">,</span><span class="nc">ARE</span><span class="o">),</span> <span class="o">(</span><span class="nc">United</span> <span class="nc">Kingdom</span><span class="o">,</span><span class="nc">GBR</span><span class="o">),</span> <span class="o">(</span><span class="nc">Uganda</span><span class="o">,</span><span class="nc">UGA</span><span class="o">),</span> <span class="o">(</span><span class="nc">Ukraine</span><span class="o">,</span><span class="nc">UKR</span><span class="o">),</span> <span class="o">(</span><span class="nc">Uruguay</span><span class="o">,</span><span class="nc">URY</span><span class="o">),</span> <span class="o">(</span><span class="nc">Uzbekistan</span><span class="o">,</span><span class="nc">UZB</span><span class="o">),</span> <span class="o">(</span><span class="nc">United</span> <span class="nc">States</span><span class="o">,</span><span class="nc">USA</span><span class="o">),</span> <span class="o">(</span><span class="nc">United</span> <span class="nc">States</span> <span class="nc">Minor</span> <span class="nc">Outlying</span> <span class="nc">Islands</span><span class="o">,</span><span class="nc">UMI</span><span class="o">))</span>
+<span class="n">res1</span><span class="k">:</span> <span class="kt">List</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">)]</span> <span class="k">=</span> <span class="nc">List</span><span class="o">((</span><span class="nc">United</span> <span class="nc">Arab</span> <span class="nc">Emirates</span><span class="o">,</span><span class="nc">ARE</span><span class="o">),</span> <span class="o">(</span><span class="nc">United</span> <span class="nc">Kingdom</span><span class="o">,</span><span class="nc">GBR</span><span class="o">),</span> <span class="o">(</span><span class="nc">Uganda</span><span class="o">,</span><span class="nc">UGA</span><span class="o">),</span> <span class="o">(</span><span class="nc">Ukraine</span><span class="o">,</span><span class="nc">UKR</span><span class="o">),</span> <span class="o">(</span><span class="nc">Uruguay</span><span class="o">,</span><span class="nc">URY</span><span class="o">),</span> <span class="o">(</span><span class="nc">Uzbekistan</span><span class="o">,</span><span class="nc">UZB</span><span class="o">),</span> <span class="o">(</span><span class="nc">United</span> <span class="nc">States</span><span class="o">,</span><span class="nc">USA</span><span class="o">),</span> <span class="o">(</span><span class="nc">United</span> <span class="nc">States</span> <span class="nc">Minor</span> <span class="nc">Outlying</span> <span class="nc">Islands</span><span class="o">,</span><span class="nc">UMI</span><span class="o">))</span>
 </code></pre>
 </div>
 
@@ -83,7 +88,7 @@ INFO: Successful Statement Execution:
 </code></pre>
 </div>
 
-<h3 id="writing-your-loghandler">Writing Your <code class="highlighter-rouge">LogHandler</code></h3>
+<h3 id="writing-your-own-loghandler">Writing Your Own <code class="highlighter-rouge">LogHandler</code></h3>
 
 <p>If you use the <code class="highlighter-rouge">jdkLogHandler</code> you will be warned that it’s just an example, write your own! So let’s do that. <code class="highlighter-rouge">LogHandler</code> is a very simple data type:</p>
 
@@ -110,11 +115,11 @@ INFO: Successful Statement Execution:
 <p>But that’s not interesting. Let’s at least print the event out.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">trivial</span> <span class="k">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="nc">Console</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">"*** "</span> <span class="o">+</span> <span class="n">e</span><span class="o">))</span>
-<span class="n">trivial</span><span class="k">:</span> <span class="kt">doobie.util.log.LogHandler</span> <span class="o">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="nc">$$Lambda$23504</span><span class="o">/</span><span class="mi">1199999767</span><span class="k">@</span><span class="mi">58695129</span><span class="o">)</span>
+<span class="n">trivial</span><span class="k">:</span> <span class="kt">doobie.util.log.LogHandler</span> <span class="o">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="nc">$$Lambda$24036</span><span class="o">/</span><span class="mi">1621940883</span><span class="k">@</span><span class="mi">49288</span><span class="n">c28</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">queryWithLogHandler</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="n">trivial</span><span class="o">).</span><span class="n">unique</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="o">***</span> <span class="nc">Success</span><span class="o">(</span><span class="n">select</span> <span class="mi">42</span><span class="o">,</span><span class="nc">List</span><span class="o">(),</span><span class="mi">478753</span> <span class="n">nanoseconds</span><span class="o">,</span><span class="mi">212600</span> <span class="n">nanoseconds</span><span class="o">)</span>
-<span class="n">res2</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="o">***</span> <span class="nc">Success</span><span class="o">(</span><span class="n">select</span> <span class="mi">42</span><span class="o">,</span><span class="nc">List</span><span class="o">(),</span><span class="mi">518243</span> <span class="n">nanoseconds</span><span class="o">,</span><span class="mi">249572</span> <span class="n">nanoseconds</span><span class="o">)</span>
+<span class="n">res3</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
 </code></pre>
 </div>
 
@@ -163,7 +168,7 @@ INFO: Successful Statement Execution:
 
 <h3 id="caveats">Caveats</h3>
 
-<p>Logging is not yet supported for streaming (<code class="highlighter-rouge">.process</code> or YOLO mode’s <code class="highlighter-rouge">.quick</code>).</p>
+<p>Logging is not yet supported for streaming (<code class="highlighter-rouge">.stream</code> or YOLO mode’s <code class="highlighter-rouge">.quick</code>).</p>
 
 <p>Note that the <code class="highlighter-rouge">LogHandler</code> invocation is part of your <code class="highlighter-rouge">ConnectionIO</code> program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.</p>
 

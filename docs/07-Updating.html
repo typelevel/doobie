@@ -6,12 +6,19 @@
 
 <p>Again we set up a transactor and pull in YOLO mode, but this time we’re not using the world database.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
 
@@ -21,26 +28,26 @@
 
 <p>Let’s create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the <code class="highlighter-rouge">sql</code> interpolator, but this time we’re using <code class="highlighter-rouge">update</code> rather than <code class="highlighter-rouge">query</code>. The <code class="highlighter-rouge">.run</code> method gives a <code class="highlighter-rouge">ConnectionIO[Int]</code> that yields the total number of rows modified, and the YOLO-mode <code class="highlighter-rouge">.quick</code> gives a <code class="highlighter-rouge">IO[Unit]</code> that prints out the row count.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">drop</span><span class="k">:</span> <span class="kt">Update0</span> <span class="o">=</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">drop</span> <span class="k">=</span>
   <span class="n">sql</span><span class="s">"""
     DROP TABLE IF EXISTS person
-  """</span><span class="o">.</span><span class="n">update</span>
+  """</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">run</span>
 
-<span class="k">val</span> <span class="n">create</span><span class="k">:</span> <span class="kt">Update0</span> <span class="o">=</span>
+<span class="k">val</span> <span class="n">create</span> <span class="k">=</span>
   <span class="n">sql</span><span class="s">"""
     CREATE TABLE person (
       id   SERIAL,
       name VARCHAR NOT NULL UNIQUE,
       age  SMALLINT
     )
-  """</span><span class="o">.</span><span class="n">update</span>
+  """</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">run</span>
 </code></pre>
 </div>
 
-<p>We can compose these and run them together.</p>
+<p>We can compose these and run them together, yielding the total number of affected rows.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">drop</span><span class="o">.</span><span class="n">run</span> <span class="o">*&gt;</span> <span class="n">create</span><span class="o">.</span><span class="n">run</span><span class="o">).</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res1</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">drop</span><span class="o">,</span> <span class="n">create</span><span class="o">).</span><span class="n">mapN</span><span class="o">(</span><span class="k">_</span> <span class="o">+</span> <span class="k">_</span><span class="o">).</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
+<span class="n">res3</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span>
 </code></pre>
 </div>
 
@@ -56,7 +63,7 @@
 <p>Let’s insert a few rows.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">insert1</span><span class="o">(</span><span class="s">"Alice"</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">12</span><span class="o">)).</span><span class="n">run</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res2</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">res4</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">insert1</span><span class="o">(</span><span class="s">"Bob"</span><span class="o">,</span> <span class="nc">None</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// switch to YOLO mode
 </span>  <span class="mi">1</span> <span class="n">row</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="n">updated</span>
@@ -112,8 +119,12 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">insert2_H2</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Short</span><span class="o">])</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span> <span class="k">=</span>
   <span class="k">for</span> <span class="o">{</span>
-    <span class="n">id</span> <span class="k">&lt;-</span> <span class="n">sql</span><span class="s">"insert into person (name, age) values ($name, $age)"</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"id"</span><span class="o">)</span>
-    <span class="n">p</span>  <span class="k">&lt;-</span> <span class="n">sql</span><span class="s">"select id, name, age from person where id = $id"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Person</span><span class="o">].</span><span class="n">unique</span>
+    <span class="n">id</span> <span class="k">&lt;-</span> <span class="n">sql</span><span class="s">"insert into person (name, age) values ($name, $age)"</span>
+            <span class="o">.</span><span class="n">update</span>
+            <span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"id"</span><span class="o">)</span>
+    <span class="n">p</span>  <span class="k">&lt;-</span> <span class="n">sql</span><span class="s">"select id, name, age from person where id = $id"</span>
+            <span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span>
+            <span class="o">.</span><span class="n">unique</span>
   <span class="o">}</span> <span class="k">yield</span> <span class="n">p</span>
 </code></pre>
 </div>
@@ -127,7 +138,8 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">insert3</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Short</span><span class="o">])</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
   <span class="n">sql</span><span class="s">"insert into person (name, age) values ($name, $age)"</span>
-    <span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">(</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">update</span>
+    <span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">(</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">)</span>
 <span class="o">}</span>
 </code></pre>
 </div>
@@ -139,11 +151,12 @@
 </code></pre>
 </div>
 
-<p>This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit <code class="highlighter-rouge">unique</code> and get a <code class="highlighter-rouge">Process[ConnectionIO, Person]</code> back.</p>
+<p>This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit <code class="highlighter-rouge">unique</code> and get a <code class="highlighter-rouge">Stream[ConnectionIO, Person]</code> back.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">up</span> <span class="k">=</span> <span class="o">{</span>
   <span class="n">sql</span><span class="s">"update person set age = age + 1 where age is not null"</span>
-    <span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">withGeneratedKeys</span><span class="o">[</span><span class="kt">Person</span><span class="o">](</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">update</span>
+    <span class="o">.</span><span class="n">withGeneratedKeys</span><span class="o">[</span><span class="kt">Person</span><span class="o">](</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">,</span> <span class="s">"age"</span><span class="o">)</span>
 <span class="o">}</span>
 </code></pre>
 </div>
@@ -164,7 +177,7 @@
 
 <h3 id="batch-updates">Batch Updates</h3>
 
-<p><strong>doobie</strong> supports batch updating via the <code class="highlighter-rouge">updateMany</code> and <code class="highlighter-rouge">updateManyWithGeneratedKeys</code> operations on the <code class="highlighter-rouge">Update</code> data type (which we haven’t seen before). An <code class="highlighter-rouge">Update0</code>, which is the type of an <code class="highlighter-rouge">sql"..."</code> expression, represents a parameterized statement where the arguments are known. An <code class="highlighter-rouge">Update[A]</code> is more general, and represents a parameterized statement where the composite argument of type <code class="highlighter-rouge">A</code> is <em>not</em> known.</p>
+<p><strong>doobie</strong> supports batch updating via the <code class="highlighter-rouge">updateMany</code> and <code class="highlighter-rouge">updateManyWithGeneratedKeys</code> operations on the <code class="highlighter-rouge">Update</code> data type (which we haven’t seen before). An <code class="highlighter-rouge">Update0</code>, which is the type of an <code class="highlighter-rouge">sql"...".update</code> expression, represents a parameterized statement where the arguments are known. An <code class="highlighter-rouge">Update[A]</code> is more general, and represents a parameterized statement where the composite argument of type <code class="highlighter-rouge">A</code> is <em>not</em> known.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Given some values ...
 </span><span class="k">val</span> <span class="n">a</span> <span class="k">=</span> <span class="mi">1</span><span class="o">;</span> <span class="k">val</span> <span class="n">b</span> <span class="k">=</span> <span class="s">"foo"</span>

@@ -4,12 +4,19 @@
 
 <h3 id="setting-up">Setting Up</h3>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
 
@@ -25,16 +32,12 @@
   <li><strong>doobie</strong> will raise an <code class="highlighter-rouge">InvariantViolation</code> in response to invalid type mappings, unknown JDBC constants returned by drivers, observed <code class="highlighter-rouge">NULL</code> values, and other violations of invariants that <strong>doobie</strong> assumes. These exceptions indicate programmer error or driver non-compliance and are generally unrecoverable.</li>
 </ol>
 
-<h3 id="the-catchable-typeclass-and-derived-combinators">The <code class="highlighter-rouge">Catchable</code> Typeclass and Derived Combinators</h3>
+<h3 id="monaderror-and-derived-combinators"><code class="highlighter-rouge">MonadError</code> and Derived Combinators</h3>
 
-<p>All <strong>doobie</strong> monads have associated instances of the <code class="highlighter-rouge">Catchable</code> typeclass, and the provided interpreter requires all target monads to have an instance as well. <code class="highlighter-rouge">Catchable</code> provides two operations:</p>
+<p>All <strong>doobie</strong> monads provide an <code class="highlighter-rouge">Async</code> instance, which extends <code class="highlighter-rouge">MonadError[?[_], Throwable]</code>. This means <code class="highlighter-rouge">ConnectionIO</code>, etc., have the following primitive operations:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">attempt</code> converts <code class="highlighter-rouge">M[A]</code> into <code class="highlighter-rouge">M[Either[Throwable, A]]</code>
-    <ul>
-      <li>this method is provided by <code class="highlighter-rouge">ApplicativeError</code> in cats so you need to import cats (e.g., <code class="highlighter-rouge">cats.implicits._</code>)</li>
-    </ul>
-  </li>
+  <li><code class="highlighter-rouge">.attempt</code> converts <code class="highlighter-rouge">M[A]</code> into <code class="highlighter-rouge">M[Either[Throwable, A]]</code></li>
   <li><code class="highlighter-rouge">fail</code> constructs an <code class="highlighter-rouge">M[A]</code> that fails with a provided <code class="highlighter-rouge">Throwable</code></li>
 </ul>
 
@@ -44,21 +47,11 @@
 <span class="n">p</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attempt</span>
-<span class="n">res0</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>,<span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
+<span class="n">res2</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>,<span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 </code></pre>
 </div>
 
-<p>From the <code class="highlighter-rouge">.attempt</code> combinator we derive the following, available as combinators and as syntax:</p>
-
-<ul>
-  <li><code class="highlighter-rouge">attemptSome</code> allows you to catch only specified <code class="highlighter-rouge">Throwable</code>s.</li>
-  <li><code class="highlighter-rouge">except</code> recovers with a new action.</li>
-  <li><code class="highlighter-rouge">exceptSome</code> same, but only for specified <code class="highlighter-rouge">Throwable</code>s.</li>
-  <li><code class="highlighter-rouge">onException</code> executes an action on failure, discarding its result.</li>
-  <li><code class="highlighter-rouge">ensuring</code> executes an action in all cases, generalizing <code class="highlighter-rouge">finally</code>.</li>
-</ul>
-
-<p>From these we can derive combinators that only pay attention to <code class="highlighter-rouge">SQLException</code>:</p>
+<p>From the <code class="highlighter-rouge">.attempt</code> and <code class="highlighter-rouge">fail</code> combinators we can derive many other operations, as described in the Cats documentation. In addition <strong>doobie</strong> provides the following specialized combinators that only pay attention to <code class="highlighter-rouge">SQLException</code>:</p>
 
 <ul>
   <li><code class="highlighter-rouge">attemptSql</code> is like <code class="highlighter-rouge">attempt</code> but only traps <code class="highlighter-rouge">SQLException</code>.</li>
@@ -82,11 +75,13 @@
 
 <p>Ok let’s set up a <code class="highlighter-rouge">person</code> table again, using a slightly different formulation just for fun. Note that the <code class="highlighter-rouge">name</code> column is marked as being unique.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">(</span><span class="n">sql</span><span class="s">"""DROP TABLE IF EXISTS person"""</span><span class="o">,</span>
-     <span class="o">|</span>      <span class="n">sql</span><span class="s">"""CREATE TABLE person (
-     |              id    SERIAL,
-     |              name  VARCHAR NOT NULL UNIQUE
-     |            )"""</span><span class="o">).</span><span class="n">traverse</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">quick</span><span class="o">).</span><span class="n">void</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">(</span>
+     <span class="o">|</span>   <span class="n">sql</span><span class="s">"""DROP TABLE IF EXISTS person"""</span><span class="o">,</span>
+     <span class="o">|</span>   <span class="n">sql</span><span class="s">"""CREATE TABLE person (
+     |           id    SERIAL,
+     |           name  VARCHAR NOT NULL UNIQUE
+     |         )"""</span>
+     <span class="o">|</span> <span class="o">).</span><span class="n">traverse</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">quick</span><span class="o">).</span><span class="n">void</span><span class="o">.</span><span class="n">unsafeRunSync</span>
   <span class="mi">0</span> <span class="n">row</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="n">updated</span>
   <span class="mi">0</span> <span class="n">row</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="n">updated</span>
 </code></pre>
@@ -98,7 +93,8 @@
 
 <span class="k">def</span> <span class="n">insert</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
   <span class="n">sql</span><span class="s">"insert into person (name) values ($s)"</span>
-    <span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">(</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">update</span>
+    <span class="o">.</span><span class="n">withUniqueGeneratedKeys</span><span class="o">(</span><span class="s">"id"</span><span class="o">,</span> <span class="s">"name"</span><span class="o">)</span>
 <span class="o">}</span>
 </code></pre>
 </div>

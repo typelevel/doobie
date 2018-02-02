@@ -6,6 +6,49 @@
 
 <p>This guide covers the changes that are specific to <strong>doobie</strong>, but you will also need to deal with changes between cats 0.9 and cats 1.0 (the provided Scalafix rules may be helpful) and between fs2 0.9 and fs2 0.10. Please join the <a href="https://gitter.im/tpolecat/doobie">gitter channel</a> if you run into trouble. We will update this document to reflect common issues as they arise.</p>
 
+<h2 id="artifacts">Artifacts</h2>
+
+<p>Artifact names have changed. The <code class="highlighter-rouge">-cats</code> segment is now redundant and has been removed.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>0.4.x Artifact</th>
+      <th>0.5.x Artifact</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-core-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-core"</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-h2-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-h2"</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-hikari-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-hikari"</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-postgres-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-postgres"</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-refined-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-refined"</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-scalatest-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-scalatest"</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">"doobie-specs2-cats"</code></td>
+      <td><code class="highlighter-rouge">"doobie-specs2"</code></td>
+    </tr>
+  </tbody>
+</table>
+
 <h2 id="imports">Imports</h2>
 
 <p>Doobie imports have been split into normal and implicit slices, to mirror the pattern in cats (old imports will work but are deprecated) and a few things have been renamed. fs2’s interop layer for cats is gone.</p>

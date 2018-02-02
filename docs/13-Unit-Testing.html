@@ -6,8 +6,13 @@
 
 <p>As with earlier chapters we set up a <code class="highlighter-rouge">Transactor</code> and YOLO mode. We will also use the <code class="highlighter-rouge">doobie-specs2</code> and <code class="highlighter-rouge">doobie-scalatest</code> add-ons.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
@@ -31,19 +36,22 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">pop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">gnp</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span>
 
-<span class="k">val</span> <span class="n">trivial</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
-  select 42, 'foo'::varchar
-"""</span><span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">String</span><span class="o">)]</span>
+<span class="k">val</span> <span class="n">trivial</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    select 42, 'foo'::varchar
+  """</span><span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">String</span><span class="o">)]</span>
 
-<span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Short</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
-  select code, name, population, gnp, indepyear
-  from country
-  where population &gt; $minPop
-"""</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
+<span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Short</span><span class="o">)</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    select code, name, population, gnp, indepyear
+    from country
+    where population &gt; $minPop
+  """</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
 
-<span class="k">def</span> <span class="n">update</span><span class="o">(</span><span class="n">oldName</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">newName</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
-  update country set name = $newName where name = $oldName
-"""</span><span class="o">.</span><span class="n">update</span>
+<span class="k">def</span> <span class="n">update</span><span class="o">(</span><span class="n">oldName</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">newName</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    update country set name = $newName where name = $oldName
+  """</span><span class="o">.</span><span class="n">update</span>
 </code></pre>
 </div>
 
@@ -73,16 +81,16 @@
 <p>When we run the test we get output similar to what we saw in the previous chapter on checking queries, but each item is now a test. Note that doing this in the REPL is a little awkward; in real source you would get the source file and line number associated with each query.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; { _root_.specs2.run(AnalysisTestSpec); () } // pretend this is sbt&gt; test
-[info] $line10.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
+[info] $line14.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
 [info] 
-[info] + Query0[(Int, String)] defined at &lt;console&gt;:29
+[info] + Query0[(Int, String)] defined at &lt;console&gt;:30
 [info]   
 [info]     select 42, 'foo'::varchar
 [info]   
 [info]   + SQL Compiles and TypeChecks
 [info]   + C01 ?column? INTEGER (int4)    NULL?  →  Int
 [info]   + C02 varchar  VARCHAR (varchar) NULL?  →  String
-[info] + Query0[Country] defined at &lt;console&gt;:31
+[info] + Query0[Country] defined at &lt;console&gt;:32
 [info]   
 [info]     select code, name, population, gnp, indepyear
 [info]     from country
@@ -114,7 +122,7 @@
 [error]   x C05 indepyear  SMALLINT (int2)    NULL      →  
 [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:72)
 [info] 
-[info] + Update0 defined at &lt;console&gt;:29
+[info] + Update0 defined at &lt;console&gt;:30
 [info]   
 [info]     update country set name = ? where name = ?
 [info]   
@@ -123,8 +131,8 @@
 [info]   + P02 String  →  VARCHAR (text)
 [info] 
 [info] 
-[info] Total for specification $line10.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
-[info] Finished in 639 ms
+[info] Total for specification $line14.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
+[info] Finished in 777 ms
 16 examples, 4 failures, 0 error
 [info] 
 </code></pre>
@@ -157,7 +165,7 @@
 AnalysisTestScalaCheck:
 - trivial
 - biggerThan *** FAILED ***
-  Query0[Country] defined at &lt;console&gt;:31
+  Query0[Country] defined at &lt;console&gt;:32
     select code, name, population, gnp, indepyear
     from country
     where population &gt; ?

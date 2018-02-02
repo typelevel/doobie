@@ -12,7 +12,7 @@
 
 <p>This library is designed for people who are interested in typed, pure functional programming. If you are not a <a href="https://github.com/typelevel/cats">Cats</a> user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading <a href="http://manning.com/bjarnason/">Functional Programming in Scala</a>, which introduces all of the ideas that you will find when exploring <strong>doobie</strong>.</p>
 
-<p>Having said this, if you find yourself confused or frustrated by this documentation or the <strong>doobie</strong> API, <em>please</em> ask a question on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>, file an <a href="https://github.com/tpolecat/doobie/issues">issue</a> or find <strong>tpolecat</strong> on <a href="https://twitter.com/tpolecat">Twitter</a> and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, <strong>this book is updated for each release</strong> to address problems and omissions.</p>
+<p>Having said this, if you find yourself confused or frustrated by this documentation or the <strong>doobie</strong> API, <em>please</em> ask a question on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>, file an <a href="https://github.com/tpolecat/doobie/issues">issue</a> and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, <strong>this book is updated continuously</strong> to address problems and omissions.</p>
 
 <h3 id="the-setup">The Setup</h3>
 
@@ -65,7 +65,7 @@ $
 </span>
 <span class="n">scalacOptions</span> <span class="o">+=</span> <span class="s">"-Ypartial-unification"</span> <span class="c1">// 2.11.9+
 </span>
-<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.0-M14"</span>
+<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.0-RC1"</span>
 
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
   <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>     <span class="o">%</span> <span class="n">doobieVersion</span><span class="o">,</span>
@@ -74,7 +74,8 @@ $
 <span class="o">)</span>
 </code></pre>
 </div>
-<p>Partial unification is a type inference bug fix that makes working with functional code significantly easier. Please see the Cats <a href="https://github.com/typelevel/cats#getting-started">Readme</a> for more info.</p>
+
+<p>The <code class="highlighter-rouge">-Ypartial-unification</code> compiler flag enables a bug fix that makes working with functional code significantly easier. See the Cats <a href="https://github.com/typelevel/cats#getting-started">Getting Started</a> for more info on this if it interests you.</p>
 
 <p>If you are not using PostgreSQL you can omit <code class="highlighter-rouge">doobie-postgres</code> and will need to add the appropriate JDBC driver as a dependency. Note that there is a <code class="highlighter-rouge">doobie-h2</code> add-on if you happen to be using <a href="http://www.h2database.com/">H2</a>.</p>
 
@@ -114,7 +115,7 @@ $
 
 <h3 id="feedback-and-contributions">Feedback and Contributions</h3>
 
-<p>Feedback on <strong>doobie</strong> or this book is genuinely welcome. Please feel free to file a <a href="https://github.com/tpolecat/doobie">pull request</a> if you have a contribution, or file an <a href="https://github.com/tpolecat/doobie/issues">issue</a>, or find and chat with <strong>tpolecat</strong> as mentioned above.</p>
+<p>Feedback on <strong>doobie</strong> or this book is genuinely welcome. Please feel free to file a <a href="https://github.com/tpolecat/doobie">pull request</a> if you have a contribution, or file an <a href="https://github.com/tpolecat/doobie/issues">issue</a>, or chat with us on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>.</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });

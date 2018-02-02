@@ -6,12 +6,19 @@
 
 <p>Same as last chapter, so if you’re still set up you can skip this section. Otherwise let’s set up a <code class="highlighter-rouge">Transactor</code> and YOLO mode.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
 
@@ -29,7 +36,7 @@
 
 <h3 id="composing-sql-literals">Composing SQL literals</h3>
 
-<p>SQL literals constructed with the <code class="highlighter-rouge">fr</code> interpolator behave just like the <code class="highlighter-rouge">sql</code> interpolator and can be composed by concatenation.</p>
+<p>You can construct a SQL <code class="highlighter-rouge">Fragment</code> using the <code class="highlighter-rouge">fr</code> interpolator, which behaves just like the <code class="highlighter-rouge">sql</code> interpolator. Fragments are concatenated with <code class="highlighter-rouge">++</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">a</span> <span class="k">=</span> <span class="n">fr</span><span class="s">"select name from country"</span>
 <span class="n">a</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"select name from country "</span><span class="o">)</span>
@@ -45,7 +52,7 @@
 </code></pre>
 </div>
 
-<p>Fragments can capture arguments of any type with a <code class="highlighter-rouge">Param</code> instance, just as the <code class="highlighter-rouge">sql</code> interpolator does.</p>
+<p>Fragments can capture arguments of any type with a <code class="highlighter-rouge">Meta</code> instance, just as the <code class="highlighter-rouge">sql</code> interpolator does.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">whereCode</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="n">fr</span><span class="s">"where code = $s"</span>
 <span class="n">whereCode</span><span class="k">:</span> <span class="o">(</span><span class="kt">s:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">doobie.util.fragment.Fragment</span>
@@ -68,6 +75,10 @@
 </code></pre>
 </div>
 
+<blockquote>
+  <p>Note that <code class="highlighter-rouge">Fragment.const</code> performs no escaping of passed strings. Passing user-supplied data is an <strong>injection risk</strong>.</p>
+</blockquote>
+
 <h3 id="whitespace-handling">Whitespace handling</h3>
 
 <p>The rendered SQL string for a <code class="highlighter-rouge">fr</code> or <code class="highlighter-rouge">const</code> fragment will have a single space character appended, which is usually what you want. Normally you don’t need to worry about whitespace when composing fragments.</p>
@@ -75,10 +86,10 @@
 <p>If you do <em>not</em> want a fragment to have trailing space you can use the <code class="highlighter-rouge">fr0</code> interpolator or <code class="highlighter-rouge">const0</code> constructor. This is used here and there in the <code class="highlighter-rouge">Fragments</code> module to yield prettier SQL strings.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">fr</span><span class="s">"IN ("</span> <span class="o">++</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fr</span><span class="s">"$n"</span><span class="o">).</span><span class="n">intercalate</span><span class="o">(</span><span class="n">fr</span><span class="s">","</span><span class="o">)</span> <span class="o">++</span> <span class="n">fr</span><span class="s">")"</span>
-<span class="n">res3</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN ( ? , ? , ? ) "</span><span class="o">)</span>
+<span class="n">res5</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN ( ? , ? , ? ) "</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">fr0</span><span class="s">"IN ("</span> <span class="o">++</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fr0</span><span class="s">"$n"</span><span class="o">).</span><span class="n">intercalate</span><span class="o">(</span><span class="n">fr</span><span class="s">","</span><span class="o">)</span> <span class="o">++</span> <span class="n">fr</span><span class="s">")"</span>
-<span class="n">res4</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN (?, ?, ?) "</span><span class="o">)</span>
+<span class="n">res6</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN (?, ?, ?) "</span><span class="o">)</span>
 </code></pre>
 </div>
 <p>Note that the <code class="highlighter-rouge">sql</code> interpolator is simply an alias for <code class="highlighter-rouge">fr0</code>.</p>

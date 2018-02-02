@@ -2,28 +2,24 @@
 
 <p>In this chapter we address some frequently-asked questions, in no particular order. First a bit of set-up.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
 <span class="k">import</span> <span class="nn">java.awt.geom.Point2D</span>
 <span class="k">import</span> <span class="nn">java.util.UUID</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
 <span class="k">import</span> <span class="nn">shapeless._</span>
 
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
 
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
-
-<h3 id="my-ide-is-freaking-out-what-can-i-do">My IDE is freaking out! What can I do?</h3>
-
-<p>Not much, sadly. Neither Scala’s presentation compiler (used by Scala-IDE and ENSIME) nor Intellij’s custom typechecker can deal with shapeless <code class="highlighter-rouge">ProductArgs</code> which is used by the <code class="highlighter-rouge">sql</code> and <code class="highlighter-rouge">fr/fr0</code> interpolators.</p>
-
-<p>There is an open issue for IntelliJ that you can vote up if you like, 
-<a href="https://youtrack.jetbrains.com/issue/SCL-10928">SCL-10928</a>.</p>
-
-<p>It has been <a href="https://github.com/tpolecat/doobie/issues/508">reported</a> that <code class="highlighter-rouge">-Ymacro-expand:none</code> improves the behavior of Scala-IDE, so you might investigate that (and please comment on the issue with your experience).</p>
 
 <h3 id="how-do-i-do-an-in-clause">How do I do an <code class="highlighter-rouge">IN</code> clause?</h3>
 
@@ -62,8 +58,9 @@
 <p><code class="highlighter-rouge">Transactor.transact</code> takes a <code class="highlighter-rouge">ConnectionIO</code> and constructs an <code class="highlighter-rouge">IO</code> or similar that will run it in a single transaction, but it is also possible to include transaction boundaries <em>within</em> a <code class="highlighter-rouge">ConnectionIO</code>, and to disable transaction handling altogether. Some kinds of DDL statements may require this for some databases. You can define a combinator to do this for you.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="cm">/**
- * Take a program `p` and return an equivalent one that first commits any ongoing transaction, runs
- * `p` without transaction handling, then starts a new transaction.
+ * Take a program `p` and return an equivalent one that first commits
+ * any ongoing transaction, runs `p` without transaction handling, then
+ * starts a new transaction.
  */</span>
 <span class="k">def</span> <span class="n">withoutTransaction</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">p</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">FC</span><span class="o">.</span><span class="n">setAutoCommit</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">p</span> <span class="o">&lt;*</span> <span class="nc">FC</span><span class="o">.</span><span class="n">setAutoCommit</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
@@ -128,27 +125,25 @@
 
 <h3 id="how-do-i-handle-outer-joins">How do I handle outer joins?</h3>
 
-<p>With an outer join you end up with set of nullable columns, which you typically want to map to a single <code class="highlighter-rouge">Option</code> of some composite type. The most straightforward way to do this is to select the <code class="highlighter-rouge">Option</code> columns directly, then use the <code class="highlighter-rouge">map</code> method on <code class="highlighter-rouge">Query0</code> to transform the result type using applicative composition on the optional values:</p>
+<p>With an outer join you end up with set of nullable columns, which you typically want to map to a single <code class="highlighter-rouge">Option</code> of some composite type, which doobie can do for you. If all columns are null you will get back <code class="highlighter-rouge">None</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">case</span> <span class="k">class</span> <span class="nc">City</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">district</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 
-<span class="k">val</span> <span class="n">join</span><span class="k">:</span> <span class="kt">Query0</span><span class="o">[(</span><span class="kt">Country</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">City</span><span class="o">])]</span> <span class="k">=</span>
+<span class="k">val</span> <span class="n">join</span> <span class="k">=</span>
   <span class="n">sql</span><span class="s">"""
     select c.name, c.code,
            k.name, k.district
     from country c
     left outer join city k
     on c.capital = k.id
-  """</span><span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">Country</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">])].</span><span class="n">map</span> <span class="o">{</span>
-    <span class="k">case</span> <span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">n</span><span class="o">,</span> <span class="n">d</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="n">d</span><span class="o">).</span><span class="n">mapN</span><span class="o">(</span><span class="nc">City</span><span class="o">))</span>
-  <span class="o">}</span>
+  """</span><span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">Country</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">City</span><span class="o">])]</span>
 </code></pre>
 </div>
 
 <p>Some examples, filtered for size.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">join</span><span class="o">.</span><span class="n">process</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">_1</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startsWith</span><span class="o">(</span><span class="s">"United"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">join</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">_1</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startsWith</span><span class="o">(</span><span class="s">"United"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
   <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">Arab</span> <span class="nc">Emirates</span><span class="o">,</span><span class="nc">ARE</span><span class="o">),</span><span class="nc">Some</span><span class="o">(</span><span class="nc">City</span><span class="o">(</span><span class="nc">Abu</span> <span class="nc">Dhabi</span><span class="o">,</span><span class="nc">Abu</span> <span class="nc">Dhabi</span><span class="o">)))</span>
   <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">Kingdom</span><span class="o">,</span><span class="nc">GBR</span><span class="o">),</span><span class="nc">Some</span><span class="o">(</span><span class="nc">City</span><span class="o">(</span><span class="nc">London</span><span class="o">,</span><span class="nc">England</span><span class="o">)))</span>
   <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">States</span><span class="o">,</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Some</span><span class="o">(</span><span class="nc">City</span><span class="o">(</span><span class="nc">Washington</span><span class="o">,</span><span class="nc">District</span> <span class="n">of</span> <span class="nc">Columbia</span><span class="o">)))</span>
@@ -173,7 +168,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 <p>Ok, so the message suggests that we need an <code class="highlighter-rouge">Meta[A]</code> for each <code class="highlighter-rouge">A</code> or <code class="highlighter-rouge">Option[A]</code> in the <code class="highlighter-rouge">HList</code>, so let’s see which one is missing by trying to summon them in the REPL.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; Meta[String]
-res11: doobie.util.meta.Meta[String] = doobie.util.meta$Meta$$anon$3@7f14ac7d
+res11: doobie.util.meta.Meta[String] = doobie.util.meta$Meta$$anon$3@40ea9796
 
 scala&gt; Meta[UUID]
 &lt;console&gt;:38: error: Could not find an instance of Meta[java.util.UUID]; you can construct one based on a primitive instance via `xmap`.
@@ -192,10 +187,10 @@ scala&gt; Meta[UUID]
 <p>Having done this, the <code class="highlighter-rouge">Meta</code> and <code class="highlighter-rouge">Param</code> instances are now present and our code compiles.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">UUID</span><span class="o">]</span>
-<span class="n">res13</span><span class="k">:</span> <span class="kt">doobie.util.meta.Meta</span><span class="o">[</span><span class="kt">java.util.UUID</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">meta$Meta$$anon$4</span><span class="k">@</span><span class="mi">35906</span><span class="n">c19</span>
+<span class="n">res13</span><span class="k">:</span> <span class="kt">doobie.util.meta.Meta</span><span class="o">[</span><span class="kt">java.util.UUID</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">meta$Meta$$anon$4</span><span class="k">@</span><span class="mi">6</span><span class="n">becf4c5</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">UUID</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]</span>
-<span class="n">res14</span><span class="k">:</span> <span class="kt">doobie.util.param.Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">java.util.UUID</span> <span class="kt">::</span> <span class="kt">shapeless.HNil</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">param$Param</span><span class="k">@</span><span class="mi">5</span><span class="n">bab496e</span>
+<span class="n">res14</span><span class="k">:</span> <span class="kt">doobie.util.param.Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">java.util.UUID</span> <span class="kt">::</span> <span class="kt">shapeless.HNil</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">param$Param</span><span class="k">@</span><span class="mi">35173</span><span class="n">ca6</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">query</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">u</span><span class="k">:</span> <span class="kt">UUID</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"select ... where foo = $s and url = $u"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
 <span class="n">query</span><span class="k">:</span> <span class="o">(</span><span class="kt">s:</span> <span class="kt">String</span><span class="o">,</span> <span class="kt">u:</span> <span class="kt">java.util.UUID</span><span class="o">)</span><span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="nc">Query0</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
@@ -280,7 +275,7 @@ scala&gt; Meta[UUID]
 <p>Our derivation now works and the code compiles.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"…"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="n">res17</span><span class="k">:</span> <span class="kt">doobie.util.query.Query0</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query$Query$$anon$7</span><span class="k">@</span><span class="mi">2</span><span class="n">b795728</span>
+<span class="n">res17</span><span class="k">:</span> <span class="kt">doobie.util.query.Query0</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query$Query$$anon$7</span><span class="k">@</span><span class="mf">475f1d</span><span class="mi">1</span>
 </code></pre>
 </div>
 

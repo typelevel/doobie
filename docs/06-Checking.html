@@ -6,12 +6,19 @@
 
 <p>Our setup here is the same as last chapter, so if you’re still running from last chapter you can skip this section. Otherwise: imports, <code class="highlighter-rouge">Transactor</code>, and YOLO mode.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IO</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
+<span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">cats._</span>
+<span class="k">import</span> <span class="nn">cats.data._</span>
+<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
 <span class="o">)</span>
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span><span class="o">;</span> <span class="k">import</span> <span class="nn">y._</span>
+
+<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
+<span class="k">import</span> <span class="nn">y._</span>
 </code></pre>
 </div>
 
@@ -38,11 +45,12 @@
 
 <p>Here’s our parameterized query from last chapter, but with the new <code class="highlighter-rouge">Country</code> definition and the <code class="highlighter-rouge">minPop</code> parameter changed to a <code class="highlighter-rouge">Short</code>.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Short</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
-  select code, name, population, gnp, indepyear
-  from country
-  where population &gt; $minPop
-"""</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Short</span><span class="o">)</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    select code, name, population, gnp, indepyear
+    from country
+    where population &gt; $minPop
+  """</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
 </code></pre>
 </div>
 
@@ -50,9 +58,10 @@
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).check.unsafeRunSync
 
-    select code, name, population, gnp, indepyear
-    from country
-    where population &gt; ?
+      select code, name, population, gnp, indepyear
+      from country
+      where population &gt; ?
+    
 
   ✓ SQL Compiles and Typechecks
   ✕ P01 Short  →  INTEGER (int4)
@@ -85,25 +94,27 @@
   <li>and an unused column.</li>
 </ul>
 
-<p>Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like <strong>doobie</strong>’s enumerated <code class="highlighter-rouge">JdbcType</code>.  Currently this is based on instantiated <code class="highlighter-rouge">Meta</code> instances, which is not ideal; hopefully in the next release the tooling will improve to support all instances in scope.</p>
+<p>Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like <strong>doobie</strong>’s enumerated <code class="highlighter-rouge">JdbcType</code>.  Currently this is based on instantiated <code class="highlighter-rouge">Meta</code> instances, which is not ideal; hopefully tooling can improve to support all instances in scope.</p>
 
 <p>Anyway, if we fix all of these problems and try again, we get a clean bill of health.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">pop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">gnp</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">BigDecimal</span><span class="o">])</span>
 
-<span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
-  select code, name, population, gnp
-  from country
-  where population &gt; $minPop
-"""</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
+<span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    select code, name, population, gnp
+    from country
+    where population &gt; $minPop
+  """</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
 </code></pre>
 </div>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).check.unsafeRunSync
 
-    select code, name, population, gnp
-    from country
-    where population &gt; ?
+      select code, name, population, gnp
+      from country
+      where population &gt; ?
+    
 
   ✓ SQL Compiles and Typechecks
   ✓ P01 Int  →  INTEGER (int4)
@@ -114,7 +125,7 @@
 </code></pre>
 </div>
 
-<p><strong>doobie</strong> supports <code class="highlighter-rouge">check</code> for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the <code class="highlighter-rouge">doobie-specs2</code> package, which allows checking to become part of your unit test suite. We will investigate this in the chapter on testing.</p>
+<p><strong>doobie</strong> supports <code class="highlighter-rouge">check</code> for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the <code class="highlighter-rouge">doobie-specs2</code> and <code class="highlighter-rouge">doobie-scalatest</code> packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.</p>
 
 <h3 id="working-around-bad-metadata">Working Around Bad Metadata</h3>
 
@@ -124,9 +135,10 @@
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).checkOutput.unsafeRunSync
 
-    select code, name, population, gnp
-    from country
-    where population &gt; ?
+      select code, name, population, gnp
+      from country
+      where population &gt; ?
+    
 
   ✓ SQL Compiles and Typechecks
   ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
@@ -136,11 +148,9 @@
 </code></pre>
 </div>
 
-<p>This option is also available in the <code class="highlighter-rouge">doobie-specs2</code> package.</p>
-
 <h3 id="diving-deeper">Diving Deeper</h3>
 
-<p>The <code class="highlighter-rouge">check</code> logic requires both a database connection and concrete <code class="highlighter-rouge">Meta</code> instances that define column-level JDBC mappings. This could in principle happen at compile-time, but it’s not clear that this is what you always want and it’s potentially hairy to implement. So for now checking happens at unit-test time.</p>
+<p>The <code class="highlighter-rouge">check</code> logic requires both a database connection and concrete <code class="highlighter-rouge">Meta</code> instances that define column-level JDBC mappings.</p>
 
 <p>The way this works is that a <code class="highlighter-rouge">Query</code> value has enough type information to describe all parameter and column mappings, as well as the SQL literal itself (with interpolated parameters erased into <code class="highlighter-rouge">?</code>). From here it is straightforward to prepare the statement, pull the <code class="highlighter-rouge">ResultsetMetaData</code> and <code class="highlighter-rouge">DatabaseMetaData</code> and work out whether things are aligned correctly (and if not, determine how misalignments might be fixed). The <code class="highlighter-rouge">Anaylsis</code> class consumes this metadata and is able to provide the following diagnostics:</p>
 
