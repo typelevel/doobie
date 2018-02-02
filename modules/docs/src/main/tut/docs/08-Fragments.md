@@ -13,12 +13,19 @@ In this chapter we discuss how to construct SQL statements at runtime.
 Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up a `Transactor` and YOLO mode.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import doobie._
+import doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-val y = xa.yolo; import y._
+
+val y = xa.yolo
+import y._
 ```
 
 We're still playing with the `country` table, shown here for reference.
@@ -35,7 +42,7 @@ CREATE TABLE country (
 
 ### Composing SQL literals
 
-SQL literals constructed with the `fr` interpolator behave just like the `sql` interpolator and can be composed by concatenation.
+You can construct a SQL `Fragment` using the `fr` interpolator, which behaves just like the `sql` interpolator. Fragments are concatenated with `++`.
 
 ```tut
 val a = fr"select name from country"
@@ -44,7 +51,7 @@ val c = a ++ b // concatenation by ++
 c.query[String].unique.quick.unsafeRunSync
 ```
 
-Fragments can capture arguments of any type with a `Param` instance, just as the `sql` interpolator does.
+Fragments can capture arguments of any type with a `Meta` instance, just as the `sql` interpolator does.
 
 ```tut
 def whereCode(s: String) = fr"where code = $s"
@@ -59,6 +66,7 @@ def count(table: String) = (fr"select count(*) from" ++ Fragment.const(table)).q
 count("city").quick.unsafeRunSync
 ```
 
+> Note that `Fragment.const` performs no escaping of passed strings. Passing user-supplied data is an **injection risk**.
 
 ### Whitespace handling
 
