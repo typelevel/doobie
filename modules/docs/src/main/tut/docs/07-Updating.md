@@ -13,12 +13,19 @@ In this chapter we examine operations that modify data in the database, and ways
 Again we set up a transactor and pull in YOLO mode, but this time we're not using the world database.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import doobie._
+import doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-val y = xa.yolo; import y._
+
+val y = xa.yolo
+import y._
 ```
 
 ### Data Definition
@@ -28,25 +35,25 @@ It is uncommon to define database structures at runtime, but **doobie** handles 
 Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count.
 
 ```tut:silent
-val drop: Update0 =
+val drop =
   sql"""
     DROP TABLE IF EXISTS person
-  """.update
+  """.update.run
 
-val create: Update0 =
+val create =
   sql"""
     CREATE TABLE person (
       id   SERIAL,
       name VARCHAR NOT NULL UNIQUE,
       age  SMALLINT
     )
-  """.update
+  """.update.run
 ```
 
-We can compose these and run them together.
+We can compose these and run them together, yielding the total number of affected rows.
 
 ```tut
-(drop.run *> create.run).transact(xa).unsafeRunSync
+(drop, create).mapN(_ + _).transact(xa).unsafeRunSync
 ```
 
 
@@ -112,8 +119,12 @@ Some database (like H2) allow you to return [only] the inserted id, allowing the
 ```tut:silent
 def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
   for {
-    id <- sql"insert into person (name, age) values ($name, $age)".update.withUniqueGeneratedKeys[Int]("id")
-    p  <- sql"select id, name, age from person where id = $id".query[Person].unique
+    id <- sql"insert into person (name, age) values ($name, $age)"
+            .update
+            .withUniqueGeneratedKeys[Int]("id")
+    p  <- sql"select id, name, age from person where id = $id"
+            .query[Person]
+            .unique
   } yield p
 ```
 
@@ -126,7 +137,8 @@ Other databases (including PostgreSQL) provide a way to do this in one shot by r
 ```tut:silent
 def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
   sql"insert into person (name, age) values ($name, $age)"
-    .update.withUniqueGeneratedKeys("id", "name", "age")
+    .update
+    .withUniqueGeneratedKeys("id", "name", "age")
 }
 ```
 
@@ -136,13 +148,14 @@ The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (oth
 insert3("Elvis", None).quick.unsafeRunSync
 ```
 
-This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit `unique` and get a `Process[ConnectionIO, Person]` back.
+This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit `unique` and get a `Stream[ConnectionIO, Person]` back.
 
 
 ```tut:silent
 val up = {
   sql"update person set age = age + 1 where age is not null"
-    .update.withGeneratedKeys[Person]("id", "name", "age")
+    .update
+    .withGeneratedKeys[Person]("id", "name", "age")
 }
 ```
 
@@ -155,7 +168,7 @@ up.quick.unsafeRunSync // and again!
 
 ### Batch Updates
 
-**doobie** supports batch updating via the `updateMany` and `updateManyWithGeneratedKeys` operations on the `Update` data type (which we haven't seen before). An `Update0`, which is the type of an `sql"..."` expression, represents a parameterized statement where the arguments are known. An `Update[A]` is more general, and represents a parameterized statement where the composite argument of type `A` is *not* known.
+**doobie** supports batch updating via the `updateMany` and `updateManyWithGeneratedKeys` operations on the `Update` data type (which we haven't seen before). An `Update0`, which is the type of an `sql"...".update` expression, represents a parameterized statement where the arguments are known. An `Update[A]` is more general, and represents a parameterized statement where the composite argument of type `A` is *not* known.
 
 ```tut:silent
 // Given some values ...
