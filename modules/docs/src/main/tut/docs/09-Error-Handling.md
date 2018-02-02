@@ -11,12 +11,19 @@ In this chapter we examine a set of combinators that allow us to construct progr
 ### Setting Up
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import doobie._
+import doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-val y = xa.yolo; import y._
+
+val y = xa.yolo
+import y._
 ```
 
 ### About Exceptions
@@ -29,12 +36,11 @@ There are three main types of exceptions that are likely to arise:
 1. Database exceptions, typically as a generic `SQLException` with a vendor-specific `SQLState` identifying the specific error, are raised for common situations such as key violations. Some vendors (PostgreSQL for instance) publish a table of error codes, and in these cases **doobie** can provide a matching set of exception-handling combinators. However in most cases the error codes must be passed down as folklore or discovered by experimentation. There exist the XOPEN and SQL:2003 standards, but it seems that no vendor adheres closely to these specifications. Some of these errors are recoverable and others aren't.
 1. **doobie** will raise an `InvariantViolation` in response to invalid type mappings, unknown JDBC constants returned by drivers, observed `NULL` values, and other violations of invariants that **doobie** assumes. These exceptions indicate programmer error or driver non-compliance and are generally unrecoverable.
 
-### The `Catchable` Typeclass and Derived Combinators
+### `MonadError` and Derived Combinators
 
-All **doobie** monads have associated instances of the `Catchable` typeclass, and the provided interpreter requires all target monads to have an instance as well. `Catchable` provides two operations:
+All **doobie** monads provide an `Async` instance, which extends `MonadError[?[_], Throwable]`. This means `ConnectionIO`, etc., have the following primitive operations:
 
-- `attempt` converts `M[A]` into `M[Either[Throwable, A]]`
-  - this method is provided by `ApplicativeError` in cats so you need to import cats (e.g., `cats.implicits._`)
+- `.attempt` converts `M[A]` into `M[Either[Throwable, A]]`
 - `fail` constructs an `M[A]` that fails with a provided `Throwable`
 
 So any **doobie** program can be lifted into a disjunction simply by adding `.attempt`.
@@ -44,15 +50,7 @@ val p = 42.pure[ConnectionIO]
 p.attempt
 ```
 
-From the `.attempt` combinator we derive the following, available as combinators and as syntax:
-
-- `attemptSome` allows you to catch only specified `Throwable`s.
-- `except` recovers with a new action.
-- `exceptSome` same, but only for specified `Throwable`s.
-- `onException` executes an action on failure, discarding its result.
-- `ensuring` executes an action in all cases, generalizing `finally`.
-
-From these we can derive combinators that only pay attention to `SQLException`:
+From the `.attempt` and `fail` combinators we can derive many other operations, as described in the Cats documentation. In addition **doobie** provides the following specialized combinators that only pay attention to `SQLException`:
 
 - `attemptSql` is like `attempt` but only traps `SQLException`.
 - `attemptSomeSql` traps only specified `SQLException`s.
@@ -73,22 +71,24 @@ See the ScalaDoc for more information.
 Ok let's set up a `person` table again, using a slightly different formulation just for fun. Note that the `name` column is marked as being unique.
 
 ```tut
-List(sql"""DROP TABLE IF EXISTS person""",
-     sql"""CREATE TABLE person (
-             id    SERIAL,
-             name  VARCHAR NOT NULL UNIQUE
-           )""").traverse(_.update.quick).void.unsafeRunSync
+List(
+  sql"""DROP TABLE IF EXISTS person""",
+  sql"""CREATE TABLE person (
+          id    SERIAL,
+          name  VARCHAR NOT NULL UNIQUE
+        )"""
+).traverse(_.update.quick).void.unsafeRunSync
 ```
 
 Alright, let's define a `Person` data type and a way to insert instances.
-
 
 ```tut:silent
 case class Person(id: Int, name: String)
 
 def insert(s: String): ConnectionIO[Person] = {
   sql"insert into person (name) values ($s)"
-    .update.withUniqueGeneratedKeys("id", "name")
+    .update
+    .withUniqueGeneratedKeys("id", "name")
 }
 ```
 
