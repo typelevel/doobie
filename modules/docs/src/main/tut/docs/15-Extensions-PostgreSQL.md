@@ -12,25 +12,33 @@ In this chapter we discuss the extended support that **doobie** offers for users
 libraryDependencies += "org.tpolecat" %% "doobie-postgres" % "{{site.doobieVersion}}"
 ```
 
-This library pulls in [PostgreSQL JDBC Driver 9.4](https://jdbc.postgresql.org/documentation/94/index.html) as a transitive dependency.
+This library pulls in [PostgreSQL JDBC Driver](https://jdbc.postgresql.org) as a transitive dependency.
 
 ### Setting Up
 
 The following examples require a few imports.
 
 ```tut:silent
-import doobie._, doobie.implicits._
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
-val y = xa.yolo; import y._
+
+val y = xa.yolo
+import y._
 ```
 
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
 
 ```tut:silent
-import doobie.postgres._, doobie.postgres.implicits._
+import doobie.postgres._
+import doobie.postgres.implicits._
 ```
 
 ### Array Types
