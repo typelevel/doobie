@@ -9,27 +9,23 @@ title: Frequently-Asked Questions
 In this chapter we address some frequently-asked questions, in no particular order. First a bit of set-up.
 
 ```tut:silent
-import doobie._, doobie.implicits._
+import cats._
+import cats.data._
+import cats.effect.IO
+import cats.implicits._
+import doobie._
+import doobie.implicits._
 import java.awt.geom.Point2D
 import java.util.UUID
-import cats._, cats.data._, cats.effect.IO, cats.implicits._
 import shapeless._
 
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-val y = xa.yolo; import y._
+val y = xa.yolo
+import y._
 ```
-
-### My IDE is freaking out! What can I do?
-
-Not much, sadly. Neither Scala's presentation compiler (used by Scala-IDE and ENSIME) nor Intellij's custom typechecker can deal with shapeless `ProductArgs` which is used by the `sql` and `fr/fr0` interpolators.
-
-There is an open issue for IntelliJ that you can vote up if you like, 
-[SCL-10928](https://youtrack.jetbrains.com/issue/SCL-10928).
-
-It has been [reported](https://github.com/tpolecat/doobie/issues/508) that `-Ymacro-expand:none` improves the behavior of Scala-IDE, so you might investigate that (and please comment on the issue with your experience).
 
 ### How do I do an `IN` clause?
 
@@ -55,8 +51,9 @@ You can use a `for` comprehension to compose any number of `ConnectionIO` progra
 
 ```tut:silent
 /**
- * Take a program `p` and return an equivalent one that first commits any ongoing transaction, runs
- * `p` without transaction handling, then starts a new transaction.
+ * Take a program `p` and return an equivalent one that first commits
+ * any ongoing transaction, runs `p` without transaction handling, then
+ * starts a new transaction.
  */
 def withoutTransaction[A](p: ConnectionIO[A]): ConnectionIO[A] =
   FC.setAutoCommit(true) *> p <* FC.setAutoCommit(false)
@@ -99,28 +96,26 @@ cities(Code("USA"), false).process.take(5).quick.unsafeRunSync
 
 ### How do I handle outer joins?
 
-With an outer join you end up with set of nullable columns, which you typically want to map to a single `Option` of some composite type. The most straightforward way to do this is to select the `Option` columns directly, then use the `map` method on `Query0` to transform the result type using applicative composition on the optional values:
+With an outer join you end up with set of nullable columns, which you typically want to map to a single `Option` of some composite type, which doobie can do for you. If all columns are null you will get back `None`.
 
 ```tut:silent
 case class Country(name: String, code: String)
 case class City(name: String, district: String)
 
-val join: Query0[(Country, Option[City])] =
+val join =
   sql"""
     select c.name, c.code,
            k.name, k.district
     from country c
     left outer join city k
     on c.capital = k.id
-  """.query[(Country, Option[String], Option[String])].map {
-    case (c, n, d) => (c, (n, d).mapN(City))
-  }
+  """.query[(Country, Option[City])]
 ```
 
 Some examples, filtered for size.
 
 ```tut
-join.process.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
+join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
 ```
 
 ### How do I resolve `error: Could not find or construct Param[...]`?
