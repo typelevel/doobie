@@ -25,19 +25,25 @@ libraryDependencies ++= Seq(
 In our REPL we have the same setup as before, plus a few extra imports.
 
 ```tut:silent
-import io.circe._, io.circe.jawn._, io.circe.syntax._
-import doobie._, doobie.implicits._
+import cats._
+import cats.effect.IO
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+import io.circe._
+import io.circe.jawn._
+import io.circe.syntax._
 import java.awt.Point
 import org.postgresql.util.PGobject
 import scala.reflect.runtime.universe.TypeTag
 import scala.util.Try
-import cats._, cats.implicits._, cats.effect.IO
 
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-val y = xa.yolo; import y._
+val y = xa.yolo
+import y._
 ```
 
 ### Meta and Composite
@@ -60,7 +66,7 @@ HPS.set(("foo", 42))
 Composite[(String,Int)].set(1, ("foo", 42))
 ```
 
-**doobie** can derive `Composite` instances for primitive column types and options thereof, plus tuples, `HList`s, shapeless records, and case classes whose elements have `Composite` instances. These primitive column types are identified by `Meta` instances, which describe `null`-aware single-column mappings.
+**doobie** can derive `Composite` instances for primitive column types and options thereof, plus tuples, `HList`s, shapeless records, and case classes whose elements have `Composite` instances. These primitive column types are identified by `Meta` instances, which describe single-column mappings.
 
 So our strategy for mapping custom types is to construct a new `Meta` instance (given `Meta[A]` you get `Composite[A]` and `Composite[Option[A]]` for free); and our strategy for multi-column mappings is to construct a new `Composite` instance. We consider both cases below.
 
@@ -95,7 +101,7 @@ Because `PersonId` is a case class of primitive column values, we can already ma
 Composite[PersonId].length
 ```
 
-However if we try to use this type for a *single* column value (i.e., as a query parameter, which requires a `Param` instance - `Param` is like `Composite` but disallows nesting), it doesn't compile.
+However if we try to use this type for a *single* column value (i.e., as a query parameter, it doesn't compile.
 
 ```tut:fail:plain
 sql"select * from person where id = $pid"
@@ -135,7 +141,7 @@ Here we go:
 ```tut:silent
 implicit val JsonMeta: Meta[Json] =
   Meta.other[PGobject]("json").xmap[Json](
-    a => parse(a.getValue).leftMap[Json](e => throw e).merge, // failure raises an exception
+    a => parse(a.getValue).leftMap[Json](e => throw e).merge,
     a => {
       val o = new PGobject
       o.setType("json")
@@ -145,14 +151,10 @@ implicit val JsonMeta: Meta[Json] =
   )
 ```
 
-```tut
-1 + 1
-```
-
-Given this mapping to and from `Json` we can construct a *further* mapping to any type that has an `EncodeJson` and `DecodeJson` instances. On failure we throw an exception; this indicates a logic or schema problem.
+Given this mapping to and from `Json` we can construct a *further* mapping to any type that has `Encoder` and `Decoder` instances. On failure we throw an exception; this indicates a logic or schema problem.
 
 ```tut:silent
-def codecMeta[A : Encoder : Decoder : TypeTag]: Meta[A] =
+def codecMeta[A: Encoder : Decoder : TypeTag]: Meta[A] =
   Meta[Json].xmap[A](
     _.as[A].fold[A](throw _, identity),
     _.asJson
@@ -164,9 +166,16 @@ Let's make sure it works. Here is a simple data type with a circe encoder, taken
 ```tut:silent
 case class Person(name: String, age: Int, things: List[String])
 
-implicit val (personEncodeJson, personDecodeJson) =
-  (Encoder.forProduct3("name", "age", "things")((p: Person) => (p.name, p.age, p.things)),
-   Decoder.forProduct3("name", "age", "things")((name: String, age: Int, things: List[String]) => Person(name, age, things)))
+implicit val personEncodeJson =
+  Encoder.forProduct3("name", "age", "things") { (p: Person) =>
+    (p.name, p.age, p.things)
+  }
+
+implicit val personDecodeJson =
+  Decoder.forProduct3("name", "age", "things") {
+    (name: String, age: Int, things: List[String]) =>
+      Person(name, age, things)
+  }
 
 implicit val PersonMeta = codecMeta[Person]
 ```
@@ -198,8 +207,14 @@ And we can now use `Person` as a parameter type and as a column type.
 
 ```tut
 val p = Person("Steve", 10, List("Train", "Ball"))
-(sql"insert into pet (name, owner) values ('Bob', $p)"
-  .update.withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")).quick.unsafeRunSync
+
+{
+  sql"insert into pet (name, owner) values ('Bob', $p)"
+    .update
+    .withUniqueGeneratedKeys[(Int, String, Person)]("id", "name", "owner")
+    .quick
+    .unsafeRunSync
+}
 ```
 
 If we ask for the `owner` column as a string value we can see that it is in fact storing JSON data.
