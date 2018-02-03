@@ -109,21 +109,24 @@ object query {
     def outputAnalysis: ConnectionIO[Analysis] =
       HC.prepareQueryAnalysis0[O](sql)
 
+    /** @group Deprecated Methods */
+    @deprecated("use .streamWithChunkSize", "0.5.0")
+    def processWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
+      streamWithChunkSize(a, chunkSize)
+
     /**
      * Apply the argument `a` to construct a `Stream` with the given chunking factor, with
      * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
      * @group Results
      */
-    def processWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      HC.process[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
-
-    /**
-     * FS2 Friendly Alias for processWithChunkSize.
-     * @group Results
-     */
     def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      processWithChunkSize(a, chunkSize)
+      HC.stream[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
+
+    /** @group Deprecated Methods */
+    @deprecated("use .stream", "0.5.0")
+    def process(a: A): Stream[ConnectionIO, B] =
+      stream(a)
 
     /**
      * Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with
@@ -131,15 +134,9 @@ object query {
      * type `B`.
      * @group Results
      */
-    def process(a: A): Stream[ConnectionIO, B] =
-      processWithChunkSize(a, DefaultChunkSize)
-
-    /**
-     * FS2 Friendly Alias for process.
-     * @group Results
-     */
     def stream(a: A): Stream[ConnectionIO, B] =
-      process(a)
+      streamWithChunkSize(a, DefaultChunkSize)
+
 
     /**
      * Apply the argument `a` to construct a program in
@@ -186,16 +183,12 @@ object query {
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.nel[O])).map(_.map(ob))
 
-    /**
-     * Convenience method; equivalent to `to[List]`
-     * @group Results
-     */
+    /** @group Deprecated Methods */
+    @deprecated("use .to[List]", "0.5.0")
     def list(a: A): ConnectionIO[List[B]] = to[List](a)
 
-    /**
-     * Convenience method; equivalent to `to[Vector]`
-     * @group Results
-     */
+    /** @group Deprecated Methods */
+    @deprecated("use .to[Vector]", "0.5.0")
     def vector(a: A): ConnectionIO[Vector[B]] = to[Vector](a)
 
     /** @group Transformations */
@@ -238,7 +231,7 @@ object query {
         def toFragment = outer.toFragment(a)
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
-        def processWithChunkSize(n: Int) = outer.processWithChunkSize(a, n)
+        def streamWithChunkSize(n: Int) = outer.streamWithChunkSize(a, n)
         def accumulate[F[_]: Alternative] = outer.accumulate[F](a)
         def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
@@ -330,34 +323,30 @@ object query {
      */
     def outputAnalysis: ConnectionIO[Analysis]
 
+    /** @group Deprecated Methods */
+    @deprecated("use .stream", "0.5.0")
+    def process: Stream[ConnectionIO, B] =
+      stream
+
     /**
      * `Stream` with default chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
-    def process: Stream[ConnectionIO, B] =
-      processWithChunkSize(DefaultChunkSize)
-
-    /**
-     * FS2 Friendly Alias for process.
-     * @group Results
-     */
     def stream : Stream[ConnectionIO, B] =
-      process
+      streamWithChunkSize(DefaultChunkSize)
+
+    /** @group Deprecated Methods */
+    @deprecated("use .streamWithChunkSize", "0.5.0")
+    def processWithChunkSize(n: Int): Stream[ConnectionIO, B] =
+      streamWithChunkSize(n)
 
     /**
      * `Stream` with given chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
      * @group Results
      */
-    def processWithChunkSize(n: Int): Stream[ConnectionIO, B]
-
-    /**
-     * FS2 Friendly Alias for processWithChunkSize.
-     * @group Results
-     */
-    def streamWithChunkSize(n: Int): Stream[ConnectionIO, B] =
-      processWithChunkSize(n)
+    def streamWithChunkSize(n: Int): Stream[ConnectionIO, B]
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`
@@ -403,18 +392,14 @@ object query {
      * @group Results
      */
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
-      process.evalMap(f).compile.drain
+      stream.evalMap(f).compile.drain
 
-    /**
-     * Convenience method; equivalent to `to[List]`
-     * @group Results
-     */
+    /** @group Deprecated Methods */
+    @deprecated("use .to[List]", "0.5.0")
     def list: ConnectionIO[List[B]] = to[List]
 
-    /**
-     * Convenience method; equivalent to `to[Vector]`
-     * @group Results
-     */
+    /** @group Deprecated Methods */
+    @deprecated("use .to[Vector]", "0.5.0")
     def vector: ConnectionIO[Vector[B]] = to[Vector]
 
   }

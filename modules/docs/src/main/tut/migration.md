@@ -64,3 +64,10 @@ The typeclass hierarchy in fs2 has been removed.
 
 **doobie**'s provided `ensuring` combinator has been renamed to `guarantee` to avoid conflicts with Scala's standard library. The combinators for `Catchable` have been removed; use `ApplicativeError` and `MonadError` instead.
 
+## Miscellaneous Changes
+
+In no particular order:
+
+- All `.process` combinators and constructors are deprecated in the `Query/Update` API and removed in the lower-level APIs; use the `.stream` equivalents.
+- The `.list` and `.vector` methods on `Query/Query0` are deprecated in favor of `.to[List]` and `.to[Vector]` respectively.
+

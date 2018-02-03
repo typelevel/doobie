@@ -45,11 +45,11 @@ class bench {
     }
   }
 
-  // Reading via .process, which adds a fair amount of overhead
+  // Reading via .stream, which adds a fair amount of overhead
   def doobieBenchP(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
-      .process
+      .stream
       .compile.toList
       .transact(xa)
       .map(_.length)
@@ -59,7 +59,7 @@ class bench {
   def doobieBench(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
-      .list
+      .to[List]
       .transact(xa)
       .map(_.length)
       .unsafeRunSync
@@ -68,7 +68,7 @@ class bench {
   def doobieBenchV(n: Int): Int =
     sql"select a.name, b.name, c.name from country a, country b, country c limit $n"
       .query[(String,String,String)]
-      .vector
+      .to[Vector]
       .transact(xa)
       .map(_.length)
       .unsafeRunSync

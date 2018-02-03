@@ -90,8 +90,8 @@ cities(Code("USA"), true).check.unsafeRunSync
 And it works!
 
 ```tut
-cities(Code("USA"), true).process.take(5).quick.unsafeRunSync
-cities(Code("USA"), false).process.take(5).quick.unsafeRunSync
+cities(Code("USA"), true).stream.take(5).quick.unsafeRunSync
+cities(Code("USA"), false).stream.take(5).quick.unsafeRunSync
 ```
 
 ### How do I handle outer joins?

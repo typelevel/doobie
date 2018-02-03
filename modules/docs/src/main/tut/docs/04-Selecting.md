@@ -81,7 +81,7 @@ The example above is ok, but there's not much point reading all the results from
 ```
 
 The difference here is that `stream` gives us an [fs2](https://github.com/functional-streams-for-scala/fs2) `Stream[ConnectionIO, String]`
-that emits rows as they arrive from the database. By applying `take(5)` we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
+that emits rows as they arrive from the database. By applying `take(5)` we instruct the stream to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.
 
 Of course a server-side `LIMIT` would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, `Stream` is a very general and powerful tool.
 For more information see the [fs2](https://github.com/functional-streams-for-scala/fs2) repo, which has a good list of learning resources.
@@ -231,7 +231,7 @@ The `sql` interpolator is sugar for constructors defined in the `doobie.hi.conne
 
 ```tut
 
-val proc = HC.process[(Code, Country)](
+val proc = HC.stream[(Code, Country)](
   "select code, name, population, gnp from country", // statement
   ().pure[PreparedStatementIO],                      // prep (none)
   512                                                // chunk size
@@ -246,4 +246,4 @@ val proc = HC.process[(Code, Country)](
 }
 ```
 
-The `process` combinator is parameterized on the process element type and consumes an sql statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.
+The `stream` combinator is parameterized on the element type and consumes a statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.

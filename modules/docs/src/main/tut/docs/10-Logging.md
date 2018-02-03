@@ -47,7 +47,7 @@ When we construct a `Query0` or `Update0` we can provide an optional `LogHandler
 def byName(pat: String) = {
   sql"select name, code from country where name like $pat"
     .queryWithLogHandler[(String, String)](LogHandler.jdkLogHandler)
-    .list
+    .to[List]
     .transact(xa)
 }
 ```
@@ -86,7 +86,7 @@ implicit val han = LogHandler.jdkLogHandler
 def byName(pat: String) = {
   sql"select name, code from country where name like $pat"
     .query[(String, String)] // handler will be picked up here
-    .list
+    .to[List]
     .transact(xa)
 }
 ```

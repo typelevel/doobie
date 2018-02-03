@@ -55,7 +55,7 @@ object coproduct {
   // work but is too low-level to be useful).
   class ConnectionOps[F[_]](implicit ev: InjectK[ConnectionOp, F]) {
     def select(pat: String): Free[F, List[String]] =
-      sql"select name from country where name like $pat".query[String].list.inject[F]
+      sql"select name from country where name like $pat".query[String].to[List].inject[F]
   }
   object ConnectionOps {
     implicit def instance[F[_]](implicit ev: InjectK[ConnectionOp, F]): ConnectionOps[F] = new ConnectionOps
