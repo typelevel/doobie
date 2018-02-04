@@ -223,7 +223,7 @@ object resultset {
    * mechanism for dealing with query results.
    * @group Results
    */
-  def process[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
+  def stream[A: Composite](chunkSize: Int): Stream[ResultSetIO, A] =
     repeatEvalChunks(getNextChunk[A](chunkSize))
 
   /** @group Properties */

@@ -67,7 +67,7 @@ object connection {
    * action, and return results via a `Stream`.
    * @group Prepared Statements
    */
-  def process[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
+  def stream[A: Composite](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
     liftStream(chunkSize, FC.prepareStatement(sql), prep, FPS.executeQuery)
 
   /**

@@ -28,6 +28,6 @@ object HiUsage {
   // Construct an action to find countries where more than `pct` of the population speaks `lang`.
   // The result is a scalaz.stream.Process that can be further manipulated by the caller.
   def speakerQuery(lang: String, pct: Double): Stream[ConnectionIO,CountryCode] =
-  sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".query[CountryCode].process
+  sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".query[CountryCode].stream
 
 }

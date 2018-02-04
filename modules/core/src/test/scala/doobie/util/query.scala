@@ -67,7 +67,7 @@ object queryspec extends Specification {
       q.toQuery0("foo").option.transact(xa).unsafeRunSync must_=== Some(123)
     }
     "map" in {
-      q.toQuery0("foo").map(_ * 2).list.transact(xa).unsafeRunSync must_=== List(246)
+      q.toQuery0("foo").map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== List(246)
     }
   }
 
@@ -82,7 +82,7 @@ object queryspec extends Specification {
       q.toQuery0("bar").option.transact(xa).unsafeRunSync must_=== None
     }
     "map" in {
-      q.toQuery0("bar").map(_ * 2).list.transact(xa).unsafeRunSync must_=== Nil
+      q.toQuery0("bar").map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== Nil
     }
   }
 
@@ -99,7 +99,7 @@ object queryspec extends Specification {
       q0n.option.transact(xa).unsafeRunSync must_=== Some(123)
     }
     "map" in {
-      q0n.map(_ * 2).list.transact(xa).unsafeRunSync must_=== List(246)
+      q0n.map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== List(246)
     }
   }
 
@@ -116,7 +116,7 @@ object queryspec extends Specification {
       q0e.option.transact(xa).unsafeRunSync must_=== None
     }
     "map" in {
-      q0e.map(_ * 2).list.transact(xa).unsafeRunSync must_=== Nil
+      q0e.map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== Nil
     }
   }
 

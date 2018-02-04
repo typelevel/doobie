@@ -46,7 +46,7 @@ object preparedstatement {
     repeatEvalChunks(FPS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
-  def process[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+  def stream[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeQuery)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
 
   /**
