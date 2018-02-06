@@ -90,7 +90,7 @@
 </div>
 
 <p>The difference here is that <code class="highlighter-rouge">stream</code> gives us an <a href="https://github.com/functional-streams-for-scala/fs2">fs2</a> <code class="highlighter-rouge">Stream[ConnectionIO, String]</code>
-that emits rows as they arrive from the database. By applying <code class="highlighter-rouge">take(5)</code> we instruct the process to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.</p>
+that emits rows as they arrive from the database. By applying <code class="highlighter-rouge">take(5)</code> we instruct the stream to shut everything down (and clean everything up) after five elements have been emitted. This is much more efficient than pulling all 239 rows and then throwing most of them away.</p>
 
 <p>Of course a server-side <code class="highlighter-rouge">LIMIT</code> would be an even better way to do this (for databases that support it), but in cases where you need client-side filtering or other custom postprocessing, <code class="highlighter-rouge">Stream</code> is a very general and powerful tool.
 For more information see the <a href="https://github.com/functional-streams-for-scala/fs2">fs2</a> repo, which has a good list of learning resources.</p>
@@ -280,7 +280,7 @@ For more information see the <a href="https://github.com/functional-streams-for-
 
 <p>The <code class="highlighter-rouge">sql</code> interpolator is sugar for constructors defined in the <code class="highlighter-rouge">doobie.hi.connection</code> module, aliased as <code class="highlighter-rouge">HC</code> if you use the standard imports. Using these constructors directly, the above program would look like this:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">proc</span> <span class="k">=</span> <span class="nc">HC</span><span class="o">.</span><span class="n">process</span><span class="o">[(</span><span class="kt">Code</span>, <span class="kt">Country</span><span class="o">)](</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">proc</span> <span class="k">=</span> <span class="nc">HC</span><span class="o">.</span><span class="n">stream</span><span class="o">[(</span><span class="kt">Code</span>, <span class="kt">Country</span><span class="o">)](</span>
      <span class="o">|</span>   <span class="s">"select code, name, population, gnp from country"</span><span class="o">,</span> <span class="c1">// statement
 </span>     <span class="o">|</span>   <span class="o">().</span><span class="n">pure</span><span class="o">[</span><span class="kt">PreparedStatementIO</span><span class="o">],</span>                      <span class="c1">// prep (none)
 </span>     <span class="o">|</span>   <span class="mi">512</span>                                                <span class="c1">// chunk size
@@ -298,7 +298,7 @@ For more information see the <a href="https://github.com/functional-streams-for-
 </code></pre>
 </div>
 
-<p>The <code class="highlighter-rouge">process</code> combinator is parameterized on the process element type and consumes an sql statement and a program in <code class="highlighter-rouge">PreparedStatementIO</code> that sets input parameters and any other pre-execution configuration. In this case the “prepare” program is a no-op.</p>
+<p>The <code class="highlighter-rouge">stream</code> combinator is parameterized on the element type and consumes a statement and a program in <code class="highlighter-rouge">PreparedStatementIO</code> that sets input parameters and any other pre-execution configuration. In this case the “prepare” program is a no-op.</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });

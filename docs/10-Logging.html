@@ -40,7 +40,7 @@
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">byName</span><span class="o">(</span><span class="n">pat</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
   <span class="n">sql</span><span class="s">"select name, code from country where name like $pat"</span>
     <span class="o">.</span><span class="n">queryWithLogHandler</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">)](</span><span class="nc">LogHandler</span><span class="o">.</span><span class="n">jdkLogHandler</span><span class="o">)</span>
-    <span class="o">.</span><span class="n">list</span>
+    <span class="o">.</span><span class="n">to</span><span class="o">[</span><span class="kt">List</span><span class="o">]</span>
     <span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
 <span class="o">}</span>
 </code></pre>
@@ -82,7 +82,7 @@ INFO: Successful Statement Execution:
 <span class="k">def</span> <span class="n">byName</span><span class="o">(</span><span class="n">pat</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
   <span class="n">sql</span><span class="s">"select name, code from country where name like $pat"</span>
     <span class="o">.</span><span class="n">query</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">)]</span> <span class="c1">// handler will be picked up here
-</span>    <span class="o">.</span><span class="n">list</span>
+</span>    <span class="o">.</span><span class="n">to</span><span class="o">[</span><span class="kt">List</span><span class="o">]</span>
     <span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
 <span class="o">}</span>
 </code></pre>
@@ -115,10 +115,10 @@ INFO: Successful Statement Execution:
 <p>But that’s not interesting. Let’s at least print the event out.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">trivial</span> <span class="k">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="nc">Console</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">"*** "</span> <span class="o">+</span> <span class="n">e</span><span class="o">))</span>
-<span class="n">trivial</span><span class="k">:</span> <span class="kt">doobie.util.log.LogHandler</span> <span class="o">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="nc">$$Lambda$24036</span><span class="o">/</span><span class="mi">1621940883</span><span class="k">@</span><span class="mi">49288</span><span class="n">c28</span><span class="o">)</span>
+<span class="n">trivial</span><span class="k">:</span> <span class="kt">doobie.util.log.LogHandler</span> <span class="o">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="nc">$$Lambda$24054</span><span class="o">/</span><span class="mi">1173194475</span><span class="nd">@edd59</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">queryWithLogHandler</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="n">trivial</span><span class="o">).</span><span class="n">unique</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="o">***</span> <span class="nc">Success</span><span class="o">(</span><span class="n">select</span> <span class="mi">42</span><span class="o">,</span><span class="nc">List</span><span class="o">(),</span><span class="mi">518243</span> <span class="n">nanoseconds</span><span class="o">,</span><span class="mi">249572</span> <span class="n">nanoseconds</span><span class="o">)</span>
+<span class="o">***</span> <span class="nc">Success</span><span class="o">(</span><span class="n">select</span> <span class="mi">42</span><span class="o">,</span><span class="nc">List</span><span class="o">(),</span><span class="mi">535571</span> <span class="n">nanoseconds</span><span class="o">,</span><span class="mi">193777</span> <span class="n">nanoseconds</span><span class="o">)</span>
 <span class="n">res3</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
 </code></pre>
 </div>

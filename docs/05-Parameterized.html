@@ -142,7 +142,7 @@
 
 <h3 id="diving-deeper">Diving Deeper</h3>
 
-<p>In the previous chapter’s <em>Diving Deeper</em> we saw how a query constructed with the <code class="highlighter-rouge">sql</code> interpolator is just sugar for the <code class="highlighter-rouge">process</code> constructor defined in the <code class="highlighter-rouge">doobie.hi.connection</code> module (aliased as <code class="highlighter-rouge">HC</code>). Here we see that the second parameter, a <code class="highlighter-rouge">PreparedStatementIO</code> program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.</p>
+<p>In the previous chapter’s <em>Diving Deeper</em> we saw how a query constructed with the <code class="highlighter-rouge">sql</code> interpolator is just sugar for the <code class="highlighter-rouge">stream</code> constructor defined in the <code class="highlighter-rouge">doobie.hi.connection</code> module (aliased as <code class="highlighter-rouge">HC</code>). Here we see that the second parameter, a <code class="highlighter-rouge">PreparedStatementIO</code> program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.Stream</span>
 
@@ -154,7 +154,7 @@
   """</span>
 
 <span class="k">def</span> <span class="n">proc</span><span class="o">(</span><span class="n">range</span><span class="k">:</span> <span class="kt">Range</span><span class="o">)</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">ConnectionIO</span>, <span class="kt">Country</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">HC</span><span class="o">.</span><span class="n">process</span><span class="o">[</span><span class="kt">Country</span><span class="o">](</span><span class="n">q</span><span class="o">,</span> <span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">((</span><span class="n">range</span><span class="o">.</span><span class="n">min</span><span class="o">,</span> <span class="n">range</span><span class="o">.</span><span class="n">max</span><span class="o">)),</span> <span class="mi">512</span><span class="o">)</span>
+  <span class="nc">HC</span><span class="o">.</span><span class="n">stream</span><span class="o">[</span><span class="kt">Country</span><span class="o">](</span><span class="n">q</span><span class="o">,</span> <span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">((</span><span class="n">range</span><span class="o">.</span><span class="n">min</span><span class="o">,</span> <span class="n">range</span><span class="o">.</span><span class="n">max</span><span class="o">)),</span> <span class="mi">512</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -173,10 +173,10 @@
 <p><code class="highlighter-rouge">Composite</code> instances are derived automatically for column types (and options thereof) that have <code class="highlighter-rouge">Meta</code> instances, and for products of other composites (via <code class="highlighter-rouge">shapeless.ProductTypeclass</code>). We can summon their instances thus:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Composite</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">Boolean</span><span class="o">)]</span>
-<span class="n">res9</span><span class="k">:</span> <span class="kt">doobie.util.composite.Composite</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">Boolean</span><span class="o">)]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">composite$LowerPriorityComposite$$anon$12</span><span class="k">@</span><span class="mi">2</span><span class="n">ce61717</span>
+<span class="n">res9</span><span class="k">:</span> <span class="kt">doobie.util.composite.Composite</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">Boolean</span><span class="o">)]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">composite$LowerPriorityComposite$$anon$12</span><span class="k">@</span><span class="mf">14f</span><span class="mi">00988</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Composite</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
-<span class="n">res10</span><span class="k">:</span> <span class="kt">doobie.util.composite.Composite</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">composite$LowerPriorityComposite$$anon$12</span><span class="k">@</span><span class="mi">25</span><span class="n">afe3c4</span>
+<span class="n">res10</span><span class="k">:</span> <span class="kt">doobie.util.composite.Composite</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">composite$LowerPriorityComposite$$anon$12</span><span class="k">@</span><span class="mi">2</span><span class="n">bf21ab8</span>
 </code></pre>
 </div>
 

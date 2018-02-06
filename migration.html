@@ -134,6 +134,15 @@
 
 <p><strong>doobie</strong>’s provided <code class="highlighter-rouge">ensuring</code> combinator has been renamed to <code class="highlighter-rouge">guarantee</code> to avoid conflicts with Scala’s standard library. The combinators for <code class="highlighter-rouge">Catchable</code> have been removed; use <code class="highlighter-rouge">ApplicativeError</code> and <code class="highlighter-rouge">MonadError</code> instead.</p>
 
+<h2 id="miscellaneous-changes">Miscellaneous Changes</h2>
+
+<p>In no particular order:</p>
+
+<ul>
+  <li>All <code class="highlighter-rouge">.process</code> combinators and constructors are deprecated in the <code class="highlighter-rouge">Query/Update</code> API and removed in the lower-level APIs; use the <code class="highlighter-rouge">.stream</code> equivalents.</li>
+  <li>The <code class="highlighter-rouge">.list</code> and <code class="highlighter-rouge">.vector</code> methods on <code class="highlighter-rouge">Query/Query0</code> are deprecated in favor of <code class="highlighter-rouge">.to[List]</code> and <code class="highlighter-rouge">.to[Vector]</code> respectively.</li>
+</ul>
+
 </div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>doobie is designed and developed by <a href="" target="_blank">Rob Norris</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/tpolecat/doobie"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank">Sbt-microsites</a> - © 2016 <a href="https://www.47deg.com/" target="_blank">47 Degrees</a></p></div></div></div></footer><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });
