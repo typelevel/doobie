@@ -168,7 +168,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 <p>Ok, so the message suggests that we need an <code class="highlighter-rouge">Meta[A]</code> for each <code class="highlighter-rouge">A</code> or <code class="highlighter-rouge">Option[A]</code> in the <code class="highlighter-rouge">HList</code>, so let’s see which one is missing by trying to summon them in the REPL.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; Meta[String]
-res11: doobie.util.meta.Meta[String] = doobie.util.meta$Meta$$anon$3@7d2303ff
+res11: doobie.util.meta.Meta[String] = doobie.util.meta$Meta$$anon$3@2ca5aa29
 
 scala&gt; Meta[UUID]
 &lt;console&gt;:38: error: Could not find an instance of Meta[java.util.UUID]; you can construct one based on a primitive instance via `xmap`.
@@ -187,10 +187,10 @@ scala&gt; Meta[UUID]
 <p>Having done this, the <code class="highlighter-rouge">Meta</code> and <code class="highlighter-rouge">Param</code> instances are now present and our code compiles.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">UUID</span><span class="o">]</span>
-<span class="n">res13</span><span class="k">:</span> <span class="kt">doobie.util.meta.Meta</span><span class="o">[</span><span class="kt">java.util.UUID</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">meta$Meta$$anon$4</span><span class="k">@</span><span class="mf">46f</span><span class="n">f3bf5</span>
+<span class="n">res13</span><span class="k">:</span> <span class="kt">doobie.util.meta.Meta</span><span class="o">[</span><span class="kt">java.util.UUID</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">meta$Meta$$anon$4</span><span class="k">@</span><span class="mi">6</span><span class="n">aa252e4</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">UUID</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]</span>
-<span class="n">res14</span><span class="k">:</span> <span class="kt">doobie.util.param.Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">java.util.UUID</span> <span class="kt">::</span> <span class="kt">shapeless.HNil</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">param$Param</span><span class="k">@</span><span class="mi">5</span><span class="n">edb325e</span>
+<span class="n">res14</span><span class="k">:</span> <span class="kt">doobie.util.param.Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">java.util.UUID</span> <span class="kt">::</span> <span class="kt">shapeless.HNil</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">param$Param</span><span class="k">@</span><span class="mf">5d</span><span class="mi">34</span><span class="n">b7c7</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">query</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">u</span><span class="k">:</span> <span class="kt">UUID</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"select ... where foo = $s and url = $u"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
 <span class="n">query</span><span class="k">:</span> <span class="o">(</span><span class="kt">s:</span> <span class="kt">String</span><span class="o">,</span> <span class="kt">u:</span> <span class="kt">java.util.UUID</span><span class="o">)</span><span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="nc">Query0</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
@@ -275,7 +275,7 @@ scala&gt; Meta[UUID]
 <p>Our derivation now works and the code compiles.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"…"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="n">res17</span><span class="k">:</span> <span class="kt">doobie.util.query.Query0</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query$Query$$anon$7</span><span class="k">@</span><span class="mf">25f</span><span class="n">d0a15</span>
+<span class="n">res17</span><span class="k">:</span> <span class="kt">doobie.util.query.Query0</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query$Query$$anon$7</span><span class="k">@</span><span class="mi">33</span><span class="n">c14c00</span>
 </code></pre>
 </div>
 
