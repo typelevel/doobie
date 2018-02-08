@@ -4,17 +4,17 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
-### <a name="0.5.0"></a>Work in Progress for Version 0.5.0
+### <a name="0.5.0"></a>New and Noteworthy for Version 0.5.0
 
 This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). This is a big release that will make life much simpler for people who were using 0.4.x with cats. See the **migration** document on the microsite for more information.
 
-**Many thanks** to Andreas Svanberg, Bjørn Madsen, Christopher Davenport, Dale Wijnand, Devin Ekins, Dmitry Polienko, Earl St Sauver, Frank S. Thomas, Hossam Karim, Jisoo Park, Keir Lawson, Mads Hartmann, Rob Norris, Stephen Lazaro, fabio labella, nigredo-tori, sh0hei, tgalappathth, and x1- for their contributions to this release!
+**Many thanks** to Andreas Svanberg, Bjørn Madsen, Charles Hunt, Christopher Davenport, Dale Wijnand, Devin Ekins, Dmitry Polienko, Earl St Sauver, fabio labella, Frank S. Thomas, Hossam Karim, Jisoo Park, Keir Lawson, Mads Hartmann, nigredo-tori, Radu Gancea, sh0hei, Stephen Lazaro, tgalappathth, wedens, and x1- for their contributions to this release!
 
 Notable changes:
 
 ##### Cats Standardization
 
-- 🎵 *Ding, dong the yax is dead!* 🎵 The new codebase is based on the cats output. All import renames have been resolved to cats names.
+- 🎵 *Ding, dong the yax is dead!* 🎵 The new codebase is based on cats!
 - The `-cats` segment of artifact names is gone. `doobie-core` uses cats now, as does everything else.
 
 ##### API Changes
