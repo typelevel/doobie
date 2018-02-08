@@ -5,16 +5,6 @@
 [![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12)
 [![Javadocs](https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg)](https://javadoc.io/doc/org.tpolecat/doobie-core_2.12)
 
-**doobie** is a pure functional JDBC layer for Scala. It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC.
+**doobie** is a pure functional JDBC layer for Scala.
 
-### Choose Your Own Adventure
-
-You have washed up on the shores of the 0.5.x branch, which is unreleased and under heavy development. You smell smoke and hear rapid typing in the distance.
-
-A dish of milk is here.  
-A ball of yarn is here.
-
-- Retreat to the awkward comfort of the [**0.4.x branch**](https://github.com/tpolecat/doobie/tree/series/0.4.x).
-- Continue to the :sparkles: [**0.5.x Microsite**](http://tpolecat.github.io/doobie/) :sparkles:
-- Watch a [**Shrimp listening to Curtis Mayfield**](https://www.youtube.com/watch?v=74_W_sOhMu4).
-- Peek at the [**Changelog**](CHANGELOG.md) for more clues.
+Please proceed to the [**microsite**](http://tpolecat.github.io/doobie/) for more information.

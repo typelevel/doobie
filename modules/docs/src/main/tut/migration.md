@@ -7,7 +7,7 @@ position: 2
 
 # Migrating from 0.4.x with Scalaz
 
-**doobie** has standardized on [cats](https://github.com/typelevel/cats) as its FP support library. If you are using scalaz and do not plan on moving the rest of your codebase to cats you can interpret into `scalaz.concurrent.Task` at the boundary by using a `Transactor[Task]`. You will need to supply an implicit `cats.effect.Async[Task]` instance.
+**doobie** has standardized on [cats](https://github.com/typelevel/cats) as its FP support library. If you are using scalaz for other parts of your application you can interpret `ConnectionIO` into `scalaz.concurrent.Task` at the boundary by using a `Transactor[Task]`. The required instance of `Async[Task]` is provided by [fs2-scalaz](https://github.com/functional-streams-for-scala/fs2-scalaz).
 
 # Migrating from 0.4.x with Cats
 
