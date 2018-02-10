@@ -39,9 +39,7 @@ find("France").transact(xa).unsafeRunSync
 
 ## Quick Start
 
-*This is documentation site for the 0.5.x development branch, which is in early stages and is tracking the upcoming cats 1.0.0 release. If you are looking for current production versions please see the [GitHub repository](https://github.com/tpolecat/doobie).*
-
-The current development version is **{{site.doobieVersion}}** for **Scala {{site.scalaVersions}}** with
+The current version is **{{site.doobieVersion}}** for **Scala {{site.scalaVersions}}** with
 
 - [**cats**](http://typelevel.org/cats/) {{site.catsVersion}}
 - [**fs2**](https://github.com/functional-streams-for-scala/fs2) {{site.fs2Version}}
