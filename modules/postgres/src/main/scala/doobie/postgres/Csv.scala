@@ -8,24 +8,47 @@ import cats.instances.string._
 
 import shapeless.{ HList, HNil, ::, <:!<, Generic }
 
+/**
+ * Typeclass for types that can be written as Postgres literal CSV. If you wish to implement an
+ * instance it's worth reading the documentation at the link below.
+ * @see [[https://www.postgresql.org/docs/9.6/static/sql-copy.html Postgres `COPY` command]]
+ */
 trait Csv[A] { outer =>
+
+  /**
+   * Construct an encoder for `A` that appends to the provided `StringBuilder.
+   * @param a the value to encode
+   * @param quote the `QUOTE` character used by the encoder
+   * @param esc the `ESCAPE` character used by the encoder.
+   */
   def unsafeEncode(a: A, quote: Char, esc: Char): StringBuilder => StringBuilder
+
+  /** Encode `a` using the provided `QUOTE` and `ESCAPE` characters. */
   final def encode(a: A, quote: Char, esc: Char): String =
     unsafeEncode(a, quote, esc)(new StringBuilder).toString
+
+  /** `Csv` is a contravariant functor. */
   final def contramap[B](f: B => A): Csv[B] =
     Csv.instance((b, q, e) => outer.unsafeEncode(f(b), q, e))
+
 }
 object Csv extends CsvInstances {
   def apply[A](implicit ev: Csv[A]): ev.type = ev
+
+  /**
+   * Construct an instance, given a function matching the `unsafeEncode` signature.
+   * @param f a function from `(A, QUOTE, ESCAPE) => StringBuilder => StringBuilder`
+   */
   def instance[A](f: (A, Char, Char) => StringBuilder => StringBuilder): Csv[A] =
     new Csv[A] {
-      def unsafeEncode(a: A, quote: Char, esc: Char) = sb => f(a, quote, esc)(sb)
+      def unsafeEncode(a: A, quote: Char, esc: Char) =
+        sb => f(a, quote, esc)(sb)
     }
 }
 
 trait CsvInstances extends CsvInstances0 { this: Csv.type =>
 
-  // String requires escaping
+  // String encoder escapes any embedded `QUOTE` characters.
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
   implicit val stringInstance: Csv[String] =
     instance { (s, q, e) => sb =>
@@ -73,7 +96,7 @@ trait CsvInstances extends CsvInstances0 { this: Csv.type =>
   ): Csv[Option[A]] =
     instance {
       case (Some(a), q, e) => csv.unsafeEncode(a, q, e)
-      case (None, q, e)    => identity
+      case (None, q, e)    => identity // null is "" (!)
     }
 
   // HNil isn't a valid Csv but a single-element HList is

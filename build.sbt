@@ -340,8 +340,8 @@ lazy val postgres = project
     ),
     initialCommands := """
       import cats._, cats.data._, cats.implicits._, cats.effect._
-      import doobie.imports._
-      import doobie.postgres.imports._
+      import doobie._, doobie.implicits._
+      import doobie.postgres._, doobie.postgres.implicits._
       val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       val yolo = xa.yolo
       import yolo._
