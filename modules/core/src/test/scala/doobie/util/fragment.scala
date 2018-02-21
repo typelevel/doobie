@@ -76,6 +76,25 @@ object fragmentspec extends Specification {
       Fragment.const0("foo").query[Int].sql must_== "foo"
     }
 
+    "allow margin stripping" in {
+      fr"""select foo
+          |  from bar
+          |  where a = $a and b = $b and c = $c
+          |""".stripMargin.query[Int].sql must_== "select foo\n  from bar\n  where a = ? and b = ? and c = ?\n "
+    }
+
+    "allow margin stripping with custom margin" in {
+      fr"""select foo
+          !  from bar
+          !""".stripMargin('!').query[Int].sql must_== "select foo\n  from bar\n "
+    }
+
+    "not affect margin characters in middle outside of margin position" in {
+      fr"""select foo || baz
+          |  from bar
+          |""".stripMargin.query[Int].sql must_== "select foo || baz\n  from bar\n "
+    }
+
   }
 
 }
