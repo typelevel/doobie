@@ -12,6 +12,8 @@ import doobie.util.update.{ Update, Update0 }
 import doobie.util.log.LogHandler
 import doobie.util.pos.Pos
 
+import scala.Predef.wrapString
+
 import shapeless.HNil
 
 /** Module defining the `Fragment` data type. */
@@ -43,6 +45,19 @@ object fragment {
         val sql = fa.sql + fb.sql
         val pos = fa.pos orElse fb.pos
       }
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def stripMargin(marginChar: Char): Fragment =
+      new Fragment {
+        type A = fa.A
+        val a = fa.a
+        val sql = fa.sql.stripMargin(marginChar)
+        val pos = fa.pos
+        val ca = fa.ca
+      }
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def stripMargin: Fragment = stripMargin('|')
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
