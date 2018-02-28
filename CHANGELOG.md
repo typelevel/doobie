@@ -4,6 +4,13 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.5.1"></a>New and Noteworthy for Version 0.5.1
+
+Minor update to get dependencies up to date.
+
+- Updated to **fs2 0.10.2**, **hikari-cp 2.7.8**, and **specs2 4.0.3**.
+- You can now do `.stripMargin` on fragments, thanks to Arne Claassen!
+
 ### <a name="0.5.0"></a>New and Noteworthy for Version 0.5.0
 
 This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). This is a big release that will make life much simpler for people who were using 0.4.x with cats. See the **migration** document on the microsite for more information.
