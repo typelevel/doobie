@@ -35,11 +35,11 @@
 
 <h2 id="quick-start">Quick Start</h2>
 
-<p>The current development version is <strong>0.5.0</strong> for <strong>Scala 2.11/12</strong> with</p>
+<p>The current version is <strong>0.5.1</strong> for <strong>Scala 2.11/12</strong> with</p>
 
 <ul>
   <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 1.0.1</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 0.10.1</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 0.10.2</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.3</li>
 </ul>
 
@@ -50,14 +50,14 @@
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
 
   <span class="c1">// Start with this one
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.5.0"</span><span class="o">,</span>
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.5.1"</span><span class="o">,</span>
 
   <span class="c1">// And add any of these as needed
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.5.0"</span><span class="o">,</span> <span class="c1">// H2 driver 1.4.196 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.5.0"</span><span class="o">,</span> <span class="c1">// HikariCP transactor.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.5.0"</span><span class="o">,</span> <span class="c1">// Postgres driver 42.2.1 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.5.0"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.5.0"</span>  <span class="c1">// ScalaTest support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.5.1"</span><span class="o">,</span> <span class="c1">// H2 driver 1.4.196 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.5.1"</span><span class="o">,</span> <span class="c1">// HikariCP transactor.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.5.1"</span><span class="o">,</span> <span class="c1">// Postgres driver 42.2.1 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.5.1"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.5.1"</span>  <span class="c1">// ScalaTest support for typechecking statements.
 </span>
 <span class="o">)</span>
 </code></pre>
@@ -84,6 +84,7 @@
 <p>Listed newest first. If you have given a presentation or have written a blog post that includes <strong>doobie</strong>, let me know and I’ll add it to this list.</p>
 
 <ul>
+  <li><a href="https://blog.godatadriven.com/doobie-monix-jdbc-example">Typechecking SQL queries with doobie</a> by Bas Beelen, GoDataDriven, 13-Feb 2018</li>
   <li><a href="http://fr.slideshare.net/normation/doobie-feedbacks-from-the-trenches-scalaio-2016">Doobie - Feedback from the Trenches</a> by François Armand, ScalaIO, October 2016</li>
   <li><a href="https://www.youtube.com/watch?v=7xSfLPD6tiQ">Pure Functional Database Programming with Fixpoint Types</a> by Rob Norris - Scala World, 2016 - <a href="http://tpolecat.github.io/presentations/sw2016/slides.html#1">slides</a></li>
   <li><a href="http://www.lyranthe.org/presentations/http4s_doobie_circe.pdf">The Functional Web Stack</a> by Gary Coady - Dublin Scala Users Group, April 2016</li>
