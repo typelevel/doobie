@@ -65,7 +65,7 @@ object FirstExample {
     val db = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
     for {
       a <- examples.transact(db).attempt
-      _ <- IO(s"$a")
+      _ <- IO(println(s"$a"))
     } yield ()
   }
 
