@@ -5,15 +5,15 @@ import microsites._
 resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "1.0.1"
-lazy val circeVersion         = "0.9.1"
+lazy val catsVersion          = "1.1.0"
+lazy val circeVersion         = "0.9.2"
 lazy val fs2CoreVersion       = "0.10.2"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.8"
 lazy val kindProjectorVersion = "0.9.6"
 lazy val monixVersion         = "3.0.0-M3"
 lazy val postGisVersion       = "2.2.1"
-lazy val postgresVersion      = "42.2.1"
+lazy val postgresVersion      = "42.2.2"
 lazy val refinedVersion       = "0.8.7"
 lazy val scalaCheckVersion    = "1.13.5"
 lazy val scalatestVersion     = "3.0.5"
