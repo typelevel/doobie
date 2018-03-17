@@ -11,83 +11,135 @@ import java.sql.{ PreparedStatement, ResultSet }
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract case class Meta[A] private (get: Get[A], put: Put[A]) {
+/**
+ * Convenience for introducing a symmetric `Get`/`Put` pair into implicit scope, and for deriving
+ * new symmetric pairs. It's important to understand that `Meta` should never be demanded by user
+ * methods; instead demand both `Get` and `Put`. The reason for this is that while `Meta` implies
+ * `Get` and `Put`, the presence of both `Get` and `Put` does *not* imply `Meta`.
+ */
+final class Meta[A](val get: Get[A], val put: Put[A]) {
 
+  /** Meta is an invariant functor. Prefer `timap` as it provides for better diagnostics.  */
   def imap[B](f: A => B)(g: B => A): Meta[B] =
-    new Meta(get.map(f), put.contramap(g)) {}
+    new Meta(get.map(f), put.contramap(g))
 
+  /** Variant of `imap` that takes a type tag, to aid in diagnostics. */
   def timap[B: TypeTag](f: A => B)(g: B => A): Meta[B] =
-    new Meta(get.tmap(f), put.tcontramap(g)) {}
+    new Meta(get.tmap(f), put.tcontramap(g))
 
-  @deprecated("Use imap, or timap if a TypeTag is available.", "0.5.0")
+  @deprecated("Use imap, or timap if a TypeTag is available.", "0.6.0")
   def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] =
-    new Meta(get.tmap(f), put.tcontramap(g)) {}
+    new Meta(get.tmap(f), put.tcontramap(g))
 
 }
 
-object Meta extends GetPutInstances {
+/** Module of constructors and instances for `Meta`. */
+object Meta extends MetaConstructors
+               with MetaInstances
+               with MetaDeprecatedConstructors // until 0.7.x
+{
 
+  /** Summon the `Meta` instance if possible. */
   def apply[A](implicit ev: Meta[A]): ev.type = ev
 
-  def basic[A: TypeTag](
-    jdbcTarget: NonEmptyList[JdbcType],
-    jdbcSource: NonEmptyList[JdbcType],
-    jdbcSourceSecondary: List[JdbcType],
-    get: (ResultSet, Int) => A,
-    put: (PreparedStatement, Int, A) => Unit,
-    update: (ResultSet, Int, A) => Unit
-  ): Meta[A] =
-    new Meta(
-      Get.Basic.many(jdbcSource, jdbcSourceSecondary, get),
-      Put.Basic.many(jdbcTarget, put, update)
-    ) {}
-
-  def basic1[A: TypeTag](
-    jdbcType: JdbcType,
-    jdbcSourceSecondary: List[JdbcType],
-    get: (ResultSet, Int) => A,
-    put: (PreparedStatement, Int, A) => Unit,
-    update: (ResultSet, Int, A) => Unit
-  ): Meta[A] =
-    new Meta(
-      Get.Basic.many(NonEmptyList.of(jdbcType), jdbcSourceSecondary, get),
-      Put.Basic.many(NonEmptyList.of(jdbcType), put, update)
-    ) {}
-
-  def advanced[A: TypeTag](
-    jdbcTypes: NonEmptyList[JdbcType],
-    schemaTypes: NonEmptyList[String],
-    get: (ResultSet, Int) => A,
-    put: (PreparedStatement, Int, A) => Unit,
-    update: (ResultSet, Int, A) => Unit
-  ): Meta[A] =
-    new Meta(
-      Get.Advanced.many(jdbcTypes, schemaTypes, get),
-      Put.Advanced.many(jdbcTypes, schemaTypes, put, update)
-    ) {}
-
-  def array[A >: Null <: AnyRef: TypeTag](
-    elementType: String,
-    schemaH: String,
-    schemaT: String*
-  ): Meta[Array[A]] =
-    new Meta[Array[A]](
-      Get.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList)),
-      Put.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList), elementType)
-    ) {}
-
-  def other[A >: Null <: AnyRef: TypeTag: ClassTag](
-    schemaH: String,
-    schemaT: String*
-  ): Meta[A] =
-    new Meta(
-      Get.Advanced.other[A](NonEmptyList(schemaH, schemaT.toList)),
-      Put.Advanced.other[A](NonEmptyList(schemaH, schemaT.toList))
-    ) {}
+  /** @group Typeclass Instances */
+  implicit val MetaInvariant: Invariant[Meta] =
+    new Invariant[Meta] {
+      def imap[A, B](fa: Meta[A])(f: A => B)(g: B => A) =
+        fa.imap(f)(g)
+    }
 
 }
 
-trait GetPutInstances { this: Meta.type =>
+trait MetaConstructors {
+
+  /**
+   * Module of constructors for "basic" JDBC types.
+   * @group Constructors
+   */
+  object Basic {
+
+    def many[A: TypeTag](
+      jdbcTarget: NonEmptyList[JdbcType],
+      jdbcSource: NonEmptyList[JdbcType],
+      jdbcSourceSecondary: List[JdbcType],
+      get: (ResultSet, Int) => A,
+      put: (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    ): Meta[A] =
+      new Meta(
+        Get.Basic.many(jdbcSource, jdbcSourceSecondary, get),
+        Put.Basic.many(jdbcTarget, put, update)
+      )
+
+    def one[A: TypeTag](
+      jdbcType: JdbcType,
+      jdbcSourceSecondary: List[JdbcType],
+      get: (ResultSet, Int) => A,
+      put: (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    ): Meta[A] =
+      new Meta(
+        Get.Basic.one(jdbcType, jdbcSourceSecondary, get),
+        Put.Basic.one(jdbcType, put, update)
+      )
+
+  }
+
+  /**
+   * Module of constructors for "advanced" JDBC types.
+   * @group Constructors
+   */
+  object Advanced {
+
+    def many[A: TypeTag](
+      jdbcTypes: NonEmptyList[JdbcType],
+      schemaTypes: NonEmptyList[String],
+      get: (ResultSet, Int) => A,
+      put: (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    ): Meta[A] =
+      new Meta(
+        Get.Advanced.many(jdbcTypes, schemaTypes, get),
+        Put.Advanced.many(jdbcTypes, schemaTypes, put, update)
+      )
+
+    def one[A: TypeTag](
+      jdbcTypes: JdbcType,
+      schemaTypes: NonEmptyList[String],
+      get: (ResultSet, Int) => A,
+      put: (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    ): Meta[A] =
+      new Meta(
+        Get.Advanced.one(jdbcTypes, schemaTypes, get),
+        Put.Advanced.one(jdbcTypes, schemaTypes, put, update)
+      )
+
+    def array[A >: Null <: AnyRef: TypeTag](
+      elementType: String,
+      schemaH: String,
+      schemaT: String*
+    ): Meta[Array[A]] =
+      new Meta[Array[A]](
+        Get.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList)),
+        Put.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList), elementType)
+      )
+
+    def other[A >: Null <: AnyRef: TypeTag: ClassTag](
+      schemaH: String,
+      schemaT: String*
+    ): Meta[A] =
+      new Meta(
+        Get.Advanced.other[A](NonEmptyList(schemaH, schemaT.toList)),
+        Put.Advanced.other[A](NonEmptyList(schemaH, schemaT.toList))
+      )
+
+  }
+
+}
+
+trait MetaInstances { this: MetaConstructors =>
   import doobie.enum.JdbcType.{ Boolean => JdbcBoolean, _ }
 
   /** @group Instances */
@@ -99,7 +151,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val ByteMeta: Meta[Byte] =
-    basic1[Byte](
+    Basic.one[Byte](
       TinyInt,
       List(SmallInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
@@ -107,7 +159,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val ShortMeta: Meta[Short] =
-    basic1[Short](
+    Basic.one[Short](
       SmallInt,
       List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
@@ -115,7 +167,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val IntMeta: Meta[Int] =
-    basic1[Int](
+    Basic.one[Int](
       Integer,
       List(TinyInt, SmallInt, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
@@ -123,7 +175,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val LongMeta: Meta[Long] =
-    basic1[Long](
+    Basic.one[Long](
       BigInt,
       List(TinyInt, Integer, SmallInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
@@ -131,7 +183,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val FloatMeta: Meta[Float] =
-    basic1[Float](
+    Basic.one[Float](
       Real,
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar,
         LongVarChar),
@@ -139,7 +191,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val DoubleMeta: Meta[Double] =
-    basic[Double](
+    Basic.many[Double](
       NonEmptyList.of(Double),
       NonEmptyList.of(Float, Double),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Real, Decimal, Numeric, Bit, Char, VarChar,
@@ -148,7 +200,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val BigDecimalMeta: Meta[java.math.BigDecimal] =
-    basic[java.math.BigDecimal](
+    Basic.many[java.math.BigDecimal](
       NonEmptyList.of(Numeric),
       NonEmptyList.of(Decimal, Numeric),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Bit, Char, VarChar,
@@ -157,7 +209,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val BooleanMeta: Meta[Boolean] =
-    basic[Boolean](
+    Basic.many[Boolean](
       NonEmptyList.of(Bit, JdbcBoolean),
       NonEmptyList.of(Bit, JdbcBoolean),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Char, VarChar,
@@ -166,7 +218,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val StringMeta: Meta[String] =
-    basic[String](
+    Basic.many[String](
       NonEmptyList.of(VarChar, Char, LongVarChar, NChar, NVarChar, LongnVarChar),
       NonEmptyList.of(Char, VarChar, LongVarChar, NChar, NVarChar, LongnVarChar),
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Real, Decimal, Numeric, Bit,
@@ -175,7 +227,7 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val ByteArrayMeta: Meta[Array[Byte]] =
-    basic[Array[Byte]](
+    Basic.many[Array[Byte]](
       NonEmptyList.of(Binary, VarBinary, LongVarBinary),
       NonEmptyList.of(Binary, VarBinary),
       List(LongVarBinary),
@@ -183,21 +235,21 @@ trait GetPutInstances { this: Meta.type =>
 
   /** @group Instances */
   implicit val DateMeta: Meta[java.sql.Date] =
-    basic1[java.sql.Date](
+    Basic.one[java.sql.Date](
       Date,
       List(Char, VarChar, LongVarChar, Timestamp),
       _.getDate(_), _.setDate(_, _), _.updateDate(_, _))
 
   /** @group Instances */
   implicit val TimeMeta: Meta[java.sql.Time] =
-    basic1[java.sql.Time](
+    Basic.one[java.sql.Time](
       Time,
       List(Char, VarChar, LongVarChar, Timestamp),
       _.getTime(_), _.setTime(_, _), _.updateTime(_, _))
 
   /** @group Instances */
   implicit val TimestampMeta: Meta[java.sql.Timestamp] =
-    basic1[java.sql.Timestamp](
+    Basic.one[java.sql.Timestamp](
       Timestamp,
       List(Char, VarChar, LongVarChar, Date, Time),
       _.getTimestamp(_), _.setTimestamp(_, _), _.updateTimestamp(_, _))
@@ -217,5 +269,60 @@ trait GetPutInstances { this: Meta.type =>
   /** @group Instances */
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
     DateMeta.imap(_.toLocalDate)(java.sql.Date.valueOf)
+
+}
+
+trait MetaDeprecatedConstructors { this: MetaConstructors =>
+
+  /** @group Constructors (deprecated) */
+  @deprecated("Use Meta.Basic.many", "0.6.0")
+  def basic[A: TypeTag](
+    jdbcTarget: NonEmptyList[JdbcType],
+    jdbcSource: NonEmptyList[JdbcType],
+    jdbcSourceSecondary: List[JdbcType],
+    get: (ResultSet, Int) => A,
+    put: (PreparedStatement, Int, A) => Unit,
+    update: (ResultSet, Int, A) => Unit
+  ): Meta[A] =
+    Basic.many(jdbcTarget, jdbcSource, jdbcSourceSecondary, get, put, update)
+
+  /** @group Constructors (deprecated) */
+  @deprecated("Use Meta.Basic.one", "0.6.0")
+  def basic1[A: TypeTag](
+    jdbcType: JdbcType,
+    jdbcSourceSecondary: List[JdbcType],
+    get: (ResultSet, Int) => A,
+    put: (PreparedStatement, Int, A) => Unit,
+    update: (ResultSet, Int, A) => Unit
+  ): Meta[A] =
+    Basic.one(jdbcType, jdbcSourceSecondary, get, put, update)
+
+  /** @group Constructors (deprecated) */
+  @deprecated("Use Meta.Advanced.many", "0.6.0")
+  def advanced[A: TypeTag](
+    jdbcTypes: NonEmptyList[JdbcType],
+    schemaTypes: NonEmptyList[String],
+    get: (ResultSet, Int) => A,
+    put: (PreparedStatement, Int, A) => Unit,
+    update: (ResultSet, Int, A) => Unit
+  ): Meta[A] =
+    Advanced.many(jdbcTypes, schemaTypes, get, put, update)
+
+  /** @group Constructors (deprecated) */
+  @deprecated("Use Meta.Advanced.array", "0.6.0")
+  def array[A >: Null <: AnyRef: TypeTag](
+    elementType: String,
+    schemaH: String,
+    schemaT: String*
+  ): Meta[Array[A]] =
+    Advanced.array(elementType, schemaH, schemaT: _*)
+
+  /** @group Constructors (deprecated) */
+  @deprecated("Use Meta.Advanced.other", "0.6.0")
+  def other[A >: Null <: AnyRef: TypeTag: ClassTag](
+    schemaH: String,
+    schemaT: String*
+  ): Meta[A] =
+    Advanced.other(schemaH, schemaT: _*)
 
 }

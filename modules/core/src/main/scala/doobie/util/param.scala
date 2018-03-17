@@ -24,7 +24,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
   /**
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
-   * with a type with a `Meta` instance, or an `Option` thereof.
+   * with a type with a `Put` instance, or an `Option` thereof.
    */
   object Param {
 

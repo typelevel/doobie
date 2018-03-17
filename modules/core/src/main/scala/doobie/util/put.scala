@@ -87,6 +87,13 @@ object Put extends PutInstances {
         ContravariantCoyoneda.lift[(ResultSet, Int, ?) => Unit, A](update)
       )
 
+    def one[A](
+      jdbcTarget: JdbcType,
+      put:  (PreparedStatement, Int, A) => Unit,
+      update: (ResultSet, Int, A) => Unit
+    )(implicit ev: TypeTag[A]): Basic[A] =
+      many(NonEmptyList.of(jdbcTarget), put, update)
+
   }
 
   final case class Advanced[A](

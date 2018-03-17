@@ -26,7 +26,7 @@ object OtherSchema {
   // Ok this mapping goes via String when reading and PGObject when writing, and it understands
   // when the type is reported as OTHER (schemaType).
   def wackyPostgresMapping(schemaName: String): Meta[String] =
-    Meta.advanced[String](
+    Meta.Advanced.many[String](
       NonEmptyList.of(JdbcType.Other, JdbcType.VarChar),
       NonEmptyList.of(schemaName),
       (rs, n) => rs.getString(n),
