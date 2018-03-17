@@ -5,6 +5,7 @@
 package doobie.util
 
 import cats.Contravariant
+import cats.free.ContravariantCoyoneda
 import cats.data.NonEmptyList
 import doobie.enum.JdbcType
 import java.sql.{ PreparedStatement, ResultSet }
