@@ -115,7 +115,7 @@ object readspec extends Specification {
 
     // "work for specific example from #217" in {
     //   trait LocalDateTime
-    //   implicit val MetaLocalDateTime: Meta[LocalDateTime] = null
+    //   implicit val MetaLocalDateTime: Get[LocalDateTime] = null
     //   Read[
     //     Option[String] :: Option[String] :: Option[String] :: Option[LocalDateTime] ::
     //     Option[String] :: Option[String] :: Option[String] :: Option[String] ::

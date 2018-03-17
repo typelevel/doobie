@@ -221,8 +221,8 @@ import java.sql.SQLXML
 import scala.xml.{ XML, Elem }
 
 implicit val XmlMeta: Meta[Elem] =
-  Meta.advanced[Elem](
-    NonEmptyList.of(Other),
+  Meta.Advanced.one[Elem](
+    Other,
     NonEmptyList.of("xml"),
     (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
     (ps, n,  e) => {

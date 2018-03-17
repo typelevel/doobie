@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright (c) 2013-2018 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
@@ -105,39 +106,44 @@ object metaspec extends Specification {
 // // Copyright (c) 2013-2017 Rob Norris
 // // This software is licensed under the MIT License (MIT).
 // // For more information see LICENSE or https://opensource.org/licenses/MIT
+=======
+// Copyright (c) 2013-2017 Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+>>>>>>> remove mentions of Meta in code, resurrect/split metaspec
 
-// package doobie.util
+package doobie.util
 
-// import cats.effect.IO
-// import doobie._, doobie.implicits._
-// import doobie.enum.JdbcType.{ Array => _, _ }
-// import org.specs2.mutable.Specification
-// import shapeless.test._
+import cats.effect.IO
+import doobie._, doobie.implicits._
+import doobie.enum.JdbcType.{ Array => _, _ }
+import org.specs2.mutable.Specification
+import shapeless.test._
 
-// @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
-// object metaspec extends Specification {
-//   final case class X(x: Int)
-//   final case class Y(x: String) extends AnyVal
-//   final case class P(x: Int) extends AnyVal
-//   final case class Q(x: String)
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
+object metaspec extends Specification {
 
-//   final case class Z(i: Int, s: String)
-//   object S
+  "Meta" should {
 
-//   final case class Reg1(x: Int)
-//   final case class Reg2(x: Int)
+    "exist for primitive types" in {
+      Meta[Int]
+      Meta[String]
+      true
+    }
 
-//   val xa = Transactor.fromDriverManager[IO](
-//     "org.h2.Driver",
-//     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-//     "sa", ""
-//   )
+    "imply Get" in {
+      def foo[A: Meta] = Get[A]
+      true
+    }
 
-//   final case class Foo(s: String)
-//   final case class Bar(n: Int)
+    "imply Put" in {
+      def foo[A: Meta] = Put[A]
+      true
+    }
 
-//   "Meta" should {
+  }
 
+<<<<<<< HEAD
 //     "exist for primitive types" in {
 //       Meta[Int]
 //       Meta[String]
@@ -215,3 +221,6 @@ object metaspec extends Specification {
 
 
 // }
+=======
+}
+>>>>>>> remove mentions of Meta in code, resurrect/split metaspec

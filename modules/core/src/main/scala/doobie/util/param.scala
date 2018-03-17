@@ -30,12 +30,12 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
     def apply[A](implicit ev: Param[A]): Param[A] = ev
 
-    /** Each `Meta[A]` gives rise to a `Param[A]`. */
-    implicit def fromMeta[A: Put]: Param[A] =
+    /** Each `Put[A]` gives rise to a `Param[A]`. */
+    implicit def fromPut[A: Put]: Param[A] =
       new Param[A](Write.fromPut[A])
 
-    /** Each `Meta[A]` gives rise to a `Param[Option[A]]`. */
-    implicit def fromMetaOption[A: Put]: Param[Option[A]] =
+    /** Each `Put[A]` gives rise to a `Param[Option[A]]`. */
+    implicit def fromPutOption[A: Put]: Param[Option[A]] =
       new Param[Option[A]](Write.fromPutOption[A])
 
     /** There is an empty `Param` for `HNil`. */

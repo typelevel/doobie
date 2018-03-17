@@ -21,7 +21,7 @@ trait Instances {
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   implicit val UuidType =
-    Meta.advanced[UUID](
+    Meta.Advanced.many[UUID](
       NonEmptyListOf(JdbcType.Binary),
       NonEmptyListOf("uuid", "UUID"),
       _.getObject(_) match {
@@ -40,7 +40,7 @@ trait Instances {
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
-    val raw = Meta.other[Array[Object]]("ARRAY").timap[Array[A]](
+    val raw = Meta.Advanced.other[Array[Object]]("ARRAY").timap[Array[A]](
       a => if (a == null) null else a.map(_.asInstanceOf[A]))(
       a => if (a == null) null else a.map(_.asInstanceOf[Object]))
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =

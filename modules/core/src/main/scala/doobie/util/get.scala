@@ -8,7 +8,7 @@ import cats.Functor
 import cats.data.NonEmptyList
 import cats.free.Coyoneda
 import doobie.enum.JdbcType
-import doobie.util.invariant.{ /*NonNullableColumnRead,*/ InvalidObjectMapping }
+import doobie.util.invariant.{ NonNullableColumnRead, InvalidObjectMapping }
 import java.sql.ResultSet
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }
@@ -26,7 +26,7 @@ sealed abstract class Get[A](
   final def unsafeGetNonNullable(rs: ResultSet, n: Int): A = {
     val i = get.fi(rs, n)
     if (rs.wasNull)
-      throw new RuntimeException("invariant violated; null observed in non-null get")
+      throw new NonNullableColumnRead(n, jdbcSources.head)
     get.k(i)
   }
 

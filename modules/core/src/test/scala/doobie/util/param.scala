@@ -21,24 +21,24 @@ object paramspec extends Specification {
       true
     }
 
-    "exist for any Meta" in {
-      def foo[A: Meta] = Param[A]
+    "exist for any Put" in {
+      def foo[A: Put] = Param[A]
       true
     }
 
-    "exist for any Option of Meta" in {
-      def foo[A: Meta] = Param[Option[A]]
+    "exist for any Option of Put" in {
+      def foo[A: Put] = Param[Option[A]]
       true
     }
 
 
-    "exist for any HList with Meta for head" in {
-      def foo[A: Meta, B <: HList : Param] = Param[A :: B]
+    "exist for any HList with Put for head" in {
+      def foo[A: Put, B <: HList : Param] = Param[A :: B]
       true
     }
 
-    "exist for any HList with Option of Meta for head" in {
-      def foo[A: Meta, B <: HList:  Param] = Param[Option[A] :: B]
+    "exist for any HList with Option of Put for head" in {
+      def foo[A: Put, B <: HList:  Param] = Param[Option[A] :: B]
       true
     }
 

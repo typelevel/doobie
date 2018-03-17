@@ -140,7 +140,7 @@ Here we go:
 
 ```tut:silent
 implicit val JsonMeta: Meta[Json] =
-  Meta.other[PGobject]("json").timap[Json](
+  Meta.Advanced.other[PGobject]("json").timap[Json](
     a => parse(a.getValue).leftMap[Json](e => throw e).merge)( // failure raises an exception
     a => {
       val o = new PGobject
