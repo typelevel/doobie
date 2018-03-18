@@ -79,6 +79,15 @@ object composite {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
 
+    final case class ForGeneric[F]() {
+      def derive[G]()(implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
+        new Composite[F] {
+          val kernel = G.value.kernel.imap(gen.from)(gen.to)
+          val meta   = G.value.meta
+          val toList = (f: F) => G.value.toList(gen.to(f))
+        }
+    }
+
     implicit val compositeInvariantFunctor: InvariantFunctor[Composite] =
       new InvariantFunctor[Composite] {
         def imap[A, B](ma: Composite[A])(f: A => B)(g: B => A): Composite[B] =
@@ -162,11 +171,7 @@ object composite {
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
-      new Composite[F] {
-        val kernel = G.value.kernel.imap(gen.from)(gen.to)
-        val meta   = G.value.meta
-        val toList = (f: F) => G.value.toList(gen.to(f))
-      }
+      Composite.ForGeneric[F].derive()
 
   }
 
