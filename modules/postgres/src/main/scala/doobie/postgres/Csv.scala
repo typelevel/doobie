@@ -2,7 +2,7 @@ package doobie.postgres
 
 import doobie._
 
-import cats.Foldable
+import cats.{ ContravariantSemigroupal, Foldable }
 import cats.syntax.foldable._
 import cats.instances.string._
 
@@ -31,6 +31,17 @@ trait Csv[A] { outer =>
   final def contramap[B](f: B => A): Csv[B] =
     Csv.instance((b, q, e) => outer.unsafeEncode(f(b), q, e))
 
+  /** `Csv` is semigroupal. */
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+  def product[B](fb: Csv[B]): Csv[(A, B)] =
+    new Csv[(A, B)] {
+      def unsafeEncode(ab: (A, B), q: Char, e: Char) = { sb =>
+        outer.unsafeEncode(ab._1, q, e)(sb)
+        sb.append(',')
+        fb.unsafeEncode(ab._2, q, e)(sb)
+      }
+    }
+
 }
 object Csv extends CsvInstances {
   def apply[A](implicit ev: Csv[A]): ev.type = ev
@@ -44,9 +55,17 @@ object Csv extends CsvInstances {
       def unsafeEncode(a: A, quote: Char, esc: Char) =
         sb => f(a, quote, esc)(sb)
     }
+
 }
 
 trait CsvInstances extends CsvInstances0 { this: Csv.type =>
+
+  /** `Csv` is both contravariant and semigroupal. */
+  implicit val CsvContravariantSemigroupal: ContravariantSemigroupal[Csv] =
+    new ContravariantSemigroupal[Csv] {
+      def contramap[A, B](fa: Csv[A])(f: B => A) = fa.contramap(f)
+      def product[A, B](fa: Csv[A],fb: Csv[B]): Csv[(A, B)] = fa.product(fb)
+    }
 
   // String encoder escapes any embedded `QUOTE` characters.
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
@@ -111,11 +130,7 @@ trait CsvInstances extends CsvInstances0 { this: Csv.type =>
     implicit h: Csv[H],
              t: Csv[T]
   ): Csv[H :: T] =
-    instance { (l, q, e) => sb =>
-      h.unsafeEncode(l.head, q, e)(sb)
-      sb.append(',')
-      t.unsafeEncode(l.tail, q, e)(sb)
-    }
+    (h product t).contramap(l => (l.head, l.tail))
 
   // Generic
   implicit def generic[A, B](
