@@ -19,12 +19,35 @@ import shapeless.labelled.FieldType
 
 import scala.annotation.implicitNotFound
 
-
-
 /**
  * Module defining a typeclass for composite database types (those that can map to multiple columns).
  */
 object composite {
+
+  object CompositeDerivation {
+
+    import magnolia._
+    import language.experimental.macros
+
+    type Typeclass[T] = Composite[T]
+
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+    def combine[T](caseClass: CaseClass[Composite, T]): Composite[T] = new Composite[T] {
+      
+      val kernel: Kernel[T] = caseClass.parameters.to[List].foldLeft[Kernel[_]](Kernel.unit) {
+        case (aggregate: Kernel[_], param: Param[Composite, T]) =>
+          Kernel.product(aggregate, param.typeclass.kernel)
+      }.asInstanceOf[Kernel[T]]
+      
+      val meta = caseClass.parameters.to[List].flatMap(_.typeclass.meta)
+      
+      val toList = (t: T) => caseClass.parameters.to[List].flatMap { param: Param[Composite, T] =>
+        param.typeclass.toList(param.dereference(t))
+      }
+    }
+
+    implicit def gen[T]: Composite[T] = macro Magnolia.gen[T]
+  }
 
   @implicitNotFound("""Could not find or construct Composite[${A}].
 
