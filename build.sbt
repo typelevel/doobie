@@ -11,6 +11,7 @@ lazy val fs2CoreVersion       = "0.10.2"
 lazy val h2Version            = "1.4.196"
 lazy val hikariVersion        = "2.7.8"
 lazy val kindProjectorVersion = "0.9.6"
+lazy val magnoliaVersion      = "0.7.1"
 lazy val monixVersion         = "3.0.0-M3"
 lazy val postGisVersion       = "2.2.1"
 lazy val postgresVersion      = "42.2.2"
@@ -267,6 +268,7 @@ lazy val core = project
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
+      "com.propensive"        %% "magnolia"      % magnoliaVersion,
       "com.h2database"        %  "h2"            % h2Version          % "test"
     ),
     scalacOptions += "-Yno-predef",
