@@ -6,6 +6,7 @@ package doobie.util
 
 import cats.Semigroupal
 import cats.{ Invariant => InvariantFunctor }
+import cats.implicits._
 
 import doobie.enum.Nullability._
 import doobie.free._
@@ -23,31 +24,6 @@ import scala.annotation.implicitNotFound
  * Module defining a typeclass for composite database types (those that can map to multiple columns).
  */
 object composite {
-
-  object CompositeDerivation {
-
-    import magnolia._
-    import language.experimental.macros
-
-    type Typeclass[T] = Composite[T]
-
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-    def combine[T](caseClass: CaseClass[Composite, T]): Composite[T] = new Composite[T] {
-      
-      val kernel: Kernel[T] = caseClass.parameters.to[List].foldLeft[Kernel[_]](Kernel.unit) {
-        case (aggregate: Kernel[_], param: Param[Composite, T]) =>
-          Kernel.product(aggregate, param.typeclass.kernel)
-      }.asInstanceOf[Kernel[T]]
-      
-      val meta = caseClass.parameters.to[List].flatMap(_.typeclass.meta)
-      
-      val toList = (t: T) => caseClass.parameters.to[List].flatMap { param: Param[Composite, T] =>
-        param.typeclass.toList(param.dereference(t))
-      }
-    }
-
-    implicit def gen[T]: Composite[T] = macro Magnolia.gen[T]
-  }
 
   @implicitNotFound("""Could not find or construct Composite[${A}].
 
@@ -150,7 +126,7 @@ object composite {
       }
 
     // Composite for shapeless record types
-    implicit def recordComposite[K <: Symbol, H, T <: HList](
+    def recordComposite[K <: Symbol, H, T <: HList](
       implicit H: Lazy[Composite[H]],
                T: Lazy[Composite[T]]
     ): Composite[FieldType[K, H] :: T] =
@@ -167,7 +143,7 @@ object composite {
   // to a single column, we will get only the atomic mapping, not the multi-column one.
   trait LowerPriorityComposite extends EvenLower {
 
-    implicit def product[H, T <: HList](
+    def product[H, T <: HList](
       implicit H: Lazy[Composite[H]],
                T: Lazy[Composite[T]]
     ): Composite[H :: T] =
@@ -177,14 +153,14 @@ object composite {
         val toList = (l: H :: T) => H.value.toList(l.head) ++ T.value.toList(l.tail)
       }
 
-    implicit def emptyProduct: Composite[HNil] =
+    def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
         val kernel = Kernel.hnil
         val meta   = Nil
         val toList = (_: HNil) => Nil
       }
 
-    implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
+    def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
       new Composite[F] {
         val kernel = G.value.kernel.imap(gen.from)(gen.to)
         val meta   = G.value.meta
@@ -193,16 +169,16 @@ object composite {
 
   }
 
-  trait EvenLower {
+  trait EvenLower extends LowerStill {
 
-    implicit val ohnil: Composite[Option[HNil]] =
+    val ohnil: Composite[Option[HNil]] =
       new Composite[Option[HNil]] {
         val kernel = Kernel.ohnil
         val meta   = Nil
         val toList = (_: Option[HNil]) => Nil
       }
 
-    implicit def ohcons1[H, T <: HList](
+    def ohcons1[H, T <: HList](
       implicit H: Lazy[Composite[Option[H]]],
                T: Lazy[Composite[Option[T]]],
                n: H <:!< Option[α] forSome { type α }
@@ -216,7 +192,7 @@ object composite {
         }
       }
 
-    implicit def ohcons2[H, T <: HList](
+    def ohcons2[H, T <: HList](
       implicit H: Lazy[Composite[Option[H]]],
                T: Lazy[Composite[Option[T]]]
     ): Composite[Option[Option[H] :: T]] =
@@ -229,7 +205,7 @@ object composite {
         }
       }
 
-    implicit def ogeneric[A, Repr <: HList](
+    def ogeneric[A, Repr <: HList](
       implicit G: Generic.Aux[A, Repr],
                B: Lazy[Composite[Option[Repr]]]
     ): Composite[Option[A]] =
@@ -238,6 +214,79 @@ object composite {
         val meta   = B.value.meta
         val toList = (oa: Option[A]) => B.value.toList(oa.map(G.to))
       }
+  }
+
+  trait LowerStill {
+
+      import magnolia._
+      import language.experimental.macros
+
+      type Typeclass[A] = Composite[A]
+
+      implicit class MoreAnyOps[A](a: A) {
+        def void(): Unit = (a, ())._2
+      }
+
+      def dispatch[A](sealedTrait: SealedTrait[Composite, A]): Composite[A] =
+        (Predef.??? : Null, sealedTrait)._1
+
+      def combine[A](caseClass: CaseClass[Composite, A]): Composite[A] =
+        new Composite[A] {
+
+          val params = caseClass.parameters.to[List]
+
+          val kernel: Kernel[A] =
+            new Kernel[A] {
+
+              type I = A
+              val ia: I => A = i => i
+              val ai: A => I = a => a
+
+              @SuppressWarnings(Array("org.wartremover.warts.Var"))
+              val get = (rs: ResultSet, n: Int) => {
+                var i = n
+                caseClass.construct { p =>
+                  val k = p.typeclass.kernel
+                  val a = k.ia(k.get(rs, i))
+                  i += k.width
+                  a
+                }
+              }
+
+              val set = (ps: PreparedStatement, n: Int, i: I) =>
+                params.foldLeft(n) { (n, p) =>
+                  val k = p.typeclass.kernel
+                  k.set(ps, n, k.ai(p.dereference(i)))
+                  n + kernel.width
+                } .void
+
+              val setNull = (ps: PreparedStatement, n: Int) =>
+                params.foldLeft(n) { (n, p) =>
+                  val k = p.typeclass.kernel
+                  k.setNull(ps, n)
+                  n + kernel.width
+                } .void
+
+              val update = (rs: ResultSet, n: Int, i: I) =>
+                params.foldLeft(n) { (n, p) =>
+                  val k = p.typeclass.kernel
+                  k.update(rs, n, k.ai(p.dereference(i)))
+                  n + kernel.width
+                } .void
+
+              val width: Int =
+                params.foldMap(_.typeclass.kernel.width)
+
+            }
+
+          val meta = params.flatMap(_.typeclass.meta)
+
+          val toList = a => params.flatMap(p => p.typeclass.toList(p.dereference(a)))
+
+        }
+
+      implicit def gen[T]: Composite[T] = macro Magnolia.gen[T]
+
   }
 
 }

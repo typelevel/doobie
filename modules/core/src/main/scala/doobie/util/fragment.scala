@@ -14,8 +14,6 @@ import doobie.util.pos.Pos
 
 import scala.Predef.wrapString
 
-import shapeless.HNil
-
 /** Module defining the `Fragment` data type. */
 object fragment {
 
@@ -115,7 +113,7 @@ object fragment {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def const0(sql: String, pos: Option[Pos] = None): Fragment =
-      Fragment[HNil](sql, HNil, pos)
+      Fragment[Unit](sql, (), pos)
 
     /**
      * Construct a statement fragment with no interpolated values and a trailing space; the

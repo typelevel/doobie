@@ -241,7 +241,12 @@ object connection {
    * Compute a map from native type to closest-matching JDBC type.
    * @group MetaData
    */
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny")) // ???
   val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
+    // Composite[String]
+    // Composite.gen[(String,JdbcType)]
+    // Composite[JdbcType]
+    // Composite[(Int, JdbcType)]
     getMetaData(FDMD.getTypeInfo.flatMap(FDMD.embed(_, HRS.list[(String, JdbcType)].map(_.toMap))))
   }
 }
