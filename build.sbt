@@ -7,8 +7,8 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.1.0"
 lazy val circeVersion         = "0.9.2"
-lazy val fs2CoreVersion       = "0.10.2"
-lazy val h2Version            = "1.4.196"
+lazy val fs2CoreVersion       = "0.10.3"
+lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "2.7.8"
 lazy val kindProjectorVersion = "0.9.6"
 lazy val monixVersion         = "3.0.0-M3"
@@ -21,7 +21,10 @@ lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.4"
 lazy val specs2Version        = "4.0.3"
 lazy val scala211Version      = "2.11.12"
-lazy val scala212Version      = "2.12.4"
+lazy val scala212Version      = "2.12.5"
+
+// Check bincompat versus this version.
+lazy val binaryCompatibleVersion = "0.5.0"
 
 // Our set of warts
 lazy val doobieWarts =
@@ -41,8 +44,11 @@ lazy val doobieWarts =
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
-// run dependencyUpdates whenever we [re]load. Spooky eh?
-onLoad in Global := { s => "dependencyUpdates" :: s }
+// check for library updates whenever the project is [re]load
+onLoad in Global := { s =>
+  if (sys.props.contains("doobie.skipDependencyUpdates")) s
+  else "dependencyUpdates" :: s
+}
 
 lazy val compilerFlags = Seq(
   scalacOptions ++= (
@@ -182,7 +188,8 @@ lazy val publishSettings = Seq(
     </developers>
   ),
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala")
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala"),
+  mimaPreviousArtifacts := Set(organization.value %% name.value % binaryCompatibleVersion)
 )
 
 lazy val noPublishSettings = Seq(
@@ -200,6 +207,7 @@ lazy val doobie = project.in(file("."))
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
+      releaseStepCommand("mimaReportBinaryIssues"),
       inquireVersions,
       runClean,
       runTest,
