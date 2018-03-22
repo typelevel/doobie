@@ -4,6 +4,11 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.5.2"></a>Work in Progress for Version 0.5.2
+
+- `FirstExample` now actually shows output! Thanks Aaron Hawley.
+- Added [MiMa](https://github.com/lightbend/migration-manager) for checking binary compatibility of changes. We're just checking 2.12 for now (0.5.1 already broke bincompat for 2.11) but will tighten the screws on the 0.6 series.
+
 ### <a name="0.5.1"></a>New and Noteworthy for Version 0.5.1
 
 Minor update to get dependencies up to date.
