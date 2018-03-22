@@ -18,6 +18,6 @@ if [[ "$TRAVIS_SCALA_VERSION" = "$MAIN_SCALA_VERSION" ]]; then
     echo "Done testing with docs for Scala $MAIN_SCALA_VERSION"
 else
     echo "Testing without docs for Scala $TRAVIS_SCALA_VERSION"
-    exec sbt -Ddoobie.skipDependencyUpdates ++$TRAVIS_SCALA_VERSION compile mimaReportBinaryIssues test:compile test
+    exec sbt -Ddoobie.skipDependencyUpdates ++$TRAVIS_SCALA_VERSION compile test:compile test
     echo "Done testing without docs for Scala $TRAVIS_SCALA_VERSION"
 fi
