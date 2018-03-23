@@ -88,7 +88,6 @@ trait CsvInstances extends CsvInstances0 { this: Csv.type =>
 
   // Big Numerics
   implicit val bigDecimalInstance: Csv[BigDecimal] = instance { (n, _, _) => _ append n.toString }
-  implicit val bigIntInstance:     Csv[BigInt]     = instance { (n, _, _) => _ append n.toString }
 
   // Boolean
   implicit val booleanInstance: Csv[Boolean] =

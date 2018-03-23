@@ -1,9 +1,10 @@
-package doobie
-package postgres
-package syntax
+package doobie.postgres.syntax
 
-import cats.{ Foldable }
-import cats.syntax.foldable._
+import cats.Foldable
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+import doobie.postgres._
 import java.io.StringReader
 
 class FragmentOps(f: Fragment) {
@@ -14,10 +15,13 @@ class FragmentOps(f: Fragment) {
    * rows.
    */
   def copyIn[F[_]: Foldable, A](fa: F[A])(implicit ev: Csv[A]): ConnectionIO[Long] = {
-    // Fold with a StringBuilder and unsafeEncode to minimize allocations
+    // Fold with a StringBuilder and unsafeEncode to minimize allocations. Note that inserting no
+    // rows is an error so we shortcut on empty input.
     // TODO: stream this rather than constructing the string in memory.
-    val data = fa.foldLeft(new StringBuilder)((b, a) => ev.unsafeEncode(a, '"', '"')(b).append("\n")).toString
-    PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, new StringReader(data)))
+    if (fa.isEmpty) 0L.pure[ConnectionIO] else {
+      val data = fa.foldLeft(new StringBuilder)((b, a) => ev.unsafeEncode(a, '"', '"')(b).append("\n")).toString
+      PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, new StringReader(data)))
+    }
   }
 
 }
