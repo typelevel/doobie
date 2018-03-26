@@ -20,6 +20,7 @@ class FragmentOps(f: Fragment) {
     // TODO: stream this rather than constructing the string in memory.
     if (fa.isEmpty) 0L.pure[ConnectionIO] else {
       val data = fa.foldLeft(new StringBuilder)((b, a) => ev.unsafeEncode(a, '"', '"')(b).append("\n")).toString
+      println(data)
       PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, new StringReader(data)))
     }
   }

@@ -98,13 +98,17 @@ trait CsvInstances extends CsvInstances0 { this: Csv.type =>
 
   // Date, Time, etc.
 
-  // Byte arrays in E'\xx01A3DD...' format.
+  // Byte arrays in \x01A3DD.. format.
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   implicit val byteArrayInstance: Csv[Array[Byte]] =
     instance { (bs, q, e) => sb =>
-      sb.append("""E'\\x""")
-      sb.append(BigInt(1, bs).toString(16))
-      sb.append('\'')
+      sb.append("\\x")
+      if (bs.length > 0) {
+        val hex = BigInt(1, bs).toString(16)
+        val pad = bs.length * 2 - hex.length
+        (0 until pad).foreach(a => sb.append("0"))
+        sb.append(hex)
+      } else sb
     }
 
   // Any non-option Csv can be lifted to Option
@@ -150,13 +154,15 @@ trait CsvInstances0 extends CsvInstances1 { this: Csv.type =>
   ): Csv[F[A]] =
     instance { (fa, q, e) => sb =>
       var first = true
-      sb.append("ARRAY[")
+      sb.append(q) // but only for the outermost array! inner ones aren't quoted
+      sb.append("{")
       f(fa).foreach { a =>
         if (first) first = false
         else sb.append(',')
         ev.unsafeEncode(a, q, e)(sb)
       }
-      sb.append(']')
+      sb.append('}')
+      sb.append(q)
       sb
     }
 

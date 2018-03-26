@@ -36,18 +36,20 @@ object csvspec extends Specification with ScalaCheck {
           |   e float4,  -- Float
           |   f float8,  -- Double
           |   g numeric, -- BigDecimal
-          |   h boolean  -- Boolean
+          |   h boolean, -- Boolean
+          |   i bytea,   -- List[Byte]
+          |   j _int4    -- List[Int]
           | ) ON COMMIT DELETE ROWS
           |""".stripMargin.update.run.void
 
   val insert: Fragment =
-    sql"""| COPY test (a, b, c, d, e, f, g, h)
+    sql"""| COPY test (a, b, c, d, e, f, g, h, i, j)
           | FROM STDIN
           | WITH (FORMAT csv)
           |""".stripMargin
 
   val selectAll: ConnectionIO[List[Row]] =
-    sql"SELECT a, b, c, d, e, f, g, h FROM test ORDER BY id ASC".query[Row].to[List]
+    sql"SELECT a, b, c, d, e, f, g, h, i, j FROM test ORDER BY id ASC".query[Row].to[List]
 
   final case class Row(
     a: Option[String],
@@ -58,6 +60,8 @@ object csvspec extends Specification with ScalaCheck {
     f: Option[Double],
     g: Option[BigDecimal],
     h: Option[Boolean],
+    j: Option[List[Byte]],
+    k: Option[List[Int]]
   )
 
   val genRow: Gen[Row] =
@@ -70,13 +74,15 @@ object csvspec extends Specification with ScalaCheck {
       f <- arbitrary[Option[Double]]
       g <- arbitrary[Option[BigDecimal]]
       h <- arbitrary[Option[Boolean]]
-    } yield Row(a, b, c, d, e, f, g, h)
+      i <- arbitrary[Option[List[Byte]]]
+      j <- arbitrary[Option[List[Int]]]
+    } yield Row(a, b, c, d, e, f, g, h, i, j)
 
   val genRows: Gen[List[Row]] =
-    Gen.choose(1,1).flatMap(Gen.listOfN(_, genRow))
+    Gen.choose(0,100).flatMap(Gen.listOfN(_, genRow))
 
   "copyIn" should {
-    "correctly insert small batches of rows of base types" in forAll(genRows) { rs =>
+    "correctly insert batches of rows" in forAll(genRows) { rs =>
       val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync
       rs must_=== rsʹ
     }
