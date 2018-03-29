@@ -241,6 +241,50 @@ val prog: ConnectionIO[Long] =
 
 See the links above and sample code in the `examples/` project in the **doobie** GitHub repo for more information on this specialized API.
 
+<div class="alert alert-danger" role="alert">
+Note: the following API was introduced in version 0.5.2 and is experimental. Community feedback and contributions (instances in particular) are encouraged.
+</div>
+
+**doobie** also provides a specialized API for very fast batch inserts using upates of the form `COPY ... FROM STDIN` and a `Text` typeclass that defines how data types are encoded in Postgres text format (similar to `Meta`; instances must be present for all fields in the data type to be inserted).
+
+First a temp table for our experiment.
+
+```tut:silent
+val create: ConnectionIO[Unit] =
+  sql"""
+    CREATE TEMPORARY TABLE food (
+      name       VARCHAR,
+      vegetarian BOOLEAN,
+      calories   INTEGER
+    )
+  """.update.run.void
+```
+
+And some values to insert. `Text` instances are provided for all the data types we are using here.
+
+```tut:silent
+case class Food(name: String, isVegetarian: Boolean, caloriesPerServing: Int)
+
+val foods = List(
+  Food("banana", true, 110),
+  Food("cheddar cheese", true, 113),
+  Food("Big Mac", false, 1120)
+)
+```
+
+Our insert statement must have the form `COPY ... FROM STDIN`, and we can insert any `Foldable`.
+
+```tut:silent
+def insert[F[_]: Foldable](fa: F[Food]): ConnectionIO[Long] =
+  sql"COPY food (name, vegetarian, calories) FROM STDIN".copyIn(fa)
+```
+
+We can run it thus, yielding the number of affected rows.
+
+```tut
+(create *> insert(foods)).quick.unsafeRunSync
+```
+
 ### Fastpath
 
 **doobie** provides an algebra and free monad for constructing programs that use the `FastPathAPI` provided by the PostgreSQL JDBC driver, however this API is mostly deprecated in favor of server-side statements (see above). And in any case I can't find an example of how you would use it from Java so I don't have an example here. But if you're using it let me know and we can figure it out.
