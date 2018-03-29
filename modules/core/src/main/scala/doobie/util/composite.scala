@@ -79,13 +79,22 @@ object composite {
 
     def apply[A](implicit A: Composite[A]): Composite[A] = A
 
-    final case class ForGeneric[F]() {
-      def derive[G]()(implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
-        new Composite[F] {
-          val kernel = G.value.kernel.imap(gen.from)(gen.to)
-          val meta   = G.value.meta
-          val toList = (f: F) => G.value.toList(gen.to(f))
-        }
+    /**
+     * Semi-automatic derivation of `Composite` for types `A` that have an equivalent generic (i.e.,
+     * `HList`) representation, if that representation has a `Composite` instance. Such instances
+     * are derived automatically, but you may find that it speeds up compilation to provide them
+     * explicitly via this method. Invoke as `Composite.deriveComposite[MyClass]()`.
+     */
+    object deriveComposite {
+      def apply[A] = new Partial[A]
+      final class Partial[A] {
+        def apply[B]()(implicit gen: Generic.Aux[A, B], B: Lazy[Composite[B]]): Composite[A] =
+          new Composite[A] {
+            val kernel = B.value.kernel.imap(gen.from)(gen.to)
+            val meta   = B.value.meta
+            val toList = (f: A) => B.value.toList(gen.to(f))
+          }
+      }
     }
 
     implicit val compositeInvariantFunctor: InvariantFunctor[Composite] =
@@ -171,7 +180,7 @@ object composite {
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
-      Composite.ForGeneric[F].derive()
+      Composite.deriveComposite[F]()
 
   }
 
