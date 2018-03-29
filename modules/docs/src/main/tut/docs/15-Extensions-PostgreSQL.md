@@ -111,13 +111,10 @@ object FooBar {
       case "bar" => Bar
     }
 
-  def unsafeFromEnum(s: String): FooBar =
-    fromEnum(s).getOrElse(throw doobie.util.invariant.InvalidEnum[FooBar](s))
-
 }
 
 implicit val FoobarMeta: Meta[FooBar] =
-  pgEnumString("myenum", FooBar.unsafeFromEnum, FooBar.toEnum)
+  pgEnumStringOpt("myenum", FooBar.fromEnum, FooBar.toEnum)
 ```
 
 ```tut
