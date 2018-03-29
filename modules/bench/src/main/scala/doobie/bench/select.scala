@@ -9,13 +9,13 @@ import doobie._, doobie.implicits._
 import java.sql.DriverManager
 import org.openjdk.jmh.annotations._
 
-object bench {
+object shared {
   @State(Scope.Benchmark)
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 }
 
 class bench {
-  import bench._
+  import shared._
 
   // Baseline hand-written JDBC code
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.While"))
