@@ -10,6 +10,7 @@ This file summarizes **notable** changes for each release, but does not describe
 - Added [MiMa](https://github.com/lightbend/migration-manager) for checking binary compatibility of changes. We're just checking 2.12 for now (0.5.1 already broke bincompat for 2.11) but will tighten the screws on the 0.6 series.
 - Added support for very fast inserts in Postgres via `COPY ... FROM STDIN`.
 - Added pgEnumStringOpt for transparently partial pgEnum decoding.
+- Added `Composite.deriveComposite[A]()` which creates a "semi-automatic" derivation of `Composite[]` for a given type `A`. While instances are usually derived automatically, this can be used to speed up compilation by only deriving once. It can also be used to avoid needing `Meta[]` instances in scope or derivable at every site where a given `Composite[A]` is used.
 
 ### <a name="0.5.1"></a>New and Noteworthy for Version 0.5.1
 
