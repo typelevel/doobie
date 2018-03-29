@@ -9,7 +9,7 @@ import org.openjdk.jmh.annotations._
 
 final case class Person(name: String, age: Int)
 
-class csv {
+class text {
   import shared._
 
   def people(n: Int): List[Person] =
@@ -37,18 +37,18 @@ class csv {
     )
 
   def copyin(n: Int): ConnectionIO[Long] =
-    ddl *> sql"COPY bench_person (name, age) FROM STDIN WITH (FORMAT csv)".copyIn(people(n))
+    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(people(n))
 
   @Benchmark
-  @OperationsPerInvocation(20000)
-  def naive_copyin: Int = naive(20000).transact(xa).unsafeRunSync
+  @OperationsPerInvocation(10000)
+  def naive_copyin: Int = naive(10000).transact(xa).unsafeRunSync
 
   @Benchmark
-  @OperationsPerInvocation(20000)
-  def jdbc_copyin: Int = optimized(20000).transact(xa).unsafeRunSync
+  @OperationsPerInvocation(10000)
+  def jdbc_copyin: Int = optimized(10000).transact(xa).unsafeRunSync
 
   @Benchmark
-  @OperationsPerInvocation(20000)
-  def fast_copyin: Long = copyin(20000).transact(xa).unsafeRunSync
+  @OperationsPerInvocation(10000)
+  def fast_copyin: Long = copyin(10000).transact(xa).unsafeRunSync
 
 }
