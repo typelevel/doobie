@@ -161,6 +161,13 @@ trait Instances {
     enumPartialMeta(name).xmap[A](f, g)
 
   /**
+   * Construct a `Meta` for values of the given type, mapped via `String` to the named PostgreSQL
+   * enum type with tranparent partiality.
+   */
+  def pgEnumStringOpt[A: TypeTag](name: String, f: String => Option[A], g: A => String): Meta[A] =
+    pgEnumString(name, {s: String => f(s).getOrElse(throw doobie.util.invariant.InvalidEnum[A](s))} ,g)
+
+  /**
    * Construct a `Meta` for value members of the given `Enumeration`.
    */
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.ToString"))
