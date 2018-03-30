@@ -6,7 +6,7 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.1.0"
-lazy val circeVersion         = "0.9.2"
+lazy val circeVersion         = "0.9.3"
 lazy val fs2CoreVersion       = "0.10.3"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "2.7.8"
@@ -226,6 +226,7 @@ lazy val doobie = project.in(file("."))
 
 lazy val free = project
   .in(file("modules/free"))
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(freeGen2Settings)
@@ -265,6 +266,7 @@ lazy val free = project
 
 lazy val core = project
   .in(file("modules/core"))
+  .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(free)
   .settings(doobieSettings)
   .settings(publishSettings)
@@ -301,6 +303,7 @@ lazy val core = project
 
 lazy val example = project
   .in(file("modules/example"))
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings ++ noPublishSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
@@ -312,6 +315,7 @@ lazy val example = project
 
 lazy val postgres = project
   .in(file("modules/postgres"))
+  .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
@@ -362,6 +366,7 @@ lazy val postgres = project
 
 lazy val h2 = project
   .in(file("modules/h2"))
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
   .dependsOn(core)
@@ -374,6 +379,7 @@ lazy val h2 = project
 
 lazy val hikari = project
   .in(file("modules/hikari"))
+  .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
@@ -385,6 +391,7 @@ lazy val hikari = project
 
 lazy val specs2 = project
   .in(file("modules/specs2"))
+  .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .dependsOn(h2 % "test")
   .settings(doobieSettings)
@@ -397,6 +404,7 @@ lazy val specs2 = project
 
 lazy val scalatest = project
   .in(file("modules/scalatest"))
+  .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
@@ -411,6 +419,7 @@ lazy val scalatest = project
 
 lazy val bench = project
   .in(file("modules/bench"))
+  .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(JmhPlugin)
   .dependsOn(core, postgres)
   .settings(doobieSettings)
@@ -476,6 +485,7 @@ lazy val docs = project
 
 lazy val refined = project
   .in(file("modules/refined"))
+  .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
