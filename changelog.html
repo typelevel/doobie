@@ -4,6 +4,18 @@
 
 <hr />
 
+<h3 id="new-and-noteworthy-for-version-052"><a name="0.5.2"></a>New and Noteworthy for Version 0.5.2</h3>
+
+<p>Minor updates, see below.</p>
+
+<ul>
+  <li>Added experimental support for Blazing Fast™ inserts in Postgres via <code class="highlighter-rouge">COPY ... FROM STDIN</code>. See book Chapter 15 for an example.</li>
+  <li>Introduced <a href="https://github.com/lightbend/migration-manager">MiMa</a> for checking binary compatibility. Note that for the 0.5.x series we will guarantee compatibility for Scala 2.12 only.</li>
+  <li><code class="highlighter-rouge">FirstExample</code> now actually shows output! Thanks Aaron Hawley.</li>
+  <li>Added pgEnumStringOpt for transparently partial pgEnum decoding. Thanks Christopher Davenport!</li>
+  <li>Added <code class="highlighter-rouge">Composite.deriveComposite[A]()</code> which creates a “semi-automatic” derivation of <code class="highlighter-rouge">Composite[]</code> for a given type <code class="highlighter-rouge">A</code>. While instances are usually derived automatically, this can be used to speed up compilation by only deriving once. It can also be used to avoid needing <code class="highlighter-rouge">Meta[]</code> instances in scope or derivable at every site where a given <code class="highlighter-rouge">Composite[A]</code> is used. Thanks Scott Parish!</li>
+</ul>
+
 <h3 id="new-and-noteworthy-for-version-051"><a name="0.5.1"></a>New and Noteworthy for Version 0.5.1</h3>
 
 <p>Minor update to get dependencies up to date.</p>

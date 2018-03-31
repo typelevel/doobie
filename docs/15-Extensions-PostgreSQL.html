@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.1"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.2"</span>
 </code></pre>
 </div>
 
@@ -107,13 +107,10 @@
       <span class="k">case</span> <span class="s">"bar"</span> <span class="k">=&gt;</span> <span class="nc">Bar</span>
     <span class="o">}</span>
 
-  <span class="k">def</span> <span class="n">unsafeFromEnum</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">FooBar</span> <span class="o">=</span>
-    <span class="n">fromEnum</span><span class="o">(</span><span class="n">s</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="k">throw</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">invariant</span><span class="o">.</span><span class="nc">InvalidEnum</span><span class="o">[</span><span class="kt">FooBar</span><span class="o">](</span><span class="n">s</span><span class="o">))</span>
-
 <span class="o">}</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nc">FoobarMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">FooBar</span><span class="o">]</span> <span class="k">=</span>
-  <span class="n">pgEnumString</span><span class="o">(</span><span class="s">"myenum"</span><span class="o">,</span> <span class="nc">FooBar</span><span class="o">.</span><span class="n">unsafeFromEnum</span><span class="o">,</span> <span class="nc">FooBar</span><span class="o">.</span><span class="n">toEnum</span><span class="o">)</span>
+  <span class="n">pgEnumStringOpt</span><span class="o">(</span><span class="s">"myenum"</span><span class="o">,</span> <span class="nc">FooBar</span><span class="o">.</span><span class="n">fromEnum</span><span class="o">,</span> <span class="nc">FooBar</span><span class="o">.</span><span class="n">toEnum</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -256,6 +253,51 @@
 </div>
 
 <p>See the links above and sample code in the <code class="highlighter-rouge">examples/</code> project in the <strong>doobie</strong> GitHub repo for more information on this specialized API.</p>
+
+<div class="alert alert-danger" role="alert">
+Note: the following API was introduced in version 0.5.2 and is experimental. Community feedback and contributions (instances in particular) are encouraged.
+</div>
+
+<p><strong>doobie</strong> also provides a specialized API for very fast batch inserts using upates of the form <code class="highlighter-rouge">COPY ... FROM STDIN</code> and a <code class="highlighter-rouge">Text</code> typeclass that defines how data types are encoded in Postgres text format (similar to <code class="highlighter-rouge">Meta</code>; instances must be present for all fields in the data type to be inserted).</p>
+
+<p>First a temp table for our experiment.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">create</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"""
+    CREATE TEMPORARY TABLE food (
+      name       VARCHAR,
+      vegetarian BOOLEAN,
+      calories   INTEGER
+    )
+  """</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">run</span><span class="o">.</span><span class="n">void</span>
+</code></pre>
+</div>
+
+<p>And some values to insert. <code class="highlighter-rouge">Text</code> instances are provided for all the data types we are using here.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Food</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">isVegetarian</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">,</span> <span class="n">caloriesPerServing</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+
+<span class="k">val</span> <span class="n">foods</span> <span class="k">=</span> <span class="nc">List</span><span class="o">(</span>
+  <span class="nc">Food</span><span class="o">(</span><span class="s">"banana"</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="mi">110</span><span class="o">),</span>
+  <span class="nc">Food</span><span class="o">(</span><span class="s">"cheddar cheese"</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="mi">113</span><span class="o">),</span>
+  <span class="nc">Food</span><span class="o">(</span><span class="s">"Big Mac"</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="mi">1120</span><span class="o">)</span>
+<span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Our insert statement must have the form <code class="highlighter-rouge">COPY ... FROM STDIN</code>, and we can insert any <code class="highlighter-rouge">Foldable</code>.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">insert</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">Foldable</span><span class="o">](</span><span class="n">fa</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Food</span><span class="o">])</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Long</span><span class="o">]</span> <span class="k">=</span>
+  <span class="n">sql</span><span class="s">"COPY food (name, vegetarian, calories) FROM STDIN"</span><span class="o">.</span><span class="n">copyIn</span><span class="o">(</span><span class="n">fa</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>We can run it thus, yielding the number of affected rows.</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">create</span> <span class="o">*&gt;</span> <span class="n">insert</span><span class="o">(</span><span class="n">foods</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="mi">3</span>
+</code></pre>
+</div>
 
 <h3 id="fastpath">Fastpath</h3>
 
