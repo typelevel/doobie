@@ -246,8 +246,8 @@ object query {
 
     /**
      * Construct a `Query` with the given SQL string, an optional `Pos` for diagnostic
-     * purposes, and composite type arguments for input and output types. Note that the most common
-     * way to construct a `Query` is via the `sql` interpolator.
+     * purposes, and type arguments for writable input and readable output types. Note that the
+     * most common way to construct a `Query` is via the `sql` interpolator.
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))

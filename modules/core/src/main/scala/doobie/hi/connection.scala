@@ -70,7 +70,7 @@ object connection {
     liftStream(chunkSize, FC.prepareStatement(sql), prep, FPS.executeQuery)
 
   /**
-   * Construct a prepared update statement with the given return columns (and composite destination
+   * Construct a prepared update statement with the given return columns (and readable destination
    * type `A`) and sql source, configure it with the given `PreparedStatementIO` action, and return
    * the generated key results via a
    * `Stream`.
@@ -88,8 +88,8 @@ object connection {
     FC.commit
 
   /**
-   * Construct an analysis for the provided `sql` query, given parameter composite type `A` and
-   * resultset row composite `B`.
+   * Construct an analysis for the provided `sql` query, given writable parameter type `A` and
+   * readable resultset row type `B`.
    */
   def prepareQueryAnalysis[A: Write, B: Read](sql: String): ConnectionIO[Analysis] =
     prepareStatement(sql) {

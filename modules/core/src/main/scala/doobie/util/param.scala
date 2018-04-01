@@ -20,7 +20,7 @@ object param {
 Ensure that this type is an atomic type with an Put instance in scope, or is an HList whose members
 have Put instances in scope. You can usually diagnose this problem by trying to summon the Put
 instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.""")
-  final class Param[A](val composite: Write[A])
+  final class Param[A](val write: Write[A])
 
   /**
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
@@ -44,7 +44,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
 
     /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
     implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]): Param[H :: T] =
-      new Param[H :: T](Write.product[H,T](ph.composite, pt.composite))
+      new Param[H :: T](Write.product[H,T](ph.write, pt.write))
 
   }
 

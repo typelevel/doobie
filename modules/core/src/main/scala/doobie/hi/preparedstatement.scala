@@ -198,14 +198,14 @@ object preparedstatement {
     FPS.getWarnings
 
   /**
-   * Set the given composite value, starting at column `n`.
+   * Set the given writable value, starting at column `n`.
    * @group Parameters
    */
   def set[A](n: Int, a: A)(implicit A: Write[A]): PreparedStatementIO[Unit] =
     A.set(n, a)
 
   /**
-   * Set the given composite value, starting at column `1`.
+   * Set the given writable value, starting at column `1`.
    * @group Parameters
    */
   def set[A](a: A)(implicit A: Write[A]): PreparedStatementIO[Unit] =
