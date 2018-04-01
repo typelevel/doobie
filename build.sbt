@@ -24,7 +24,7 @@ lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.5"
 
 // Check bincompat versus this version.
-lazy val binaryCompatibleVersion = "0.5.0"
+lazy val binaryCompatibleVersion = "0.5.2"
 
 // Our set of warts
 lazy val doobieWarts =

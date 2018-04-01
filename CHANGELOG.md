@@ -4,13 +4,15 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
-### <a name="0.5.2"></a>Work in Progress for Version 0.5.2
+### <a name="0.5.2"></a>New and Noteworthy for Version 0.5.2
 
+Minor updates, see below.
+
+- Added experimental support for Blazing Fast&trade; inserts in Postgres via `COPY ... FROM STDIN`. See book Chapter 15 for an example.
+- Introduced [MiMa](https://github.com/lightbend/migration-manager) for checking binary compatibility. Note that for the 0.5.x series we will guarantee compatibility for Scala 2.12 only.
 - `FirstExample` now actually shows output! Thanks Aaron Hawley.
-- Added [MiMa](https://github.com/lightbend/migration-manager) for checking binary compatibility of changes. We're just checking 2.12 for now (0.5.1 already broke bincompat for 2.11) but will tighten the screws on the 0.6 series.
-- Added support for very fast inserts in Postgres via `COPY ... FROM STDIN`.
-- Added pgEnumStringOpt for transparently partial pgEnum decoding.
-- Added `Composite.deriveComposite[A]()` which creates a "semi-automatic" derivation of `Composite[]` for a given type `A`. While instances are usually derived automatically, this can be used to speed up compilation by only deriving once. It can also be used to avoid needing `Meta[]` instances in scope or derivable at every site where a given `Composite[A]` is used.
+- Added pgEnumStringOpt for transparently partial pgEnum decoding. Thanks Christopher Davenport!
+- Added `Composite.deriveComposite[A]()` which creates a "semi-automatic" derivation of `Composite[]` for a given type `A`. While instances are usually derived automatically, this can be used to speed up compilation by only deriving once. It can also be used to avoid needing `Meta[]` instances in scope or derivable at every site where a given `Composite[A]` is used. Thanks Scott Parish!
 
 ### <a name="0.5.1"></a>New and Noteworthy for Version 0.5.1
 
