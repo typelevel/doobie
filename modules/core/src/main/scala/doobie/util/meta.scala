@@ -99,6 +99,9 @@ object meta {
     /** Invariant map. */
     def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B]
 
+    /** Invariant map without TypeTag. */
+    def imap[B](f: A => B, g: B => A): Meta[B]
+
     /**
      * Invariant map with `null` handling, for `A, B >: Null`; the functions `f` and `g` will
      * never be passed a `null` value.
@@ -150,6 +153,15 @@ object meta {
         val jdbcSourceSecondary = outer.jdbcSourceSecondary
       })
 
+    def imap[B](f: A => B, g: B => A): Meta[B] =
+      Meta.reg(new BasicMeta[B] {
+        val kernel              = outer.kernel.imap(f)(g)
+        val jdbcSource          = outer.jdbcSource
+        val jdbcTarget          = outer.jdbcTarget
+        val scalaType           = "«unknown»"
+        val jdbcSourceSecondary = outer.jdbcSourceSecondary
+      })
+
   }
 
 
@@ -194,6 +206,15 @@ object meta {
         val jdbcSource  = outer.jdbcSource
         val jdbcTarget  = outer.jdbcTarget
         val scalaType   = ev.tpe.toString
+        val schemaTypes = outer.schemaTypes
+      })
+
+    def imap[B](f: A => B, g: B => A): Meta[B] =
+      Meta.reg(new AdvancedMeta[B] {
+        val kernel      = outer.kernel.imap(f)(g)
+        val jdbcSource  = outer.jdbcSource
+        val jdbcTarget  = outer.jdbcTarget
+        val scalaType   = "«unknown»"
         val schemaTypes = outer.schemaTypes
       })
 
