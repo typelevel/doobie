@@ -71,7 +71,7 @@ object composite {
       new Composite[(A, B)] {
         val kernel = c.kernel.zip(cb.kernel)
         val meta   = c.meta ++ cb.meta
-        val toList = S.Contramap2(identity, c.toList, cb.toList)
+        val toList = S.Contramap2(identity[(A, B)], c.toList, cb.toList)
       }
   }
 
@@ -125,7 +125,7 @@ object composite {
           val width   = A.kernel.width
         }
         val meta   = List((A, NoNulls))
-        val toList = S.Opaque(List(_))
+        val toList = S.Opaque[A](List(_))
       }
 
     implicit def fromMetaOption[A](implicit A: Meta[A]): Composite[Option[A]] =
@@ -141,7 +141,7 @@ object composite {
           val width   = A.kernel.width
         }
         val meta   = List((A, Nullable))
-        val toList = S.Opaque(List(_))
+        val toList = S.Opaque[Option[A]](List(_))
       }
 
     // Composite for shapeless record types
@@ -184,7 +184,7 @@ object composite {
       new Composite[HNil] {
         val kernel = Kernel.hnil
         val meta   = Nil
-        val toList = S.Opaque(_ => Nil)
+        val toList = S.Opaque[HNil](_ => Nil)
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
@@ -198,7 +198,7 @@ object composite {
       new Composite[Option[HNil]] {
         val kernel = Kernel.ohnil
         val meta   = Nil
-        val toList = S.Opaque(_ => Nil)
+        val toList = S.Opaque[Option[HNil]](_ => Nil)
       }
 
     implicit def ohcons1[H, T <: HList](
@@ -209,7 +209,7 @@ object composite {
       new Composite[Option[H :: T]] {
         val kernel = Kernel.ohcons1(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ (T.value.meta, n)._1 // just to fix the unused implicit warning for `n`
-        val toList = S.later(S.Contramap2(
+        val toList = S.later(S.Contramap2[Option[H :: T], Option[H], Option[T]](
           {
             case Some(h :: t) => (Some(h), Some(t))
             case None         => (None, None)
@@ -226,7 +226,10 @@ object composite {
       new Composite[Option[Option[H] :: T]] {
         val kernel = Kernel.ohcons2(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ T.value.meta
-        val toList = S.later(S.Contramap2(
+        val toList = S.later(S.Contramap2[
+          Option[Option[H] :: T],
+          Option[H], Option[T]
+        ](
           {
             case Some(h :: t) => (h, Some(t))
             case None         => (None, None)
@@ -243,7 +246,7 @@ object composite {
       new Composite[Option[A]] {
         val kernel = B.value.kernel.imap(_.map(G.from))(_.map(G.to))
         val meta   = B.value.meta
-        val toList = S.later(S.Contramap(
+        val toList = S.later(S.Contramap[Option[A], Option[Repr]](
           _.map(G.to),
           B.value.toList
         ))
