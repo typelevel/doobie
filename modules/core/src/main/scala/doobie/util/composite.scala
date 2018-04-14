@@ -12,7 +12,7 @@ import doobie.enum.Nullability._
 import doobie.free._
 import doobie.util.kernel.Kernel
 import doobie.util.meta.Meta
-import doobie.util.serializer.{Serializer => S}
+import doobie.util.safefold.{SafeFold => S}
 
 import java.sql.{ PreparedStatement, ResultSet }
 

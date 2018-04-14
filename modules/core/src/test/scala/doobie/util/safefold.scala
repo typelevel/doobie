@@ -4,18 +4,17 @@
 
 package doobie.util
 
-import cats.Eval
 import cats.instances.list._
-import doobie.util.serializer.{Serializer => S}
+import doobie.util.safefold.{SafeFold => S}
 import org.specs2.mutable.Specification
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-object serializerspec extends Specification {
+object safefoldspec extends Specification {
 
   val base: Int => List[Int] = List(_)
   val baseS = S.opaque(base)
 
-  "Serializer" >> {
+  "SafeFold" >> {
     "opaque" in {
       baseS.combineAll(1) must_== base(1)
     }
