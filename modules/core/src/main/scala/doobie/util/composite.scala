@@ -6,6 +6,7 @@ package doobie.util
 
 import cats.Semigroupal
 import cats.{ Invariant => InvariantFunctor }
+import cats.instances.list._
 
 import doobie.enum.Nullability._
 import doobie.free._
@@ -19,7 +20,6 @@ import shapeless.{ HList, HNil, ::, Generic, Lazy, <:!< }
 import shapeless.labelled.FieldType
 
 import scala.annotation.implicitNotFound
-import scala.Predef.identity
 
 
 /**
@@ -63,7 +63,7 @@ object composite {
       new Composite[B] {
         val kernel = c.kernel.imap(f)(g)
         val meta   = c.meta
-        val toList = S.Contramap(g, c.toList)
+        val toList = S.fromFunction(c.toList).contramap(g).asFunction
       }
 
     /** Product of two Composites. */
@@ -71,7 +71,9 @@ object composite {
       new Composite[(A, B)] {
         val kernel = c.kernel.zip(cb.kernel)
         val meta   = c.meta ++ cb.meta
-        val toList = S.Contramap2(identity[(A, B)], c.toList, cb.toList)
+        val toList = S.fromFunction(c.toList)
+          .product(S.fromFunction(cb.toList))
+          .asFunction
       }
   }
 
@@ -92,7 +94,9 @@ object composite {
           new Composite[A] {
             val kernel = B.value.kernel.imap(gen.from)(gen.to)
             val meta   = B.value.meta
-            val toList = S.later(S.Contramap(gen.to, B.value.toList))
+            val toList = S.suspend(
+              S.fromFunction(B.value.toList)
+            ).contramap(gen.to).asFunction
           }
       }
     }
@@ -125,7 +129,7 @@ object composite {
           val width   = A.kernel.width
         }
         val meta   = List((A, NoNulls))
-        val toList = S.Opaque[A](List(_))
+        override val toList = S.opaque((a: A) => List(a)).asFunction
       }
 
     implicit def fromMetaOption[A](implicit A: Meta[A]): Composite[Option[A]] =
@@ -141,7 +145,7 @@ object composite {
           val width   = A.kernel.width
         }
         val meta   = List((A, Nullable))
-        val toList = S.Opaque[Option[A]](List(_))
+        val toList = S.opaque((ma: Option[A]) => List(ma)).asFunction
       }
 
     // Composite for shapeless record types
@@ -152,13 +156,13 @@ object composite {
       new Composite[FieldType[K, H] :: T] {
         val kernel = Kernel.record(H.value.kernel, T.value.kernel): Kernel[FieldType[K,H] :: T] // ascription necessary in 2.11 for some reason
         val meta   = H.value.meta ++ T.value.meta
-        val toList = S.later(S.Contramap2(
-          (l: FieldType[K, H] :: T) => (l.head, l.tail),
-          H.value.toList,
-          T.value.toList
-        ))
+        val toList = S.product(
+          S.suspend(S.fromFunction(H.value.toList)),
+          S.suspend(S.fromFunction(T.value.toList))
+        ).contramap(
+          (l: FieldType[K, H] :: T) => (l.head, l.tail)
+        ).asFunction
       }
-
   }
 
   // N.B. we're separating this out in order to make the atom ~> composite derivation higher
@@ -173,18 +177,19 @@ object composite {
       new Composite[H :: T] {
         val kernel = Kernel.hcons(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ T.value.meta
-        val toList = S.later(S.Contramap2(
-          (l: H :: T) => (l.head, l.tail),
-          H.value.toList,
-          T.value.toList
-        ))
+        val toList = S.product(
+          S.suspend(S.fromFunction(H.value.toList)),
+          S.suspend(S.fromFunction(T.value.toList))
+        ).contramap(
+          (l: H :: T) => (l.head, l.tail)
+        ).asFunction
       }
 
     implicit def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
         val kernel = Kernel.hnil
         val meta   = Nil
-        val toList = S.Opaque[HNil](_ => Nil)
+        val toList = S.trivial[HNil, List[Any]].asFunction
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
@@ -198,7 +203,7 @@ object composite {
       new Composite[Option[HNil]] {
         val kernel = Kernel.ohnil
         val meta   = Nil
-        val toList = S.Opaque[Option[HNil]](_ => Nil)
+        val toList = S.trivial[Option[HNil], List[Any]].asFunction
       }
 
     implicit def ohcons1[H, T <: HList](
@@ -209,14 +214,13 @@ object composite {
       new Composite[Option[H :: T]] {
         val kernel = Kernel.ohcons1(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ (T.value.meta, n)._1 // just to fix the unused implicit warning for `n`
-        val toList = S.later(S.Contramap2[Option[H :: T], Option[H], Option[T]](
-          {
-            case Some(h :: t) => (Some(h), Some(t))
-            case None         => (None, None)
-          },
-          H.value.toList,
-          T.value.toList
-        ))
+        val toList = S.product(
+          S.suspend(S.fromFunction(H.value.toList)),
+          S.suspend(S.fromFunction(T.value.toList))
+        ).contramap[Option[H :: T]]{
+          case Some(h :: t) => (Some(h), Some(t))
+          case None         => (None, None)
+        }.asFunction
       }
 
     implicit def ohcons2[H, T <: HList](
@@ -226,17 +230,13 @@ object composite {
       new Composite[Option[Option[H] :: T]] {
         val kernel = Kernel.ohcons2(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ T.value.meta
-        val toList = S.later(S.Contramap2[
-          Option[Option[H] :: T],
-          Option[H], Option[T]
-        ](
-          {
-            case Some(h :: t) => (h, Some(t))
-            case None         => (None, None)
-          },
-          H.value.toList,
-          T.value.toList
-        ))
+        val toList = S.product(
+          S.suspend(S.fromFunction(H.value.toList)),
+          S.suspend(S.fromFunction(T.value.toList))
+        ).contramap[Option[Option[H] :: T]] {
+          case Some(h :: t) => (h, Some(t))
+          case None         => (None, None)
+        }.asFunction
       }
 
     implicit def ogeneric[A, Repr <: HList](
@@ -246,10 +246,9 @@ object composite {
       new Composite[Option[A]] {
         val kernel = B.value.kernel.imap(_.map(G.from))(_.map(G.to))
         val meta   = B.value.meta
-        val toList = S.later(S.Contramap[Option[A], Option[Repr]](
-          _.map(G.to),
-          B.value.toList
-        ))
+        val toList = S.suspend(S.fromFunction(B.value.toList))
+          .contramap((oa: Option[A]) => oa.map(G.to))
+          .asFunction
       }
   }
 
