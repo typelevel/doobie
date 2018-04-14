@@ -13,6 +13,9 @@ object safefoldspec extends Specification {
 
   val base: Int => List[Int] = List(_)
   val baseS = S.opaque(base)
+  val product2 = baseS.product(baseS)
+  val product3 = baseS.product(baseS).product(baseS)
+    .contramap[(Int, Int, Int)] { case (a, b, c) => ((a, b), c) }
 
   "SafeFold" >> {
     "opaque" in {
@@ -25,7 +28,7 @@ object safefoldspec extends Specification {
     }
 
     "product" in {
-      S.product(baseS, baseS).combineAll((1, 2)) must_== (base(1) ++ base(2))
+      product2.combineAll((1, 2)) must_== (base(1) ++ base(2))
     }
 
     "suspend" in {
@@ -44,9 +47,19 @@ object safefoldspec extends Specification {
       counter must_== 1
     }
 
-    "asFunction" in {
+    "asFunction1" in {
       // This doesn't change semantics, but can break stack safety.
-      S.fromFunction(baseS.asFunction) must beTheSameAs(baseS)
+      S.fromFunction1(baseS.asFunction1) must beTheSameAs(baseS)
+    }
+
+    "asFunction2" in {
+      // This doesn't change semantics, but can break stack safety.
+      S.fromFunction2(product2.asFunction2) must beTheSameAs(product2)
+    }
+
+    "asFunction3" in {
+      // This doesn't change semantics, but can break stack safety.
+      S.fromFunction3(product3.asFunction3) must beTheSameAs(product3)
     }
   }
 }

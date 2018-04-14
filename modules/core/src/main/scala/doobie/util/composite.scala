@@ -63,7 +63,7 @@ object composite {
       new Composite[B] {
         val kernel = c.kernel.imap(f)(g)
         val meta   = c.meta
-        val toList = S.fromFunction(c.toList).contramap(g).asFunction
+        val toList = S.fromFunction1(c.toList).contramap(g).asFunction1
       }
 
     /** Product of two Composites. */
@@ -71,9 +71,9 @@ object composite {
       new Composite[(A, B)] {
         val kernel = c.kernel.zip(cb.kernel)
         val meta   = c.meta ++ cb.meta
-        val toList = S.fromFunction(c.toList)
-          .product(S.fromFunction(cb.toList))
-          .asFunction
+        val toList = S.fromFunction1(c.toList)
+          .product(S.fromFunction1(cb.toList))
+          .asFunction1
       }
   }
 
@@ -95,8 +95,8 @@ object composite {
             val kernel = B.value.kernel.imap(gen.from)(gen.to)
             val meta   = B.value.meta
             val toList = S.suspend(
-              S.fromFunction(B.value.toList)
-            ).contramap(gen.to).asFunction
+              S.fromFunction1(B.value.toList)
+            ).contramap(gen.to).asFunction1
           }
       }
     }
@@ -129,7 +129,7 @@ object composite {
           val width   = A.kernel.width
         }
         val meta   = List((A, NoNulls))
-        override val toList = S.opaque((a: A) => List(a)).asFunction
+        override val toList = S.opaque((a: A) => List(a)).asFunction1
       }
 
     implicit def fromMetaOption[A](implicit A: Meta[A]): Composite[Option[A]] =
@@ -145,7 +145,7 @@ object composite {
           val width   = A.kernel.width
         }
         val meta   = List((A, Nullable))
-        val toList = S.opaque((ma: Option[A]) => List(ma)).asFunction
+        val toList = S.opaque((ma: Option[A]) => List(ma)).asFunction1
       }
 
     // Composite for shapeless record types
@@ -157,11 +157,11 @@ object composite {
         val kernel = Kernel.record(H.value.kernel, T.value.kernel): Kernel[FieldType[K,H] :: T] // ascription necessary in 2.11 for some reason
         val meta   = H.value.meta ++ T.value.meta
         val toList = S.product(
-          S.suspend(S.fromFunction(H.value.toList)),
-          S.suspend(S.fromFunction(T.value.toList))
+          S.suspend(S.fromFunction1(H.value.toList)),
+          S.suspend(S.fromFunction1(T.value.toList))
         ).contramap(
           (l: FieldType[K, H] :: T) => (l.head, l.tail)
-        ).asFunction
+        ).asFunction1
       }
   }
 
@@ -178,18 +178,18 @@ object composite {
         val kernel = Kernel.hcons(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ T.value.meta
         val toList = S.product(
-          S.suspend(S.fromFunction(H.value.toList)),
-          S.suspend(S.fromFunction(T.value.toList))
+          S.suspend(S.fromFunction1(H.value.toList)),
+          S.suspend(S.fromFunction1(T.value.toList))
         ).contramap(
           (l: H :: T) => (l.head, l.tail)
-        ).asFunction
+        ).asFunction1
       }
 
     implicit def emptyProduct: Composite[HNil] =
       new Composite[HNil] {
         val kernel = Kernel.hnil
         val meta   = Nil
-        val toList = S.trivial[HNil, List[Any]].asFunction
+        val toList = S.trivial[HNil, List[Any]].asFunction1
       }
 
     implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[Composite[G]]): Composite[F] =
@@ -203,7 +203,7 @@ object composite {
       new Composite[Option[HNil]] {
         val kernel = Kernel.ohnil
         val meta   = Nil
-        val toList = S.trivial[Option[HNil], List[Any]].asFunction
+        val toList = S.trivial[Option[HNil], List[Any]].asFunction1
       }
 
     implicit def ohcons1[H, T <: HList](
@@ -215,12 +215,12 @@ object composite {
         val kernel = Kernel.ohcons1(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ (T.value.meta, n)._1 // just to fix the unused implicit warning for `n`
         val toList = S.product(
-          S.suspend(S.fromFunction(H.value.toList)),
-          S.suspend(S.fromFunction(T.value.toList))
+          S.suspend(S.fromFunction1(H.value.toList)),
+          S.suspend(S.fromFunction1(T.value.toList))
         ).contramap[Option[H :: T]]{
           case Some(h :: t) => (Some(h), Some(t))
           case None         => (None, None)
-        }.asFunction
+        }.asFunction1
       }
 
     implicit def ohcons2[H, T <: HList](
@@ -231,12 +231,12 @@ object composite {
         val kernel = Kernel.ohcons2(H.value.kernel, T.value.kernel)
         val meta   = H.value.meta ++ T.value.meta
         val toList = S.product(
-          S.suspend(S.fromFunction(H.value.toList)),
-          S.suspend(S.fromFunction(T.value.toList))
+          S.suspend(S.fromFunction1(H.value.toList)),
+          S.suspend(S.fromFunction1(T.value.toList))
         ).contramap[Option[Option[H] :: T]] {
           case Some(h :: t) => (h, Some(t))
           case None         => (None, None)
-        }.asFunction
+        }.asFunction1
       }
 
     implicit def ogeneric[A, Repr <: HList](
@@ -246,9 +246,9 @@ object composite {
       new Composite[Option[A]] {
         val kernel = B.value.kernel.imap(_.map(G.from))(_.map(G.to))
         val meta   = B.value.meta
-        val toList = S.suspend(S.fromFunction(B.value.toList))
+        val toList = S.suspend(S.fromFunction1(B.value.toList))
           .contramap((oa: Option[A]) => oa.map(G.to))
-          .asFunction
+          .asFunction1
       }
   }
 

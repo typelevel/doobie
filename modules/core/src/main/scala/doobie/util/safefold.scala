@@ -65,8 +65,9 @@ object safefold {
       * WARNING: The captured [[Monoid]] instance is lost when unwrapping, which
       * can lead to change in behaviour for overlapping instances.
       */
-    private[util] final def asFunction(implicit R: Monoid[R]): A => R =
+    private[util] final def asFunction1(implicit R: Monoid[R]): A => R =
       AsFunction1(this)
+
   }
 
   object SafeFold {
@@ -97,11 +98,36 @@ object safefold {
     ) extends SafeFold[A, R]
 
     // Support for the binary compatibility hack. Remove in 0.6.0.
-
+    // Make sure any combinators used in this library are overriden in such a way
+    // that recovering the original `SafeFold` is possible.
     private final case class AsFunction1[A, R: Monoid](
       asSafeFold: SafeFold[A, R]
     ) extends (A => R) {
       def apply(a: A): R = asSafeFold.combineAll(a)
+    }
+
+    private final case class AsFunction2[A, B, R: Monoid](
+      asSafeFold: SafeFold[(A, B), R]
+    ) extends ((A, B) => R) {
+      def apply(a: A, b: B): R = asSafeFold.combineAll((a, b))
+      override def tupled = AsFunction1(asSafeFold)
+    }
+
+    private final case class AsFunction3[A, B, C, R: Monoid](
+      asSafeFold: SafeFold[(A, B, C), R]
+    ) extends ((A, B, C) => R) {
+      def apply(a: A, b: B, c: C): R = asSafeFold.combineAll((a, b, c))
+      override def tupled = AsFunction1(asSafeFold)
+    }
+
+    private[util] implicit class Ops2[A, B, R](val self: SafeFold[(A, B), R]) extends AnyVal {
+      def asFunction2(implicit R: Monoid[R]): (A, B) => R =
+        AsFunction2(self)
+    }
+
+    private[util] implicit class Ops3[A, B, C, R](val self: SafeFold[(A, B, C), R]) extends AnyVal {
+      def asFunction3(implicit R: Monoid[R]): (A, B, C) => R =
+        AsFunction3(self)
     }
 
     /**
@@ -111,7 +137,7 @@ object safefold {
       * - For other functions returns a new opaque [[SafeFold]].
       */
     @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-    private[util] def fromFunction[A, R](f: A => R): SafeFold[A, R] =
+    private[util] def fromFunction1[A, R](f: A => R): SafeFold[A, R] =
       f match {
         // We're playing fast and loose with covariance here. We know that
         // `SafeFold` is covariant in `R` and contravariant in `A`, but proving
@@ -120,6 +146,12 @@ object safefold {
         case AsFunction1(s) => s.asInstanceOf[SafeFold[A, R]]
         case _ => Opaque(f)
       }
+
+    private[util] def fromFunction2[A, B, R](f: (A, B) => R): SafeFold[(A, B), R] =
+      fromFunction1(f.tupled)
+
+    private[util] def fromFunction3[A, B, C, R](f: (A, B, C) => R): SafeFold[(A, B, C), R] =
+      fromFunction1(f.tupled)
 
     def opaque[A, R](f: A => R): SafeFold[A, R] = Opaque(f)
 
