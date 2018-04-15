@@ -7,7 +7,6 @@ package doobie.util
 import java.sql.{ ResultSet, PreparedStatement }
 
 import cats.{ Semigroupal, Invariant => InvariantFunctor }
-import cats.instances.unit._
 import shapeless._
 import shapeless.labelled.{ field, FieldType }
 import doobie.util.safefold.{ SafeFold => S }
@@ -190,7 +189,7 @@ object kernel {
         ).contramap[(A, Int, I)]{ case (a, n, i) =>
             val (i1, i2) = split(i)
             ((a, n, i1), (a, n + xWidth, i2))
-        }.asFunction3
+        }.asEffectFunction3
     }
 
     private def combineSetLike[I] = new CombineSetLikePartiallyApplied[I]
@@ -205,7 +204,7 @@ object kernel {
         S.fromFunction2(sy)
       ).contramap[(PreparedStatement, Int)] { case (ps, n) =>
           ((ps, n), (ps, n + xWidth))
-      }.asFunction2
+      }.asEffectFunction2
   }
 
   trait KernelInstances {

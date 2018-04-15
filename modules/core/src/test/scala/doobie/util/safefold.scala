@@ -52,14 +52,14 @@ object safefoldspec extends Specification {
       S.fromFunction1(baseS.asFunction1) must beTheSameAs(baseS)
     }
 
-    "asFunction2" in {
-      // This doesn't change semantics, but can break stack safety.
-      S.fromFunction2(product2.asFunction2) must beTheSameAs(product2)
+    "asEffectFunction2" in {
+      val s2 = S.opaque[(Int, Int), Unit](_ => ())
+      S.fromFunction2(s2.asEffectFunction2) must beTheSameAs(s2)
     }
 
-    "asFunction3" in {
-      // This doesn't change semantics, but can break stack safety.
-      S.fromFunction3(product3.asFunction3) must beTheSameAs(product3)
+    "asEffectFunction3" in {
+      val s3 = S.opaque[(Int, Int, Int), Unit](_ => ())
+      S.fromFunction3(s3.asEffectFunction3) must beTheSameAs(s3)
     }
   }
 }

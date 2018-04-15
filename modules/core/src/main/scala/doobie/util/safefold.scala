@@ -9,6 +9,8 @@ import cats.{
   Eval,
   Monoid
 }
+import cats.instances.unit._
+import cats.evidence.===
 
 /**
  * Module defining a structure for traversing data with stack-safe operations.
@@ -24,6 +26,10 @@ object safefold {
 
     final def combineAll(a: A)(implicit R: Monoid[R]): R =
       this.foldLeft(R.empty)(R.combine)(a)
+
+    final def runForEffect(a: A)(implicit ev: R === Unit): Unit =
+      // TODO: This can be optimized using a manual fold
+      ev.substitute(this).combineAll(a)
 
     final def foldLeft[Z](z: Z)(step: (Z, R) => Z)(a: A): Z = {
 
@@ -68,6 +74,8 @@ object safefold {
     private[util] final def asFunction1(implicit R: Monoid[R]): A => R =
       AsFunction1(this)
 
+    private[util] final def asEffectFunction1(implicit ev: R === Unit): A => Unit =
+      AsEffectFunction1(ev.substitute(this))
   }
 
   object SafeFold {
@@ -106,28 +114,34 @@ object safefold {
       def apply(a: A): R = asSafeFold.combineAll(a)
     }
 
-    private final case class AsFunction2[A, B, R: Monoid](
-      asSafeFold: SafeFold[(A, B), R]
-    ) extends ((A, B) => R) {
-      def apply(a: A, b: B): R = asSafeFold.combineAll((a, b))
-      override def tupled = AsFunction1(asSafeFold)
+    private final case class AsEffectFunction1[A](
+      asSafeFold: SafeFold[A, Unit]
+    ) extends (A => Unit) {
+      def apply(a: A): Unit = asSafeFold.runForEffect(a)
     }
 
-    private final case class AsFunction3[A, B, C, R: Monoid](
-      asSafeFold: SafeFold[(A, B, C), R]
-    ) extends ((A, B, C) => R) {
-      def apply(a: A, b: B, c: C): R = asSafeFold.combineAll((a, b, c))
-      override def tupled = AsFunction1(asSafeFold)
+    private final case class AsEffectFunction2[A, B](
+      asSafeFold: SafeFold[(A, B), Unit]
+    ) extends ((A, B) => Unit) {
+      def apply(a: A, b: B): Unit = asSafeFold.runForEffect((a, b))
+      override def tupled = AsEffectFunction1(asSafeFold)
     }
 
-    private[util] implicit class Ops2[A, B, R](val self: SafeFold[(A, B), R]) extends AnyVal {
-      def asFunction2(implicit R: Monoid[R]): (A, B) => R =
-        AsFunction2(self)
+    private final case class AsEffectFunction3[A, B, C](
+      asSafeFold: SafeFold[(A, B, C), Unit]
+    ) extends ((A, B, C) => Unit) {
+      def apply(a: A, b: B, c: C): Unit = asSafeFold.runForEffect((a, b, c))
+      override def tupled = AsEffectFunction1(asSafeFold)
     }
 
-    private[util] implicit class Ops3[A, B, C, R](val self: SafeFold[(A, B, C), R]) extends AnyVal {
-      def asFunction3(implicit R: Monoid[R]): (A, B, C) => R =
-        AsFunction3(self)
+    private[util] implicit class EffectOps2[A, B](val self: SafeFold[(A, B), Unit]) extends AnyVal {
+      def asEffectFunction2: (A, B) => Unit =
+        AsEffectFunction2(self)
+    }
+
+    private[util] implicit class EffectOps3[A, B, C](val self: SafeFold[(A, B, C), Unit]) extends AnyVal {
+      def asEffectFunction3: (A, B, C) => Unit =
+        AsEffectFunction3(self)
     }
 
     /**
@@ -144,6 +158,7 @@ object safefold {
         // that through types brings more noise than feasible for this temporary
         // hack, as does using `narrow` and `widen`
         case AsFunction1(s) => s.asInstanceOf[SafeFold[A, R]]
+        case AsEffectFunction1(s) => s.asInstanceOf[SafeFold[A, R]]
         case _ => Opaque(f)
       }
 
