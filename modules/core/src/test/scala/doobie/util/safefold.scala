@@ -19,20 +19,20 @@ object safefoldspec extends Specification {
 
   "SafeFold" >> {
     "opaque" in {
-      baseS.combineAll(1) must_== base(1)
+      baseS(1).combineAll must_== base(1)
     }
 
     "contramap" in {
       val f: String => Int = _.length
-      baseS.contramap(f).combineAll("abc") must_== base(3)
+      baseS.contramap(f)("abc").combineAll must_== base(3)
     }
 
     "product" in {
-      product2.combineAll((1, 2)) must_== (base(1) ++ base(2))
+      product2((1, 2)).combineAll must_== (base(1) ++ base(2))
     }
 
     "suspend" in {
-      S.suspend(baseS).combineAll(1) must_== base(1)
+      S.suspend(baseS)(1).combineAll must_== base(1)
     }
 
     "suspend (laziness)"in {
@@ -43,7 +43,7 @@ object safefoldspec extends Specification {
         baseS
       }
       counter must_== 0
-      s.combineAll(1)
+      s(1).combineAll
       counter must_== 1
     }
 

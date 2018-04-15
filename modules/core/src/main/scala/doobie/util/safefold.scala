@@ -21,41 +21,13 @@ object safefold {
     * A structure for building data traversal functions. This is similar to
     * `A => List[R]`, but has the added benefit of stack safety.
     */
-  sealed trait SafeFold[A, R] {
+  sealed trait SafeFold[A, R] { self =>
     import SafeFold._
 
-    final def combineAll(a: A)(implicit R: Monoid[R]): R =
-      this.foldLeft(R.empty)(R.combine)(a)
-
-    final def runForEffect(a: A)(implicit ev: R === Unit): Unit =
-      // TODO: This can be optimized using a manual fold
-      ev.substitute(this).combineAll(a)
-
-    final def foldLeft[Z](z: Z)(step: (Z, R) => Z)(a: A): Z = {
-
-      type Item = (α, SafeFold[α, R]) forSome { type α }
-
-      // `acc` is the processed part of the object.
-      @tailrec
-      def worker(stack: List[Item], acc: Z): Z =
-        stack match {
-          case Nil => acc
-          case (h :: rest) => h match {
-            case (_, Empty()) =>
-              worker(rest, acc)
-            case (x, Opaque(f)) =>
-              worker(rest, step(acc, f(x)))
-            case (x, Contramap(f, sy)) =>
-              worker((f(x), sy) :: rest, acc)
-            case (x, Product(sy, sz)) =>
-              val (y, z) = x
-              worker((y, sy) :: (z, sz) :: rest, acc)
-            case (x, Suspend(f)) =>
-              worker((x, f.value) :: rest, acc)
-          }
-        }
-
-      worker(List((a, this)), z)
+    final def apply(a0: A): Applied[R] = new Applied[R] {
+      type T = A
+      val t = a0
+      val st = self
     }
 
     final def product[B](fb: SafeFold[B, R]): SafeFold[(A, B), R] =
@@ -83,7 +55,7 @@ object safefold {
     // Constructors
 
     // This is required to prevent capturing `Monoid` for `unit`.
-    private final case class Empty[A, R]() extends SafeFold[A, R]
+    private[util] final case class Trivial[A, R]() extends SafeFold[A, R]
 
     private final case class Opaque[A, R](
       f: A => R
@@ -111,26 +83,26 @@ object safefold {
     private final case class AsFunction1[A, R: Monoid](
       asSafeFold: SafeFold[A, R]
     ) extends (A => R) {
-      def apply(a: A): R = asSafeFold.combineAll(a)
+      def apply(a: A): R = asSafeFold(a).combineAll
     }
 
     private final case class AsEffectFunction1[A](
       asSafeFold: SafeFold[A, Unit]
     ) extends (A => Unit) {
-      def apply(a: A): Unit = asSafeFold.runForEffect(a)
+      def apply(a: A): Unit = asSafeFold(a).combineAll
     }
 
     private final case class AsEffectFunction2[A, B](
       asSafeFold: SafeFold[(A, B), Unit]
     ) extends ((A, B) => Unit) {
-      def apply(a: A, b: B): Unit = asSafeFold.runForEffect((a, b))
+      def apply(a: A, b: B): Unit = asSafeFold((a, b)).combineAll
       override def tupled = AsEffectFunction1(asSafeFold)
     }
 
     private final case class AsEffectFunction3[A, B, C](
       asSafeFold: SafeFold[(A, B, C), Unit]
     ) extends ((A, B, C) => Unit) {
-      def apply(a: A, b: B, c: C): Unit = asSafeFold.runForEffect((a, b, c))
+      def apply(a: A, b: B, c: C): Unit = asSafeFold((a, b, c)).combineAll
       override def tupled = AsEffectFunction1(asSafeFold)
     }
 
@@ -143,6 +115,54 @@ object safefold {
       def asEffectFunction3: (A, B, C) => Unit =
         AsEffectFunction3(self)
     }
+
+    sealed trait Applied[R] {
+
+      protected type T
+      protected val t: T
+      protected val st: SafeFold[T, R]
+
+      final def combineAll(implicit R: Monoid[R]): R =
+        foldLeft(R.empty)(R.combine)
+
+      final def foldLeft[Z](z: Z)(step: (Z, R) => Z): Z = {
+
+        type Item = (α, SafeFold[α, R]) forSome { type α }
+
+        @tailrec
+        def worker(stack: List[Item], acc: Z): Z =
+          stack match {
+            case Nil => acc
+            case (h :: rest) => h match {
+              case (_, Trivial()) =>
+                worker(rest, acc)
+              case (x, Opaque(f)) =>
+                worker(rest, step(acc, f(x)))
+              case (x, Contramap(f, sy)) =>
+                worker((f(x), sy) :: rest, acc)
+              case (x, Product(sy, sz)) =>
+                val (y, z) = x
+                worker((y, sy) :: (z, sz) :: rest, acc)
+              case (x, Suspend(f)) =>
+                worker((x, f.value) :: rest, acc)
+            }
+          }
+        worker(List((t, st)), z)
+      }
+    }
+
+    def opaque[A, R](f: A => R): SafeFold[A, R] = Opaque(f)
+
+    def suspend[A, R](f: => SafeFold[A, R]): SafeFold[A, R] =
+      SafeFold.Suspend(Eval.later(f))
+
+    def trivial[A, R]: SafeFold[A, R] = Trivial()
+
+    def product[A, B, R](
+      fa: SafeFold[A, R],
+      fb: SafeFold[B, R]
+    ): SafeFold[(A, B), R] =
+      Product(fa, fb)
 
     /**
       * Get a [[SafeFold]], corresponding to given function:
@@ -167,18 +187,5 @@ object safefold {
 
     private[util] def fromFunction3[A, B, C, R](f: (A, B, C) => R): SafeFold[(A, B, C), R] =
       fromFunction1(f.tupled)
-
-    def opaque[A, R](f: A => R): SafeFold[A, R] = Opaque(f)
-
-    def suspend[A, R](f: => SafeFold[A, R]): SafeFold[A, R] =
-      SafeFold.Suspend(Eval.later(f))
-
-    def trivial[A, R]: SafeFold[A, R] = Empty()
-
-    def product[A, B, R](
-      fa: SafeFold[A, R],
-      fb: SafeFold[B, R]
-    ): SafeFold[(A, B), R] =
-      Product(fa, fb)
   }
 }
