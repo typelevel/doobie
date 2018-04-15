@@ -9,6 +9,7 @@ import java.sql.{ ResultSet, PreparedStatement }
 import cats.{ Semigroupal, Invariant => InvariantFunctor }
 import shapeless._
 import shapeless.labelled.{ field, FieldType }
+import doobie.util.safefold.{ SafeFold => S }
 
 object kernel {
 
@@ -75,12 +76,17 @@ object kernel {
     def hcons[H, T <: HList](h: Kernel[H], t: Kernel[T]): Kernel[H :: T] =
       new Kernel[H :: T] {
         type I      = H :: T
+
+        val split: I => (h.I, t.I) = {
+          case ha :: ta => (h.ai(ha), t.ai(ta))
+        }
+
         val ia      = (i: I) => i
         val ai      = (a: I) => a
         val get     = (rs: ResultSet, n: Int)     =>   h.ia(h.get(rs, n)) ::            t.ia(t.get(rs, n + h.width))
-        val set     = (ps: PreparedStatement, n: Int, ht: I) => { h.set(ps, n, h.ai(ht.head)) ;    t.set(ps, n + h.width, t.ai(ht.tail)) }
-        val setNull = (ps: PreparedStatement, n: Int)     => { h.setNull(ps, n) ;               t.setNull(ps, n + h.width) }
-        val update  = (rs: ResultSet, n: Int, ht: I) => { h.update(rs, n, h.ai(ht.head)) ; t.update(rs, n + h.width, t.ai(ht.tail)) }
+        val set     = combineSetLike[I](split)(h.width, h.set, t.set)
+        val update  = combineSetLike[I](split)(h.width, h.update, t.update)
+        val setNull = combineSetNull(h.width, h.setNull, t.setNull)
         val width   = h.width + t.width
       }
 
@@ -99,19 +105,18 @@ object kernel {
     def ohcons1[H, T <: HList](H: Kernel[Option[H]], T: Kernel[Option[T]]): Kernel[Option[H :: T]] =
       new Kernel[Option[H :: T]]{
 
-        def split(i: I)(f: (Option[H], Option[T]) => Unit): Unit =
-          i match {
-            case Some(h :: t) => f(Some(h), Some(t))
-            case None         => f(None, None)
-          }
+        val split: I => (H.I, T.I) = {
+          case Some(h :: t) => (H.ai(Some(h)), T.ai(Some(t)))
+          case None         => (H.ai(None), T.ai(None))
+        }
 
         type I      = Option[H :: T]
         val ia      = (i: I) => i
         val ai      = (a: I) => a
         val get     = (rs: ResultSet, n: Int) => H.ia(H.get(rs, n)).flatMap(h => T.ia(T.get(rs, n + H.width)).map(h :: _))
-        val set     = (ps: PreparedStatement, n: Int, i: I) => split(i) { (h, t) => H.set(ps, n, H.ai(h)); T.set(ps, n + H.width, T.ai(t)) }
-        val update  = (rs: ResultSet, n: Int, i: I) => split(i) { (h, t) => H.update(rs, n, H.ai(h)); T.update(rs, n + H.width, T.ai(t)) }
-        val setNull = (ps: PreparedStatement, n: Int) => { H.setNull(ps, n); T.setNull(ps, n + H.width) }
+        val set     = combineSetLike[I](split)(H.width, H.set, T.set)
+        val update  = combineSetLike[I](split)(H.width, H.update, T.update)
+        val setNull = combineSetNull(H.width, H.setNull, T.setNull)
         val width   = H.width + T.width
 
       }
@@ -119,19 +124,18 @@ object kernel {
     def ohcons2[H, T <: HList](H: Kernel[Option[H]], T: Kernel[Option[T]]): Kernel[Option[Option[H] :: T]] =
       new Kernel[Option[Option[H] :: T]]{
 
-        def split(i: I)(f: (Option[H], Option[T]) => Unit): Unit =
-          i match {
-            case Some(h :: t) => f(h, Some(t))
-            case None         => f(None, None)
-          }
+        val split: I => (H.I, T.I) = {
+          case Some(h :: t) => (H.ai(h), T.ai(Some(t)))
+          case None         => (H.ai(None), T.ai(None))
+        }
 
         type I      = Option[Option[H] :: T]
         val ia      = (i: I) => i
         val ai      = (a: I) => a
         val get     = (rs: ResultSet, n: Int) => T.ia(T.get(rs, n + H.width)).map(H.ia(H.get(rs, n)) :: _)
-        val set     = (ps: PreparedStatement, n: Int, i: I) => split(i) { (h, t) => H.set(ps, n, H.ai(h)); T.set(ps, n + H.width, T.ai(t)) }
-        val update  = (rs: ResultSet, n: Int, i: I) => split(i) { (h, t) => H.update(rs, n, H.ai(h)); T.update(rs, n + H.width, T.ai(t)) }
-        val setNull = (ps: PreparedStatement, n: Int) => { H.setNull(ps, n); T.setNull(ps, n + H.width) }
+        val set     = combineSetLike[I](split)(H.width, H.set, T.set)
+        val update  = combineSetLike[I](split)(H.width, H.update, T.update)
+        val setNull = combineSetNull(H.width, H.setNull, T.setNull)
         val width   = H.width + T.width
       }
 
@@ -139,27 +143,68 @@ object kernel {
     def product[A, B](a: Kernel[A], b: Kernel[B]): Kernel[(A, B)] =
       new Kernel[(A, B)] {
         type I      = (A, B)
+
+        val split: I => (a.I, b.I) = {
+          case (aa, ba) => (a.ai(aa), b.ai(ba))
+        }
+
         val ia      = (i: I) => i
         val ai      = (a: I) => a
         val get     = (rs: ResultSet, n: Int) => ( a.ia(a.get(rs, n)), b.ia(b.get(rs, n + a.width)) )
-        val set     = (ps: PreparedStatement, n: Int, ab: I) => { a.set(ps, n, a.ai(ab._1)); b.set(ps, n + a.width, b.ai(ab._2)) }
-        val setNull = (ps: PreparedStatement, n: Int) => { a.setNull(ps, n); b.setNull(ps, n + a.width) }
-        val update  = (rs: ResultSet, n: Int, ab: I) => { a.update(rs, n, a.ai(ab._1)) ; b.update(rs, n + a.width, b.ai(ab._2)) }
+        val set     = combineSetLike[I](split)(a.width, a.set, b.set)
+        val update  = combineSetLike[I](split)(a.width, a.update, b.update)
+        val setNull = combineSetNull(a.width, a.setNull, b.setNull)
         val width   = a.width + b.width
       }
 
     def record[K <: Symbol, H, T <: HList](h: Kernel[H], t: Kernel[T]): Kernel[FieldType[K, H] :: T] =
       new Kernel[FieldType[K, H] :: T] {
         type I      = FieldType[K, H] :: T
+
+        val split: I => (h.I, t.I) = {
+          case ha :: ta => (h.ai(ha), t.ai(ta))
+        }
+
         val ia      = (i: I) => i
         val ai      = (a: I) => a
         val get     = (rs: ResultSet, n: Int) => field[K](h.ia(h.get(rs, n))) :: t.ia(t.get(rs, n + h.width))
-        val set     = (ps: PreparedStatement, n: Int, ht: I) => { h.set(ps, n, h.ai(ht.head)); t.set(ps, n + h.width, t.ai(ht.tail)) }
-        val setNull = (ps: PreparedStatement, n: Int) => { h.setNull(ps, n);  t.setNull(ps, n + h.width) }
-        val update  = (rs: ResultSet, n: Int, ht: I) => { h.update(rs, n, h.ai(ht.head)); t.update(rs, n + h.width, t.ai(ht.tail)) }
+        val set     = combineSetLike[I](split)(h.width, h.set, t.set)
+        val update  = combineSetLike[I](split)(h.width, h.update, t.update)
+        val setNull = combineSetNull(h.width, h.setNull, t.setNull)
         val width   = h.width + t.width
       }
 
+    // These patterns come up a lot, and they are terribly noisy.
+
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    private class CombineSetLikePartiallyApplied[I](val dummy: Boolean = true) extends AnyVal {
+      def apply[A, I1, I2](split: I => (I1, I2))(
+        xWidth: Int,
+        sx: (A, Int, I1) => Unit,
+        sy: (A, Int, I2) => Unit
+      ): (A, Int, I) => Unit =
+        S.product(
+          S.fromFunction3(sx),
+          S.fromFunction3(sy)
+        ).contramap[(A, Int, I)]{ case (a, n, i) =>
+            val (i1, i2) = split(i)
+            ((a, n, i1), (a, n + xWidth, i2))
+        }.asEffectFunction3
+    }
+
+    private def combineSetLike[I] = new CombineSetLikePartiallyApplied[I]
+
+    private def combineSetNull(
+      xWidth: Int,
+      sx: (PreparedStatement, Int) => Unit,
+      sy: (PreparedStatement, Int) => Unit
+    ): (PreparedStatement, Int) => Unit =
+      S.product(
+        S.fromFunction2(sx),
+        S.fromFunction2(sy)
+      ).contramap[(PreparedStatement, Int)] { case (ps, n) =>
+          ((ps, n), (ps, n + xWidth))
+      }.asEffectFunction2
   }
 
   trait KernelInstances {

@@ -140,6 +140,14 @@ object compositespec extends Specification {
     //   true
     // }
 
+    "compose in a stack-safe fashion" in {
+      val base = Composite[Int]
+      val constructed = Stream.iterate(base, 10000) { acc =>
+        acc.zip(base).imap(t => t._1)(x => (x, x))
+      }.lastOption.getOrElse(sys.error("unpossible"))
+
+      constructed.toList(0) must_=== List.fill(10000)(0)
+    }
   }
 
 }

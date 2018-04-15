@@ -5,12 +5,20 @@
 package doobie.util
 
 import cats.{ Reducible => Foldable1, _}, cats.implicits._
+import cats.data.NonEmptyList
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object fragmentsspec extends Specification {
   import Fragments._
+
+  val xa = Transactor.fromDriverManager[IO](
+    "org.h2.Driver",
+    "jdbc:h2:mem:fragmentspec;DB_CLOSE_DELAY=-1",
+    "sa", ""
+  )
 
   "Fragments" >> {
 
@@ -20,6 +28,21 @@ object fragmentsspec extends Specification {
 
     "in" in {
       in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
+    }
+
+    "in (stack safety)" in {
+      // #426
+      def query(ids: Option[NonEmptyList[Long]]): Query0[Long] = {
+        val q: Fragment = fr"""
+          SELECT id
+          FROM VALUES (123), (10001) AS table(id)
+        """ ++ Fragments.whereAndOpt(ids.map(Fragments.in(fr"id", _)))
+        q.query[Long]
+      }
+      val result = query(List.range(0L,10000L).toNel)
+        .to[Vector].transact(xa).unsafeRunSync
+
+      result must_== Vector(123L)
     }
 
     "notIn" in {
@@ -121,7 +144,6 @@ object fragmentsspec extends Specification {
     "whereOrOpt (none)" in {
       whereOrOpt(None, None).query[Unit].sql must_== ""
     }
-
   }
 
 }
