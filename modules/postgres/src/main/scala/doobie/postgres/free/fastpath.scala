@@ -117,6 +117,7 @@ object fastpath { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: FastpathIO[Unit] = FF.pure[FastpathOp, Unit](())
+  def pure[A](a: A): FastpathIO[A] = FF.pure[FastpathOp, A](a)
   def raw[A](f: PGFastpath => A): FastpathIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[FastpathOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): FastpathIO[A] = FF.liftF(Delay(() => a))

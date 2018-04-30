@@ -88,6 +88,7 @@ object ref { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: RefIO[Unit] = FF.pure[RefOp, Unit](())
+  def pure[A](a: A): RefIO[A] = FF.pure[RefOp, A](a)
   def raw[A](f: Ref => A): RefIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): RefIO[A] = FF.liftF(Delay(() => a))

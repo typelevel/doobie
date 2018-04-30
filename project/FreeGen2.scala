@@ -275,6 +275,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |
     |  // Smart constructors for operations common to all algebras.
     |  val unit: ${ioname}[Unit] = FF.pure[${opname}, Unit](())
+    |  def pure[A](a: A): ${ioname}[A] = FF.pure[${opname}, A](a)
     |  def raw[A](f: $sname => A): ${ioname}[A] = FF.liftF(Raw(f))
     |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${opname}, A] = FF.liftF(Embed(ev.embed(j, fa)))
     |  def delay[A](a: => A): ${ioname}[A] = FF.liftF(Delay(() => a))

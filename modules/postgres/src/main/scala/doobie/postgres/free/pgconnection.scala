@@ -151,6 +151,7 @@ object pgconnection { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: PGConnectionIO[Unit] = FF.pure[PGConnectionOp, Unit](())
+  def pure[A](a: A): PGConnectionIO[A] = FF.pure[PGConnectionOp, A](a)
   def raw[A](f: PGConnection => A): PGConnectionIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PGConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): PGConnectionIO[A] = FF.liftF(Delay(() => a))

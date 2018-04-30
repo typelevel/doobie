@@ -85,6 +85,7 @@ object sqldata { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: SQLDataIO[Unit] = FF.pure[SQLDataOp, Unit](())
+  def pure[A](a: A): SQLDataIO[A] = FF.pure[SQLDataOp, A](a)
   def raw[A](f: SQLData => A): SQLDataIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLDataOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): SQLDataIO[A] = FF.liftF(Delay(() => a))

@@ -283,6 +283,7 @@ object statement { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: StatementIO[Unit] = FF.pure[StatementOp, Unit](())
+  def pure[A](a: A): StatementIO[A] = FF.pure[StatementOp, A](a)
   def raw[A](f: Statement => A): StatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): StatementIO[A] = FF.liftF(Delay(() => a))

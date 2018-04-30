@@ -152,6 +152,7 @@ object largeobject { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: LargeObjectIO[Unit] = FF.pure[LargeObjectOp, Unit](())
+  def pure[A](a: A): LargeObjectIO[A] = FF.pure[LargeObjectOp, A](a)
   def raw[A](f: LargeObject => A): LargeObjectIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[LargeObjectOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): LargeObjectIO[A] = FF.liftF(Delay(() => a))

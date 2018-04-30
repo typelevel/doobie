@@ -116,6 +116,7 @@ object blob { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: BlobIO[Unit] = FF.pure[BlobOp, Unit](())
+  def pure[A](a: A): BlobIO[A] = FF.pure[BlobOp, A](a)
   def raw[A](f: Blob => A): BlobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[BlobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): BlobIO[A] = FF.liftF(Delay(() => a))

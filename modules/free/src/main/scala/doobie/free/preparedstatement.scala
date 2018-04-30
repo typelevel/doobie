@@ -533,6 +533,7 @@ object preparedstatement { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: PreparedStatementIO[Unit] = FF.pure[PreparedStatementOp, Unit](())
+  def pure[A](a: A): PreparedStatementIO[A] = FF.pure[PreparedStatementOp, A](a)
   def raw[A](f: PreparedStatement => A): PreparedStatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): PreparedStatementIO[A] = FF.liftF(Delay(() => a))

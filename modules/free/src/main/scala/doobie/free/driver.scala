@@ -103,6 +103,7 @@ object driver { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: DriverIO[Unit] = FF.pure[DriverOp, Unit](())
+  def pure[A](a: A): DriverIO[A] = FF.pure[DriverOp, A](a)
   def raw[A](f: Driver => A): DriverIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DriverOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): DriverIO[A] = FF.liftF(Delay(() => a))

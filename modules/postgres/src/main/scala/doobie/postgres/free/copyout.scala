@@ -102,6 +102,7 @@ object copyout { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: CopyOutIO[Unit] = FF.pure[CopyOutOp, Unit](())
+  def pure[A](a: A): CopyOutIO[A] = FF.pure[CopyOutOp, A](a)
   def raw[A](f: PGCopyOut => A): CopyOutIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyOutOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): CopyOutIO[A] = FF.liftF(Delay(() => a))
