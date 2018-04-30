@@ -17,6 +17,7 @@ import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.sql.ResultSet
+import java.sql.{ Array => SqlArray }
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
 import org.postgresql.copy.{ CopyDual => PGCopyDual }

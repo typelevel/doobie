@@ -128,6 +128,7 @@ object nclob { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: NClobIO[Unit] = FF.pure[NClobOp, Unit](())
+  def pure[A](a: A): NClobIO[A] = FF.pure[NClobOp, A](a)
   def raw[A](f: NClob => A): NClobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[NClobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): NClobIO[A] = FF.liftF(Delay(() => a))

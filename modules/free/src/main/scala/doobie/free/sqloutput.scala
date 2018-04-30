@@ -200,6 +200,7 @@ object sqloutput { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: SQLOutputIO[Unit] = FF.pure[SQLOutputOp, Unit](())
+  def pure[A](a: A): SQLOutputIO[A] = FF.pure[SQLOutputOp, A](a)
   def raw[A](f: SQLOutput => A): SQLOutputIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLOutputOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): SQLOutputIO[A] = FF.liftF(Delay(() => a))

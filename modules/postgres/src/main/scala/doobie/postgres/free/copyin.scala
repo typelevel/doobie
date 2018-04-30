@@ -106,6 +106,7 @@ object copyin { module =>
 
   // Smart constructors for operations common to all algebras.
   val unit: CopyInIO[Unit] = FF.pure[CopyInOp, Unit](())
+  def pure[A](a: A): CopyInIO[A] = FF.pure[CopyInOp, A](a)
   def raw[A](f: PGCopyIn => A): CopyInIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyInOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): CopyInIO[A] = FF.liftF(Delay(() => a))
