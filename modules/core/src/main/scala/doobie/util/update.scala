@@ -107,7 +107,9 @@ object update {
       HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeUpdate(a))
 
     /**
-     * Program to execute a batch update and yield a count of affected rows.
+     * Program to execute a batch update and yield a count of affected rows. Note that failed
+     * updates are not reported (see https://github.com/tpolecat/doobie/issues/706). This API is
+     * likely to change.
      * @group Execution
      */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
