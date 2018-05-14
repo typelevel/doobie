@@ -4,12 +4,10 @@
 
 package doobie.util
 
-import cats.Monoid
+import cats._
+import cats.implicits._
 
-import doobie.util.composite.Composite
-import doobie.util.query.{ Query, Query0 }
-import doobie.util.update.{ Update, Update0 }
-import doobie.util.log.LogHandler
+import doobie._, doobie.implicits._
 import doobie.util.pos.Pos
 
 import scala.Predef.wrapString
@@ -31,6 +29,13 @@ object fragment {
     protected def a: A              // the interpolated argument itself
     protected def ca: Composite[A]  // proof that we can map the argument to parameters
     protected def sql: String       // snipped of SQL with `ca.length` placeholders
+
+    /**
+     * Construct a program in ConnectionIO that constructs and prepares a PreparedStatement, with
+     * further handling delegated to the provided program.
+     */
+    def execWith[B](fa: PreparedStatementIO[B]): ConnectionIO[B] =
+      HC.prepareStatement(sql)(ca.set(1, a) *> fa)
 
     // Stack frame, used by the query checker to guess the source position. This will go away at
     // some point, possibly in favor of Haoyi's source position doodad.

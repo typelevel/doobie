@@ -28,16 +28,13 @@ object Dynamic {
     data.foreach(println)
   }
 
-  // Construct a parameterized query and process it with a custom program.
-  def connProg(pattern: String): ConnectionIO[(Headers, Data)] = {
-    val sql = "select code, name, population from country where code like ?"
-    HC.prepareStatement(sql)(prepareAndExec(pattern))
-  }
+  // Construct a parameterized query and execute it with a custom program.
+  def connProg(pattern: String): ConnectionIO[(Headers, Data)] =
+    sql"select code, name, population from country where code like $pattern".execWith(exec)
 
-  // Configure and run a PreparedStatement. We don't know the column count or types.
-  def prepareAndExec(pattern: String): PreparedStatementIO[(Headers, Data)] =
+  // Exec our PreparedStatement, examining metadata to figure out column count.
+  def exec: PreparedStatementIO[(Headers, Data)] =
     for {
-      _    <- HPS.set(pattern)
       md   <- HPS.getMetaData // lots of useful info here
       cols  = (1 to md.getColumnCount).toList
       data <- HPS.executeQuery(readAll(cols))
