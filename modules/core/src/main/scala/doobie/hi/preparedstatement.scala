@@ -65,11 +65,15 @@ object preparedstatement {
     FPS.addBatch
 
   /**
-   * Add many sets of parameters and execute as a batch update, returning total rows updated.
+   * Add many sets of parameters and execute as a batch update, returning total rows updated. Note
+   * that failed updates are not reported (see https://github.com/tpolecat/doobie/issues/706). This
+   * API is likely to change.
    * @group Batching
    */
   def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
-    fa.toList.foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b).map(_.sum)
+    fa.toList
+      .foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b)
+      .map(_.foldLeft(0)((acc, n) => acc + (n max 0))) // treat negatives (failures) as no rows updated
 
   /**
    * Add many sets of parameters.
