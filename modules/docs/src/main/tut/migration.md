@@ -50,6 +50,7 @@ The IO data types provided by fs2 and doobie have been subsumed by `cats.effect.
 | `fs2.Task`           | `cats.effect.IO` |
 | `doobie.util.IOLite` | `cats.effect.IO` |
 
+Note that the "end of the world" operation for `IO` is called `unsafeRunSync`.
 
 ## Typeclasses
 
@@ -59,6 +60,15 @@ The typeclass hierarchy in fs2 has been removed.
 |------------------------|------------------------------------|
 | `fs2.util.Catchable`   | `cats.MonadError[?[_], Throwable]` |
 | `fs2.util.Suspendable` | `cats.effect.Sync`                 |
+
+## Transactors
+
+The built-in `Transactor` constructors are now on `Transactor` itself.
+
+| 0.4.x  Constructor             | 0.5.x Constructor                   |
+|--------------------------------|-------------------------------------|
+| `DriverManagerTransactor(...)` | `Transactor.fromDriverManager(...)` |
+| `DataSourceTransactor(...)`    | `Transactor.fromDataSource(...)`   |
 
 ## Error-Handling Combinators
 
