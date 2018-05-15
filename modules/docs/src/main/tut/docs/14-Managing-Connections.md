@@ -112,12 +112,12 @@ val testXa = Transactor.after.set(xa, HC.rollback)
 
 ### Using an Existing JDBC Connection
 
-If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target monad `M` that has `Catchable` and `Capture` instances by running the `Kleisli[M, Connection, A]` yielded by the default interpreter.
+If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target `M` that has an `Async` instance by running the `Kleisli[M, Connection, A]` yielded by the default interpreter.
 
 ```tut:silent
 val conn: java.sql.Connection = null     // Connection (pretending)
 val prog = 42.pure[ConnectionIO]         // ConnectionIO[Int]
-val int  = KleisliInterpreter[IO]    // KleisliInterpreter[IO]
+val int  = KleisliInterpreter[IO]        // KleisliInterpreter[IO]
 val nat  = int.ConnectionInterpreter     // ConnectionIO ~> Kleisli[IO, Connection, ?]
 val task = prog.foldMap(nat).run(conn)   // IO[Int]
 ```
