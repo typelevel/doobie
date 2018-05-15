@@ -11,7 +11,7 @@ scala:
 
 env:
   global:
-    - MAIN_SCALA_VERSION=2.12.5
+    - MAIN_SCALA_VERSION=2.12.6
 
 before_install:
  - export PATH=${PATH}:./vendor/bundle
