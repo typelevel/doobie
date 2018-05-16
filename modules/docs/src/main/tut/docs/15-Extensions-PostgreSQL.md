@@ -184,7 +184,7 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```tut
-p.attempt.quick.unsafeRunSync // attempt provided by Catchable instance
+p.attempt.quick.unsafeRunSync // attempt is provided by ApplicativeError instance
 
 p.attemptSqlState.quick.unsafeRunSync // this catches only SQL exceptions
 
