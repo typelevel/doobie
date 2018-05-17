@@ -4,6 +4,18 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.5.3"></a>New and Noteworthy for Version 0.5.3
+
+Minor updates, see below.
+
+- Updated to **refined 0.9**, **fs2 0.10.4**, **Hikari 3.1.0**, **ScalaCheck 1.14.0**, and **Specs2 4.2.0**.
+- Added `.execWith` method to `Fragment`, allowing for custom handling of the associated statement.
+- Added `pure` to generated algebras, so you can now say `FC.pure(1)` instead of `1.pure[ConnectionIO]` if you like. Thanks wedens!
+- Added an example of generic DAOs for simple schemas. See `Orm.scala` in the `example` project.
+- Minor doc updates.
+
+This is the last planned release in the 0.5.x series. Work will start soon on 0.6!
+
 ### <a name="0.5.2"></a>New and Noteworthy for Version 0.5.2
 
 Minor updates, see below.
