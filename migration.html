@@ -107,6 +107,8 @@
   </tbody>
 </table>
 
+<p>Note that the “end of the world” operation for <code class="highlighter-rouge">IO</code> is called <code class="highlighter-rouge">unsafeRunSync</code>.</p>
+
 <h2 id="typeclasses">Typeclasses</h2>
 
 <p>The typeclass hierarchy in fs2 has been removed.</p>
@@ -126,6 +128,29 @@
     <tr>
       <td><code class="highlighter-rouge">fs2.util.Suspendable</code></td>
       <td><code class="highlighter-rouge">cats.effect.Sync</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="transactors">Transactors</h2>
+
+<p>The built-in <code class="highlighter-rouge">Transactor</code> constructors are now on <code class="highlighter-rouge">Transactor</code> itself.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>0.4.x  Constructor</th>
+      <th>0.5.x Constructor</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="highlighter-rouge">DriverManagerTransactor(...)</code></td>
+      <td><code class="highlighter-rouge">Transactor.fromDriverManager(...)</code></td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">DataSourceTransactor(...)</code></td>
+      <td><code class="highlighter-rouge">Transactor.fromDataSource(...)</code></td>
     </tr>
   </tbody>
 </table>

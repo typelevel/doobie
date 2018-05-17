@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.2"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.3"</span>
 </code></pre>
 </div>
 
@@ -188,7 +188,7 @@
 
 <p>Some of the recovery combinators demonstrated:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attempt</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// attempt provided by Catchable instance
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attempt</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// attempt is provided by ApplicativeError instance
 </span>  <span class="nc">Left</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="n">postgresql</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="nc">PSQLException</span><span class="k">:</span> <span class="kt">ERROR:</span> <span class="kt">syntax</span> <span class="kt">error</span> <span class="kt">at</span> <span class="kt">or</span> <span class="kt">near</span> <span class="err">"</span><span class="kt">oops</span><span class="err">"</span>
   <span class="kt">Position:</span> <span class="err">1</span><span class="o">)</span>
 

@@ -49,7 +49,7 @@
 <p>And here we go.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="n">program1</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="n">io</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$2034986689</span>
+<span class="n">io</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$368676491</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">io</span><span class="o">.</span><span class="n">unsafeRunSync</span>
 <span class="n">res1</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
@@ -72,7 +72,7 @@
 <span class="n">program2</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">io2</span> <span class="k">=</span> <span class="n">program2</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="n">io2</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$1581083107</span>
+<span class="n">io2</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$73654901</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">io2</span><span class="o">.</span><span class="n">unsafeRunSync</span>
 <span class="n">res2</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
@@ -96,7 +96,7 @@
 <p>And behold!</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">program3</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res3</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.6643427130766213</span><span class="o">)</span>
+<span class="n">res3</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.35305103240534663</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -113,7 +113,7 @@
 <p>And lo, it was good:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">program3a</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res4</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.542170537635684</span><span class="o">)</span>
+<span class="n">res4</span><span class="k">:</span> <span class="o">(</span><span class="kt">Int</span><span class="o">,</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.799691379070282</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -123,14 +123,14 @@
 <span class="n">valuesList</span><span class="k">:</span> <span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="nc">Free</span><span class="o">(...)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">result</span> <span class="k">=</span> <span class="n">valuesList</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="n">result</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="nc">IO$444718165</span>
+<span class="n">result</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">List</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Double</span><span class="o">)]]</span> <span class="k">=</span> <span class="nc">IO$1275612355</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">unsafeRunSync</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.11045934585854411</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.6247912039980292</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.9714657342992723</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.642768585588783</span><span class="o">)</span>
-<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.6013854150660336</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.03204446332529187</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.2510692561045289</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.5603550099767745</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.2610341371037066</span><span class="o">)</span>
+<span class="o">(</span><span class="mi">42</span><span class="o">,</span><span class="mf">0.13996110623702407</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -153,13 +153,13 @@
 <span class="k">import</span> <span class="nn">java.sql.Connection</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">interpreter</span> <span class="k">=</span> <span class="nc">KleisliInterpreter</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="nc">ConnectionInterpreter</span>
-<span class="n">interpreter</span><span class="k">:</span> <span class="kt">doobie.free.connection.ConnectionOp</span> <span class="kt">~&gt;</span> <span class="err">[</span><span class="kt">γ$9$</span><span class="err">]</span><span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">γ$9$</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">free</span><span class="o">.</span><span class="nc">KleisliInterpreter$$anon$10</span><span class="k">@</span><span class="mi">1</span><span class="n">a4954b0</span>
+<span class="n">interpreter</span><span class="k">:</span> <span class="kt">doobie.free.connection.ConnectionOp</span> <span class="kt">~&gt;</span> <span class="err">[</span><span class="kt">γ$9$</span><span class="err">]</span><span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">γ$9$</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">free</span><span class="o">.</span><span class="nc">KleisliInterpreter$$anon$10</span><span class="k">@</span><span class="mi">7699</span><span class="n">ad68</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">kleisli</span> <span class="k">=</span> <span class="n">program1</span><span class="o">.</span><span class="n">foldMap</span><span class="o">(</span><span class="n">interpreter</span><span class="o">)</span>
-<span class="n">kleisli</span><span class="k">:</span> <span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="nc">KleisliFlatMap$$Lambda$24358</span><span class="o">/</span><span class="mi">388852948</span><span class="k">@</span><span class="mf">49f</span><span class="mi">56</span><span class="n">e46</span><span class="o">)</span>
+<span class="n">kleisli</span><span class="k">:</span> <span class="kt">cats.data.Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,<span class="kt">java.sql.Connection</span>,<span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="nc">KleisliFlatMap$$Lambda$6746</span><span class="o">/</span><span class="mi">2013185517</span><span class="k">@</span><span class="mi">2879</span><span class="n">b439</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="kc">null</span><span class="k">:</span> <span class="kt">java.sql.Connection</span><span class="o">)</span> <span class="o">&gt;&gt;=</span> <span class="n">kleisli</span><span class="o">.</span><span class="n">run</span>
-<span class="n">io</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$267709674</span>
+<span class="n">io</span><span class="k">:</span> <span class="kt">cats.effect.IO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO$2073946567</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">io</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// sneaky; program1 never looks at the connection
 </span><span class="n">res6</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span>
