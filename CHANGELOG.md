@@ -4,6 +4,35 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.6.0"></a>Work in Progress for Version 0.6.0
+
+This is a major update with **breaking changes**. Please read the following notes carefully.
+
+#### Splitting of read/write functionality.
+
+Prior to the 0.6.x series we provided two typeclasses for **bidirectional** type mapping:
+- `Meta` defined nullable mappings between column/parameter values and scala types.
+- `Composite` defined null-safe mappings betwen column/parameter **vectors** and scala types.
+
+Starting with version 0.6.0 type mappings are **unidirectional**:
+- `Meta` has been split into `Get` and `Put` typeclasses, for nullable reads and writes of column/parameter values, respectively.
+- `Composite` has been split into `Read` and `Write` typeclasses, for null-safe reads and writes of column/parameter vectors, respecitively.
+
+Note that `Meta` does still exist, but only as a mechanism for introducing `Get/Put` pairs. An implicit `Meta[A]` induces both an implicit `Get[A]` and an implicit `Put[A]`, and the old mechanism of `Meta[A].imap(...)(...)` is still supported for this purpose. The `xmap` method has been replaced with parametric `imap` and `TypeTag`-constrained `tmap`. Prefer `tmap` when possible because it yields better diagnostic information when typechecking queries.
+
+To summarize:
+
+| 0.5.x                | 0.6.x                    | Notes |
+|----------------------|--------------------------------|--|
+| `[A: Meta]`      | `[A: Get : Put]`      | Or just one, depending on usage. |
+| `[A: Composite]` | `[A: Read : Write]`   | Or just one, depending on usage. |
+| `Meta[A].xmap(..)` | `Meta[A].tmap(...)` | Or `imap` when a `TypeTag` is unavailable. |
+| `Composite[A].xmap(...)` | `Read[A].map(...)` <br> `Write[A].contramap(...)` | This takes two steps now. |
+
+Please refer to the `examples` project for example usage, or ask questions on the Gitter channel if you have questions or concerns about this change.
+
+
+---
 ### <a name="0.5.3"></a>New and Noteworthy for Version 0.5.3
 
 Minor updates, see below.
@@ -16,6 +45,7 @@ Minor updates, see below.
 
 This is the last planned release in the 0.5.x series. Work will start soon on 0.6!
 
+---
 ### <a name="0.5.2"></a>New and Noteworthy for Version 0.5.2
 
 Minor updates, see below.
@@ -26,6 +56,7 @@ Minor updates, see below.
 - Added pgEnumStringOpt for transparently partial pgEnum decoding. Thanks Christopher Davenport!
 - Added `Composite.deriveComposite[A]()` which creates a "semi-automatic" derivation of `Composite[]` for a given type `A`. While instances are usually derived automatically, this can be used to speed up compilation by only deriving once. It can also be used to avoid needing `Meta[]` instances in scope or derivable at every site where a given `Composite[A]` is used. Thanks Scott Parish!
 
+---
 ### <a name="0.5.1"></a>New and Noteworthy for Version 0.5.1
 
 Minor update to get dependencies up to date.
@@ -33,6 +64,7 @@ Minor update to get dependencies up to date.
 - Updated to **fs2 0.10.2**, **hikari-cp 2.7.8**, and **specs2 4.0.3**.
 - You can now do `.stripMargin` on fragments, thanks to Arne Claassen!
 
+---
 ### <a name="0.5.0"></a>New and Noteworthy for Version 0.5.0
 
 This introduces the **0.5.x** series which standardizes on [**cats**](http://typelevel.org/cats/), [**cats-effect**](https://github.com/typelevel/cats-effect), and [**fs2**](https://github.com/functional-streams-for-scala/fs2). This is a big release that will make life much simpler for people who were using 0.4.x with cats. See the **migration** document on the microsite for more information.
@@ -59,14 +91,17 @@ Notable changes:
 - Added [WartRemover](http://www.wartremover.org/) finally.
 - The release process is much better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.
 
+---
 ### <a name="0.4.4"></a>New and Noteworthy for Version 0.4.4
 
 This release fixes an [issue](https://github.com/tpolecat/doobie/pull/569) with HikariTransactor (thanks Naoki Aoyama) and supersedes the botched 0.4.3 release.
 
+---
 ### <a name="0.4.3"></a>New and Noteworthy for Version 0.4.3
 
 This was a failed attempt to add back support for 2.10. Do not use this release.
 
+---
 ### <a name="0.4.2"></a>New and Noteworthy for Version 0.4.2
 
 Sparkly contributors for this release are :sparkles: n4to4, :sparkles: Alexa DeWit, :sparkles: wedens, :sparkles: Colt Frederickson, :sparkles: Benjamin Trenker, :sparkles: nigredo-tori, :sparkles: Suhas Gaddam, :sparkles: Christopher Davenport, :sparkles: Damir Vandic, :sparkles: Jacob Barber, and :chicken: tpolecat. Noteworthy changes:
@@ -101,10 +136,12 @@ In addition the following libraries were updated:
 - Hikari 2.6.1
 - Circe 0.8.0
 
+---
 ### <a name="0.4.1"></a>New and Noteworthy for Version 0.4.1
 
 This release updates **doobie** to Cats 0.9 and the associated fs2-cats interop layer to 0.3, courtesy of mighty space robot Adelbert Chang. There are no other changes.
 
+---
 ### <a name="0.4.0"></a>New and Noteworthy for Version 0.4.0
 
 This was intended to be a quick follow-up to 0.3.0 but it got a little out of hand and turned into a major release. **Please read these notes carefully** because there are some breaking changes relative to 0.3.0.
@@ -140,8 +177,7 @@ We cleaned up the add-on modules a bit and made some naming simplifications that
 
 That's it! Enjoy the release. Once again many thanks to our contributors.
 
-----
-
+---
 ### <a name="0.3.0"></a>New and Noteworthy for Version 0.3.0
 
 This release brings **doobie** up to date with major dependencies, almost entirely due to the hard work of **@guersam**. The release is otherwise equivalent to 0.2.4 from a feature standpoint.
@@ -152,9 +188,7 @@ Upgrades:
 - Updated to JDK 1.8
 - Added build support Scala 2.12
 
-
-----
-
+---
 ### <a name="0.2.4"></a>New and Noteworthy for Version 0.2.4
 
 This is a minor release with a few odds and ends and an important library update.
@@ -170,8 +204,7 @@ Upgrades:
 - Updated to scalaz-stream 0.8 (thanks **@guersam**).
 
 
-----
-
+---
 ### <a name="0.2.3"></a>New and Noteworthy for Version 0.2.3
 
 This release includes more performance work and some usability improvements, as well as documentation improvements here and there. This release should be source-compatible for most users, but is **not** binary compatible with 0.2.2 or any other release. Let me know if you run into source compatibilty problems. Special thanks to **@mdmoss** for build improvements, **@fommil** and **@non** for help with Sonatype, and everyone else for your continued interest and contributions!
@@ -204,8 +237,7 @@ Upgrades:
 - Updated to kind-projector 0.7.1 (build-time dependency only)
 
 
-----
-
+---
 ### <a name="0.2.2"></a>New and Noteworthy for Version 0.2.2
 
 This is another minor release that adds yet more support PostgreSQL-specific features, updates dependencies, and improves performance for resultset processing. Thanks everyone for your continued interest and contributions!
@@ -231,8 +263,7 @@ Upgrades:
 - Updated to Specs2 3.6 (thanks [@etorrebore](https://twitter.com/etorreborre))
 
 
-----
-
+---
 ### <a name="0.2.1"></a>New and Noteworthy for Version 0.2.1
 
 This is a minor follow-up release, primarily to add support for some PostgreSQL features and other odds and ends reported by users. Thanks to users and contributors for their help!
