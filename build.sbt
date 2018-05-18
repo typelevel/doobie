@@ -24,7 +24,7 @@ lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.6"
 
 // Check bincompat versus this version.
-lazy val binaryCompatibleVersion = "0.5.2"
+lazy val binaryCompatibleVersion = "0.6.0"
 
 // Our set of warts
 lazy val doobieWarts =
@@ -189,7 +189,8 @@ lazy val publishSettings = Seq(
   ),
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala"),
-  mimaPreviousArtifacts := Set(organization.value %% name.value % binaryCompatibleVersion)
+  // TODO: re-enable after 0.6.0
+  // mimaPreviousArtifacts := Set(organization.value %% name.value % binaryCompatibleVersion)
 )
 
 lazy val noPublishSettings = Seq(
