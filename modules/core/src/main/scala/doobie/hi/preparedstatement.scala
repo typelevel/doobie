@@ -70,7 +70,7 @@ object preparedstatement {
    * API is likely to change.
    * @group Batching
    */
-  def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
+  def addBatchesAndExecute[F[_]: Foldable, A: Write](fa: F[A]): PreparedStatementIO[Int] =
     fa.toList
       .foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b)
       .map(_.foldLeft(0)((acc, n) => acc + (n max 0))) // treat negatives (failures) as no rows updated
