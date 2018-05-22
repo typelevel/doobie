@@ -12,13 +12,13 @@ import shapeless.ProductArgs
 /**
  * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
  * interpolated values of type `A` and `B` (which must have `[[Param]]` instances, derived
- * automatically from `Meta`) yields a value of type `[[Fragment]]`.
+ * automatically from `Put`) yields a value of type `[[Fragment]]`.
  */
 final class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
 
   private def mkFragment[A](a: A, token: Boolean)(implicit ev: Param[A]): Fragment = {
     val sql = sc.parts.mkString("", "?", if (token) " " else "")
-    Fragment(sql, a, Some(pos))(ev.composite)
+    Fragment(sql, a, Some(pos))(ev.write)
   }
 
   /**

@@ -51,7 +51,7 @@ val c = a ++ b // concatenation by ++
 c.query[String].unique.quick.unsafeRunSync
 ```
 
-Fragments can capture arguments of any type with a `Meta` instance, just as the `sql` interpolator does.
+Fragments can capture arguments of any type with a `Put` instance, just as the `sql` interpolator does.
 
 ```tut
 def whereCode(s: String) = fr"where code = $s"

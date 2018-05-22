@@ -36,22 +36,21 @@ object refinedtypes extends Specification {
   final case class Quadrant1()
   type PointInQuadrant1 = Point Refined Quadrant1
 
-  implicit val PointComposite: Composite[Point] =
-    Composite[(Int, Int)]
-      .imap((t: (Int,Int)) => new Point(t._1, t._2))((p: Point) => (p.x, p.y))
+  implicit val PointComposite: Write[Point] =
+    Write[(Int, Int)].contramap((p: Point) => (p.x, p.y))
 
   implicit val quadrant1Validate: Validate.Plain[Point, Quadrant1] =
     Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => s"($p is in quadrant 1)", Quadrant1())
 
-  "Composite" should {
+  "Write" should {
 
     "exist for refined types" in {
-      Composite[PointInQuadrant1]
+      Write[PointInQuadrant1]
       true
     }
 
     "exist for Option of a refined type" in {
-      Composite[Option[PositiveInt]]
+      Write[Option[PositiveInt]]
       true
     }
 

@@ -40,10 +40,12 @@ object Orm {
       class Partial[A, K] {
         def apply[R <: HList, S <: HList](table: String, keyCol: String)(
           implicit ev: LabelledGeneric.Aux[A, R],
-                   co: Composite[A],
+                   ra: Read[A],
+                   wa: Write[A],
                    ks: Keys.Aux[R, S],
                    tl: ToList[S, Symbol],
-                   ci: Composite[K]
+                   rk: Read[K],
+                   wk: Write[K]
         ): Aux[A, K] =
           new Dao[A] {
             void(ev)

@@ -12,7 +12,6 @@ import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.hi.{ connection => HC }
 import doobie.hi.{ preparedstatement => HPS }
 import doobie.util.analysis.Analysis
-import doobie.util.composite.Composite
 import doobie.util.log._
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
@@ -32,9 +31,9 @@ object update {
    * F[_] type argument explicitly.
    */
   trait UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
-    def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K] =
+    def apply[F[_]](as: F[A])(implicit F: Foldable[F], K: Read[K]): Stream[ConnectionIO, K] =
       withChunkSize(as, DefaultChunkSize)
-    def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K]
+    def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Read[K]): Stream[ConnectionIO, K]
   }
 
   /**
@@ -46,7 +45,7 @@ object update {
     // Contravariant coyoneda trick for A
     protected type I
     protected val ai: A => I
-    protected implicit val ic: Composite[I]
+    protected implicit val ic: Write[I]
 
     // LogHandler is protected for now.
     protected val logHandler: LogHandler
@@ -100,7 +99,7 @@ object update {
 
     /**
      * Construct a program to execute the update and yield a count of affected rows, given the
-     * composite argument `a`.
+     * writable argument `a`.
      * @group Execution
      */
     def run(a: A): ConnectionIO[Int] =
@@ -117,41 +116,41 @@ object update {
 
     /**
      * Construct a stream that performs a batch update as with `updateMany`, yielding generated
-     * keys of composite type `K`, identified by the specified columns. Note that not all drivers
+     * keys of readable type `K`, identified by the specified columns. Note that not all drivers
      * support generated keys, and some support only a single key column.
      * @group Execution
      */
     def updateManyWithGeneratedKeys[K](columns: String*): UpdateManyWithGeneratedKeysPartiallyApplied[A, K] =
       new UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
-        def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Composite[K]): Stream[ConnectionIO, K] =
+        def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Read[K]): Stream[ConnectionIO, K] =
           HC.updateManyWithGeneratedKeys[List,I,K](columns.toList)(sql, ().pure[PreparedStatementIO], as.toList.map(ai), chunkSize)
       }
 
     /**
-     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
-     * identified by the specified columns, given a composite argument `a`. Note that not all
+     * Construct a stream that performs the update, yielding generated keys of readable type `K`,
+     * identified by the specified columns, given a writable argument `a`. Note that not all
      * drivers support generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeys[K: Composite](columns: String*)(a: A): Stream[ConnectionIO, K] =
+    def withGeneratedKeys[K: Read](columns: String*)(a: A): Stream[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize[K](columns: _*)(a, DefaultChunkSize)
 
     /**
-     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
-     * identified by the specified columns, given a composite argument `a` and `chunkSize`. Note
+     * Construct a stream that performs the update, yielding generated keys of readable type `K`,
+     * identified by the specified columns, given a writable argument `a` and `chunkSize`. Note
      * that not all drivers support generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(a: A, chunkSize: Int): Stream[ConnectionIO, K] =
+    def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(a: A, chunkSize: Int): Stream[ConnectionIO, K] =
       HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(ai(a)), chunkSize)
 
     /**
      * Construct a program that performs the update, yielding a single set of generated keys of
-     * composite type `K`, identified by the specified columns, given a composite argument `a`.
+     * readable type `K`, identified by the specified columns, given a writable argument `a`.
      * Note that not all drivers support generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withUniqueGeneratedKeys[K: Composite](columns: String*)(a: A): ConnectionIO[K] =
+    def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
       HC.prepareStatementS(sql, columns.toList)(HPS.set(ai(a)) *> HPS.executeUpdateWithUniqueGeneratedKeys)
 
     /**
@@ -179,9 +178,9 @@ object update {
         def toFragment = u.toFragment(a)
         def analysis = u.analysis
         def run = u.run(a)
-        def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize: Int) =
+        def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int) =
           u.withGeneratedKeysWithChunkSize[K](columns: _*)(a, chunkSize)
-        def withUniqueGeneratedKeys[K: Composite](columns: String*) =
+        def withUniqueGeneratedKeys[K: Read](columns: String*) =
           u.withUniqueGeneratedKeys(columns: _*)(a)
       }
 
@@ -190,14 +189,14 @@ object update {
   object Update {
 
     /**
-     * Construct an `Update` for some composite parameter type `A` with the given SQL string, and
+     * Construct an `Update` for some writable parameter type `A` with the given SQL string, and
      * optionally a `Pos` and/or `LogHandler` for diagnostics. The normal mechanism
      * for construction is the `sql/fr/fr0` interpolators.
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
-      implicit C: Composite[A]
+      implicit C: Write[A]
     ): Update[A] =
       new Update[A] {
         type I  = A
@@ -250,29 +249,29 @@ object update {
     def run: ConnectionIO[Int]
 
     /**
-     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
+     * Construct a stream that performs the update, yielding generated keys of readable type `K`,
      * identified by the specified columns. Note that not all drivers support generated keys, and
      * some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeys[K: Composite](columns: String*): Stream[ConnectionIO, K] =
+    def withGeneratedKeys[K: Read](columns: String*): Stream[ConnectionIO, K] =
       withGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
 
     /**
-     * Construct a stream that performs the update, yielding generated keys of composite type `K`,
+     * Construct a stream that performs the update, yielding generated keys of readable type `K`,
      * identified by the specified columns, given a `chunkSize`. Note that not all drivers support
      * generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withGeneratedKeysWithChunkSize[K: Composite](columns: String*)(chunkSize:Int): Stream[ConnectionIO, K]
+    def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize:Int): Stream[ConnectionIO, K]
 
     /**
      * Construct a program that performs the update, yielding a single set of generated keys of
-     * composite type `K`, identified by the specified columns. Note that not all drivers support
+     * readable type `K`, identified by the specified columns. Note that not all drivers support
      * generated keys, and some support only a single key column.
      * @group Execution
      */
-    def withUniqueGeneratedKeys[K: Composite](columns: String*): ConnectionIO[K]
+    def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K]
 
   }
 

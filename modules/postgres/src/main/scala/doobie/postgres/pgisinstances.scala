@@ -23,11 +23,11 @@ trait PgisInstances {
   // Constructor for geometry types via the `Geometry` member of PGgeometry
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def geometryType[A >: Null <: Geometry: TypeTag](implicit A: ClassTag[A]): Meta[A] =
-    PGgeometryType.xmap[A](g =>
+    PGgeometryType.timap[A](g =>
       try A.runtimeClass.cast(g.getGeometry).asInstanceOf[A]
       catch {
         case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, g.getGeometry.getClass)
-      }, new PGgeometry(_))
+      })(new PGgeometry(_))
 
   // PostGIS Geometry Types
   implicit val GeometryType           = geometryType[Geometry]

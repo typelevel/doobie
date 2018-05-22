@@ -27,12 +27,12 @@ trait Instances {
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.
 
   // Geometric Types, minus PGline which is "not fully implemented"
-  implicit val PGboxType      = Meta.other[PGbox]("box")
-  implicit val PGcircleType   = Meta.other[PGcircle]("circle")
-  implicit val PGlsegType     = Meta.other[PGlseg]("lseg")
-  implicit val PGpathType     = Meta.other[PGpath]("path")
-  implicit val PGpointType    = Meta.other[PGpoint]("point")
-  implicit val PGpolygonType  = Meta.other[PGpolygon]("polygon")
+  implicit val PGboxType      = Meta.Advanced.other[PGbox]("box")
+  implicit val PGcircleType   = Meta.Advanced.other[PGcircle]("circle")
+  implicit val PGlsegType     = Meta.Advanced.other[PGlseg]("lseg")
+  implicit val PGpathType     = Meta.Advanced.other[PGpath]("path")
+  implicit val PGpointType    = Meta.Advanced.other[PGpoint]("point")
+  implicit val PGpolygonType  = Meta.Advanced.other[PGpolygon]("polygon")
 
   // PGmoney doesn't seem to work:
   // PSQLException: : Bad value for type double : 1,234.56  (AbstractJdbc2ResultSet.java:3059)
@@ -46,14 +46,14 @@ trait Instances {
   // Interval Type
   // There is no natural mapping to java.time types (https://github.com/tpolecat/doobie/pull/315)
   // so we provide the bare mapping and leave it at that.
-  implicit val PGIntervalType = Meta.other[PGInterval]("interval")
+  implicit val PGIntervalType = Meta.Advanced.other[PGInterval]("interval")
 
   // UUID
-  implicit val UuidType = Meta.other[UUID]("uuid")
+  implicit val UuidType = Meta.Advanced.other[UUID]("uuid")
 
   // Network Address Types
-  implicit val InetType = Meta.other[PGobject]("inet").xmap[InetAddress](
-    o => Option(o).map(a => InetAddress.getByName(a.getValue)).orNull,
+  implicit val InetType = Meta.Advanced.other[PGobject]("inet").timap[InetAddress](
+    o => Option(o).map(a => InetAddress.getByName(a.getValue)).orNull)(
     a => Option(a).map { a =>
       val o = new PGobject
       o.setType("inet")
@@ -80,12 +80,12 @@ trait Instances {
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
   @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String, arrayType: String, arrayTypeT: String*): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
-    val raw = Meta.array[A](elemType, arrayType, arrayTypeT: _*)
+    val raw = Meta.Advanced.array[A](elemType, arrayType, arrayTypeT: _*)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a
-    (raw.xmap(checkNull(_, NullableCellRead), checkNull(_, NullableCellUpdate)),
-     raw.xmap[Array[Option[A]]](_.map(Option(_)), _.map(_.orNull).toArray))
+    (raw.timap(checkNull(_, NullableCellRead))(checkNull(_, NullableCellUpdate)),
+     raw.timap[Array[Option[A]]](_.map(Option(_)))(_.map(_.orNull).toArray))
   }
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) Java wrapped primitives. PostgreSQL
@@ -110,8 +110,8 @@ trait Instances {
     implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) =
     // TODO: assert, somehow, that A is the boxed version of B so we catch errors on instance
     // construction, which is somewhat better than at [logical] execution time.
-    (boxed.xmap(a => if (a == null) null else a.map(f), a => if (a == null) null else a.map(g)),
-     boxedLifted.xmap(_.asInstanceOf[Array[Option[B]]], _.asInstanceOf[Array[Option[A]]]))
+    (boxed.timap(a => if (a == null) null else a.map(f))(a => if (a == null) null else a.map(g)),
+     boxedLifted.timap(_.asInstanceOf[Array[Option[B]]])(_.asInstanceOf[Array[Option[A]]]))
 
   // Arrays of lifted (nullable) and unlifted (non-nullable) AnyVals
   implicit val (unliftedUnboxedBooleanArrayType, liftedUnboxedBooleanArrayType) = unboxedPair[java.lang.Boolean, scala.Boolean](_.booleanValue, java.lang.Boolean.valueOf)
@@ -158,7 +158,7 @@ trait Instances {
    * enum type.
    */
   def pgEnumString[A: TypeTag](name: String, f: String => A, g: A => String): Meta[A] =
-    enumPartialMeta(name).xmap[A](f, g)
+    enumPartialMeta(name).timap[A](f)(g)
 
   /**
    * Construct a `Meta` for values of the given type, mapped via `String` to the named PostgreSQL
@@ -191,10 +191,10 @@ trait Instances {
 
   /** HSTORE maps to a java.util.Map[String, String]. */
   implicit val hstoreMetaJava: Meta[JMap[String, String]] =
-    Meta.other[JMap[String, String]]("hstore")
+    Meta.Advanced.other[JMap[String, String]]("hstore")
 
   /** HSTORE maps to a Map[String, String]. */
   implicit val hstoreMeta: Meta[Map[String, String]] =
-    hstoreMetaJava.xmap[Map[String, String]](_.asScala.toMap, _.asJava)
+    hstoreMetaJava.timap[Map[String, String]](_.asScala.toMap)(_.asJava)
 
 }
