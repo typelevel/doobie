@@ -13,7 +13,7 @@ import doobie.util._
 import org.postgresql.util.PGobject
 import scala.reflect.runtime.universe.TypeTag
 
-object Instances {
+trait Instances {
 
   implicit val jsonPut: Put[Json] = 
     Put.Advanced.other[PGobject](
