@@ -106,7 +106,7 @@ biggerThan(0).checkOutput.unsafeRunSync
 
 ### Diving Deeper
 
-The `check` logic requires both a database connection and concrete `Meta` instances that define column-level JDBC mappings.
+The `check` logic requires both a database connection and concrete `Get` and `Put` instances that define column-level JDBC mappings.
 
 The way this works is that a `Query` value has enough type information to describe all parameter and column mappings, as well as the SQL literal itself (with interpolated parameters erased into `?`). From here it is straightforward to prepare the statement, pull the `ResultsetMetaData` and `DatabaseMetaData` and work out whether things are aligned correctly (and if not, determine how misalignments might be fixed). The `Anaylsis` class consumes this metadata and is able to provide the following diagnostics:
 

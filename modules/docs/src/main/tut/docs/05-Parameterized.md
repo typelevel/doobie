@@ -6,7 +6,7 @@ title: Parameterized Queries
 
 ## {{page.title}}
 
-In this chapter we learn how to construct parameterized queries, and introduce the `Meta` and `Composite` typeclasses.
+In this chapter we learn how to construct parameterized queries, and introduce the `Put` and `Write` typeclasses.
 
 ### Setting Up
 
@@ -79,7 +79,7 @@ biggerThan(150000000).quick.unsafeRunSync // Let's see them all
 
 So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
 
-**doobie** allows you to interpolate values of any type (and options thereof) with an `Meta` instance, which includes
+**doobie** allows you to interpolate values of any type (and options thereof) with a `Put` instance, which includes
 
 - any JVM type that has a target mapping defined by the JDBC specification,
 - vendor-specific types defined by extension packages,
@@ -153,16 +153,16 @@ proc(150000000 to 200000000).quick.unsafeRunSync
 
 But how does the `set` constructor work?
 
-When reading a row or setting parameters in the high-level API, we require an instance of `Composite[A]` for the input or output type. It is not immediately obvious when using the `sql` interpolator, but the parameters (each of which require a `Meta` instance, to be discussed in a later chapter) are gathered into an `HList` and treated as a single composite parameter.
+When setting parameters in the high-level API, we require an instance of `Write[A]` for the input type. It is not immediately obvious when using the `sql` interpolator, but the parameters (each of which require a `Put` instance, to be discussed in a later chapter) are gathered into an `HList` and treated as a single writable parameter.
 
-`Composite` instances are derived automatically for column types (and options thereof) that have `Meta` instances, and for products of other composites (via `shapeless.ProductTypeclass`). We can summon their instances thus:
+`Write` instances are derived automatically for column types (and options thereof) that have `Put` instances, and for products of other writable types. We can summon their instances thus:
 
 ```tut
 Write[(String, Boolean)]
 Write[Country]
 ```
 
-The `set` constructor takes an argument of any type with a `Composite` instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.
+The `set` constructor takes an argument of any type with a `Write` instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.
 
 ```tut:silent
 // Set parameters as (String, Boolean) starting at index 1 (default)
@@ -178,7 +178,7 @@ HPS.set(1, "foo") *> HPS.set(2, true)
 HPS.set(2, true) *> HPS.set(1, "foo")
 ```
 
-Using the low level `doobie.free` constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the `Meta` typeclass (discussed in a later chapter) is to abstract away these differences.
+Using the low level `doobie.free` constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the `Put` typeclass (discussed in a later chapter) is to abstract away these differences.
 
 ```tut:silent
 FPS.setString(1, "foo") *> FPS.setBoolean(2, true)

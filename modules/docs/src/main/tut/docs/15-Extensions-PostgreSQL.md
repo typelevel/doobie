@@ -245,7 +245,7 @@ See the links above and sample code in the `examples/` project in the **doobie**
 Note: the following API was introduced in version 0.5.2 and is experimental. Community feedback and contributions (instances in particular) are encouraged.
 </div>
 
-**doobie** also provides a specialized API for very fast batch inserts using upates of the form `COPY ... FROM STDIN` and a `Text` typeclass that defines how data types are encoded in Postgres text format (similar to `Meta`; instances must be present for all fields in the data type to be inserted).
+**doobie** also provides a specialized API for very fast batch inserts using upates of the form `COPY ... FROM STDIN` and a `Text` typeclass that defines how data types are encoded in Postgres text format (similar to `Put`; instances must be present for all fields in the data type to be inserted).
 
 First a temp table for our experiment.
 
