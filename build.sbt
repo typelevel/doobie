@@ -10,7 +10,7 @@ lazy val circeVersion         = "0.9.3"
 lazy val fs2CoreVersion       = "0.10.4"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.1.0"
-lazy val kindProjectorVersion = "0.9.6"
+lazy val kindProjectorVersion = "0.9.7"
 lazy val monixVersion         = "3.0.0-M3"
 lazy val postGisVersion       = "2.2.1"
 lazy val postgresVersion      = "42.2.2"
@@ -177,10 +177,10 @@ lazy val mimaSettings = {
 
   def semverBinCompatVersions(major: Int, minor: Int, patch: Int): Set[(Int, Int, Int)] = {
     val majorVersions: List[Int] = List(major)
-    val minorVersions : List[Int] = 
+    val minorVersions : List[Int] =
       if (major >= 1) Range(0, minor).inclusive.toList
       else List(minor)
-    def patchVersions(currentMinVersion: Int): List[Int] = 
+    def patchVersions(currentMinVersion: Int): List[Int] =
       if (minor == 0 && patch == 0) List.empty[Int]
       else if (currentMinVersion != minor) List(0)
       else Range(0, patch - 1).inclusive.toList
@@ -213,7 +213,7 @@ lazy val mimaSettings = {
       .filterNot(excludedVersions.contains(_))
       .map(v => organization.value %% name.value % v)
   )
-} 
+}
 
 lazy val publishSettings = Seq(
   useGpg := false,
