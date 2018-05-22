@@ -38,7 +38,7 @@ object stringspec extends Specification {
     }
 
     "not support product params" in {
-      Composite[(Int, String)]
+      Write[(Int, String)]
       illTyped(""" val a = (1, "two"); sql"foo $a bar baz".query[Int] """)
       true
     }

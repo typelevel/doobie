@@ -21,7 +21,7 @@ object logspec extends Specification {
   )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def eventForUniqueQuery[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
+  def eventForUniqueQuery[A: Write](sql: String, arg: A = HNil : HNil): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio     = Query[A, HNil](sql, None, handler).unique(arg)
@@ -30,7 +30,7 @@ object logspec extends Specification {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def eventForUniqueUpdate[A: Composite](sql: String, arg: A = HNil : HNil): LogEvent = {
+  def eventForUniqueUpdate[A: Write](sql: String, arg: A = HNil : HNil): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio     = sql"create table if not exists foo (bar integer)".update.run *>

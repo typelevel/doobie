@@ -26,21 +26,21 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Param: Composite](col: String, a: A) =
+  def inOut[A: Param: Write: Read](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield (a0)
 
-  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
-    s"Mapping for $col as ${m.scalaType}" >> {
-      s"write+read $col as ${m.scalaType}" in {
+  def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" in {
         inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
       }
-      s"write+read $col as Option[${m.scalaType}] (Some)" in {
+      s"write+read $col as Option[${m.typeStack}] (Some)" in {
         inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
       }
-      s"write+read $col as Option[${m.scalaType}] (None)" in {
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
         inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
       }
     }
@@ -142,8 +142,8 @@ object pgtypesspec extends Specification {
   testInOut("varchar[]", List[String]("foo", "bar"))
   testInOut("uuid[]", List[UUID](UUID.fromString("7af2cb9a-9aee-47bc-910b-b9f4d608afa0"), UUID.fromString("643a05f3-463f-4dab-916c-5af4a84c3e4a")))
 
-  // 8.16 Composite Types
-  skip("composite")
+  // 8.16 Structs
+  skip("structs")
 
   // 8.17 Range Types
   skip("int4range")

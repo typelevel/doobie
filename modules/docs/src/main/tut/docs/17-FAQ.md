@@ -118,103 +118,11 @@ Some examples, filtered for size.
 join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
 ```
 
-### How do I resolve `error: Could not find or construct Param[...]`?
-
-When we use the `sql` interpolator we require a `Param` instance for an `HList` composed of the types of the interpolated query parameters. For instance, in the following code (which has parameters of type `String` and `UUID`, in that order) we need a `Param[String :: UUID :: HNil]` and none is available.
-
-```tut:fail:plain
-def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
-```
-
-Ok, so the message suggests that we need an `Meta[A]` for each `A` or `Option[A]` in the `HList`, so let's see which one is missing by trying to summon them in the REPL.
-
-```tut:nofail:plain
-Meta[String]
-Meta[UUID]
-```
-
-So what this means is that we have not defined a mapping for the `UUID` type to an underlying JDBC type, and **doobie** doesn't know how to set an argument of that type on the underlying `PreparedStatement`. So we have a few choices. We can `xmap` from an existing `Meta` instance, as described in [Chapter 10](10-Custom-Mappings.html); or we can import a provided mapping from a vendor-specific `contrib` package. Since we're using PostgreSQL here, let's do that.
-
-```tut
-import doobie.postgres.implicits._
-```
-
-Having done this, the `Meta` and `Param` instances are now present and our code compiles.
-
-```tut
-Meta[UUID]
-Param[String :: UUID :: HNil]
-def query(s: String, u: UUID) = sql"select ... where foo = $s and url = $u".query[Int]
-```
-
-### How do I resolve `error: Could not find or construct Composite[...]`?
-
-When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has a `Meta` instance, or is an option thereof, or a product type whose elements have `Composite` instances.
-
-```tut:silent
-case class Point(lat: Double, lon: Double)
-case class City(name: String, loc: Point)
-case class State(name: String, capitol: City)
-```
-
-In this case if we were to say `.query[State]` the derivation would be automatic, because all elements of the "flattened" structure have `Meta` instances for free.
-
-```scala
-State(String, City(String, Point(Double, Double))) // our structure
-     (String,     (String,      (Double, Double))) // is isomorphic to this
-      String,      String,       Double, Double    // so we expect a column vector of this shape
-```
-
-But what if we wanted to use AWT's `Point2D.Double` instead of our own `Point` class?
-
-```tut:silent
-case class City(name: String, loc: Point2D.Double)
-case class State(name: String, capitol: City)
-```
-
-The derivation now fails.
-
-```tut:fail:plain
-sql"…".query[State]
-```
-
-And if we look at the flat structure it's clear that the culprit has to be `Point2D.Double` since we know `String` has a defined column mapping.
-
-```scala
-State(String, City(String, Point2D.Double)) // our structure
-     (String,     (String, Point2D.Double)) // is isomorphic to this
-      String,      String, Point2D.Double   // so we expect a column vector of this shape
-```
-
-And indeed this type has no column vector mapping.
-
-```tut:fail:plain
-Composite[Point2D.Double]
-```
-
-If this were an atomic type it would be a matter of importing or defining a `Meta` instance, but here we need to define a `Composite` directly because we're mapping a type with several members. As this type is isomorphic to `(Double, Double)` we can simply base our mapping off of the existing `Composite`.
-
-```tut:silent
-implicit val Point2DComposite: Composite[Point2D.Double] =
-  Composite[(Double, Double)].imap(
-    (t: (Double, Double)) => new Point2D.Double(t._1, t._2))(
-    (p: Point2D.Double) => (p.x, p.y)
-  )
-```
-
-Our derivation now works and the code compiles.
-
-```tut
-sql"…".query[State]
-```
-
-### How do I time query execution?
-
 ### How do I log the SQL produced for my query after interpolation?
 
 As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentation question. See [Chapter 10](10-Logging.html) for more details.
 
-### Why is there no `Meta[SQLXML]`?
+### Why is there no `Get` or `Put` for `SQLXML`?
 
 There are a lot of ways to handle `SQLXML` so there is no pre-defined strategy, but here is one that maps `scala.xml.Elem` to `SQLXML` via streaming.
 
@@ -224,8 +132,8 @@ import java.sql.SQLXML
 import scala.xml.{ XML, Elem }
 
 implicit val XmlMeta: Meta[Elem] =
-  Meta.advanced[Elem](
-    NonEmptyList.of(Other),
+  Meta.Advanced.one[Elem](
+    Other,
     NonEmptyList.of("xml"),
     (rs, n) => XML.load(rs.getObject(n).asInstanceOf[SQLXML].getBinaryStream),
     (ps, n,  e) => {
@@ -266,6 +174,5 @@ case class NonEmptyString(value: String)
 
 // If the domain for NonEmptyStrings is nes
 implicit val nesMeta: Meta[NonEmptyString] =
-  string("nes").xmap(NonEmptyString.apply, _.value)
-  }
+  string("nes").imap(NonEmptyString.apply)(_.value)
 ```

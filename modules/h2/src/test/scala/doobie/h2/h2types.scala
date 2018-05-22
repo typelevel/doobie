@@ -20,22 +20,22 @@ object h2typesspec extends Specification {
     "sa", ""
   )
 
-  def inOut[A: Param: Composite](col: String, a: A) =
+  def inOut[A: Param: Read](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
       _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
       a0 <- sql"SELECT value FROM TEST".query[A].unique
     } yield (a0)
 
-  def testInOut[A](col: String, a: A)(implicit m: Meta[A]) =
-    s"Mapping for $col as ${m.scalaType}" >> {
-      s"write+read $col as ${m.scalaType}" in {
+  def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" in {
         inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
       }
-      s"write+read $col as Option[${m.scalaType}] (Some)" in {
+      s"write+read $col as Option[${m.typeStack}] (Some)" in {
         inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
       }
-      s"write+read $col as Option[${m.scalaType}] (None)" in {
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
         inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
       }
     }

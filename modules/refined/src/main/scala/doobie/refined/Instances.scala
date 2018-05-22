@@ -18,18 +18,24 @@ trait Instances {
              refType:  RefType[F],
              manifest: TypeTag[F[T,P]]
   ): Meta[F[T, P]] =
-    metaT.xmap[F[T,P]](
-      refineType[T,P,F],
+    metaT.timap[F[T,P]](
+      refineType[T,P,F])(
       unwrapRefinedType[T,P,F]
     )
 
-  implicit def refinedComposite[T, P, F[_,_]](
-    implicit compositeT: Composite[T],
-             validate:   Validate[T, P],
-             refType:    RefType[F],
-             manifest:   TypeTag[F[T,P]]
-  ): Composite[F[T,P]] =
-    compositeT.imap[F[T,P]](refineType[T,P,F])(unwrapRefinedType[T,P,F])
+  implicit def refinedWrite[T, P, F[_,_]](
+    implicit writeT:  Write[T],
+             refType: RefType[F]
+  ): Write[F[T,P]] =
+    writeT.contramap[F[T,P]](unwrapRefinedType[T,P,F])
+
+  implicit def refinedRead[T, P, F[_,_]](
+    implicit readT: Read[T],
+             validate: Validate[T, P],
+             refType:  RefType[F],
+             manifest: TypeTag[F[T,P]]
+  ): Read[F[T,P]] =
+    readT.map[F[T,P]](refineType[T,P,F])
 
   private def refineType[T,P,F[_,_]](t: T)(
     implicit refType:  RefType[F],

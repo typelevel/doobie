@@ -5,7 +5,7 @@
 package doobie.hi
 
 import doobie.enum.JdbcType
-import doobie.util.meta.Meta
+import doobie.util.{ Get, Put }
 import doobie.enum.ColumnNullable
 import doobie.enum.ParameterNullable
 import doobie.enum.ParameterMode
@@ -15,8 +15,8 @@ import doobie.enum.FetchDirection
 import doobie.enum.ResultSetConcurrency
 import doobie.enum.ResultSetType
 
+import doobie.util.{ Read, Write }
 import doobie.util.analysis._
-import doobie.util.composite._
 import doobie.util.stream.repeatEvalChunks
 
 import doobie.syntax.align._
@@ -42,11 +42,11 @@ object preparedstatement {
   import implicits._
 
   // fs2 handler, not public
-  private def unrolled[A: Composite](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
+  private def unrolled[A: Read](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
     repeatEvalChunks(FPS.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
   /** @group Execution */
-  def stream[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+  def stream[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeQuery)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
 
   /**
@@ -70,7 +70,7 @@ object preparedstatement {
    * API is likely to change.
    * @group Batching
    */
-  def addBatchesAndExecute[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Int] =
+  def addBatchesAndExecute[F[_]: Foldable, A: Write](fa: F[A]): PreparedStatementIO[Int] =
     fa.toList
       .foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b)
       .map(_.foldLeft(0)((acc, n) => acc + (n max 0))) // treat negatives (failures) as no rows updated
@@ -79,7 +79,7 @@ object preparedstatement {
    * Add many sets of parameters.
    * @group Batching
    */
-  def addBatches[F[_]: Foldable, A: Composite](fa: F[A]): PreparedStatementIO[Unit] =
+  def addBatches[F[_]: Foldable, A: Write](fa: F[A]): PreparedStatementIO[Unit] =
     fa.toList.foldRight(().pure[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
 
   /** @group Execution */
@@ -91,11 +91,11 @@ object preparedstatement {
     FPS.executeUpdate
 
   /** @group Execution */
-  def executeUpdateWithUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
+  def executeUpdateWithUniqueGeneratedKeys[A: Read]: PreparedStatementIO[A] =
     executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
  /** @group Execution */
-  def executeUpdateWithGeneratedKeys[A: Composite](chunkSize: Int): Stream[PreparedStatementIO, A] =
+  def executeUpdateWithGeneratedKeys[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeUpdate *> FPS.getGeneratedKeys)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
@@ -116,11 +116,11 @@ object preparedstatement {
 
   /**
    * Compute the column mappings for this `PreparedStatement` by aligning its `JdbcMeta`
-   * with the `JdbcMeta` provided by a `Composite` instance.
+   * with the `JdbcMeta` provided by a `Write` instance.
    * @group Metadata
    */
-  def getColumnMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) Ior ColumnMeta]] =
-    getColumnJdbcMeta.map(m => A.meta align m)
+  def getColumnMappings[A](implicit A: Read[A]): PreparedStatementIO[List[(Get[_], NullabilityKnown) Ior ColumnMeta]] =
+    getColumnJdbcMeta.map(m => A.gets align m)
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
@@ -135,7 +135,7 @@ object preparedstatement {
     FPS.getGeneratedKeys.flatMap(s => FPS.embed(s, k guarantee FRS.close))
 
   /** @group Results */
-  def getUniqueGeneratedKeys[A: Composite]: PreparedStatementIO[A] =
+  def getUniqueGeneratedKeys[A: Read]: PreparedStatementIO[A] =
     getGeneratedKeys(resultset.getUnique[A])
 
   /**
@@ -155,11 +155,11 @@ object preparedstatement {
 
   /**
    * Compute the parameter mappings for this `PreparedStatement` by aligning its `JdbcMeta`
-   * with the `JdbcMeta` provided by a `Composite` instance.
+   * with the `JdbcMeta` provided by a `Write` instance.
    * @group Metadata
    */
-  def getParameterMappings[A](implicit A: Composite[A]): PreparedStatementIO[List[(Meta[_], NullabilityKnown) Ior ParameterMeta]] =
-    getParameterJdbcMeta.map(m => A.meta align m)
+  def getParameterMappings[A](implicit A: Write[A]): PreparedStatementIO[List[(Put[_], NullabilityKnown) Ior ParameterMeta]] =
+    getParameterJdbcMeta.map(m => A.puts align m)
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =
@@ -198,17 +198,17 @@ object preparedstatement {
     FPS.getWarnings
 
   /**
-   * Set the given composite value, starting at column `n`.
+   * Set the given writable value, starting at column `n`.
    * @group Parameters
    */
-  def set[A](n: Int, a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
+  def set[A](n: Int, a: A)(implicit A: Write[A]): PreparedStatementIO[Unit] =
     A.set(n, a)
 
   /**
-   * Set the given composite value, starting at column `1`.
+   * Set the given writable value, starting at column `1`.
    * @group Parameters
    */
-  def set[A](a: A)(implicit A: Composite[A]): PreparedStatementIO[Unit] =
+  def set[A](a: A)(implicit A: Write[A]): PreparedStatementIO[Unit] =
     A.set(1, a)
 
   /** @group Properties */

@@ -27,7 +27,7 @@ object fragment {
 
     protected type A                // type of interpolated argument (existential, HNil for none)
     protected def a: A              // the interpolated argument itself
-    protected def ca: Composite[A]  // proof that we can map the argument to parameters
+    protected def ca: Write[A]  // proof that we can map the argument to parameters
     protected def sql: String       // snipped of SQL with `ca.length` placeholders
 
     /**
@@ -45,7 +45,7 @@ object fragment {
     def ++(fb: Fragment): Fragment =
       new Fragment {
         type A  = (fa.A, fb.A)
-        val ca  = fa.ca zip fb.ca
+        val ca  = fa.ca product fb.ca
         val a   = (fa.a, fb.a)
         val sql = fa.sql + fb.sql
         val pos = fa.pos orElse fb.pos
@@ -66,14 +66,14 @@ object fragment {
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def query[B: Composite](implicit h: LogHandler = LogHandler.nop): Query0[B] =
+    def query[B: Read](implicit h: LogHandler = LogHandler.nop): Query0[B] =
       queryWithLogHandler(h)
 
     /**
      * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
      * `LogHandler`.
      */
-    def queryWithLogHandler[B](h: LogHandler)(implicit cb: Composite[B]): Query0[B] =
+    def queryWithLogHandler[B](h: LogHandler)(implicit cb: Read[B]): Query0[B] =
       Query[A, B](sql, pos, h)(ca, cb).toQuery0(a)
 
     /** Construct an [[Update0]] from this fragment. */
@@ -104,7 +104,7 @@ object fragment {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A0](sql0: String, a0: A0, pos0: Option[Pos] = None)(
-      implicit ev: Composite[A0]
+      implicit ev: Write[A0]
     ): Fragment =
       new Fragment {
         type A  = A0

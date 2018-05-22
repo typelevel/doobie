@@ -25,7 +25,7 @@ object `706` extends Specification with ScalaCheck {
   val setup: ConnectionIO[Unit] =
     sql"CREATE TABLE IF NOT EXISTS test (value INTEGER)".update.run.void
 
-  def insert[F[_]: Foldable, A: Composite](as: F[A]): ConnectionIO[Int] =
+  def insert[F[_]: Foldable, A: Write](as: F[A]): ConnectionIO[Int] =
     Update[A]("INSERT INTO test VALUES (?)").updateMany(as)
 
   "updateMany" should {

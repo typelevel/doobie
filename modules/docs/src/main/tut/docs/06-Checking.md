@@ -73,9 +73,7 @@ Yikes, there are quite a few problems, in several categories. In this case **doo
 - a column nullability mismatch, where a column that is *provably* nullable is read into a non-`Option` type;
 - and an unused column.
 
-Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like **doobie**'s enumerated `JdbcType`.  Currently this is based on instantiated `Meta` instances, which is not ideal; hopefully tooling can improve to support all instances in scope.
-
-Anyway, if we fix all of these problems and try again, we get a clean bill of health.
+If we fix all of these problems and try again, we get a clean bill of health.
 
 ```tut:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
@@ -106,7 +104,7 @@ biggerThan(0).checkOutput.unsafeRunSync
 
 ### Diving Deeper
 
-The `check` logic requires both a database connection and concrete `Meta` instances that define column-level JDBC mappings.
+The `check` logic requires both a database connection and concrete `Get` and `Put` instances that define column-level JDBC mappings.
 
 The way this works is that a `Query` value has enough type information to describe all parameter and column mappings, as well as the SQL literal itself (with interpolated parameters erased into `?`). From here it is straightforward to prepare the statement, pull the `ResultsetMetaData` and `DatabaseMetaData` and work out whether things are aligned correctly (and if not, determine how misalignments might be fixed). The `Anaylsis` class consumes this metadata and is able to provide the following diagnostics:
 
