@@ -202,8 +202,8 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .dependsOn(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
-  .aggregate(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
+  .dependsOn(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined)
+  .aggregate(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined)
   .settings(
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
@@ -363,6 +363,21 @@ lazy val postgres = project
       import org.postgresql.geometric._
       """,
     initialCommands in consoleQuick := ""
+  )
+
+lazy val `postgres-circe` = project
+  .in(file("modules/postgres-circe"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core, postgres)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name  := "doobie-postgres-circe",
+    description := "Postgres circe support for doobie.",
+    libraryDependencies ++= Seq(
+      "io.circe"    %% "circe-core"    % circeVersion,
+      "io.circe"    %% "circe-parser"  % circeVersion
+    )
   )
 
 lazy val h2 = project
