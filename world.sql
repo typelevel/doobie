@@ -5369,6 +5369,13 @@ ALTER TABLE country
 ALTER TABLE countrylanguage
     ADD CONSTRAINT countrylanguage_countrycode_fkey FOREIGN KEY (countrycode) REFERENCES country(code);
 
+
+CREATE OR REPLACE FUNCTION getCountries(n integer, OUT c refcursor) AS '
+BEGIN
+    OPEN c FOR SELECT name FROM country LIMIT n;
+END;
+' LANGUAGE plpgsql;
+
 COMMIT;
 
 ANALYZE;
