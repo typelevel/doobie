@@ -73,9 +73,7 @@ Yikes, there are quite a few problems, in several categories. In this case **doo
 - a column nullability mismatch, where a column that is *provably* nullable is read into a non-`Option` type;
 - and an unused column.
 
-Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like **doobie**'s enumerated `JdbcType`.  Currently this is based on instantiated `Meta` instances, which is not ideal; hopefully tooling can improve to support all instances in scope.
-
-Anyway, if we fix all of these problems and try again, we get a clean bill of health.
+If we fix all of these problems and try again, we get a clean bill of health.
 
 ```tut:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
