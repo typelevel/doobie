@@ -172,6 +172,49 @@ lazy val commonSettings =
     releaseProcess := Nil
   )
 
+lazy val mimaSettings = {
+  import sbtrelease.Version
+
+  def semverBinCompatVersions(major: Int, minor: Int, patch: Int): Set[(Int, Int, Int)] = {
+    val majorVersions: List[Int] = List(major)
+    val minorVersions : List[Int] = 
+      if (major >= 1) Range(0, minor).inclusive.toList
+      else List(minor)
+    def patchVersions(currentMinVersion: Int): List[Int] = 
+      if (minor == 0 && patch == 0) List.empty[Int]
+      else if (currentMinVersion != minor) List(0)
+      else Range(0, patch - 1).inclusive.toList
+
+    val versions = for {
+      maj <- majorVersions
+      min <- minorVersions
+      pat <- patchVersions(min)
+    } yield (maj, min, pat)
+    versions.toSet
+  }
+
+  def mimaVersions(version: String): Set[String] = {
+    Version(version) match {
+      case Some(Version(major, Seq(minor, patch), _)) =>
+        semverBinCompatVersions(major.toInt, minor.toInt, patch.toInt)
+          .map{case (maj, min, pat) => s"${maj}.${min}.${pat}"}
+      case _ =>
+        Set.empty[String]
+    }
+  }
+  // Safety Net For Exclusions
+  lazy val excludedVersions: Set[String] = Set()
+
+  // Safety Net for Inclusions
+  lazy val extraVersions: Set[String] = Set()
+
+  Seq(
+    mimaPreviousArtifacts := (mimaVersions(version.value) ++ extraVersions)
+      .filterNot(excludedVersions.contains(_))
+      .map(v => organization.value %% name.value % v)
+  )
+} 
+
 lazy val publishSettings = Seq(
   useGpg := false,
   publishMavenStyle := true,
@@ -188,10 +231,8 @@ lazy val publishSettings = Seq(
     </developers>
   ),
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala"),
-  // TODO: re-enable after 0.6.0
-  // mimaPreviousArtifacts := Set(organization.value %% name.value % binaryCompatibleVersion)
-)
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala")
+) ++ mimaSettings
 
 lazy val noPublishSettings = Seq(
   skip in publish := true
