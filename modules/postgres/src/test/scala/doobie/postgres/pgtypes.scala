@@ -26,11 +26,17 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Param: Write: Read](col: String, a: A) =
+  def inOut[A: Get: Put](col: String, a: A): ConnectionIO[A] =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
-    } yield (a0)
+    } yield a0
+
+  def inOutOpt[A: Get: Put](col: String, a: Option[A]): ConnectionIO[Option[A]] =
+    for {
+      _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
+      a0 <- Update[Option[A]](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[Option[A]]("value")(a)
+    } yield a0
 
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
@@ -38,10 +44,10 @@ object pgtypesspec extends Specification {
         inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
+        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
       }
     }
 
