@@ -17,7 +17,7 @@ trait Instances {
 
   implicit val jsonPut: Put[Json] = 
     Put.Advanced.other[PGobject](
-      NonEmptyList.of("json")
+      NonEmptyList.of("json", "jsonb")
     ).tcontramap{a =>
       val o = new PGobject
       o.setType("json")
@@ -27,7 +27,7 @@ trait Instances {
 
   implicit val jsonGet: Get[Json] =
     Get.Advanced.other[PGobject](
-      NonEmptyList.of("json")
+      NonEmptyList.of("json", "jsonb")
     ).tmap(a => 
       parse(a.getValue).leftMap[Json](e => throw e).merge
     )
