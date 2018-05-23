@@ -20,7 +20,6 @@ trait Instances {
       NonEmptyList.of("json", "jsonb")
     ).tcontramap{a =>
       val o = new PGobject
-      o.setType("json")
       o.setValue(a.noSpaces)
       o
     }
