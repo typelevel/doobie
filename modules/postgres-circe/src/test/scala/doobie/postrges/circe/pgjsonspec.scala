@@ -23,13 +23,16 @@ object pgjsonspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Param: Write: Read](col: String, a: A) =
+  def inOut[A: Write: Read](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
 
-  def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) =
+  def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) = {
+
+    Param.hcons[A, shapeless.HNil]
+
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" in {
         inOut(col, a).transact(t).attempt.unsafeRunSync must_== Right(a)
@@ -41,6 +44,7 @@ object pgjsonspec extends Specification {
         inOut[Option[A]](col, None).transact(t).attempt.unsafeRunSync must_== Right(None)
       }
     }
+  }
 
   {
     import doobie.postgres.circe.json.implicits._
