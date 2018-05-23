@@ -15,8 +15,8 @@ Prior to the 0.6.x series we provided two typeclasses for **bidirectional** type
 - `Composite` defined null-safe mappings betwen column/parameter **vectors** and scala types.
 
 Starting with version 0.6.0 type mappings are **unidirectional**:
-- `Meta` has been split into `Get` and `Put` typeclasses, for nullable reads and writes of column/parameter values, respectively.
-- `Composite` has been split into `Read` and `Write` typeclasses, for null-safe reads and writes of column/parameter vectors, respecitively.
+- `Meta` has been split into `Get` and `Put` typeclasses, for reads and writes of column/parameter values, respectively.
+- `Composite` has been split into `Read` and `Write` typeclasses, for reads and writes of column/parameter vectors, respecitively.
 
 Note that `Meta` does still exist, but only as a mechanism for introducing `Get/Put` pairs. An implicit `Meta[A]` induces both an implicit `Get[A]` and an implicit `Put[A]`, and the old mechanism of `Meta[A].imap(...)(...)` is still supported for this purpose. The `xmap` method has been replaced with parametric `imap` and `TypeTag`-constrained `tmap`. Prefer `tmap` when possible because it yields better diagnostic information when typechecking queries.
 
