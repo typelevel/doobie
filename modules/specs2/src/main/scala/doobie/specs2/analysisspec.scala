@@ -44,9 +44,16 @@ object analysisspec {
     def check[A: Analyzable](a: A): Fragments =
       checkImpl(Analyzable.unpack(a))
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def checkOutput[A: TypeTag](q: Query0[A]): Fragments =
       checkImpl(AnalysisArgs(
         typeName[Query0[A]], q.pos, q.sql, q.outputAnalysis
+      ))
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+      checkImpl(AnalysisArgs(
+        typeName[Query[A, B]], q.pos, q.sql, q.outputAnalysis
       ))
 
     private def checkImpl(args: AnalysisArgs): Fragments =

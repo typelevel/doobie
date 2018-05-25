@@ -5,7 +5,7 @@
 package doobie.scalatest
 
 import cats.effect.{ Effect, IO }
-import doobie.util.query.Query0
+import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
 import org.scalatest.Assertions
 import scala.reflect.runtime.universe.TypeTag
@@ -38,9 +38,16 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 
   def check[A: Analyzable](a: A) = checkImpl(Analyzable.unpack(a))
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def checkOutput[A: TypeTag](q: Query0[A]) =
     checkImpl(AnalysisArgs(
       typeName[Query0[A]], q.pos, q.sql, q.outputAnalysis
+    ))
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+    checkImpl(AnalysisArgs(
+      typeName[Query[A, B]], q.pos, q.sql, q.outputAnalysis
     ))
 
   private def checkImpl(args: AnalysisArgs) = {
