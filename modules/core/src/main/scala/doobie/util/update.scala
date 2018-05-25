@@ -6,23 +6,17 @@ package doobie.util
 
 import cats._
 import cats.implicits._
-import doobie.free.connection.ConnectionIO
-import doobie.free.{ preparedstatement => FPS }
-import doobie.free.preparedstatement.PreparedStatementIO
-import doobie.hi.{ connection => HC }
-import doobie.hi.{ preparedstatement => HPS }
+import doobie._
+import doobie.implicits._
 import doobie.util.analysis.Analysis
-import doobie.util.log._
+import doobie.util.log.{ Success, ExecFailure, LogEvent }
 import doobie.util.pos.Pos
-import doobie.util.fragment.Fragment
 import fs2.Stream
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 
 /** Module defining updates parameterized by input type. */
 object update {
-
-  import doobie.free.preparedstatement.AsyncPreparedStatementIO // we need this instance ... TODO: re-org
 
   val DefaultChunkSize = query.DefaultChunkSize
 
@@ -43,26 +37,25 @@ object update {
   trait Update[A] { u =>
 
     // Contravariant coyoneda trick for A
-    protected type I
-    protected val ai: A => I
-    protected implicit val ic: Write[I]
+    protected implicit val write: Write[A]
 
     // LogHandler is protected for now.
     protected val logHandler: LogHandler
 
-    private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
-    private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
+    private val now: PreparedStatementIO[Long] =
+      FPS.delay(System.nanoTime)
+
+    private def fail[T](t: Throwable): PreparedStatementIO[T] =
+      t.raiseError[PreparedStatementIO, T]
 
     // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
-      // N.B. the .attempt syntax isn't working in cats. unclear why
-      val args = ic.toList(ai(a))
-      val c = Predef.implicitly[MonadError[PreparedStatementIO, Throwable]]
+      val args = write.toList(a)
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
-        en <- c.attempt(FPS.executeUpdate)
+        en <- FPS.executeUpdate.attempt
         t1 <- now
         n  <- en match {
                 case Left(e)  => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[Int](e)
@@ -88,14 +81,14 @@ object update {
 
     /** Turn this `Update` into a `Fragment`, given an argument. */
     def toFragment(a: A): Fragment =
-      Fragment(sql, ai(a), pos)
+      Fragment(sql, a, pos)
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis] =
-      HC.prepareUpdateAnalysis[I](sql)
+      HC.prepareUpdateAnalysis[A](sql)
 
     /**
      * Construct a program to execute the update and yield a count of affected rows, given the
@@ -103,7 +96,7 @@ object update {
      * @group Execution
      */
     def run(a: A): ConnectionIO[Int] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeUpdate(a))
+      HC.prepareStatement(sql)(HPS.set(a) *> executeUpdate(a))
 
     /**
      * Program to execute a batch update and yield a count of affected rows. Note that failed
@@ -112,7 +105,7 @@ object update {
      * @group Execution
      */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
-      HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa.toList.map(ai)))
+      HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa))
 
     /**
      * Construct a stream that performs a batch update as with `updateMany`, yielding generated
@@ -123,7 +116,7 @@ object update {
     def updateManyWithGeneratedKeys[K](columns: String*): UpdateManyWithGeneratedKeysPartiallyApplied[A, K] =
       new UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
         def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Read[K]): Stream[ConnectionIO, K] =
-          HC.updateManyWithGeneratedKeys[List,I,K](columns.toList)(sql, ().pure[PreparedStatementIO], as.toList.map(ai), chunkSize)
+          HC.updateManyWithGeneratedKeys[List,A,K](columns.toList)(sql, FPS.unit, as.toList, chunkSize)
       }
 
     /**
@@ -142,7 +135,7 @@ object update {
      * @group Execution
      */
     def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(a: A, chunkSize: Int): Stream[ConnectionIO, K] =
-      HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(ai(a)), chunkSize)
+      HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a), chunkSize)
 
     /**
      * Construct a program that performs the update, yielding a single set of generated keys of
@@ -151,7 +144,7 @@ object update {
      * @group Execution
      */
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
-      HC.prepareStatementS(sql, columns.toList)(HPS.set(ai(a)) *> HPS.executeUpdateWithUniqueGeneratedKeys)
+      HC.prepareStatementS(sql, columns.toList)(HPS.set(a) *> HPS.executeUpdateWithUniqueGeneratedKeys)
 
     /**
      * Update is a contravariant functor.
@@ -159,9 +152,7 @@ object update {
      */
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
-        type I  = u.I
-        val ai  = u.ai compose f
-        val ic  = u.ic
+        val write = u.write.contramap(f)
         val sql = u.sql
         val pos = u.pos
         val logHandler = u.logHandler
@@ -196,12 +187,10 @@ object update {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
-      implicit C: Write[A]
+      implicit W: Write[A]
     ): Update[A] =
       new Update[A] {
-        type I  = A
-        val ai  = (a: A) => a
-        val ic  = C
+        val write = W
         val sql = sql0
         val logHandler = logHandler0
         val pos = pos0
