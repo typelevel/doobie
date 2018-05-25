@@ -6,8 +6,10 @@ package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.{ Effect, IO }
+import cats.instances.list._
 import cats.syntax.list._
 import cats.syntax.applicativeError._
+import cats.syntax.foldable._
 import doobie._
 import doobie.implicits._
 import doobie.util.analysis._
@@ -172,4 +174,31 @@ package object testing {
       F.runAsync(fa)(out => IO(cb(out)))
         .unsafeRunSync
     }
+
+  /**
+    * Simple formatting for analysis results.
+    */
+  def formatReport(
+    args: AnalysisArgs,
+    report: AnalysisReport
+  ): Block = {
+    val sql = args.cleanedSql
+      .wrap(68)
+      // SQL should use the default color
+      .padLeft(Console.RESET.toString)
+    val items = report.items.foldMap(formatItem)
+    Block.fromString(args.header)
+      .above(sql)
+      .above(items)
+  }
+
+  private val formatItem: AnalysisReport.Item => Block = {
+    case AnalysisReport.Item(desc, None) =>
+      Block.fromString(s"${Console.GREEN}✓${Console.RESET} $desc")
+    case AnalysisReport.Item(desc, Some(err)) =>
+      Block.fromString(s"${Console.RED}✕${Console.RESET} $desc")
+        // No color for error details - ScalaTest paints each line of failure
+        // red by default.
+        .above(err.wrap(66).padLeft("  "))
+  }
 }
