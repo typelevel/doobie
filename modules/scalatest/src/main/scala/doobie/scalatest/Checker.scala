@@ -6,8 +6,7 @@ package doobie.scalatest
 
 import cats.effect.{ Effect, IO }
 import doobie.scalatest.formatting.formatReport
-import doobie.util.query.{Query, Query0}
-import doobie.util.update.{Update, Update0}
+import doobie.util.query.Query0
 import doobie.util.testing._
 import org.scalatest.Assertions
 import scala.reflect.runtime.universe.TypeTag
@@ -38,26 +37,12 @@ import scala.reflect.runtime.universe.TypeTag
   */
 trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]) =
-    checkImpl(Analyzable.unpack(q))
-
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def check[A](q: Query0[A])(implicit A: TypeTag[A]) =
-    checkImpl(Analyzable.unpack(q))
+  def check[A: Analyzable](a: A) = checkImpl(Analyzable.unpack(a))
 
   def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]) =
     checkImpl(AnalysisArgs(
       s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis
     ))
-
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def check[A](q: Update[A])(implicit A: TypeTag[A]) =
-    checkImpl(Analyzable.unpack(q))
-
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def check(q: Update0) =
-    checkImpl(Analyzable.unpack(q))
 
   private def checkImpl(args: AnalysisArgs) = {
     val report = analyzeIO(args, transactor).unsafeRunSync
