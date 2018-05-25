@@ -214,8 +214,8 @@ object query {
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
       new Query[A, B] {
-        implicit val write = A
-        implicit val read = B
+        val write = A
+        val read = B
         val sql = sql0
         val pos = pos0
         val logHandler = logHandler0
