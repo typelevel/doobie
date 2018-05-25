@@ -30,7 +30,12 @@ object yolo {
 
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick: M[Unit] =
-        q.sink(a => out(a.toString)).transact(xa)
+        q.stream
+         .map(_.toString)
+         .evalMap(out)
+         .compile
+         .drain
+         .transact(xa)
 
       def check: M[Unit] =
         doCheck(q.analysis)

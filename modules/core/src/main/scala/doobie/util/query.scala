@@ -2,28 +2,22 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
-package util
+package doobie.util
 
-import cats._, cats.effect._
-import cats.implicits._
-import cats.{ Alternative, Contravariant, Functor }
+import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-
+import cats.implicits._
+import doobie._
 import doobie.implicits._
 import doobie.util.analysis.Analysis
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
 import doobie.util.pos.Pos
-
+import fs2.Stream
+import java.sql.ResultSet
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
-
-import java.sql.ResultSet
-
-
-import fs2.Stream
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -37,38 +31,32 @@ object query {
    */
   trait Query[A, B] { outer =>
 
-    // jiggery pokery to support CBF; we're doing the coyoneda trick on B to avoid a Functor
-    // constraint on the `F` parameter in `to`, and it's just easier to do the contravariant coyo
-    // trick on A while we're at it.
-    protected type I
-    protected type O
-    protected val ai: A => I
-    protected val ob: O => B
-    protected implicit val ic: Write[I]
-    protected implicit val oc: Read[O]
+    protected implicit val write: Write[A]
+    protected implicit val read: Read[B]
 
     // LogHandler is protected for now.
     protected val logHandler: LogHandler
 
-    private val now: PreparedStatementIO[Long] = FPS.delay(System.nanoTime)
-    private def fail[T](t: Throwable): PreparedStatementIO[T] = FPS.delay(throw t)
+    private val now: PreparedStatementIO[Long] =
+      FPS.delay(System.nanoTime)
+
+    private def fail[T](t: Throwable): PreparedStatementIO[T] =
+      t.raiseError[PreparedStatementIO, T]
 
     // Equivalent to HPS.executeQuery(k) but with logging
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
-      // N.B. the .attempt syntax isn't working in cats. unclear why
-      val c = Predef.implicitly[Sync[PreparedStatementIO]]
-      val args = ic.toList(ai(a))
+      val args = write.toList(a)
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
-        er <- c.attempt(FPS.executeQuery)
+        er <- FPS.executeQuery.attempt
         t1 <- now
         rs <- er match {
                 case Left(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[ResultSet](e)
                 case Right(a) => a.pure[PreparedStatementIO]
               }
-        et <- c.attempt(FPS.embed(rs, k guarantee FRS.close))
+        et <- FPS.embed(rs, k guarantee FRS.close).attempt
         t2 <- now
         t  <- et match {
                 case Left(e) => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
@@ -93,7 +81,7 @@ object query {
 
     /** Turn this `Query` into a `Fragment`, given an argument. */
     def toFragment(a: A): Fragment =
-      Fragment(sql, ai(a), pos)
+      Fragment(sql, a, pos)
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
@@ -101,18 +89,13 @@ object query {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis] =
-      HC.prepareQueryAnalysis[I, O](sql)
+      HC.prepareQueryAnalysis[A, B](sql)
     /**
      * Program to construct an analysis of this query's SQL statement and result set column types.
      * @group Diagnostics
      */
     def outputAnalysis: ConnectionIO[Analysis] =
-      HC.prepareQueryAnalysis0[O](sql)
-
-    /** @group Deprecated Methods */
-    @deprecated("use .streamWithChunkSize", "0.5.0")
-    def processWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      streamWithChunkSize(a, chunkSize)
+      HC.prepareQueryAnalysis0[B](sql)
 
     /**
      * Apply the argument `a` to construct a `Stream` with the given chunking factor, with
@@ -121,12 +104,7 @@ object query {
      * @group Results
      */
     def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      HC.stream[O](sql, HPS.set(ai(a)), chunkSize).map(ob)
-
-    /** @group Deprecated Methods */
-    @deprecated("use .stream", "0.5.0")
-    def process(a: A): Stream[ConnectionIO, B] =
-      stream(a)
+      HC.stream[B](sql, HPS.set(a), chunkSize)
 
     /**
      * Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with
@@ -137,7 +115,6 @@ object query {
     def stream(a: A): Stream[ConnectionIO, B] =
       streamWithChunkSize(a, DefaultChunkSize)
 
-
     /**
      * Apply the argument `a` to construct a program in
      *`[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
@@ -145,7 +122,7 @@ object query {
      * @group Results
      */
     def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.buildMap[F,O,B](ob)))
+      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.build[F,B]))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -154,7 +131,7 @@ object query {
      * @group Results
      */
     def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.accumulate[F, O].map(_.map(ob))))
+      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.accumulate[F, B]))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -163,7 +140,7 @@ object query {
      * @group Results
      */
     def unique(a: A): ConnectionIO[B] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.getUnique[O])).map(ob)
+      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.getUnique[B]))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -172,7 +149,7 @@ object query {
      * @group Results
      */
     def option(a: A): ConnectionIO[Option[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.getOption[O])).map(_.map(ob))
+      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.getOption[B]))
 
     /**
       * Apply the argument `a` to construct a program in
@@ -181,25 +158,13 @@ object query {
       * @group Results
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
-      HC.prepareStatement(sql)(HPS.set(ai(a)) *> executeQuery(a, HRS.nel[O])).map(_.map(ob))
-
-    /** @group Deprecated Methods */
-    @deprecated("use .to[List]", "0.5.0")
-    def list(a: A): ConnectionIO[List[B]] = to[List](a)
-
-    /** @group Deprecated Methods */
-    @deprecated("use .to[Vector]", "0.5.0")
-    def vector(a: A): ConnectionIO[Vector[B]] = to[Vector](a)
+      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.nel[B]))
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
-        type I = outer.I
-        type O = outer.O
-        val ai = outer.ai
-        val ob = outer.ob andThen f
-        val ic: Write[I] = outer.ic
-        val oc: Read[O] = outer.oc
+        val write = outer.write
+        val read  = outer.read.map(f)
         def sql = outer.sql
         def pos = outer.pos
         val logHandler = outer.logHandler
@@ -208,12 +173,8 @@ object query {
     /** @group Transformations */
     def contramap[C](f: C => A): Query[C, B] =
       new Query[C, B] {
-        type I = outer.I
-        type O = outer.O
-        val ai = outer.ai compose f
-        val ob = outer.ob
-        val ic: Write[I] = outer.ic
-        val oc: Read[O] = outer.oc
+        val write = outer.write.contramap(f)
+        val read  = outer.read
         def sql = outer.sql
         def pos = outer.pos
         val logHandler = outer.logHandler
@@ -253,12 +214,8 @@ object query {
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
       new Query[A, B] {
-        type I = A
-        type O = B
-        val ai: A => I = a => a
-        val ob: O => B = o => o
-        implicit val ic: Write[I] = A
-        implicit val oc: Read[O] = B
+        implicit val write = A
+        implicit val read = B
         val sql = sql0
         val pos = pos0
         val logHandler = logHandler0
@@ -323,11 +280,6 @@ object query {
      */
     def outputAnalysis: ConnectionIO[Analysis]
 
-    /** @group Deprecated Methods */
-    @deprecated("use .stream", "0.5.0")
-    def process: Stream[ConnectionIO, B] =
-      stream
-
     /**
      * `Stream` with default chunk factor, with effect type
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding  elements of type `B`.
@@ -335,11 +287,6 @@ object query {
      */
     def stream : Stream[ConnectionIO, B] =
       streamWithChunkSize(DefaultChunkSize)
-
-    /** @group Deprecated Methods */
-    @deprecated("use .streamWithChunkSize", "0.5.0")
-    def processWithChunkSize(n: Int): Stream[ConnectionIO, B] =
-      streamWithChunkSize(n)
 
     /**
      * `Stream` with given chunk factor, with effect type
@@ -388,19 +335,12 @@ object query {
     def map[C](f: B => C): Query0[C]
 
     /**
-     * Convenience method; equivalent to `process.sink(f)`
+     * Convenience method, equivalent to `stream.evalMap(f).compile.drain`.
      * @group Results
      */
+    @deprecated("use .stream.evalMap(f).compile.drain", "0.6.0")
     def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
       stream.evalMap(f).compile.drain
-
-    /** @group Deprecated Methods */
-    @deprecated("use .to[List]", "0.5.0")
-    def list: ConnectionIO[List[B]] = to[List]
-
-    /** @group Deprecated Methods */
-    @deprecated("use .to[Vector]", "0.5.0")
-    def vector: ConnectionIO[Vector[B]] = to[Vector]
 
   }
 

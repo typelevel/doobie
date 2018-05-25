@@ -85,7 +85,7 @@ object analysis {
           |coercible to ${typeName(get.typeStack.last, n)} according to the JDBC specification or any defined
           |mapping.
           |Fix this by changing the schema type to
-          |${get.jdbcSources.list.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
+          |${get.jdbcSources.toList.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
           |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
           |type.
           |""".stripMargin.lines.mkString(" ")
@@ -98,7 +98,7 @@ object analysis {
           |coercible to ${typeName(get.typeStack.last, n)}
           |according to the JDBC specification but is not a recommended target type.
           |Expected schema type was
-          |${get.jdbcSources.list.map(_.show.toUpperCase).toList.mkString(" or ") }.
+          |${get.jdbcSources.toList.map(_.show.toUpperCase).toList.mkString(" or ") }.
           |""".stripMargin.lines.mkString(" ")
   }
 
@@ -116,7 +116,7 @@ object analysis {
 
     def parameterTypeErrors: List[ParameterTypeError] =
       parameterAlignment.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !j.jdbcTargets.element(p.jdbcType) =>
+        case (Ior.Both((j, n1), p), n) if !j.jdbcTargets.contains_(p.jdbcType) =>
           ParameterTypeError(n + 1, j, n1, p.jdbcType, p.vendorTypeName)
       }
 
@@ -128,15 +128,15 @@ object analysis {
 
     def columnTypeErrors: List[ColumnTypeError] =
       columnAlignment.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !(j.jdbcSources.list.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).element(p.jdbcType) =>
+        case (Ior.Both((j, n1), p), n) if !(j.jdbcSources.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).contains_(p.jdbcType) =>
           ColumnTypeError(n + 1, j, n1, p)
-        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType == JdbcType.Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
+        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType == JdbcType.Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).contains_(p.vendorTypeName) =>
           ColumnTypeError(n + 1, j, n1, p)
       }
 
     def columnTypeWarnings: List[ColumnTypeWarning] =
       columnAlignment.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if j.fold(_.jdbcSourceSecondary.toList, _ => Nil).element(p.jdbcType) =>
+        case (Ior.Both((j, n1), p), n) if j.fold(_.jdbcSourceSecondary.toList, _ => Nil).contains_(p.jdbcType) =>
           ColumnTypeWarning(n + 1, j, n1, p)
       }
 
