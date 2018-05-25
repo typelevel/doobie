@@ -38,9 +38,9 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 
   def check[A: Analyzable](a: A) = checkImpl(Analyzable.unpack(a))
 
-  def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]) =
+  def checkOutput[A: TypeTag](q: Query0[A]) =
     checkImpl(AnalysisArgs(
-      s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis
+      typeName[Query0[A]], q.pos, q.sql, q.outputAnalysis
     ))
 
   private def checkImpl(args: AnalysisArgs) = {

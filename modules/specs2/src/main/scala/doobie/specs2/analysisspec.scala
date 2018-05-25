@@ -44,9 +44,9 @@ object analysisspec {
     def check[A: Analyzable](a: A): Fragments =
       checkImpl(Analyzable.unpack(a))
 
-    def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
+    def checkOutput[A: TypeTag](q: Query0[A]): Fragments =
       checkImpl(AnalysisArgs(
-        s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis
+        typeName[Query0[A]], q.pos, q.sql, q.outputAnalysis
       ))
 
     private def checkImpl(args: AnalysisArgs): Fragments =
