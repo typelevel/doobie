@@ -45,8 +45,12 @@ object update {
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
-    private def fail[T](t: Throwable): PreparedStatementIO[T] =
-      t.raiseError[PreparedStatementIO, T]
+    implicit class MoreEitherOps[L, R](e: Either[L, R]) {
+      def liftOnError[F[_]](handler: L => F[Unit])(
+        implicit ev: ApplicativeError[F, L]
+      ): F[R] =
+        e.fold(l => handler(l) *> ev.raiseError[R](l), _.pure[F])
+    }
 
     // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
@@ -57,10 +61,7 @@ object update {
         t0 <- now
         en <- FPS.executeUpdate.attempt
         t1 <- now
-        n  <- en match {
-                case Left(e)  => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[Int](e)
-                case Right(a) => a.pure[PreparedStatementIO]
-              }
+        n  <- en.liftOnError(e => log(ExecFailure(sql, args, diff(t1, t0), e)))
         _  <- log(Success(sql, args, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
       } yield n
     }
