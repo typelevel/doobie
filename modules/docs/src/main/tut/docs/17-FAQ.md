@@ -133,7 +133,7 @@ Meta[String]
 Meta[UUID]
 ```
 
-So what this means is that we have not defined a mapping for the `UUID` type to an underlying JDBC type, and **doobie** doesn't know how to set an argument of that type on the underlying `PreparedStatement`. So we have a few choices. We can `xmap` from an existing `Meta` instance, as described in [Chapter 10](10-Custom-Mappings.html); or we can import a provided mapping from a vendor-specific `contrib` package. Since we're using PostgreSQL here, let's do that.
+So what this means is that we have not defined a mapping for the `UUID` type to an underlying JDBC type, and **doobie** doesn't know how to set an argument of that type on the underlying `PreparedStatement`. So we have a few choices. We can `xmap` from an existing `Meta` instance, as described in [Chapter 12](12-Custom-Mappings.html); or we can import a provided mapping from a vendor-specific `contrib` package. Since we're using PostgreSQL here, let's do that.
 
 ```tut
 import doobie.postgres.implicits._
@@ -149,7 +149,7 @@ def query(s: String, u: UUID) = sql"select ... where foo = $s and url = $u".quer
 
 ### How do I resolve `error: Could not find or construct Composite[...]`?
 
-When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 10](10-Custom-Mappings.html)) or derive automatically if `A` has a `Meta` instance, or is an option thereof, or a product type whose elements have `Composite` instances.
+When we use the `sql` interpolator and use the `.query[A]` method we require a `Composite` instance for the output type `A`, which we can define directly (as described in [Chapter 12](12-Custom-Mappings.html)) or derive automatically if `A` has a `Meta` instance, or is an option thereof, or a product type whose elements have `Composite` instances.
 
 ```tut:silent
 case class Point(lat: Double, lon: Double)
