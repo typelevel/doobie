@@ -95,6 +95,26 @@ object fragmentspec extends Specification {
           |""".stripMargin.query[Int].sql must_== "select foo || baz\n  from bar\n "
     }
 
+    // A fragment composed of this many sub-fragments would not be stacksafe without special
+    // handling, which we test below.
+    val STACK_UNSAFE_SIZE = 20000
+
+    "be stacksafe (left-associve)" in {
+      val frag =
+        fr0"SELECT 1 WHERE 1 IN (" ++
+        List.fill(STACK_UNSAFE_SIZE)(1).foldLeft(Fragment.empty)((f, n) => f ++ fr"$n,") ++
+        fr0"1)"
+      frag.query[Int].unique.transact(xa).unsafeRunSync must_== 1
+    }
+
+    "be stacksafe (right-associve)" in {
+      val frag =
+        fr0"SELECT 1 WHERE 1 IN (" ++
+        List.fill(STACK_UNSAFE_SIZE)(1).foldRight(Fragment.empty)((n, f) => f ++ fr"$n,") ++
+        fr0"1)"
+      frag.query[Int].unique.transact(xa).unsafeRunSync must_== 1
+    }
+
   }
 
 }
