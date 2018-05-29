@@ -45,9 +45,6 @@ object update {
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
-    private def fail[T](t: Throwable): PreparedStatementIO[T] =
-      t.raiseError[PreparedStatementIO, T]
-
     // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
       val args = write.toList(a)
@@ -57,14 +54,10 @@ object update {
         t0 <- now
         en <- FPS.executeUpdate.attempt
         t1 <- now
-        n  <- en match {
-                case Left(e)  => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[Int](e)
-                case Right(a) => a.pure[PreparedStatementIO]
-              }
+        n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, diff(t1, t0), e)) }
         _  <- log(Success(sql, args, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
       } yield n
     }
-
 
     /**
      * The SQL string.
