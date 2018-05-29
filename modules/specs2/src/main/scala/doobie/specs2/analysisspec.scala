@@ -41,26 +41,20 @@ object analysisspec {
 
   trait Checker[M[_]] extends CheckerBase[M] { this: Specification =>
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def check[A, B](q: Query[A, B])(implicit A: TypeTag[A], B: TypeTag[B]): Fragments =
-      checkImpl(Analyzable.unpack(q))
+    def check[A: Analyzable](a: A): Fragments =
+      checkImpl(Analyzable.unpack(a))
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def check[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
-      checkImpl(Analyzable.unpack(q))
-
-    def checkOutput[A](q: Query0[A])(implicit A: TypeTag[A]): Fragments =
+    def checkOutput[A: TypeTag](q: Query0[A]): Fragments =
       checkImpl(AnalysisArgs(
-        s"Query0[${typeName(A)}]", q.pos, q.sql, q.outputAnalysis
+        s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
       ))
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def check[A](q: Update[A])(implicit A: TypeTag[A]): Fragments =
-      checkImpl(Analyzable.unpack(q))
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def check(q: Update0): Fragments =
-      checkImpl(Analyzable.unpack(q))
+    def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+      checkImpl(AnalysisArgs(
+        s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
+      ))
 
     private def checkImpl(args: AnalysisArgs): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early

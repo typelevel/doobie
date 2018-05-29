@@ -6,8 +6,10 @@ package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.{ Effect, IO }
+import cats.instances.list._
 import cats.syntax.list._
 import cats.syntax.applicativeError._
+import cats.syntax.foldable._
 import doobie._
 import doobie.implicits._
 import doobie.util.analysis._
@@ -80,32 +82,29 @@ package testing {
         def unpack(t: T) = impl(t)
       }
 
-    implicit def analyzableQuery[A, B](
-      implicit A: TypeTag[A], B: TypeTag[B]
-    ): Analyzable[Query[A, B]] = instance { q =>
-      AnalysisArgs(
-        s"Query[${typeName(A)}, ${typeName(B)}]",
-        q.pos, q.sql, q.analysis
-      )
-    }
+    implicit def analyzableQuery[A: TypeTag, B: TypeTag]: Analyzable[Query[A, B]] =
+      instance { q =>
+        AnalysisArgs(
+          s"Query[${typeName[A]}, ${typeName[B]}]",
+          q.pos, q.sql, q.analysis
+        )
+      }
 
-    implicit def analyzableQuery0[A](
-      implicit A: TypeTag[A]
-    ): Analyzable[Query0[A]] = instance { q =>
-      AnalysisArgs(
-        s"Query0[${typeName(A)}]",
-        q.pos, q.sql, q.analysis
-      )
-    }
+    implicit def analyzableQuery0[A: TypeTag]: Analyzable[Query0[A]] =
+      instance { q =>
+        AnalysisArgs(
+          s"Query0[${typeName[A]}]",
+          q.pos, q.sql, q.analysis
+        )
+      }
 
-    implicit def analyzableUpdate[A](
-      implicit A: TypeTag[A]
-    ): Analyzable[Update[A]] = instance { q =>
-      AnalysisArgs(
-        s"Update[${typeName(A)}]",
-        q.pos, q.sql, q.analysis
-      )
-    }
+    implicit def analyzableUpdate[A: TypeTag]: Analyzable[Update[A]] =
+      instance { q =>
+        AnalysisArgs(
+          s"Update[${typeName[A]}]",
+          q.pos, q.sql, q.analysis
+        )
+      }
 
     implicit val analyzableUpdate0: Analyzable[Update0] =
       instance { q =>
@@ -114,7 +113,6 @@ package testing {
           q.pos, q.sql, q.analysis
         )
       }
-
   }
 }
 
@@ -143,7 +141,7 @@ package object testing {
   private val packagePrefix = "\\b[a-z]+\\.".r
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def typeName[A](tag: TypeTag[A]): String =
+  def typeName[A](implicit tag: TypeTag[A]): String =
     packagePrefix.replaceAllIn(tag.tpe.toString, "")
 
   private def alignmentErrorsToBlock(
@@ -172,4 +170,31 @@ package object testing {
       F.runAsync(fa)(out => IO(cb(out)))
         .unsafeRunSync
     }
+
+  /**
+    * Simple formatting for analysis results.
+    */
+  def formatReport(
+    args: AnalysisArgs,
+    report: AnalysisReport
+  ): Block = {
+    val sql = args.cleanedSql
+      .wrap(68)
+      // SQL should use the default color
+      .padLeft(Console.RESET.toString)
+    val items = report.items.foldMap(formatItem)
+    Block.fromString(args.header)
+      .above(sql)
+      .above(items)
+  }
+
+  private val formatItem: AnalysisReport.Item => Block = {
+    case AnalysisReport.Item(desc, None) =>
+      Block.fromString(s"${Console.GREEN}✓${Console.RESET} $desc")
+    case AnalysisReport.Item(desc, Some(err)) =>
+      Block.fromString(s"${Console.RED}✕${Console.RESET} $desc")
+        // No color for error details - ScalaTest paints each line of failure
+        // red by default.
+        .above(err.wrap(66).padLeft("  "))
+  }
 }
