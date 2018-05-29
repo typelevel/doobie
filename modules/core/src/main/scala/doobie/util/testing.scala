@@ -85,7 +85,7 @@ package testing {
     implicit def analyzableQuery[A: TypeTag, B: TypeTag]: Analyzable[Query[A, B]] =
       instance { q =>
         AnalysisArgs(
-          typeName[Query[A, B]],
+          s"Query[${typeName[A]}, ${typeName[B]}]",
           q.pos, q.sql, q.analysis
         )
       }
@@ -93,7 +93,7 @@ package testing {
     implicit def analyzableQuery0[A: TypeTag]: Analyzable[Query0[A]] =
       instance { q =>
         AnalysisArgs(
-          typeName[Query0[A]],
+          s"Query0[${typeName[A]}]",
           q.pos, q.sql, q.analysis
         )
       }
@@ -101,7 +101,7 @@ package testing {
     implicit def analyzableUpdate[A: TypeTag]: Analyzable[Update[A]] =
       instance { q =>
         AnalysisArgs(
-          typeName[Update[A]],
+          s"Update[${typeName[A]}]",
           q.pos, q.sql, q.analysis
         )
       }
@@ -109,7 +109,7 @@ package testing {
     implicit val analyzableUpdate0: Analyzable[Update0] =
       instance { q =>
         AnalysisArgs(
-          typeName[Update0],
+          s"Update0",
           q.pos, q.sql, q.analysis
         )
       }

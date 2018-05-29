@@ -47,13 +47,13 @@ object analysisspec {
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def checkOutput[A: TypeTag](q: Query0[A]): Fragments =
       checkImpl(AnalysisArgs(
-        typeName[Query0[A]], q.pos, q.sql, q.outputAnalysis
+        s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
       ))
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
       checkImpl(AnalysisArgs(
-        typeName[Query[A, B]], q.pos, q.sql, q.outputAnalysis
+        s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
       ))
 
     private def checkImpl(args: AnalysisArgs): Fragments =

@@ -42,7 +42,7 @@ object yolo {
 
       def checkOutput: M[Unit] =
         checkImpl(AnalysisArgs(
-          typeName[Query0[A]], q.pos, q.sql, q.outputAnalysis
+          s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
         ))
     }
 
@@ -56,7 +56,7 @@ object yolo {
 
       def checkOutput: M[Unit] =
         checkImpl(AnalysisArgs(
-          typeName[Query[I, A]], q.pos, q.sql, q.outputAnalysis
+          s"Query[${typeName[I]}, ${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
         ))
     }
 
