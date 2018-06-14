@@ -14,7 +14,6 @@ import doobie.util.analysis.Analysis
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
 import doobie.util.pos.Pos
 import fs2.Stream
-import java.sql.ResultSet
 import scala.collection.generic.CanBuildFrom
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
@@ -40,9 +39,6 @@ object query {
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
-    private def fail[T](t: Throwable): PreparedStatementIO[T] =
-      t.raiseError[PreparedStatementIO, T]
-
     // Equivalent to HPS.executeQuery(k) but with logging
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       val args = write.toList(a)
@@ -52,16 +48,10 @@ object query {
         t0 <- now
         er <- FPS.executeQuery.attempt
         t1 <- now
-        rs <- er match {
-                case Left(e) => log(ExecFailure(sql, args, diff(t1, t0), e)) *> fail[ResultSet](e)
-                case Right(a) => a.pure[PreparedStatementIO]
-              }
+        rs <- er.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, diff(t1, t0), e)) }
         et <- FPS.embed(rs, k guarantee FRS.close).attempt
         t2 <- now
-        t  <- et match {
-                case Left(e) => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) *> fail(e)
-                case Right(a) => a.pure[PreparedStatementIO]
-              }
+        t  <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) }
         _  <- log(Success(sql, args, diff(t1, t0), diff(t2, t1)))
       } yield t
     }
@@ -214,8 +204,8 @@ object query {
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
       new Query[A, B] {
-        implicit val write = A
-        implicit val read = B
+        val write = A
+        val read = B
         val sql = sql0
         val pos = pos0
         val logHandler = logHandler0

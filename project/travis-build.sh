@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xe
 
 cd `dirname $0`/..
 

@@ -5,7 +5,6 @@
 package doobie.scalatest
 
 import cats.effect.{ Effect, IO }
-import doobie.scalatest.formatting.formatReport
 import doobie.util.testing._
 import org.scalatest.matchers.{
   Matcher,
