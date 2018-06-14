@@ -7,7 +7,7 @@ package doobie.postgres
 import cats.{ ContravariantSemigroupal, Foldable }
 import cats.syntax.foldable._
 
-import shapeless.{ HList, HNil, ::, <:!<, Generic }
+import shapeless.{ HList, HNil, ::, <:!<, Generic, Lazy }
 
 /**
  * Typeclass for types that can be written as Postgres literal text, using the default DELIMETER
@@ -174,9 +174,9 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
   // Generic
   implicit def generic[A, B](
     implicit gen: Generic.Aux[A, B],
-             csv: Text[B]
+             csv: Lazy[Text[B]]
   ): Text[A] =
-    csv.contramap(gen.to)
+    csv.value.contramap(gen.to)
 
 }
 
