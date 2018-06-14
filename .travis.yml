@@ -23,10 +23,10 @@ install:
   - gem install jekyll -v 3.2.1
 
 addons:
-  postgresql: "9.3"
+  postgresql: "9.4"
   apt:
     packages:
-    - postgresql-9.3-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
+    - postgresql-9.4-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
 
 before_script:
   - project/travis-before-build.sh

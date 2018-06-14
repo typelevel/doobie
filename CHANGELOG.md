@@ -31,6 +31,9 @@ To summarize:
 
 Please refer to the `examples` project for example usage, or ask questions on the Gitter channel if you have questions or concerns about this change.
 
+#### Other Changes
+
+- postgres-circe module created exposing Get and Put instances for `io.circe.Json`
 
 ---
 ### <a name="0.5.3"></a>New and Noteworthy for Version 0.5.3
