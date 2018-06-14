@@ -5,5 +5,5 @@
 package doobie.postgres.circe
 
 package object jsonb {
-  object implicits extends doobie.postgres.circe.Instances.jsonbInstances
+  object implicits extends doobie.postgres.circe.Instances.JsonbInstances
 }

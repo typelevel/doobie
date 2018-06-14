@@ -15,7 +15,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 object Instances {
 
-  trait jsonbInstances {
+  trait JsonbInstances {
       implicit val jsonbPut: Put[Json] = 
       Put.Advanced.other[PGobject](
         NonEmptyList.of("jsonb")
@@ -46,7 +46,7 @@ object Instances {
       Get[Json].map(json => json.as[A].fold(throw _, identity))
   }
 
-  trait jsonInstances {
+  trait JsonInstances {
     implicit val jsonPut: Put[Json] = 
       Put.Advanced.other[PGobject](
         NonEmptyList.of("json")
