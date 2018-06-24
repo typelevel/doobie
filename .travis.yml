@@ -4,6 +4,7 @@ language: scala
 
 jdk:
   - oraclejdk8
+  - oraclejdk10
 
 scala:
   - 2.11.12
