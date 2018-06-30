@@ -43,6 +43,6 @@ object HikariTransactor {
 
   /** Constructs a stream that emits a single `HikariTransactor` with guaranteed cleanup. */
   def stream[M[_]: Async](driverClassName: String, url: String, user: String, pass: String) : Stream[M, HikariTransactor[M]] =
-    Stream.bracket(newHikariTransactor(driverClassName, url, user, pass))(Stream.emit(_), _.configure(ds => Async[M].delay(ds.close)))
+    Stream.bracket(newHikariTransactor(driverClassName, url, user, pass))(_.configure(ds => Async[M].delay(ds.close)))
 
 }

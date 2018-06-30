@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
@@ -47,6 +47,8 @@ object nclob { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => NClobIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): F[B]
 
       // NClob
       def free: F[Unit]
@@ -80,6 +82,12 @@ object nclob { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => NClobIO[Unit]) extends NClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: NClobIO[A], use: A => NClobIO[B], release: (A, ExitCase[Throwable]) => NClobIO[Unit]) extends NClobOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // NClob-specific operations.
@@ -135,6 +143,8 @@ object nclob { module =>
   def handleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]): NClobIO[A] = FF.liftF[NClobOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): NClobIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): NClobIO[A] = FF.liftF[NClobOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => NClobIO[Unit]): NClobIO[A] = FF.liftF[NClobOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): NClobIO[B] = FF.liftF[NClobOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for NClob-specific operations.
   val free: NClobIO[Unit] = FF.liftF(Free)
@@ -155,10 +165,12 @@ object nclob { module =>
   implicit val AsyncNClobIO: Async[NClobIO] =
     new Async[NClobIO] {
       val M = FF.catsFreeMonadForFree[NClobOp]
+      def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): NClobIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): NClobIO[A] = M.pure(x)
       def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]): NClobIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): NClobIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): NClobIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => NClobIO[Unit]): NClobIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => NClobIO[Either[A, B]]): NClobIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => NClobIO[A]): NClobIO[A] = M.flatten(module.delay(thunk))

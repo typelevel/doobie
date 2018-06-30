@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
@@ -63,6 +63,8 @@ object resultset { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): F[B]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -278,6 +280,12 @@ object resultset { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]) extends ResultSetOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: ResultSetIO[A], use: A => ResultSetIO[B], release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]) extends ResultSetOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // ResultSet-specific operations.
@@ -879,6 +887,8 @@ object resultset { module =>
   def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): ResultSetIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ResultSetIO[A] = FF.liftF[ResultSetOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))
@@ -1081,10 +1091,12 @@ object resultset { module =>
   implicit val AsyncResultSetIO: Async[ResultSetIO] =
     new Async[ResultSetIO] {
       val M = FF.catsFreeMonadForFree[ResultSetOp]
+      def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): ResultSetIO[A] = M.pure(x)
       def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ResultSetIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): ResultSetIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => ResultSetIO[Unit]): ResultSetIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = M.flatten(module.delay(thunk))

@@ -66,7 +66,7 @@ object StreamingCopy {
       interpS(sinkXA.strategy.always)
 
     // And we're done!
-    Stream.bracket(open)(mkStream, cleanup)
+    Stream.bracket(open)(cleanup).flatMap(mkStream)
 
   }
 

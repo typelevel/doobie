@@ -5,7 +5,7 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
@@ -43,6 +43,8 @@ object largeobject { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): F[B]
 
       // LargeObject
       def close: F[Unit]
@@ -83,6 +85,12 @@ object largeobject { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: LargeObjectIO[A], use: A => LargeObjectIO[B], release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]) extends LargeObjectOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // LargeObject-specific operations.
@@ -159,6 +167,8 @@ object largeobject { module =>
   def handleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): LargeObjectIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): LargeObjectIO[B] = FF.liftF[LargeObjectOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
@@ -186,10 +196,12 @@ object largeobject { module =>
   implicit val AsyncLargeObjectIO: Async[LargeObjectIO] =
     new Async[LargeObjectIO] {
       val M = FF.catsFreeMonadForFree[LargeObjectOp]
+      def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): LargeObjectIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): LargeObjectIO[A] = M.pure(x)
       def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): LargeObjectIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): LargeObjectIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => LargeObjectIO[Unit]): LargeObjectIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => LargeObjectIO[Either[A, B]]): LargeObjectIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => LargeObjectIO[A]): LargeObjectIO[A] = M.flatten(module.delay(thunk))

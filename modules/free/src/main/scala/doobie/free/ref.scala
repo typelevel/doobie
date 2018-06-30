@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.String
@@ -43,6 +43,8 @@ object ref { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): F[B]
 
       // Ref
       def getBaseTypeName: F[String]
@@ -67,6 +69,12 @@ object ref { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: RefIO[A], use: A => RefIO[B], release: (A, ExitCase[Throwable]) => RefIO[Unit]) extends RefOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // Ref-specific operations.
@@ -95,6 +103,8 @@ object ref { module =>
   def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): RefIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): RefIO[A] = FF.liftF[RefOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): RefIO[A] = FF.liftF[RefOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = FF.liftF[RefOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
@@ -106,10 +116,12 @@ object ref { module =>
   implicit val AsyncRefIO: Async[RefIO] =
     new Async[RefIO] {
       val M = FF.catsFreeMonadForFree[RefOp]
+      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): RefIO[A] = M.pure(x)
       def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): RefIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): RefIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => RefIO[Unit]): RefIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => RefIO[A]): RefIO[A] = M.flatten(module.delay(thunk))

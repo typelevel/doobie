@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.String
@@ -44,6 +44,8 @@ object sqldata { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): F[B]
 
       // SQLData
       def getSQLTypeName: F[String]
@@ -67,6 +69,12 @@ object sqldata { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]) extends SQLDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: SQLDataIO[A], use: A => SQLDataIO[B], release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]) extends SQLDataOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // SQLData-specific operations.
@@ -92,6 +100,8 @@ object sqldata { module =>
   def handleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]): SQLDataIO[A] = FF.liftF[SQLDataOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): SQLDataIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLDataIO[A] = FF.liftF[SQLDataOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): SQLDataIO[A] = FF.liftF[SQLDataOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): SQLDataIO[B] = FF.liftF[SQLDataOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for SQLData-specific operations.
   val getSQLTypeName: SQLDataIO[String] = FF.liftF(GetSQLTypeName)
@@ -102,10 +112,12 @@ object sqldata { module =>
   implicit val AsyncSQLDataIO: Async[SQLDataIO] =
     new Async[SQLDataIO] {
       val M = FF.catsFreeMonadForFree[SQLDataOp]
+      def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): SQLDataIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): SQLDataIO[A] = M.pure(x)
       def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): SQLDataIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLDataIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => SQLDataIO[Unit]): SQLDataIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = M.flatten(module.delay(thunk))
