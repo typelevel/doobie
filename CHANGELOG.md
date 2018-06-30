@@ -34,6 +34,7 @@ Please refer to the `examples` project for example usage, or ask questions on th
 #### Other Changes
 
 - postgres-circe module created exposing Get and Put instances for `io.circe.Json`
+- upgraded to cats-effect 1.0 and fs2 1.0
 
 ---
 ### <a name="0.5.3"></a>New and Noteworthy for Version 0.5.3
