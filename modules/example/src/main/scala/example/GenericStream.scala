@@ -59,10 +59,10 @@ object GenericStream {
       repeatEvalChunks(FC.embed(rs, getNextChunkGeneric(chunkSize)))
 
     val preparedStatement: Stream[ConnectionIO, PreparedStatement] =
-      bracket(create)(prepared, FC.embed(_, FPS.close))
+      bracket(create)(FC.embed(_, FPS.close)).flatMap(prepared)
 
     def results(ps: PreparedStatement): Stream[ConnectionIO, Row] =
-      bracket(FC.embed(ps, exec))(unrolled, FC.embed(_, FRS.close))
+      bracket(FC.embed(ps, exec))(FC.embed(_, FRS.close)).flatMap(unrolled)
 
     preparedStatement.flatMap(results)
 

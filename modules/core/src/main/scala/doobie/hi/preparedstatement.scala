@@ -47,7 +47,7 @@ object preparedstatement {
 
   /** @group Execution */
   def stream[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
-    bracket(FPS.executeQuery)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
+    bracket(FPS.executeQuery)(FPS.embed(_, FRS.close)).flatMap(unrolled[A](_, chunkSize))
 
   /**
    * Non-strict unit for capturing effects.
@@ -96,7 +96,7 @@ object preparedstatement {
 
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
-    bracket(FPS.executeUpdate *> FPS.getGeneratedKeys)(unrolled[A](_, chunkSize), FPS.embed(_, FRS.close))
+    bracket(FPS.executeUpdate *> FPS.getGeneratedKeys)(FPS.embed(_, FRS.close)).flatMap(unrolled[A](_, chunkSize))
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata

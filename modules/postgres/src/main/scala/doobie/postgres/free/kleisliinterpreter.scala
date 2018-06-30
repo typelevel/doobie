@@ -7,7 +7,7 @@ package doobie.postgres.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 
 // Types referenced in the JDBC API
 import java.io.InputStream
@@ -86,6 +86,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, PGCopyIn, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGCopyIn, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Unit]): Kleisli[M, PGCopyIn, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]): Kleisli[M, PGCopyIn, A] =
       Kleisli { j =>
@@ -93,6 +97,9 @@ trait KleisliInterpreter[M[_]] { outer =>
         val fʹ  = f.andThen(_.foldMap(this).run(j))
         M.handleErrorWith(faʹ)(fʹ)
       }
+
+    def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): Kleisli[M, PGCopyIn, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def cancelCopy = primitive(_.cancelCopy)
@@ -115,6 +122,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, PGCopyManager, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGCopyManager, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): Kleisli[M, PGCopyManager, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): Kleisli[M, PGCopyManager, A] =
       Kleisli { j =>
@@ -122,6 +133,9 @@ trait KleisliInterpreter[M[_]] { outer =>
         val fʹ  = f.andThen(_.foldMap(this).run(j))
         M.handleErrorWith(faʹ)(fʹ)
       }
+
+    def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): Kleisli[M, PGCopyManager, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def copyDual(a: String) = primitive(_.copyDual(a))
@@ -144,6 +158,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, PGCopyOut, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGCopyOut, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): Kleisli[M, PGCopyOut, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): Kleisli[M, PGCopyOut, A] =
       Kleisli { j =>
@@ -151,6 +169,9 @@ trait KleisliInterpreter[M[_]] { outer =>
         val fʹ  = f.andThen(_.foldMap(this).run(j))
         M.handleErrorWith(faʹ)(fʹ)
       }
+
+    def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): Kleisli[M, PGCopyOut, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def cancelCopy = primitive(_.cancelCopy)
@@ -172,6 +193,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, PGFastpath, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGFastpath, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Unit]): Kleisli[M, PGFastpath, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]): Kleisli[M, PGFastpath, A] =
       Kleisli { j =>
@@ -179,6 +204,9 @@ trait KleisliInterpreter[M[_]] { outer =>
         val fʹ  = f.andThen(_.foldMap(this).run(j))
         M.handleErrorWith(faʹ)(fʹ)
       }
+
+    def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): Kleisli[M, PGFastpath, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addFunction(a: String, b: Int) = primitive(_.addFunction(a, b))
@@ -203,6 +231,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, LargeObject, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, LargeObject, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): Kleisli[M, LargeObject, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]): Kleisli[M, LargeObject, A] =
       Kleisli { j =>
@@ -210,6 +242,9 @@ trait KleisliInterpreter[M[_]] { outer =>
         val fʹ  = f.andThen(_.foldMap(this).run(j))
         M.handleErrorWith(faʹ)(fʹ)
       }
+
+    def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): Kleisli[M, LargeObject, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def close = primitive(_.close)
@@ -243,6 +278,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, LargeObjectManager, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, LargeObjectManager, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectManagerIO[Unit]): Kleisli[M, LargeObjectManager, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectManagerIO[A], f: Throwable => LargeObjectManagerIO[A]): Kleisli[M, LargeObjectManager, A] =
       Kleisli { j =>
@@ -250,6 +289,9 @@ trait KleisliInterpreter[M[_]] { outer =>
         val fʹ  = f.andThen(_.foldMap(this).run(j))
         M.handleErrorWith(faʹ)(fʹ)
       }
+
+    def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): Kleisli[M, LargeObjectManager, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def create = primitive(_.create)
@@ -279,6 +321,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](a: () => A): Kleisli[M, PGConnection, A] = outer.delay(a)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGConnection, A] = outer.async(k)
 
+    // for asyncF we must call ourself recursively
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): Kleisli[M, PGConnection, A] =
+      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+
     // for handleErrorWith we must call ourself recursively
     override def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): Kleisli[M, PGConnection, A] =
       Kleisli { j =>
@@ -287,9 +333,13 @@ trait KleisliInterpreter[M[_]] { outer =>
         M.handleErrorWith(faʹ)(fʹ)
       }
 
+    def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): Kleisli[M, PGConnection, B] =
+      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
     override def addDataType(a: String, b: String) = primitive(_.addDataType(a, b))
+    override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))
     override def escapeIdentifier(a: String) = primitive(_.escapeIdentifier(a))
     override def escapeLiteral(a: String) = primitive(_.escapeLiteral(a))
     override def getAutosave = primitive(_.getAutosave)

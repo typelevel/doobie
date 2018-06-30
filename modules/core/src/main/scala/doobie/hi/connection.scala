@@ -52,10 +52,10 @@ object connection {
       repeatEvalChunks(FC.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
     val preparedStatement: Stream[ConnectionIO, PreparedStatement] =
-      bracket(create)(prepared, FC.embed(_, FPS.close))
+      bracket(create)(FC.embed(_, FPS.close)).flatMap(prepared)
 
     def results(ps: PreparedStatement): Stream[ConnectionIO, A] =
-      bracket(FC.embed(ps, exec))(unrolled, FC.embed(_, FRS.close))
+      bracket(FC.embed(ps, exec))(FC.embed(_, FRS.close)).flatMap(unrolled)
 
     preparedStatement.flatMap(results)
 

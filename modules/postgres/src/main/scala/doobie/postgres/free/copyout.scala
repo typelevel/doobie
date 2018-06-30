@@ -5,7 +5,7 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
@@ -41,6 +41,8 @@ object copyout { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): F[B]
 
       // PGCopyOut
       def cancelCopy: F[Unit]
@@ -69,6 +71,12 @@ object copyout { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: CopyOutIO[A], use: A => CopyOutIO[B], release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]) extends CopyOutOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // PGCopyOut-specific operations.
@@ -109,6 +117,8 @@ object copyout { module =>
   def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): CopyOutIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyOutIO[A] = FF.liftF[CopyOutOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = FF.liftF[CopyOutOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for CopyOut-specific operations.
   val cancelCopy: CopyOutIO[Unit] = FF.liftF(CancelCopy)
@@ -124,10 +134,12 @@ object copyout { module =>
   implicit val AsyncCopyOutIO: Async[CopyOutIO] =
     new Async[CopyOutIO] {
       val M = FF.catsFreeMonadForFree[CopyOutOp]
+      def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): CopyOutIO[A] = M.pure(x)
       def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): CopyOutIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyOutIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => CopyOutIO[A]): CopyOutIO[A] = M.flatten(module.delay(thunk))

@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.Class
@@ -46,6 +46,8 @@ object databasemetadata { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): F[B]
 
       // DatabaseMetaData
       def allProceduresAreCallable: F[Boolean]
@@ -244,6 +246,12 @@ object databasemetadata { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]) extends DatabaseMetaDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: DatabaseMetaDataIO[A], use: A => DatabaseMetaDataIO[B], release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]) extends DatabaseMetaDataOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // DatabaseMetaData-specific operations.
@@ -794,6 +802,8 @@ object databasemetadata { module =>
   def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): DatabaseMetaDataIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = FF.liftF[DatabaseMetaDataOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for DatabaseMetaData-specific operations.
   val allProceduresAreCallable: DatabaseMetaDataIO[Boolean] = FF.liftF(AllProceduresAreCallable)
@@ -979,10 +989,12 @@ object databasemetadata { module =>
   implicit val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
     new Async[DatabaseMetaDataIO] {
       val M = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
+      def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): DatabaseMetaDataIO[A] = M.pure(x)
       def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): DatabaseMetaDataIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): DatabaseMetaDataIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => DatabaseMetaDataIO[Either[A, B]]): DatabaseMetaDataIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = M.flatten(module.delay(thunk))

@@ -5,7 +5,7 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
@@ -41,6 +41,8 @@ object copyin { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): F[B]
 
       // PGCopyIn
       def cancelCopy: F[Unit]
@@ -70,6 +72,12 @@ object copyin { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Unit]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: CopyInIO[A], use: A => CopyInIO[B], release: (A, ExitCase[Throwable]) => CopyInIO[Unit]) extends CopyInOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // PGCopyIn-specific operations.
@@ -113,6 +121,8 @@ object copyin { module =>
   def handleErrorWith[A](fa: CopyInIO[A], f: Throwable => CopyInIO[A]): CopyInIO[A] = FF.liftF[CopyInOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): CopyInIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyInIO[A] = FF.liftF[CopyInOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Unit]): CopyInIO[A] = FF.liftF[CopyInOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): CopyInIO[B] = FF.liftF[CopyInOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for CopyIn-specific operations.
   val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)
@@ -129,10 +139,12 @@ object copyin { module =>
   implicit val AsyncCopyInIO: Async[CopyInIO] =
     new Async[CopyInIO] {
       val M = FF.catsFreeMonadForFree[CopyInOp]
+      def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): CopyInIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): CopyInIO[A] = M.pure(x)
       def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]): CopyInIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): CopyInIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyInIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyInIO[Unit]): CopyInIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => CopyInIO[Either[A, B]]): CopyInIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => CopyInIO[A]): CopyInIO[A] = M.flatten(module.delay(thunk))

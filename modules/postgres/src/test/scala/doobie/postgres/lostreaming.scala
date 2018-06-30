@@ -35,9 +35,9 @@ object lostreamingspec extends Specification with ScalaCheck {
       val data0 = data.covary[ConnectionIO]
 
       val result = Stream.bracket(PHLOS.createLOFromStream(data0))(
-        oid => PHLOS.createStreamFromLO(oid, chunkSize = 1024 * 10),
         oid => PHC.pgGetLargeObjectAPI(PFLOM.unlink(oid))
-      ).compile.toVector.transact(xa).unsafeRunSync()
+      ).flatMap(oid => PHLOS.createStreamFromLO(oid, chunkSize = 1024 * 10))
+       .compile.toVector.transact(xa).unsafeRunSync()
 
       result must_=== data.toVector
     }

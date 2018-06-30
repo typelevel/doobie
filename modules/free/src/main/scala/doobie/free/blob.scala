@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
@@ -43,6 +43,8 @@ object blob { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): F[B]
 
       // Blob
       def free: F[Unit]
@@ -74,6 +76,12 @@ object blob { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: BlobIO[A], use: A => BlobIO[B], release: (A, ExitCase[Throwable]) => BlobIO[Unit]) extends BlobOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // Blob-specific operations.
@@ -123,6 +131,8 @@ object blob { module =>
   def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): BlobIO[A] = FF.liftF[BlobOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): BlobIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): BlobIO[A] = FF.liftF[BlobOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): BlobIO[A] = FF.liftF[BlobOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = FF.liftF[BlobOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for Blob-specific operations.
   val free: BlobIO[Unit] = FF.liftF(Free)
@@ -141,10 +151,12 @@ object blob { module =>
   implicit val AsyncBlobIO: Async[BlobIO] =
     new Async[BlobIO] {
       val M = FF.catsFreeMonadForFree[BlobOp]
+      def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): BlobIO[A] = M.pure(x)
       def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): BlobIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): BlobIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => BlobIO[Unit]): BlobIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => BlobIO[A]): BlobIO[A] = M.flatten(module.delay(thunk))

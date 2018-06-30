@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
@@ -46,6 +46,8 @@ object clob { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): F[B]
 
       // Clob
       def free: F[Unit]
@@ -79,6 +81,12 @@ object clob { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: ClobIO[A], use: A => ClobIO[B], release: (A, ExitCase[Throwable]) => ClobIO[Unit]) extends ClobOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // Clob-specific operations.
@@ -134,6 +142,8 @@ object clob { module =>
   def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): ClobIO[A] = FF.liftF[ClobOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): ClobIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ClobIO[A] = FF.liftF[ClobOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): ClobIO[A] = FF.liftF[ClobOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): ClobIO[B] = FF.liftF[ClobOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)
@@ -154,10 +164,12 @@ object clob { module =>
   implicit val AsyncClobIO: Async[ClobIO] =
     new Async[ClobIO] {
       val M = FF.catsFreeMonadForFree[ClobOp]
+      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): ClobIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): ClobIO[A] = M.pure(x)
       def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ClobIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): ClobIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => ClobIO[Unit]): ClobIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => ClobIO[Either[A, B]]): ClobIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => ClobIO[A]): ClobIO[A] = M.flatten(module.delay(thunk))

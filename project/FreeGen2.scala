@@ -208,7 +208,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |package $pkg
     |
     |import cats.~>
-    |import cats.effect.Async
+    |import cats.effect.{ Async, ExitCase }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
     |
     |${imports[A].mkString("\n")}
@@ -244,6 +244,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def delay[A](a: () => A): F[A]
     |      def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): F[A]
     |      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+    |      def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): F[A]
+    |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): F[B]
     |
     |      // $sname
           ${ctors[A].map(_.visitor).mkString("\n    ")}
@@ -266,6 +268,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.async(k)
     |    }
+    |    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]) extends ${opname}[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    |    }
+    |    final case class BracketCase[A, B](acquire: ${ioname}[A], use: A => ${ioname}[B], release: (A, ExitCase[Throwable]) => ${ioname}[Unit]) extends ${opname}[B] {
+    |      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    |    }
     |
     |    // $sname-specific operations.
     |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
@@ -282,6 +290,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): ${ioname}[A] = FF.liftF[${opname}, A](HandleErrorWith(fa, f))
     |  def raiseError[A](err: Throwable): ${ioname}[A] = delay(throw err)
     |  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ${ioname}[A] = FF.liftF[${opname}, A](Async1(k))
+    |  def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): ${ioname}[A] = FF.liftF[${opname}, A](AsyncF(k))
+    |  def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = FF.liftF[${opname}, B](BracketCase(acquire, use, release))
     |
     |  // Smart constructors for $oname-specific operations.
     |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
@@ -290,10 +300,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  implicit val Async${ioname}: Async[${ioname}] =
     |    new Async[${ioname}] {
     |      val M = FF.catsFreeMonadForFree[${opname}]
+    |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = module.bracketCase(acquire)(use)(release)
     |      def pure[A](x: A): ${ioname}[A] = M.pure(x)
     |      def handleErrorWith[A](fa: ${ioname}[A])(f: Throwable => ${ioname}[A]): ${ioname}[A] = module.handleErrorWith(fa, f)
     |      def raiseError[A](e: Throwable): ${ioname}[A] = module.raiseError(e)
     |      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ${ioname}[A] = module.async(k)
+    |      def asyncF[A](k: (Either[Throwable,A] => Unit) => ${ioname}[Unit]): ${ioname}[A] = module.asyncF(k)
     |      def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = M.flatMap(fa)(f)
     |      def tailRecM[A, B](a: A)(f: A => ${ioname}[Either[A, B]]): ${ioname}[B] = M.tailRecM(a)(f)
     |      def suspend[A](thunk: => ${ioname}[A]): ${ioname}[A] = M.flatten(module.delay(thunk))
@@ -350,6 +362,10 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    override def delay[A](a: () => A): Kleisli[M, $sname, A] = outer.delay(a)
        |    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, $sname, A] = outer.async(k)
        |
+       |    // for asyncF we must call ourself recursively
+       |    override def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): Kleisli[M, $sname, A] =
+       |      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+       |
        |    // for handleErrorWith we must call ourself recursively
        |    override def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): Kleisli[M, $sname, A] =
        |      Kleisli { j =>
@@ -357,6 +373,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |        val fʹ  = f.andThen(_.foldMap(this).run(j))
        |        M.handleErrorWith(faʹ)(fʹ)
        |      }
+       |
+       |    def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): Kleisli[M, $sname, B] =
+       |      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
        |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
@@ -383,7 +402,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |// Library imports
       |import cats.~>
       |import cats.data.Kleisli
-      |import cats.effect.Async
+      |import cats.effect.{ Async, ExitCase }
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }

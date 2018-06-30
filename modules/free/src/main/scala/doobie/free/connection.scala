@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.Class
@@ -58,6 +58,8 @@ object connection { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): F[B]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -132,6 +134,12 @@ object connection { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: ConnectionIO[A], use: A => ConnectionIO[B], release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]) extends ConnectionOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // Connection-specific operations.
@@ -310,6 +318,8 @@ object connection { module =>
   def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): ConnectionIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ConnectionIO[A] = FF.liftF[ConnectionOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = FF.liftF[ConnectionOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
@@ -371,10 +381,12 @@ object connection { module =>
   implicit val AsyncConnectionIO: Async[ConnectionIO] =
     new Async[ConnectionIO] {
       val M = FF.catsFreeMonadForFree[ConnectionOp]
+      def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): ConnectionIO[A] = M.pure(x)
       def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ConnectionIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): ConnectionIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => ConnectionIO[Unit]): ConnectionIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = M.flatten(module.delay(thunk))

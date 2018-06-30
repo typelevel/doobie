@@ -5,7 +5,7 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.io.InputStream
@@ -49,6 +49,8 @@ object copymanager { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): F[B]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -78,6 +80,12 @@ object copymanager { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: CopyManagerIO[A], use: A => CopyManagerIO[B], release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]) extends CopyManagerOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // PGCopyManager-specific operations.
@@ -121,6 +129,8 @@ object copymanager { module =>
   def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): CopyManagerIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = FF.liftF[CopyManagerOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
@@ -137,10 +147,12 @@ object copymanager { module =>
   implicit val AsyncCopyManagerIO: Async[CopyManagerIO] =
     new Async[CopyManagerIO] {
       val M = FF.catsFreeMonadForFree[CopyManagerOp]
+      def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): CopyManagerIO[A] = M.pure(x)
       def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): CopyManagerIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyManagerIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => CopyManagerIO[A]): CopyManagerIO[A] = M.flatten(module.delay(thunk))

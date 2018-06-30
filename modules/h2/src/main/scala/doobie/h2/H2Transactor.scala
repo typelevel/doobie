@@ -22,6 +22,6 @@ object H2Transactor {
 
   /** Constructs a stream that emits a single `HikariTransactor` with guaranteed cleanup. */
   def stream[M[_]: Async](url: String, user: String, pass: String) : Stream[M, H2Transactor[M]] =
-    Stream.bracket(newH2Transactor(url, user, pass))(Stream.emit(_), _.configure(ds => Async[M].delay(ds.dispose())))
+    Stream.bracket(newH2Transactor(url, user, pass))(_.configure(ds => Async[M].delay(ds.dispose())))
 
 }

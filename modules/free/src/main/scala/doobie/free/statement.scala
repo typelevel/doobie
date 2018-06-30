@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.Async
+import cats.effect.{ Async, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 
 import java.lang.Class
@@ -46,6 +46,8 @@ object statement { module =>
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
+      def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): F[A]
+      def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): F[B]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -118,6 +120,12 @@ object statement { module =>
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    }
+    final case class BracketCase[A, B](acquire: StatementIO[A], use: A => StatementIO[B], release: (A, ExitCase[Throwable]) => StatementIO[Unit]) extends StatementOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
 
     // Statement-specific operations.
@@ -290,6 +298,8 @@ object statement { module =>
   def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): StatementIO[A] = delay(throw err)
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): StatementIO[A] = FF.liftF[StatementOp, A](Async1(k))
+  def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): StatementIO[A] = FF.liftF[StatementOp, A](AsyncF(k))
+  def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): StatementIO[B] = FF.liftF[StatementOp, B](BracketCase(acquire, use, release))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
@@ -349,10 +359,12 @@ object statement { module =>
   implicit val AsyncStatementIO: Async[StatementIO] =
     new Async[StatementIO] {
       val M = FF.catsFreeMonadForFree[StatementOp]
+      def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): StatementIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): StatementIO[A] = M.pure(x)
       def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): StatementIO[A] = module.async(k)
+      def asyncF[A](k: (Either[Throwable,A] => Unit) => StatementIO[Unit]): StatementIO[A] = module.asyncF(k)
       def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = M.flatMap(fa)(f)
       def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = M.tailRecM(a)(f)
       def suspend[A](thunk: => StatementIO[A]): StatementIO[A] = M.flatten(module.delay(thunk))
