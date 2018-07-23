@@ -11,6 +11,7 @@ lazy val fs2CoreVersion       = "0.10.4"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.1.0"
 lazy val kindProjectorVersion = "0.9.6"
+lazy val linebackerVersion    = "0.1.0"
 lazy val monixVersion         = "3.0.0-M3"
 lazy val postGisVersion       = "2.2.1"
 lazy val postgresVersion      = "42.2.2"
@@ -201,8 +202,8 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .dependsOn(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
-  .aggregate(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined)
+  .dependsOn(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined, linebacker)
+  .aggregate(free, core, h2, hikari, postgres, specs2, example, bench, scalatest, docs, refined, linebacker)
   .settings(
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
@@ -496,5 +497,19 @@ lazy val refined = project
       "eu.timepit"            %% "refined"        % refinedVersion,
       scalaOrganization.value %  "scala-compiler" % scalaVersion.value % Provided,
       "com.h2database"        %  "h2"             % h2Version          % "test"
+    )
+  )
+
+lazy val linebacker = project
+  .in(file("modules/linebacker"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-linebacker",
+    description := "Linebacker support for doobie.",
+    libraryDependencies ++= Seq(
+      "io.chrisdavenport" %% "linebacker"        % linebackerVersion
     )
   )
