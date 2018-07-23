@@ -14,11 +14,12 @@ import cats.data._
 import scala.concurrent.ExecutionContext
 
 object LinebackerTransactor {
-  def apply[F[_]: Async: Linebacker](t: Transactor[F])(implicit cpuEc: ExecutionContext) : Transactor[F] = {
+  def apply[F[_]: Async](linebacker: Linebacker[F], cpuEc: ExecutionContext)(t: Transactor[F]): Transactor[F] = {
+    implicit val ec: ExecutionContext = cpuEc
     val blockingInterpreter = new ~>[ConnectionOp, Kleisli[F, Connection, ?]]{
       def apply[A](fa: ConnectionOp[A]): Kleisli[F, Connection,A] = 
         Kleisli{ connection: Connection => 
-          Linebacker[F].block(t.interpret(fa).run(connection))
+          linebacker.block(t.interpret(fa).run(connection))
         }
     }
     t.copy(interpret0 = blockingInterpreter)

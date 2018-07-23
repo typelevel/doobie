@@ -13,11 +13,11 @@ import cats._
 import cats.data._
 
 object DualContextTransactor {
-  def apply[F[_]: Async: DualContext](t: Transactor[F]): Transactor[F] = {
+  def apply[F[_]: Async](dc: DualContext[F])(t: Transactor[F]): Transactor[F] = {
     val blockingInterpreter = new ~>[ConnectionOp, Kleisli[F, Connection, ?]]{
       def apply[A](fa: ConnectionOp[A]): Kleisli[F, Connection,A] = 
         Kleisli{ connection: Connection => 
-          DualContext[F].block(t.interpret(fa).run(connection))
+          dc.block(t.interpret(fa).run(connection))
         }
     }
     t.copy(interpret0 = blockingInterpreter)
