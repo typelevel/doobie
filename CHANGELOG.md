@@ -4,6 +4,12 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.5.4"></a>New and Noteworthy for Version 0.5.4
+
+Minor updates, see below.
+
+- linebacker module created exposing Blocking Transactor for `DualContext` and `Linebacker`
+
 ### <a name="0.5.3"></a>New and Noteworthy for Version 0.5.3
 
 Minor updates, see below.
