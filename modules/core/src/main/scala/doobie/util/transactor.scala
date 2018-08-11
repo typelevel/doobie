@@ -186,7 +186,7 @@ object transactor  {
       def nat(c: Connection): ConnectionIO ~> M =
         liftF(interpret andThen applyKleisli(c))
 
-      eval(connect(kernel)).flatMap(c => pa.translate[M](nat(c)))
+      eval(connect(kernel)).flatMap(c => pa.translate(nat(c)))
 
      }
 
