@@ -8,7 +8,6 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 lazy val catsVersion          = "1.2.0"
 lazy val circeVersion         = "0.9.3"
 lazy val fs2CoreVersion       = "1.0.0-M3"
-lazy val fs2ScodecVersion     = "1.0.0-M1"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.2.0"
 lazy val kindProjectorVersion = "0.9.7"
@@ -352,8 +351,7 @@ lazy val example = project
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2CoreVersion,
-      "co.fs2" %% "fs2-scodec" % fs2ScodecVersion
+      "co.fs2" %% "fs2-io"     % fs2CoreVersion
     )
   )
 
