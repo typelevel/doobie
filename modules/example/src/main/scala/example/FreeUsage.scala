@@ -6,19 +6,19 @@ package example
 
 import java.io.File
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 
 // JDBC program using the low-level API
-object FreeUsage {
+object FreeUsage extends IOApp {
 
   final case class CountryCode(code: String)
 
-  def main(args: Array[String]): Unit = {
+  def run(args: List[String]): IO[ExitCode] = {
     val db = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-    db.trans.apply(examples.void).unsafeRunSync
+    db.trans.apply(examples.void).as(ExitCode.Success)
   }
 
   def examples: ConnectionIO[String] =

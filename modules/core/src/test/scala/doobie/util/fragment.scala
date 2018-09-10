@@ -6,13 +6,17 @@ package doobie.util
 
 import cats._
 import cats.implicits._
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 import shapeless._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object fragmentspec extends Specification {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

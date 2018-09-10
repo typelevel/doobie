@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.postgres._, doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
@@ -15,10 +15,14 @@ import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 
 // Establish that we can write and read various types.
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgtypesspec extends Specification {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

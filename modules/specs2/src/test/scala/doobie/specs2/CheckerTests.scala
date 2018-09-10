@@ -4,19 +4,28 @@
 
 package doobie.specs2
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.specs2.imports._
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
+
+  implicit def contextShift: ContextShift[M]
+
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
   )
+
   check(sql"select 1".query[Int])
+
 }
 
-class IOCheckerCheck extends CheckerChecks[IO] with IOChecker
+class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
+  def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+}

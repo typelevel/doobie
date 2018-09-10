@@ -19,7 +19,7 @@ import fs2.Stream
  * on either side (by putting a typo in the `read` or `write` statements) both transactions will
  * roll back.
  */
-object StreamingCopy {
+object StreamingCopy extends IOApp {
 
   /**
    * Stream from `source` through `sink`, where source and sink run on distinct transactors. To do
@@ -134,15 +134,11 @@ object StreamingCopy {
   }
 
   // Our main program
-  val io: IO[Unit] =
+  def run(args: List[String]): IO[ExitCode] =
     for {
       _ <- fuseMap(read, write)(pg, h2).compile.drain // do the copy with fuseMap
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IO(Console.println(s"Copied $n cities!"))
-    } yield ()
-
-  // Scala entry point
-  def main(args: Array[String]): Unit =
-    io.unsafeRunSync
+    } yield ExitCode.Success
 
 }

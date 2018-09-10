@@ -5,14 +5,18 @@
 package doobie.util
 
 import cats.Monad
-import cats.effect.{ Async, IO }
+import cats.effect.{ Async, ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 import scala.Predef._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
 object strategyspec extends Specification {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val baseXa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
@@ -22,7 +26,10 @@ object strategyspec extends Specification {
 
   // an instrumented interpreter
   class Interp extends KleisliInterpreter[IO] {
-    val M = implicitly[Async[IO]]
+
+    val asyncM = Async[IO]
+    val blockingContext = KleisliInterpreter.defaultBlockingContext
+    val contextShiftM = contextShift
 
     object Connection {
       var autoCommit: Option[Boolean] = None

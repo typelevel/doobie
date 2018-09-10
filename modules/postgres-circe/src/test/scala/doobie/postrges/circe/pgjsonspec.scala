@@ -4,14 +4,18 @@
 
 package doobie.postgres.circe
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._
 import doobie.implicits._
 import io.circe.{Json, Encoder, Decoder}
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgjsonspec extends Specification {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -42,12 +46,12 @@ object pgjsonspec extends Specification {
     import doobie.postgres.circe.json.implicits._
     testInOut("json", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
-  
+
   {
     import doobie.postgres.circe.jsonb.implicits._
     testInOut("jsonb", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
-  
+
 
   // Explicit Type Checks
 
@@ -79,7 +83,7 @@ object pgjsonspec extends Specification {
     }
   }
 
-  // Encoder / Decoders 
+  // Encoder / Decoders
   private final case class Foo(x: Json)
   private object Foo{
     import doobie.postgres.circe.json.implicits._
@@ -95,7 +99,7 @@ object pgjsonspec extends Specification {
       a.columnTypeErrors must_== Nil
     }
   }
-  
+
   "fooPut" should {
     "check ok for write" in {
       val a = sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa).unsafeRunSync

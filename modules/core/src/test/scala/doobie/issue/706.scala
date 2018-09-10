@@ -6,15 +6,19 @@ package doobie.issue
 
 import cats._
 import cats.implicits._
-import cats.effect.{ Async, IO }
+import cats.effect.{ Async, ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.scalacheck.Prop.forAll
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 import scala.Predef._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object `706` extends Specification with ScalaCheck {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

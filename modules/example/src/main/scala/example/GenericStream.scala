@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -17,7 +17,7 @@ import doobie.util.stream.repeatEvalChunks
  * From a user question on Gitter, how can we have an equivalent to `Stream[A]` that constructs a
  * stream of untyped maps.
  */
-object GenericStream {
+object GenericStream extends IOApp {
 
   type Row = Map[String, Any]
 
@@ -74,14 +74,11 @@ object GenericStream {
 
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
-  def runl(args: List[String]): IO[Unit] =
+  def run(args: List[String]): IO[ExitCode] =
     args match {
-      case sql :: Nil => processGeneric(sql, ().pure[PreparedStatementIO], 100).transact(xa).evalMap(m => IO(Console.println(m))).compile.drain
-      case _          => IO(Console.println("expected on arg, a query"))
+      case sql :: Nil => processGeneric(sql, ().pure[PreparedStatementIO], 100).transact(xa).evalMap(m => IO(Console.println(m))).compile.drain.as(ExitCode.Success)
+      case _          => IO(Console.println("expected on arg, a query")).as(ExitCode.Error)
     }
-
-  def main(args: Array[String]): Unit =
-    runl(args.toList).unsafeRunSync
 
   // > runMain example.GenericStream "select * from city limit 10"
   // Map(name -> Kabul, population -> 1780000, id -> 1, district -> Kabol, countrycode -> AFG)

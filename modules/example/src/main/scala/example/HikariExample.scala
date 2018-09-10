@@ -4,21 +4,18 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import doobie.hikari._
 import doobie.hikari.syntax.hikaritransactor._
 import doobie.implicits._
 
-object HikariExample {
+object HikariExample extends IOApp {
 
-  def tmain: IO[Unit] =
+  def run(args: List[String]): IO[ExitCode] =
     for {
       xa <- HikariTransactor.newHikariTransactor[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
       _  <- FreeUsage.examples.transact(xa)
       _  <- xa.shutdown
-    } yield ()
-
-  def main(args: Array[String]): Unit =
-    tmain.unsafeRunSync
+    } yield ExitCode.Success
 
 }

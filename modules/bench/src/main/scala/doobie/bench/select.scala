@@ -4,12 +4,17 @@
 
 package doobie.bench
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import java.sql.DriverManager
 import org.openjdk.jmh.annotations._
+import scala.concurrent.ExecutionContext
 
 object shared {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+
   @State(Scope.Benchmark)
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 }

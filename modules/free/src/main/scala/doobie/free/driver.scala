@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.lang.String
 import java.sql.Connection
@@ -48,6 +49,8 @@ object driver { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): F[A]
       def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): F[A]
 
       // Driver
       def acceptsURL(a: String): F[Boolean]
@@ -81,6 +84,13 @@ object driver { module =>
     }
     final case class BracketCase[A, B](acquire: DriverIO[A], use: A => DriverIO[B], release: (A, ExitCase[Throwable]) => DriverIO[Unit]) extends DriverOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends DriverOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn
+    [A](ec: ExecutionContext, fa: DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // Driver-specific operations.
@@ -120,6 +130,8 @@ object driver { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): DriverIO[A] = FF.liftF[DriverOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): DriverIO[A] = FF.liftF[DriverOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = FF.liftF[DriverOp, B](BracketCase(acquire, use, release))
+  val shift: DriverIO[Unit] = FF.liftF[DriverOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = FF.liftF[DriverOp, A](EvalOn(ec, fa))
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))
@@ -133,17 +145,23 @@ object driver { module =>
   // DriverIO is an Async
   implicit val AsyncDriverIO: Async[DriverIO] =
     new Async[DriverIO] {
-      val M = FF.catsFreeMonadForFree[DriverOp]
+      val asyncM = FF.catsFreeMonadForFree[DriverOp]
       def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): DriverIO[A] = M.pure(x)
+      def pure[A](x: A): DriverIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): DriverIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): DriverIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => DriverIO[Unit]): DriverIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // DriverIO is a ContextShift
+  implicit val ContextShiftDriverIO: ContextShift[DriverIO] =
+    new ContextShift[DriverIO] {
+      def shift: DriverIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

@@ -4,7 +4,7 @@
 
 package doobie.refined
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.refined.implicits._
@@ -13,9 +13,13 @@ import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined._
 import doobie.util.invariant._
+import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object refinedtypes extends Specification {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

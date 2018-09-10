@@ -208,8 +208,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |package $pkg
     |
     |import cats.~>
-    |import cats.effect.{ Async, ExitCase }
+    |import cats.effect.{ Async, ContextShift, ExitCase }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+    |import scala.concurrent.ExecutionContext
     |
     |${imports[A].mkString("\n")}
     |
@@ -246,6 +247,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
     |      def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): F[A]
     |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): F[B]
+    |      def shift: F[Unit]
+    |      def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]): F[A]
     |
     |      // $sname
           ${ctors[A].map(_.visitor).mkString("\n    ")}
@@ -274,6 +277,13 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    final case class BracketCase[A, B](acquire: ${ioname}[A], use: A => ${ioname}[B], release: (A, ExitCase[Throwable]) => ${ioname}[Unit]) extends ${opname}[B] {
     |      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     |    }
+    |    final case object Shift extends ${opname}[Unit] {
+    |      def visit[F[_]](v: Visitor[F]) = v.shift
+    |    }
+    |    final case class EvalOn
+    [A](ec: ExecutionContext, fa: ${ioname}[A]) extends ${opname}[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    |    }
     |
     |    // $sname-specific operations.
     |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
@@ -292,6 +302,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ${ioname}[A] = FF.liftF[${opname}, A](Async1(k))
     |  def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): ${ioname}[A] = FF.liftF[${opname}, A](AsyncF(k))
     |  def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = FF.liftF[${opname}, B](BracketCase(acquire, use, release))
+    |  val shift: ${ioname}[Unit] = FF.liftF[${opname}, Unit](Shift)
+    |  def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]) = FF.liftF[${opname}, A](EvalOn(ec, fa))
     |
     |  // Smart constructors for $oname-specific operations.
     |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
@@ -299,18 +311,24 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  // ${ioname} is an Async
     |  implicit val Async${ioname}: Async[${ioname}] =
     |    new Async[${ioname}] {
-    |      val M = FF.catsFreeMonadForFree[${opname}]
+    |      val asyncM = FF.catsFreeMonadForFree[${opname}]
     |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = module.bracketCase(acquire)(use)(release)
-    |      def pure[A](x: A): ${ioname}[A] = M.pure(x)
+    |      def pure[A](x: A): ${ioname}[A] = asyncM.pure(x)
     |      def handleErrorWith[A](fa: ${ioname}[A])(f: Throwable => ${ioname}[A]): ${ioname}[A] = module.handleErrorWith(fa, f)
     |      def raiseError[A](e: Throwable): ${ioname}[A] = module.raiseError(e)
     |      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ${ioname}[A] = module.async(k)
     |      def asyncF[A](k: (Either[Throwable,A] => Unit) => ${ioname}[Unit]): ${ioname}[A] = module.asyncF(k)
-    |      def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = M.flatMap(fa)(f)
-    |      def tailRecM[A, B](a: A)(f: A => ${ioname}[Either[A, B]]): ${ioname}[B] = M.tailRecM(a)(f)
-    |      def suspend[A](thunk: => ${ioname}[A]): ${ioname}[A] = M.flatten(module.delay(thunk))
+    |      def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = asyncM.flatMap(fa)(f)
+    |      def tailRecM[A, B](a: A)(f: A => ${ioname}[Either[A, B]]): ${ioname}[B] = asyncM.tailRecM(a)(f)
+    |      def suspend[A](thunk: => ${ioname}[A]): ${ioname}[A] = asyncM.flatten(module.delay(thunk))
     |    }
     |
+    |  // $ioname is a ContextShift
+    |  implicit val ContextShift${ioname}: ContextShift[${ioname}] =
+    |    new ContextShift[${ioname}] {
+    |      def shift: ${ioname}[Unit] = module.shift
+    |      def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]) = module.evalOn(ec)(fa)
+    |    }
     |}
     |""".trim.stripMargin
   }
@@ -364,18 +382,24 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |
        |    // for asyncF we must call ourself recursively
        |    override def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): Kleisli[M, $sname, A] =
-       |      Kleisli(j => M.asyncF(k.andThen(_.foldMap(this).run(j))))
+       |      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
        |
        |    // for handleErrorWith we must call ourself recursively
        |    override def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): Kleisli[M, $sname, A] =
        |      Kleisli { j =>
        |        val faʹ = fa.foldMap(this).run(j)
        |        val fʹ  = f.andThen(_.foldMap(this).run(j))
-       |        M.handleErrorWith(faʹ)(fʹ)
+       |        asyncM.handleErrorWith(faʹ)(fʹ)
        |      }
        |
        |    def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): Kleisli[M, $sname, B] =
-       |      Kleisli(j => M.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
+       |      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
+       |
+       |    val shift: Kleisli[M, $sname, Unit] =
+       |      Kleisli(j => contextShiftM.shift)
+       |
+       |    def evalOn[A](ec: ExecutionContext)(fa: $ioname[A]): Kleisli[M, $sname, A] =
+       |      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
        |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
@@ -402,7 +426,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |// Library imports
       |import cats.~>
       |import cats.data.Kleisli
-      |import cats.effect.{ Async, ExitCase }
+      |import cats.effect.{ Async, ContextShift, ExitCase }
+      |import java.util.concurrent.{ Executors, ThreadFactory }
+      |import scala.concurrent.ExecutionContext
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
@@ -411,24 +437,50 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
       |object KleisliInterpreter {
-      |  def apply[M[_]](implicit ev: Async[M]): KleisliInterpreter[M] =
+      |
+      |  val defaultBlockingContext: ExecutionContext =
+      |    ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
+      |      new ThreadFactory {
+      |        def newThread(r: Runnable): Thread = {
+      |          val th = new Thread(r)
+      |          th.setName(s"doobie-default-blocking-$${th.getId}")
+      |          th.setDaemon(true)
+      |          th
+      |        }
+      |      }
+      |    ))
+      |
+      |  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+      |  def apply[M[_]](blocking: ExecutionContext = defaultBlockingContext)(
+      |    implicit am: Async[M],
+      |             cs: ContextShift[M]
+      |  ): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M] {
-      |      val M = ev
+      |      val asyncM = am
+      |      val contextShiftM = cs
+      |      val blockingContext = blocking
       |    }
+      |
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
       |trait KleisliInterpreter[M[_]] { outer =>
-      |  implicit val M: Async[M]
+      |
+      |  implicit val asyncM: Async[M]
+      |
+      |  // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
+      |  // to support shifting blocking operations to another pool.
+      |  val contextShiftM: ContextShift[M]
+      |  val blockingContext: ExecutionContext
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}
       |
       |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
-      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => M.delay(f(a)))
-      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => M.delay(a()))
+      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => contextShiftM.evalOn(blockingContext)(asyncM.delay(f(a))))
+      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
       |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
-      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => M.async(k))
+      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
       |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
       |    e match {
       |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}

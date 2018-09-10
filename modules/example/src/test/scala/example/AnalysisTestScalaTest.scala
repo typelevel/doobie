@@ -4,12 +4,18 @@
 
 package example
 
+import cats.effect.{ ContextShift, IO }
 import cats.effect.IO
 import doobie._
 import doobie.scalatest.imports._
 import org.scalatest._
+import scala.concurrent.ExecutionContext
 
 class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+
   val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
   // Commented tests fail!

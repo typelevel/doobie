@@ -4,13 +4,13 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import org.postgresql.geometric.PGpoint
 
-object PostgresPoint extends App {
+object PostgresPoint extends IOApp {
 
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
@@ -23,12 +23,18 @@ object PostgresPoint extends App {
       Meta[PGpoint].timap(p => new Point(p.x, p.y))(p => new PGpoint(p.x, p.y))
   }
 
-  // Point is now a perfectly cromulent input/output type
   val q = sql"select '(1, 2)'::point".query[Point]
   val a = q.to[List].transact(xa).unsafeRunSync
-  Console.println(a) // List(Point(1.0,2.0))
 
-  // Just to be clear; the Write instance has width 1, not 2
-  Console.println(Write[Point].length) // 1
+  def run(args: List[String]): IO[ExitCode] =
+    for {
+
+      // Point is now a perfectly cromulent input/output type
+      _ <- IO(println(a)) // List(Point(1.0,2.0))
+
+      // Just to be clear; the Write instance has width 1, not 2
+      _ <- IO(println(Write[Point].length)) // 1
+
+    } yield ExitCode.Success
 
 }

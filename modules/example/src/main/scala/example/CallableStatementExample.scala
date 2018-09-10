@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import doobie._
 import doobie.enum.JdbcType.Other
 import doobie.free.connection.ConnectionIO
@@ -13,7 +13,7 @@ import doobie.util.transactor.Transactor
 import cats.implicits._
 
 
-object CallableStatementExample {
+object CallableStatementExample extends IOApp {
 
   def names(limit: Int): ConnectionIO[List[String]] =
     HC.prepareCall("{ call getCountries(?, ?) }") {
@@ -29,14 +29,10 @@ object CallableStatementExample {
   val xa: Transactor[IO] =
     Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 
-  def runc: IO[Unit] =
+  def run(args: List[String]): IO[ExitCode] =
     for {
       ns <- names(10).transact(xa)
       _  <- ns.traverse(s => IO(println(s)))
-    } yield ()
+    } yield ExitCode.Success
 
-
-  def main(args: Array[String]): Unit = {
-    runc.unsafeRunSync()
-  }
 }

@@ -5,7 +5,8 @@
 package example
 
 import cats.data.NonEmptyList
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
+import cats.implicits._
 import doobie._
 import doobie.enum.JdbcType
 import doobie.implicits._
@@ -21,7 +22,7 @@ import org.postgresql.util._
  *   );
  *
  */
-object OtherSchema {
+object OtherSchema extends IOApp {
 
   // Ok this mapping goes via String when reading and PGObject when writing, and it understands
   // when the type is reported as OTHER (schemaType).
@@ -53,7 +54,7 @@ object OtherSchema {
   implicit val meta: Meta[ReturnStatus.Value] =
     wackyPostgresMapping(""""returns_data"."return_status"""").timap(ReturnStatus.withName)(_.toString)
 
-  def main(args: Array[String]): Unit = {
+  def run(args: List[String]): IO[ExitCode] = {
 
     // Some setup
     val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
@@ -62,13 +63,13 @@ object OtherSchema {
 
     // Check as column value only
     val q1 = sql"SELECT 'INITIAL'::returns_data.return_status".query[ReturnStatus.Value]
-    q1.check.unsafeRunSync
-    q1.unique.quick.unsafeRunSync
+    val p1 = q1.check *> q1.unique.quick
 
     // Check as parameter too
     val q2 = sql"SELECT ${ReturnStatus.IN_PROGRESS}::returns_data.return_status".query[ReturnStatus.Value]
-    q2.check.unsafeRunSync
-    q2.unique.quick.unsafeRunSync
+    val p2 = q2.check *> q2.unique.quick
+
+    (p1 *> p2) as ExitCode.Success
 
   }
 

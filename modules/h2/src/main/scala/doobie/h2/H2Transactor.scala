@@ -5,7 +5,7 @@
 package doobie
 package h2
 
-import cats.effect.Async
+import cats.effect.{ Async, ContextShift }
 import fs2.Stream
 import org.h2.jdbcx.JdbcConnectionPool
 
@@ -13,15 +13,15 @@ object H2Transactor {
 
   /** Constructs a program that constructs a new H2Transactor. */
   @deprecated("This method has been renamed `newH2Transactor` to help clarify usage", "doobie 0.5.0")
-  def apply[M[_]: Async](url: String, user: String, pass: String): M[H2Transactor[M]] =
+  def apply[M[_]: Async: ContextShift](url: String, user: String, pass: String): M[H2Transactor[M]] =
     newH2Transactor(url, user, pass)
 
   /** Constructs a program that constructs a new H2Transactor. */
-  def newH2Transactor[M[_]: Async](url: String, user: String, pass: String): M[H2Transactor[M]] =
+  def newH2Transactor[M[_]: Async: ContextShift](url: String, user: String, pass: String): M[H2Transactor[M]] =
     Async[M].delay(Transactor.fromDataSource[M](JdbcConnectionPool.create(url, user, pass)))
 
   /** Constructs a stream that emits a single `HikariTransactor` with guaranteed cleanup. */
-  def stream[M[_]: Async](url: String, user: String, pass: String) : Stream[M, H2Transactor[M]] =
+  def stream[M[_]: Async: ContextShift](url: String, user: String, pass: String) : Stream[M, H2Transactor[M]] =
     Stream.bracket(newH2Transactor(url, user, pass))(_.configure(ds => Async[M].delay(ds.dispose())))
 
 }

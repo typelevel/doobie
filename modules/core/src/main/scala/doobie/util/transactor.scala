@@ -14,7 +14,7 @@ import cats.{ Monad, MonadError, ~> }
 import cats.data.Kleisli
 import cats.free.Free
 import cats.implicits._
-import cats.effect.{ Sync, Async }
+import cats.effect.{ Sync, Async, ContextShift }
 import fs2.Stream
 import fs2.Stream.{ eval, eval_ }
 
@@ -248,14 +248,17 @@ object transactor  {
        * @group Constructors (Partially Applied)
        */
       class FromDataSourceUnapplied[M[_]] {
-        def apply[A <: DataSource](a: A)(implicit ev: Async[M]): Transactor.Aux[M, A] =
-          Transactor(a, a => ev.delay(a.getConnection), KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
+        def apply[A <: DataSource](a: A)(
+          implicit ev: Async[M],
+                   cs: ContextShift[M]
+        ): Transactor.Aux[M, A] =
+          Transactor(a, a => ev.delay(a.getConnection), KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default)
       }
     }
 
     /** @group Constructors */
-    def fromConnection[M[_]: Async](a: Connection): Transactor.Aux[M, Connection] =
-      Transactor(a, _.pure[M], KleisliInterpreter[M].ConnectionInterpreter, Strategy.default.copy(always = unit))
+    def fromConnection[M[_]: Async: ContextShift](a: Connection): Transactor.Aux[M, Connection] =
+      Transactor(a, _.pure[M], KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default.copy(always = unit))
 
     /**
      * Construct a constructor of `Transactor[M, Unit]` backed by the JDBC DriverManager by partial
@@ -267,16 +270,16 @@ object transactor  {
     object fromDriverManager {
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-      private def create[M[_]: Async](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
-        Transactor((), u => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
+      private def create[M[_]: Async: ContextShift](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
+        Transactor((), u => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default)
 
-      def apply[M[_]: Async](driver: String, url: String): Transactor.Aux[M, Unit] =
+      def apply[M[_]: Async: ContextShift](driver: String, url: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url))
 
-      def apply[M[_]: Async](driver: String, url: String, user: String, pass: String): Transactor.Aux[M, Unit] =
+      def apply[M[_]: Async: ContextShift](driver: String, url: String, user: String, pass: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, user, pass))
 
-      def apply[M[_]: Async](driver: String, url: String, info: java.util.Properties): Transactor.Aux[M, Unit] =
+      def apply[M[_]: Async: ContextShift](driver: String, url: String, info: java.util.Properties): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, info))
 
     }

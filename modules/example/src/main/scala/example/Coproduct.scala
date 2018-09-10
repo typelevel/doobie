@@ -7,7 +7,7 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.free.Free
 import cats.implicits._
 import cats.{InjectK, ~>}
@@ -17,7 +17,7 @@ import doobie.implicits._
 
 import scala.io.StdIn
 
-object coproduct {
+object coproduct extends IOApp {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
@@ -79,20 +79,20 @@ object coproduct {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, ?] =
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO].ConnectionInterpreter
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO]().ConnectionInterpreter
 
   // Our interpreted program
   val iprog: Kleisli[IO, Connection, Unit] = prog[Cop].foldMap(interp)
 
+  val xa = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver",
+    "jdbc:postgresql:world",
+    "postgres", ""
+  )
+
   // Exec it!
-  def main(args: Array[String]): Unit = {
-    val xa = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver",
-      "jdbc:postgresql:world",
-      "postgres", ""
-    )
-    xa.exec.apply(iprog).unsafeRunSync
-  }
+  def run(args: List[String]): IO[ExitCode] =
+    xa.exec.apply(iprog).as(ExitCode.Success)
 
   // Enter a pattern:
   // U%

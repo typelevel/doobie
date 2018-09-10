@@ -4,18 +4,27 @@
 
 package doobie.scalatest
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.scalatest._
 import org.scalatest._
+import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends FunSuite with Matchers with Checker[M] {
+
+  implicit def contextShift: ContextShift[M]
+
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
   )
+
   test("trivial") { check(sql"select 1".query[Int]) }
+
 }
 
-class IOCheckerCheck extends CheckerChecks[IO] with IOChecker
+class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
+  def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+}

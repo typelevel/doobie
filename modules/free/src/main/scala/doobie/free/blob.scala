@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -45,6 +46,8 @@ object blob { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): F[A]
       def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): F[A]
 
       // Blob
       def free: F[Unit]
@@ -82,6 +85,13 @@ object blob { module =>
     }
     final case class BracketCase[A, B](acquire: BlobIO[A], use: A => BlobIO[B], release: (A, ExitCase[Throwable]) => BlobIO[Unit]) extends BlobOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends BlobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn
+    [A](ec: ExecutionContext, fa: BlobIO[A]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // Blob-specific operations.
@@ -133,6 +143,8 @@ object blob { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): BlobIO[A] = FF.liftF[BlobOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): BlobIO[A] = FF.liftF[BlobOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = FF.liftF[BlobOp, B](BracketCase(acquire, use, release))
+  val shift: BlobIO[Unit] = FF.liftF[BlobOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]) = FF.liftF[BlobOp, A](EvalOn(ec, fa))
 
   // Smart constructors for Blob-specific operations.
   val free: BlobIO[Unit] = FF.liftF(Free)
@@ -150,17 +162,23 @@ object blob { module =>
   // BlobIO is an Async
   implicit val AsyncBlobIO: Async[BlobIO] =
     new Async[BlobIO] {
-      val M = FF.catsFreeMonadForFree[BlobOp]
+      val asyncM = FF.catsFreeMonadForFree[BlobOp]
       def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): BlobIO[A] = M.pure(x)
+      def pure[A](x: A): BlobIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): BlobIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): BlobIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => BlobIO[Unit]): BlobIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => BlobIO[A]): BlobIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => BlobIO[A]): BlobIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // BlobIO is a ContextShift
+  implicit val ContextShiftBlobIO: ContextShift[BlobIO] =
+    new ContextShift[BlobIO] {
+      def shift: BlobIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 
