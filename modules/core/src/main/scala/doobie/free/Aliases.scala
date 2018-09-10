@@ -5,6 +5,8 @@
 package doobie.free
 
 import cats.effect.Async
+import cats.effect._
+import scala.concurrent.ExecutionContext
 
 trait Types {
   /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]
@@ -82,5 +84,36 @@ trait Instances {
 
   /** @group Typeclass Instances */  implicit lazy val AsyncStatementIO: Async[StatementIO] =
     statement.AsyncStatementIO
+
+
+  /**
+   * We can piggyback on ContextShift[IO] if we have LiftIO and Bracket.
+   * @group Derivations
+   */
+  def contextShiftViaLiftIO[F[_]](
+    implicit cs: ContextShift[IO],
+             io: LiftIO[F],
+             br: Bracket[F, Throwable]
+  ): ContextShift[F] =
+    new ContextShift[F] {
+      def shift: F[Unit] = io.liftIO(cs.shift)
+      def evalOn[A](ec: ExecutionContext)(fa: F[A]): F[A] =
+        br.bracket(io.liftIO(IO.shift(ec)))(_ => fa)(_ => io.liftIO(cs.shift))
+    }
+
+  /** @group Typeclass Instances */ implicit def contextShiftBlobIO(implicit ev: ContextShift[IO]): ContextShift[BlobIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftCallableStatementIO(implicit ev: ContextShift[IO]): ContextShift[CallableStatementIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftClobIO(implicit ev: ContextShift[IO]): ContextShift[ClobIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftConnectionIO(implicit ev: ContextShift[IO]): ContextShift[ConnectionIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftDatabaseMetaDataIO(implicit ev: ContextShift[IO]): ContextShift[DatabaseMetaDataIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftDriverIO(implicit ev: ContextShift[IO]): ContextShift[DriverIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftNClobIO(implicit ev: ContextShift[IO]): ContextShift[NClobIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftPreparedStatementIO(implicit ev: ContextShift[IO]): ContextShift[PreparedStatementIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftRefIO(implicit ev: ContextShift[IO]): ContextShift[RefIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftResultSetIO(implicit ev: ContextShift[IO]): ContextShift[ResultSetIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftSQLDataIO(implicit ev: ContextShift[IO]): ContextShift[SQLDataIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftSQLInputIO(implicit ev: ContextShift[IO]): ContextShift[SQLInputIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftSQLOutputIO(implicit ev: ContextShift[IO]): ContextShift[SQLOutputIO] = contextShiftViaLiftIO
+  /** @group Typeclass Instances */ implicit def contextShiftStatementIO(implicit ev: ContextShift[IO]): ContextShift[StatementIO] = contextShiftViaLiftIO
 
 }

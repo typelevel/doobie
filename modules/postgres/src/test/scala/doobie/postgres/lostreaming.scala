@@ -20,6 +20,10 @@ import scala.concurrent.ExecutionContext.global
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object lostreamingspec extends Specification with ScalaCheck {
+
+  implicit val ioContextShift: ContextShift[IO] =
+    IO.contextShift(global)
+
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
@@ -37,14 +41,6 @@ object lostreamingspec extends Specification with ScalaCheck {
     "round-trip" in forAll(genFiniteStream[Pure, Byte]) { data =>
       val data0 = data.covary[ConnectionIO]
 
-      val base = IO.contextShift(global)
-      implicit val translated : ContextShift[ConnectionIO] = new ContextShift[ConnectionIO]{
-        def shift: ConnectionIO[Unit] = LiftIO[ConnectionIO].liftIO(base.shift)
-        // Ignorance Is Bliss - totally not how this is intended to work.
-        def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): ConnectionIO[A] =
-          fa
-      }
-
       val result = Stream.bracket(PHLOS.createLOFromStream(data0, global))(
         oid => PHC.pgGetLargeObjectAPI(PFLOM.unlink(oid))
       ).flatMap(oid => PHLOS.createStreamFromLO(oid, chunkSize = 1024 * 10, global))
@@ -53,4 +49,5 @@ object lostreamingspec extends Specification with ScalaCheck {
       result must_=== data.toVector
     }
   }
+
 }
