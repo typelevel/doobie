@@ -46,6 +46,10 @@ import doobie.implicits._
 
 val q = sql"select 42".query[Int].unique
 
+// We need a ContextShift[IO] before we can construct a Transactor[IO].
+// Note that you don't have to do this if you use IOApp because it's provided for you.
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+
 for {
   xa <- H2Transactor.newH2Transactor[IO]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   _  <- xa.setMaxConnections(10) // and other ops; see scaladoc or source

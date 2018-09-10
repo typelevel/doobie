@@ -258,7 +258,7 @@ object transactor  {
 
     /** @group Constructors */
     def fromConnection[M[_]: Async: ContextShift](a: Connection): Transactor.Aux[M, Connection] =
-      Transactor(a, _.pure[M], KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default.copy(always = unit))
+      Transactor(a, Async[M].pure, KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default.copy(always = unit))
 
     /**
      * Construct a constructor of `Transactor[M, Unit]` backed by the JDBC DriverManager by partial

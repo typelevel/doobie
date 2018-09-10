@@ -48,6 +48,10 @@ However, for experimentation as described in this book (and for situations where
 class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```tut:silent
+// We need a ContextShift[IO] before we can construct a Transactor[IO].
+// Note that you don't have to do this if you use IOApp because it's provided for you.
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", // fully-qualified driver class name
   "jdbc:postgresql:world", // connect URL
@@ -117,7 +121,7 @@ If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an
 ```tut:silent
 val conn: java.sql.Connection = null     // Connection (pretending)
 val prog = 42.pure[ConnectionIO]         // ConnectionIO[Int]
-val int  = KleisliInterpreter[IO]        // KleisliInterpreter[IO]
+val int  = KleisliInterpreter[IO]()      // KleisliInterpreter[IO]
 val nat  = int.ConnectionInterpreter     // ConnectionIO ~> Kleisli[IO, Connection, ?]
 val task = prog.foldMap(nat).run(conn)   // IO[Int]
 ```

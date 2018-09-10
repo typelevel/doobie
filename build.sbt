@@ -13,7 +13,7 @@ lazy val hikariVersion        = "3.2.0"
 lazy val kindProjectorVersion = "0.9.7"
 lazy val monixVersion         = "3.0.0-M3"
 lazy val postGisVersion       = "2.2.1"
-lazy val postgresVersion      = "42.2.4"
+lazy val postgresVersion      = "42.2.5"
 lazy val refinedVersion       = "0.9.2"
 lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.5"
@@ -124,6 +124,7 @@ lazy val compilerFlags = Seq(
     }
   ),
   scalacOptions in (Compile, console) --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports"),
+  scalacOptions in (Compile, console) ++= Seq("-Ydelambdafy:inline"), // http://fs2.io/faq.html
   scalacOptions in (Compile, doc)     --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports", "-Yno-imports")
 )
 
@@ -396,6 +397,7 @@ lazy val postgres = project
       import cats._, cats.data._, cats.implicits._, cats.effect._
       import doobie._, doobie.implicits._
       import doobie.postgres._, doobie.postgres.implicits._
+      implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
       val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       val yolo = xa.yolo
       import yolo._
@@ -490,6 +492,8 @@ lazy val docs = project
   .settings(noPublishSettings)
   .settings(
     scalacOptions in Tut --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
+    scalacOptions in Tut ++= Seq("-Ydelambdafy:inline"), // http://fs2.io/faq.html
+
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,

@@ -20,6 +20,10 @@ import cats.data._
 import cats.effect.IO
 import cats.implicits._
 
+// We need a ContextShift[IO] before we can construct a Transactor[IO].
+// Note that you don't have to do this if you use IOApp because it's provided for you.
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
@@ -202,7 +206,7 @@ And just for fun, since the `Code` values are constructed from the primary key, 
     .query[(Code, Country)]
     .stream.take(5)
     .compile.toList
-    .map(_.toMap)
+    .map(_.toMap) // this causes a deadlock … why?
     .quick
     .unsafeRunSync
 }
