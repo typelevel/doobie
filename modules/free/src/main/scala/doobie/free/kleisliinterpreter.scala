@@ -8,7 +8,6 @@ package doobie.free
 import cats.~>
 import cats.data.Kleisli
 import cats.effect.{ Async, ContextShift, ExitCase }
-import java.util.concurrent.{ Executors, ThreadFactory }
 import scala.concurrent.ExecutionContext
 
 // Types referenced in the JDBC API
@@ -72,20 +71,8 @@ import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
 
-  val defaultBlockingContext: ExecutionContext =
-    ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
-      new ThreadFactory {
-        def newThread(r: Runnable): Thread = {
-          val th = new Thread(r)
-          th.setName(s"doobie-default-blocking-${th.getId}")
-          th.setDaemon(true)
-          th
-        }
-      }
-    ))
-
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply[M[_]](blocking: ExecutionContext = defaultBlockingContext)(
+  def apply[M[_]](blocking: ExecutionContext)(
     implicit am: Async[M],
              cs: ContextShift[M]
   ): KleisliInterpreter[M] =

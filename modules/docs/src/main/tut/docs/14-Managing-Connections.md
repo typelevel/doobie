@@ -11,7 +11,7 @@ In this chapter we discuss several ways to manage connections in applications th
 ```tut:silent
 import cats._
 import cats.data._
-import cats.effect.IO
+import cats.effect._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -19,13 +19,16 @@ import doobie.implicits._
 
 ### About Transactors
 
-Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
+Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
-A `Transactor.Aux[M, A]` closes over some source of connections and configuration information (`A`). Based on this, it provides several natural transformations from `ConnectionIO ~> M`, where `M` is a target monad such as `IO`.
+A `Transactor[M]` consists of the following bits of information:
 
-A `Strategy`, which represents the setup, error-handling, and cleanup strategy associated with each database interation, can be configured for a `Transactor`, where reasonable defaults are provided. A `Transactor` uses a `Strategy` to wrap programs prior to execution.
+- An arbitrary piece of configuration, called the `kernel`, particular to a given implementation (see below);
+- a source of connections, computed in `M` (typically `IO`);
+- an *interpreter* from `ConnectionOp ~> M`; and
+- a transaction `Strategy` that specifies a setup, error-handling, and cleanup strategy associated with each database interation.
 
-These are the natural transformations that a `Transactor` provides:
+Given this information a `Transactor[M]` can provide the following transformations:
 
 - `trans: ConnectionIO ~> M` A natural transformation of a program in `ConnectionIO` to the target monad `M` that uses the given `Strategy` to wrap the given program with additional setup, error-handling and cleanup operations. This yields an independent program in `M`. This is the most common way to run a doobie program.
   - e.g., `xa.trans.apply(program1)`
@@ -36,103 +39,134 @@ These are the natural transformations that a `Transactor` provides:
 - `exec: Kleisli[M, Connection, ?] ~> M` equivalent to `trans` except it transforms a `Kleisli` that expects a `java.sql.Connection` and not a `ConnectionIO`. This can be used in combination with the doobie interpreters, which can transform doobie programs (e.g., `ConnectionIO`) to `Kleisli` effects, in order to implement your own logic for running doobie programs.
 - `rawExec` natural transformation equivalent to `exec` but one that does not use the provided `Strategy` to wrap the given program with additional operations.
 
-So summarizing, once you have a `Transactor[M, A]` you have a way of discharging `ConnectionIO` and replacing it with some effectful `M` like `IO`. In effect this turns a **doobie** program into a "real" program value that you can integrate with the rest of your application; all doobieness is left behind.
+So summarizing, once you have a `Transactor[M]` you have a way of discharging `ConnectionIO` and replacing it with some effectful `M` like `IO`. In effect this turns a **doobie** program into a "real" program value that you can integrate with the rest of your application; all doobieness is left behind.
 
-**doobie** provides several implementations, described below.
+### About Threading
+
+Starting with version 0.6.0 **doobie** provides an asynchronous API that delegates blocking operations to dedicated execution contexts *if you use the provided `Transactor` implementations*. To construct any of the provided `Transactor[M]`s you need
+
+- `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
+- An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
+- A second `ExecutionContext` for **execution JDBC operations**. Because your connection pool limits the number of active connections it is usually fine for this to be an **unbounded** pool.
+
+Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 
 ### Using the JDBC DriverManager
 
 JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections.
 
-However, for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is ideal. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver
-class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
+However, for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is ideal. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```tut:silent
-// We need a ContextShift[IO] before we can construct a Transactor[IO].
-// Note that you don't have to do this if you use IOApp because it's provided for you.
-implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+import scala.concurrent.ExecutionContext
 
+// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+implicit val cs = IO.contextShift(ExecutionContext.global)
+
+// A transactor that gets connections from java.sql.DriverManager
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // fully-qualified driver class name
-  "jdbc:postgresql:world", // connect URL
+  "org.postgresql.Driver", // driver classname
+  "jdbc:postgresql:world", // connect URL (driver-specific)
   "jimmy",                 // user
-  "coconut"                // password
+  "coconut",               // password
+  ExecutionContext.global, // await connection here (testing only, don't use this EC here!)
+  ExecutionContext.global  // execute JDBC operations here (testing only, don't use this EC here!)
 )
 ```
 
+We won't provide an example of using `DriverManagerTransactor` in a real program because you would never want to.
+
 ### Using a HikariCP Connection Pool
 
-The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool has internal state so constructing one is an effect:
+The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a `Resource`. A program that uses `HikariTransactor` will typically use `IOApp`.
 
-```tut:silent
-import doobie.hikari._, doobie.hikari.implicits._
+```tut:silent:reset
+import cats.effect._
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+import doobie.hikari._
 
-val q = sql"select 42".query[Int].unique
+object HikariApp extends IOApp {
 
-val p: IO[Int] = for {
-  xa <- HikariTransactor.newHikariTransactor[IO](
-          "org.postgresql.Driver",
-          "jdbc:postgresql:world",
-          "postgres",
-          ""
-        )
-  _  <- xa.configure(hx => IO( /* do something with hx */ ()))
-  a  <- q.transact(xa) guarantee xa.shutdown
-} yield a
+  // Resource yielding a transactor configured with a bounded connect EC and an unbounded
+  // transaction EC. Everything will be closed and shut down cleanly after use.
+  val transactor: Resource[IO, HikariTransactor[IO]] =
+    for {
+      ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
+      te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
+      xa <- HikariTransactor.newHikariTransactor[IO](
+              "org.h2.Driver",                        // driver classname
+              "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
+              "sa",                                   // username
+              "",                                     // password
+              ce,                                     // await connection here
+              te                                      // execute JDBC operations here
+            )
+    } yield xa
+
+
+  def run(args: List[String]): IO[ExitCode] =
+    transactor.use { xa =>
+
+      // Construct and run your server here!
+      for {
+        n <- sql"select 42".query[Int].unique.transact(xa)
+        _ <- IO(println(n))
+      } yield ExitCode.Success
+
+    }
+
+}
 ```
 
-And running this `IO` gives us the desired result.
+And running this program gives us the desired result.
 
 ```tut
-p.unsafeRunSync
+HikariApp.main(Array())
 ```
-
-The returned instance is of type `HikariTransactor`, which provides a `shutdown` method, as well as a `configure` method that provides access to the underlying `HikariDataSource` if additional configuration is required.
 
 ### Using an existing DataSource
 
-If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`.
+If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`. You still need to provide execution contexts.
 
 ```tut:silent
-val ds: javax.sql.DataSource = null // pretending
+import javax.sql.DataSource
 
-val xa = Transactor.fromDataSource[IO](ds)
-
-val p: IO[Int] = for {
-  _  <- xa.configure(ds => IO( /* do something with ds */ ()))
-  a  <- q.transact(xa)
-} yield a
+// Resource yielding a DataSourceTransactor[IO] wrapping the given `DataSource`
+def transactor(ds: DataSource)(
+  implicit ev: ContextShift[IO]
+): Resource[IO, DataSourceTransactor[IO]] =
+  for {
+    ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
+    te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
+  } yield Transactor.fromDataSource[IO](ds, ce, te)
 ```
 
 The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
+
+
+### Using an Existing JDBC Connection
+
+If your application exposes an existing `Connection` you can use it directly by wrapping it in a `Transactor`. You still need to provide an execution context for blocking operations.
+
+```tut:silent
+import java.sql.Connection
+
+// Resource yielding a Transactor[IO] wrapping the given `Connection`
+def transactor(c: Connection)(
+  implicit ev: ContextShift[IO]
+): Resource[IO, Transactor[IO]] =
+  ExecutionContexts.cachedThreadPool[IO].map { te =>
+    Transactor.fromConnection[IO](c, te)
+  }
+```
 
 ### Customizing Transactors
 
 If the default `Transactor` behavior don't meet your needs you can replace any member with one that does what you need. See the Scaladoc for `Transactor` and `Strategy` for details on the structure. Lenses are provided to make it straightforward to replace just the piece you're interested in. For example, to create a transactor that is the same as `xa` but always rolls back (for testing perhaps) you can say:
 
-```tut
+```scala
 val testXa = Transactor.after.set(xa, HC.rollback)
 ```
-
-### Using an Existing JDBC Connection
-
-If you have an existing `Connection` you can transform a `ConnectionIO[A]` to an `M[A]` for any target `M` that has an `Async` instance by running the `Kleisli[M, Connection, A]` yielded by the default interpreter.
-
-```tut:silent
-val conn: java.sql.Connection = null     // Connection (pretending)
-val prog = 42.pure[ConnectionIO]         // ConnectionIO[Int]
-val int  = KleisliInterpreter[IO]()      // KleisliInterpreter[IO]
-val nat  = int.ConnectionInterpreter     // ConnectionIO ~> Kleisli[IO, Connection, ?]
-val task = prog.foldMap(nat).run(conn)   // IO[Int]
-```
-
-As an aside, this technique works for programs written in *any* of the provided contexts. For example, here we run a program in `ResultSetIO`.
-
-```tut:silent
-val rs: java.sql.ResultSet = null      // ResultSet (pretending)
-val prog = 42.pure[ResultSetIO]        // ResultSetIO[Int]
-val nat  = int.ResultSetInterpreter    // ResultSetIO ~> Kleisli[IO, ResultSet, ?]
-val task = prog.foldMap(nat).run(rs)   // IO[Int]
-```
-
-This facility allows you to mix **doobie** programs into existing JDBC applications in a fine-grained manner if this meets your needs.

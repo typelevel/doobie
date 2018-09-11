@@ -20,7 +20,9 @@ object pgjsonspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   def inOut[A: Param: Write: Read](col: String, a: A) =

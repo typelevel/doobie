@@ -23,11 +23,13 @@ object beforeall extends Specification with IOChecker with BeforeAll {
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
 
-  val transactor = H2Transactor.newH2Transactor[IO](
-    "jdbc:h2:mem:",
-    "sa",
-    ""
-  ).unsafeRunSync
+  val transactor = Transactor.fromDriverManager[IO](
+    "org.h2.Driver",
+    "jdbc:h2:mem:beforeall;DB_CLOSE_DELAY=-1",
+    "sa", "",
+    ExecutionContext.global,
+    ExecutionContext.global
+  )
 
   // The test itself
   check(targetQ)

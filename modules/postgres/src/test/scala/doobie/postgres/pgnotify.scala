@@ -23,7 +23,9 @@ object pgnotifyspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   // Listen on the given channel, notify on another connection

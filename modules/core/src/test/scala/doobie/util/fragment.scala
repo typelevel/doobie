@@ -21,7 +21,9 @@ object fragmentspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:fragmentspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    "sa", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   "Fragment" should {

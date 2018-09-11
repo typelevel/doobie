@@ -8,6 +8,7 @@ import doobie._
 import doobie.implicits._
 import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
+import scala.concurrent.ExecutionContext
 
 // Sketch of a program to run a query and get the output without knowing how many columns will
 // come back, or their types. This can be useful for building query tools, etc.
@@ -19,7 +20,9 @@ object Dynamic extends IOApp {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   // Entry point. Run a query and print the results out.

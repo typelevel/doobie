@@ -21,14 +21,16 @@ object strategyspec extends Specification {
   val baseXa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    "sa", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   // an instrumented interpreter
   class Interp extends KleisliInterpreter[IO] {
 
     val asyncM = Async[IO]
-    val blockingContext = KleisliInterpreter.defaultBlockingContext
+    val blockingContext = ExecutionContext.global
     val contextShiftM = contextShift
 
     object Connection {

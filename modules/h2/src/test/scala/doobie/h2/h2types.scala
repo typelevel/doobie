@@ -21,7 +21,9 @@ object h2typesspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    "sa", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   def inOut[A: Param: Read](col: String, a: A) =

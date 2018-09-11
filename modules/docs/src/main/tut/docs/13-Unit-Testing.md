@@ -19,13 +19,20 @@ import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
+import scala.concurrent.ExecutionContext
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO].
-// Note that you don't have to do this if you use IOApp because it's provided for you.
-implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+implicit val cs = IO.contextShift(ExecutionContext.global)
 
+// A transactor that gets connections from java.sql.DriverManager
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  "org.postgresql.Driver", // driver classname
+  "jdbc:postgresql:world", // connect URL (driver-specific)
+  "postgres",              // user
+  "",                      // password
+  ExecutionContext.global, // await connection here (testing only, don't use this EC here!)
+  ExecutionContext.global  // execute JDBC operations here (testing only, don't use this EC here!)
 )
 ```
 
@@ -78,7 +85,8 @@ import org.specs2.mutable.Specification
 object AnalysisTestSpec extends Specification with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
+    ExecutionContext.global, ExecutionContext.global // ok for testing
   )
 
   check(trivial)
@@ -105,7 +113,8 @@ import org.scalatest._
 class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
+    ExecutionContext.global, ExecutionContext.global // ok for testing
   )
 
   test("trivial")    { check(trivial)        }

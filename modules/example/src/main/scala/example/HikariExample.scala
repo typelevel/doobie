@@ -4,18 +4,30 @@
 
 package example
 
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect._
+import cats.implicits._
+import doobie._
 import doobie.hikari._
-import doobie.hikari.syntax.hikaritransactor._
 import doobie.implicits._
 
 object HikariExample extends IOApp {
 
-  def run(args: List[String]): IO[ExitCode] =
+  // Typically you construct a transactor this way, using lifetime-managed thread pools.
+  val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
-      xa <- HikariTransactor.newHikariTransactor[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-      _  <- FreeUsage.examples.transact(xa)
-      _  <- xa.shutdown
-    } yield ExitCode.Success
+      ce <- ExecutionContexts.fixedThreadPool[IO](32)
+      te <- ExecutionContexts.cachedThreadPool[IO]
+      xa <- HikariTransactor.newHikariTransactor[IO](
+              "org.h2.Driver",
+              "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
+              "sa", "",
+              ce, te
+            )
+    } yield xa
+
+  def run(args: List[String]): IO[ExitCode] =
+    transactor.use { xa =>
+      FirstExample.examples.transact(xa).as(ExitCode.Success)
+    }
 
 }

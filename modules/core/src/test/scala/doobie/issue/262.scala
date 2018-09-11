@@ -21,7 +21,7 @@ object `262` extends Specification {
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
     val asyncM = Async[IO]
-    val blockingContext = KleisliInterpreter.defaultBlockingContext
+    val blockingContext = ExecutionContext.global
     val contextShiftM = contextShift
 
     val M = implicitly[Async[IO]]
@@ -36,7 +36,9 @@ object `262` extends Specification {
   val baseXa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    "sa", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   // A transactor that uses our interpreter above

@@ -16,7 +16,10 @@ object AnalysisTestSpecs2 extends Specification with IOChecker {
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
 
-  val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val transactor = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
+    ExecutionContext.global, ExecutionContext.global
+  )
   // Commented tests fail!
   // check(AnalysisTest.speakerQuery(null, 0))
   check(AnalysisTest.speakerQuery2)

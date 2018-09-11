@@ -16,7 +16,10 @@ class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
 
-  val transactor = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val transactor = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
+    ExecutionContext.global, ExecutionContext.global
+  )
 
   // Commented tests fail!
 //test("speakerQuery")  { check(AnalysisTest.speakerQuery(null, 0)) }

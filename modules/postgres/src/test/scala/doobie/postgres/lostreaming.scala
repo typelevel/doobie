@@ -25,7 +25,9 @@ object lostreamingspec extends Specification with ScalaCheck {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "",
+    global,
+    global
   )
 
   def genFiniteStream[F[_], A: Arbitrary]: Gen[Stream[F, A]] =

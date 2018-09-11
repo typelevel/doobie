@@ -1,0 +1,32 @@
+// Copyright (c) 2013-2018 Rob Norris and Contributors
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
+package doobie.util
+
+import cats.effect.{ Resource, Sync }
+import cats.implicits._
+import java.util.concurrent.{ Executors, ExecutorService }
+import scala.concurrent.ExecutionContext
+
+object ExecutionContexts {
+
+  /** Resource yielding an `ExecutionContext` backed by a fixed-size pool. */
+  def fixedThreadPool[F[_]](size: Int)(
+    implicit sf: Sync[F]
+  ): Resource[F, ExecutionContext] = {
+    val alloc = sf.delay(Executors.newFixedThreadPool(size))
+    val free  = (es: ExecutorService) => sf.delay(es.shutdown())
+    Resource.make(alloc)(free).map(ExecutionContext.fromExecutor)
+  }
+
+  /** Resource yielding an `ExecutionContext` backed by an unbounded thread pool. */
+  def cachedThreadPool[F[_]](
+    implicit sf: Sync[F]
+  ): Resource[F, ExecutionContext] = {
+    val alloc = sf.delay(Executors.newCachedThreadPool)
+    val free  = (es: ExecutorService) => sf.delay(es.shutdown())
+    Resource.make(alloc)(free).map(ExecutionContext.fromExecutor)
+  }
+
+}

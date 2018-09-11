@@ -23,7 +23,9 @@ object `706` extends Specification with ScalaCheck {
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:issue-706;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    "sa", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   val setup: ConnectionIO[Unit] =

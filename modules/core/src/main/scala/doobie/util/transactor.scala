@@ -21,6 +21,7 @@ import fs2.Stream.{ eval, eval_ }
 import java.sql.{ Connection, DriverManager }
 import javax.sql.DataSource
 
+import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 object transactor  {
@@ -248,39 +249,110 @@ object transactor  {
        * @group Constructors (Partially Applied)
        */
       class FromDataSourceUnapplied[M[_]] {
-        def apply[A <: DataSource](a: A)(
-          implicit ev: Async[M],
+        def apply[A <: DataSource](
+          dataSource: A,
+          connectEC:  ExecutionContext,
+          transactEC: ExecutionContext
+        )(implicit ev: Async[M],
                    cs: ContextShift[M]
-        ): Transactor.Aux[M, A] =
-          Transactor(a, a => ev.delay(a.getConnection), KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default)
+        ): Transactor.Aux[M, A] = {
+          val co = (dataSource: A) => cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
+          val in = KleisliInterpreter[M](transactEC).ConnectionInterpreter
+          Transactor(dataSource, co, in, Strategy.default)
+        }
       }
+
     }
 
-    /** @group Constructors */
-    def fromConnection[M[_]: Async: ContextShift](a: Connection): Transactor.Aux[M, Connection] =
-      Transactor(a, Async[M].pure, KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default.copy(always = unit))
+    /**
+     * Construct a `Transactor` that wraps an existing `Connection`, using a `Strategy` that does
+     * not close the connection but is otherwise identical to `Strategy.default`.
+     * @param connection a raw JDBC `Connection` to wrap
+     * @param transactEC an `ExecutionContext` for blocking database operations
+     * @group Constructors
+     */
+    def fromConnection[M[_]: Async: ContextShift](
+      connection: Connection,
+      transactEC: ExecutionContext
+    ): Transactor.Aux[M, Connection] = {
+      val co = (c: Connection) => Async[M].pure(c)
+      val in = KleisliInterpreter[M](transactEC).ConnectionInterpreter
+      Transactor(connection, co, in, Strategy.default.copy(always = unit))
+    }
 
     /**
-     * Construct a constructor of `Transactor[M, Unit]` backed by the JDBC DriverManager by partial
-     * application of `M`, which cannot be inferred in general. This follows the pattern described
-     * [here](http://tpolecat.github.io/2015/07/30/infer.html).
+     * Module of constructors for `Transactor` that use the JDBC `DriverManager` to allocate
+     * connections.
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     object fromDriverManager {
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-      private def create[M[_]: Async: ContextShift](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
-        Transactor((), u => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M]().ConnectionInterpreter, Strategy.default)
+      private def create[M[_]](
+        driver:     String,
+        conn:    => Connection,
+        connectEC:  ExecutionContext,
+        transactEC: ExecutionContext,
+        strategy: Strategy
+      )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
+        Transactor(
+          (),
+          _ => cs.evalOn(connectEC)(am.delay { Class.forName(driver); conn }),
+          KleisliInterpreter[M](transactEC).ConnectionInterpreter,
+          strategy
+        )
 
-      def apply[M[_]: Async: ContextShift](driver: String, url: String): Transactor.Aux[M, Unit] =
-        create(driver, DriverManager.getConnection(url))
+      /**
+       * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
+       * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
+       * @param url        a connection URL, specific to your driver
+       * @param connectEC  an `ExecutionContext` for initiating new connections
+       * @param transactEC an `ExecutionContext` for blocking database operations
+       */
+      def apply[M[_]: Async: ContextShift](
+        driver:     String,
+        url:        String,
+        connectEC:  ExecutionContext,
+        transactEC: ExecutionContext
+      ): Transactor.Aux[M, Unit] =
+        create(driver, DriverManager.getConnection(url), connectEC, transactEC, Strategy.default)
 
-      def apply[M[_]: Async: ContextShift](driver: String, url: String, user: String, pass: String): Transactor.Aux[M, Unit] =
-        create(driver, DriverManager.getConnection(url, user, pass))
+      /**
+       * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
+       * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
+       * @param url        a connection URL, specific to your driver
+       * @param user       database username
+       * @param pass       database password
+       * @param connectEC  an `ExecutionContext` for initiating new connections
+       * @param transactEC an `ExecutionContext` for blocking database operations
+       */
+      def apply[M[_]: Async: ContextShift](
+        driver:     String,
+        url:        String,
+        user:       String,
+        pass:       String,
+        connectEC:  ExecutionContext,
+        transactEC: ExecutionContext
+      ): Transactor.Aux[M, Unit] =
+        create(driver, DriverManager.getConnection(url, user, pass), connectEC, transactEC, Strategy.default)
 
-      def apply[M[_]: Async: ContextShift](driver: String, url: String, info: java.util.Properties): Transactor.Aux[M, Unit] =
-        create(driver, DriverManager.getConnection(url, info))
+      /**
+       * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
+       * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
+       * @param url        a connection URL, specific to your driver
+       * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
+       * @param connectEC  an `ExecutionContext` for initiating new connections
+       * @param transactEC an `ExecutionContext` for blocking database operations
+       */
+      def apply[M[_]: Async: ContextShift](
+        driver:     String,
+        url:        String,
+        info:       java.util.Properties,
+        connectEC:  ExecutionContext,
+        transactEC: ExecutionContext
+      ): Transactor.Aux[M, Unit] =
+        create(driver, DriverManager.getConnection(url, info), connectEC, transactEC, Strategy.default)
 
     }
 

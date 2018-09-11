@@ -7,6 +7,7 @@ package example
 import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._, doobie.implicits._
+import scala.concurrent.ExecutionContext
 
 object FragmentExample extends IOApp {
 
@@ -39,7 +40,9 @@ object FragmentExample extends IOApp {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "",
+    ExecutionContext.global,
+    ExecutionContext.global
   )
 
   // Some quick examples.
