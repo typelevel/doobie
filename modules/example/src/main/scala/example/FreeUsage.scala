@@ -10,7 +10,6 @@ import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
 
 // JDBC program using the low-level API
 object FreeUsage extends IOApp {
@@ -19,9 +18,7 @@ object FreeUsage extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = {
     val db = Transactor.fromDriverManager[IO](
-      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "",
-      ExecutionContext.global,
-      ExecutionContext.global
+      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
     )
     db.trans.apply(examples.void).as(ExitCode.Success)
   }

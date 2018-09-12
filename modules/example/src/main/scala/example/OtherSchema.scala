@@ -11,7 +11,6 @@ import doobie._
 import doobie.enum.JdbcType
 import doobie.implicits._
 import org.postgresql.util._
-import scala.concurrent.ExecutionContext
 
 /**
  * The normal string mapping doesn't work for enums defined in another schema. Here we have
@@ -59,9 +58,7 @@ object OtherSchema extends IOApp {
 
     // Some setup
     val xa = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-      ExecutionContext.global,
-      ExecutionContext.global
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
     )
     val y  = xa.yolo
     import y._

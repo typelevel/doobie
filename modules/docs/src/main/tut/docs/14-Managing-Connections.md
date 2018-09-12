@@ -43,7 +43,7 @@ So summarizing, once you have a `Transactor[M]` you have a way of discharging `C
 
 ### About Threading
 
-Starting with version 0.6.0 **doobie** provides an asynchronous API that delegates blocking operations to dedicated execution contexts *if you use the provided `Transactor` implementations*. To construct any of the provided `Transactor[M]`s you need
+Starting with version 0.6.0 **doobie** provides an asynchronous API that delegates blocking operations to dedicated execution contexts *if you use the provided `Transactor` implementations*. To construct any of the provided `Transactor[M]`s (other than `DriverManagerTransactor`) you need
 
 - `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
@@ -53,9 +53,9 @@ Because these pools need to be shut down in order to exit cleanly it is typical 
 
 ### Using the JDBC DriverManager
 
-JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections.
+JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.
 
-However, for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is ideal. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
+However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is fine. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```tut:silent
 import scala.concurrent.ExecutionContext
@@ -64,18 +64,15 @@ import scala.concurrent.ExecutionContext
 // is where nonblocking operations will be executed.
 implicit val cs = IO.contextShift(ExecutionContext.global)
 
-// A transactor that gets connections from java.sql.DriverManager
+// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads.
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", // driver classname
   "jdbc:postgresql:world", // connect URL (driver-specific)
-  "jimmy",                 // user
-  "coconut",               // password
-  ExecutionContext.global, // await connection here (testing only, don't use this EC here!)
-  ExecutionContext.global  // execute JDBC operations here (testing only, don't use this EC here!)
+  "postgres",              // user
+  ""                       // password
 )
 ```
-
-We won't provide an example of using `DriverManagerTransactor` in a real program because you would never want to.
 
 ### Using a HikariCP Connection Pool
 

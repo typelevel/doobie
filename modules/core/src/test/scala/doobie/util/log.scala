@@ -21,9 +21,7 @@ object logspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "sa", ""
   )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))

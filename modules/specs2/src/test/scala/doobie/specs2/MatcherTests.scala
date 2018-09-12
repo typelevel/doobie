@@ -20,9 +20,7 @@ trait MatcherChecks[M[_]] extends Specification
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "sa", ""
   )
 
   "valid query should pass" >> {

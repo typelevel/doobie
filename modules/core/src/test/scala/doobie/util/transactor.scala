@@ -21,9 +21,7 @@ object transactorspec extends Specification {
   def xa[A[_]: Async: ContextShift] = Transactor.fromDriverManager[A](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "sa", ""
   )
 
   "transactor" should {

@@ -12,7 +12,6 @@ import doobie.postgres._
 import java.io.File
 
 import cats.effect.IO
-import scala.concurrent.ExecutionContext
 
 /**
   * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the
@@ -21,9 +20,7 @@ import scala.concurrent.ExecutionContext
 object PostgresLargeObject extends IOApp {
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   val prog: LargeObjectManagerIO[Long] =

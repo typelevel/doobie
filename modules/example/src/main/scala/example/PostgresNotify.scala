@@ -13,7 +13,6 @@ import doobie.postgres._
 import org.postgresql._
 import fs2.Stream
 import fs2.Stream._
-import scala.concurrent.ExecutionContext
 
 /**
   * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
@@ -47,9 +46,7 @@ object PostgresNotify extends IOApp {
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   /**

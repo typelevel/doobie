@@ -22,9 +22,7 @@ object pglargeobjectspec extends Specification with FileEquality {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "postgres", ""
   )
 
   "large object support" should {

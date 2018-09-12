@@ -16,7 +16,7 @@ object shared {
     IO.contextShift(ExecutionContext.global)
 
   @State(Scope.Benchmark)
-  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "", ExecutionContext.global, ExecutionContext.global)
+  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
 }
 
 class bench {

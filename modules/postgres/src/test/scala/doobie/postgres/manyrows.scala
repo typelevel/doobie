@@ -20,9 +20,7 @@ object manyrows extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "postgres", ""
   )
 
   "select" should {

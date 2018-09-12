@@ -14,7 +14,6 @@ import cats.{InjectK, ~>}
 import doobie._
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
-
 import scala.concurrent.ExecutionContext
 import scala.io.StdIn
 
@@ -88,9 +87,7 @@ object coproduct extends IOApp {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "postgres", ""
   )
 
   // Exec it!

@@ -27,9 +27,7 @@ object pgtypesspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "postgres", ""
   )
 
   def inOut[A: Param: Write: Read](col: String, a: A) =

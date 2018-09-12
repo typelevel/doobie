@@ -9,14 +9,11 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import org.postgresql.geometric.PGpoint
-import scala.concurrent.ExecutionContext
 
 object PostgresPoint extends IOApp {
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   // A custom Point type with a Meta instance xmapped from the PostgreSQL native type (which

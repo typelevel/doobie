@@ -12,7 +12,6 @@ import fs2.Stream
 import fs2.Stream.{ eval, bracket }
 import java.sql.{ PreparedStatement, ResultSet }
 import doobie.util.stream.repeatEvalChunks
-import scala.concurrent.ExecutionContext
 
 /**
  * From a user question on Gitter, how can we have an equivalent to `Stream[A]` that constructs a
@@ -74,9 +73,7 @@ object GenericStream extends IOApp {
 
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   def run(args: List[String]): IO[ExitCode] =

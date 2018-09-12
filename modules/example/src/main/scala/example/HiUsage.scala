@@ -9,7 +9,6 @@ import cats.implicits._
 import fs2.Stream
 import doobie._
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
 
 // JDBC program using the high-level API
 object HiUsage extends IOApp {
@@ -20,9 +19,7 @@ object HiUsage extends IOApp {
   // Program entry point
   def run(args: List[String]): IO[ExitCode] = {
     val db = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-      ExecutionContext.global,
-      ExecutionContext.global
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
     )
     example.transact(db).as(ExitCode.Success)
   }

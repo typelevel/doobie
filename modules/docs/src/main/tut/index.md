@@ -23,8 +23,7 @@ import scala.concurrent.ExecutionContext
 implicit val cs = IO.contextShift(ExecutionContext.global)
 
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-  ExecutionContext.global, ExecutionContext.global // ok for messing around
+  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
 case class Country(code: String, name: String, population: Long)

@@ -19,9 +19,7 @@ object pgcheck extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "postgres", ""
   )
 
   // create type myenum as enum ('foo', 'bar') <-- part of setup

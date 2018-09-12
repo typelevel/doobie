@@ -11,7 +11,6 @@ import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 import doobie.util.transactor.Transactor
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 object CallableStatementExample extends IOApp {
 
@@ -28,8 +27,7 @@ object CallableStatementExample extends IOApp {
 
   val xa: Transactor[IO] =
     Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-      ExecutionContext.global, ExecutionContext.global
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
     )
 
   def run(args: List[String]): IO[ExitCode] =

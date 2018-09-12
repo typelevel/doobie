@@ -13,7 +13,6 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import fs2.Stream
-import scala.concurrent.ExecutionContext
 
 /**
  * Example of resource-safe transactional database-to-database copy with fs2. If you induce failures
@@ -127,16 +126,13 @@ object StreamingCopy extends IOApp {
 
   // A postges transactor for our source. We assume the WORLD database is set up already.
   val pg = addLogging("Postgres")(Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global, ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   ))
 
   // An h2 transactor for our sink.
   val h2 = addLogging("H2") {
     val xa = Transactor.fromDriverManager[IO](
-      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "",
-      ExecutionContext.global,
-      ExecutionContext.global
+      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
     )
     Transactor.before.modify(xa, _ *> ddl) // Run our DDL on every connection
   }

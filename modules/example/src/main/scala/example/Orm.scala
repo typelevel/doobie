@@ -11,7 +11,6 @@ import fs2.Stream
 import shapeless._
 import shapeless.ops.record._
 import shapeless.ops.hlist._
-import scala.concurrent.ExecutionContext
 
 /**
  * A super-simple ORM for super-simple data types. We assume auto-generated keys, represented
@@ -123,9 +122,7 @@ object Orm extends IOApp {
   }
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   def run(args: List[String]): IO[ExitCode] =

@@ -9,7 +9,6 @@ import cats.implicits._
 import cats.effect.{ IO, IOApp, ExitCode }
 import fs2.Stream
 import doobie._, doobie.implicits._
-import scala.concurrent.ExecutionContext
 
 // Example lifted from slick
 object FirstExample extends IOApp {
@@ -64,8 +63,7 @@ object FirstExample extends IOApp {
   // Entry point for SafeApp
   def run(args: List[String]): IO[ExitCode] = {
     val db = Transactor.fromDriverManager[IO](
-      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "",
-      ExecutionContext.global, ExecutionContext.global
+      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
     )
     for {
       a <- examples.transact(db).attempt

@@ -25,14 +25,13 @@ import scala.concurrent.ExecutionContext
 // is where nonblocking operations will be executed.
 implicit val cs = IO.contextShift(ExecutionContext.global)
 
-// A transactor that gets connections from java.sql.DriverManager
+// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", // driver classname
   "jdbc:postgresql:world", // connect URL (driver-specific)
   "postgres",              // user
-  "",                      // password
-  ExecutionContext.global, // await connection here (testing only, don't use this EC here!)
-  ExecutionContext.global  // execute JDBC operations here (testing only, don't use this EC here!)
+  ""                       // password
 )
 ```
 
@@ -85,8 +84,7 @@ import org.specs2.mutable.Specification
 object AnalysisTestSpec extends Specification with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global, ExecutionContext.global // ok for testing
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   check(trivial)
@@ -113,8 +111,7 @@ import org.scalatest._
 class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global, ExecutionContext.global // ok for testing
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   test("trivial")    { check(trivial)        }

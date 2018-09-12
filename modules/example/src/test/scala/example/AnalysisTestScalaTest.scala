@@ -17,8 +17,7 @@ class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
     IO.contextShift(ExecutionContext.global)
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "",
-    ExecutionContext.global, ExecutionContext.global
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   // Commented tests fail!

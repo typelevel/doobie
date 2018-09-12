@@ -24,9 +24,7 @@ object textspec extends Specification with ScalaCheck {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", "",
-    ExecutionContext.global,
-    ExecutionContext.global
+    "postgres", ""
   )
 
   implicit val byteListInstance: Text[List[Byte]] =
