@@ -4,24 +4,30 @@
 
 package doobie.postgres.hi
 
+import cats.effect.ContextShift
 import cats.implicits._
 import doobie._, doobie.implicits._
 import fs2.Stream
 import fs2.{io => FS2IO}
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject
+import scala.concurrent.ExecutionContext
 
 object lostreaming {
-  def createLOFromStream(data: Stream[ConnectionIO, Byte]): ConnectionIO[Long] =
+  def createLOFromStream(data: Stream[ConnectionIO, Byte], blockingExecutionContext: ExecutionContext)(
+    implicit cs: ContextShift[ConnectionIO]
+  ): ConnectionIO[Long] =
     createLO.flatMap { oid =>
       Stream.bracket(openLO(oid))(closeLO)
-        .flatMap(lo => data.to(FS2IO.writeOutputStream(getOutputStream(lo))))
+        .flatMap(lo => data.to(FS2IO.writeOutputStream(getOutputStream(lo), blockingExecutionContext)))
         .compile.drain.as(oid)
     }
 
-  def createStreamFromLO(oid: Long, chunkSize: Int): Stream[ConnectionIO, Byte] =
+  def createStreamFromLO(oid: Long, chunkSize: Int, blockingExecutionContext: ExecutionContext)(
+    implicit cs: ContextShift[ConnectionIO]
+  ): Stream[ConnectionIO, Byte] =
     Stream.bracket(openLO(oid))(closeLO)
-      .flatMap(lo => FS2IO.readInputStream(getInputStream(lo), chunkSize))
+      .flatMap(lo => FS2IO.readInputStream(getInputStream(lo), chunkSize, blockingExecutionContext))
 
   private val createLO: ConnectionIO[Long] =
     PHC.pgGetLargeObjectAPI(PFLOM.createLO)

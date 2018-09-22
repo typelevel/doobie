@@ -18,8 +18,10 @@ import java.sql.{ Savepoint, PreparedStatement, ResultSet }
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 import cats.Foldable
+import cats.effect.{ Async, ContextShift, Resource }
 import cats.implicits._
 import fs2.Stream
 import fs2.Stream.{ eval, bracket }
@@ -31,6 +33,28 @@ import fs2.Stream.{ eval, bracket }
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection {
   import implicits._
+
+  object ContextShift { module =>
+
+    /** A `ContextShift` implementation that shifts [back] onto the given `ExecutionContext`. */
+    def forExecutionContext(ec: ExecutionContext): ContextShift[ConnectionIO] =
+      new ContextShift[ConnectionIO] {
+        def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): ConnectionIO[A] =
+          Resource.make(Async.shift[ConnectionIO](ec))(_ => shift).use(_ => fa)
+        def shift: ConnectionIO[Unit] =
+          Async.shift[ConnectionIO](ec)
+      }
+
+    /** A `ContextShift` implementation that shifts [back] onto the global `ExecutionContext`. */
+    val global: ContextShift[ConnectionIO] =
+      forExecutionContext(ExecutionContext.global)
+
+    object Implicits {
+      implicit val global: ContextShift[ConnectionIO] =
+        module.global
+    }
+
+  }
 
   /** @group Lifting */
   def delay[A](a: => A): ConnectionIO[A] =
