@@ -88,8 +88,7 @@ object driver { module =>
     final case object Shift extends DriverOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
-    final case class EvalOn
-    [A](ec: ExecutionContext, fa: DriverIO[A]) extends DriverOp[A] {
+    final case class EvalOn[A](ec: ExecutionContext, fa: DriverIO[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 

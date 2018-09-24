@@ -89,8 +89,7 @@ object blob { module =>
     final case object Shift extends BlobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
-    final case class EvalOn
-    [A](ec: ExecutionContext, fa: BlobIO[A]) extends BlobOp[A] {
+    final case class EvalOn[A](ec: ExecutionContext, fa: BlobIO[A]) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 

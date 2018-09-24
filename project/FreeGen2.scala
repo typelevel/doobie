@@ -280,8 +280,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    final case object Shift extends ${opname}[Unit] {
     |      def visit[F[_]](v: Visitor[F]) = v.shift
     |    }
-    |    final case class EvalOn
-    [A](ec: ExecutionContext, fa: ${ioname}[A]) extends ${opname}[A] {
+    |    final case class EvalOn[A](ec: ExecutionContext, fa: ${ioname}[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     |    }
     |
@@ -427,7 +426,6 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import cats.~>
       |import cats.data.Kleisli
       |import cats.effect.{ Async, ContextShift, ExitCase }
-      |import java.util.concurrent.{ Executors, ThreadFactory }
       |import scala.concurrent.ExecutionContext
       |
       |// Types referenced in the JDBC API
@@ -438,20 +436,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |
       |object KleisliInterpreter {
       |
-      |  val defaultBlockingContext: ExecutionContext =
-      |    ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
-      |      new ThreadFactory {
-      |        def newThread(r: Runnable): Thread = {
-      |          val th = new Thread(r)
-      |          th.setName(s"doobie-default-blocking-$${th.getId}")
-      |          th.setDaemon(true)
-      |          th
-      |        }
-      |      }
-      |    ))
-      |
       |  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-      |  def apply[M[_]](blocking: ExecutionContext = defaultBlockingContext)(
+      |  def apply[M[_]](blocking: ExecutionContext)(
       |    implicit am: Async[M],
       |             cs: ContextShift[M]
       |  ): KleisliInterpreter[M] =

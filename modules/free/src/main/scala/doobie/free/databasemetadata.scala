@@ -259,8 +259,7 @@ object databasemetadata { module =>
     final case object Shift extends DatabaseMetaDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
-    final case class EvalOn
-    [A](ec: ExecutionContext, fa: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
+    final case class EvalOn[A](ec: ExecutionContext, fa: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 

@@ -212,7 +212,7 @@ And just for fun, since the `Code` values are constructed from the primary key, 
     .query[(Code, Country)]
     .stream.take(5)
     .compile.toList
-    .map(_.toMap) // this causes a deadlock … why?
+    .map(_.toMap)
     .quick
     .unsafeRunSync
 }

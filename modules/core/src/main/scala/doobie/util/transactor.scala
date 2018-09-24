@@ -257,9 +257,9 @@ object transactor  {
         )(implicit ev: Async[M],
                    cs: ContextShift[M]
         ): Transactor.Aux[M, A] = {
-          val co = (dataSource: A) => cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
-          val in = KleisliInterpreter[M](transactEC).ConnectionInterpreter
-          Transactor(dataSource, co, in, Strategy.default)
+          val connect = (dataSource: A) => cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
+          val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
+          Transactor(dataSource, connect, interp, Strategy.default)
         }
       }
 
@@ -276,9 +276,9 @@ object transactor  {
       connection: Connection,
       transactEC: ExecutionContext
     ): Transactor.Aux[M, Connection] = {
-      val co = (c: Connection) => Async[M].pure(c)
-      val in = KleisliInterpreter[M](transactEC).ConnectionInterpreter
-      Transactor(connection, co, in, Strategy.default.copy(always = unit))
+      val connect = (c: Connection) => Async[M].pure(c)
+      val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
+      Transactor(connection, connect, interp, Strategy.default.copy(always = unit))
     }
 
     /**
@@ -309,8 +309,8 @@ object transactor  {
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]](
-        driver:     String,
-        conn:    => Connection,
+        driver:   String,
+        conn:  => Connection,
         strategy: Strategy
       )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
         Transactor(
@@ -326,8 +326,8 @@ object transactor  {
        * @param url        a connection URL, specific to your driver
        */
       def apply[M[_]: Async: ContextShift](
-        driver:     String,
-        url:        String
+        driver: String,
+        url:    String
       ): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url), Strategy.default)
 
@@ -339,10 +339,10 @@ object transactor  {
        * @param pass       database password
        */
       def apply[M[_]: Async: ContextShift](
-        driver:     String,
-        url:        String,
-        user:       String,
-        pass:       String
+        driver: String,
+        url:    String,
+        user:   String,
+        pass:   String
       ): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, user, pass), Strategy.default)
 
@@ -353,9 +353,9 @@ object transactor  {
        * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
        */
       def apply[M[_]: Async: ContextShift](
-        driver:     String,
-        url:        String,
-        info:       java.util.Properties
+        driver: String,
+        url:    String,
+        info:   java.util.Properties
       ): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url, info), Strategy.default)
 

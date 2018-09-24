@@ -209,8 +209,7 @@ object preparedstatement { module =>
     final case object Shift extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
-    final case class EvalOn
-    [A](ec: ExecutionContext, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+    final case class EvalOn[A](ec: ExecutionContext, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 

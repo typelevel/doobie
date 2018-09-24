@@ -293,8 +293,7 @@ object resultset { module =>
     final case object Shift extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
-    final case class EvalOn
-    [A](ec: ExecutionContext, fa: ResultSetIO[A]) extends ResultSetOp[A] {
+    final case class EvalOn[A](ec: ExecutionContext, fa: ResultSetIO[A]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
