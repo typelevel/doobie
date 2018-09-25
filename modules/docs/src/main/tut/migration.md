@@ -7,7 +7,7 @@ position: 2
 
 # Upgrading to 0.6.x from 0.5.x
 
-The major changes in 0.6.x are the addition of explicit threading controls for asynchronous operationn and the restructing of `Meta` and `Composite`, as described below. In preparation for upgrading please **fix all deprecation warnings** as all methods deprecated in 0.5.x have been removed.
+The major changes in 0.6.x are the addition of explicit threading controls for asynchronous operation and the restructuring of `Meta` and `Composite`, as described below. In preparation for upgrading please **fix all deprecation warnings** as all methods deprecated in 0.5.x have been removed.
 
 ## Transactors and Threading
 

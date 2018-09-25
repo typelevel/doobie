@@ -47,7 +47,7 @@ Starting with version 0.6.0 **doobie** provides an asynchronous API that delegat
 
 - `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
-- A second `ExecutionContext` for **execution JDBC operations**. Because your connection pool limits the number of active connections it is usually fine for this to be an **unbounded** pool.
+- A second `ExecutionContext` for **executing JDBC operations**. Because your connection pool limits the number of active connections it is usually fine for this to be an **unbounded** pool.
 
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 
