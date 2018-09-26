@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.io.InputStream
 import java.io.Reader
@@ -65,6 +66,8 @@ object resultset { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): F[A]
       def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): F[A]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -286,6 +289,12 @@ object resultset { module =>
     }
     final case class BracketCase[A, B](acquire: ResultSetIO[A], use: A => ResultSetIO[B], release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]) extends ResultSetOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends ResultSetOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: ResultSetIO[A]) extends ResultSetOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // ResultSet-specific operations.
@@ -889,6 +898,8 @@ object resultset { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ResultSetIO[A] = FF.liftF[ResultSetOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))
+  val shift: ResultSetIO[Unit] = FF.liftF[ResultSetOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]) = FF.liftF[ResultSetOp, A](EvalOn(ec, fa))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))
@@ -1090,17 +1101,23 @@ object resultset { module =>
   // ResultSetIO is an Async
   implicit val AsyncResultSetIO: Async[ResultSetIO] =
     new Async[ResultSetIO] {
-      val M = FF.catsFreeMonadForFree[ResultSetOp]
+      val asyncM = FF.catsFreeMonadForFree[ResultSetOp]
       def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): ResultSetIO[A] = M.pure(x)
+      def pure[A](x: A): ResultSetIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ResultSetIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): ResultSetIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => ResultSetIO[Unit]): ResultSetIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // ResultSetIO is a ContextShift
+  implicit val ContextShiftResultSetIO: ContextShift[ResultSetIO] =
+    new ContextShift[ResultSetIO] {
+      def shift: ResultSetIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

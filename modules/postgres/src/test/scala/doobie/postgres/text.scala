@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
@@ -13,9 +13,13 @@ import org.specs2.ScalaCheck
 import org.scalacheck.{ Arbitrary, Gen }
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
+import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object textspec extends Specification with ScalaCheck {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

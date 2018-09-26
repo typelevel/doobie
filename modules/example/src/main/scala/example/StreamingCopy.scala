@@ -19,7 +19,7 @@ import fs2.Stream
  * on either side (by putting a typo in the `read` or `write` statements) both transactions will
  * roll back.
  */
-object StreamingCopy {
+object StreamingCopy extends IOApp {
 
   /**
    * Stream from `source` through `sink`, where source and sink run on distinct transactors. To do
@@ -125,24 +125,24 @@ object StreamingCopy {
 
 
   // A postges transactor for our source. We assume the WORLD database is set up already.
-  val pg = addLogging("Postgres")(Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""))
+  val pg = addLogging("Postgres")(Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  ))
 
   // An h2 transactor for our sink.
   val h2 = addLogging("H2") {
-    val xa = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+    val xa = Transactor.fromDriverManager[IO](
+      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
+    )
     Transactor.before.modify(xa, _ *> ddl) // Run our DDL on every connection
   }
 
   // Our main program
-  val io: IO[Unit] =
+  def run(args: List[String]): IO[ExitCode] =
     for {
       _ <- fuseMap(read, write)(pg, h2).compile.drain // do the copy with fuseMap
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IO(Console.println(s"Copied $n cities!"))
-    } yield ()
-
-  // Scala entry point
-  def main(args: Array[String]): Unit =
-    io.unsafeRunSync
+    } yield ExitCode.Success
 
 }

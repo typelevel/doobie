@@ -7,7 +7,23 @@ position: 2
 
 # Upgrading to 0.6.x from 0.5.x
 
-The major change in 0.6.x is the restructing of `Meta` and `Composite` as described below. In preparation for upgrading please **fix all deprecation warnings** as all methods deprecated in 0.5.x have been removed.
+The major changes in 0.6.x are the addition of explicit threading controls for asynchronous operation and the restructuring of `Meta` and `Composite`, as described below. In preparation for upgrading please **fix all deprecation warnings** as all methods deprecated in 0.5.x have been removed.
+
+## Transactors and Threading
+
+Prior to 0.6.x **doobie** had nothing to say about threading; it was up to users to shift interpreted `IO` programs onto dedicated pools if desired. This has changed. We now identify three distinct execution contexts that are relevant to database applications.
+
+1. All *non-blocking* work is performed on the execution context identified by [`ContextShift[F]`](https://typelevel.org/cats-effect/datatypes/contextshift.html). If you are using [`IOApp`](https://typelevel.org/cats-effect/datatypes/ioapp.html) (which you should) this instance is provided for you. All interpreters (and thus all transactors) need this instance on construction.
+1. Requesting a JDBC connection is a blocking operation, so to avoid deadlock these requests cannot be placed in competition with running programs (which need to make progress in order to finish up and return their connections to the pool). Therefore we need a distinct, bounded, blocking execution context for the single purpose of awaiting database connections. All transactors that use a connection pool will require this execution context to be specified.
+1. All JDBC primitive operations are [potentially] blocking, so we need a distinct, typically unbounded (since the connection context above provides a logical bound) execution context for scheduling these operations. All transactors that use a connection pool will require this execution context to be specified.
+
+For convenience we provide an `ExecutionContexts` module that provides [`Resource`]()s yielding the kinds of `ExecutionContext`s that will tend to be useful for the scenarios above. Note that `DriverManagerTransactor` provides an unbounded number of connections and is unsuitable for production use anyway, so we do not require the blocking pools here (it uses an unbounded pool internally). Fine for testing but don't use it in real life.
+
+See the book chapter on **Managing Connections** for more information and examples.
+
+#### Streams and Resources
+
+In 0.5.x we provided some single-element `Stream`s that would emit values and guarantee resource cleanup. This has been generalized as `Resource` in cats-effect 1.x, and all such constructors (`H2Transactor.newH2Transactor` for example) now use `Resource` rather than `Stream`. You can use `Stream.resource` to regain the old functionality if desired.
 
 ## Meta and Composite
 

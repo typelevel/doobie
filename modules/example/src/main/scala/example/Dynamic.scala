@@ -6,27 +6,30 @@ package example
 
 import doobie._
 import doobie.implicits._
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 
 // Sketch of a program to run a query and get the output without knowing how many columns will
 // come back, or their types. This can be useful for building query tools, etc.
-object Dynamic {
+object Dynamic extends IOApp {
 
   type Headers = List[String]
   type Data    = List[List[Object]]
 
+  val xa = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver",
+    "jdbc:postgresql:world",
+    "postgres", ""
+  )
+
   // Entry point. Run a query and print the results out.
-  def main(args: Array[String]): Unit = {
-    val xa = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver",
-      "jdbc:postgresql:world",
-      "postgres", ""
-    )
-    val (headers, data) = connProg("U%").transact(xa).unsafeRunSync()
-    println(headers)
-    data.foreach(println)
-  }
+  def run(args: List[String]): IO[ExitCode] =
+    connProg("U%").transact(xa).flatMap { case (headers, data) =>
+      for {
+        _ <- IO(println(headers))
+        _ <- data.traverse(d => IO(println(d)))
+      } yield ExitCode.Success
+    }
 
   // Construct a parameterized query and execute it with a custom program.
   def connProg(pattern: String): ConnectionIO[(Headers, Data)] =

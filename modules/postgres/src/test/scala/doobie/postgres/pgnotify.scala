@@ -4,17 +4,21 @@
 
 package doobie.postgres
 
-import cats.effect.{ IO, Sync }
+import cats.effect.{ IO, ContextShift, Sync }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.postgres._, doobie.postgres.implicits._
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object pgnotifyspec extends Specification {
 
   import FC.{commit, delay}
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

@@ -37,18 +37,41 @@ See the previous chapter on **SQL Arrays** for usage examples.
 
 **doobie** provides a `Transactor` that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by `IO`).
 
-```tut:silent
-import cats.effect.IO
+```tut:silent:reset
+import cats.effect._
+import cats.implicits._
 import doobie._
-import doobie.h2._
-import doobie.h2.implicits._
 import doobie.implicits._
+import doobie.h2._
 
-val q = sql"select 42".query[Int].unique
+object H2App extends IOApp {
 
-for {
-  xa <- H2Transactor.newH2Transactor[IO]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
-  _  <- xa.setMaxConnections(10) // and other ops; see scaladoc or source
-  a  <- q.transact(xa)
-} yield a
+  // Resource yielding a transactor configured with a bounded connect EC and an unbounded
+  // transaction EC. Everything will be closed and shut down cleanly after use.
+  val transactor: Resource[IO, H2Transactor[IO]] =
+    for {
+      ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
+      te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
+      xa <- H2Transactor.newH2Transactor[IO](
+              "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
+              "sa",                                   // username
+              "",                                     // password
+              ce,                                     // await connection here
+              te                                      // execute JDBC operations here
+            )
+    } yield xa
+
+
+  def run(args: List[String]): IO[ExitCode] =
+    transactor.use { xa =>
+
+      // Construct and run your server here!
+      for {
+        n <- sql"select 42".query[Int].unique.transact(xa)
+        _ <- IO(println(n))
+      } yield ExitCode.Success
+
+    }
+
+}
 ```

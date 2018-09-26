@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import fs2.Stream
@@ -16,7 +16,7 @@ import shapeless.ops.hlist._
  * A super-simple ORM for super-simple data types. We assume auto-generated keys, represented
  * externally, and columns map 1:1 with fields and have the same names.
  */
-object Orm {
+object Orm extends IOApp {
 
   // to silence unused warnings
   def void[A](a: A): Unit = (a, ())._2
@@ -121,9 +121,14 @@ object Orm {
     } yield s"Did some stuff. Keys were $ka and $kb. Selected value was $oa."
   }
 
-  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  )
 
-  def main(args: Array[String]): Unit =
-    println(prog.transact(xa).unsafeRunSync)
+  def run(args: List[String]): IO[ExitCode] =
+    for {
+      a <- prog.transact(xa)
+      _ <- IO(println(a))
+    } yield ExitCode.Success
 
 }

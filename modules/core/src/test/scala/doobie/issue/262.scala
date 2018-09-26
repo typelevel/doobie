@@ -6,16 +6,24 @@ package doobie.issue
 
 import cats.Monad
 import cats.implicits._
-import cats.effect.{ Async, IO }
+import cats.effect.{ Async, ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 import Predef._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object `262` extends Specification {
 
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
+    val asyncM = Async[IO]
+    val blockingContext = ExecutionContext.global
+    val contextShiftM = contextShift
+
     val M = implicitly[Async[IO]]
 
     override lazy val PreparedStatementInterpreter =

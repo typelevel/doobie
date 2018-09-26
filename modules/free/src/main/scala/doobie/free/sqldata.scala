@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.lang.String
 import java.sql.SQLData
@@ -46,6 +47,8 @@ object sqldata { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): F[A]
       def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]): F[A]
 
       // SQLData
       def getSQLTypeName: F[String]
@@ -76,6 +79,12 @@ object sqldata { module =>
     final case class BracketCase[A, B](acquire: SQLDataIO[A], use: A => SQLDataIO[B], release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]) extends SQLDataOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
+    final case object Shift extends SQLDataOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: SQLDataIO[A]) extends SQLDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
 
     // SQLData-specific operations.
     final case object GetSQLTypeName extends SQLDataOp[String] {
@@ -102,6 +111,8 @@ object sqldata { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLDataIO[A] = FF.liftF[SQLDataOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): SQLDataIO[A] = FF.liftF[SQLDataOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): SQLDataIO[B] = FF.liftF[SQLDataOp, B](BracketCase(acquire, use, release))
+  val shift: SQLDataIO[Unit] = FF.liftF[SQLDataOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]) = FF.liftF[SQLDataOp, A](EvalOn(ec, fa))
 
   // Smart constructors for SQLData-specific operations.
   val getSQLTypeName: SQLDataIO[String] = FF.liftF(GetSQLTypeName)
@@ -111,17 +122,23 @@ object sqldata { module =>
   // SQLDataIO is an Async
   implicit val AsyncSQLDataIO: Async[SQLDataIO] =
     new Async[SQLDataIO] {
-      val M = FF.catsFreeMonadForFree[SQLDataOp]
+      val asyncM = FF.catsFreeMonadForFree[SQLDataOp]
       def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): SQLDataIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): SQLDataIO[A] = M.pure(x)
+      def pure[A](x: A): SQLDataIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): SQLDataIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLDataIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => SQLDataIO[Unit]): SQLDataIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // SQLDataIO is a ContextShift
+  implicit val ContextShiftSQLDataIO: ContextShift[SQLDataIO] =
+    new ContextShift[SQLDataIO] {
+      def shift: SQLDataIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

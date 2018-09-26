@@ -4,12 +4,13 @@
 
 package doobie.specs2
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.h2._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
+import scala.concurrent.ExecutionContext
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
@@ -19,11 +20,14 @@ object beforeall extends Specification with IOChecker with BeforeAll {
 
   val targetQ = sql"select value from some_table".query[String]
 
-  val transactor = H2Transactor.newH2Transactor[IO](
-    "jdbc:h2:mem:",
-    "sa",
-    ""
-  ).unsafeRunSync
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+
+  val transactor = Transactor.fromDriverManager[IO](
+    "org.h2.Driver",
+    "jdbc:h2:mem:beforeall;DB_CLOSE_DELAY=-1",
+    "sa", ""
+  )
 
   // The test itself
   check(targetQ)

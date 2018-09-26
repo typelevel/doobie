@@ -36,7 +36,14 @@ val program1 = 42.pure[ConnectionIO]
 This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
 ```tut:silent
-// A transactor that gets connections from java.sql.DriverManager
+import scala.concurrent.ExecutionContext
+
+// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+implicit val cs = IO.contextShift(ExecutionContext.global)
+
+// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", // driver classname
   "jdbc:postgresql:world", // connect URL (driver-specific)
@@ -130,7 +137,7 @@ import cats.data.Kleisli
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO].ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO](ExecutionContext.global).ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
 val io = IO(null: java.sql.Connection) >>= kleisli.run
 io.unsafeRunSync // sneaky; program1 never looks at the connection

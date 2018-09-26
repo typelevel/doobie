@@ -4,14 +4,16 @@
 
 package doobie.util
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.enum.JdbcType.{ Array => _, _ }
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 import shapeless.test._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
 object GetSpec extends Specification {
+
   final case class X(x: Int)
   final case class Y(x: String) extends AnyVal
   final case class P(x: Int) extends AnyVal
@@ -22,6 +24,9 @@ object GetSpec extends Specification {
 
   final case class Reg1(x: Int)
   final case class Reg2(x: Int)
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

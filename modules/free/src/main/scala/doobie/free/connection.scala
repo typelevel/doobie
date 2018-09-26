@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.lang.Class
 import java.lang.String
@@ -60,6 +61,8 @@ object connection { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): F[A]
       def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): F[A]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -140,6 +143,12 @@ object connection { module =>
     }
     final case class BracketCase[A, B](acquire: ConnectionIO[A], use: A => ConnectionIO[B], release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]) extends ConnectionOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: ConnectionIO[A]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // Connection-specific operations.
@@ -320,6 +329,8 @@ object connection { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ConnectionIO[A] = FF.liftF[ConnectionOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = FF.liftF[ConnectionOp, B](BracketCase(acquire, use, release))
+  val shift: ConnectionIO[Unit] = FF.liftF[ConnectionOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]) = FF.liftF[ConnectionOp, A](EvalOn(ec, fa))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
@@ -380,17 +391,23 @@ object connection { module =>
   // ConnectionIO is an Async
   implicit val AsyncConnectionIO: Async[ConnectionIO] =
     new Async[ConnectionIO] {
-      val M = FF.catsFreeMonadForFree[ConnectionOp]
+      val asyncM = FF.catsFreeMonadForFree[ConnectionOp]
       def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): ConnectionIO[A] = M.pure(x)
+      def pure[A](x: A): ConnectionIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ConnectionIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): ConnectionIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => ConnectionIO[Unit]): ConnectionIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // ConnectionIO is a ContextShift
+  implicit val ContextShiftConnectionIO: ContextShift[ConnectionIO] =
+    new ContextShift[ConnectionIO] {
+      def shift: ConnectionIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

@@ -4,21 +4,24 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
+import cats.implicits._
 import fs2.Stream
 import doobie._
 import doobie.implicits._
 
 // JDBC program using the high-level API
-object HiUsage {
+object HiUsage extends IOApp {
 
   // A very simple data type we will read
   final case class CountryCode(code: Option[String])
 
   // Program entry point
-  def main(args: Array[String]): Unit = {
-    val db = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-    example.transact(db).unsafeRunSync()
+  def run(args: List[String]): IO[ExitCode] = {
+    val db = Transactor.fromDriverManager[IO](
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    )
+    example.transact(db).as(ExitCode.Success)
   }
 
   // An example action. Streams results to stdout
@@ -28,6 +31,6 @@ object HiUsage {
   // Construct an action to find countries where more than `pct` of the population speaks `lang`.
   // The result is a scalaz.stream.Process that can be further manipulated by the caller.
   def speakerQuery(lang: String, pct: Double): Stream[ConnectionIO,CountryCode] =
-  sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".query[CountryCode].stream
+    sql"SELECT COUNTRYCODE FROM COUNTRYLANGUAGE WHERE LANGUAGE = $lang AND PERCENTAGE > $pct".query[CountryCode].stream
 
 }

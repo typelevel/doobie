@@ -4,11 +4,11 @@
 
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._, doobie.implicits._
 
-object FragmentExample {
+object FragmentExample extends IOApp {
 
   // Import some convenience constructors.
   import Fragments.{ in, whereAndOpt }
@@ -55,8 +55,7 @@ object FragmentExample {
     q.check *> q.quick
   }
 
-  // End of the world
-  def main(args: Array[String]): Unit =
-    prog.void.unsafeRunSync
+  def run(args: List[String]): IO[ExitCode] =
+    prog.as(ExitCode.Success)
 
 }

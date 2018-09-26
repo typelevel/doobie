@@ -5,14 +5,18 @@
 package doobie.util
 
 import cats.implicits._
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import org.specs2.mutable.Specification
+import scala.concurrent.ExecutionContext
 import shapeless._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
 object logspec extends Specification {
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

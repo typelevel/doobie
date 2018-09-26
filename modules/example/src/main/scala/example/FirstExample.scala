@@ -6,12 +6,12 @@
 package example
 
 import cats.implicits._
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import fs2.Stream
 import doobie._, doobie.implicits._
 
 // Example lifted from slick
-object FirstExample {
+object FirstExample extends IOApp {
 
   // Our data model
   final case class Supplier(id: Int, name: String, street: String, city: String, state: String, zip: String)
@@ -61,12 +61,14 @@ object FirstExample {
     } yield "All done!"
 
   // Entry point for SafeApp
-  def runc: IO[Unit] = {
-    val db = Transactor.fromDriverManager[IO]("org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
+  def run(args: List[String]): IO[ExitCode] = {
+    val db = Transactor.fromDriverManager[IO](
+      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
+    )
     for {
       a <- examples.transact(db).attempt
       _ <- IO(println(s"$a"))
-    } yield ()
+    } yield ExitCode.Success
   }
 
   /** DAO module provides ConnectionIO constructors for end users. */
@@ -135,8 +137,4 @@ object FirstExample {
   def putStrLn(s: => String): ConnectionIO[Unit] =
     FC.delay(println(s))
 
-
-  def main(args: Array[String]): Unit = {
-    runc.unsafeRunSync()
-  }
 }

@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.io.InputStream
 import java.io.Reader
@@ -61,6 +62,8 @@ object sqloutput { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): F[A]
       def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): F[A]
 
       // SQLOutput
       def writeArray(a: SqlArray): F[Unit]
@@ -115,6 +118,12 @@ object sqloutput { module =>
     }
     final case class BracketCase[A, B](acquire: SQLOutputIO[A], use: A => SQLOutputIO[B], release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]) extends SQLOutputOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends SQLOutputOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: SQLOutputIO[A]) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // SQLOutput-specific operations.
@@ -217,6 +226,8 @@ object sqloutput { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): SQLOutputIO[B] = FF.liftF[SQLOutputOp, B](BracketCase(acquire, use, release))
+  val shift: SQLOutputIO[Unit] = FF.liftF[SQLOutputOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]) = FF.liftF[SQLOutputOp, A](EvalOn(ec, fa))
 
   // Smart constructors for SQLOutput-specific operations.
   def writeArray(a: SqlArray): SQLOutputIO[Unit] = FF.liftF(WriteArray(a))
@@ -251,17 +262,23 @@ object sqloutput { module =>
   // SQLOutputIO is an Async
   implicit val AsyncSQLOutputIO: Async[SQLOutputIO] =
     new Async[SQLOutputIO] {
-      val M = FF.catsFreeMonadForFree[SQLOutputOp]
+      val asyncM = FF.catsFreeMonadForFree[SQLOutputOp]
       def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): SQLOutputIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): SQLOutputIO[A] = M.pure(x)
+      def pure[A](x: A): SQLOutputIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): SQLOutputIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLOutputIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => SQLOutputIO[Unit]): SQLOutputIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => SQLOutputIO[Either[A, B]]): SQLOutputIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => SQLOutputIO[A]): SQLOutputIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => SQLOutputIO[Either[A, B]]): SQLOutputIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => SQLOutputIO[A]): SQLOutputIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // SQLOutputIO is a ContextShift
+  implicit val ContextShiftSQLOutputIO: ContextShift[SQLOutputIO] =
+    new ContextShift[SQLOutputIO] {
+      def shift: SQLOutputIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

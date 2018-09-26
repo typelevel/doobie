@@ -5,6 +5,8 @@
 // relies on whenM, etc. so no cats for now
 package example
 
+import cats.effect.{ IO, IOApp, ExitCode }
+import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.postgres._
 import java.io.File
@@ -15,9 +17,11 @@ import cats.effect.IO
   * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the
   * source in doobie.contrib.postgresql for more information.
   */
-object PostgresLargeObject {
+object PostgresLargeObject extends IOApp {
 
-  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  )
 
   val prog: LargeObjectManagerIO[Long] =
     for {
@@ -26,13 +30,9 @@ object PostgresLargeObject {
       _   <- PHLOM.delete(oid)
     } yield oid
 
-  val task: IO[Unit] =
-
+  def run(args: List[String]): IO[ExitCode] =
     PHC.pgGetLargeObjectAPI(prog).transact(xa).flatMap { oid =>
       IO(Console.println("oid was " + s"$oid"))
-    }
-
-  def main(args: Array[String]): Unit =
-    task.unsafeRunSync()
+    } .as(ExitCode.Success)
 
 }

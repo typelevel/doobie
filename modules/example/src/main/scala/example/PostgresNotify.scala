@@ -5,7 +5,7 @@
 // relies on streaming, so no cats for now
 package example
 
-import cats.effect.IO
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -23,7 +23,7 @@ import fs2.Stream._
   *
   * to send a notification. The program will exit after reading five notifications.
   */
-object PostgresNotify {
+object PostgresNotify extends IOApp {
 
   /**
     * Construct a program that pauses the current thread. This doesn't scale, but neither do
@@ -45,19 +45,20 @@ object PostgresNotify {
     } yield n).onComplete(eval_(PHC.pgUnlisten(channel) *> HC.commit))
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
-  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  )
 
   /**
     * Construct a stream of PGNotifications that prints to the console. Transform it to a
     * runnable process using the transcactor above, and run it.
     */
-  def main(args: Array[String]): Unit =
+  def run(args: List[String]): IO[ExitCode] =
     notificationStream("foo", 1000)
       .map(n => s"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
       .evalMap(s => HC.delay(Console.println(s))).compile.drain
       .transact(xa)
-      .void
-      .unsafeRunSync()
+      .as(ExitCode.Success)
 
 }

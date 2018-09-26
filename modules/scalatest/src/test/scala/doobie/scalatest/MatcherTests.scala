@@ -4,15 +4,18 @@
 
 package doobie.scalatest
 
-import cats.effect.IO
+import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.scalatest._
 import org.scalatest._
+import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 trait MatcherChecks[M[_]] extends FunSuite
     with MustMatchers
     with AnalysisMatchers[M] {
+
+  implicit def contextShift: ContextShift[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
@@ -33,4 +36,7 @@ trait MatcherChecks[M[_]] extends FunSuite
   }
 }
 
-class IOMatcherCheck extends MatcherChecks[IO] with IOChecker
+class IOMatcherCheck extends MatcherChecks[IO] with IOChecker {
+  def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+}
