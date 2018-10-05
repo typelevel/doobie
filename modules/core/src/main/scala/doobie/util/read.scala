@@ -69,7 +69,7 @@ object Read extends LowerPriorityRead {
     }
 
   implicit val unit: Read[Unit] =
-    new Read(Nil, (rs, n) => ())
+    new Read(Nil, (_, _) => ())
 
   implicit def fromGet[A](implicit ev: Get[A]): Read[A] =
     new Read(List((ev, NoNulls)), ev.unsafeGetNonNullable)
