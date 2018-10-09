@@ -44,12 +44,6 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =
       new Param[HNil](Composite.emptyProduct)
-
-    implicit def ParamHListFromMeta[H, T <: HList](implicit mh: Meta[H], pt: Param[T]): Param[H :: T] =
-      ParamHList(fromMeta(mh), pt)
-
-    implicit def ParamHListFromMetaOption[H, T <: HList](implicit mh: Meta[H], pt: Param[T]): Param[Option[H] :: T] =
-      ParamHList(fromMetaOption(mh), pt)
   }
 
   trait LowPriorityParamImplicits {
