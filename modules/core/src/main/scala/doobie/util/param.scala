@@ -46,10 +46,10 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
       new Param[HNil](Composite.emptyProduct)
 
     implicit def ParamHListFromMeta[H, T <: HList](implicit mh: Meta[H], pt: Param[T]): Param[H :: T] =
-      ParamHList(new Param[H](Composite.fromMeta(mh)), pt)
+      ParamHList(fromMeta(mh), pt)
 
     implicit def ParamHListFromMetaOption[H, T <: HList](implicit mh: Meta[H], pt: Param[T]): Param[Option[H] :: T] =
-      ParamHList(new Param[Option[H]](Composite.fromMetaOption(mh)), pt)
+      ParamHList(fromMetaOption(mh), pt)
   }
 
   trait LowPriorityParamImplicits {
