@@ -42,14 +42,6 @@ object paramspec extends Specification {
       true
     }
 
-    "exist for wider scopes" in { // #780
-      class Foo[A: Meta, B: Meta] {
-        def bar = Param[A :: B :: HNil]
-      }
-
-      true
-    }
-
     "not exist for non-unary products" in {
       illTyped("Param[Z]")
       illTyped("Param[(Int, Int)]")
