@@ -54,7 +54,7 @@ val xa = Transactor.fromDriverManager[IO](
 
 A `Transactor` is a data type that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IO`, which gives us a program we can run. Specifically it gives us an `IO` that, when run, will connect to the database and execute single transaction.
 
-We are using `cats.effect.IO` as our final effect type, but you can use any monad `M[_]` given `cats.effect.Async[M]`. See *Using Your Own Target Monad* at the end of this capter for more details.
+We are using `cats.effect.IO` as our final effect type, but you can use any monad `M[_]` given `cats.effect.Async[M]`. See *Using Your Own Target Monad* at the end of this chapter for more details.
 
 The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.
 
