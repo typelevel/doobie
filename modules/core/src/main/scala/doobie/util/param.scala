@@ -29,7 +29,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
    * with a type with a `Meta` instance, or an `Option` thereof.
    */
-  object Param {
+  object Param extends LowPriorityParamImplicits {
 
     def apply[A](implicit ev: Param[A]): Param[A] = ev
 
@@ -44,11 +44,12 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =
       new Param[HNil](Composite.emptyProduct)
+  }
 
+  trait LowPriorityParamImplicits {
     /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
     implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]): Param[H :: T] =
       new Param[H :: T](Composite.product[H,T](ph.composite, pt.composite))
-
   }
 
 }
