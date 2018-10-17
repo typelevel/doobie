@@ -507,7 +507,7 @@ lazy val docs = project
     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
     micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
     micrositeName             := "doobie",
-    micrositeDescription      := "A principled JDBC layer for Scala.",
+    micrositeDescription      := "A functional JDBC layer for Scala.",
     micrositeAuthor           := "Rob Norris",
     micrositeGithubOwner      := "tpolecat",
     micrositeGithubRepo       := "doobie",
