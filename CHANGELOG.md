@@ -4,9 +4,11 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
-### <a name="0.6.0"></a>Work in Progress for Version 0.6.0
+### <a name="0.6.0"></a>New and Noteworthy for Version 0.6.0
 
-This is a major update with **breaking changes**. Please read the following notes carefully.
+Many thanks to **Arber Shabhasa**, **Bjørn Madsen**, **Chris Davenport**, **Cody Allen**, **Dmitry Polienko**, **Kai(luo) Wang**, **Kevin Walter**, **Mark Canlas**, and **Quang Le Hong** for their contributions to this release.
+
+:exclamation: This is a major update with **breaking changes**. Please read the following notes carefully.
 
 #### Transactors and Threading
 
@@ -22,7 +24,7 @@ See the book chapter on **Managing Connections** for more information and exampl
 
 #### Streams and Resources
 
-In 0.5.x we provided some single-element `Stream`s that would emit values and guarantee resource cleanup. This has been generalized as `Resource` in cats-effect 1.x, and all such constructors (`H2Transactor.newH2Transactor` for example) now use `Resource` rather than `Stream`. You can use `Stream.resource` to regain the old functionality if desired.
+In 0.5.x we provided some single-element `Stream`s that would emit values and guarantee resource cleanup. This has been generalized as `Resource` in cats-effect 1.x, and all such constructors (`H2Transactor.newH2Transactor` for example) now use `Resource` rather than `Stream`. You can use `Stream.resource(rsrc)` to regain the old functionality if desired.
 
 #### Splitting of read/write functionality.
 
@@ -34,7 +36,7 @@ Starting with version 0.6.0 type mappings are **unidirectional**:
 - `Meta` has been split into `Get` and `Put` typeclasses, for reads and writes of column/parameter values, respectively.
 - `Composite` has been split into `Read` and `Write` typeclasses, for reads and writes of column/parameter vectors, respecitively.
 
-Note that `Meta` does still exist, but only as a mechanism for introducing `Get/Put` pairs. An implicit `Meta[A]` induces both an implicit `Get[A]` and an implicit `Put[A]`, and the old mechanism of `Meta[A].imap(...)(...)` is still supported for this purpose. The `xmap` method has been replaced with parametric `imap` and `TypeTag`-constrained `tmap`. Prefer `tmap` when possible because it yields better diagnostic information when typechecking queries.
+Note that `Meta` does still exist, but only as a mechanism for introducing `Get/Put` pairs. An implicit `Meta[A]` induces both an implicit `Get[A]` and an implicit `Put[A]`, and the old mechanism of `Meta[A].imap(...)(...)` is still supported for this purpose. The `xmap` method has been replaced with parametric `imap` and `TypeTag`-constrained `timap`. Prefer `timap` when possible because it yields better diagnostic information when typechecking queries.
 
 To summarize:
 
@@ -45,7 +47,7 @@ To summarize:
 | `Meta[A].xmap(..)` | `Meta[A].tmap(...)` | Or `imap` when a `TypeTag` is unavailable. |
 | `Composite[A].xmap(...)` | `Read[A].map(...)` <br> `Write[A].contramap(...)` | This takes two steps now. |
 
-Please refer to the `examples` project for example usage, or ask questions on the Gitter channel if you have questions or concerns about this change.
+Please refer to book chapter on **Custom Mappings** and the `examples` project for more details.
 
 #### Other Changes
 

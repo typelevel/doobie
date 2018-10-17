@@ -19,7 +19,7 @@ lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.5"
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.5"
-lazy val specs2Version        = "4.3.4"
+lazy val specs2Version        = "4.3.5"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.7"
 
@@ -260,8 +260,7 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-// Turn this on when we release 0.6.0
-//    releaseStepCommand("docs/publishMicrosite"),
+      releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
@@ -508,7 +507,7 @@ lazy val docs = project
     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
     micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
     micrositeName             := "doobie",
-    micrositeDescription      := "A principled JDBC layer for Scala.",
+    micrositeDescription      := "A functional JDBC layer for Scala.",
     micrositeAuthor           := "Rob Norris",
     micrositeGithubOwner      := "tpolecat",
     micrositeGithubRepo       := "doobie",

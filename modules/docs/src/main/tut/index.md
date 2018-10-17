@@ -12,7 +12,7 @@ layout: home
 [![Javadocs](https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg)](https://javadoc.io/doc/org.tpolecat/doobie-core_2.12)
 
 
-**doobie** is a pure functional JDBC layer for Scala and [**Cats**](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a principled way to construct programs (and higher-level libraries) that use JDBC. For common use cases **doobie** provides a minimal but expressive high-level API:
+**doobie** is a pure functional JDBC layer for Scala and [**Cats**](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases **doobie** provides a minimal but expressive high-level API:
 
 ```tut:silent
 import doobie._
