@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.5.3"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.6.0"</span>
 </code></pre>
 </div>
 
@@ -18,10 +18,20 @@
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 <span class="k">import</span> <span class="nn">doobie._</span>
 <span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
 <span class="k">import</span> <span class="nn">y._</span>
@@ -71,7 +81,6 @@
 </div>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select 'foo'::myenum"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">MyEnum.Value</span><span class="o">].</span><span class="n">unique</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="n">foo</span>
 </code></pre>
 </div>
 
@@ -115,7 +124,6 @@
 </div>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select 'foo'::myenum"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">FooBar</span><span class="o">].</span><span class="n">unique</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">Foo</span>
 </code></pre>
 </div>
 
@@ -189,24 +197,17 @@
 <p>Some of the recovery combinators demonstrated:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attempt</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// attempt is provided by ApplicativeError instance
-</span>  <span class="nc">Left</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="n">postgresql</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="nc">PSQLException</span><span class="k">:</span> <span class="kt">ERROR:</span> <span class="kt">syntax</span> <span class="kt">error</span> <span class="kt">at</span> <span class="kt">or</span> <span class="kt">near</span> <span class="err">"</span><span class="kt">oops</span><span class="err">"</span>
-  <span class="kt">Position:</span> <span class="err">1</span><span class="o">)</span>
-
+</span>
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attemptSqlState</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// this catches only SQL exceptions
-</span>  <span class="nc">Left</span><span class="o">(</span><span class="nc">SqlState</span><span class="o">(</span><span class="mi">42601</span><span class="o">))</span>
-
+</span>
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attemptSomeSqlState</span> <span class="o">{</span> <span class="k">case</span> <span class="nc">SqlState</span><span class="o">(</span><span class="s">"42601"</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="s">"caught!"</span> <span class="o">}</span> <span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// catch it
-</span>  <span class="nc">Left</span><span class="o">(</span><span class="n">caught</span><span class="o">!)</span>
-
+</span>
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">attemptSomeSqlState</span> <span class="o">{</span> <span class="k">case</span> <span class="n">sqlstate</span><span class="o">.</span><span class="n">class42</span><span class="o">.</span><span class="nc">SYNTAX_ERROR</span> <span class="k">=&gt;</span> <span class="s">"caught!"</span> <span class="o">}</span> <span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// same, w/constant
-</span>  <span class="nc">Left</span><span class="o">(</span><span class="n">caught</span><span class="o">!)</span>
-
+</span>
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">exceptSomeSqlState</span> <span class="o">{</span> <span class="k">case</span> <span class="n">sqlstate</span><span class="o">.</span><span class="n">class42</span><span class="o">.</span><span class="nc">SYNTAX_ERROR</span> <span class="k">=&gt;</span> <span class="s">"caught!"</span><span class="o">.</span><span class="n">pure</span><span class="o">[</span><span class="kt">ConnectionIO</span><span class="o">]</span> <span class="o">}</span> <span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// recover
-</span>  <span class="n">caught</span><span class="o">!</span>
-
+</span>
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">onSyntaxError</span><span class="o">(</span><span class="s">"caught!"</span><span class="o">.</span><span class="n">pure</span><span class="o">[</span><span class="kt">ConnectionIO</span><span class="o">]).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// using recovery combinator
-</span>  <span class="n">caught</span><span class="o">!</span>
-</code></pre>
+</span></code></pre>
 </div>
 
 <h3 id="server-side-statements">Server-Side Statements</h3>
@@ -258,7 +259,7 @@
 Note: the following API was introduced in version 0.5.2 and is experimental. Community feedback and contributions (instances in particular) are encouraged.
 </div>
 
-<p><strong>doobie</strong> also provides a specialized API for very fast batch inserts using upates of the form <code class="highlighter-rouge">COPY ... FROM STDIN</code> and a <code class="highlighter-rouge">Text</code> typeclass that defines how data types are encoded in Postgres text format (similar to <code class="highlighter-rouge">Meta</code>; instances must be present for all fields in the data type to be inserted).</p>
+<p><strong>doobie</strong> also provides a specialized API for very fast batch inserts using upates of the form <code class="highlighter-rouge">COPY ... FROM STDIN</code> and a <code class="highlighter-rouge">Text</code> typeclass that defines how data types are encoded in Postgres text format (similar to <code class="highlighter-rouge">Put</code>; instances must be present for all fields in the data type to be inserted).</p>
 
 <p>First a temp table for our experiment.</p>
 
@@ -295,7 +296,6 @@ Note: the following API was introduced in version 0.5.2 and is experimental. Com
 <p>We can run it thus, yielding the number of affected rows.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">create</span> <span class="o">*&gt;</span> <span class="n">insert</span><span class="o">(</span><span class="n">foods</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="mi">3</span>
 </code></pre>
 </div>
 

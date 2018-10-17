@@ -35,19 +35,42 @@
 
 <p><strong>doobie</strong> provides a <code class="highlighter-rouge">Transactor</code> that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by <code class="highlighter-rouge">IO</code>).</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
 <span class="k">import</span> <span class="nn">doobie._</span>
-<span class="k">import</span> <span class="nn">doobie.h2._</span>
-<span class="k">import</span> <span class="nn">doobie.h2.implicits._</span>
 <span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">doobie.h2._</span>
 
-<span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">unique</span>
+<span class="k">object</span> <span class="nc">H2App</span> <span class="k">extends</span> <span class="nc">IOApp</span> <span class="o">{</span>
 
-<span class="k">for</span> <span class="o">{</span>
-  <span class="n">xa</span> <span class="k">&lt;-</span> <span class="n">H2Transactor</span><span class="o">.</span><span class="n">newH2Transactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">"jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"</span><span class="o">,</span> <span class="s">"sa"</span><span class="o">,</span> <span class="s">""</span><span class="o">)</span>
-  <span class="k">_</span>  <span class="k">&lt;-</span> <span class="n">xa</span><span class="o">.</span><span class="n">setMaxConnections</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span> <span class="c1">// and other ops; see scaladoc or source
-</span>  <span class="n">a</span>  <span class="k">&lt;-</span> <span class="n">q</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
-<span class="o">}</span> <span class="k">yield</span> <span class="n">a</span>
+  <span class="c1">// Resource yielding a transactor configured with a bounded connect EC and an unbounded
+</span>  <span class="c1">// transaction EC. Everything will be closed and shut down cleanly after use.
+</span>  <span class="k">val</span> <span class="n">transactor</span><span class="k">:</span> <span class="kt">Resource</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">H2Transactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">]]</span> <span class="k">=</span>
+    <span class="k">for</span> <span class="o">{</span>
+      <span class="n">ce</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">fixedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="mi">32</span><span class="o">)</span> <span class="c1">// our connect EC
+</span>      <span class="n">te</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">cachedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our transaction EC
+</span>      <span class="n">xa</span> <span class="k">&lt;-</span> <span class="n">H2Transactor</span><span class="o">.</span><span class="n">newH2Transactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+              <span class="s">"jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"</span><span class="o">,</span> <span class="c1">// connect URL
+</span>              <span class="s">"sa"</span><span class="o">,</span>                                   <span class="c1">// username
+</span>              <span class="s">""</span><span class="o">,</span>                                     <span class="c1">// password
+</span>              <span class="n">ce</span><span class="o">,</span>                                     <span class="c1">// await connection here
+</span>              <span class="n">te</span>                                      <span class="c1">// execute JDBC operations here
+</span>            <span class="o">)</span>
+    <span class="o">}</span> <span class="k">yield</span> <span class="n">xa</span>
+
+
+  <span class="k">def</span> <span class="n">run</span><span class="o">(</span><span class="n">args</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">ExitCode</span><span class="o">]</span> <span class="k">=</span>
+    <span class="n">transactor</span><span class="o">.</span><span class="n">use</span> <span class="o">{</span> <span class="n">xa</span> <span class="k">=&gt;</span>
+
+      <span class="c1">// Construct and run your server here!
+</span>      <span class="k">for</span> <span class="o">{</span>
+        <span class="n">n</span> <span class="k">&lt;-</span> <span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">unique</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
+        <span class="k">_</span> <span class="k">&lt;-</span> <span class="nc">IO</span><span class="o">(</span><span class="n">println</span><span class="o">(</span><span class="n">n</span><span class="o">))</span>
+      <span class="o">}</span> <span class="k">yield</span> <span class="nc">ExitCode</span><span class="o">.</span><span class="nc">Success</span>
+
+    <span class="o">}</span>
+
+<span class="o">}</span>
 </code></pre>
 </div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({

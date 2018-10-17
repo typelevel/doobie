@@ -61,11 +61,11 @@ $
 
 <p>On the Scala side you just need a console with the proper dependencies. A minimal <code class="highlighter-rouge">build.sbt</code> would look something like this.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.12.6"</span> <span class="c1">// Scala 2.11/12
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.12.7"</span> <span class="c1">// Scala 2.11/12
 </span>
 <span class="n">scalacOptions</span> <span class="o">+=</span> <span class="s">"-Ypartial-unification"</span> <span class="c1">// 2.11.9+
 </span>
-<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.5.3"</span>
+<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.6.0"</span>
 
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
   <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>     <span class="o">%</span> <span class="n">doobieVersion</span><span class="o">,</span>

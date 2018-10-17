@@ -11,10 +11,20 @@
 <span class="k">import</span> <span class="nn">java.awt.geom.Point2D</span>
 <span class="k">import</span> <span class="nn">java.util.UUID</span>
 <span class="k">import</span> <span class="nn">shapeless._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
 <span class="k">import</span> <span class="nn">y._</span>
@@ -34,18 +44,7 @@
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select $s"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span>
 
-  <span class="n">select</span> <span class="o">?</span>
-
-  <span class="o">✕</span> <span class="nc">SQL</span> <span class="nc">Compiles</span> <span class="n">and</span> <span class="nc">Typechecks</span>
-    <span class="o">-</span> <span class="nc">ERROR</span><span class="k">:</span> <span class="kt">could</span> <span class="kt">not</span> <span class="kt">determine</span> <span class="kt">data</span> <span class="k">type</span> <span class="kt">of</span> <span class="kt">parameter</span> <span class="kt">$1</span>
-
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select $s :: char"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-
-  <span class="n">select</span> <span class="o">?</span> <span class="o">::</span> <span class="n">char</span>
-
-  <span class="o">✓</span> <span class="nc">SQL</span> <span class="nc">Compiles</span> <span class="n">and</span> <span class="nc">Typechecks</span>
-  <span class="o">✓</span> <span class="n">P01</span> <span class="nc">String</span>  <span class="o">→</span>  <span class="nc">CHAR</span> <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">C01</span> <span class="n">bpchar</span> <span class="nc">CHAR</span> <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span> <span class="nc">NULL</span><span class="o">?</span>  <span class="o">→</span>  <span class="nc">String</span>
 </code></pre>
 </div>
 
@@ -91,35 +90,14 @@
 <p>We can check the resulting <code class="highlighter-rouge">Query0</code> as expected.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; cities(Code("USA"), true).check.unsafeRunSync
-
-      SELECT countrycode, name, population
-      FROM   city
-      WHERE  countrycode = ?
-      ORDER BY name ASC 
-
-  ✓ SQL Compiles and Typechecks
-  ✓ P01 Code  →  CHAR (bpchar)
-  ✓ C01 countrycode CHAR    (bpchar)  NOT NULL  →  Code
-  ✓ C02 name        VARCHAR (varchar) NOT NULL  →  String
-  ✓ C03 population  INTEGER (int4)    NOT NULL  →  Int
 </code></pre>
 </div>
 
 <p>And it works!</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">cities</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="s">"USA"</span><span class="o">),</span> <span class="kc">true</span><span class="o">).</span><span class="n">stream</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Abilene</span><span class="o">,</span><span class="mi">115930</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Akron</span><span class="o">,</span><span class="mi">217074</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Albany</span><span class="o">,</span><span class="mi">93994</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Albuquerque</span><span class="o">,</span><span class="mi">448607</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Alexandria</span><span class="o">,</span><span class="mi">128283</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">cities</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="s">"USA"</span><span class="o">),</span> <span class="kc">false</span><span class="o">).</span><span class="n">stream</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Yonkers</span><span class="o">,</span><span class="mi">196086</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Worcester</span><span class="o">,</span><span class="mi">172648</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Winston</span><span class="o">-</span><span class="nc">Salem</span><span class="o">,</span><span class="mi">185776</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Wichita</span> <span class="nc">Falls</span><span class="o">,</span><span class="mi">104197</span><span class="o">)</span>
-  <span class="nc">City</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Wichita</span><span class="o">,</span><span class="mi">344284</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -144,154 +122,14 @@
 <p>Some examples, filtered for size.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">join</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">_1</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startsWith</span><span class="o">(</span><span class="s">"United"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">Arab</span> <span class="nc">Emirates</span><span class="o">,</span><span class="nc">ARE</span><span class="o">),</span><span class="nc">Some</span><span class="o">(</span><span class="nc">City</span><span class="o">(</span><span class="nc">Abu</span> <span class="nc">Dhabi</span><span class="o">,</span><span class="nc">Abu</span> <span class="nc">Dhabi</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">Kingdom</span><span class="o">,</span><span class="nc">GBR</span><span class="o">),</span><span class="nc">Some</span><span class="o">(</span><span class="nc">City</span><span class="o">(</span><span class="nc">London</span><span class="o">,</span><span class="nc">England</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">States</span><span class="o">,</span><span class="nc">USA</span><span class="o">),</span><span class="nc">Some</span><span class="o">(</span><span class="nc">City</span><span class="o">(</span><span class="nc">Washington</span><span class="o">,</span><span class="nc">District</span> <span class="n">of</span> <span class="nc">Columbia</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">United</span> <span class="nc">States</span> <span class="nc">Minor</span> <span class="nc">Outlying</span> <span class="nc">Islands</span><span class="o">,</span><span class="nc">UMI</span><span class="o">),</span><span class="nc">None</span><span class="o">)</span>
 </code></pre>
 </div>
-
-<h3 id="how-do-i-resolve-error-could-not-find-or-construct-param">How do I resolve <code class="highlighter-rouge">error: Could not find or construct Param[...]</code>?</h3>
-
-<p>When we use the <code class="highlighter-rouge">sql</code> interpolator we require a <code class="highlighter-rouge">Param</code> instance for an <code class="highlighter-rouge">HList</code> composed of the types of the interpolated query parameters. For instance, in the following code (which has parameters of type <code class="highlighter-rouge">String</code> and <code class="highlighter-rouge">UUID</code>, in that order) we need a <code class="highlighter-rouge">Param[String :: UUID :: HNil]</code> and none is available.</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
-&lt;console&gt;:38: error: Could not find or construct Param[String :: java.util.UUID :: shapeless.HNil].
-Ensure that this type is an atomic type with an Meta instance in scope, or is an HList whose members
-have Meta instances in scope. You can usually diagnose this problem by trying to summon the Meta
-instance for each element in the REPL. See the FAQ in the Book of Doobie for more hints.
-       def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
-                                       ^
-&lt;console&gt;:38: warning: parameter value s in method query is never used
-       def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
-                 ^
-&lt;console&gt;:38: warning: parameter value u in method query is never used
-       def query(s: String, u: UUID) = sql"… $s … $u …".query[Int]
-                            ^
-</code></pre>
-</div>
-
-<p>Ok, so the message suggests that we need an <code class="highlighter-rouge">Meta[A]</code> for each <code class="highlighter-rouge">A</code> or <code class="highlighter-rouge">Option[A]</code> in the <code class="highlighter-rouge">HList</code>, so let’s see which one is missing by trying to summon them in the REPL.</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; Meta[String]
-res11: doobie.util.meta.Meta[String] = doobie.util.meta$Meta$$anon$3@27a6a5b6
-
-scala&gt; Meta[UUID]
-&lt;console&gt;:38: error: Could not find an instance of Meta[java.util.UUID]; you can construct one based on a primitive instance via `xmap`.
-       Meta[UUID]
-           ^
-</code></pre>
-</div>
-
-<p>So what this means is that we have not defined a mapping for the <code class="highlighter-rouge">UUID</code> type to an underlying JDBC type, and <strong>doobie</strong> doesn’t know how to set an argument of that type on the underlying <code class="highlighter-rouge">PreparedStatement</code>. So we have a few choices. We can <code class="highlighter-rouge">xmap</code> from an existing <code class="highlighter-rouge">Meta</code> instance, as described in <a href="10-Custom-Mappings.html">Chapter 10</a>; or we can import a provided mapping from a vendor-specific <code class="highlighter-rouge">contrib</code> package. Since we’re using PostgreSQL here, let’s do that.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">import</span> <span class="nn">doobie.postgres.implicits._</span>
-<span class="k">import</span> <span class="nn">doobie.postgres.implicits._</span>
-</code></pre>
-</div>
-
-<p>Having done this, the <code class="highlighter-rouge">Meta</code> and <code class="highlighter-rouge">Param</code> instances are now present and our code compiles.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">UUID</span><span class="o">]</span>
-<span class="n">res13</span><span class="k">:</span> <span class="kt">doobie.util.meta.Meta</span><span class="o">[</span><span class="kt">java.util.UUID</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">meta$Meta$$anon$4</span><span class="k">@</span><span class="mi">4</span><span class="n">e4ceea3</span>
-
-<span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">UUID</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]</span>
-<span class="n">res14</span><span class="k">:</span> <span class="kt">doobie.util.param.Param</span><span class="o">[</span><span class="kt">String</span> <span class="kt">::</span> <span class="kt">java.util.UUID</span> <span class="kt">::</span> <span class="kt">shapeless.HNil</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">param$Param</span><span class="k">@</span><span class="mf">171d</span><span class="n">ea6a</span>
-
-<span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">query</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">u</span><span class="k">:</span> <span class="kt">UUID</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"select ... where foo = $s and url = $u"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
-<span class="n">query</span><span class="k">:</span> <span class="o">(</span><span class="kt">s:</span> <span class="kt">String</span><span class="o">,</span> <span class="kt">u:</span> <span class="kt">java.util.UUID</span><span class="o">)</span><span class="n">doobie</span><span class="o">.</span><span class="nc">Query0</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
-</code></pre>
-</div>
-
-<h3 id="how-do-i-resolve-error-could-not-find-or-construct-composite">How do I resolve <code class="highlighter-rouge">error: Could not find or construct Composite[...]</code>?</h3>
-
-<p>When we use the <code class="highlighter-rouge">sql</code> interpolator and use the <code class="highlighter-rouge">.query[A]</code> method we require a <code class="highlighter-rouge">Composite</code> instance for the output type <code class="highlighter-rouge">A</code>, which we can define directly (as described in <a href="10-Custom-Mappings.html">Chapter 10</a>) or derive automatically if <code class="highlighter-rouge">A</code> has a <code class="highlighter-rouge">Meta</code> instance, or is an option thereof, or a product type whose elements have <code class="highlighter-rouge">Composite</code> instances.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Point</span><span class="o">(</span><span class="n">lat</span><span class="k">:</span> <span class="kt">Double</span><span class="o">,</span> <span class="n">lon</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span>
-<span class="k">case</span> <span class="k">class</span> <span class="nc">City</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">loc</span><span class="k">:</span> <span class="kt">Point</span><span class="o">)</span>
-<span class="k">case</span> <span class="k">class</span> <span class="nc">State</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">capitol</span><span class="k">:</span> <span class="kt">City</span><span class="o">)</span>
-</code></pre>
-</div>
-
-<p>In this case if we were to say <code class="highlighter-rouge">.query[State]</code> the derivation would be automatic, because all elements of the “flattened” structure have <code class="highlighter-rouge">Meta</code> instances for free.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="nc">State</span><span class="o">(</span><span class="nc">String</span><span class="o">,</span> <span class="nc">City</span><span class="o">(</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Point</span><span class="o">(</span><span class="nc">Double</span><span class="o">,</span> <span class="nc">Double</span><span class="o">)))</span> <span class="c1">// our structure
-</span>     <span class="o">(</span><span class="nc">String</span><span class="o">,</span>     <span class="o">(</span><span class="nc">String</span><span class="o">,</span>      <span class="o">(</span><span class="nc">Double</span><span class="o">,</span> <span class="nc">Double</span><span class="o">)))</span> <span class="c1">// is isomorphic to this
-</span>      <span class="nc">String</span><span class="o">,</span>      <span class="nc">String</span><span class="o">,</span>       <span class="nc">Double</span><span class="o">,</span> <span class="nc">Double</span>    <span class="c1">// so we expect a column vector of this shape
-</span></code></pre>
-</div>
-
-<p>But what if we wanted to use AWT’s <code class="highlighter-rouge">Point2D.Double</code> instead of our own <code class="highlighter-rouge">Point</code> class?</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">City</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">loc</span><span class="k">:</span> <span class="kt">Point2D.Double</span><span class="o">)</span>
-<span class="k">case</span> <span class="k">class</span> <span class="nc">State</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">capitol</span><span class="k">:</span> <span class="kt">City</span><span class="o">)</span>
-</code></pre>
-</div>
-
-<p>The derivation now fails.</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; sql"…".query[State]
-&lt;console&gt;:43: error: Could not find or construct Composite[State].
-
-  If State is a simple type (or option thereof) that maps to a single column, you're
-  probably missing a Meta instance. If State is a product type (typically a case class,
-  tuple, or HList) then probably one of its component types is missing a Composite instance. You can
-  usually diagnose this by evaluating Composite[Foo] for each element Foo of the product type in
-  question. See the FAQ in the Book of Doobie for more hints.
-
-       sql"…".query[State]
-                   ^
-</code></pre>
-</div>
-
-<p>And if we look at the flat structure it’s clear that the culprit has to be <code class="highlighter-rouge">Point2D.Double</code> since we know <code class="highlighter-rouge">String</code> has a defined column mapping.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="nc">State</span><span class="o">(</span><span class="nc">String</span><span class="o">,</span> <span class="nc">City</span><span class="o">(</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Point2D</span><span class="o">.</span><span class="nc">Double</span><span class="o">))</span> <span class="c1">// our structure
-</span>     <span class="o">(</span><span class="nc">String</span><span class="o">,</span>     <span class="o">(</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Point2D</span><span class="o">.</span><span class="nc">Double</span><span class="o">))</span> <span class="c1">// is isomorphic to this
-</span>      <span class="nc">String</span><span class="o">,</span>      <span class="nc">String</span><span class="o">,</span> <span class="nc">Point2D</span><span class="o">.</span><span class="nc">Double</span>   <span class="c1">// so we expect a column vector of this shape
-</span></code></pre>
-</div>
-
-<p>And indeed this type has no column vector mapping.</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; Composite[Point2D.Double]
-&lt;console&gt;:41: error: Could not find or construct Composite[java.awt.geom.Point2D.Double].
-
-  If java.awt.geom.Point2D.Double is a simple type (or option thereof) that maps to a single column, you're
-  probably missing a Meta instance. If java.awt.geom.Point2D.Double is a product type (typically a case class,
-  tuple, or HList) then probably one of its component types is missing a Composite instance. You can
-  usually diagnose this by evaluating Composite[Foo] for each element Foo of the product type in
-  question. See the FAQ in the Book of Doobie for more hints.
-
-       Composite[Point2D.Double]
-                ^
-</code></pre>
-</div>
-
-<p>If this were an atomic type it would be a matter of importing or defining a <code class="highlighter-rouge">Meta</code> instance, but here we need to define a <code class="highlighter-rouge">Composite</code> directly because we’re mapping a type with several members. As this type is isomorphic to <code class="highlighter-rouge">(Double, Double)</code> we can simply base our mapping off of the existing <code class="highlighter-rouge">Composite</code>.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nc">Point2DComposite</span><span class="k">:</span> <span class="kt">Composite</span><span class="o">[</span><span class="kt">Point2D.Double</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Composite</span><span class="o">[(</span><span class="kt">Double</span>, <span class="kt">Double</span><span class="o">)].</span><span class="n">imap</span><span class="o">(</span>
-    <span class="o">(</span><span class="n">t</span><span class="k">:</span> <span class="o">(</span><span class="kt">Double</span><span class="o">,</span> <span class="kt">Double</span><span class="o">))</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Point2D</span><span class="o">.</span><span class="nc">Double</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="n">_1</span><span class="o">,</span> <span class="n">t</span><span class="o">.</span><span class="n">_2</span><span class="o">))(</span>
-    <span class="o">(</span><span class="n">p</span><span class="k">:</span> <span class="kt">Point2D.Double</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">)</span>
-  <span class="o">)</span>
-</code></pre>
-</div>
-
-<p>Our derivation now works and the code compiles.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"…"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="n">res17</span><span class="k">:</span> <span class="kt">doobie.Query0</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span> <span class="k">=</span> <span class="n">doobie</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">query$Query$$anon$7</span><span class="k">@</span><span class="mi">6</span><span class="n">e41be29</span>
-</code></pre>
-</div>
-
-<h3 id="how-do-i-time-query-execution">How do I time query execution?</h3>
 
 <h3 id="how-do-i-log-the-sql-produced-for-my-query-after-interpolation">How do I log the SQL produced for my query after interpolation?</h3>
 
 <p>As of <strong>doobie</strong> 0.4 there is a reasonable solution to the logging/instrumentation question. See <a href="10-Logging.html">Chapter 10</a> for more details.</p>
 
-<h3 id="why-is-there-no-metasqlxml">Why is there no <code class="highlighter-rouge">Meta[SQLXML]</code>?</h3>
+<h3 id="why-is-there-no-get-or-put-for-sqlxml">Why is there no <code class="highlighter-rouge">Get</code> or <code class="highlighter-rouge">Put</code> for <code class="highlighter-rouge">SQLXML</code>?</h3>
 
 <p>There are a lot of ways to handle <code class="highlighter-rouge">SQLXML</code> so there is no pre-defined strategy, but here is one that maps <code class="highlighter-rouge">scala.xml.Elem</code> to <code class="highlighter-rouge">SQLXML</code> via streaming.</p>
 
@@ -300,8 +138,8 @@ scala&gt; Meta[UUID]
 <span class="k">import</span> <span class="nn">scala.xml.</span><span class="o">{</span> <span class="nc">XML</span><span class="o">,</span> <span class="nc">Elem</span> <span class="o">}</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nc">XmlMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">Elem</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Meta</span><span class="o">.</span><span class="n">advanced</span><span class="o">[</span><span class="kt">Elem</span><span class="o">](</span>
-    <span class="nc">NonEmptyList</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="nc">Other</span><span class="o">),</span>
+  <span class="nc">Meta</span><span class="o">.</span><span class="nc">Advanced</span><span class="o">.</span><span class="n">one</span><span class="o">[</span><span class="kt">Elem</span><span class="o">](</span>
+    <span class="nc">Other</span><span class="o">,</span>
     <span class="nc">NonEmptyList</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="s">"xml"</span><span class="o">),</span>
     <span class="o">(</span><span class="n">rs</span><span class="o">,</span> <span class="n">n</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">XML</span><span class="o">.</span><span class="n">load</span><span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="n">getObject</span><span class="o">(</span><span class="n">n</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SQLXML</span><span class="o">].</span><span class="n">getBinaryStream</span><span class="o">),</span>
     <span class="o">(</span><span class="n">ps</span><span class="o">,</span> <span class="n">n</span><span class="o">,</span>  <span class="n">e</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
@@ -342,8 +180,7 @@ scala&gt; Meta[UUID]
 
 <span class="c1">// If the domain for NonEmptyStrings is nes
 </span><span class="k">implicit</span> <span class="k">val</span> <span class="n">nesMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">NonEmptyString</span><span class="o">]</span> <span class="k">=</span>
-  <span class="n">string</span><span class="o">(</span><span class="s">"nes"</span><span class="o">).</span><span class="n">xmap</span><span class="o">(</span><span class="nc">NonEmptyString</span><span class="o">.</span><span class="n">apply</span><span class="o">,</span> <span class="k">_</span><span class="o">.</span><span class="n">value</span><span class="o">)</span>
-  <span class="o">}</span>
+  <span class="n">string</span><span class="o">(</span><span class="s">"nes"</span><span class="o">).</span><span class="n">imap</span><span class="o">(</span><span class="nc">NonEmptyString</span><span class="o">.</span><span class="n">apply</span><span class="o">)(</span><span class="k">_</span><span class="o">.</span><span class="n">value</span><span class="o">)</span>
 </code></pre>
 </div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({

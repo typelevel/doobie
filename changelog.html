@@ -4,6 +4,90 @@
 
 <hr />
 
+<h3 id="new-and-noteworthy-for-version-060"><a name="0.6.0"></a>New and Noteworthy for Version 0.6.0</h3>
+
+<p>Many thanks to <strong>Arber Shabhasa</strong>, <strong>Bjørn Madsen</strong>, <strong>Chris Davenport</strong>, <strong>Cody Allen</strong>, <strong>Dmitry Polienko</strong>, <strong>Kai(luo) Wang</strong>, <strong>Kevin Walter</strong>, <strong>Mark Canlas</strong>, and <strong>Quang Le Hong</strong> for their contributions to this release.</p>
+
+<p>:exclamation: This is a major update with <strong>breaking changes</strong>. Please read the following notes carefully.</p>
+
+<h4 id="transactors-and-threading">Transactors and Threading</h4>
+
+<p>Prior to 0.6.x <strong>doobie</strong> had nothing to say about threading; it was up to users to shift interpreted <code class="highlighter-rouge">IO</code> programs onto dedicated pools if desired. This has changed. We now identify three distinct execution contexts that are relevant to database applications.</p>
+
+<ol>
+  <li>All <em>non-blocking</em> work is performed on the execution context identified by <a href="https://typelevel.org/cats-effect/datatypes/contextshift.html"><code class="highlighter-rouge">ContextShift[F]</code></a>. If you are using <a href="https://typelevel.org/cats-effect/datatypes/ioapp.html"><code class="highlighter-rouge">IOApp</code></a> (which you should) this instance is provided for you. All interpreters (and thus all transactors) need this instance on construction.</li>
+  <li>Requesting a JDBC connection is a blocking operation, so to avoid deadlock these requests cannot be placed in competition with running programs (which need to make progress in order to finish up and return their connections to the pool). Therefore we need a distinct, bounded, blocking execution context for the single purpose of awaiting database connections. All transactors that use a connection pool will require this execution context to be specified.</li>
+  <li>All JDBC primitive operations are [potentially] blocking, so we need a distinct, typically unbounded (since the connection context above provides a logical bound) execution context for scheduling these operations. All transactors that use a connection pool will require this execution context to be specified.</li>
+</ol>
+
+<p>For convenience we provide an <code class="highlighter-rouge">ExecutionContexts</code> module that provides <a href=""><code class="highlighter-rouge">Resource</code></a>s yielding the kinds of <code class="highlighter-rouge">ExecutionContext</code>s that will tend to be useful for the scenarios above. Note that <code class="highlighter-rouge">DriverManagerTransactor</code> provides an unbounded number of connections and is unsuitable for production use anyway, so we do not require the blocking pools here (it uses an unbounded pool internally). Fine for testing but don’t use it in real life.</p>
+
+<p>See the book chapter on <strong>Managing Connections</strong> for more information and examples.</p>
+
+<h4 id="streams-and-resources">Streams and Resources</h4>
+
+<p>In 0.5.x we provided some single-element <code class="highlighter-rouge">Stream</code>s that would emit values and guarantee resource cleanup. This has been generalized as <code class="highlighter-rouge">Resource</code> in cats-effect 1.x, and all such constructors (<code class="highlighter-rouge">H2Transactor.newH2Transactor</code> for example) now use <code class="highlighter-rouge">Resource</code> rather than <code class="highlighter-rouge">Stream</code>. You can use <code class="highlighter-rouge">Stream.resource(rsrc)</code> to regain the old functionality if desired.</p>
+
+<h4 id="splitting-of-readwrite-functionality">Splitting of read/write functionality.</h4>
+
+<p>Prior to the 0.6.x series we provided two typeclasses for <strong>bidirectional</strong> type mapping:</p>
+<ul>
+  <li><code class="highlighter-rouge">Meta</code> defined nullable mappings between column/parameter values and scala types.</li>
+  <li><code class="highlighter-rouge">Composite</code> defined null-safe mappings betwen column/parameter <strong>vectors</strong> and scala types.</li>
+</ul>
+
+<p>Starting with version 0.6.0 type mappings are <strong>unidirectional</strong>:</p>
+<ul>
+  <li><code class="highlighter-rouge">Meta</code> has been split into <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> typeclasses, for reads and writes of column/parameter values, respectively.</li>
+  <li><code class="highlighter-rouge">Composite</code> has been split into <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> typeclasses, for reads and writes of column/parameter vectors, respecitively.</li>
+</ul>
+
+<p>Note that <code class="highlighter-rouge">Meta</code> does still exist, but only as a mechanism for introducing <code class="highlighter-rouge">Get/Put</code> pairs. An implicit <code class="highlighter-rouge">Meta[A]</code> induces both an implicit <code class="highlighter-rouge">Get[A]</code> and an implicit <code class="highlighter-rouge">Put[A]</code>, and the old mechanism of <code class="highlighter-rouge">Meta[A].imap(...)(...)</code> is still supported for this purpose. The <code class="highlighter-rouge">xmap</code> method has been replaced with parametric <code class="highlighter-rouge">imap</code> and <code class="highlighter-rouge">TypeTag</code>-constrained <code class="highlighter-rouge">timap</code>. Prefer <code class="highlighter-rouge">timap</code> when possible because it yields better diagnostic information when typechecking queries.</p>
+
+<p>To summarize:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>0.5.x</th>
+      <th>0.6.x</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="highlighter-rouge">[A: Meta]</code></td>
+      <td><code class="highlighter-rouge">[A: Get : Put]</code></td>
+      <td>Or just one, depending on usage.</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">[A: Composite]</code></td>
+      <td><code class="highlighter-rouge">[A: Read : Write]</code></td>
+      <td>Or just one, depending on usage.</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">Meta[A].xmap(..)</code></td>
+      <td><code class="highlighter-rouge">Meta[A].tmap(...)</code></td>
+      <td>Or <code class="highlighter-rouge">imap</code> when a <code class="highlighter-rouge">TypeTag</code> is unavailable.</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">Composite[A].xmap(...)</code></td>
+      <td><code class="highlighter-rouge">Read[A].map(...)</code> <br /> <code class="highlighter-rouge">Write[A].contramap(...)</code></td>
+      <td>This takes two steps now.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Please refer to book chapter on <strong>Custom Mappings</strong> and the <code class="highlighter-rouge">examples</code> project for more details.</p>
+
+<h4 id="other-changes">Other Changes</h4>
+
+<ul>
+  <li>postgres-circe module created exposing Get and Put instances for <code class="highlighter-rouge">io.circe.Json</code></li>
+  <li>upgraded to cats-effect 1.0 and fs2 1.0</li>
+</ul>
+
+<hr />
 <h3 id="new-and-noteworthy-for-version-053"><a name="0.5.3"></a>New and Noteworthy for Version 0.5.3</h3>
 
 <p>Minor updates, see below.</p>
@@ -18,6 +102,7 @@
 
 <p>This is the last planned release in the 0.5.x series. Work will start soon on 0.6!</p>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-052"><a name="0.5.2"></a>New and Noteworthy for Version 0.5.2</h3>
 
 <p>Minor updates, see below.</p>
@@ -30,6 +115,7 @@
   <li>Added <code class="highlighter-rouge">Composite.deriveComposite[A]()</code> which creates a “semi-automatic” derivation of <code class="highlighter-rouge">Composite[]</code> for a given type <code class="highlighter-rouge">A</code>. While instances are usually derived automatically, this can be used to speed up compilation by only deriving once. It can also be used to avoid needing <code class="highlighter-rouge">Meta[]</code> instances in scope or derivable at every site where a given <code class="highlighter-rouge">Composite[A]</code> is used. Thanks Scott Parish!</li>
 </ul>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-051"><a name="0.5.1"></a>New and Noteworthy for Version 0.5.1</h3>
 
 <p>Minor update to get dependencies up to date.</p>
@@ -39,6 +125,7 @@
   <li>You can now do <code class="highlighter-rouge">.stripMargin</code> on fragments, thanks to Arne Claassen!</li>
 </ul>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-050"><a name="0.5.0"></a>New and Noteworthy for Version 0.5.0</h3>
 
 <p>This introduces the <strong>0.5.x</strong> series which standardizes on <a href="http://typelevel.org/cats/"><strong>cats</strong></a>, <a href="https://github.com/typelevel/cats-effect"><strong>cats-effect</strong></a>, and <a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a>. This is a big release that will make life much simpler for people who were using 0.4.x with cats. See the <strong>migration</strong> document on the microsite for more information.</p>
@@ -71,14 +158,17 @@
   <li>The release process is much better, so releases can be more frequent. Version numbers appearing in the doc are now supplied automatically.</li>
 </ul>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-044"><a name="0.4.4"></a>New and Noteworthy for Version 0.4.4</h3>
 
 <p>This release fixes an <a href="https://github.com/tpolecat/doobie/pull/569">issue</a> with HikariTransactor (thanks Naoki Aoyama) and supersedes the botched 0.4.3 release.</p>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-043"><a name="0.4.3"></a>New and Noteworthy for Version 0.4.3</h3>
 
 <p>This was a failed attempt to add back support for 2.10. Do not use this release.</p>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-042"><a name="0.4.2"></a>New and Noteworthy for Version 0.4.2</h3>
 
 <p>Sparkly contributors for this release are :sparkles: n4to4, :sparkles: Alexa DeWit, :sparkles: wedens, :sparkles: Colt Frederickson, :sparkles: Benjamin Trenker, :sparkles: nigredo-tori, :sparkles: Suhas Gaddam, :sparkles: Christopher Davenport, :sparkles: Damir Vandic, :sparkles: Jacob Barber, and :chicken: tpolecat. Noteworthy changes:</p>
@@ -120,10 +210,12 @@
   <li>Circe 0.8.0</li>
 </ul>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-041"><a name="0.4.1"></a>New and Noteworthy for Version 0.4.1</h3>
 
 <p>This release updates <strong>doobie</strong> to Cats 0.9 and the associated fs2-cats interop layer to 0.3, courtesy of mighty space robot Adelbert Chang. There are no other changes.</p>
 
+<hr />
 <h3 id="new-and-noteworthy-for-version-040"><a name="0.4.0"></a>New and Noteworthy for Version 0.4.0</h3>
 
 <p>This was intended to be a quick follow-up to 0.3.0 but it got a little out of hand and turned into a major release. <strong>Please read these notes carefully</strong> because there are some breaking changes relative to 0.3.0.</p>
@@ -166,7 +258,6 @@
 <p>That’s it! Enjoy the release. Once again many thanks to our contributors.</p>
 
 <hr />
-
 <h3 id="new-and-noteworthy-for-version-030"><a name="0.3.0"></a>New and Noteworthy for Version 0.3.0</h3>
 
 <p>This release brings <strong>doobie</strong> up to date with major dependencies, almost entirely due to the hard work of <strong>@guersam</strong>. The release is otherwise equivalent to 0.2.4 from a feature standpoint.</p>
@@ -180,7 +271,6 @@
 </ul>
 
 <hr />
-
 <h3 id="new-and-noteworthy-for-version-024"><a name="0.2.4"></a>New and Noteworthy for Version 0.2.4</h3>
 
 <p>This is a minor release with a few odds and ends and an important library update.</p>
@@ -200,7 +290,6 @@
 </ul>
 
 <hr />
-
 <h3 id="new-and-noteworthy-for-version-023"><a name="0.2.3"></a>New and Noteworthy for Version 0.2.3</h3>
 
 <p>This release includes more performance work and some usability improvements, as well as documentation improvements here and there. This release should be source-compatible for most users, but is <strong>not</strong> binary compatible with 0.2.2 or any other release. Let me know if you run into source compatibilty problems. Special thanks to <strong>@mdmoss</strong> for build improvements, <strong>@fommil</strong> and <strong>@non</strong> for help with Sonatype, and everyone else for your continued interest and contributions!</p>
@@ -239,7 +328,6 @@
 </ul>
 
 <hr />
-
 <h3 id="new-and-noteworthy-for-version-022"><a name="0.2.2"></a>New and Noteworthy for Version 0.2.2</h3>
 
 <p>This is another minor release that adds yet more support PostgreSQL-specific features, updates dependencies, and improves performance for resultset processing. Thanks everyone for your continued interest and contributions!</p>
@@ -271,7 +359,6 @@
 </ul>
 
 <hr />
-
 <h3 id="new-and-noteworthy-for-version-021"><a name="0.2.1"></a>New and Noteworthy for Version 0.2.1</h3>
 
 <p>This is a minor follow-up release, primarily to add support for some PostgreSQL features and other odds and ends reported by users. Thanks to users and contributors for their help!</p>

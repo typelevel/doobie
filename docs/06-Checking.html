@@ -12,10 +12,20 @@
 <span class="k">import</span> <span class="nn">cats.data._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
 <span class="k">import</span> <span class="nn">y._</span>
@@ -57,31 +67,6 @@
 <p>Now let’s try the <code class="highlighter-rouge">check</code> method provided by YOLO and see what happens.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).check.unsafeRunSync
-
-      select code, name, population, gnp, indepyear
-      from country
-      where population &gt; ?
-    
-
-  ✓ SQL Compiles and Typechecks
-  ✕ P01 Short  →  INTEGER (int4)
-    - Short is not coercible to INTEGER (int4) according to the JDBC specification.
-      Fix this by changing the schema type to SMALLINT, or the Scala type to Int or
-      JdbcType.
-  ✕ C01 code       CHAR     (bpchar)  NOT NULL  →  Int
-    - CHAR (bpchar) is ostensibly coercible to Int according to the JDBC specification
-      but is not a recommended target type. Fix this by changing the schema type to
-      INTEGER; or the Scala type to Code or String.
-  ✓ C02 name       VARCHAR  (varchar) NOT NULL  →  String
-  ✓ C03 population INTEGER  (int4)    NOT NULL  →  Int
-  ✕ C04 gnp        NUMERIC  (numeric) NULL      →  Double
-    - NUMERIC (numeric) is ostensibly coercible to Double according to the JDBC
-      specification but is not a recommended target type. Fix this by changing the
-      schema type to FLOAT or DOUBLE; or the Scala type to BigDecimal or BigDecimal.
-    - Reading a NULL value into Double will result in a runtime failure. Fix this by
-      making the schema type NOT NULL or by changing the Scala type to Option[Double]
-  ✕ C05 indepyear  SMALLINT (int2)    NULL      →  
-    - Column is unused. Remove it from the SELECT statement.
 </code></pre>
 </div>
 
@@ -94,9 +79,7 @@
   <li>and an unused column.</li>
 </ul>
 
-<p>Suggested fixes are given in terms of both JDBC and vendor-specific schema types and include known custom types like <strong>doobie</strong>’s enumerated <code class="highlighter-rouge">JdbcType</code>.  Currently this is based on instantiated <code class="highlighter-rouge">Meta</code> instances, which is not ideal; hopefully tooling can improve to support all instances in scope.</p>
-
-<p>Anyway, if we fix all of these problems and try again, we get a clean bill of health.</p>
+<p>If we fix all of these problems and try again, we get a clean bill of health.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">pop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">gnp</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">BigDecimal</span><span class="o">])</span>
 
@@ -110,18 +93,6 @@
 </div>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).check.unsafeRunSync
-
-      select code, name, population, gnp
-      from country
-      where population &gt; ?
-    
-
-  ✓ SQL Compiles and Typechecks
-  ✓ P01 Int  →  INTEGER (int4)
-  ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
-  ✓ C02 name       VARCHAR (varchar) NOT NULL  →  String
-  ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
-  ✓ C04 gnp        NUMERIC (numeric) NULL      →  Option[BigDecimal]
 </code></pre>
 </div>
 
@@ -134,23 +105,12 @@
 <p>However a common case is that <em>parameter</em> metadata is unavailable but <em>output column</em> metadata is. And in these cases there is a workaround: use <code class="highlighter-rouge">checkOutput</code> rather than <code class="highlighter-rouge">check</code>. This instructs <strong>doobie</strong> to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).checkOutput.unsafeRunSync
-
-      select code, name, population, gnp
-      from country
-      where population &gt; ?
-    
-
-  ✓ SQL Compiles and Typechecks
-  ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
-  ✓ C02 name       VARCHAR (varchar) NOT NULL  →  String
-  ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
-  ✓ C04 gnp        NUMERIC (numeric) NULL      →  Option[BigDecimal]
 </code></pre>
 </div>
 
 <h3 id="diving-deeper">Diving Deeper</h3>
 
-<p>The <code class="highlighter-rouge">check</code> logic requires both a database connection and concrete <code class="highlighter-rouge">Meta</code> instances that define column-level JDBC mappings.</p>
+<p>The <code class="highlighter-rouge">check</code> logic requires both a database connection and concrete <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> instances that define column-level JDBC mappings.</p>
 
 <p>The way this works is that a <code class="highlighter-rouge">Query</code> value has enough type information to describe all parameter and column mappings, as well as the SQL literal itself (with interpolated parameters erased into <code class="highlighter-rouge">?</code>). From here it is straightforward to prepare the statement, pull the <code class="highlighter-rouge">ResultsetMetaData</code> and <code class="highlighter-rouge">DatabaseMetaData</code> and work out whether things are aligned correctly (and if not, determine how misalignments might be fixed). The <code class="highlighter-rouge">Anaylsis</code> class consumes this metadata and is able to provide the following diagnostics:</p>
 

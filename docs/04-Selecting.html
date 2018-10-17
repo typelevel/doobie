@@ -12,10 +12,20 @@
 <span class="k">import</span> <span class="nn">cats.data._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -114,11 +124,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
 </span>     <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>         <span class="c1">// IO[Unit]
 </span>     <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="nc">Afghanistan</span>
-  <span class="nc">Netherlands</span>
-  <span class="nc">Netherlands</span> <span class="nc">Antilles</span>
-  <span class="nc">Albania</span>
-  <span class="nc">Algeria</span>
 </code></pre>
 </div>
 
@@ -141,11 +146,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
      <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="o">(</span><span class="nc">AFG</span><span class="o">,</span><span class="nc">Afghanistan</span><span class="o">,</span><span class="mi">22720000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">))</span>
-  <span class="o">(</span><span class="nc">NLD</span><span class="o">,</span><span class="nc">Netherlands</span><span class="o">,</span><span class="mi">15864000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">))</span>
-  <span class="o">(</span><span class="nc">ANT</span><span class="o">,</span><span class="nc">Netherlands</span> <span class="nc">Antilles</span><span class="o">,</span><span class="mi">217000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">))</span>
-  <span class="o">(</span><span class="nc">ALB</span><span class="o">,</span><span class="nc">Albania</span><span class="o">,</span><span class="mi">3401200</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">))</span>
-  <span class="o">(</span><span class="nc">DZA</span><span class="o">,</span><span class="nc">Algeria</span><span class="o">,</span><span class="mi">31471000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">))</span>
 </code></pre>
 </div>
 <p><strong>doobie</strong> supports row mappings for atomic column types, as well as options, tuples, <code class="highlighter-rouge">HList</code>s, shapeless records, and case classes thereof. So let’s try the same query with an <code class="highlighter-rouge">HList</code>:</p>
@@ -161,11 +161,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
      <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="nc">AFG</span> <span class="o">::</span> <span class="nc">Afghanistan</span> <span class="o">::</span> <span class="mi">22720000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">NLD</span> <span class="o">::</span> <span class="nc">Netherlands</span> <span class="o">::</span> <span class="mi">15864000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">ANT</span> <span class="o">::</span> <span class="nc">Netherlands</span> <span class="nc">Antilles</span> <span class="o">::</span> <span class="mi">217000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">ALB</span> <span class="o">::</span> <span class="nc">Albania</span> <span class="o">::</span> <span class="mi">3401200</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">DZA</span> <span class="o">::</span> <span class="nc">Algeria</span> <span class="o">::</span> <span class="mi">31471000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
 </code></pre>
 </div>
 
@@ -185,11 +180,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
      <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="nc">AFG</span> <span class="o">::</span> <span class="nc">Afghanistan</span> <span class="o">::</span> <span class="mi">22720000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">NLD</span> <span class="o">::</span> <span class="nc">Netherlands</span> <span class="o">::</span> <span class="mi">15864000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">ANT</span> <span class="o">::</span> <span class="nc">Netherlands</span> <span class="nc">Antilles</span> <span class="o">::</span> <span class="mi">217000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">ALB</span> <span class="o">::</span> <span class="nc">Albania</span> <span class="o">::</span> <span class="mi">3401200</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
-  <span class="nc">DZA</span> <span class="o">::</span> <span class="nc">Algeria</span> <span class="o">::</span> <span class="mi">31471000</span> <span class="o">::</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">)</span> <span class="o">::</span> <span class="nc">HNil</span>
 </code></pre>
 </div>
 
@@ -207,11 +197,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
      <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="nc">Country</span><span class="o">(</span><span class="nc">AFG</span><span class="o">,</span><span class="nc">Afghanistan</span><span class="o">,</span><span class="mi">22720000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">))</span>
-  <span class="nc">Country</span><span class="o">(</span><span class="nc">NLD</span><span class="o">,</span><span class="nc">Netherlands</span><span class="o">,</span><span class="mi">15864000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">))</span>
-  <span class="nc">Country</span><span class="o">(</span><span class="nc">ANT</span><span class="o">,</span><span class="nc">Netherlands</span> <span class="nc">Antilles</span><span class="o">,</span><span class="mi">217000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">))</span>
-  <span class="nc">Country</span><span class="o">(</span><span class="nc">ALB</span><span class="o">,</span><span class="nc">Albania</span><span class="o">,</span><span class="mi">3401200</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">))</span>
-  <span class="nc">Country</span><span class="o">(</span><span class="nc">DZA</span><span class="o">,</span><span class="nc">Algeria</span><span class="o">,</span><span class="mi">31471000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">))</span>
 </code></pre>
 </div>
 
@@ -230,11 +215,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
      <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">AFG</span><span class="o">),</span><span class="nc">Country</span><span class="o">(</span><span class="nc">Afghanistan</span><span class="o">,</span><span class="mi">22720000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">NLD</span><span class="o">),</span><span class="nc">Country</span><span class="o">(</span><span class="nc">Netherlands</span><span class="o">,</span><span class="mi">15864000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">ANT</span><span class="o">),</span><span class="nc">Country</span><span class="o">(</span><span class="nc">Netherlands</span> <span class="nc">Antilles</span><span class="o">,</span><span class="mi">217000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">ALB</span><span class="o">),</span><span class="nc">Country</span><span class="o">(</span><span class="nc">Albania</span><span class="o">,</span><span class="mi">3401200</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">)))</span>
-  <span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">DZA</span><span class="o">),</span><span class="nc">Country</span><span class="o">(</span><span class="nc">Algeria</span><span class="o">,</span><span class="mi">31471000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">)))</span>
 </code></pre>
 </div>
 
@@ -249,7 +229,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
      <span class="o">|</span>     <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>     <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="nc">Map</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">ANT</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Netherlands</span> <span class="nc">Antilles</span><span class="o">,</span><span class="mi">217000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">DZA</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Algeria</span><span class="o">,</span><span class="mi">31471000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">ALB</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Albania</span><span class="o">,</span><span class="mi">3401200</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">NLD</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Netherlands</span><span class="o">,</span><span class="mi">15864000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">AFG</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Afghanistan</span><span class="o">,</span><span class="mi">22720000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">)))</span>
 </code></pre>
 </div>
 
@@ -294,7 +273,6 @@ For more information see the <a href="https://github.com/functional-streams-for-
 </span>     <span class="o">|</span>       <span class="o">.</span><span class="n">quick</span>
      <span class="o">|</span>       <span class="o">.</span><span class="n">unsafeRunSync</span>
      <span class="o">|</span> <span class="o">}</span>
-  <span class="nc">Map</span><span class="o">(</span><span class="nc">Code</span><span class="o">(</span><span class="nc">ANT</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Netherlands</span> <span class="nc">Antilles</span><span class="o">,</span><span class="mi">217000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">1941.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">DZA</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Algeria</span><span class="o">,</span><span class="mi">31471000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">49982.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">ALB</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Albania</span><span class="o">,</span><span class="mi">3401200</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">3205.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">NLD</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Netherlands</span><span class="o">,</span><span class="mi">15864000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">371362.0</span><span class="o">)),</span> <span class="nc">Code</span><span class="o">(</span><span class="nc">AFG</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">Country</span><span class="o">(</span><span class="nc">Afghanistan</span><span class="o">,</span><span class="mi">22720000</span><span class="o">,</span><span class="nc">Some</span><span class="o">(</span><span class="mf">5976.0</span><span class="o">)))</span>
 </code></pre>
 </div>
 

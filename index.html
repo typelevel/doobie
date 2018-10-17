@@ -12,6 +12,9 @@
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
 <span class="k">import</span> <span class="nn">doobie.implicits._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
   <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -27,7 +30,7 @@
 <p>And then …</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">find</span><span class="o">(</span><span class="s">"France"</span><span class="o">).</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="n">res3</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">FRA</span><span class="o">,</span><span class="nc">France</span><span class="o">,</span><span class="mi">59225700</span><span class="o">))</span>
+<span class="n">res4</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="nc">Country</span><span class="o">(</span><span class="nc">FRA</span><span class="o">,</span><span class="nc">France</span><span class="o">,</span><span class="mi">59225700</span><span class="o">))</span>
 </code></pre>
 </div>
 
@@ -35,11 +38,11 @@
 
 <h2 id="quick-start">Quick Start</h2>
 
-<p>The current version is <strong>0.5.3</strong> for <strong>Scala 2.11/12</strong> with</p>
+<p>The current version is <strong>0.6.0</strong> for <strong>Scala 2.11/12</strong> with</p>
 
 <ul>
-  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 1.1.0</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 0.10.4</li>
+  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 1.4.0</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 1.0.0</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.3</li>
 </ul>
 
@@ -50,14 +53,14 @@
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
 
   <span class="c1">// Start with this one
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.5.3"</span><span class="o">,</span>
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.6.0"</span><span class="o">,</span>
 
   <span class="c1">// And add any of these as needed
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.5.3"</span><span class="o">,</span> <span class="c1">// H2 driver 1.4.197 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.5.3"</span><span class="o">,</span> <span class="c1">// HikariCP transactor.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.5.3"</span><span class="o">,</span> <span class="c1">// Postgres driver 42.2.2 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.5.3"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.5.3"</span>  <span class="c1">// ScalaTest support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.6.0"</span><span class="o">,</span>          <span class="c1">// H2 driver 1.4.197 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.6.0"</span><span class="o">,</span>          <span class="c1">// HikariCP transactor.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.6.0"</span><span class="o">,</span>          <span class="c1">// Postgres driver 42.2.5 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.6.0"</span> <span class="o">%</span> <span class="s">"test"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.6.0"</span> <span class="o">%</span> <span class="s">"test"</span>  <span class="c1">// ScalaTest support for typechecking statements.
 </span>
 <span class="o">)</span>
 </code></pre>

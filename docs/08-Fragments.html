@@ -12,10 +12,20 @@
 <span class="k">import</span> <span class="nn">cats.data._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
 <span class="k">import</span> <span class="nn">y._</span>
@@ -48,11 +58,10 @@
 </span><span class="n">c</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"select name from country where code = 'USA' "</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">unique</span><span class="o">.</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">United</span> <span class="nc">States</span>
 </code></pre>
 </div>
 
-<p>Fragments can capture arguments of any type with a <code class="highlighter-rouge">Meta</code> instance, just as the <code class="highlighter-rouge">sql</code> interpolator does.</p>
+<p>Fragments can capture arguments of any type with a <code class="highlighter-rouge">Put</code> instance, just as the <code class="highlighter-rouge">sql</code> interpolator does.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">whereCode</span><span class="o">(</span><span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="n">fr</span><span class="s">"where code = $s"</span>
 <span class="n">whereCode</span><span class="k">:</span> <span class="o">(</span><span class="kt">s:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">doobie.util.fragment.Fragment</span>
@@ -61,7 +70,6 @@
 <span class="n">fra</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"where code = ? "</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">fr</span><span class="s">"select name from country"</span> <span class="o">++</span> <span class="n">fra</span><span class="o">).</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">France</span>
 </code></pre>
 </div>
 
@@ -71,7 +79,6 @@
 <span class="n">count</span><span class="k">:</span> <span class="o">(</span><span class="kt">table:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">doobie.ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">count</span><span class="o">(</span><span class="s">"city"</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="mi">4079</span>
 </code></pre>
 </div>
 
@@ -86,10 +93,10 @@
 <p>If you do <em>not</em> want a fragment to have trailing space you can use the <code class="highlighter-rouge">fr0</code> interpolator or <code class="highlighter-rouge">const0</code> constructor. This is used here and there in the <code class="highlighter-rouge">Fragments</code> module to yield prettier SQL strings.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">fr</span><span class="s">"IN ("</span> <span class="o">++</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fr</span><span class="s">"$n"</span><span class="o">).</span><span class="n">intercalate</span><span class="o">(</span><span class="n">fr</span><span class="s">","</span><span class="o">)</span> <span class="o">++</span> <span class="n">fr</span><span class="s">")"</span>
-<span class="n">res5</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN ( ? , ? , ? ) "</span><span class="o">)</span>
+<span class="n">res10</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN ( ? , ? , ? ) "</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">fr0</span><span class="s">"IN ("</span> <span class="o">++</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fr0</span><span class="s">"$n"</span><span class="o">).</span><span class="n">intercalate</span><span class="o">(</span><span class="n">fr</span><span class="s">","</span><span class="o">)</span> <span class="o">++</span> <span class="n">fr</span><span class="s">")"</span>
-<span class="n">res6</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN (?, ?, ?) "</span><span class="o">)</span>
+<span class="n">res11</span><span class="k">:</span> <span class="kt">doobie.util.fragment.Fragment</span> <span class="o">=</span> <span class="nc">Fragment</span><span class="o">(</span><span class="s">"IN (?, ?, ?) "</span><span class="o">)</span>
 </code></pre>
 </div>
 <p>Note that the <code class="highlighter-rouge">sql</code> interpolator is simply an alias for <code class="highlighter-rouge">fr0</code>.</p>
@@ -133,39 +140,10 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">select</span><span class="o">(</span><span class="nc">None</span><span class="o">,</span> <span class="nc">None</span><span class="o">,</span> <span class="nc">Nil</span><span class="o">,</span> <span class="mi">10</span><span class="o">).</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// no filters
 </span>
-  <span class="nc">SELECT</span> <span class="n">name</span><span class="o">,</span> <span class="n">code</span><span class="o">,</span> <span class="n">population</span> <span class="nc">FROM</span> <span class="n">country</span> <span class="nc">LIMIT</span> <span class="o">?</span> 
-
-  <span class="o">✓</span> <span class="nc">SQL</span> <span class="nc">Compiles</span> <span class="n">and</span> <span class="nc">Typechecks</span>
-  <span class="o">✓</span> <span class="n">P01</span> <span class="nc">Long</span>  <span class="o">→</span>  <span class="nc">BIGINT</span> <span class="o">(</span><span class="n">int8</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">C01</span> <span class="n">name</span>       <span class="nc">VARCHAR</span> <span class="o">(</span><span class="n">varchar</span><span class="o">)</span> <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">String</span>
-  <span class="o">✓</span> <span class="n">C02</span> <span class="n">code</span>       <span class="nc">CHAR</span>    <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span>  <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">String</span>
-  <span class="o">✓</span> <span class="n">C03</span> <span class="n">population</span> <span class="nc">INTEGER</span> <span class="o">(</span><span class="n">int4</span><span class="o">)</span>    <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">Int</span>
-
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">select</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="s">"U%"</span><span class="o">),</span> <span class="nc">None</span><span class="o">,</span> <span class="nc">Nil</span><span class="o">,</span> <span class="mi">10</span><span class="o">).</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// one filter
 </span>
-  <span class="nc">SELECT</span> <span class="n">name</span><span class="o">,</span> <span class="n">code</span><span class="o">,</span> <span class="n">population</span> <span class="nc">FROM</span> <span class="n">country</span> <span class="nc">WHERE</span> <span class="n">name</span> <span class="nc">LIKE</span> <span class="o">?</span> <span class="nc">LIMIT</span> <span class="o">?</span> 
-
-  <span class="o">✓</span> <span class="nc">SQL</span> <span class="nc">Compiles</span> <span class="n">and</span> <span class="nc">Typechecks</span>
-  <span class="o">✓</span> <span class="n">P01</span> <span class="nc">String</span>  <span class="o">→</span>  <span class="nc">VARCHAR</span> <span class="o">(</span><span class="n">text</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">P02</span> <span class="nc">Long</span>    <span class="o">→</span>  <span class="nc">BIGINT</span>  <span class="o">(</span><span class="n">int8</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">C01</span> <span class="n">name</span>       <span class="nc">VARCHAR</span> <span class="o">(</span><span class="n">varchar</span><span class="o">)</span> <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">String</span>
-  <span class="o">✓</span> <span class="n">C02</span> <span class="n">code</span>       <span class="nc">CHAR</span>    <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span>  <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">String</span>
-  <span class="o">✓</span> <span class="n">C03</span> <span class="n">population</span> <span class="nc">INTEGER</span> <span class="o">(</span><span class="n">int4</span><span class="o">)</span>    <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">Int</span>
-
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">select</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="s">"U%"</span><span class="o">),</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">12345</span><span class="o">),</span> <span class="nc">List</span><span class="o">(</span><span class="s">"FRA"</span><span class="o">,</span> <span class="s">"GBR"</span><span class="o">),</span> <span class="mi">10</span><span class="o">).</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// three filters
-</span>
-  <span class="nc">SELECT</span> <span class="n">name</span><span class="o">,</span> <span class="n">code</span><span class="o">,</span> <span class="n">population</span> <span class="nc">FROM</span> <span class="n">country</span> <span class="nc">WHERE</span> <span class="n">name</span> <span class="nc">LIKE</span> <span class="o">?</span> <span class="nc">AND</span> <span class="n">population</span> <span class="o">&gt;</span> <span class="o">?</span> <span class="nc">AND</span> <span class="n">code</span> <span class="nc">IN</span> <span class="o">(?,</span> <span class="o">?)</span> <span class="nc">LIMIT</span> <span class="o">?</span> 
-
-  <span class="o">✓</span> <span class="nc">SQL</span> <span class="nc">Compiles</span> <span class="n">and</span> <span class="nc">Typechecks</span>
-  <span class="o">✓</span> <span class="n">P01</span> <span class="nc">String</span>  <span class="o">→</span>  <span class="nc">VARCHAR</span> <span class="o">(</span><span class="n">text</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">P02</span> <span class="nc">Int</span>     <span class="o">→</span>  <span class="nc">INTEGER</span> <span class="o">(</span><span class="n">int4</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">P03</span> <span class="nc">String</span>  <span class="o">→</span>  <span class="nc">CHAR</span>    <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">P04</span> <span class="nc">String</span>  <span class="o">→</span>  <span class="nc">CHAR</span>    <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">P05</span> <span class="nc">Long</span>    <span class="o">→</span>  <span class="nc">BIGINT</span>  <span class="o">(</span><span class="n">int8</span><span class="o">)</span>
-  <span class="o">✓</span> <span class="n">C01</span> <span class="n">name</span>       <span class="nc">VARCHAR</span> <span class="o">(</span><span class="n">varchar</span><span class="o">)</span> <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">String</span>
-  <span class="o">✓</span> <span class="n">C02</span> <span class="n">code</span>       <span class="nc">CHAR</span>    <span class="o">(</span><span class="n">bpchar</span><span class="o">)</span>  <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">String</span>
-  <span class="o">✓</span> <span class="n">C03</span> <span class="n">population</span> <span class="nc">INTEGER</span> <span class="o">(</span><span class="n">int4</span><span class="o">)</span>    <span class="nc">NOT</span> <span class="nc">NULL</span>  <span class="o">→</span>  <span class="nc">Int</span>
-</code></pre>
+</span></code></pre>
 </div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']

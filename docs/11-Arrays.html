@@ -14,10 +14,20 @@
 <span class="k">import</span> <span class="nn">cats.data._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
 <span class="k">import</span> <span class="nn">y._</span>
@@ -42,8 +52,6 @@
 </div>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="o">(</span><span class="n">drop</span> <span class="o">*&gt;</span> <span class="n">create</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-  <span class="mi">0</span> <span class="n">row</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="n">updated</span>
-  <span class="mi">0</span> <span class="n">row</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="n">updated</span>
 </code></pre>
 </div>
 
@@ -62,10 +70,8 @@
 <p>Insert works fine, as does reading the result. No surprises.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">insert</span><span class="o">(</span><span class="s">"Bob"</span><span class="o">,</span> <span class="nc">List</span><span class="o">(</span><span class="s">"Nixon"</span><span class="o">,</span> <span class="s">"Slappy"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">Person</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="nc">Bob</span><span class="o">,</span><span class="nc">List</span><span class="o">(</span><span class="nc">Nixon</span><span class="o">,</span> <span class="nc">Slappy</span><span class="o">))</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">insert</span><span class="o">(</span><span class="s">"Alice"</span><span class="o">,</span> <span class="nc">Nil</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">Person</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span><span class="nc">Alice</span><span class="o">,</span><span class="nc">List</span><span class="o">())</span>
 </code></pre>
 </div>
 
@@ -78,16 +84,12 @@
 <p>So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a <code class="highlighter-rouge">NULL</code> cell would result in a <code class="highlighter-rouge">NullableCellRead</code> exception.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select array['foo','bar','baz']"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">]].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">List</span><span class="o">(</span><span class="n">foo</span><span class="o">,</span> <span class="n">bar</span><span class="o">,</span> <span class="n">baz</span><span class="o">)</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select array['foo','bar','baz']"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">]]].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">Some</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">foo</span><span class="o">,</span> <span class="n">bar</span><span class="o">,</span> <span class="n">baz</span><span class="o">))</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select array['foo',NULL,'baz']"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">]]].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">List</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">foo</span><span class="o">),</span> <span class="nc">None</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">baz</span><span class="o">))</span>
 
 <span class="n">scala</span><span class="o">&gt;</span> <span class="n">sql</span><span class="s">"select array['foo',NULL,'baz']"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">]]]].</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-  <span class="nc">Some</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">foo</span><span class="o">),</span> <span class="nc">None</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">baz</span><span class="o">)))</span>
 </code></pre>
 </div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({

@@ -12,10 +12,20 @@
 <span class="k">import</span> <span class="nn">cats.data._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
+<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
+</span>  <span class="s">""</span>                       <span class="c1">// password
+</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -81,16 +91,16 @@
 <p>When we run the test we get output similar to what we saw in the previous chapter on checking queries, but each item is now a test. Note that doing this in the REPL is a little awkward; in real source you would get the source file and line number associated with each query.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; { _root_.specs2.run(AnalysisTestSpec); () } // pretend this is sbt&gt; test
-[info] $line14.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
+[info] $line16.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
 [info] 
-[info] + Query0[(Int, String)] defined at &lt;console&gt;:30
+[info] + Query0[(Int, String)] defined at &lt;console&gt;:32
 [info]   
 [info]     select 42, 'foo'::varchar
 [info]   
 [info]   + SQL Compiles and TypeChecks
 [info]   + C01 ?column? INTEGER (int4)    NULL?  →  Int
 [info]   + C02 varchar  VARCHAR (varchar) NULL?  →  String
-[info] + Query0[Country] defined at &lt;console&gt;:32
+[info] + Query0[Country] defined at &lt;console&gt;:34
 [info]   
 [info]     select code, name, population, gnp, indepyear
 [info]     from country
@@ -99,30 +109,27 @@
 [info]   + SQL Compiles and TypeChecks
 [error]   x P01 Short  →  INTEGER (int4)
 [error]    Short is not coercible to INTEGER (int4) according to the JDBC
-   specification. Fix this by changing the schema type to SMALLINT, or
-   the Scala type to Int or JdbcType. (analysisspec.scala:72)
+   specification. Expected schema type was SMALLINT. (analysisspec.scala:66)
 [info] 
 [error]   x C01 code       CHAR     (bpchar)  NOT NULL  →  Int
 [error]    CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
-   specification but is not a recommended target type. Fix this by
-   changing the schema type to INTEGER; or the Scala type to Code or
-   PersonId or String. (analysisspec.scala:72)
+   specification but is not a recommended target type. Expected schema
+   type was INTEGER. (analysisspec.scala:66)
 [info] 
 [info]   + C02 name       VARCHAR  (varchar) NOT NULL  →  String
 [info]   + C03 population INTEGER  (int4)    NOT NULL  →  Int
 [error]   x C04 gnp        NUMERIC  (numeric) NULL      →  Double
 [error]    NUMERIC (numeric) is ostensibly coercible to Double according to the
-   JDBC specification but is not a recommended target type. Fix this by
-   changing the schema type to FLOAT or DOUBLE; or the Scala type to
-   BigDecimal or BigDecimal.
+   JDBC specification but is not a recommended target type. Expected
+   schema type was FLOAT or DOUBLE.
    Reading a NULL value into Double will result in a runtime failure. Fix
    this by making the schema type NOT NULL or by changing the Scala type
-   to Option[Double] (analysisspec.scala:72)
+   to Option[Double] (analysisspec.scala:66)
 [info] 
 [error]   x C05 indepyear  SMALLINT (int2)    NULL      →  
-[error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:72)
+[error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:66)
 [info] 
-[info] + Update0 defined at &lt;console&gt;:30
+[info] + Update0 defined at &lt;console&gt;:32
 [info]   
 [info]     update country set name = ? where name = ?
 [info]   
@@ -131,8 +138,8 @@
 [info]   + P02 String  →  VARCHAR (text)
 [info] 
 [info] 
-[info] Total for specification $line14.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
-[info] Finished in 766 ms
+[info] Total for specification $line16.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$AnalysisTestSpec$
+[info] Finished in 595 ms
 16 examples, 4 failures, 0 error
 [info] 
 </code></pre>
@@ -165,32 +172,29 @@
 AnalysisTestScalaCheck:
 - trivial
 - biggerThan *** FAILED ***
-  Query0[Country] defined at &lt;console&gt;:32
+  Query0[Country] defined at &lt;console&gt;:34
     select code, name, population, gnp, indepyear
     from country
     where population &gt; ?
     ✓ SQL Compiles and TypeChecks
     ✕ P01 Short  →  INTEGER (int4)
       Short is not coercible to INTEGER (int4) according to the JDBC
-      specification. Fix this by changing the schema type to SMALLINT,
-      or the Scala type to Int or JdbcType.
+      specification. Expected schema type was SMALLINT.
     ✕ C01 code       CHAR     (bpchar)  NOT NULL  →  Int
       CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
-      specification but is not a recommended target type. Fix this by
-      changing the schema type to INTEGER; or the Scala type to Code or
-      PersonId or String.
+      specification but is not a recommended target type. Expected
+      schema type was INTEGER.
     ✓ C02 name       VARCHAR  (varchar) NOT NULL  →  String
     ✓ C03 population INTEGER  (int4)    NOT NULL  →  Int
     ✕ C04 gnp        NUMERIC  (numeric) NULL      →  Double
       NUMERIC (numeric) is ostensibly coercible to Double according to
-      the JDBC specification but is not a recommended target type. Fix
-      this by changing the schema type to FLOAT or DOUBLE; or the Scala
-      type to BigDecimal or BigDecimal.
+      the JDBC specification but is not a recommended target type.
+      Expected schema type was FLOAT or DOUBLE.
       Reading a NULL value into Double will result in a runtime failure.
       Fix this by making the schema type NOT NULL or by changing the
       Scala type to Option[Double]
     ✕ C05 indepyear  SMALLINT (int2)    NULL      →  
-      Column is unused. Remove it from the SELECT statement. (Checker.scala:65)
+      Column is unused. Remove it from the SELECT statement. (Checker.scala:56)
 - update
 </code></pre>
 </div>
