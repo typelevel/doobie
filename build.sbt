@@ -260,8 +260,7 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-// Turn this on when we release 0.6.0
-//    releaseStepCommand("docs/publishMicrosite"),
+      releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
