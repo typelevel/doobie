@@ -19,7 +19,7 @@ lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.5"
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.5"
-lazy val specs2Version        = "4.3.4"
+lazy val specs2Version        = "4.3.5"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.7"
 
