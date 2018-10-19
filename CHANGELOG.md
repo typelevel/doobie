@@ -44,7 +44,7 @@ To summarize:
 |----------------------|--------------------------------|--|
 | `[A: Meta]`      | `[A: Get : Put]`      | Or just one, depending on usage. |
 | `[A: Composite]` | `[A: Read : Write]`   | Or just one, depending on usage. |
-| `Meta[A].xmap(..)` | `Meta[A].tmap(...)` | Or `imap` when a `TypeTag` is unavailable. |
+| `Meta[A].xmap(..)` | `Meta[A].timap(...)` | Or `imap` when a `TypeTag` is unavailable. |
 | `Composite[A].xmap(...)` | `Read[A].map(...)` <br> `Write[A].contramap(...)` | This takes two steps now. |
 
 Please refer to book chapter on **Custom Mappings** and the `examples` project for more details.
