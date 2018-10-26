@@ -34,7 +34,7 @@
   <li><code class="highlighter-rouge">Composite</code> has been split into <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> typeclasses, for reads and writes of column/parameter vectors, respecitively.</li>
 </ul>
 
-<p>Note that <code class="highlighter-rouge">Meta</code> does still exist, but only as a mechanism for introducing <code class="highlighter-rouge">Get/Put</code> pairs. An implicit <code class="highlighter-rouge">Meta[A]</code> induces both an implicit <code class="highlighter-rouge">Get[A]</code> and an implicit <code class="highlighter-rouge">Put[A]</code>, and the old mechanism of <code class="highlighter-rouge">Meta[A].imap(...)(...)</code> is still supported for this purpose. The <code class="highlighter-rouge">xmap</code> method has been replaced with parametric <code class="highlighter-rouge">imap</code> and <code class="highlighter-rouge">TypeTag</code>-constrained <code class="highlighter-rouge">tmap</code>. Prefer <code class="highlighter-rouge">tmap</code> when possible because it yields better diagnostic information when typechecking queries.</p>
+<p>Note that <code class="highlighter-rouge">Meta</code> does still exist, but only as a mechanism for introducing <code class="highlighter-rouge">Get/Put</code> pairs. An implicit <code class="highlighter-rouge">Meta[A]</code> induces both an implicit <code class="highlighter-rouge">Get[A]</code> and an implicit <code class="highlighter-rouge">Put[A]</code>, and the old mechanism of <code class="highlighter-rouge">Meta[A].imap(...)(...)</code> is still supported for this purpose. The <code class="highlighter-rouge">xmap</code> method has been replaced with parametric <code class="highlighter-rouge">imap</code> and <code class="highlighter-rouge">TypeTag</code>-constrained <code class="highlighter-rouge">timap</code>. Prefer <code class="highlighter-rouge">timap</code> when possible because it yields better diagnostic information when typechecking queries. <code class="highlighter-rouge">Meta[A]#(t)imap</code> is the combinatioon of <code class="highlighter-rouge">Get[A]#(t)map</code> and <code class="highlighter-rouge">Put[A]#(t)contramap</code>.</p>
 
 <p>To summarize:</p>
 
@@ -59,7 +59,7 @@
     </tr>
     <tr>
       <td><code class="highlighter-rouge">Meta[A].xmap(..)</code></td>
-      <td><code class="highlighter-rouge">Meta[A].tmap(...)</code></td>
+      <td><code class="highlighter-rouge">Meta[A].timap(...)</code></td>
       <td>Or <code class="highlighter-rouge">imap</code> when a <code class="highlighter-rouge">TypeTag</code> is unavailable.</td>
     </tr>
     <tr>
