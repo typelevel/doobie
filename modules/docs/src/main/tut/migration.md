@@ -35,7 +35,7 @@ Starting with version 0.6.0 type mappings are **unidirectional**:
 - `Meta` has been split into `Get` and `Put` typeclasses, for reads and writes of column/parameter values, respectively.
 - `Composite` has been split into `Read` and `Write` typeclasses, for reads and writes of column/parameter vectors, respecitively.
 
-Note that `Meta` does still exist, but only as a mechanism for introducing `Get/Put` pairs. An implicit `Meta[A]` induces both an implicit `Get[A]` and an implicit `Put[A]`, and the old mechanism of `Meta[A].imap(...)(...)` is still supported for this purpose. The `xmap` method has been replaced with parametric `imap` and `TypeTag`-constrained `tmap`. Prefer `tmap` when possible because it yields better diagnostic information when typechecking queries.
+Note that `Meta` does still exist, but only as a mechanism for introducing `Get/Put` pairs. An implicit `Meta[A]` induces both an implicit `Get[A]` and an implicit `Put[A]`, and the old mechanism of `Meta[A].imap(...)(...)` is still supported for this purpose. The `xmap` method has been replaced with parametric `imap` and `TypeTag`-constrained `timap`. Prefer `timap` when possible because it yields better diagnostic information when typechecking queries. `Meta[A]#(t)imap` is the combinatioon of `Get[A]#(t)map` and `Put[A]#(t)contramap`.
 
 To summarize:
 
@@ -43,7 +43,7 @@ To summarize:
 |----------------------|--------------------------------|--|
 | `[A: Meta]`      | `[A: Get : Put]`      | Or just one, depending on usage. |
 | `[A: Composite]` | `[A: Read : Write]`   | Or just one, depending on usage. |
-| `Meta[A].xmap(..)` | `Meta[A].tmap(...)` | Or `imap` when a `TypeTag` is unavailable. |
+| `Meta[A].xmap(..)` | `Meta[A].timap(...)` | Or `imap` when a `TypeTag` is unavailable. |
 | `Composite[A].xmap(...)` | `Read[A].map(...)` <br> `Write[A].contramap(...)` | This takes two steps now. |
 
 Please refer to the `examples` project for example usage, or ask questions on the Gitter channel if you have questions or concerns about this change.
