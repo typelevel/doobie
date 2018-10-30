@@ -86,7 +86,7 @@ And when we run the query ... surprise, it works!
 biggerThan(150000000).quick.unsafeRunSync // Let's see them all
 ```
 
-So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a `PreparedStatement`, and the `minProp` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
+So what's going on? It looks like we're just dropping a string literal into our SQL string, but actually we're constructing a `PreparedStatement`, and the `minPop` value is ultimately set via a call to `setInt` (see "Diving Deeper" below).
 
 **doobie** allows you to interpolate values of any type (and options thereof) with a `Put` instance, which includes
 
