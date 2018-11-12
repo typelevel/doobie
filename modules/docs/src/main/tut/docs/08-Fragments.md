@@ -98,7 +98,7 @@ Here we define a query with a three optional filter conditions.
 
 ```tut:silent
 // Import some convenience combinators.
-import Fragments.{ in, whereAndOpt }
+import doobie.util.fragments.{ in, whereAndOpt }
 
 // Country Info
 case class Info(name: String, code: String, population: Int)
