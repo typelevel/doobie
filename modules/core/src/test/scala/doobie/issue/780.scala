@@ -15,9 +15,8 @@ object `780` extends Specification {
   "Param" should {
     "exist when meta instances are in scope" in {
       class Foo[A: Meta, B: Meta] {
-        def bar = Param[A :: B :: HNil]
+        Param[A :: B :: HNil]
       }
-
       true
     }
   }
