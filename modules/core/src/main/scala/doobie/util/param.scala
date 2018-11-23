@@ -9,7 +9,7 @@ import doobie.util.composite.Composite
 
 import scala.annotation.implicitNotFound
 
-import shapeless.{ HNil, HList, :: }
+import shapeless.{ HNil, HList, ::, Lazy}
 
 /** Module defining the `Param` typeclass. */
 object param {
@@ -29,7 +29,7 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
    * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
    * with a type with a `Meta` instance, or an `Option` thereof.
    */
-  object Param extends LowPriorityParamImplicits {
+  object Param {
 
     def apply[A](implicit ev: Param[A]): Param[A] = ev
 
@@ -41,15 +41,13 @@ instance for each element in the REPL. See the FAQ in the Book of Doobie for mor
     implicit def fromMetaOption[A](implicit ev: Meta[A]): Param[Option[A]] =
       new Param[Option[A]](Composite.fromMetaOption(ev))
 
+    /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
+    implicit def ParamHList[H, T <: HList](implicit ph: Lazy[Param[H]], pt: Lazy[Param[T]]): Param[H :: T] =
+      new Param[H :: T](Composite.product[H,T](ph.value.composite, pt.value.composite))
+
     /** There is an empty `Param` for `HNil`. */
     implicit val ParamHNil: Param[HNil] =
       new Param[HNil](Composite.emptyProduct)
-  }
-
-  trait LowPriorityParamImplicits {
-    /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
-    implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]): Param[H :: T] =
-      new Param[H :: T](Composite.product[H,T](ph.composite, pt.composite))
   }
 
 }
