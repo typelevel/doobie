@@ -6,7 +6,7 @@ package doobie.util
 
 import scala.annotation.implicitNotFound
 
-import shapeless.{ HNil, HList, :: }
+import shapeless.{ HNil, HList, ::, Lazy}
 
 /** Module defining the `Param` typeclass. */
 object param {
@@ -52,9 +52,8 @@ Chapter 12 of the book of doobie for more information.
       new Param[HNil](Write.emptyProduct)
 
     /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
-    implicit def ParamHList[H, T <: HList](implicit ph: Param[H], pt: Param[T]): Param[H :: T] =
-      new Param[H :: T](Write.product[H,T](ph.write, pt.write))
-
+    implicit def ParamHList[H, T <: HList](implicit ph: Lazy[Param[H]], pt: Lazy[Param[T]]): Param[H :: T] =
+      new Param[H :: T](Write.product[H,T](ph.value.write, pt.value.write))
   }
 
 }
