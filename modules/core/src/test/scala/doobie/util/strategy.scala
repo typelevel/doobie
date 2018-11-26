@@ -64,7 +64,7 @@ object strategyspec extends Specification {
   }
 
   def xa(i: KleisliInterpreter[IO]) =
-    Transactor.interpret.set(baseXa, i.ConnectionInterpreter)
+    Transactor.interpreter.set(baseXa, i.ConnectionInterpreter)
 
   "Connection configuration and safety" >> {
 

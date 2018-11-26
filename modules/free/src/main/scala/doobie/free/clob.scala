@@ -42,7 +42,7 @@ object clob { module =>
       final def apply[A](fa: ClobOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: Clob => A): F[A]
+      def raw[A](f: Env[Clob] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): F[A]
@@ -70,7 +70,7 @@ object clob { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: Clob => A) extends ClobOp[A] {
+    final case class Raw[A](f: Env[Clob] => A) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends ClobOp[A] {
@@ -145,7 +145,7 @@ object clob { module =>
   // Smart constructors for operations common to all algebras.
   val unit: ClobIO[Unit] = FF.pure[ClobOp, Unit](())
   def pure[A](a: A): ClobIO[A] = FF.pure[ClobOp, A](a)
-  def raw[A](f: Clob => A): ClobIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[Clob] => A): ClobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ClobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): ClobIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): ClobIO[A] = FF.liftF[ClobOp, A](HandleErrorWith(fa, f))

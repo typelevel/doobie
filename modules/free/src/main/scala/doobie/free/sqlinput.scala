@@ -53,7 +53,7 @@ object sqlinput { module =>
       final def apply[A](fa: SQLInputOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: SQLInput => A): F[A]
+      def raw[A](f: Env[SQLInput] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): F[A]
@@ -96,7 +96,7 @@ object sqlinput { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: SQLInput => A) extends SQLInputOp[A] {
+    final case class Raw[A](f: Env[SQLInput] => A) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends SQLInputOp[A] {
@@ -216,7 +216,7 @@ object sqlinput { module =>
   // Smart constructors for operations common to all algebras.
   val unit: SQLInputIO[Unit] = FF.pure[SQLInputOp, Unit](())
   def pure[A](a: A): SQLInputIO[A] = FF.pure[SQLInputOp, A](a)
-  def raw[A](f: SQLInput => A): SQLInputIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[SQLInput] => A): SQLInputIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLInputOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): SQLInputIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): SQLInputIO[A] = FF.liftF[SQLInputOp, A](HandleErrorWith(fa, f))

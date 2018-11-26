@@ -5,7 +5,7 @@
 package doobie.util
 
 import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commit, rollback, close, unit, delay }
-import doobie.free.KleisliInterpreter
+import doobie.free.{ Env, KleisliInterpreter }
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import doobie.syntax.monaderror._
@@ -21,7 +21,7 @@ import fs2.Stream.{ eval, eval_ }
 import java.sql.{ Connection, DriverManager }
 import javax.sql.DataSource
 import java.util.concurrent.{ Executors, ThreadFactory }
-
+import org.slf4j.{ Logger, LoggerFactory }
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
@@ -30,7 +30,10 @@ object transactor  {
   import doobie.free.connection.AsyncConnectionIO
 
   /** @group Type Aliases */
-  type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Connection, ?]
+  type CEnv = Env[Connection]
+
+  /** @group Type Aliases */
+  type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, CEnv, ?]
 
   /**
    * Data type representing the common setup, error-handling, and cleanup strategy associated with
@@ -64,10 +67,10 @@ object transactor  {
 
     /**
      * Natural transformation that wraps a `Kleisli` program, using the provided interpreter to
-     * interpret the `before`/`after`/`oops`/`always` strategy.
+     * interpreter the `before`/`after`/`oops`/`always` strategy.
      */
     def wrapK[M[_]: MonadError[?[_], Throwable]](interp: Interpreter[M]) =
-      λ[Kleisli[M, Connection, ?] ~> Kleisli[M, Connection, ?]] { ka =>
+      λ[Kleisli[M, CEnv, ?] ~> Kleisli[M, CEnv, ?]] { ka =>
         val beforeʹ = before foldMap interp
         val afterʹ  = after  foldMap interp
         val oopsʹ   = oops   foldMap interp
@@ -121,10 +124,13 @@ object transactor  {
     def connect: A => M[Connection]
 
     /** A natural transformation for interpreting `ConnectionIO` **/
-    def interpret: Interpreter[M]
+    def interpreter: Interpreter[M]
 
     /** A `Strategy` for running a program on a connection **/
     def strategy: Strategy
+
+    /** A `Logger` for logging instructions */
+    def logger: Logger
 
     /** Construct a [[Yolo]] for REPL experimentation. */
     def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
@@ -145,16 +151,16 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: Monad[M]): Kleisli[M, Connection, ?] ~> M =
-      λ[Kleisli[M, Connection, ?] ~> M](k => connect(kernel).flatMap(k.run))
+    def rawExec(implicit ev: Monad[M]): Kleisli[M, CEnv, ?] ~> M =
+      λ[Kleisli[M, CEnv, ?] ~> M](k => connect(kernel).flatMap(c => k.run(Env(c, logger))))
 
     /**
      * Natural transformation that provides a connection and binds through a `Kleisli` program
      * using the given `Strategy`, yielding an independent program in `M`.
      * @group Natural Transformations
      */
-    def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
-      strategy.wrapK(interpret) andThen rawExec(ev)
+    def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, CEnv, ?] ~> M =
+      strategy.wrapK(interpreter) andThen rawExec(ev)
 
     /**
      * Natural transformation equivalent to `trans` that does not use the provided `Strategy` and
@@ -163,7 +169,7 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawTrans(implicit ev: Monad[M]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M](f => connect(kernel).flatMap(f.foldMap(interpret).run))
+      λ[ConnectionIO ~> M](f => connect(kernel).flatMap(c => f.foldMap(interpreter).run(Env(c, logger))))
 
     /**
      * Natural transformation that provides a connection and binds through a `ConnectionIO` program
@@ -186,7 +192,7 @@ object transactor  {
         λ[Free[F, ?] ~> G](_.foldMap(nat))
 
       def nat(c: Connection): ConnectionIO ~> M =
-        liftF(interpret andThen applyKleisli(c))
+        liftF(interpreter andThen applyKleisli(Env(c, logger)))
 
       eval(connect(kernel)).flatMap(c => pa.translate(nat(c)))
 
@@ -197,40 +203,55 @@ object transactor  {
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
-      kernel0: A = self.kernel,
-      connect0: A => M[Connection] = self.connect,
-      interpret0: Interpreter[M] = self.interpret,
-      strategy0: Strategy = self.strategy
-    ): Transactor.Aux[M, A] = new Transactor[M] {
-      type A = self.A
-      val kernel = kernel0
-      val connect = connect0
-      val interpret = interpret0
-      val strategy = strategy0
+      kernel:    A                  = self.kernel,
+      connect:   A => M[Connection] = self.connect,
+      interpreter: Interpreter[M]     = self.interpreter,
+      strategy:  Strategy           = self.strategy,
+      logger:    Logger             = self.logger
+    ): Transactor.Aux[M, A] = {
+      // We need to alias the params so we can use them below. Kind of annoying.
+      val (kernel0, connect0, interpret0, strategy0, logger0) = (kernel, connect, interpreter, strategy, logger)
+      new Transactor[M] {
+        type A        = self.A
+        val kernel    = kernel0
+        val connect   = connect0
+        val interpreter = interpret0
+        val strategy  = strategy0
+        val logger    = logger0
+      }
     }
   }
 
   object Transactor {
 
-    def apply[M[_], A0](
-      kernel0: A0,
-      connect0: A0 => M[Connection],
-      interpret0: Interpreter[M],
-      strategy0: Strategy
-    ): Transactor.Aux[M, A0] = new Transactor[M] {
-      type A = A0
-      val kernel = kernel0
-      val connect = connect0
-      val interpret = interpret0
-      val strategy = strategy0
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def apply[M[_], A](
+      kernel:    A,
+      connect:   A => M[Connection],
+      interpreter: Interpreter[M],
+      strategy:  Strategy,
+      logger:    Logger = LoggerFactory.getLogger("doobie.transactor"),
+    ): Transactor.Aux[M, A] = {
+      // We need to alias the params so we can use them below. Kind of annoying.
+      val (kernel0, connect0, interpret0, strategy0, logger0) = (kernel, connect, interpreter, strategy, logger)
+      type A0 = A
+      new Transactor[M] {
+        type A = A0
+        val kernel    = kernel0
+        val connect   = connect0
+        val interpreter = interpret0
+        val strategy  = strategy0
+        val logger    = logger0
+      }
     }
 
     type Aux[M[_], A0] = Transactor[M] { type A = A0  }
 
-    /** @group Lenses */ def kernel   [M[_], A]: Transactor.Aux[M, A] Lens A                    = Lens(_.kernel,    (a, b) => a.copy(kernel0    = b))
-    /** @group Lenses */ def connect  [M[_], A]: Transactor.Aux[M, A] Lens (A => M[Connection]) = Lens(_.connect,   (a, b) => a.copy(connect0   = b))
-    /** @group Lenses */ def interpret[M[_]]: Transactor[M] Lens Interpreter[M]       = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
-    /** @group Lenses */ def strategy [M[_]]: Transactor[M] Lens Strategy             = Lens(_.strategy,  (a, b) => a.copy(strategy0  = b))
+    /** @group Lenses */ def kernel   [M[_], A]: Transactor.Aux[M, A] Lens A          = Lens(_.kernel,    (a, b) => a.copy(kernel    = b))
+    /** @group Lenses */ def connect  [M[_], A]: Transactor.Aux[M, A] Lens (A => M[Connection]) = Lens(_.connect,   (a, b) => a.copy(connect   = b))
+    /** @group Lenses */ def interpreter[M[_]]: Transactor[M] Lens Interpreter[M]       = Lens(_.interpreter, (a, b) => a.copy(interpreter = b))
+    /** @group Lenses */ def strategy [M[_]]: Transactor[M] Lens Strategy             = Lens(_.strategy,  (a, b) => a.copy(strategy  = b))
+    /** @group Lenses */ def logger   [M[_]]: Transactor[M] Lens Logger               = Lens(_.logger,    (a, b) => a.copy(logger    = b))
     /** @group Lenses */ def before   [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.before
     /** @group Lenses */ def after    [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.after
     /** @group Lenses */ def oops     [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.oops

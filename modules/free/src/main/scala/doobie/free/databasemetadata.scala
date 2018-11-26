@@ -42,7 +42,7 @@ object databasemetadata { module =>
       final def apply[A](fa: DatabaseMetaDataOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: DatabaseMetaData => A): F[A]
+      def raw[A](f: Env[DatabaseMetaData] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): F[A]
@@ -235,7 +235,7 @@ object databasemetadata { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: DatabaseMetaData => A) extends DatabaseMetaDataOp[A] {
+    final case class Raw[A](f: Env[DatabaseMetaData] => A) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends DatabaseMetaDataOp[A] {
@@ -805,7 +805,7 @@ object databasemetadata { module =>
   // Smart constructors for operations common to all algebras.
   val unit: DatabaseMetaDataIO[Unit] = FF.pure[DatabaseMetaDataOp, Unit](())
   def pure[A](a: A): DatabaseMetaDataIO[A] = FF.pure[DatabaseMetaDataOp, A](a)
-  def raw[A](f: DatabaseMetaData => A): DatabaseMetaDataIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[DatabaseMetaData] => A): DatabaseMetaDataIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DatabaseMetaDataOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): DatabaseMetaDataIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](HandleErrorWith(fa, f))

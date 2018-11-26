@@ -39,7 +39,7 @@ object blob { module =>
       final def apply[A](fa: BlobOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: Blob => A): F[A]
+      def raw[A](f: Env[Blob] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): F[A]
@@ -65,7 +65,7 @@ object blob { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: Blob => A) extends BlobOp[A] {
+    final case class Raw[A](f: Env[Blob] => A) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends BlobOp[A] {
@@ -134,7 +134,7 @@ object blob { module =>
   // Smart constructors for operations common to all algebras.
   val unit: BlobIO[Unit] = FF.pure[BlobOp, Unit](())
   def pure[A](a: A): BlobIO[A] = FF.pure[BlobOp, A](a)
-  def raw[A](f: Blob => A): BlobIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[Blob] => A): BlobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[BlobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): BlobIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): BlobIO[A] = FF.liftF[BlobOp, A](HandleErrorWith(fa, f))

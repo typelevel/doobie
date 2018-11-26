@@ -6,15 +6,15 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.4.0"
-lazy val circeVersion         = "0.10.0"
+lazy val circeVersion         = "0.10.1"
 lazy val fs2CoreVersion       = "1.0.0"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.2.0"
-lazy val kindProjectorVersion = "0.9.8"
+lazy val kindProjectorVersion = "0.9.9"
 lazy val monixVersion         = "3.0.0-M3"
-lazy val postGisVersion       = "2.2.1"
+lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
-lazy val refinedVersion       = "0.9.2"
+lazy val refinedVersion       = "0.9.3"
 lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.5"
 lazy val shapelessVersion     = "2.3.3"
@@ -22,6 +22,7 @@ lazy val sourcecodeVersion    = "0.1.5"
 lazy val specs2Version        = "4.3.5"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.7"
+lazy val slf4jVersion         = "1.7.25"
 
 // Check bincompat versus this version.
 lazy val binaryCompatibleVersion = "0.6.0"
@@ -281,7 +282,8 @@ lazy val free = project
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"   % fs2CoreVersion,
       "org.typelevel"  %% "cats-core"  % catsVersion,
-      "org.typelevel"  %% "cats-free"  % catsVersion
+      "org.typelevel"  %% "cats-free"  % catsVersion,
+      "org.slf4j"      %  "slf4j-api"  % slf4jVersion,
     ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
@@ -320,7 +322,9 @@ lazy val core = project
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
-      "com.h2database"        %  "h2"            % h2Version          % "test"
+      "com.h2database"        %  "h2"            % h2Version          % "test",
+            "org.slf4j"      %  "slf4j-simple" % slf4jVersion % "test",
+
     ),
     scalacOptions += "-Yno-predef",
     sourceGenerators in Compile += Def.task {

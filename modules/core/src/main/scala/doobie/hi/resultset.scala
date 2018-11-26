@@ -85,10 +85,10 @@ object resultset {
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Read[A]): ResultSetIO[F[A]] =
-    FRS.raw { rs =>
+    FRS.raw { e =>
       val b = C()
-      while (rs.next)
-        b += A.unsafeGet(rs, 1)
+      while (e.jdbc.next)
+        b += A.unsafeGet(e.jdbc, 1)
       b.result()
     }
 
@@ -101,10 +101,10 @@ object resultset {
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Read[A]): ResultSetIO[F[B]] =
-    FRS.raw { rs =>
+    FRS.raw { e =>
       val b = C()
-      while (rs.next)
-        b += f(A.unsafeGet(rs, 1))
+      while (e.jdbc.next)
+        b += f(A.unsafeGet(e.jdbc, 1))
       b.result()
     }
 
@@ -173,11 +173,11 @@ object resultset {
    */
   @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def getNextChunkV[A](chunkSize: Int)(implicit A: Read[A]): ResultSetIO[Vector[A]] =
-    FRS.raw { rs =>
+    FRS.raw { e =>
       var n = chunkSize
       val b = Vector.newBuilder[A]
-      while (n > 0 && rs.next) {
-        b += A.unsafeGet(rs, 1)
+      while (n > 0 && e.jdbc.next) {
+        b += A.unsafeGet(e.jdbc, 1)
         n -= 1
       }
       b.result()

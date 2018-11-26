@@ -28,7 +28,7 @@ object `262` extends Specification {
 
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {
-        override def getMetaData = primitive(_ => null)
+        override def getMetaData = primitive(_ => null, "getMetaData")
       }
 
   }
@@ -41,7 +41,7 @@ object `262` extends Specification {
 
   // A transactor that uses our interpreter above
   val xa: Transactor[IO] =
-    Transactor.interpret.set(baseXa, Interp.ConnectionInterpreter)
+    Transactor.interpreter.set(baseXa, Interp.ConnectionInterpreter)
 
   "getColumnJdbcMeta" should {
     "handle null metadata" in {

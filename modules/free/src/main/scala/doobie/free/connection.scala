@@ -54,7 +54,7 @@ object connection { module =>
       final def apply[A](fa: ConnectionOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: Connection => A): F[A]
+      def raw[A](f: Env[Connection] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): F[A]
@@ -123,7 +123,7 @@ object connection { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: Connection => A) extends ConnectionOp[A] {
+    final case class Raw[A](f: Env[Connection] => A) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends ConnectionOp[A] {
@@ -321,7 +321,7 @@ object connection { module =>
   // Smart constructors for operations common to all algebras.
   val unit: ConnectionIO[Unit] = FF.pure[ConnectionOp, Unit](())
   def pure[A](a: A): ConnectionIO[A] = FF.pure[ConnectionOp, A](a)
-  def raw[A](f: Connection => A): ConnectionIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[Connection] => A): ConnectionIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): ConnectionIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](HandleErrorWith(fa, f))

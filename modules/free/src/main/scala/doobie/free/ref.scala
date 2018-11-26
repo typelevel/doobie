@@ -39,7 +39,7 @@ object ref { module =>
       final def apply[A](fa: RefOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: Ref => A): F[A]
+      def raw[A](f: Env[Ref] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): F[A]
@@ -58,7 +58,7 @@ object ref { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: Ref => A) extends RefOp[A] {
+    final case class Raw[A](f: Env[Ref] => A) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends RefOp[A] {
@@ -106,7 +106,7 @@ object ref { module =>
   // Smart constructors for operations common to all algebras.
   val unit: RefIO[Unit] = FF.pure[RefOp, Unit](())
   def pure[A](a: A): RefIO[A] = FF.pure[RefOp, A](a)
-  def raw[A](f: Ref => A): RefIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[Ref] => A): RefIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): RefIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))

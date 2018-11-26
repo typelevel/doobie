@@ -60,7 +60,7 @@ object preparedstatement { module =>
       final def apply[A](fa: PreparedStatementOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: PreparedStatement => A): F[A]
+      def raw[A](f: Env[PreparedStatement] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): F[A]
@@ -185,7 +185,7 @@ object preparedstatement { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: PreparedStatement => A) extends PreparedStatementOp[A] {
+    final case class Raw[A](f: Env[PreparedStatement] => A) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends PreparedStatementOp[A] {
@@ -551,7 +551,7 @@ object preparedstatement { module =>
   // Smart constructors for operations common to all algebras.
   val unit: PreparedStatementIO[Unit] = FF.pure[PreparedStatementOp, Unit](())
   def pure[A](a: A): PreparedStatementIO[A] = FF.pure[PreparedStatementOp, A](a)
-  def raw[A](f: PreparedStatement => A): PreparedStatementIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[PreparedStatement] => A): PreparedStatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): PreparedStatementIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](HandleErrorWith(fa, f))
