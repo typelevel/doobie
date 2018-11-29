@@ -15,7 +15,7 @@ import java.sql.SQLException
 object catchsql {
 
   /** Like `attempt` but catches only `SQLException`. */
-  def attemptSql[M[_]](ma: M[A])(implicit c: MonadError[M, Throwable]): M[Either[SQLException, A]] =
+  def attemptSql[M[_], A](ma: M[A])(implicit c: MonadError[M, Throwable]): M[Either[SQLException, A]] =
     ma.attempt.flatMap {
       case sqle@Left(_: SQLException) => c.pure(sqle)
       case Left(e)                    => c.raiseError(e)
