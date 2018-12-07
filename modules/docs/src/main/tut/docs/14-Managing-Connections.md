@@ -64,7 +64,7 @@ import scala.concurrent.ExecutionContext
 // is where nonblocking operations will be executed.
 implicit val cs = IO.contextShift(ExecutionContext.global)
 
-// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
+// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an unbounded pool of daemon threads.
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", // driver classname
