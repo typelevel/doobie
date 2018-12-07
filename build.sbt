@@ -207,7 +207,7 @@ lazy val doobie = project.in(file("."))
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
-      releaseStepCommand("mimaReportBinaryIssues"),
+      // releaseStepCommand("mimaReportBinaryIssues"),
       inquireVersions,
       runClean,
       runTest,
