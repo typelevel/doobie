@@ -7,11 +7,11 @@ jdk:
 
 scala:
   - 2.11.12
-  - 2.12.6
+  - 2.12.7
 
 env:
   global:
-    - MAIN_SCALA_VERSION=2.12.6
+    - MAIN_SCALA_VERSION=2.12.7
 
 before_install:
  - export PATH=${PATH}:./vendor/bundle
