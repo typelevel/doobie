@@ -113,10 +113,9 @@ trait KleisliInterpreter[M[_]] { outer =>
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
   def primitive[J, A](f: J => A, name: String, args: Any*): Kleisli[M, Env[J], A] =
     raw { e =>
-      import scala.Predef._
-      if (e.logger.isTraceEnabled) {
-        e.logger.trace(s"${e.jdbc.getClass.getSimpleName}<${System.identityHashCode(e.jdbc).toHexString}>.$name(${args.mkString(", ")})")
-      }
+      // if (e.logger.isTraceEnabled) {
+        e.unsafeTrace(s"$name(${args.mkString(", ")})")
+      // }
       f(e.jdbc)
     }
 

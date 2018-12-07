@@ -475,7 +475,6 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  def delay[J, A](a: () => A): Kleisli[M, Env[J], A] =
       |    Kleisli(_ => asyncM.delay(a()))
       |
-      |  // TODO: add catch logging here
       |  def raw[J, A](f: Env[J] => A): Kleisli[M, Env[J], A] =
       |    Kleisli(e => contextShiftM.evalOn(blockingContext)(asyncM.delay(f(e))))
       |
