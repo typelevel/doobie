@@ -145,7 +145,7 @@ object analysis {
       columnAlignment.zipWithIndex.collect {
         case (Ior.Both((j, n1), p), n) if !(j.jdbcSource.list.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).element(p.jdbcType) =>
           ColumnTypeError(n + 1, j, n1, p)
-        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType == JdbcType.Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
+        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType === JdbcType.Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).element(p.vendorTypeName) =>
           ColumnTypeError(n + 1, j, n1, p)
       }
 

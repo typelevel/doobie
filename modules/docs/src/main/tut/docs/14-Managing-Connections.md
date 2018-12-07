@@ -72,7 +72,7 @@ val p: IO[Int] = for {
           "postgres",
           ""
         )
-  _  <- xa.configure(hx => IO( /* do something with hx */ ()))
+  _  <- xa.configure(hx => IO(hx)) // do something interesting with hx
   a  <- q.transact(xa) guarantee xa.shutdown
 } yield a
 ```
@@ -95,7 +95,7 @@ val ds: javax.sql.DataSource = null // pretending
 val xa = Transactor.fromDataSource[IO](ds)
 
 val p: IO[Int] = for {
-  _  <- xa.configure(ds => IO( /* do something with ds */ ()))
+  _  <- xa.configure(ds => IO(ds)) // do something interesting with ds
   a  <- q.transact(xa)
 } yield a
 ```

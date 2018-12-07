@@ -268,7 +268,7 @@ object transactor  {
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]: Async](driver: String, conn: => Connection): Transactor.Aux[M, Unit] =
-        Transactor((), u => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
+        Transactor((), _ => Sync[M].delay { Class.forName(driver); conn }, KleisliInterpreter[M].ConnectionInterpreter, Strategy.default)
 
       def apply[M[_]: Async](driver: String, url: String): Transactor.Aux[M, Unit] =
         create(driver, DriverManager.getConnection(url))

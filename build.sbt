@@ -6,22 +6,22 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.5.0"
-lazy val circeVersion         = "0.9.3"
-lazy val fs2CoreVersion       = "0.10.4"
+lazy val circeVersion         = "0.10.1"
+lazy val fs2CoreVersion       = "0.10.6"
 lazy val h2Version            = "1.4.197"
-lazy val hikariVersion        = "3.1.0"
-lazy val kindProjectorVersion = "0.9.6"
+lazy val hikariVersion        = "3.2.0"
+lazy val kindProjectorVersion = "0.9.9"
 lazy val monixVersion         = "3.0.0-M3"
-lazy val postGisVersion       = "2.2.1"
+lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
-lazy val refinedVersion       = "0.9.0"
+lazy val refinedVersion       = "0.9.3"
 lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.5"
 lazy val shapelessVersion     = "2.3.3"
-lazy val sourcecodeVersion    = "0.1.4"
-lazy val specs2Version        = "4.2.0"
+lazy val sourcecodeVersion    = "0.1.5"
+lazy val specs2Version        = "4.3.5"
 lazy val scala211Version      = "2.11.12"
-lazy val scala212Version      = "2.12.7"
+lazy val scala212Version      = "2.12.8"
 
 // Check bincompat versus this version.
 lazy val binaryCompatibleVersion = "0.5.2"
@@ -207,17 +207,18 @@ lazy val doobie = project.in(file("."))
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
-      releaseStepCommand("mimaReportBinaryIssues"),
+      // releaseStepCommand("mimaReportBinaryIssues"),
       inquireVersions,
       runClean,
       runTest,
-      releaseStepCommand("docs/tut"), // annoying that we have to do this twice
+      releaseStepCommand("docs/tut"), // go ahead and check
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand("docs/publishMicrosite"),
+      // DISABLED: we're not on the tip anymore
+      // releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
