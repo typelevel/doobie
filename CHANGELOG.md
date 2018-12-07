@@ -4,6 +4,17 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.5.4"></a>New and Noteworthy for Version 0.5.4
+
+This is a maintenance release for the 0.5.x branch. Active development is on 0.6.x.
+
+Note that this version is **not** binary compatible with 0.5.3 due to changes required for the fix for #780 (see below).
+
+- Added a callable statement example. Thanks Arber Shabhasa!
+- Doc improvements. Thanks Cody Allen, Colt Frederickson, and Francois Armand!
+- Fix for [#780](https://github.com/tpolecat/doobie/issues/780), thanks Jacob Barber!
+- Many dependency updates, thanks Colt Frederickson and Jacob Barber!
+
 ### <a name="0.5.3"></a>New and Noteworthy for Version 0.5.3
 
 Minor updates, see below.
