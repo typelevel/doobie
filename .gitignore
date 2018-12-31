@@ -37,3 +37,6 @@ bin/
 
 # Bloop
 .bloop/
+
+# Metals
+.metals/
