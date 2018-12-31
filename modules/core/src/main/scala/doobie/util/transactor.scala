@@ -201,23 +201,22 @@ object transactor  {
     def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       strategy.wrapP andThen rawTransP
 
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
-      kernel:    A                  = self.kernel,
-      connect:   A => M[Connection] = self.connect,
+      kernel:      A                  = self.kernel,
+      connect:     A => M[Connection] = self.connect,
       interpreter: Interpreter[M]     = self.interpreter,
-      strategy:  Strategy           = self.strategy,
-      logger:    Logger             = self.logger
+      strategy:    Strategy           = self.strategy,
+      logger:      Logger             = self.logger
     ): Transactor.Aux[M, A] = {
       // We need to alias the params so we can use them below. Kind of annoying.
       val (kernel0, connect0, interpret0, strategy0, logger0) = (kernel, connect, interpreter, strategy, logger)
       new Transactor[M] {
-        type A        = self.A
-        val kernel    = kernel0
-        val connect   = connect0
+        type A          = self.A
+        val kernel      = kernel0
+        val connect     = connect0
         val interpreter = interpret0
-        val strategy  = strategy0
-        val logger    = logger0
+        val strategy    = strategy0
+        val logger      = logger0
       }
     }
   }

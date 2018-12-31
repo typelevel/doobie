@@ -4,7 +4,7 @@
 
 package doobie.issue
 
-import doobie._, doobie.implicits._
+import doobie._
 import org.specs2.mutable.Specification
 import scala.Predef._
 import shapeless.{::, HNil}

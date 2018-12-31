@@ -142,7 +142,7 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
       if (bs.length > 0) {
         val hex = BigInt(1, bs).toString(16)
         val pad = bs.length * 2 - hex.length
-        (0 until pad).foreach(a => sb.append("0"))
+        (0 until pad).foreach(_ => sb.append("0"))
         sb.append(hex)
       }
     }

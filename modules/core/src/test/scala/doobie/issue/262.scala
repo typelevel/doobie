@@ -4,8 +4,6 @@
 
 package doobie.issue
 
-import cats.Monad
-import cats.implicits._
 import cats.effect.{ Async, ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
