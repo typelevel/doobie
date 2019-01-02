@@ -14,6 +14,7 @@ import java.sql.ResultSet
 import org.postgresql.fastpath.FastpathArg
 import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object fastpath { module =>
 
@@ -49,6 +50,7 @@ object fastpath { module =>
       def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: FastpathIO[A]): F[A]
+      def liftE[G[_]](env: Env[PGFastpath] => G ~> FastpathIO): F[G ~> FastpathIO]
 
       // PGFastpath
       def addFunction(a: String, b: Int): F[Unit]
@@ -92,6 +94,9 @@ object fastpath { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: FastpathIO[A]) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[PGFastpath] => G ~> FastpathIO) extends FastpathOp[G ~> FastpathIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // PGFastpath-specific operations.
@@ -145,6 +150,7 @@ object fastpath { module =>
   def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): FastpathIO[B] = FF.liftF[FastpathOp, B](BracketCase(acquire, use, release))
   val shift: FastpathIO[Unit] = FF.liftF[FastpathOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: FastpathIO[A]) = FF.liftF[FastpathOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[PGFastpath] => F ~> FastpathIO) = FF.liftF[FastpathOp, F ~> FastpathIO](LiftE(env))
 
   // Smart constructors for Fastpath-specific operations.
   def addFunction(a: String, b: Int): FastpathIO[Unit] = FF.liftF(AddFunction(a, b))

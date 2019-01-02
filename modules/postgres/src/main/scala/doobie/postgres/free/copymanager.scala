@@ -19,6 +19,7 @@ import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object copymanager { module =>
 
@@ -54,6 +55,7 @@ object copymanager { module =>
       def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]): F[A]
+      def liftE[G[_]](env: Env[PGCopyManager] => G ~> CopyManagerIO): F[G ~> CopyManagerIO]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -95,6 +97,9 @@ object copymanager { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CopyManagerIO[A]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[PGCopyManager] => G ~> CopyManagerIO) extends CopyManagerOp[G ~> CopyManagerIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // PGCopyManager-specific operations.
@@ -142,6 +147,7 @@ object copymanager { module =>
   def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = FF.liftF[CopyManagerOp, B](BracketCase(acquire, use, release))
   val shift: CopyManagerIO[Unit] = FF.liftF[CopyManagerOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[PGCopyManager] => F ~> CopyManagerIO) = FF.liftF[CopyManagerOp, F ~> CopyManagerIO](LiftE(env))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))

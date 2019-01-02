@@ -28,6 +28,7 @@ import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection { module =>
 
@@ -63,8 +64,6 @@ object connection { module =>
       def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): F[A]
-
-      // ****
       def liftE[G[_]](env: Env[Connection] => G ~> ConnectionIO): F[G ~> ConnectionIO]
 
       // Connection
@@ -153,9 +152,6 @@ object connection { module =>
     final case class EvalOn[A](ec: ExecutionContext, fa: ConnectionIO[A]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
-
-    // ****
-    /** A hack to allow for the PgConnection interpreter. */
     final case class LiftE[G[_]](env: Env[Connection] => G ~> ConnectionIO) extends ConnectionOp[G ~> ConnectionIO] {
       def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
@@ -340,8 +336,6 @@ object connection { module =>
   def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = FF.liftF[ConnectionOp, B](BracketCase(acquire, use, release))
   val shift: ConnectionIO[Unit] = FF.liftF[ConnectionOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]) = FF.liftF[ConnectionOp, A](EvalOn(ec, fa))
-
-  // ****
   def liftE[F[_]](env: Env[Connection] => F ~> ConnectionIO) = FF.liftF[ConnectionOp, F ~> ConnectionIO](LiftE(env))
 
   // Smart constructors for Connection-specific operations.

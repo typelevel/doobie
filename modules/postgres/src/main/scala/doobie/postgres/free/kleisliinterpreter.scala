@@ -18,20 +18,15 @@ import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.sql.ResultSet
-import java.sql.{ Array => SqlArray }
 import org.postgresql.PGConnection
-import org.postgresql.PGNotification
-import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.fastpath.FastpathArg
 import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 import org.postgresql.jdbc.AutoSave
-import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
-import org.postgresql.replication.PGReplicationConnection
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.postgres.free.copyin.{ CopyInIO, CopyInOp }
@@ -57,6 +52,7 @@ object KleisliInterpreter {
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: Async[M]
@@ -128,6 +124,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]): Kleisli[M, Env[PGCopyIn], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[PGCopyIn] => G ~> CopyInIO): Kleisli[M, Env[PGCopyIn], G ~> CopyInIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def cancelCopy = primitive(_.cancelCopy, "cancelCopy")
     override def endCopy = primitive(_.endCopy, "endCopy")
@@ -169,6 +168,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]): Kleisli[M, Env[PGCopyManager], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[PGCopyManager] => G ~> CopyManagerIO): Kleisli[M, Env[PGCopyManager], G ~> CopyManagerIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def copyDual(a: String) = primitive(_.copyDual(a), "copyDual", a)
@@ -212,6 +214,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]): Kleisli[M, Env[PGCopyOut], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[PGCopyOut] => G ~> CopyOutIO): Kleisli[M, Env[PGCopyOut], G ~> CopyOutIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def cancelCopy = primitive(_.cancelCopy, "cancelCopy")
     override def getFieldCount = primitive(_.getFieldCount, "getFieldCount")
@@ -252,6 +257,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: FastpathIO[A]): Kleisli[M, Env[PGFastpath], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[PGFastpath] => G ~> FastpathIO): Kleisli[M, Env[PGFastpath], G ~> FastpathIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addFunction(a: String, b: Int) = primitive(_.addFunction(a, b), "addFunction", a, b)
@@ -296,6 +304,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]): Kleisli[M, Env[LargeObject], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[LargeObject] => G ~> LargeObjectIO): Kleisli[M, Env[LargeObject], G ~> LargeObjectIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def close = primitive(_.close, "close")
@@ -350,6 +361,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]): Kleisli[M, Env[LargeObjectManager], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[LargeObjectManager] => G ~> LargeObjectManagerIO): Kleisli[M, Env[LargeObjectManager], G ~> LargeObjectManagerIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def create = primitive(_.create, "create")
     override def create(a: Int) = primitive(_.create(a), "create", a)
@@ -398,6 +412,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]): Kleisli[M, Env[PGConnection], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[PGConnection] => G ~> PGConnectionIO): Kleisli[M, Env[PGConnection], G ~> PGConnectionIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b), "addDataType", a, b)

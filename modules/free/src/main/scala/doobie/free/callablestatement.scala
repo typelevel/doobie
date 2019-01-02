@@ -35,6 +35,7 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object callablestatement { module =>
 
@@ -70,6 +71,7 @@ object callablestatement { module =>
       def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]): F[A]
+      def liftE[G[_]](env: Env[CallableStatement] => G ~> CallableStatementIO): F[G ~> CallableStatementIO]
 
       // CallableStatement
       def addBatch: F[Unit]
@@ -333,6 +335,9 @@ object callablestatement { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CallableStatementIO[A]) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[CallableStatement] => G ~> CallableStatementIO) extends CallableStatementOp[G ~> CallableStatementIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // CallableStatement-specific operations.
@@ -1046,6 +1051,7 @@ object callablestatement { module =>
   def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): CallableStatementIO[B] = FF.liftF[CallableStatementOp, B](BracketCase(acquire, use, release))
   val shift: CallableStatementIO[Unit] = FF.liftF[CallableStatementOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]) = FF.liftF[CallableStatementOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[CallableStatement] => F ~> CallableStatementIO) = FF.liftF[CallableStatementOp, F ~> CallableStatementIO](LiftE(env))
 
   // Smart constructors for CallableStatement-specific operations.
   val addBatch: CallableStatementIO[Unit] = FF.liftF(AddBatch)

@@ -16,6 +16,7 @@ import java.sql.ResultSet
 import java.sql.SQLWarning
 import java.sql.Statement
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object statement { module =>
 
@@ -51,6 +52,7 @@ object statement { module =>
       def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): F[A]
+      def liftE[G[_]](env: Env[Statement] => G ~> StatementIO): F[G ~> StatementIO]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -135,6 +137,9 @@ object statement { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: StatementIO[A]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[Statement] => G ~> StatementIO) extends StatementOp[G ~> StatementIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // Statement-specific operations.
@@ -311,6 +316,7 @@ object statement { module =>
   def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): StatementIO[B] = FF.liftF[StatementOp, B](BracketCase(acquire, use, release))
   val shift: StatementIO[Unit] = FF.liftF[StatementOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]) = FF.liftF[StatementOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[Statement] => F ~> StatementIO) = FF.liftF[StatementOp, F ~> StatementIO](LiftE(env))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))

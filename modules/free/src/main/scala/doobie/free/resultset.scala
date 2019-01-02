@@ -33,6 +33,7 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object resultset { module =>
 
@@ -68,6 +69,7 @@ object resultset { module =>
       def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): F[A]
+      def liftE[G[_]](env: Env[ResultSet] => G ~> ResultSetIO): F[G ~> ResultSetIO]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -295,6 +297,9 @@ object resultset { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: ResultSetIO[A]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[ResultSet] => G ~> ResultSetIO) extends ResultSetOp[G ~> ResultSetIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // ResultSet-specific operations.
@@ -900,6 +905,7 @@ object resultset { module =>
   def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))
   val shift: ResultSetIO[Unit] = FF.liftF[ResultSetOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]) = FF.liftF[ResultSetOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[ResultSet] => F ~> ResultSetIO) = FF.liftF[ResultSetOp, F ~> ResultSetIO](LiftE(env))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))

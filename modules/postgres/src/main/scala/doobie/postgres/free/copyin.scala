@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContext
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object copyin { module =>
 
@@ -46,6 +47,7 @@ object copyin { module =>
       def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]): F[A]
+      def liftE[G[_]](env: Env[PGCopyIn] => G ~> CopyInIO): F[G ~> CopyInIO]
 
       // PGCopyIn
       def cancelCopy: F[Unit]
@@ -87,6 +89,9 @@ object copyin { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CopyInIO[A]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[PGCopyIn] => G ~> CopyInIO) extends CopyInOp[G ~> CopyInIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // PGCopyIn-specific operations.
@@ -134,6 +139,7 @@ object copyin { module =>
   def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): CopyInIO[B] = FF.liftF[CopyInOp, B](BracketCase(acquire, use, release))
   val shift: CopyInIO[Unit] = FF.liftF[CopyInOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]) = FF.liftF[CopyInOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[PGCopyIn] => F ~> CopyInIO) = FF.liftF[CopyInOp, F ~> CopyInIO](LiftE(env))
 
   // Smart constructors for CopyIn-specific operations.
   val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)

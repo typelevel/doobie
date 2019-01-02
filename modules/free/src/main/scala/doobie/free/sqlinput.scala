@@ -27,6 +27,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object sqlinput { module =>
 
@@ -62,6 +63,7 @@ object sqlinput { module =>
       def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): F[A]
+      def liftE[G[_]](env: Env[SQLInput] => G ~> SQLInputIO): F[G ~> SQLInputIO]
 
       // SQLInput
       def readArray: F[SqlArray]
@@ -122,6 +124,9 @@ object sqlinput { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: SQLInputIO[A]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[SQLInput] => G ~> SQLInputIO) extends SQLInputOp[G ~> SQLInputIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // SQLInput-specific operations.
@@ -226,6 +231,7 @@ object sqlinput { module =>
   def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): SQLInputIO[B] = FF.liftF[SQLInputOp, B](BracketCase(acquire, use, release))
   val shift: SQLInputIO[Unit] = FF.liftF[SQLInputOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]) = FF.liftF[SQLInputOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[SQLInput] => F ~> SQLInputIO) = FF.liftF[SQLInputOp, F ~> SQLInputIO](LiftE(env))
 
   // Smart constructors for SQLInput-specific operations.
   val readArray: SQLInputIO[SqlArray] = FF.liftF(ReadArray)

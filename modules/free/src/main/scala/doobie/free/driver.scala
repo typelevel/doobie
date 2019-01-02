@@ -16,6 +16,7 @@ import java.sql.DriverPropertyInfo
 import java.util.Properties
 import java.util.logging.Logger
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object driver { module =>
 
@@ -51,6 +52,7 @@ object driver { module =>
       def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): F[A]
+      def liftE[G[_]](env: Env[Driver] => G ~> DriverIO): F[G ~> DriverIO]
 
       // Driver
       def acceptsURL(a: String): F[Boolean]
@@ -90,6 +92,9 @@ object driver { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: DriverIO[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[Driver] => G ~> DriverIO) extends DriverOp[G ~> DriverIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // Driver-specific operations.
@@ -131,6 +136,7 @@ object driver { module =>
   def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = FF.liftF[DriverOp, B](BracketCase(acquire, use, release))
   val shift: DriverIO[Unit] = FF.liftF[DriverOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = FF.liftF[DriverOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[Driver] => F ~> DriverIO) = FF.liftF[DriverOp, F ~> DriverIO](LiftE(env))
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))

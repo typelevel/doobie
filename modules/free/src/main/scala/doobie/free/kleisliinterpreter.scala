@@ -12,9 +12,7 @@ import scala.concurrent.ExecutionContext
 
 // Types referenced in the JDBC API
 import java.io.InputStream
-import java.io.OutputStream
 import java.io.Reader
-import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.math.BigDecimal
@@ -26,20 +24,15 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.Date
 import java.sql.Driver
-import java.sql.DriverPropertyInfo
 import java.sql.NClob
-import java.sql.ParameterMetaData
 import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
-import java.sql.ResultSetMetaData
 import java.sql.RowId
-import java.sql.RowIdLifetime
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 import java.sql.SQLType
-import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
 import java.sql.Statement
@@ -51,7 +44,6 @@ import java.util.Calendar
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
-import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.free.nclob.{ NClobIO, NClobOp }
@@ -84,6 +76,7 @@ object KleisliInterpreter {
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: Async[M]
@@ -169,6 +162,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: NClobIO[A]): Kleisli[M, Env[NClob], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[NClob] => G ~> NClobIO): Kleisli[M, Env[NClob], G ~> NClobIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free, "free")
     override def getAsciiStream = primitive(_.getAsciiStream, "getAsciiStream")
@@ -215,6 +211,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): Kleisli[M, Env[Blob], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[Blob] => G ~> BlobIO): Kleisli[M, Env[Blob], G ~> BlobIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free, "free")
     override def getBinaryStream = primitive(_.getBinaryStream, "getBinaryStream")
@@ -258,6 +257,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): Kleisli[M, Env[Clob], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[Clob] => G ~> ClobIO): Kleisli[M, Env[Clob], G ~> ClobIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free, "free")
@@ -304,6 +306,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]): Kleisli[M, Env[DatabaseMetaData], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[DatabaseMetaData] => G ~> DatabaseMetaDataIO): Kleisli[M, Env[DatabaseMetaData], G ~> DatabaseMetaDataIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def allProceduresAreCallable = primitive(_.allProceduresAreCallable, "allProceduresAreCallable")
@@ -516,6 +521,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): Kleisli[M, Env[Driver], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[Driver] => G ~> DriverIO): Kleisli[M, Env[Driver], G ~> DriverIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def acceptsURL(a: String) = primitive(_.acceptsURL(a), "acceptsURL", a)
     override def connect(a: String, b: Properties) = primitive(_.connect(a, b), "connect", a, b)
@@ -556,6 +564,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]): Kleisli[M, Env[Ref], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[Ref] => G ~> RefIO): Kleisli[M, Env[Ref], G ~> RefIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def getBaseTypeName = primitive(_.getBaseTypeName, "getBaseTypeName")
     override def getObject = primitive(_.getObject, "getObject")
@@ -593,6 +604,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]): Kleisli[M, Env[SQLData], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[SQLData] => G ~> SQLDataIO): Kleisli[M, Env[SQLData], G ~> SQLDataIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def getSQLTypeName = primitive(_.getSQLTypeName, "getSQLTypeName")
     override def readSQL(a: SQLInput, b: String) = primitive(_.readSQL(a, b), "readSQL", a, b)
@@ -628,6 +642,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): Kleisli[M, Env[SQLInput], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[SQLInput] => G ~> SQLInputIO): Kleisli[M, Env[SQLInput], G ~> SQLInputIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def readArray = primitive(_.readArray, "readArray")
@@ -689,6 +706,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): Kleisli[M, Env[SQLOutput], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[SQLOutput] => G ~> SQLOutputIO): Kleisli[M, Env[SQLOutput], G ~> SQLOutputIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def writeArray(a: SqlArray) = primitive(_.writeArray(a), "writeArray", a)
@@ -841,6 +861,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): Kleisli[M, Env[Statement], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def liftE[G[_]](env: Env[Statement] => G ~> StatementIO): Kleisli[M, Env[Statement], G ~> StatementIO] =
+      Kleisli(e => asyncM.pure(env(e)))
+
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch(a: String) = primitive(_.addBatch(a), "addBatch", a)
     override def cancel = primitive(_.cancel, "cancel")
@@ -925,6 +948,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): Kleisli[M, Env[PreparedStatement], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[PreparedStatement] => G ~> PreparedStatementIO): Kleisli[M, Env[PreparedStatement], G ~> PreparedStatementIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch, "addBatch")
@@ -1068,6 +1094,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]): Kleisli[M, Env[CallableStatement], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[CallableStatement] => G ~> CallableStatementIO): Kleisli[M, Env[CallableStatement], G ~> CallableStatementIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch, "addBatch")
@@ -1332,6 +1361,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): Kleisli[M, Env[ResultSet], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[ResultSet] => G ~> ResultSetIO): Kleisli[M, Env[ResultSet], G ~> ResultSetIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def absolute(a: Int) = primitive(_.absolute(a), "absolute", a)

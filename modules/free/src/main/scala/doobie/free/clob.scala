@@ -16,6 +16,7 @@ import java.io.Writer
 import java.lang.String
 import java.sql.Clob
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object clob { module =>
 
@@ -51,6 +52,7 @@ object clob { module =>
       def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): F[A]
+      def liftE[G[_]](env: Env[Clob] => G ~> ClobIO): F[G ~> ClobIO]
 
       // Clob
       def free: F[Unit]
@@ -96,6 +98,9 @@ object clob { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: ClobIO[A]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[Clob] => G ~> ClobIO) extends ClobOp[G ~> ClobIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // Clob-specific operations.
@@ -155,6 +160,7 @@ object clob { module =>
   def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): ClobIO[B] = FF.liftF[ClobOp, B](BracketCase(acquire, use, release))
   val shift: ClobIO[Unit] = FF.liftF[ClobOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]) = FF.liftF[ClobOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[Clob] => F ~> ClobIO) = FF.liftF[ClobOp, F ~> ClobIO](LiftE(env))
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)

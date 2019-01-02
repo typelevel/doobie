@@ -250,6 +250,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): F[B]
     |      def shift: F[Unit]
     |      def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]): F[A]
+    |      def liftE[G[_]](env: Env[${sname}] => G ~> ${ioname}): F[G ~> ${ioname}]
     |
     |      // $sname
           ${ctors[A].map(_.visitor).mkString("\n    ")}
@@ -284,6 +285,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    final case class EvalOn[A](ec: ExecutionContext, fa: ${ioname}[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     |    }
+    |    final case class LiftE[G[_]](env: Env[${sname}] => G ~> ${ioname}) extends ${opname}[G ~> ${ioname}] {
+    |      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
+    |    }
     |
     |    // $sname-specific operations.
     |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
@@ -304,6 +308,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = FF.liftF[${opname}, B](BracketCase(acquire, use, release))
     |  val shift: ${ioname}[Unit] = FF.liftF[${opname}, Unit](Shift)
     |  def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]) = FF.liftF[${opname}, A](EvalOn(ec, fa))
+    |  def liftE[F[_]](env: Env[${sname}] => F ~> ${ioname}) = FF.liftF[${opname}, F ~> ${ioname}](LiftE(env))
     |
     |  // Smart constructors for $oname-specific operations.
     |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
@@ -355,6 +360,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      |
      |// A pair (J, Free[F, A]) with constructors that tie down J and F.
      |sealed trait Embedded[A]
+     |@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
      |object Embedded {
      |  ${managed.map(ClassTag(_)).map(embed(_)).mkString("\n  ") }
      |}
@@ -400,6 +406,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |
        |    def evalOn[A](ec: ExecutionContext)(fa: $ioname[A]): Kleisli[M, Env[$sname], A] =
        |      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+       |
+       |    def liftE[G[_]](env: Env[${sname}] => G ~> $ioname): Kleisli[M, Env[${sname}], G ~> $ioname] =
+       |      Kleisli(e => asyncM.pure(env(e)))
        |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}

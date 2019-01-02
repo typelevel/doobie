@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object largeobjectmanager { module =>
 
@@ -47,6 +48,7 @@ object largeobjectmanager { module =>
       def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]): F[A]
+      def liftE[G[_]](env: Env[LargeObjectManager] => G ~> LargeObjectManagerIO): F[G ~> LargeObjectManagerIO]
 
       // LargeObjectManager
       def create: F[Int]
@@ -95,6 +97,9 @@ object largeobjectmanager { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[LargeObjectManager] => G ~> LargeObjectManagerIO) extends LargeObjectManagerOp[G ~> LargeObjectManagerIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // LargeObjectManager-specific operations.
@@ -163,6 +168,7 @@ object largeobjectmanager { module =>
   def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[B] = FF.liftF[LargeObjectManagerOp, B](BracketCase(acquire, use, release))
   val shift: LargeObjectManagerIO[Unit] = FF.liftF[LargeObjectManagerOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[LargeObjectManager] => F ~> LargeObjectManagerIO) = FF.liftF[LargeObjectManagerOp, F ~> LargeObjectManagerIO](LiftE(env))
 
   // Smart constructors for LargeObjectManager-specific operations.
   val create: LargeObjectManagerIO[Int] = FF.liftF(Create)

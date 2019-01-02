@@ -13,6 +13,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object largeobject { module =>
 
@@ -48,6 +49,7 @@ object largeobject { module =>
       def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]): F[A]
+      def liftE[G[_]](env: Env[LargeObject] => G ~> LargeObjectIO): F[G ~> LargeObjectIO]
 
       // LargeObject
       def close: F[Unit]
@@ -100,6 +102,9 @@ object largeobject { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[LargeObject] => G ~> LargeObjectIO) extends LargeObjectOp[G ~> LargeObjectIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // LargeObject-specific operations.
@@ -180,6 +185,7 @@ object largeobject { module =>
   def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): LargeObjectIO[B] = FF.liftF[LargeObjectOp, B](BracketCase(acquire, use, release))
   val shift: LargeObjectIO[Unit] = FF.liftF[LargeObjectOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[LargeObject] => F ~> LargeObjectIO) = FF.liftF[LargeObjectOp, F ~> LargeObjectIO](LiftE(env))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)

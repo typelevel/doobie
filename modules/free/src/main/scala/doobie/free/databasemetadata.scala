@@ -16,6 +16,7 @@ import java.sql.DatabaseMetaData
 import java.sql.ResultSet
 import java.sql.RowIdLifetime
 
+@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object databasemetadata { module =>
 
@@ -51,6 +52,7 @@ object databasemetadata { module =>
       def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]): F[A]
+      def liftE[G[_]](env: Env[DatabaseMetaData] => G ~> DatabaseMetaDataIO): F[G ~> DatabaseMetaDataIO]
 
       // DatabaseMetaData
       def allProceduresAreCallable: F[Boolean]
@@ -261,6 +263,9 @@ object databasemetadata { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class LiftE[G[_]](env: Env[DatabaseMetaData] => G ~> DatabaseMetaDataIO) extends DatabaseMetaDataOp[G ~> DatabaseMetaDataIO] {
+      def visit[F[_]](v: Visitor[F]) = v.liftE(env)
     }
 
     // DatabaseMetaData-specific operations.
@@ -815,6 +820,7 @@ object databasemetadata { module =>
   def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = FF.liftF[DatabaseMetaDataOp, B](BracketCase(acquire, use, release))
   val shift: DatabaseMetaDataIO[Unit] = FF.liftF[DatabaseMetaDataOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]) = FF.liftF[DatabaseMetaDataOp, A](EvalOn(ec, fa))
+  def liftE[F[_]](env: Env[DatabaseMetaData] => F ~> DatabaseMetaDataIO) = FF.liftF[DatabaseMetaDataOp, F ~> DatabaseMetaDataIO](LiftE(env))
 
   // Smart constructors for DatabaseMetaData-specific operations.
   val allProceduresAreCallable: DatabaseMetaDataIO[Boolean] = FF.liftF(AllProceduresAreCallable)
