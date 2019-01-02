@@ -4,6 +4,14 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.7.0"></a>Work in Progress for Version 0.7.0
+
+0.7 is probably the last version of doobie prior to shifting work to a tagless implementation. This version will be source-compatible for most users but is not binary compatible with 0.6.x or any earlier version.
+
+- Added `TRACE`-level logging for low-level operations, sent to slf4j `Logger` specified via the `logger` member on `Transactor`, by default a logger called `"doobie.transactor"`. If you wish to associate correlation ids or otherwise mess with logging you can do this by swapping out the logger prior to calling `transact`. See `CorrelationId.scala` in the `example` project for an example.
+- Deprecated existing logging machinery.
+
+____
 ### <a name="0.6.0"></a>New and Noteworthy for Version 0.6.0
 
 Many thanks to **Arber Shabhasa**, **Bjørn Madsen**, **Chris Davenport**, **Cody Allen**, **Dmitry Polienko**, **Kai(luo) Wang**, **Kevin Walter**, **Mark Canlas**, and **Quang Le Hong** for their contributions to this release.

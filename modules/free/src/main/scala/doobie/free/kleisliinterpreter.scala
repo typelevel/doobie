@@ -72,14 +72,13 @@ import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 object KleisliInterpreter {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply[M[_]](blocking: ExecutionContext)(
+  def apply[M[_]](
     implicit am: Async[M],
              cs: ContextShift[M]
   ): KleisliInterpreter[M] =
     new KleisliInterpreter[M] {
       val asyncM = am
       val contextShiftM = cs
-      val blockingContext = blocking
     }
 
 }
@@ -92,7 +91,6 @@ trait KleisliInterpreter[M[_]] { outer =>
   // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
   // to support shifting blocking operations to another pool.
   val contextShiftM: ContextShift[M]
-  val blockingContext: ExecutionContext
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, Env[NClob], ?] = new NClobInterpreter { }
@@ -112,19 +110,13 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
   def primitive[J, A](f: J => A, name: String, args: Any*): Kleisli[M, Env[J], A] =
-    raw { e =>
-      // if (e.logger.isTraceEnabled) {
-        e.unsafeTrace(s"$name(${args.mkString(", ")})")
-      // }
-      f(e.jdbc)
-    }
+    raw(_.unsafeTrace(s"$name(${args.mkString(", ")})")(f))
 
   def delay[J, A](a: () => A): Kleisli[M, Env[J], A] =
     Kleisli(_ => asyncM.delay(a()))
 
-  // TODO: add catch logging here
   def raw[J, A](f: Env[J] => A): Kleisli[M, Env[J], A] =
-    Kleisli(e => contextShiftM.evalOn(blockingContext)(asyncM.delay(f(e))))
+    Kleisli(e => contextShiftM.evalOn(e.blockingContext)(asyncM.delay(f(e))))
 
   def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Env[J], A] =
     Kleisli(_ => asyncM.async(k))
@@ -758,6 +750,9 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): Kleisli[M, Env[Connection], A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def liftE[G[_]](env: Env[Connection] => G ~> ConnectionIO): Kleisli[M, Env[Connection], G ~> ConnectionIO] =
+      Kleisli(e => asyncM.pure(env(e)))
 
     // domain-specific operations are implemented in terms of `primitive`
     override def abort(a: Executor) = primitive(_.abort(a), "abort", a)

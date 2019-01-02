@@ -5,8 +5,9 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
 
 import java.lang.Class
 import java.lang.String
@@ -46,13 +47,15 @@ object pgconnection { module =>
       final def apply[A](fa: PGConnectionOp[A]): F[A] = fa.visit(this)
 
       // Common
-      def raw[A](f: PGConnection => A): F[A]
+      def raw[A](f: Env[PGConnection] => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): F[A]
       def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]): F[A]
 
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
@@ -78,7 +81,7 @@ object pgconnection { module =>
     }
 
     // Common operations for all algebras.
-    final case class Raw[A](f: PGConnection => A) extends PGConnectionOp[A] {
+    final case class Raw[A](f: Env[PGConnection] => A) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends PGConnectionOp[A] {
@@ -98,6 +101,12 @@ object pgconnection { module =>
     }
     final case class BracketCase[A, B](acquire: PGConnectionIO[A], use: A => PGConnectionIO[B], release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]) extends PGConnectionOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: PGConnectionIO[A]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // PGConnection-specific operations.
@@ -165,7 +174,7 @@ object pgconnection { module =>
   // Smart constructors for operations common to all algebras.
   val unit: PGConnectionIO[Unit] = FF.pure[PGConnectionOp, Unit](())
   def pure[A](a: A): PGConnectionIO[A] = FF.pure[PGConnectionOp, A](a)
-  def raw[A](f: PGConnection => A): PGConnectionIO[A] = FF.liftF(Raw(f))
+  def raw[A](f: Env[PGConnection] => A): PGConnectionIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PGConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): PGConnectionIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](HandleErrorWith(fa, f))
@@ -173,6 +182,8 @@ object pgconnection { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): PGConnectionIO[B] = FF.liftF[PGConnectionOp, B](BracketCase(acquire, use, release))
+  val shift: PGConnectionIO[Unit] = FF.liftF[PGConnectionOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]) = FF.liftF[PGConnectionOp, A](EvalOn(ec, fa))
 
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
@@ -198,17 +209,23 @@ object pgconnection { module =>
   // PGConnectionIO is an Async
   implicit val AsyncPGConnectionIO: Async[PGConnectionIO] =
     new Async[PGConnectionIO] {
-      val M = FF.catsFreeMonadForFree[PGConnectionOp]
+      val asyncM = FF.catsFreeMonadForFree[PGConnectionOp]
       def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): PGConnectionIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): PGConnectionIO[A] = M.pure(x)
+      def pure[A](x: A): PGConnectionIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): PGConnectionIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): PGConnectionIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => PGConnectionIO[Unit]): PGConnectionIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => PGConnectionIO[A]): PGConnectionIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => PGConnectionIO[A]): PGConnectionIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // PGConnectionIO is a ContextShift
+  implicit val ContextShiftPGConnectionIO: ContextShift[PGConnectionIO] =
+    new ContextShift[PGConnectionIO] {
+      def shift: PGConnectionIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

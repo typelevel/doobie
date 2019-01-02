@@ -129,6 +129,9 @@ object transactor  {
     /** A `Strategy` for running a program on a connection **/
     def strategy: Strategy
 
+    /** An `ExecutionContext` for blocking operations **/
+    def blockingContext: ExecutionContext
+
     /** A `Logger` for logging instructions */
     def logger: Logger
 
@@ -152,7 +155,7 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawExec(implicit ev: Monad[M]): Kleisli[M, CEnv, ?] ~> M =
-      λ[Kleisli[M, CEnv, ?] ~> M](k => connect(kernel).flatMap(c => k.run(Env(c, logger))))
+      λ[Kleisli[M, CEnv, ?] ~> M](k => connect(kernel).flatMap(c => k.run(Env(c, logger, blockingContext))))
 
     /**
      * Natural transformation that provides a connection and binds through a `Kleisli` program
@@ -169,7 +172,7 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawTrans(implicit ev: Monad[M]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M](f => connect(kernel).flatMap(c => f.foldMap(interpreter).run(Env(c, logger))))
+      λ[ConnectionIO ~> M](f => connect(kernel).flatMap(c => f.foldMap(interpreter).run(Env(c, logger, blockingContext))))
 
     /**
      * Natural transformation that provides a connection and binds through a `ConnectionIO` program
@@ -192,7 +195,7 @@ object transactor  {
         λ[Free[F, ?] ~> G](_.foldMap(nat))
 
       def nat(c: Connection): ConnectionIO ~> M =
-        liftF(interpreter andThen applyKleisli(Env(c, logger)))
+        liftF(interpreter andThen applyKleisli(Env(c, logger, blockingContext)))
 
       eval(connect(kernel)).flatMap(c => pa.translate(nat(c)))
 
@@ -201,22 +204,26 @@ object transactor  {
     def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       strategy.wrapP andThen rawTransP
 
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
       kernel:      A                  = self.kernel,
       connect:     A => M[Connection] = self.connect,
       interpreter: Interpreter[M]     = self.interpreter,
       strategy:    Strategy           = self.strategy,
+      blockingContext: ExecutionContext = self.blockingContext,
       logger:      Logger             = self.logger
     ): Transactor.Aux[M, A] = {
       // We need to alias the params so we can use them below. Kind of annoying.
-      val (kernel0, connect0, interpret0, strategy0, logger0) = (kernel, connect, interpreter, strategy, logger)
+      val (kernel0, connect0, interpret0, strategy0, blockingContext0, logger0) =
+        (kernel, connect, interpreter, strategy, blockingContext, logger)
       new Transactor[M] {
-        type A          = self.A
-        val kernel      = kernel0
-        val connect     = connect0
-        val interpreter = interpret0
-        val strategy    = strategy0
-        val logger      = logger0
+        type A              = self.A
+        val kernel          = kernel0
+        val connect         = connect0
+        val interpreter     = interpret0
+        val strategy        = strategy0
+        val blockingContext = blockingContext0
+        val logger          = logger0
       }
     }
   }
@@ -225,22 +232,25 @@ object transactor  {
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[M[_], A](
-      kernel:    A,
-      connect:   A => M[Connection],
-      interpreter: Interpreter[M],
-      strategy:  Strategy,
-      logger:    Logger = LoggerFactory.getLogger("doobie.transactor"),
+      kernel:          A,
+      connect:         A => M[Connection],
+      interpreter:     Interpreter[M],
+      strategy:        Strategy,
+      blockingContext: ExecutionContext,
+      logger:          Logger = LoggerFactory.getLogger("doobie.transactor"),
     ): Transactor.Aux[M, A] = {
       // We need to alias the params so we can use them below. Kind of annoying.
-      val (kernel0, connect0, interpret0, strategy0, logger0) = (kernel, connect, interpreter, strategy, logger)
+      val (kernel0, connect0, interpret0, strategy0, logger0, blockingContext0) =
+        (kernel, connect, interpreter, strategy, logger, blockingContext)
       type A0 = A
       new Transactor[M] {
         type A = A0
-        val kernel    = kernel0
-        val connect   = connect0
-        val interpreter = interpret0
-        val strategy  = strategy0
-        val logger    = logger0
+        val kernel          = kernel0
+        val connect         = connect0
+        val interpreter     = interpret0
+        val strategy        = strategy0
+        val blockingContext = blockingContext0
+        val logger          = logger0
       }
     }
 
@@ -278,8 +288,8 @@ object transactor  {
                    cs: ContextShift[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
-          val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
-          Transactor(dataSource, connect, interp, Strategy.default)
+          val interp  = KleisliInterpreter[M].ConnectionInterpreter
+          Transactor(dataSource, connect, interp, Strategy.default, transactEC)
         }
       }
 
@@ -297,8 +307,8 @@ object transactor  {
       transactEC: ExecutionContext
     ): Transactor.Aux[M, Connection] = {
       val connect = (c: Connection) => Async[M].pure(c)
-      val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
-      Transactor(connection, connect, interp, Strategy.default.copy(always = unit))
+      val interp  = KleisliInterpreter[M].ConnectionInterpreter
+      Transactor(connection, connect, interp, Strategy.default.copy(always = unit), transactEC)
     }
 
     /**
@@ -336,8 +346,9 @@ object transactor  {
         Transactor(
           (),
           _ => cs.evalOn(blockingContext)(am.delay { Class.forName(driver); conn }),
-          KleisliInterpreter[M](blockingContext).ConnectionInterpreter,
-          strategy
+          KleisliInterpreter[M].ConnectionInterpreter,
+          strategy,
+          blockingContext
         )
 
       /**

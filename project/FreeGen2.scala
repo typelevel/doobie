@@ -437,14 +437,13 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |object KleisliInterpreter {
       |
       |  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-      |  def apply[M[_]](blocking: ExecutionContext)(
+      |  def apply[M[_]](
       |    implicit am: Async[M],
       |             cs: ContextShift[M]
       |  ): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M] {
       |      val asyncM = am
       |      val contextShiftM = cs
-      |      val blockingContext = blocking
       |    }
       |
       |}
@@ -457,26 +456,19 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
       |  // to support shifting blocking operations to another pool.
       |  val contextShiftM: ContextShift[M]
-      |  val blockingContext: ExecutionContext
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}
       |
       |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
       |  def primitive[J, A](f: J => A, name: String, args: Any*): Kleisli[M, Env[J], A] =
-      |    raw { e =>
-      |      import scala.Predef._
-      |      if (e.logger.isTraceEnabled) {
-      |        e.logger.trace(s"$${e.jdbc.getClass.getSimpleName}<$${System.identityHashCode(e.jdbc).toHexString}>.$$name($${args.mkString(", ")})")
-      |      }
-      |      f(e.jdbc)
-      |    }
+      |    raw(_.unsafeTrace(s"$$name($${args.mkString(", ")})")(f))
       |
       |  def delay[J, A](a: () => A): Kleisli[M, Env[J], A] =
       |    Kleisli(_ => asyncM.delay(a()))
       |
       |  def raw[J, A](f: Env[J] => A): Kleisli[M, Env[J], A] =
-      |    Kleisli(e => contextShiftM.evalOn(blockingContext)(asyncM.delay(f(e))))
+      |    Kleisli(e => contextShiftM.evalOn(e.blockingContext)(asyncM.delay(f(e))))
       |
       |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Env[J], A] =
       |    Kleisli(_ => asyncM.async(k))

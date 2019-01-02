@@ -37,7 +37,7 @@ object StreamingCopy extends IOApp {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
     def interpS[T](f: ConnectionIO[T]): Connection => F[T] = c =>
-      f.foldMap(sinkXA.interpreter).run(Env(c, LoggerFactory.getLogger("example")))
+      f.foldMap(sinkXA.interpreter).run(Env(c, LoggerFactory.getLogger("example"), sinkXA.blockingContext))
 
     // Open a connection in `F` via the sink transactor. Need patmat due to the existential.
     val open: F[Connection] =
