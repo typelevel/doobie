@@ -237,7 +237,7 @@ object transactor  {
       interpreter:     Interpreter[M],
       strategy:        Strategy,
       blockingContext: ExecutionContext,
-      logger:          Logger = LoggerFactory.getLogger("doobie.transactor"),
+      logger:          Logger = LoggerFactory.getLogger("doobie.transactor")
     ): Transactor.Aux[M, A] = {
       // We need to alias the params so we can use them below. Kind of annoying.
       val (kernel0, connect0, interpret0, strategy0, logger0, blockingContext0) =
