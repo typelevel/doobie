@@ -214,6 +214,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |
     |${imports[A].mkString("\n")}
     |
+    |@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
     |@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     |object $mname { module =>
     |
@@ -449,6 +450,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
+      |@com.github.ghik.silencer.silent // deprecations, unused variables, etc.
       |trait KleisliInterpreter[M[_]] { outer =>
       |
       |  implicit val asyncM: Async[M]

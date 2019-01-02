@@ -5,12 +5,12 @@
 package doobie.postgres
 
 import cats.effect.{ ContextShift, IO }
+import com.github.ghik.silencer.silent
 import doobie._, doobie.implicits._
-import doobie.postgres._, doobie.postgres.implicits._
+import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
 import java.net.InetAddress
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
@@ -82,9 +82,9 @@ object pgtypesspec extends Specification {
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
   testInOut("timestamp", java.time.Instant.now)
   skip("timestamp with time zone")
-  testInOut("date", new java.sql.Date(4,5,6))
+  testInOut("date", new java.sql.Date(4,5,6): @silent)
   testInOut("date", java.time.LocalDate.of(4,5,6))
-  testInOut("time", new java.sql.Time(3,4,5))
+  testInOut("time", new java.sql.Time(3,4,5): @silent)
   skip("time with time zone")
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
 
