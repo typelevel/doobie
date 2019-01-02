@@ -52,7 +52,7 @@ object pretty {
   object Block {
     val empty = Block(Nil)
     def fromString(s: String) = Block(List(s))
-    def fromLines(s: String) = Block(s.lines.toList)
+    def fromLines(s: String) = Block(s.linesIterator.toList)
 
     implicit val BlockMonoid: Monoid[Block] = new Monoid[Block] {
       def empty = Block.empty

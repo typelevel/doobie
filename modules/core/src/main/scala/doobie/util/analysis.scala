@@ -37,10 +37,10 @@ object analysis {
       case ParameterMisalignment(_, None) =>
         s"""|Interpolated value has no corresponding SQL parameter and likely appears inside a
             |comment or quoted string. Ior.Left will result in a runtime failure; fix this by removing
-            |the parameter.""".stripMargin.lines.mkString(" ")
+            |the parameter.""".stripMargin.linesIterator.mkString(" ")
       case ParameterMisalignment(_, Some(pm)) =>
         s"""|${pm.jdbcType.show.toUpperCase} parameter is not set; this will result in a runtime
-            |failure. Perhaps you used a literal ? rather than an interpolated value.""".stripMargin.lines.mkString(" ")
+            |failure. Perhaps you used a literal ? rather than an interpolated value.""".stripMargin.linesIterator.mkString(" ")
     }
   }
 
@@ -50,7 +50,7 @@ object analysis {
       s"""|${typeName(put.typeStack.last, n)} is not coercible to ${jdbcType.show.toUpperCase}
           |(${vendorTypeName})
           |according to the JDBC specification.
-          |Expected schema type was ${put.jdbcTargets.head.show.toUpperCase}.""".stripMargin.lines.mkString(" ")
+          |Expected schema type was ${put.jdbcTargets.head.show.toUpperCase}.""".stripMargin.linesIterator.mkString(" ")
   }
 
   final case class ColumnMisalignment(index: Int, alignment: Either[(Get[_], NullabilityKnown), ColumnMeta]) extends AlignmentError {
@@ -58,7 +58,7 @@ object analysis {
     override def msg = this match {
       case ColumnMisalignment(_, Left((get, n))) =>
         s"""|Too few columns are selected, which will result in a runtime failure. Add a column or
-            |remove mapped ${typeName(get.typeStack.last, n)} from the result type.""".stripMargin.lines.mkString(" ")
+            |remove mapped ${typeName(get.typeStack.last, n)} from the result type.""".stripMargin.linesIterator.mkString(" ")
       case ColumnMisalignment(_, Right(_)) =>
         s"""Column is unused. Remove it from the SELECT statement."""
     }
@@ -73,7 +73,7 @@ object analysis {
       case NullabilityMisalignment(_, _, st, Nullable, NoNulls) =>
         s"""|Reading a NULL value into ${typeName(st, NoNulls)} will result in a runtime failure.
             |Fix this by making the schema type ${formatNullability(NoNulls)} or by changing the
-            |Scala type to ${typeName(st, Nullable)}""".stripMargin.lines.mkString(" ")
+            |Scala type to ${typeName(st, Nullable)}""".stripMargin.linesIterator.mkString(" ")
       case _ => sys.error("unpossible, evidently")
     }
   }
@@ -88,7 +88,7 @@ object analysis {
           |${get.jdbcSources.toList.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
           |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
           |type.
-          |""".stripMargin.lines.mkString(" ")
+          |""".stripMargin.linesIterator.mkString(" ")
   }
 
   final case class ColumnTypeWarning(index: Int, get: Get[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
@@ -99,7 +99,7 @@ object analysis {
           |according to the JDBC specification but is not a recommended target type.
           |Expected schema type was
           |${get.jdbcSources.toList.map(_.show.toUpperCase).toList.mkString(" or ") }.
-          |""".stripMargin.lines.mkString(" ")
+          |""".stripMargin.linesIterator.mkString(" ")
   }
 
   /** Compatibility analysis for the given statement and aligned mappings. */
@@ -166,7 +166,7 @@ object analysis {
           case (Ior.Left((j1, n1)),                              i)  => List(f"P${i+1}%02d", show"${typeName(j1.typeStack.last, n1)}", " → ", "", "")
           case (Ior.Right(          ParameterMeta(j2, s2, _, _)), i) => List(f"P${i+1}%02d", "",                     " → ", j2.show.toUpperCase, show"($s2)")
         } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
-      params.toString.lines.toList.zipWithIndex.map { case (show, n) =>
+      params.toString.linesIterator.toList.zipWithIndex.map { case (show, n) =>
         (show, parameterAlignmentErrors.filter(_.index == n + 1))
       }
     }
@@ -180,7 +180,7 @@ object analysis {
           case (Ior.Left((j1, n1)),                            i)  => List(f"C${i+1}%02d", "",          "", "",                       "",                    " → ", typeName(j1.typeStack.last, n1))
           case (Ior.Right(          ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.show.toUpperCase, show"(${s2.toString})", formatNullability(n2), " → ", "")
         } .transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
-      cols.toString.lines.toList.zipWithIndex.map { case (show, n) =>
+      cols.toString.linesIterator.toList.zipWithIndex.map { case (show, n) =>
         (show, columnAlignmentErrors.filter(_.index == n + 1))
       }
     }
