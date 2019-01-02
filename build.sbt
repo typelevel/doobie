@@ -22,6 +22,7 @@ lazy val sourcecodeVersion    = "0.1.5"
 lazy val specs2Version        = "4.3.6"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
+lazy val silencerVersion      = "1.3.1"
 lazy val slf4jVersion         = "1.7.25"
 
 // Check bincompat versus this version.
@@ -159,6 +160,8 @@ lazy val commonSettings =
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
     libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+      "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
       "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
