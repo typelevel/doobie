@@ -210,6 +210,15 @@ lazy val mimaSettings = {
   lazy val extraVersions: Set[String] = Set()
 
   Seq(
+    mimaBinaryIssueFilters ++= {
+      import com.typesafe.tools.mima.core._
+      import com.typesafe.tools.mima.core.ProblemFilters._
+
+      Seq(
+        // implicits were wrapped in `Lazy`
+        exclude[IncompatibleMethTypeProblem]("doobie.util.param#Param.ParamHList"),
+      )
+    },
     mimaPreviousArtifacts := (mimaVersions(version.value) ++ extraVersions)
       .filterNot(excludedVersions.contains(_))
       .map(v => organization.value %% name.value % v)
