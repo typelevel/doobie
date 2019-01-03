@@ -32,7 +32,7 @@ import java.util.concurrent.Executor
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection { module =>
 
-  // Algebra of operations for Connection. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for Connection. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait ConnectionOp[A] {
     def visit[F[_]](v: ConnectionOp.Visitor[F]): F[A]
   }

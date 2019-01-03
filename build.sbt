@@ -562,7 +562,6 @@ lazy val refined = project
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
       "eu.timepit"            %% "refined"        % refinedVersion,
-      scalaOrganization.value %  "scala-compiler" % scalaVersion.value % Provided,
       "com.h2database"        %  "h2"             % h2Version          % "test"
     )
   )
