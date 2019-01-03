@@ -4,6 +4,7 @@
 
 package doobie.free
 
+import cats.Functor
 import org.slf4j.Logger
 import scala.concurrent.ExecutionContext
 
@@ -13,7 +14,6 @@ import scala.concurrent.ExecutionContext
  * @param logger A logger for tracing execution.
  * @param blockingContext A blocking execution context for primitive operations.
  */
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Env[J](
   jdbc:            J,
   logger:          Logger,
@@ -29,6 +29,13 @@ final case class Env[J](
     f"$elapsed%4d ms $prefix $message"
   }
 
+  /**
+   * Log an operation on `jdbc` yielding a value of type `A`. The logged message will be at `TRACE`
+   * level and will include the execution time, class and hash of `jdbc`.
+   * {{{
+   *   14 ms PgPreparedStatement<13438d6>   executeQuery()
+   * }}}
+   */
   def unsafeTrace[A](msg: => String)(f: J => A): A =
     if (logger.isTraceEnabled) {
       val t0 = System.currentTimeMillis
@@ -40,7 +47,19 @@ final case class Env[J](
       }
     } else f(jdbc)
 
-    def map[B](f: J => B): Env[B] =
-      Env(f(jdbc), logger, blockingContext)
+  /** Env is a covariant functor. */
+  def map[B](f: J => B): Env[B] =
+    Env(f(jdbc), logger, blockingContext)
+
+}
+
+object Env {
+
+  /** Env is a covariant functor. */
+  implicit val EnvFunctor: Functor[Env] =
+    new Functor[Env] {
+      def map[A, B](fa: Env[A])(f: A => B): Env[B] =
+        fa.map(f)
+    }
 
 }

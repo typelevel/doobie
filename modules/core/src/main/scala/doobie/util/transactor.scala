@@ -206,12 +206,12 @@ object transactor  {
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
-      kernel:      A                  = self.kernel,
-      connect:     A => M[Connection] = self.connect,
-      interpreter: Interpreter[M]     = self.interpreter,
-      strategy:    Strategy           = self.strategy,
-      blockingContext: ExecutionContext = self.blockingContext,
-      logger:      Logger             = self.logger
+      kernel:          A                  = self.kernel,
+      connect:         A => M[Connection] = self.connect,
+      interpreter:     Interpreter[M]     = self.interpreter,
+      strategy:        Strategy           = self.strategy,
+      blockingContext: ExecutionContext   = self.blockingContext,
+      logger:          Logger             = self.logger
     ): Transactor.Aux[M, A] = {
       // We need to alias the params so we can use them below. Kind of annoying.
       val (kernel0, connect0, interpret0, strategy0, blockingContext0, logger0) =
