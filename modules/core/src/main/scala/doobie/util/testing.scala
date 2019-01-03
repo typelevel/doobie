@@ -15,7 +15,7 @@ import doobie.implicits._
 import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
-import scala.Predef.wrapString
+import scala.Predef.augmentString
 import scala.reflect.runtime.universe.TypeTag
 
 package testing {

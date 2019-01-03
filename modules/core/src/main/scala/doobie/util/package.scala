@@ -5,7 +5,7 @@
 package doobie
 
 /** Collection of modules for typeclasses and other helpful bits. */
-package object util {
+package object util extends ToTempStringOps {
 
   private[util] def void(a: Any*): Unit =
     (a, ())._2
