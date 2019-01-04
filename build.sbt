@@ -221,21 +221,6 @@ lazy val mimaSettings = {
   lazy val extraVersions: Set[String] = Set()
 
   Seq(
-    mimaBinaryIssueFilters ++= {
-      import com.typesafe.tools.mima.core._
-      import com.typesafe.tools.mima.core.ProblemFilters._
-
-      Seq(
-        // implicits were wrapped in `Lazy`
-        exclude[IncompatibleMethTypeProblem]("doobie.util.param#Param.ParamHList"),
-        // implicit changed from CanBuildFrom to FactoryCompat (is it save to ignore?)
-        exclude[IncompatibleMethTypeProblem]("doobie.util.query#Query.to"),
-        exclude[IncompatibleMethTypeProblem]("doobie.util.query#Query0.to"),
-        exclude[ReversedMissingMethodProblem]("doobie.util.query#Query0.to"),
-        exclude[IncompatibleMethTypeProblem]("doobie.hi.resultset.build"),
-        exclude[IncompatibleMethTypeProblem]("doobie.hi.resultset.buildMap"),
-      )
-    },
     mimaPreviousArtifacts := (mimaVersions(version.value) ++ extraVersions)
       .filterNot(excludedVersions.contains(_))
       .map(v => organization.value %% name.value % v)

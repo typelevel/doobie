@@ -186,11 +186,11 @@ trait PutInstances {
     }
 
   /** @group Instances */
-  implicit def ArrayTypeAsListGet[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[List[A]] =
+  implicit def ArrayTypeAsListPut[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[List[A]] =
     ev.tcontramap(_.toArray)
 
   /** @group Instances */
-  implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
+  implicit def ArrayTypeAsVectorPut[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
     ev.tcontramap(_.toArray)
 
   /** @group Instances */
