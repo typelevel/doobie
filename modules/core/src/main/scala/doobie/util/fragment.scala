@@ -10,7 +10,7 @@ import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.util.pos.Pos
 
-import scala.Predef.wrapString
+import scala.Predef.augmentString
 
 import shapeless.HNil
 

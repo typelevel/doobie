@@ -58,7 +58,7 @@ object preparedstatement {
 
   /** @group Batching */
   val executeBatch: PreparedStatementIO[List[Int]] =
-    FPS.executeBatch.map(_.toList)
+    FPS.executeBatch.map(_.toIndexedSeq.toList) // intArrayOps does not have `toList` in 2.13
 
   /** @group Batching */
   val addBatch: PreparedStatementIO[Unit] =
@@ -97,6 +97,7 @@ object preparedstatement {
  /** @group Execution */
   def executeUpdateWithGeneratedKeys[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
     bracket(FPS.executeUpdate *> FPS.getGeneratedKeys)(FPS.embed(_, FRS.close)).flatMap(unrolled[A](_, chunkSize))
+
   /**
    * Compute the column `JdbcMeta` list for this `PreparedStatement`.
    * @group Metadata

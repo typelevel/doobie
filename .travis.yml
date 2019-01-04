@@ -4,20 +4,22 @@ language: scala
 
 jdk:
   - oraclejdk8
+  - oraclejdk11
 
 scala:
   - 2.11.12
   - 2.12.7
+  - 2.13.0-M5
 
 env:
   global:
-    - MAIN_SCALA_VERSION=2.12.6
+    - MAIN_SCALA_VERSION=2.12.7
 
 before_install:
  - export PATH=${PATH}:./vendor/bundle
 
 install:
-  - rvm use 2.2.8 --install --fuzzy
+  - rvm use 2.4 --install --fuzzy
   - gem update --system
   - gem install sass
   - gem install jekyll -v 3.2.1

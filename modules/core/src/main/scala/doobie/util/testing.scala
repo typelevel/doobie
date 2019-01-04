@@ -15,7 +15,7 @@ import doobie.implicits._
 import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
-import scala.Predef.wrapString
+import scala.Predef.augmentString
 import scala.reflect.runtime.universe.TypeTag
 
 package testing {
@@ -37,7 +37,7 @@ package testing {
     analysis: ConnectionIO[Analysis]
   ) {
     val cleanedSql = Block(
-      sql.lines
+      sql.linesIterator
         .map(_.trim)
         .filterNot(_.isEmpty)
         .toList
@@ -147,7 +147,7 @@ package object testing {
   private def alignmentErrorsToBlock(
     es: NonEmptyList[AlignmentError]
   ): Block =
-    Block(es.toList.flatMap(_.msg.lines))
+    Block(es.toList.flatMap(_.msg.linesIterator))
 
   private def buildItems(
     input: Either[Throwable, Analysis]
