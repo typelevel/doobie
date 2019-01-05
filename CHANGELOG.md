@@ -4,6 +4,14 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.7.0"></a>Work in Progress for Version 0.7.0
+
+This is a **compatibility-breaking** release intended to satisfy some lingering issues prior to switching to a tagless encoding.
+
+- Added support for Scala 2.13.0-M5, many thanks to **Sam Guymer** for setting this up.
+
+____
+
 ### <a name="0.6.0"></a>New and Noteworthy for Version 0.6.0
 
 Many thanks to **Arber Shabhasa**, **Bjørn Madsen**, **Chris Davenport**, **Cody Allen**, **Dmitry Polienko**, **Kai(luo) Wang**, **Kevin Walter**, **Mark Canlas**, and **Quang Le Hong** for their contributions to this release.

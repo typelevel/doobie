@@ -271,7 +271,7 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand("docs/publishMicrosite"),
+      // releaseStepCommand("docs/publishMicrosite"), // TODO: re-enable for 0.7.0 final
       setNextVersion,
       commitNextVersion,
       pushChanges
