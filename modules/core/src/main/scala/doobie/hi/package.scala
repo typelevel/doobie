@@ -12,7 +12,7 @@ package doobie
  *    defined in `doobie.enum`.
  *  - Nullable values are represented in terms of `Option`.
  *  - Java collection types are translated to immutable Scala equivalents.
- *  - Actions that compute liftime-managed resources do not return the resource directly, but rather
+ *  - Actions that compute lifetime-managed resources do not return the resource directly, but rather
  *    take a continuation in the resource's monad.
  *  - Actions that compute values of impure types (`CLOB`, `InputStream`, etc.) do not appear in this API.
  *    They are available in the low-level API but must be used with considerable caution.
