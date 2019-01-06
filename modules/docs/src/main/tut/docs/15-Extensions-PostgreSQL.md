@@ -61,6 +61,7 @@ import doobie.postgres.implicits._
 - `float4[]` maps to `Array[Float]`
 - `float8[]` maps to `Array[Double]`
 - `varchar[]`, `char[]`, `text[],` and `bpchar[]` all map to `Array[String]`.
+- `uuid[]` maps to `Array[UUID]` 
 
 In addition to `Array` you can also map to `List` and `Vector`. Note that arrays of advanced types and structs are not supported by the driver; arrays of `Byte` are represented as `bytea`; and arrays of `int2` are incorrectly mapped by the driver as `Array[Int]` rather than `Array[Short]` and are not supported in **doobie**.
 
