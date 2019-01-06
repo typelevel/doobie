@@ -211,8 +211,11 @@ object connection {
   /** @group Connection Properties */
   def setClientInfo(info: Map[String, String]): ConnectionIO[Unit] =
     FC.setClientInfo {
+      // Java 11 overloads the `putAll` method with Map[?,?] along with the existing Map[Obj,Obj]
       val ps = new java.util.Properties
-      ps.putAll(info.asJava)
+      info.foreach { case (k, v) =>
+        ps.put(k, v)
+      }
       ps
     }
 

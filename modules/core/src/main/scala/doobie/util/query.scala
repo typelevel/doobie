@@ -12,10 +12,10 @@ import com.github.ghik.silencer.silent
 import doobie._
 import doobie.implicits._
 import doobie.util.analysis.Analysis
+import doobie.util.compat.FactoryCompat
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
 import doobie.util.pos.Pos
 import fs2.Stream
-import scala.collection.generic.CanBuildFrom
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 
@@ -114,7 +114,7 @@ object query {
      * via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
      * @group Results
      */
-    def to[F[_]](a: A)(implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]] =
+    def to[F[_]](a: A)(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] =
       HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.build[F,B]))
 
     /**
@@ -187,7 +187,7 @@ object query {
         def outputAnalysis = outer.outputAnalysis
         def streamWithChunkSize(n: Int) = outer.streamWithChunkSize(a, n)
         def accumulate[F[_]: Alternative] = outer.accumulate[F](a)
-        def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]) = outer.to[F](a)
+        def to[F[_]](implicit f: FactoryCompat[B, F[B]]) = outer.to[F](a)
         def unique = outer.unique(a)
         def option = outer.option(a)
         def nel = outer.nel(a)
@@ -295,7 +295,7 @@ object query {
      * collection.
      * @group Results
      */
-    def to[F[_]](implicit cbf: CanBuildFrom[Nothing, B, F[B]]): ConnectionIO[F[B]]
+    def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`

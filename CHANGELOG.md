@@ -10,6 +10,7 @@ This file summarizes **notable** changes for each release, but does not describe
 
 - Added `TRACE`-level logging for low-level operations, sent to slf4j `Logger` specified via the `logger` member on `Transactor`, by default a logger called `"doobie.transactor"`. If you wish to associate correlation ids or otherwise mess with logging you can do this by swapping out the logger prior to calling `transact`. See `CorrelationId.scala` in the `example` project for an example.
 - Deprecated existing logging machinery.
+- Added support for Scala 2.13.0-M5, many thanks to **Sam Guymer** for setting this up.
 
 ____
 ### <a name="0.6.0"></a>New and Noteworthy for Version 0.6.0

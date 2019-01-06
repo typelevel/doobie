@@ -11,14 +11,13 @@ import cats.implicits._
 import doobie.enum.Holdability
 import doobie.enum.FetchDirection
 import doobie.util.{ Read, Write }
+import doobie.util.compat.FactoryCompat
 import doobie.util.invariant._
 import doobie.util.stream.repeatEvalChunks
 
 import fs2.Stream
 
 import java.sql.{ ResultSetMetaData, SQLWarning }
-
-import scala.collection.generic.CanBuildFrom
 
 /**
  * Module of high-level constructors for `ResultSetIO` actions.
@@ -83,10 +82,10 @@ object resultset {
    * @group Results
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
-  def build[F[_], A](implicit C: CanBuildFrom[Nothing, A, F[A]], A: Read[A]): ResultSetIO[F[A]] =
+  def build[F[_], A](implicit F: FactoryCompat[A, F[A]], A: Read[A]): ResultSetIO[F[A]] =
     FRS.raw { e =>
       e.unsafeTrace(s"HRS.build ${Read[A].gets.map(_._1.typeStack.head.getOrElse("«unknown»")).mkString("(", ", ", ")")}") { _ =>
-        val b = C()
+        val b = F.newBuilder
         while (e.jdbc.next)
           b += A.unsafeGet(e.jdbc, 1)
         b.result()
@@ -101,10 +100,10 @@ object resultset {
    * @group Results
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
-  def buildMap[F[_], A, B](f: A => B)(implicit C: CanBuildFrom[Nothing, B, F[B]], A: Read[A]): ResultSetIO[F[B]] =
+  def buildMap[F[_], A, B](f: A => B)(implicit F: FactoryCompat[B, F[B]], A: Read[A]): ResultSetIO[F[B]] =
     FRS.raw { e =>
       e.unsafeTrace(s"HRS.buildMap ${Read[A].gets.map(_._1.typeStack.head.getOrElse("«unknown»")).mkString("(", ", ", ")")}") { _ =>
-        val b = C()
+        val b = F.newBuilder
         while (e.jdbc.next)
           b += f(A.unsafeGet(e.jdbc, 1))
         b.result()

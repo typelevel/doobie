@@ -7,21 +7,28 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.5.0"
 lazy val circeVersion         = "0.11.0"
-lazy val fs2CoreVersion       = "1.0.2"
+def fs2CoreVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
+  case Some((2, v)) if v >= 13 => "1.0.3-SNAPSHOT"
+  case _                       => "1.0.2"
+}
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.3.0"
 lazy val kindProjectorVersion = "0.9.9"
-lazy val monixVersion         = "3.0.0-M3"
+lazy val monixVersion         = "3.0.0-RC3"
 lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
 lazy val refinedVersion       = "0.9.3"
 lazy val scalaCheckVersion    = "1.14.0"
-lazy val scalatestVersion     = "3.0.5"
+def scalatestVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
+  case Some((2, v)) if v >= 13 => "3.0.6-SNAP5"
+  case _                       => "3.0.5"
+}
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.5"
 lazy val specs2Version        = "4.3.6"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
+lazy val scala213Version      = "2.13.0-M5"
 lazy val silencerVersion      = "1.3.1"
 lazy val slf4jVersion         = "1.7.25"
 
@@ -76,7 +83,6 @@ lazy val compilerFlags = Seq(
           "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
           "-Xfuture",                          // Turn on future language features.
           "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
-          "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.
           "-Xlint:constant",                   // Evaluation of a constant arithmetic expression results in an error.
           "-Xlint:delayedinit-select",         // Selecting member of DelayedInit.
           "-Xlint:doc-detached",               // A Scaladoc comment appears to be detached from its element.
@@ -91,16 +97,9 @@ lazy val compilerFlags = Seq(
           "-Xlint:private-shadow",             // A private field (or class parameter) shadows a superclass field.
           "-Xlint:stars-align",                // Pattern sequence wildcard must align with sequence component.
           "-Xlint:type-parameter-shadow",      // A local type parameter shadows a type already in scope.
-          "-Xlint:unsound-match",              // Pattern match may not be typesafe.
-          "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
           // "-Yno-imports",                      // No predef or default imports
-          "-Ypartial-unification",             // Enable partial unification in type constructor inference
           "-Ywarn-dead-code",                  // Warn when dead code is identified.
           "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
-          "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
-          "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
-          "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
-          "-Ywarn-nullary-unit",               // Warn when nullary methods return Unit.
           "-Ywarn-numeric-widen",              // Warn when numerics are widened.
           "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
           "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
@@ -111,6 +110,18 @@ lazy val compilerFlags = Seq(
           "-Ywarn-value-discard",              // Warn when non-Unit expression results are unused.
           "-Yrangepos"
         )
+    }
+  ),
+  // flags removed in 2.13
+  scalacOptions ++= (
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n == 12 =>
+        Seq(
+          "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
+          "-Ypartial-unification"              // Enable partial unification in type constructor inference
+        )
+      case _ =>
+        Seq.empty
     }
   ),
   scalacOptions in (Test, compile) --= (
@@ -135,7 +146,7 @@ lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := scala212Version,
-  crossScalaVersions := Seq(scala211Version, scalaVersion.value)
+  crossScalaVersions := Seq(scala211Version, scala212Version, scala213Version)
 )
 
 lazy val commonSettings =
@@ -265,7 +276,7 @@ lazy val doobie = project.in(file("."))
       tagRelease,
       publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand("docs/publishMicrosite"),
+      // releaseStepCommand("docs/publishMicrosite"), // TODO: re-enable for 0.7.0 final
       setNextVersion,
       commitNextVersion,
       pushChanges
@@ -284,7 +295,7 @@ lazy val free = project
     scalacOptions += "-Yno-predef",
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"   % fs2CoreVersion,
+      "co.fs2"         %% "fs2-core"   % fs2CoreVersion(scalaVersion.value),
       "org.typelevel"  %% "cats-core"  % catsVersion,
       "org.typelevel"  %% "cats-free"  % catsVersion,
       "org.slf4j"      %  "slf4j-api"  % slf4jVersion,
@@ -330,6 +341,13 @@ lazy val core = project
       "org.slf4j"             %  "slf4j-simple"  % slf4jVersion       % "test",
     ),
     scalacOptions += "-Yno-predef",
+    unmanagedSourceDirectories in Compile += {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+        case _                       => sourceDir / "scala-2.13-"
+      }
+    },
     sourceGenerators in Compile += Def.task {
       val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
@@ -358,7 +376,7 @@ lazy val example = project
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
-      "co.fs2"    %% "fs2-io"       % fs2CoreVersion,
+      "co.fs2"    %% "fs2-io"       % fs2CoreVersion(scalaVersion.value),
       "org.slf4j" %  "slf4j-simple" % slf4jVersion,
     )
   )
@@ -374,7 +392,7 @@ lazy val postgres = project
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2CoreVersion,
+      "co.fs2" %% "fs2-io"     % fs2CoreVersion(scalaVersion.value),
       "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided"
     ),
@@ -478,7 +496,7 @@ lazy val scalatest = project
     name := s"doobie-scalatest",
     description := "Scalatest support for doobie.",
     libraryDependencies ++= Seq(
-      "org.scalatest"  %% "scalatest" % scalatestVersion,
+      "org.scalatest" %% "scalatest" % scalatestVersion(scalaVersion.value),
       "com.h2database"  %  "h2"       % h2Version % "test"
     )
   )
@@ -505,7 +523,9 @@ lazy val docs = project
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
       "io.circe"    %% "circe-parser"  % circeVersion,
-      "io.monix"    %% "monix-eval"    % monixVersion
+      // sbt seems to still look for 2.12 when 2.13 is excluded from `crossScalaVersions`
+      // so just comment out the dependency and readd it when Monix has version available for 2.13
+      //"io.monix"    %% "monix-eval"    % monixVersion
     ),
     fork in Test := true,
 
@@ -537,7 +557,7 @@ lazy val docs = project
       yamlCustomProperties = Map(
         "doobieVersion"    -> version.value,
         "catsVersion"      -> catsVersion,
-        "fs2Version"       -> fs2CoreVersion,
+        "fs2Version"       -> fs2CoreVersion(scalaVersion.value),
         "shapelessVersion" -> shapelessVersion,
         "h2Version"        -> h2Version,
         "postgresVersion"  -> postgresVersion,

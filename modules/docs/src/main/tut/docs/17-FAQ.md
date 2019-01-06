@@ -168,21 +168,24 @@ Domains with check constraints will type check as DISTINCT. For Doobie later tha
 ```tut:silent
 import cats.data.NonEmptyList
 import doobie._
-import doobie.enum.JdbcType.{Distinct => JdbcDistinct, _}
+import doobie.enum.JdbcType
 
 object distinct {
-def string(name: String): Meta[String] =
-  Meta.advanced(
-    NonEmptyList.of(JdbcDistinct, VarChar),
-    NonEmptyList.of(name),
-    _ getString _,
-    _.setString(_, _),
-    _.updateString(_, _)
-  )
+
+  def string(name: String): Meta[String] =
+    Meta.Advanced.many(
+      NonEmptyList.of(JdbcType.Distinct, JdbcType.VarChar),
+      NonEmptyList.of(name),
+      _ getString _,
+      _.setString(_, _),
+      _.updateString(_, _)
+    )
+}
 
 case class NonEmptyString(value: String)
 
 // If the domain for NonEmptyStrings is nes
-implicit val nesMeta: Meta[NonEmptyString] =
-  string("nes").imap(NonEmptyString.apply)(_.value)
+implicit val nesMeta: Meta[NonEmptyString] = {
+  distinct.string("nes").imap(NonEmptyString.apply)(_.value)
+}
 ```

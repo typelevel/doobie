@@ -28,7 +28,9 @@ object pretty {
 
     def leftOfP(other: Block, padding: String): Block = {
       val h  = height max other.height
-      Block((lines.map(_.padTo(width, ' ')).padTo(h, " " * width), (other.lines.padTo(h, ""))).zipped.map(_ + padding + _))
+      val ls = lines.iterator.map(_.padTo(width, ' ')).padTo(h, " " * width)
+      val os = other.lines.iterator.padTo(h, "")
+      Block(ls.zip(os).map { case (l, o) => l + padding + o }.toList)
     }
 
     def padLeft(padding: String): Block = Block.empty.leftOfP(this, padding)
@@ -52,7 +54,7 @@ object pretty {
   object Block {
     val empty = Block(Nil)
     def fromString(s: String) = Block(List(s))
-    def fromLines(s: String) = Block(s.lines.toList)
+    def fromLines(s: String) = Block(s.linesIterator.toList)
 
     implicit val BlockMonoid: Monoid[Block] = new Monoid[Block] {
       def empty = Block.empty
