@@ -21,7 +21,7 @@ import scala.reflect.runtime.universe.TypeTag
 package testing {
 
   /**
-    * Common base trait for varous checkers and matchers.
+    * Common base trait for various checkers and matchers.
     */
   trait CheckerBase[M[_]] {
     // Effect type, required instances

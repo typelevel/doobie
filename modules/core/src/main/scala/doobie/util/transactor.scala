@@ -315,7 +315,7 @@ object transactor  {
      * Module of constructors for `Transactor` that use the JDBC `DriverManager` to allocate
      * connections. Note that `DriverManager` is unbounded and will happily allocate new connections
      * until server resources are exhausted. It is usually preferable to use `DataSourceTransactor`
-     * with an underlying bounded connection pool (as with `H2Transactor` and `HikariTransctor` for
+     * with an underlying bounded connection pool (as with `H2Transactor` and `HikariTransactor` for
      * instance). Blocking operations on `DriverManagerTransactor` are executed on an unbounded
      * cached daemon thread pool, so you are also at risk of exhausting system threads. TL;DR this
      * is fine for console apps but don't use it for a web application.

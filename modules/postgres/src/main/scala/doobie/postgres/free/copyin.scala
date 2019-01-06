@@ -15,7 +15,7 @@ import org.postgresql.copy.{ CopyIn => PGCopyIn }
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object copyin { module =>
 
-  // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait CopyInOp[A] {
     def visit[F[_]](v: CopyInOp.Visitor[F]): F[A]
   }
