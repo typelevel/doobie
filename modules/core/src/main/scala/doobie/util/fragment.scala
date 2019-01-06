@@ -9,7 +9,7 @@ import cats.implicits._
 import com.github.ghik.silencer.silent
 import doobie._, doobie.implicits._
 import doobie.util.pos.Pos
-import scala.Predef.wrapString
+import scala.Predef.augmentString
 import shapeless.HNil
 
 /** Module defining the `Fragment` data type. */
