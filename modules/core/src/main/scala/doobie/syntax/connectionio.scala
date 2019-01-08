@@ -4,12 +4,12 @@
 
 package doobie.syntax
 
-import cats.Monad
+import cats.effect.Bracket
 import doobie.free.connection.ConnectionIO
 import doobie.util.transactor.Transactor
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
-  def transact[M[_]: Monad](xa: Transactor[M]): M[A] = xa.trans.apply(ma)
+  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): M[A] = xa.transB.apply(ma)
 }
 
 trait ToConnectionIOOps {

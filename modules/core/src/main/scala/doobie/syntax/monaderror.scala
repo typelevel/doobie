@@ -17,6 +17,8 @@ class MonadErrorOps[M[_]: MonadError[?[_], Throwable], A](self: M[A]) {
   def exceptSqlState(handler: SqlState => M[A]): M[A] = C.exceptSqlState(self)(handler)
   def exceptSomeSqlState(pf: PartialFunction[SqlState, M[A]]): M[A] = C.exceptSomeSqlState(self)(pf)
   def onSqlException[B](action: M[B]): M[A] = C.onSqlException(self)(action)
+
+  @deprecated("Use cats.effect.Bracket.bracket", "0.7.0")
   def guarantee(finalizer: M[Unit]): M[A] = C.guarantee(self)(finalizer)
 }
 
