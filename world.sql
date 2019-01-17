@@ -1,7 +1,7 @@
 --
 -- H2 port of the PostgreSQL port of the MySQL "World" database.
 --
--- The sample data used in the world database is Copyright Statistics 
+-- The sample data used in the world database is Copyright Statistics
 -- Finland, http://www.stat.fi/worldinfigures.
 --
 
@@ -5368,13 +5368,6 @@ ALTER TABLE country
 
 ALTER TABLE countrylanguage
     ADD CONSTRAINT countrylanguage_countrycode_fkey FOREIGN KEY (countrycode) REFERENCES country(code);
-
-
-CREATE OR REPLACE FUNCTION getCountries(n integer, OUT c refcursor) AS '
-BEGIN
-    OPEN c FOR SELECT name FROM country LIMIT n;
-END;
-' LANGUAGE plpgsql;
 
 COMMIT;
 

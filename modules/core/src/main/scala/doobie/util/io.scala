@@ -6,9 +6,9 @@ package doobie.util
 
 import java.io.{ Console => _, _ }
 
-import doobie.syntax.monaderror._
 import cats.implicits._
 import cats.effect.Sync
+import cats.effect.syntax.bracket._
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {
@@ -70,21 +70,21 @@ object io {
      * @group File Operations
      */
     def withFileInputStream[A](file: File)(f: FileInputStream => M[A]): M[A] =
-      delay(new FileInputStream(file)) flatMap { i => f(i) guarantee delay(i.close) }
+      delay(new FileInputStream(file)).bracket(f)(i => delay(i.close()))
 
     /**
      * Perform an operation with a `FileOutputStream`, which will be closed afterward.
      * @group File Operations
      */
     def withFileOutputStream[A](file: File)(f: FileOutputStream => M[A]): M[A] =
-      delay(new FileOutputStream(file)) flatMap { i => f(i) guarantee delay(i.close) }
+      delay(new FileOutputStream(file)).bracket(f)(i => delay(i.close()))
 
     /**
      * Flush `os`.
      * @group Stream Operations
      */
     def flush(os: OutputStream): M[Unit] =
-      delay(os.flush)
+      delay(os.flush())
 
   }
 
