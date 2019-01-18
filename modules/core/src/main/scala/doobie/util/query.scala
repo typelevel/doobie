@@ -9,8 +9,9 @@ import cats.arrow.Profunctor
 import cats.data.NonEmptyList
 import cats.implicits._
 import com.github.ghik.silencer.silent
+import cats.effect.syntax.bracket._
 import doobie._
-import doobie.implicits._
+import doobie.implicits.AsyncPreparedStatementIO
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
@@ -49,12 +50,19 @@ object query {
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
-        er <- FPS.executeQuery.attempt
-        t1 <- now
-        rs <- er.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, diff(t1, t0), e)) }
-        et <- FPS.embed(rs, k guarantee FRS.close).attempt
-        t2 <- now
-        t  <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) }
+        eet <- FPS.executeQuery.bracket(rs => for {
+          t1 <- now
+          et <- FPS.embed(rs, k).attempt
+          t2 <- now
+        } yield (t1, et, t2))(FPS.embed(_, FRS.close)).attempt
+        tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
+          for {
+            t1 <- now
+            _ <- log(ExecFailure(sql, args, diff(t1, t0), e))
+          } yield ()
+        }
+        (t1, et, t2) = tuple
+        t <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) }
         _  <- log(Success(sql, args, diff(t1, t0), diff(t2, t1)))
       } yield t
     }
@@ -83,6 +91,7 @@ object query {
      */
     def analysis: ConnectionIO[Analysis] =
       HC.prepareQueryAnalysis[A, B](sql)
+
     /**
      * Program to construct an analysis of this query's SQL statement and result set column types.
      * @group Diagnostics

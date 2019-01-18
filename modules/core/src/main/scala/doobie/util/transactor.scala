@@ -4,17 +4,16 @@
 
 package doobie.util
 
-import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commit, rollback, close, unit, delay }
+import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commit, rollback, close, unit, delay, raiseError }
 import doobie.free.{ Env, KleisliInterpreter }
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-import doobie.syntax.monaderror._
 
-import cats.{ Monad, MonadError, ~> }
+import cats.{ Functor, Monad, MonadError, ~> }
 import cats.data.Kleisli
-import cats.free.Free
 import cats.implicits._
-import cats.effect.{ Sync, Async, ContextShift }
+import cats.effect.{ Bracket, Sync, Async, ContextShift }
+import cats.effect.syntax.bracket._
 import fs2.Stream
 import fs2.Stream.{ eval, eval_ }
 
@@ -52,6 +51,7 @@ object transactor  {
   ) {
 
     /** Natural transformation that wraps a `ConnectionIO` program. */
+    @deprecated("Use Transactor.transB", "0.7.0")
     val wrap = λ[ConnectionIO ~> ConnectionIO] { ma =>
       (before *> ma <* after)
         .onError { case NonFatal(_) => oops }
@@ -59,6 +59,7 @@ object transactor  {
     }
 
     /** Natural transformation that wraps a `ConnectionIO` stream. */
+    @deprecated("Use Transactor.transP", "0.7.0")
     val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
       (eval_(before) ++ pa ++ eval_(after))
         .onError { case NonFatal(e) => eval_(oops) ++ eval_(delay(throw e)) }
@@ -69,8 +70,10 @@ object transactor  {
      * Natural transformation that wraps a `Kleisli` program, using the provided interpreter to
      * interpreter the `before`/`after`/`oops`/`always` strategy.
      */
+    @deprecated("Use Transactor.execB", "0.7.0")
     def wrapK[M[_]: MonadError[?[_], Throwable]](interp: Interpreter[M]) =
       λ[Kleisli[M, CEnv, ?] ~> Kleisli[M, CEnv, ?]] { ka =>
+        import doobie.syntax.monaderror._
         val beforeʹ = before foldMap interp
         val afterʹ  = after  foldMap interp
         val oopsʹ   = oops   foldMap interp
@@ -123,6 +126,12 @@ object transactor  {
     /** A program in `M` that can provide a database connection, given the kernel **/
     def connect: A => M[Connection]
 
+    def env(c: Connection): CEnv =
+      Env(c, logger, blockingContext)
+
+    def connectE(a: A)(implicit ec: Functor[M]): M[CEnv] =
+      connect(a).map(env)
+
     /** A natural transformation for interpreting `ConnectionIO` **/
     def interpreter: Interpreter[M]
 
@@ -155,15 +164,35 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawExec(implicit ev: Monad[M]): Kleisli[M, CEnv, ?] ~> M =
-      λ[Kleisli[M, CEnv, ?] ~> M](k => connect(kernel).flatMap(c => k.run(Env(c, logger, blockingContext))))
+      λ[Kleisli[M, CEnv, ?] ~> M](k => connectE(kernel).flatMap(k.run))
 
     /**
      * Natural transformation that provides a connection and binds through a `Kleisli` program
      * using the given `Strategy`, yielding an independent program in `M`.
      * @group Natural Transformations
      */
+    @deprecated("Use execB", "0.7.0")
     def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, CEnv, ?] ~> M =
       strategy.wrapK(interpreter) andThen rawExec(ev)
+
+    /**
+      * Natural transformation that provides a connection and binds through a `Kleisli` program
+      * using the given `Strategy`, yielding an independent program in `M`.
+      * @group Natural Transformations
+      */
+    def execB(implicit ev: Bracket[M, Throwable]): Kleisli[M, CEnv, ?] ~> M =
+      λ[Kleisli[M, CEnv, ?] ~> M] { ka =>
+        val beforeʹ = strategy.before foldMap interpreter
+        val afterʹ  = strategy.after  foldMap interpreter
+        val oopsʹ   = strategy.oops   foldMap interpreter
+        val alwaysʹ = strategy.always foldMap interpreter
+
+        val wrap = (beforeʹ *> ka <* afterʹ)
+          .onError { case NonFatal(_) => oopsʹ }
+
+        connectE(kernel).bracket(wrap.run)(alwaysʹ.run)
+
+      }
 
     /**
      * Natural transformation equivalent to `trans` that does not use the provided `Strategy` and
@@ -172,7 +201,17 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawTrans(implicit ev: Monad[M]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M](f => connect(kernel).flatMap(c => f.foldMap(interpreter).run(Env(c, logger, blockingContext))))
+      λ[ConnectionIO ~> M](f => connectE(kernel).flatMap(f.foldMap(interpreter).run))
+
+    /**
+      * Natural transformation that provides a connection and binds through a `ConnectionIO` program
+      * interpreted via the given interpreter, using the given `Strategy`, yielding an independent
+      * program in `M`. This is the most common way to run a doobie program.
+      * @group Natural Transformations
+      */
+    @deprecated("Use transB", "0.7.0")
+    def trans(implicit ev: Monad[M]): ConnectionIO ~> M =
+      strategy.wrap andThen rawTrans
 
     /**
      * Natural transformation that provides a connection and binds through a `ConnectionIO` program
@@ -180,29 +219,40 @@ object transactor  {
      * program in `M`. This is the most common way to run a doobie program.
      * @group Natural Transformations
      */
-    def trans(implicit ev: Monad[M]): ConnectionIO ~> M =
-      strategy.wrap andThen rawTrans
+    def transB(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+      λ[ConnectionIO ~> M] { f =>
+        val wrap = (strategy.before *> f <* strategy.after)
+          .onError { case NonFatal(_) => strategy.oops }
 
-    def rawTransP(implicit ev: Monad[M]) = λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { pa =>
-      // TODO: this can almost certainly be simplified
+        def release(c: CEnv) = run(c).apply(strategy.always)
 
-      // Natural transformation by Kleisli application.
-      def applyKleisli[F[_], E](e: E) =
-        λ[Kleisli[F, E, ?] ~> F](_.run(e))
+        connectE(kernel)
+          .bracket(c => run(c).apply(wrap))(release)
+      }
 
-      // Lift a natural translation over an functor to one over its free monad.
-      def liftF[F[_], G[_]: Monad](nat: F ~> G) =
-        λ[Free[F, ?] ~> G](_.foldMap(nat))
-
-      def nat(c: Connection): ConnectionIO ~> M =
-        liftF(interpreter andThen applyKleisli(Env(c, logger, blockingContext)))
-
-      eval(connect(kernel)).flatMap(c => pa.translate(nat(c)))
-
-     }
+    def rawTransP[T](implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
+      λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
+        eval(connect(kernel))
+        .map(Env(_, logger, blockingContext))
+        .flatMap(c => s.translate(run(c)))
+      }
 
     def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
-      strategy.wrapP andThen rawTransP
+      λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
+        val acquire = connectE(kernel)
+        def release(c: CEnv) = run(c).apply(strategy.always)
+
+        Stream.bracket(acquire)(release).flatMap { c =>
+          (eval_(strategy.before) ++ s ++ eval_(strategy.after))
+            .onError { case NonFatal(e) => eval_(strategy.oops) ++ eval_(raiseError(e)) }
+            .translate(run(c))
+        }
+      }
+
+    private def run(c: CEnv)(implicit ev: Monad[M]): ConnectionIO ~> M =
+      λ[ConnectionIO ~> M] { f =>
+        f.foldMap(interpreter).run(c)
+      }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(

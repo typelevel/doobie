@@ -20,7 +20,6 @@ import doobie.util.analysis._
 import doobie.util.stream.repeatEvalChunks
 
 import doobie.syntax.align._
-import doobie.syntax.monaderror._
 
 import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 
@@ -29,6 +28,7 @@ import scala.Predef.{ intArrayOps, intWrapper }
 import cats.Foldable
 import cats.implicits._
 import cats.data.Ior
+import cats.effect.syntax.bracket._
 import fs2.Stream
 import fs2.Stream.bracket
 
@@ -84,7 +84,7 @@ object preparedstatement {
 
   /** @group Execution */
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    FPS.executeQuery.flatMap(s => FPS.embed(s, k guarantee FRS.close))
+    FPS.executeQuery.bracket(s => FPS.embed(s, k))(s => FPS.embed(s, FRS.close))
 
   /** @group Execution */
   val executeUpdate: PreparedStatementIO[Int] =
@@ -133,7 +133,7 @@ object preparedstatement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
-    FPS.getGeneratedKeys.flatMap(s => FPS.embed(s, k guarantee FRS.close))
+    FPS.getGeneratedKeys.bracket(s => FPS.embed(s, k))(s => FPS.embed(s, FRS.close))
 
   /** @group Results */
   def getUniqueGeneratedKeys[A: Read]: PreparedStatementIO[A] =

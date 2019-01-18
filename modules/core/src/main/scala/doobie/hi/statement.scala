@@ -4,11 +4,11 @@
 
 package doobie.hi
 
+import cats.effect.syntax.bracket._
 import doobie.enum.Holdability
 import doobie.enum.FetchDirection
 import doobie.enum.ResultSetConcurrency
 import doobie.enum.ResultSetType
-import doobie.syntax.monaderror._
 
 import java.sql.SQLWarning
 
@@ -34,7 +34,7 @@ object statement {
 
   /** @group Execution */
   def executeQuery[A](sql: String)(k: ResultSetIO[A]): StatementIO[A] =
-    FS.executeQuery(sql).flatMap(s => FS.embed(s, k guarantee FRS.close))
+    FS.executeQuery(sql).bracket(s => FS.embed(s, k))(s => FS.embed(s, FRS.close))
 
   /** @group Execution */
   def executeUpdate(sql: String): StatementIO[Int] =
@@ -50,7 +50,7 @@ object statement {
 
   /** @group Results */
   def getGeneratedKeys[A](k: ResultSetIO[A]): StatementIO[A] =
-    FS.getGeneratedKeys.flatMap(s => FS.embed(s, k guarantee FRS.close))
+    FS.getGeneratedKeys.bracket(s => FS.embed(s, k))(s => FS.embed(s, FRS.close))
 
   /** @group Properties */
   val getMaxFieldSize: StatementIO[Int] =

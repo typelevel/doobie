@@ -119,6 +119,9 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
       }
     }
 
+  //Char
+  implicit val charInstance:    Text[Char]    = instance((n, sb) => sb.append(n.toString))
+
   // Primitive Numerics
   @silent /* value discarding */ implicit val intInstance:    Text[Int]    = instance((n, sb) => sb.append(n))
   @silent /* value discarding */ implicit val shortInstance:  Text[Short]  = instance((n, sb) => sb.append(n))
