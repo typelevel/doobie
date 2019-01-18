@@ -45,11 +45,13 @@ object catchsql {
   def onSqlException[M[_], A, B](ma: M[A])(action: M[B])(implicit c: MonadError[M, Throwable]): M[A] =
     exceptSql(ma)(e => action *> c.raiseError(e))
 
+  @deprecated("Use cats.effect.Bracket.bracket", "0.7.0")
   def guarantee[M[_], A](ma: M[A])(finalizer: M[Unit])(implicit ev: MonadError[M, Throwable]): M[A] =
     ev.flatMap(ev.attempt(ma)) { e =>
       ev.flatMap(finalizer)(_ => e.fold(ev.raiseError, ev.pure))
     }
 
+  @deprecated("Use cats.ApplicativeError.onError", "0.7.0")
   def onError[M[_], A](ma: M[A])(handler: M[_])(implicit ev: MonadError[M, Throwable]): M[A] =
     ev.handleErrorWith(ma)(e => ev.flatMap(handler)(_ => ev.raiseError(e)))
 

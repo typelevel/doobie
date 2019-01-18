@@ -5,14 +5,27 @@
 package example
 
 import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect.syntax.bracket._
+import cats.implicits._
 import doobie._
 import doobie.enum.JdbcType.Other
 import doobie.free.connection.ConnectionIO
-import doobie.implicits._
+import doobie.syntax.connectionio._
 import doobie.util.transactor.Transactor
-import cats.implicits._
 
 object CallableStatementExample extends IOApp {
+
+  // cant be in world.sql as H2 does not support SQL functions
+  def createFunc: ConnectionIO[Int] = {
+    val sql = """
+      CREATE OR REPLACE FUNCTION getCountries(n integer, OUT c refcursor) AS '
+        BEGIN
+          OPEN c FOR SELECT name FROM country LIMIT n;
+        END;
+      ' LANGUAGE plpgsql;
+    """
+    HC.createStatement(HS.executeUpdate(sql))
+  }
 
   def names(limit: Int): ConnectionIO[List[String]] =
     HC.prepareCall("{ call getCountries(?, ?) }") {
@@ -20,8 +33,9 @@ object CallableStatementExample extends IOApp {
         _  <- FCS.setInt(1, limit)
         _  <- FCS.registerOutParameter(2, Other.toInt)
         _  <- FCS.execute
-        rs <- FCS.getObject(2).map(_.asInstanceOf[java.sql.ResultSet])
-        ns <- FCS.embed(rs, HRS.list[String] guarantee FRS.close)
+        ns <- FCS.getObject(2).map(_.asInstanceOf[java.sql.ResultSet]).bracket { rs =>
+          FCS.embed(rs, HRS.list[String])
+        }(FCS.embed(_, FRS.close))
       } yield ns
     }
 
@@ -32,6 +46,7 @@ object CallableStatementExample extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     for {
+      _ <- createFunc.transact(xa)
       ns <- names(10).transact(xa)
       _  <- ns.traverse(s => IO(println(s)))
     } yield ExitCode.Success

@@ -6,16 +6,16 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.5.0"
-lazy val circeVersion         = "0.11.0"
+lazy val circeVersion         = "0.11.1"
 def fs2CoreVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
   case Some((2, v)) if v >= 13 => "1.0.3-SNAPSHOT"
   case _                       => "1.0.2"
 }
 lazy val h2Version            = "1.4.197"
-lazy val hikariVersion        = "3.2.0"
+lazy val hikariVersion        = "3.3.0"
 lazy val kindProjectorVersion = "0.9.9"
 lazy val monixVersion         = "3.0.0-RC2"
-lazy val postGisVersion       = "2.2.1"
+lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
 lazy val refinedVersion       = "0.9.3"
 lazy val scalaCheckVersion    = "1.14.0"
@@ -27,7 +27,7 @@ lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.5"
 lazy val specs2Version        = "4.3.6"
 lazy val scala211Version      = "2.11.12"
-lazy val scala212Version      = "2.12.7"
+lazy val scala212Version      = "2.12.8"
 lazy val scala213Version      = "2.13.0-M5"
 
 // Check bincompat versus this version.
