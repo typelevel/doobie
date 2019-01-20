@@ -67,7 +67,7 @@ You can use a `for` comprehension to compose any number of `ConnectionIO` progra
  * starts a new transaction.
  */
 def withoutTransaction[A](p: ConnectionIO[A]): ConnectionIO[A] =
-  FC.setAutoCommit(true) *> p.guarantee(FC.setAutoCommit(false))
+  FC.setAutoCommit(true).bracket(_ => p)(_ => FC.setAutoCommit(false))
 ```
 
 Note that you need both of these operations if you are using a `Transactor` because it will always start a transaction and will try to commit on completion.
