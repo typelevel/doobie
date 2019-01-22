@@ -5,13 +5,13 @@
 package doobie.util
 
 import cats._
+import cats.data.Chain
 import cats.implicits._
 
 import doobie._, doobie.implicits._
 import doobie.util.pos.Pos
 import doobie.util.param.Param.Elem
 import doobie.enum.Nullability._
-import fs2.Catenable
 import java.sql.{ PreparedStatement, ResultSet }
 import scala.Predef.augmentString
 
@@ -26,7 +26,7 @@ object fragment {
    */
   final class Fragment(
     protected val sql: String,
-    protected val elems: Catenable[Elem],
+    protected val elems: Chain[Elem],
     protected val pos: Option[Pos]
   ) {
 
@@ -50,7 +50,7 @@ object fragment {
       @SuppressWarnings(Array("org.wartremover.warts.Var"))
       val unsafeSet: (PreparedStatement, Int, elems.type) => Unit = { (ps, n, elems) =>
         var index = n
-        elems.foreach { e =>
+        elems.iterator.foreach { e =>
           e match {
             case Arg(a, p) => p.unsafeSetNonNullable(ps, index, a)
             case Opt(a, p) => p.unsafeSetNullable(ps, index, a)
@@ -62,7 +62,7 @@ object fragment {
       @SuppressWarnings(Array("org.wartremover.warts.Var"))
       val unsafeUpdate: (ResultSet, Int, elems.type) => Unit = { (ps, n, elems) =>
         var index = n
-        elems.foreach { e =>
+        elems.iterator.foreach { e =>
           e match {
             case Arg(a, p) => p.unsafeUpdateNonNullable(ps, index, a)
             case Opt(a, p) => p.unsafeUpdateNullable(ps, index, a)
@@ -139,7 +139,7 @@ object fragment {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply(sql: String, elems: List[Elem], pos: Option[Pos] = None): Fragment =
-      new Fragment(sql, Catenable.fromSeq(elems), pos)
+      new Fragment(sql, Chain.fromSeq(elems), pos)
 
     /**
      * Construct a statement fragment with no interpolated values and no trailing space; the
@@ -147,7 +147,7 @@ object fragment {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def const0(sql: String, pos: Option[Pos] = None): Fragment =
-      new Fragment(sql, Catenable.empty, pos)
+      new Fragment(sql, Chain.empty, pos)
 
     /**
      * Construct a statement fragment with no interpolated values and a trailing space; the
