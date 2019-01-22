@@ -14,7 +14,7 @@ object `780` extends Specification {
 
   "deriving instances" should {
     "work correctly for Param from class scope" in {
-      class Foo[A: Param, B: Param] {
+      class Foo[A: Put, B: Put] {
         Param[A :: B :: HNil]
       }
       true
