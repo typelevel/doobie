@@ -6,7 +6,6 @@ package doobie
 package hikari
 
 import cats.effect._
-import cats.implicits._
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import scala.concurrent.ExecutionContext
 

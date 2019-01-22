@@ -6,6 +6,7 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.5.0"
+lazy val catsEffectVersion    = "1.2.0"
 lazy val circeVersion         = "0.11.1"
 def fs2CoreVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
   case Some((2, v)) if v >= 13 => "1.0.3-SNAPSHOT"
@@ -295,9 +296,10 @@ lazy val free = project
     scalacOptions += "-Yno-predef",
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"   % fs2CoreVersion(scalaVersion.value),
-      "org.typelevel"  %% "cats-core"  % catsVersion,
-      "org.typelevel"  %% "cats-free"  % catsVersion,
+      "co.fs2"         %% "fs2-core"    % fs2CoreVersion(scalaVersion.value),
+      "org.typelevel"  %% "cats-core"   % catsVersion,
+      "org.typelevel"  %% "cats-free"   % catsVersion,
+      "org.typelevel"  %% "cats-effect" % catsEffectVersion,
       "org.slf4j"      %  "slf4j-api"  % slf4jVersion,
     ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
