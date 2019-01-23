@@ -120,6 +120,7 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
     }
 
   //Char
+  @com.github.ghik.silencer.silent // non-unit discard
   implicit val charInstance:    Text[Char]    = instance((n, sb) => sb.append(n.toString))
 
   // Primitive Numerics
