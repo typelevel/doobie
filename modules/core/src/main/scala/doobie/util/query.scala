@@ -77,10 +77,6 @@ object query {
      */
     def pos: Option[Pos]
 
-    // /** Turn this `Query` into a `Fragment`, given an argument. */
-    // def toFragment(a: A): Fragment =
-    //   Fragment(sql, ai(a), pos)
-
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
      * column types.
@@ -262,9 +258,6 @@ object query {
      * @group Diagnostics
      */
     def pos: Option[Pos]
-
-    // /** Turn this `Query0` into a `Fragment`. */
-    // def toFragment: Fragment
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and

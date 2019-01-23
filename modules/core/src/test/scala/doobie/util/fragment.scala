@@ -62,16 +62,6 @@ object fragmentspec extends Specification {
       s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
     }
 
-    // "translate to and from Query0" in {
-    //   val f = fr"bar $a $b $c baz"
-    //   f.query[HNil].toFragment unsafeEquals f
-    // }
-
-    // "translate to and from Update0" in {
-    //   val f = fr"bar $a $b $c baz"
-    //   f.update.toFragment unsafeEquals f
-    // }
-
     "Add a trailing space when constructed with .const" in {
       Fragment.const("foo").query[Int].sql must_== "foo "
     }
