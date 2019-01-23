@@ -9,7 +9,9 @@ This file summarizes **notable** changes for each release, but does not describe
 This is a **compatibility-breaking** release intended to satisfy some lingering issues prior to switching to a tagless encoding.
 
 - Added support for Scala 2.13.0-M5, many thanks to **Sam Guymer** for setting this up.
-- Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource when using cancelable IO. Thanks **Sam Guymer** for this update.
+- Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource leakage when using cancelable IO. Thanks **Sam Guymer** for this update.
+- `Fragment` concatenation and derived combinators like `Fragments.in` are now stacksafe, so you can now have gigantic `IN` clauses. This required API changes in `Param`, `Fragment`, `Update[0]` and `Query[0]` but these should not affect most users.
+
 ____
 
 ### <a name="0.6.0"></a>New and Noteworthy for Version 0.6.0
