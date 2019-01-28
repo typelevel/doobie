@@ -6,15 +6,13 @@ package doobie.util
 
 import scala.annotation.implicitNotFound
 
-import shapeless.{ HNil, HList, ::, Lazy}
+import shapeless.{ HNil, HList, :: }
 
 /** Module defining the `Param` typeclass. */
 object param {
 
   /**
-   * Typeclass for a flat vector of `Put`s, analogous to `Write` but with no nesting or
-   * generalization to product types. Each element expands to some nonzero number of `?`
-   * placeholders in the SQL literal, and the param vector itself has a `Write` instance.
+   * Witness that the elements of an HList each have an applicable Put instance.
    */
   @implicitNotFound("""
 Cannot construct a parameter vector of the following type:
@@ -29,31 +27,44 @@ instance in scope. Try them one by one in the REPL or in your code:
 and find the one that has no instance, then construct one as needed. Refer to
 Chapter 12 of the book of doobie for more information.
 """)
-  final class Param[A](val write: Write[A])
+  sealed trait Param[A <: HList] {
+    def elems(a: A): List[Param.Elem]
+  }
 
-  /**
-   * Derivations for `Param`, which disallow embedding. Each interpolated query argument corresponds
-   * with a type with a `Put` instance, or an `Option` thereof.
-   */
   object Param {
 
-    def apply[A](implicit ev: Param[A]): Param[A] = ev
+    sealed trait Elem
+    object Elem {
+      final case class Arg[A](a: A, p: Put[A]) extends Elem
+      final case class Opt[A](a: Option[A], p: Put[A]) extends Elem
+    }
 
-    /** Each `Put[A]` gives rise to a `Param[A]`. */
-    implicit def fromPut[A: Put]: Param[A] =
-      new Param[A](Write.fromPut[A])
-
-    /** Each `Put[A]` gives rise to a `Param[Option[A]]`. */
-    implicit def fromPutOption[A: Put]: Param[Option[A]] =
-      new Param[Option[A]](Write.fromPutOption[A])
+    def apply[L <: HList](implicit ev: Param[L]): Param[L] = ev
 
     /** There is an empty `Param` for `HNil`. */
-    implicit val ParamHNil: Param[HNil] =
-      new Param[HNil](Write.emptyProduct)
+    implicit val hnil: Param[HNil] =
+      new Param[HNil] {
+        def elems(a: HNil) = Nil
+      }
 
-    /** Inductively we can cons a new `Param` onto the head of a `Param` of an `HList`. */
-    implicit def ParamHList[H, T <: HList](implicit ph: Lazy[Param[H]], pt: Lazy[Param[T]]): Param[H :: T] =
-      new Param[H :: T](Write.product[H,T](ph.value.write, pt.value.write))
+    implicit def hcons[H, T <: HList](
+      implicit pa: Put[H],
+               pt: Param[T]
+    ): Param[H :: T] =
+      new Param[H :: T] {
+        def elems(a: H :: T) =
+          Elem.Arg(a.head, pa) :: pt.elems(a.tail)
+      }
+
+    implicit def hconsOpt[H, T <: HList](
+      implicit pa: Put[H],
+               pt: Param[T]
+    ): Param[Option[H] :: T] =
+      new Param[Option[H] :: T] {
+        def elems(a: Option[H] :: T) =
+          Elem.Opt(a.head, pa) :: pt.elems(a.tail)
+      }
+
   }
 
 }

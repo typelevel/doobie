@@ -23,7 +23,7 @@ object pgjsonspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Param: Write: Read](col: String, a: A) =
+  def inOut[A: Write: Read](col: String, a: A) =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)

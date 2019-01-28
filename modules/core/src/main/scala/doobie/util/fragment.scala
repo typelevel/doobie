@@ -5,14 +5,15 @@
 package doobie.util
 
 import cats._
+import cats.data.Chain
 import cats.implicits._
 
 import doobie._, doobie.implicits._
 import doobie.util.pos.Pos
-
+import doobie.util.param.Param.Elem
+import doobie.enum.Nullability._
+import java.sql.{ PreparedStatement, ResultSet }
 import scala.Predef.augmentString
-
-import shapeless.HNil
 
 /** Module defining the `Fragment` data type. */
 object fragment {
@@ -23,43 +24,71 @@ object fragment {
    * constructed a `Fragment` is opaque; it has no externally observable properties. Fragments are
    * eventually used to construct a [[Query0]] or [[Update0]].
    */
-  sealed trait Fragment { fa =>
+  final class Fragment(
+    protected val sql: String,
+    protected val elems: Chain[Elem],
+    protected val pos: Option[Pos]
+  ) {
 
-    protected type A                // type of interpolated argument (existential, HNil for none)
-    protected def a: A              // the interpolated argument itself
-    protected def ca: Write[A]  // proof that we can map the argument to parameters
-    protected def sql: String       // snipped of SQL with `ca.length` placeholders
+    // Unfortunately we need to produce a Write for our list of elems, which is a bit of a grunt
+    // but straightforward nonetheless. And it's stacksafe!
+    private implicit lazy val write: Write[elems.type] = {
+      import Elem._
+
+      val puts: List[(Put[_], NullabilityKnown)] =
+        elems.map {
+          case Arg(_, p) => (p, NoNulls)
+          case Opt(_, p) => (p, Nullable)
+        } .toList
+
+      val toList: elems.type => List[Any] = elems =>
+        elems.map {
+          case Arg(a, _) => a
+          case Opt(a, _) => a
+        } .toList
+
+      @SuppressWarnings(Array("org.wartremover.warts.Var"))
+      val unsafeSet: (PreparedStatement, Int, elems.type) => Unit = { (ps, n, elems) =>
+        var index = n
+        elems.iterator.foreach { e =>
+          e match {
+            case Arg(a, p) => p.unsafeSetNonNullable(ps, index, a)
+            case Opt(a, p) => p.unsafeSetNullable(ps, index, a)
+          }
+          index += 1
+        }
+      }
+
+      @SuppressWarnings(Array("org.wartremover.warts.Var"))
+      val unsafeUpdate: (ResultSet, Int, elems.type) => Unit = { (ps, n, elems) =>
+        var index = n
+        elems.iterator.foreach { e =>
+          e match {
+            case Arg(a, p) => p.unsafeUpdateNonNullable(ps, index, a)
+            case Opt(a, p) => p.unsafeUpdateNullable(ps, index, a)
+          }
+          index += 1
+        }
+      }
+
+      new Write(puts, toList, unsafeSet, unsafeUpdate)
+
+    }
 
     /**
      * Construct a program in ConnectionIO that constructs and prepares a PreparedStatement, with
      * further handling delegated to the provided program.
      */
     def execWith[B](fa: PreparedStatementIO[B]): ConnectionIO[B] =
-      HC.prepareStatement(sql)(ca.set(1, a) *> fa)
-
-    // Stack frame, used by the query checker to guess the source position. This will go away at
-    // some point, possibly in favor of Haoyi's source position doodad.
-    protected def pos: Option[Pos]
+      HC.prepareStatement(sql)(write.set(1, elems) *> fa)
 
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =
-      new Fragment {
-        type A  = (fa.A, fb.A)
-        val ca  = fa.ca product fb.ca
-        val a   = (fa.a, fb.a)
-        val sql = fa.sql + fb.sql
-        val pos = fa.pos orElse fb.pos
-      }
+      new Fragment(sql + fb.sql, elems ++ fb.elems, pos orElse fb.pos)
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def stripMargin(marginChar: Char): Fragment =
-      new Fragment {
-        type A = fa.A
-        val a = fa.a
-        val sql = fa.sql.stripMargin(marginChar)
-        val pos = fa.pos
-        val ca = fa.ca
-      }
+      new Fragment(sql.stripMargin(marginChar), elems, pos)
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def stripMargin: Fragment = stripMargin('|')
@@ -74,7 +103,7 @@ object fragment {
      * `LogHandler`.
      */
     def queryWithLogHandler[B](h: LogHandler)(implicit cb: Read[B]): Query0[B] =
-      Query[A, B](sql, pos, h)(ca, cb).toQuery0(a)
+      Query[elems.type, B](sql, pos, h).toQuery0(elems)
 
     /** Construct an [[Update0]] from this fragment. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -83,36 +112,34 @@ object fragment {
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLogHandler(h: LogHandler): Update0 =
-      Update[A](sql, pos, h)(ca).toUpdate0(a)
+      Update[elems.type](sql, pos, h).toUpdate0(elems)
 
     override def toString =
       s"""Fragment("$sql")"""
 
-    /** Used only for testing; this uses universal equality on the captured argument. */
+    /** Used only for testing; this pulls out the arguments as an untyped list. */
+    private def args: List[Any] =
+      elems.toList.map {
+        case Elem.Arg(a, _) => a
+        case Elem.Opt(a, _) => a
+      }
+
+    /** Used only for testing; this uses universal equality on the captured arguments. */
     @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     private[util] def unsafeEquals(fb: Fragment): Boolean =
-      fa.a == fb.a && fa.sql == fb.sql
+      sql == fb.sql && args == fb.args
 
   }
-
   object Fragment {
 
     /**
      * Construct a statement fragment with the given SQL string, which must contain sufficient `?`
-     * placeholders to accommodate the fields of the given interpolated value. This is normally
+     * placeholders to accommodate the given list of interpolated elements. This is normally
      * accomplished via the string interpolator rather than direct construction.
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A0](sql0: String, a0: A0, pos0: Option[Pos] = None)(
-      implicit ev: Write[A0]
-    ): Fragment =
-      new Fragment {
-        type A  = A0
-        val ca  = ev
-        val a   = a0
-        val sql = sql0
-        val pos = pos0
-      }
+    def apply(sql: String, elems: List[Elem], pos: Option[Pos] = None): Fragment =
+      new Fragment(sql, Chain.fromSeq(elems), pos)
 
     /**
      * Construct a statement fragment with no interpolated values and no trailing space; the
@@ -120,7 +147,7 @@ object fragment {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def const0(sql: String, pos: Option[Pos] = None): Fragment =
-      Fragment[HNil](sql, HNil, pos)
+      new Fragment(sql, Chain.empty, pos)
 
     /**
      * Construct a statement fragment with no interpolated values and a trailing space; the
