@@ -11,7 +11,9 @@ This file summarizes **notable** changes for each release, but does not describe
 - Added `TRACE`-level logging for low-level operations, sent to slf4j `Logger` specified via the `logger` member on `Transactor`, by default a logger called `"doobie.transactor"`. If you wish to associate correlation ids or otherwise mess with logging you can do this by swapping out the logger prior to calling `transact`. See `CorrelationId.scala` in the `example` project for an example.
 - Deprecated existing logging machinery.
 - Added support for Scala 2.13.0-M5, many thanks to **Sam Guymer** for setting this up.
-- Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource when using cancelable IO. Thanks **Sam Guymer** for this update.
+- Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource leakage when using cancelable IO. Thanks **Sam Guymer** for this update.
+- `Fragment` concatenation and derived combinators like `Fragments.in` are now stacksafe, so you can now have gigantic `IN` clauses. This required API changes in `Param`, `Fragment`, `Update[0]` and `Query[0]` but these should not affect most users.
+
 ____
 ### <a name="0.6.0"></a>New and Noteworthy for Version 0.6.0
 

@@ -61,16 +61,6 @@ object fragmentspec extends Specification {
       s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
     }
 
-    "translate to and from Query0" in {
-      val f = fr"bar $a $b $c baz"
-      f.query[HNil].toFragment unsafeEquals f
-    }
-
-    "translate to and from Update0" in {
-      val f = fr"bar $a $b $c baz"
-      f.update.toFragment unsafeEquals f
-    }
-
     "Add a trailing space when constructed with .const" in {
       Fragment.const("foo").query[Int].sql must_== "foo "
     }
@@ -96,6 +86,26 @@ object fragmentspec extends Specification {
       fr"""select foo || baz
           |  from bar
           |""".stripMargin.query[Int].sql must_== "select foo || baz\n  from bar\n "
+    }
+
+    // A fragment composed of this many sub-fragments would not be stacksafe without special
+    // handling, which we test below.
+    val STACK_UNSAFE_SIZE = 20000
+
+    "be stacksafe (left-associve)" in {
+      val frag =
+        fr0"SELECT 1 WHERE 1 IN (" ++
+        List.fill(STACK_UNSAFE_SIZE)(1).foldLeft(Fragment.empty)((f, n) => f ++ fr"$n,") ++
+        fr0"1)"
+      frag.query[Int].unique.transact(xa).unsafeRunSync must_== 1
+    }
+
+    "be stacksafe (right-associve)" in {
+      val frag =
+        fr0"SELECT 1 WHERE 1 IN (" ++
+        List.fill(STACK_UNSAFE_SIZE)(1).foldRight(Fragment.empty)((n, f) => f ++ fr"$n,") ++
+        fr0"1)"
+      frag.query[Int].unique.transact(xa).unsafeRunSync must_== 1
     }
 
   }

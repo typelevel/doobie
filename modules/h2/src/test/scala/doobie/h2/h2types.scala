@@ -25,11 +25,18 @@ object h2typesspec extends Specification {
     "sa", ""
   )
 
-  def inOut[A: Param: Read](col: String, a: A) =
+  def inOut[A: Put: Get](col: String, a: A): ConnectionIO[A] =
     for {
       _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
       _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
       a0 <- sql"SELECT value FROM TEST".query[A].unique
+    } yield (a0)
+
+  def inOutOpt[A: Put: Get](col: String, a: Option[A]): ConnectionIO[Option[A]] =
+    for {
+      _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
+      _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
+      a0 <- sql"SELECT value FROM TEST".query[Option[A]].unique
     } yield (a0)
 
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
@@ -38,10 +45,10 @@ object h2typesspec extends Specification {
         inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
+        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
       }
     }
 

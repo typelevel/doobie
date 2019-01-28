@@ -54,12 +54,6 @@ lazy val doobieWarts =
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
-// // check for library updates whenever the project is [re]load
-onLoad in Global := { s =>
-  if (sys.props.contains("doobie.skipDependencyUpdates")) s
-  else "dependencyUpdates" :: s
-}
-
 lazy val compilerFlags = Seq(
   scalacOptions ++= (
     CrossVersion.partialVersion(scalaVersion.value) match {
@@ -300,7 +294,7 @@ lazy val free = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-      "org.slf4j"      %  "slf4j-api"  % slf4jVersion,
+      "org.slf4j"      %  "slf4j-api"   % slf4jVersion,
     ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
