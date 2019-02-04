@@ -42,7 +42,7 @@ object statement {
 
   /** @group Properties */
   val getFetchDirection: StatementIO[FetchDirection] =
-    FS.getFetchDirection.map(FetchDirection.unsafeFromInt)
+    FS.getFetchDirection.flatMap(FetchDirection.fromIntF[StatementIO])
 
   /** @group Properties */
   val getFetchSize: StatementIO[Int] =
@@ -78,15 +78,15 @@ object statement {
 
   /** @group Properties */
   val getResultSetConcurrency: StatementIO[ResultSetConcurrency] =
-    FS.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
+    FS.getResultSetConcurrency.flatMap(ResultSetConcurrency.fromIntF[StatementIO])
 
   /** @group Properties */
   val getResultSetHoldability: StatementIO[Holdability] =
-    FS.getResultSetHoldability.map(Holdability.unsafeFromInt)
+    FS.getResultSetHoldability.flatMap(Holdability.fromIntF[StatementIO])
 
   /** @group Properties */
   val getResultSetType: StatementIO[ResultSetType] =
-    FS.getResultSetType.map(ResultSetType.unsafeFromInt)
+    FS.getResultSetType.flatMap(ResultSetType.fromIntF[StatementIO])
 
   /** @group Results */
   val getUpdateCount: StatementIO[Int] =

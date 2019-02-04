@@ -41,6 +41,7 @@ object largeobjectmanager { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: LargeObjectManagerIO[A], f: Throwable => LargeObjectManagerIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectManagerIO[Unit]): F[A]
       def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): F[B]
@@ -77,6 +78,9 @@ object largeobjectmanager { module =>
     }
     final case class HandleErrorWith[A](fa: LargeObjectManagerIO[A], f: Throwable => LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends LargeObjectManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -148,7 +152,7 @@ object largeobjectmanager { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[LargeObjectManagerOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): LargeObjectManagerIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: LargeObjectManagerIO[A], f: Throwable => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = FF.liftF[LargeObjectManagerOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): LargeObjectManagerIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): LargeObjectManagerIO[A] = FF.liftF[LargeObjectManagerOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): LargeObjectManagerIO[A] = FF.liftF[LargeObjectManagerOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = FF.liftF[LargeObjectManagerOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[B] = FF.liftF[LargeObjectManagerOp, B](BracketCase(acquire, use, release))
@@ -174,16 +178,16 @@ object largeobjectmanager { module =>
   // LargeObjectManagerIO is an Async
   implicit val AsyncLargeObjectManagerIO: Async[LargeObjectManagerIO] =
     new Async[LargeObjectManagerIO] {
-      val M = FF.catsFreeMonadForFree[LargeObjectManagerOp]
+      val asyncM = FF.catsFreeMonadForFree[LargeObjectManagerOp]
       def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): LargeObjectManagerIO[A] = M.pure(x)
+      def pure[A](x: A): LargeObjectManagerIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: LargeObjectManagerIO[A])(f: Throwable => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): LargeObjectManagerIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): LargeObjectManagerIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => LargeObjectManagerIO[Either[A, B]]): LargeObjectManagerIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => LargeObjectManagerIO[Either[A, B]]): LargeObjectManagerIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
 }

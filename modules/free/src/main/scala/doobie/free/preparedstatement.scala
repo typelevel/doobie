@@ -37,7 +37,7 @@ import java.util.Calendar
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object preparedstatement { module =>
 
-  // Algebra of operations for PreparedStatement. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for PreparedStatement. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait PreparedStatementOp[A] {
     def visit[F[_]](v: PreparedStatementOp.Visitor[F]): F[A]
   }
@@ -64,6 +64,7 @@ object preparedstatement { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Unit]): F[A]
       def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): F[B]
@@ -196,6 +197,9 @@ object preparedstatement { module =>
     }
     final case class HandleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -555,7 +559,7 @@ object preparedstatement { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): PreparedStatementIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): PreparedStatementIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Unit]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): PreparedStatementIO[B] = FF.liftF[PreparedStatementOp, B](BracketCase(acquire, use, release))

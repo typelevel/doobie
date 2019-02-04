@@ -5,12 +5,13 @@
 package doobie.postgres
 
 import cats.effect.{ ContextShift, IO }
-import doobie._, doobie.implicits._
-import doobie.postgres._, doobie.postgres.implicits._
+import doobie._
+import doobie.implicits._
+import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
+import doobie.postgres.enums._
 import java.net.InetAddress
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
@@ -98,17 +99,15 @@ object pgtypesspec extends Specification {
   testInOut("boolean", true)
 
   // 8.7 Enumerated Types
-  // create type myenum as enum ('foo', 'bar') <-- part of setup
-  @SuppressWarnings(Array("org.wartremover.warts.Enumeration"))
-  object MyEnum extends Enumeration { val foo, bar = Value }
+  testInOut("myenum", MyEnum.Foo : MyEnum)
 
   // as scala.Enumeration
-  implicit val MyEnumMeta: Meta[MyEnum.Value] = pgEnum(MyEnum, "myenum")
-  testInOut("myenum", MyEnum.foo)
+  implicit val MyEnumMeta: Meta[MyScalaEnum.Value] = pgEnum(MyScalaEnum, "myenum")
+  testInOut("myenum", MyScalaEnum.foo)
 
-  // // as java.lang.Enum
-  // implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
-  // testInOutNN("myenum", MyJavaEnum.bar)
+  // as java.lang.Enum
+  implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
+  testInOut("myenum", MyJavaEnum.bar)
 
   // 8.8 Geometric Types
   testInOut("box", new PGbox(new PGpoint(1, 2), new PGpoint(3, 4)))

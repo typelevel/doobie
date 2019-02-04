@@ -6,7 +6,7 @@ package doobie.postgres
 
 import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
-import doobie.postgres._, doobie.postgres.implicits._
+import doobie.postgres.enums._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
@@ -22,21 +22,6 @@ object pgcheck extends Specification {
     "postgres", ""
   )
 
-  // create type myenum as enum ('foo', 'bar') <-- part of setup
-  sealed trait MyEnum
-  case object Foo extends MyEnum
-  case object Bar extends MyEnum
-  object MyEnum {
-    implicit val MyEnumMeta: Meta[MyEnum] =
-      pgEnumString("myenum", {
-        case "foo" => Foo
-        case "bar" => Bar
-      }, {
-        case Foo => "foo"
-        case Bar => "bar"
-      })
-  }
-
   "pgEnumString" should {
 
     "check ok for read" in {
@@ -45,7 +30,7 @@ object pgcheck extends Specification {
     }
 
     "check ok for write" in {
-      val a = sql"select ${Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync
+      val a = sql"select ${MyEnum.Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync
       a.parameterTypeErrors must_== Nil
     }
 

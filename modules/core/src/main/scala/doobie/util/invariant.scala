@@ -6,6 +6,8 @@ package doobie.util
 
 import scala.reflect.runtime.universe.TypeTag
 
+import cats.Show
+import cats.syntax.show._
 import doobie.enum.JdbcType
 
 /**
@@ -30,10 +32,13 @@ object invariant {
 
   /** Unexpected string value for an enumerated type. */
   final case class InvalidEnum[A](value: String)(implicit ev: TypeTag[A])
-    extends InvariantViolation(s"${ev.tpe}: invalid ordinal: $value")
+    extends InvariantViolation(s"${ev.tpe}: invalid enum: $value")
 
   final case class SecondaryValidationFailed[A](value: String)(implicit ev: TypeTag[A])
     extends InvariantViolation(s"${ev.tpe}: validation failed: $value")
+
+  final case class InvalidValue[A, B](value: A, reason: String)(implicit sA: Show[A], evA: TypeTag[A], evB: TypeTag[B])
+    extends InvariantViolation(s"${value.show}: ${evA.tpe} invalid for ${evB.tpe} because: $reason")
 
   /** The type of schema violations. */
   sealed abstract class MappingViolation(msg: String) extends InvariantViolation(msg) {

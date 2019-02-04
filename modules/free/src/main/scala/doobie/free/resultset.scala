@@ -36,7 +36,7 @@ import java.util.Map
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object resultset { module =>
 
-  // Algebra of operations for ResultSet. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for ResultSet. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait ResultSetOp[A] {
     def visit[F[_]](v: ResultSetOp.Visitor[F]): F[A]
   }
@@ -63,6 +63,7 @@ object resultset { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): F[A]
       def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): F[B]
@@ -280,6 +281,9 @@ object resultset { module =>
     }
     final case class HandleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends ResultSetOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -894,7 +898,7 @@ object resultset { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ResultSetOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): ResultSetIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): ResultSetIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): ResultSetIO[A] = FF.liftF[ResultSetOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ResultSetIO[A] = FF.liftF[ResultSetOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))

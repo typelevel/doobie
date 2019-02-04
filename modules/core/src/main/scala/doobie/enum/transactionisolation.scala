@@ -8,6 +8,7 @@ import doobie.util.invariant._
 
 import java.sql.Connection._
 
+import cats.ApplicativeError
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
@@ -32,8 +33,8 @@ object TransactionIsolation {
       case TransactionSerializable.toInt    => TransactionSerializable
     }
 
-  def unsafeFromInt(n: Int): TransactionIsolation =
-    fromInt(n).getOrElse(throw InvalidOrdinal[TransactionIsolation](n))
+  def fromIntF[F[_]](n: Int)(implicit AE: ApplicativeError[F, Throwable]): F[TransactionIsolation] =
+    ApplicativeError.liftFromOption(fromInt(n), InvalidOrdinal[TransactionIsolation](n))
 
   implicit val EqTransactionIsolation: Eq[TransactionIsolation] =
     Eq.by(_.toInt)

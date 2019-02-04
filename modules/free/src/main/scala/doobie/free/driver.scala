@@ -19,7 +19,7 @@ import java.util.logging.Logger
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object driver { module =>
 
-  // Algebra of operations for Driver. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for Driver. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait DriverOp[A] {
     def visit[F[_]](v: DriverOp.Visitor[F]): F[A]
   }
@@ -46,6 +46,7 @@ object driver { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): F[A]
       def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): F[B]
@@ -75,6 +76,9 @@ object driver { module =>
     }
     final case class HandleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -125,7 +129,7 @@ object driver { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DriverOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): DriverIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): DriverIO[A] = FF.liftF[DriverOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): DriverIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): DriverIO[A] = FF.liftF[DriverOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): DriverIO[A] = FF.liftF[DriverOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): DriverIO[A] = FF.liftF[DriverOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = FF.liftF[DriverOp, B](BracketCase(acquire, use, release))

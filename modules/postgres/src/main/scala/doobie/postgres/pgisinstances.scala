@@ -21,7 +21,7 @@ trait PgisInstances {
   implicit val PGbox2dType    = Meta.other[PGbox2d]("box2d")
 
   // Constructor for geometry types via the `Geometry` member of PGgeometry
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   private def geometryType[A >: Null <: Geometry: TypeTag](implicit A: ClassTag[A]): Meta[A] =
     PGgeometryType.timap[A](g =>
       try A.runtimeClass.cast(g.getGeometry).asInstanceOf[A]

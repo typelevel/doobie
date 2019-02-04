@@ -19,7 +19,7 @@ import java.sql.RowIdLifetime
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object databasemetadata { module =>
 
-  // Algebra of operations for DatabaseMetaData. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for DatabaseMetaData. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait DatabaseMetaDataOp[A] {
     def visit[F[_]](v: DatabaseMetaDataOp.Visitor[F]): F[A]
   }
@@ -46,6 +46,7 @@ object databasemetadata { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): F[A]
       def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): F[B]
@@ -246,6 +247,9 @@ object databasemetadata { module =>
     }
     final case class HandleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends DatabaseMetaDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -809,7 +813,7 @@ object databasemetadata { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DatabaseMetaDataOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): DatabaseMetaDataIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): DatabaseMetaDataIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = FF.liftF[DatabaseMetaDataOp, B](BracketCase(acquire, use, release))
