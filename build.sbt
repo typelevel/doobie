@@ -325,9 +325,22 @@ lazy val core = project
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
       "com.h2database"        %  "h2"            % h2Version          % "test",
-      "org.scalaz" %% "scalaz-zio"               % zioVersion         % "test",
-      "org.scalaz" %% "scalaz-zio-interop-cats"  % zioVersion         % "test",
     ),
+
+    // temporary until a 2.13 version of zio has been published
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 12 => Seq(
+          "org.scalaz" %% "scalaz-zio"               % zioVersion % "test",
+          "org.scalaz" %% "scalaz-zio-interop-cats"  % zioVersion % "test",
+        )
+        case _ => Seq.empty
+      }
+    },
+    unmanagedJars in Test += unmanagedBase.value / scalaVersion.value / "scalaz-zio.jar",
+    unmanagedJars in Test += unmanagedBase.value / scalaVersion.value / "scalaz-zio-interop-shared.jar",
+    unmanagedJars in Test += unmanagedBase.value / scalaVersion.value / "scalaz-zio-interop-cats.jar",
+
     scalacOptions += "-Yno-predef",
     unmanagedSourceDirectories in Compile += {
       val sourceDir = (sourceDirectory in Compile).value
