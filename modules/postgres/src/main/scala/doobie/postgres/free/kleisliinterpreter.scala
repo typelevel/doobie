@@ -65,6 +65,7 @@ trait KleisliInterpreter[M[_]] { outer =>
   def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => M.delay(f(a)))
   def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => M.delay(a()))
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
+  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => M.raiseError(e))
   def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => M.async(k))
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
     e match {
@@ -84,6 +85,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGCopyIn => A): Kleisli[M, PGCopyIn, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGCopyIn, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGCopyIn, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, PGCopyIn, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGCopyIn, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -120,6 +122,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGCopyManager => A): Kleisli[M, PGCopyManager, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGCopyManager, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGCopyManager, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, PGCopyManager, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGCopyManager, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -156,6 +159,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGCopyOut => A): Kleisli[M, PGCopyOut, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGCopyOut, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGCopyOut, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, PGCopyOut, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGCopyOut, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -191,6 +195,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGFastpath, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGFastpath, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, PGFastpath, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGFastpath, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -229,6 +234,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: LargeObject => A): Kleisli[M, LargeObject, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, LargeObject, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, LargeObject, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, LargeObject, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, LargeObject, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -276,6 +282,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, LargeObjectManager, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, LargeObjectManager, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, LargeObjectManager, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, LargeObjectManager, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -319,6 +326,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGConnection => A): Kleisli[M, PGConnection, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGConnection, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGConnection, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, PGConnection, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PGConnection, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively

@@ -19,7 +19,7 @@ import java.sql.Clob
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object clob { module =>
 
-  // Algebra of operations for Clob. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for Clob. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait ClobOp[A] {
     def visit[F[_]](v: ClobOp.Visitor[F]): F[A]
   }
@@ -46,6 +46,7 @@ object clob { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): F[A]
       def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): F[B]
@@ -81,6 +82,9 @@ object clob { module =>
     }
     final case class HandleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -149,7 +153,7 @@ object clob { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ClobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): ClobIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): ClobIO[A] = FF.liftF[ClobOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): ClobIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): ClobIO[A] = FF.liftF[ClobOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ClobIO[A] = FF.liftF[ClobOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): ClobIO[A] = FF.liftF[ClobOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): ClobIO[B] = FF.liftF[ClobOp, B](BracketCase(acquire, use, release))

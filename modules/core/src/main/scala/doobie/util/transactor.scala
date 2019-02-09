@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commit, rollback, close, unit, delay, raiseError }
+import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commit, rollback, close, unit, raiseError }
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
@@ -59,7 +59,7 @@ object transactor  {
     @deprecated("Use Transactor.transP", "0.7.0")
     val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
       (eval_(before) ++ pa ++ eval_(after))
-        .onError { case NonFatal(e) => eval_(oops) ++ eval_(delay(throw e)) }
+        .onError { case NonFatal(e) => eval_(oops) ++ eval_(raiseError(e)) }
         .onFinalize(always)
     }
 

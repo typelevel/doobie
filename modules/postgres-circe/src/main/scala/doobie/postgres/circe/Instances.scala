@@ -4,6 +4,7 @@
 
 package doobie.postgres.circe
 
+import cats.Show
 import cats.data.NonEmptyList
 import cats.implicits._
 import io.circe._
@@ -15,8 +16,10 @@ import scala.reflect.runtime.universe.TypeTag
 
 object Instances {
 
+  private implicit val showPGobject: Show[PGobject] = Show.show(_.getValue.take(250))
+
   trait JsonbInstances {
-      implicit val jsonbPut: Put[Json] = 
+    implicit val jsonbPut: Put[Json] =
       Put.Advanced.other[PGobject](
         NonEmptyList.of("jsonb")
       ).tcontramap{a =>
@@ -29,25 +32,26 @@ object Instances {
     implicit val jsonbGet: Get[Json] =
       Get.Advanced.other[PGobject](
         NonEmptyList.of("jsonb")
-      ).tmap(a => 
-        parse(a.getValue).leftMap[Json](e => throw e).merge
+      ).temap(a =>
+        parse(a.getValue).leftMap(_.show)
       )
 
-    def pgEncoderPutT[A: Encoder: TypeTag]: Put[A] = 
+    def pgEncoderPutT[A: Encoder: TypeTag]: Put[A] =
       Put[Json].tcontramap(_.asJson)
 
     def pgEncoderPut[A: Encoder]: Put[A] =
       Put[Json].contramap(_.asJson)
 
-    def pgDecoderGetT[A: Decoder: TypeTag]: Get[A] = 
-      Get[Json].tmap(json => json.as[A].fold(throw _, identity))
+    def pgDecoderGetT[A: Decoder: TypeTag]: Get[A] =
+      Get[Json].temap(json => json.as[A].leftMap(_.show))
 
-    def pgDecoderGet[A: Decoder]: Get[A] = 
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+    def pgDecoderGet[A: Decoder]: Get[A] =
       Get[Json].map(json => json.as[A].fold(throw _, identity))
   }
 
   trait JsonInstances {
-    implicit val jsonPut: Put[Json] = 
+    implicit val jsonPut: Put[Json] =
       Put.Advanced.other[PGobject](
         NonEmptyList.of("json")
       ).tcontramap{a =>
@@ -60,20 +64,21 @@ object Instances {
     implicit val jsonGet: Get[Json] =
       Get.Advanced.other[PGobject](
         NonEmptyList.of("json")
-      ).tmap(a => 
-        parse(a.getValue).leftMap[Json](e => throw e).merge
+      ).temap(a =>
+        parse(a.getValue).leftMap(_.show)
       )
 
-    def pgEncoderPutT[A: Encoder: TypeTag]: Put[A] = 
+    def pgEncoderPutT[A: Encoder: TypeTag]: Put[A] =
       Put[Json].tcontramap(_.asJson)
 
     def pgEncoderPut[A: Encoder]: Put[A] =
       Put[Json].contramap(_.asJson)
 
-    def pgDecoderGetT[A: Decoder: TypeTag]: Get[A] = 
-      Get[Json].tmap(json => json.as[A].fold(throw _, identity))
+    def pgDecoderGetT[A: Decoder: TypeTag]: Get[A] =
+      Get[Json].temap(json => json.as[A].leftMap(_.show))
 
-    def pgDecoderGet[A: Decoder]: Get[A] = 
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+    def pgDecoderGet[A: Decoder]: Get[A] =
       Get[Json].map(json => json.as[A].fold(throw _, identity))
 
   }

@@ -4,11 +4,11 @@
 
 package doobie.util
 
-import cats.Functor
+import cats.{ Functor, Show }
 import cats.data.NonEmptyList
 import cats.free.Coyoneda
 import doobie.enum.JdbcType
-import doobie.util.invariant.{ NonNullableColumnRead, InvalidObjectMapping }
+import doobie.util.invariant.{ InvalidObjectMapping, InvalidValue, NonNullableColumnRead }
 import java.sql.ResultSet
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{ Type, TypeTag }
@@ -23,10 +23,11 @@ sealed abstract class Get[A](
 
   protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   final def unsafeGetNonNullable(rs: ResultSet, n: Int): A = {
     val i = get.fi(rs, n)
     if (rs.wasNull)
-      throw new NonNullableColumnRead(n, jdbcSources.head)
+      throw NonNullableColumnRead(n, jdbcSources.head)
     get.k(i)
   }
 
@@ -36,7 +37,7 @@ sealed abstract class Get[A](
   }
 
   /**
-   * Apply `f` to values retrieved by this `Get`. Prefer `tget`when possible because it will
+   * Apply `f` to values retrieved by this `Get`. Prefer `tmap` when possible because it will
    * allow for better diagnostics when checking queries. Note that `null` values will not be
    * transformed, so you do not need to (nor can you) handle this case.
    */
@@ -49,6 +50,18 @@ sealed abstract class Get[A](
    */
   final def tmap[B](f: A => B)(implicit ev: TypeTag[B]): Get[B] =
     mapImpl(f, Some(ev.tpe))
+
+  /**
+    * Equivalent to `tmap`, but allows the conversion to fail with an error message.
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  final def temap[B](f: A => Either[String, B])(implicit sA: Show[A], evA: TypeTag[A], evB: TypeTag[B]): Get[B] =
+    tmap { a =>
+      f(a) match {
+        case Left(reason) => throw InvalidValue[A, B](a, reason)
+        case Right(b) => b
+      }
+    }
 
   def fold[B](f: Get.Basic[A] => B, g: Get.Advanced[A] => B): B
 
@@ -131,7 +144,7 @@ object Get extends GetInstances {
         }
       )
 
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
     def other[A >: Null <: AnyRef: TypeTag](schemaTypes: NonEmptyList[String])(
       implicit A: ClassTag[A]
     ): Advanced[A] =

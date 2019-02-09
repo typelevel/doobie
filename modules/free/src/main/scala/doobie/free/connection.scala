@@ -58,6 +58,7 @@ object connection { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): F[A]
       def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): F[B]
@@ -134,6 +135,9 @@ object connection { module =>
     }
     final case class HandleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -325,7 +329,7 @@ object connection { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): ConnectionIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): ConnectionIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): ConnectionIO[A] = FF.liftF[ConnectionOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ConnectionIO[A] = FF.liftF[ConnectionOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = FF.liftF[ConnectionOp, B](BracketCase(acquire, use, release))

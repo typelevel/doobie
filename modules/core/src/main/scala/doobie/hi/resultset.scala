@@ -188,10 +188,10 @@ object resultset {
    * @group Results
    */
   def getUnique[A: Read]: ResultSetIO[A] =
-    (getNext[A], next) mapN {
-      case (Some(a), false) => a
-      case (Some(_), true)  => throw UnexpectedContinuation
-      case (None, _)        => throw UnexpectedEnd
+    (getNext[A], next).tupled.flatMap {
+      case (Some(a), false) => FRS.delay(a)
+      case (Some(_), true)  => FRS.raiseError(UnexpectedContinuation)
+      case (None, _)        => FRS.raiseError(UnexpectedEnd)
     }
 
   /**
@@ -200,10 +200,10 @@ object resultset {
    * @group Results
    */
   def getOption[A: Read]: ResultSetIO[Option[A]] =
-    (getNext[A], next) mapN {
-      case (a @ Some(_), false) => a
-      case (Some(_), true)      => throw UnexpectedContinuation
-      case (None, _)            => None
+    (getNext[A], next).tupled.flatMap {
+      case (a @ Some(_), false) => FRS.delay(a)
+      case (Some(_), true)      => FRS.raiseError(UnexpectedContinuation)
+      case (None, _)            => FRS.delay(None)
     }
 
   /**
@@ -212,9 +212,9 @@ object resultset {
     * @group Results
     */
   def nel[A: Read]: ResultSetIO[NonEmptyList[A]] =
-    (getNext[A], list) mapN {
-      case (Some(a), as) => NonEmptyList(a, as)
-      case (None, _)     => throw UnexpectedEnd
+    (getNext[A], list).tupled.flatMap {
+      case (Some(a), as) => FRS.delay(NonEmptyList(a, as))
+      case (None, _)     => FRS.raiseError(UnexpectedEnd)
     }
 
   /**
@@ -227,7 +227,7 @@ object resultset {
 
   /** @group Properties */
   val getFetchDirection: ResultSetIO[FetchDirection] =
-    FRS.getFetchDirection.map(FetchDirection.unsafeFromInt)
+    FRS.getFetchDirection.flatMap(FetchDirection.fromIntF[ResultSetIO])
 
   /** @group Properties */
   val getFetchSize: ResultSetIO[Int] =
@@ -235,7 +235,7 @@ object resultset {
 
   /** @group Properties */
   val getHoldability: ResultSetIO[Holdability] =
-    FRS.getHoldability.map(Holdability.unsafeFromInt)
+    FRS.getHoldability.flatMap(Holdability.fromIntF[ResultSetIO])
 
   /** @group Properties */
   val getMetaData: ResultSetIO[ResultSetMetaData] =

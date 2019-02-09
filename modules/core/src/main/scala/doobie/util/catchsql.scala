@@ -26,8 +26,11 @@ object catchsql {
   def attemptSqlState[M[_]: MonadError[?[_], Throwable], A](ma: M[A]): M[Either[SqlState, A]] =
     attemptSql(ma).map(_.leftMap(e => SqlState(e.getSQLState)))
 
-  def attemptSomeSqlState[M[_]: MonadError[?[_], Throwable], A, B](ma: M[A])(f: PartialFunction[SqlState, B]): M[Either[B, A]] =
-    attemptSql(ma).map(_.leftMap(sqle => f.lift(SqlState(sqle.getSQLState)).getOrElse(throw sqle)))
+  def attemptSomeSqlState[M[_], A, B](ma: M[A])(f: PartialFunction[SqlState, B])(implicit c: MonadError[M, Throwable]): M[Either[B, A]] =
+    attemptSql(ma).flatMap {
+      case Left(sqle) => f.lift(SqlState(sqle.getSQLState)).fold(c.raiseError[Either[B, A]](sqle))(b => c.pure(Left(b)))
+      case Right(a)   => c.pure(Right(a))
+    }
 
   /** Executes the handler, for exceptions propagating from `ma`. */
   def exceptSql[M[_]: MonadError[?[_], Throwable], A](ma: M[A])(handler: SQLException => M[A]): M[A] =
@@ -38,8 +41,10 @@ object catchsql {
     exceptSql(ma)(e => handler(SqlState(e.getSQLState)))
 
   /** Executes the handler where defined, for exceptions propagating from `ma`. */
-  def exceptSomeSqlState[M[_]: MonadError[?[_], Throwable], A](ma: M[A])(pf: PartialFunction[SqlState, M[A]]): M[A] =
-    exceptSql(ma)(e => pf.lift(SqlState(e.getSQLState)).getOrElse((throw e): M[A]))
+  def exceptSomeSqlState[M[_], A](ma: M[A])(pf: PartialFunction[SqlState, M[A]])(implicit c: MonadError[M, Throwable]): M[A] =
+    exceptSql(ma) { e =>
+      pf.lift(SqlState(e.getSQLState)).fold(c.raiseError[A](e))(a => a)
+    }
 
   /** Like "finally", but only performs the final action if there was an exception. */
   def onSqlException[M[_], A, B](ma: M[A])(action: M[B])(implicit c: MonadError[M, Throwable]): M[A] =

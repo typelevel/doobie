@@ -8,6 +8,7 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
+import cats.ApplicativeError
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
@@ -26,8 +27,8 @@ object Holdability {
       case CloseCursorsAtCommit.toInt  => CloseCursorsAtCommit
     }
 
-  def unsafeFromInt(n:Int): Holdability =
-    fromInt(n).getOrElse(throw InvalidOrdinal[Holdability](n))
+  def fromIntF[F[_]](n: Int)(implicit AE: ApplicativeError[F, Throwable]): F[Holdability] =
+    ApplicativeError.liftFromOption(fromInt(n), InvalidOrdinal[Holdability](n))
 
   implicit val EqHoldability: Eq[Holdability] =
     Eq.by(_.toInt)

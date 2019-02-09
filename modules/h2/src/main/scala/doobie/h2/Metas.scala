@@ -19,7 +19,7 @@ import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 @SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
 trait Instances {
 
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   implicit val UuidType =
     Meta.Advanced.many[UUID](
       NonEmptyListOf(JdbcType.Binary),
@@ -38,7 +38,7 @@ trait Instances {
 
   // see postgres contrib for an explanation of array mapping; we may want to factor this out
 
-  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
+  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
     val raw = Meta.Advanced.other[Array[Object]]("ARRAY").timap[Array[A]](
       a => if (a == null) null else a.map(_.asInstanceOf[A]))(

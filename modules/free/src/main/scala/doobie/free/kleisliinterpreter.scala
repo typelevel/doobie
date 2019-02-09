@@ -111,9 +111,18 @@ trait KleisliInterpreter[M[_]] { outer =>
   lazy val ResultSetInterpreter: ResultSetOp ~> Kleisli[M, ResultSet, ?] = new ResultSetInterpreter { }
 
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
-  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => contextShiftM.evalOn(blockingContext)(asyncM.delay(f(a))))
+  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
+    // primitive JDBC methods throw exceptions and so do we when reading values
+    // so catch any non-fatal exceptions and lift them into the effect
+    contextShiftM.evalOn(blockingContext)(try {
+      asyncM.delay(f(a))
+    } catch {
+      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
+    })
+  }
   def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
+  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
   def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
     e match {
@@ -140,6 +149,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: NClob => A): Kleisli[M, NClob, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, NClob, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, NClob, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, NClob, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, NClob, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -186,6 +196,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Blob => A): Kleisli[M, Blob, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Blob, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Blob, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, Blob, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Blob, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -230,6 +241,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Clob => A): Kleisli[M, Clob, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Clob, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Clob, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, Clob, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Clob, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -276,6 +288,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, DatabaseMetaData, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, DatabaseMetaData, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, DatabaseMetaData, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, DatabaseMetaData, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -487,6 +500,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Driver => A): Kleisli[M, Driver, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Driver, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Driver, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, Driver, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Driver, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -527,6 +541,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Ref => A): Kleisli[M, Ref, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Ref, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Ref, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, Ref, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Ref, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -564,6 +579,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: SQLData => A): Kleisli[M, SQLData, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, SQLData, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, SQLData, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, SQLData, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, SQLData, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -600,6 +616,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: SQLInput => A): Kleisli[M, SQLInput, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, SQLInput, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, SQLInput, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, SQLInput, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, SQLInput, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -661,6 +678,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: SQLOutput => A): Kleisli[M, SQLOutput, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, SQLOutput, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, SQLOutput, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, SQLOutput, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, SQLOutput, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -722,6 +740,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Connection => A): Kleisli[M, Connection, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Connection, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Connection, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, Connection, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Connection, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -809,6 +828,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Statement => A): Kleisli[M, Statement, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Statement, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Statement, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, Statement, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Statement, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -894,6 +914,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PreparedStatement, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PreparedStatement, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, PreparedStatement, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PreparedStatement, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -1037,6 +1058,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: CallableStatement => A): Kleisli[M, CallableStatement, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, CallableStatement, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, CallableStatement, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, CallableStatement, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, CallableStatement, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively
@@ -1301,6 +1323,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: ResultSet => A): Kleisli[M, ResultSet, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, ResultSet, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, ResultSet, A] = outer.delay(a)
+    override def raiseError[A](err: Throwable): Kleisli[M, ResultSet, A] = outer.raiseError(err)
     override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, ResultSet, A] = outer.async(k)
 
     // for asyncF we must call ourself recursively

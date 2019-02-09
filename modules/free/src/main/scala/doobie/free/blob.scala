@@ -16,7 +16,7 @@ import java.sql.Blob
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object blob { module =>
 
-  // Algebra of operations for Blob. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for Blob. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait BlobOp[A] {
     def visit[F[_]](v: BlobOp.Visitor[F]): F[A]
   }
@@ -43,6 +43,7 @@ object blob { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): F[A]
       def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): F[B]
@@ -76,6 +77,9 @@ object blob { module =>
     }
     final case class HandleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -138,7 +142,7 @@ object blob { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[BlobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): BlobIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): BlobIO[A] = FF.liftF[BlobOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): BlobIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): BlobIO[A] = FF.liftF[BlobOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): BlobIO[A] = FF.liftF[BlobOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): BlobIO[A] = FF.liftF[BlobOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = FF.liftF[BlobOp, B](BracketCase(acquire, use, release))

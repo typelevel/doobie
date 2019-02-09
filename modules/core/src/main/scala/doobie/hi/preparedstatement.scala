@@ -103,15 +103,18 @@ object preparedstatement {
    * @group Metadata
    */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
-    FPS.getMetaData.map {
-      case null => Nil // https://github.com/tpolecat/doobie/issues/262
+    FPS.getMetaData.flatMap {
+      case null => FPS.pure(Nil) // https://github.com/tpolecat/doobie/issues/262
       case md   =>
-        (1 to md.getColumnCount).toList.map { i =>
-          val j = JdbcType.fromInt(md.getColumnType(i))
-          val s = md.getColumnTypeName(i)
-          val n = ColumnNullable.unsafeFromInt(md.isNullable(i)).toNullability
-          val c = md.getColumnName(i)
-          ColumnMeta(j, s, n, c)
+        (1 to md.getColumnCount).toList.traverse { i =>
+          for {
+            n <- ColumnNullable.fromIntF[PreparedStatementIO](md.isNullable(i))
+          } yield {
+            val j = JdbcType.fromInt(md.getColumnType(i))
+            val s = md.getColumnTypeName(i)
+            val c = md.getColumnName(i)
+            ColumnMeta(j, s, n.toNullability, c)
+          }
         }
     }
 
@@ -125,7 +128,7 @@ object preparedstatement {
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
-    FPS.getFetchDirection.map(FetchDirection.unsafeFromInt)
+    FPS.getFetchDirection.flatMap(FetchDirection.fromIntF[PreparedStatementIO])
 
   /** @group Properties */
   val getFetchSize: PreparedStatementIO[Int] =
@@ -144,13 +147,16 @@ object preparedstatement {
    * @group Metadata
    */
   def getParameterJdbcMeta: PreparedStatementIO[List[ParameterMeta]] =
-    FPS.getParameterMetaData.map { md =>
-      (1 to md.getParameterCount).toList.map { i =>
-        val j = JdbcType.fromInt(md.getParameterType(i))
-        val s = md.getParameterTypeName(i)
-        val n = ParameterNullable.unsafeFromInt(md.isNullable(i)).toNullability
-        val m = ParameterMode.unsafeFromInt(md.getParameterMode(i))
-        ParameterMeta(j, s, n, m)
+    FPS.getParameterMetaData.flatMap { md =>
+      (1 to md.getParameterCount).toList.traverse { i =>
+        for {
+          n <- ParameterNullable.fromIntF[PreparedStatementIO](md.isNullable(i))
+          m <- ParameterMode.fromIntF[PreparedStatementIO](md.getParameterMode(i))
+        } yield {
+          val j = JdbcType.fromInt(md.getParameterType(i))
+          val s = md.getParameterTypeName(i)
+          ParameterMeta(j, s, n.toNullability, m)
+        }
       }
     }
 
@@ -184,15 +190,15 @@ object preparedstatement {
 
   /** @group Properties */
   val getResultSetConcurrency: PreparedStatementIO[ResultSetConcurrency] =
-    FPS.getResultSetConcurrency.map(ResultSetConcurrency.unsafeFromInt)
+    FPS.getResultSetConcurrency.flatMap(ResultSetConcurrency.fromIntF[PreparedStatementIO])
 
   /** @group Properties */
   val getResultSetHoldability: PreparedStatementIO[Holdability] =
-    FPS.getResultSetHoldability.map(Holdability.unsafeFromInt)
+    FPS.getResultSetHoldability.flatMap(Holdability.fromIntF[PreparedStatementIO])
 
   /** @group Properties */
   val getResultSetType: PreparedStatementIO[ResultSetType] =
-    FPS.getResultSetType.map(ResultSetType.unsafeFromInt)
+    FPS.getResultSetType.flatMap(ResultSetType.fromIntF[PreparedStatementIO])
 
   /** @group Results */
   val getWarnings: PreparedStatementIO[SQLWarning] =

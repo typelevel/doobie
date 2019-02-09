@@ -4,13 +4,17 @@
 
 package doobie.util
 
-import cats.effect.IO
+import cats.effect.{ Effect, IO }
+import cats.effect.syntax.effect._
+import cats.syntax.applicativeError._
 import doobie._, doobie.implicits._
 import java.sql.SQLException
 import org.specs2.mutable.Specification
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
-object catchsqlpec extends Specification {
+trait catchsqlspec[F[_]] extends Specification {
+
+  implicit def E: Effect[F]
 
   val SQLSTATE_FOO = SqlState("Foo")
   val SQLSTATE_BAR = SqlState("Bar")
@@ -18,17 +22,17 @@ object catchsqlpec extends Specification {
   "attemptSql" should {
 
     "do nothing on success" in {
-      IO(3).attemptSql.unsafeRunSync must_== Right(3)
+      E.delay(3).attemptSql.toIO.unsafeRunSync must_== Right(3)
     }
 
     "catch SQLException" in {
       val e = new SQLException
-      IO(throw e).attemptSql.unsafeRunSync must_== Left(e)
+      E.raiseError(e).attemptSql.toIO.unsafeRunSync must_== Left(e)
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
-      IO(throw e).attemptSql.unsafeRunSync must throwA[IllegalArgumentException]
+      E.raiseError(e).attemptSql.toIO.unsafeRunSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -37,17 +41,17 @@ object catchsqlpec extends Specification {
   "attemptSqlState" should {
 
     "do nothing on success" in {
-      IO(3).attemptSqlState.unsafeRunSync must_== Right(3)
+      E.delay(3).attemptSqlState.toIO.unsafeRunSync must_== Right(3)
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO(throw e).attemptSqlState.unsafeRunSync must_== Left(SQLSTATE_FOO)
+      E.raiseError(e).attemptSqlState.toIO.unsafeRunSync must_== Left(SQLSTATE_FOO)
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
-      IO(throw e).attemptSqlState.unsafeRunSync must throwA[IllegalArgumentException]
+      E.raiseError(e).attemptSqlState.toIO.unsafeRunSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -55,105 +59,105 @@ object catchsqlpec extends Specification {
   "attemptSomeSqlState" should {
 
     "do nothing on success" in {
-      IO(3).attemptSomeSqlState {
+      E.delay(3).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.unsafeRunSync must_== Right(3)
+      }.toIO.unsafeRunSync must_== Right(3)
     }
 
     "catch SQLException with matching state (1)" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO(throw e).attemptSomeSqlState {
+      E.raiseError(e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.unsafeRunSync must_== Left(42)
+      }.toIO.unsafeRunSync must_== Left(42)
     }
 
     "catch SQLException with matching state (2)" in {
       val e = new SQLException("", SQLSTATE_BAR.value)
-      IO(throw e).attemptSomeSqlState {
+      E.raiseError(e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
         case SQLSTATE_BAR        => 66
-      }.unsafeRunSync must_== Left(66)
+      }.toIO.unsafeRunSync must_== Left(66)
     }
 
     "ignore SQLException with non-matching state" in {
       val e = new SQLException("", SQLSTATE_BAR.value)
-      IO(throw e).attemptSomeSqlState {
+      E.raiseError(e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
-      }.unsafeRunSync must throwA[SQLException]
+      }.toIO.unsafeRunSync must throwA[SQLException]
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
-      IO(throw e).attemptSomeSqlState {
+      E.raiseError(e).attemptSomeSqlState {
         case SQLSTATE_FOO => 42
-      }.unsafeRunSync must throwA[IllegalArgumentException]
+      }.toIO.unsafeRunSync must throwA[IllegalArgumentException]
     }
 
   }
 
   "exceptSql" should {
 
-    val rescue = IO(4)
+    val rescue = E.delay(4)
 
     "do nothing on success" in {
-      IO(3).exceptSql(_ => rescue).unsafeRunSync must_== 3
+      E.delay(3).exceptSql(_ => rescue).toIO.unsafeRunSync must_== 3
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO[Int](throw e).exceptSql(_ => rescue).unsafeRunSync must_== 4
+      E.raiseError[Int](e).exceptSql(_ => rescue).toIO.unsafeRunSync must_== 4
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
-      IO[Int](throw e).exceptSql(_ => rescue).unsafeRunSync must throwA[IllegalArgumentException]
+      E.raiseError[Int](e).exceptSql(_ => rescue).toIO.unsafeRunSync must throwA[IllegalArgumentException]
     }
 
   }
 
   "exceptSqlState" should {
 
-    val rescue = IO(4)
+    val rescue = E.delay(4)
 
     "do nothing on success" in {
-      IO(3).exceptSqlState(_ => rescue).unsafeRunSync must_== 3
+      E.delay(3).exceptSqlState(_ => rescue).toIO.unsafeRunSync must_== 3
     }
 
     "catch SQLException" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO[Int](throw e).exceptSqlState(_ => rescue).unsafeRunSync must_== 4
+      E.raiseError[Int](e).exceptSqlState(_ => rescue).toIO.unsafeRunSync must_== 4
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
-      IO[Int](throw e).exceptSqlState(_ => rescue).unsafeRunSync must throwA[IllegalArgumentException]
+      E.raiseError[Int](e).exceptSqlState(_ => rescue).toIO.unsafeRunSync must throwA[IllegalArgumentException]
     }
 
   }
 
   "exceptSomeSqlState" should {
 
-    val rescue = IO(4)
+    val rescue = E.delay(4)
 
     "do nothing on success" in {
-      IO(3).exceptSomeSqlState { case _ => rescue }.unsafeRunSync must_== 3
+      E.delay(3).exceptSomeSqlState { case _ => rescue }.toIO.unsafeRunSync must_== 3
     }
 
     "catch SQLException with some state" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO[Int](throw e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.unsafeRunSync must_== 4
+      E.raiseError[Int](e).exceptSomeSqlState { case SQLSTATE_FOO => rescue }.toIO.unsafeRunSync must_== 4
     }
 
     "ignore SQLException with other state" in {
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO[Int](throw e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.unsafeRunSync must throwA[SQLException]
+      E.raiseError[Int](e).exceptSomeSqlState { case SQLSTATE_BAR => rescue }.toIO.unsafeRunSync must throwA[SQLException]
     }
 
     "ignore non-SQLException" in {
       val e = new IllegalArgumentException
-      IO[Int](throw e).exceptSomeSqlState { case _ => rescue }.unsafeRunSync must throwA[IllegalArgumentException]
+      E.raiseError[Int](e).exceptSomeSqlState { case _ => rescue }.toIO.unsafeRunSync must throwA[IllegalArgumentException]
     }
 
   }
@@ -162,24 +166,31 @@ object catchsqlpec extends Specification {
 
     "do nothing on success" in {
       var a = 1
-      IO(3).onSqlException(IO(a += 1)).attempt.unsafeRunSync
+      E.delay(3).onSqlException(E.delay(a += 1)).attempt.toIO.unsafeRunSync
       a must_== 1
     }
 
     "perform its effect on SQLException" in {
       var a = 1
       val e = new SQLException("", SQLSTATE_FOO.value)
-      IO[Int](throw e).onSqlException(IO(a += 1)).attempt.unsafeRunSync must_== Left(e)
+      E.raiseError[Int](e).onSqlException(E.delay(a += 1)).attempt.toIO.unsafeRunSync must_== Left(e)
       a must_== 2
     }
 
     "ignore its effect on non-SQLException" in {
       var a = 1
       val e = new IllegalArgumentException
-      IO[Int](throw e).onSqlException(IO(a += 1)).attempt.unsafeRunSync must_== Left(e)
+      E.raiseError[Int](e).onSqlException(E.delay(a += 1)).attempt.toIO.unsafeRunSync must_== Left(e)
       a must_== 1
     }
 
   }
 
+}
+
+object catchsqlspecIO extends catchsqlspec[IO] {
+  implicit val E: Effect[IO] = IO.ioEffect
+}
+object catchsqlspecZIO extends catchsqlspec[scalaz.zio.interop.Task] {
+  implicit val E: Effect[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.taskEffectInstances
 }

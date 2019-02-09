@@ -138,7 +138,7 @@ object connection {
 
   /** @group Connection Properties */
   val getHoldability: ConnectionIO[Holdability] =
-    FC.getHoldability.map(Holdability.unsafeFromInt)
+    FC.getHoldability.flatMap(Holdability.fromIntF[ConnectionIO])
 
   /** @group Connection Properties */
   def getMetaData[A](k: DatabaseMetaDataIO[A]): ConnectionIO[A] =
@@ -146,7 +146,7 @@ object connection {
 
   /** @group Transaction Control */
   val getTransactionIsolation: ConnectionIO[TransactionIsolation] =
-    FC.getTransactionIsolation.map(TransactionIsolation.unsafeFromInt)
+    FC.getTransactionIsolation.flatMap(TransactionIsolation.fromIntF[ConnectionIO])
 
   /** @group Connection Properties */
   val isReadOnly: ConnectionIO[Boolean] =

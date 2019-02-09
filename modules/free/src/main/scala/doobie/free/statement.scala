@@ -19,7 +19,7 @@ import java.sql.Statement
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object statement { module =>
 
-  // Algebra of operations for Statement. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for Statement. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait StatementOp[A] {
     def visit[F[_]](v: StatementOp.Visitor[F]): F[A]
   }
@@ -46,6 +46,7 @@ object statement { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): F[A]
       def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): F[B]
@@ -120,6 +121,9 @@ object statement { module =>
     }
     final case class HandleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -305,7 +309,7 @@ object statement { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): StatementIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): StatementIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): StatementIO[A] = FF.liftF[StatementOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): StatementIO[A] = FF.liftF[StatementOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): StatementIO[A] = FF.liftF[StatementOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): StatementIO[B] = FF.liftF[StatementOp, B](BracketCase(acquire, use, release))
