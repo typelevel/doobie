@@ -93,13 +93,14 @@ trait Instances {
   // so you can xmap if you need Short[]. The type names provided here are what is reported by JDBC
   // when metadata is requested; there are numerous aliases but these are the ones we need. Nothing
   // about this is portable, sorry. (╯°□°）╯︵ ┻━┻
-  implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit",     "_bit")
-  implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]("int4",    "_int4")
-  implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("int8",    "_int8")
-  implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("float4",  "_float4")
-  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("float8",  "_float8")
-  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar", "_varchar", "_char", "_text", "_bpchar")
-  implicit val (unliftedUUIDArrayType,    liftedUUIDArrayType)    = boxedPair[java.util.UUID]   ("uuid", "_uuid")
+  implicit val (unliftedBooleanArrayType,    liftedBooleanArrayType)    = boxedPair[java.lang.Boolean]    ("bit",     "_bit")
+  implicit val (unliftedIntegerArrayType,    liftedIntegerArrayType)    = boxedPair[java.lang.Integer]    ("int4",    "_int4")
+  implicit val (unliftedLongArrayType,       liftedLongArrayType)       = boxedPair[java.lang.Long]       ("int8",    "_int8")
+  implicit val (unliftedFloatArrayType,      liftedFloatArrayType)      = boxedPair[java.lang.Float]      ("float4",  "_float4")
+  implicit val (unliftedDoubleArrayType,     liftedDoubleArrayType)     = boxedPair[java.lang.Double]     ("float8",  "_float8")
+  implicit val (unliftedStringArrayType,     liftedStringArrayType)     = boxedPair[java.lang.String]     ("varchar", "_varchar", "_char", "_text", "_bpchar")
+  implicit val (unliftedUUIDArrayType,       liftedUUIDArrayType)       = boxedPair[java.util.UUID]       ("uuid", "_uuid")
+  implicit val (unliftedBigDecimalArrayType, liftedBigDecimalArrayType) = boxedPair[java.math.BigDecimal] ("numeric", "_decimal", "_numeric")
 
   // Unboxed equivalents (actually identical in the lifted case). We require that B is the unboxed
   // equivalent of A, otherwise this will fail in spectacular fashion, and we're using a cast in the
