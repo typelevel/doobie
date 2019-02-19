@@ -12,6 +12,7 @@ import doobie.postgres.pgisimplicits._
 import doobie.postgres.enums._
 import java.net.InetAddress
 import java.util.UUID
+import java.math.{BigDecimal => JBigDecimal}
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
@@ -150,6 +151,7 @@ object pgtypesspec extends Specification {
   testInOut("double precision[]", List[Double](1.2, 3.4))
   testInOut("varchar[]", List[String]("foo", "bar"))
   testInOut("uuid[]", List[UUID](UUID.fromString("7af2cb9a-9aee-47bc-910b-b9f4d608afa0"), UUID.fromString("643a05f3-463f-4dab-916c-5af4a84c3e4a")))
+  testInOut("numeric[]", List[JBigDecimal](BigDecimal("3.14").bigDecimal, BigDecimal("42.0").bigDecimal))
 
   // 8.16 Structs
   skip("structs")
