@@ -16,7 +16,7 @@ import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
 import scala.Predef.augmentString
-import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe.WeakTypeTag
 
 package testing {
 
@@ -82,7 +82,7 @@ package testing {
         def unpack(t: T) = impl(t)
       }
 
-    implicit def analyzableQuery[A: TypeTag, B: TypeTag]: Analyzable[Query[A, B]] =
+    implicit def analyzableQuery[A: WeakTypeTag, B: WeakTypeTag]: Analyzable[Query[A, B]] =
       instance { q =>
         AnalysisArgs(
           s"Query[${typeName[A]}, ${typeName[B]}]",
@@ -90,7 +90,7 @@ package testing {
         )
       }
 
-    implicit def analyzableQuery0[A: TypeTag]: Analyzable[Query0[A]] =
+    implicit def analyzableQuery0[A: WeakTypeTag]: Analyzable[Query0[A]] =
       instance { q =>
         AnalysisArgs(
           s"Query0[${typeName[A]}]",
@@ -98,7 +98,7 @@ package testing {
         )
       }
 
-    implicit def analyzableUpdate[A: TypeTag]: Analyzable[Update[A]] =
+    implicit def analyzableUpdate[A: WeakTypeTag]: Analyzable[Update[A]] =
       instance { q =>
         AnalysisArgs(
           s"Update[${typeName[A]}]",
@@ -141,7 +141,7 @@ package object testing {
   private val packagePrefix = "\\b[a-z]+\\.".r
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def typeName[A](implicit tag: TypeTag[A]): String =
+  def typeName[A](implicit tag: WeakTypeTag[A]): String =
     packagePrefix.replaceAllIn(tag.tpe.toString, "")
 
   private def alignmentErrorsToBlock(
