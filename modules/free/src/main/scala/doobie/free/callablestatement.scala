@@ -38,7 +38,7 @@ import java.util.Map
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object callablestatement { module =>
 
-  // Algebra of operations for CallableStatement. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for CallableStatement. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait CallableStatementOp[A] {
     def visit[F[_]](v: CallableStatementOp.Visitor[F]): F[A]
   }
@@ -65,6 +65,7 @@ object callablestatement { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CallableStatementIO[Unit]): F[A]
       def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): F[B]
@@ -318,6 +319,9 @@ object callablestatement { module =>
     }
     final case class HandleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -1040,7 +1044,7 @@ object callablestatement { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CallableStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): CallableStatementIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): CallableStatementIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CallableStatementIO[Unit]): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): CallableStatementIO[B] = FF.liftF[CallableStatementOp, B](BracketCase(acquire, use, release))

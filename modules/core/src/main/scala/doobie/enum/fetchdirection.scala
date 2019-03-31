@@ -8,6 +8,7 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
+import cats.ApplicativeError
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
@@ -28,8 +29,8 @@ object FetchDirection {
       case Unknown.toInt => Unknown
     }
 
-  def unsafeFromInt(n: Int): FetchDirection =
-    fromInt(n).getOrElse(throw InvalidOrdinal[FetchDirection](n))
+  def fromIntF[F[_]](n: Int)(implicit AE: ApplicativeError[F, Throwable]): F[FetchDirection] =
+    ApplicativeError.liftFromOption(fromInt(n), InvalidOrdinal[FetchDirection](n))
 
   implicit val EqFetchDirection: Eq[FetchDirection] =
     Eq.by(_.toInt)

@@ -4,26 +4,28 @@
 
 package doobie
 
+import shapeless.HList
+
 /** Mixin containing aliases for the most commonly used types and modules from doobie-core. */
 trait Aliases extends Types with Modules
 
 /** Mixin containing aliases for the most commonly used types from doobie-core. */
 trait Types {
-  /** @group Type Aliases - Core */ type Meta[A]                    = doobie.util.Meta[A]
-  /** @group Type Aliases - Core */ type Get[A]                     = doobie.util.Get[A]
-  /** @group Type Aliases - Core */ type Put[A]                     = doobie.util.Put[A]
-  /** @group Type Aliases - Core */ type Read[A]                    = doobie.util.Read[A]
-  /** @group Type Aliases - Core */ type Write[A]                   = doobie.util.Write[A]
-  /** @group Type Aliases - Core */ type Query[A,B]                 = doobie.util.query.Query[A,B]
-  /** @group Type Aliases - Core */ type Update[A]                  = doobie.util.update.Update[A]
-  /** @group Type Aliases - Core */ type Query0[A]                  = doobie.util.query.Query0[A]
-  /** @group Type Aliases - Core */ type Update0                    = doobie.util.update.Update0
-  /** @group Type Aliases - Core */ type SqlState                   = doobie.enum.SqlState
-  /** @group Type Aliases - Core */ type Param[A]                   = doobie.util.param.Param[A]
-  /** @group Type Aliases - Core */ type Transactor[M[_]]           = doobie.util.transactor.Transactor[M]
-  /** @group Type Aliases - Core */ type LogHandler                 = doobie.util.log.LogHandler
-  /** @group Type Aliases - Core */ type Fragment                   = doobie.util.fragment.Fragment
-  /** @group Type Aliases - Core */ type KleisliInterpreter[F[_]]   = doobie.free.KleisliInterpreter[F]
+  /** @group Type Aliases - Core */ type Meta[A]                  = doobie.util.Meta[A]
+  /** @group Type Aliases - Core */ type Get[A]                   = doobie.util.Get[A]
+  /** @group Type Aliases - Core */ type Put[A]                   = doobie.util.Put[A]
+  /** @group Type Aliases - Core */ type Read[A]                  = doobie.util.Read[A]
+  /** @group Type Aliases - Core */ type Write[A]                 = doobie.util.Write[A]
+  /** @group Type Aliases - Core */ type Query[A,B]               = doobie.util.query.Query[A,B]
+  /** @group Type Aliases - Core */ type Update[A]                = doobie.util.update.Update[A]
+  /** @group Type Aliases - Core */ type Query0[A]                = doobie.util.query.Query0[A]
+  /** @group Type Aliases - Core */ type Update0                  = doobie.util.update.Update0
+  /** @group Type Aliases - Core */ type SqlState                 = doobie.enum.SqlState
+  /** @group Type Aliases - Core */ type Param[A <: HList]        = doobie.util.param.Param[A]
+  /** @group Type Aliases - Core */ type Transactor[M[_]]         = doobie.util.transactor.Transactor[M]
+  /** @group Type Aliases - Core */ type LogHandler               = doobie.util.log.LogHandler
+  /** @group Type Aliases - Core */ type Fragment                 = doobie.util.fragment.Fragment
+  /** @group Type Aliases - Core */ type KleisliInterpreter[F[_]] = doobie.free.KleisliInterpreter[F]
   /** @group Type Aliases - Core */ type DataSourceTransactor[F[_]] = doobie.util.transactor.Transactor.Aux[F, javax.sql.DataSource]
 }
 

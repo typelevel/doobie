@@ -21,16 +21,15 @@ object paramspec extends Specification {
       true
     }
 
-    "exist for any Put" in {
-      def foo[A: Put] = Param[A]
+    "exist for A :: HNil given Put[A]" in {
+      def foo[A: Put] = Param[A :: HNil]
       true
     }
 
-    "exist for any Option of Put" in {
-      def foo[A: Put] = Param[Option[A]]
+    "exist for Option[A] :: HNil given Put[A]" in {
+      def foo[A: Put] = Param[Option[A] :: HNil]
       true
     }
-
 
     "exist for any HList with Put for head" in {
       def foo[A: Put, B <: HList : Param] = Param[A :: B]

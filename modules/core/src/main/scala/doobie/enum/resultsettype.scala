@@ -8,6 +8,7 @@ import doobie.util.invariant._
 
 import java.sql.ResultSet._
 
+import cats.ApplicativeError
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
@@ -28,8 +29,8 @@ object ResultSetType {
       case TypeScrollSensitive.toInt   => TypeScrollSensitive
     }
 
-  def unsafeFromInt(n: Int): ResultSetType =
-    fromInt(n).getOrElse(throw InvalidOrdinal[ResultSetType](n))
+  def fromIntF[F[_]](n: Int)(implicit AE: ApplicativeError[F, Throwable]): F[ResultSetType] =
+    ApplicativeError.liftFromOption(fromInt(n), InvalidOrdinal[ResultSetType](n))
 
   implicit val EqResultSetType: Eq[ResultSetType] =
     Eq.by(_.toInt)

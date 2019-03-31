@@ -217,7 +217,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     |object $mname { module =>
     |
-    |  // Algebra of operations for $sname. Each accepts a visitor as an alternatie to pattern-matching.
+    |  // Algebra of operations for $sname. Each accepts a visitor as an alternative to pattern-matching.
     |  sealed trait ${opname}[A] {
     |    def visit[F[_]](v: ${opname}.Visitor[F]): F[A]
     |  }
@@ -244,6 +244,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def embed[A](e: Embedded[A]): F[A]
     |      def delay[A](a: () => A): F[A]
     |      def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): F[A]
+    |      def raiseError[A](e: Throwable): F[A]
     |      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
     |      def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): F[A]
     |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): F[B]
@@ -267,6 +268,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    }
     |    final case class HandleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    |    }
+    |    final case class RaiseError[A](e: Throwable) extends ${opname}[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     |    }
     |    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -297,7 +301,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[${opname}, A] = FF.liftF(Embed(ev.embed(j, fa)))
     |  def delay[A](a: => A): ${ioname}[A] = FF.liftF(Delay(() => a))
     |  def handleErrorWith[A](fa: ${ioname}[A], f: Throwable => ${ioname}[A]): ${ioname}[A] = FF.liftF[${opname}, A](HandleErrorWith(fa, f))
-    |  def raiseError[A](err: Throwable): ${ioname}[A] = delay(throw err)
+    |  def raiseError[A](err: Throwable): ${ioname}[A] = FF.liftF[${opname}, A](RaiseError(err))
     |  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ${ioname}[A] = FF.liftF[${opname}, A](Async1(k))
     |  def asyncF[A](k: (Either[Throwable, A] => Unit) => ${ioname}[Unit]): ${ioname}[A] = FF.liftF[${opname}, A](AsyncF(k))
     |  def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = FF.liftF[${opname}, B](BracketCase(acquire, use, release))
@@ -377,6 +381,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    override def raw[A](f: $sname => A): Kleisli[M, $sname, A] = outer.raw(f)
        |    override def embed[A](e: Embedded[A]): Kleisli[M, $sname, A] = outer.embed(e)
        |    override def delay[A](a: () => A): Kleisli[M, $sname, A] = outer.delay(a)
+       |    override def raiseError[A](err: Throwable): Kleisli[M, $sname, A] = outer.raiseError(err)
        |    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, $sname, A] = outer.async(k)
        |
        |    // for asyncF we must call ourself recursively
@@ -463,9 +468,18 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  ${managed.map(interpreterDef).mkString("\n  ")}
       |
       |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
-      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli(a => contextShiftM.evalOn(blockingContext)(asyncM.delay(f(a))))
+      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
+      |    // primitive JDBC methods throw exceptions and so do we when reading values
+      |    // so catch any non-fatal exceptions and lift them into the effect
+      |    contextShiftM.evalOn(blockingContext)(try {
+      |      asyncM.delay(f(a))
+      |    } catch {
+      |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
+      |    })
+      |  }
       |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
       |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
+      |  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
       |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
       |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
       |    e match {

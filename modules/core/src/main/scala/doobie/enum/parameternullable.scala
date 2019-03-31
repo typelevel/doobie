@@ -8,6 +8,7 @@ import doobie.util.invariant._
 
 import java.sql.ParameterMetaData._
 
+import cats.ApplicativeError
 import cats.kernel.Eq
 import cats.kernel.instances.int._
 
@@ -38,8 +39,8 @@ object ParameterNullable {
       case Nullability.NullableUnknown => NullableUnknown
     }
 
-  def unsafeFromInt(n: Int): ParameterNullable =
-    fromInt(n).getOrElse(throw InvalidOrdinal[ParameterNullable](n))
+  def fromIntF[F[_]](n: Int)(implicit AE: ApplicativeError[F, Throwable]): F[ParameterNullable] =
+    ApplicativeError.liftFromOption(fromInt(n), InvalidOrdinal[ParameterNullable](n))
 
   implicit val EqParameterNullable: Eq[ParameterNullable] =
     Eq.by(_.toInt)

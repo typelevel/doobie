@@ -5,12 +5,14 @@
 package doobie.postgres
 
 import cats.effect.{ ContextShift, IO }
-import doobie._, doobie.implicits._
-import doobie.postgres._, doobie.postgres.implicits._
+import doobie._
+import doobie.implicits._
+import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
+import doobie.postgres.enums._
 import java.net.InetAddress
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
+import java.math.{BigDecimal => JBigDecimal}
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
@@ -30,11 +32,17 @@ object pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Param: Write: Read](col: String, a: A) =
+  def inOut[A: Get: Put](col: String, a: A): ConnectionIO[A] =
     for {
       _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
-    } yield (a0)
+    } yield a0
+
+  def inOutOpt[A: Get: Put](col: String, a: Option[A]): ConnectionIO[Option[A]] =
+    for {
+      _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
+      a0 <- Update[Option[A]](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[Option[A]]("value")(a)
+    } yield a0
 
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
@@ -42,10 +50,10 @@ object pgtypesspec extends Specification {
         inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
+        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOut[Option[A]](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
       }
     }
 
@@ -92,17 +100,15 @@ object pgtypesspec extends Specification {
   testInOut("boolean", true)
 
   // 8.7 Enumerated Types
-  // create type myenum as enum ('foo', 'bar') <-- part of setup
-  @SuppressWarnings(Array("org.wartremover.warts.Enumeration"))
-  object MyEnum extends Enumeration { val foo, bar = Value }
+  testInOut("myenum", MyEnum.Foo : MyEnum)
 
   // as scala.Enumeration
-  implicit val MyEnumMeta: Meta[MyEnum.Value] = pgEnum(MyEnum, "myenum")
-  testInOut("myenum", MyEnum.foo)
+  implicit val MyEnumMeta: Meta[MyScalaEnum.Value] = pgEnum(MyScalaEnum, "myenum")
+  testInOut("myenum", MyScalaEnum.foo)
 
-  // // as java.lang.Enum
-  // implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
-  // testInOutNN("myenum", MyJavaEnum.bar)
+  // as java.lang.Enum
+  implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
+  testInOut("myenum", MyJavaEnum.bar)
 
   // 8.8 Geometric Types
   testInOut("box", new PGbox(new PGpoint(1, 2), new PGpoint(3, 4)))
@@ -145,6 +151,7 @@ object pgtypesspec extends Specification {
   testInOut("double precision[]", List[Double](1.2, 3.4))
   testInOut("varchar[]", List[String]("foo", "bar"))
   testInOut("uuid[]", List[UUID](UUID.fromString("7af2cb9a-9aee-47bc-910b-b9f4d608afa0"), UUID.fromString("643a05f3-463f-4dab-916c-5af4a84c3e4a")))
+  testInOut("numeric[]", List[JBigDecimal](BigDecimal("3.14").bigDecimal, BigDecimal("42.0").bigDecimal))
 
   // 8.16 Structs
   skip("structs")

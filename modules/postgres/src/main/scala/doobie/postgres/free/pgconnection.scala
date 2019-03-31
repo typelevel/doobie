@@ -50,6 +50,7 @@ object pgconnection { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): F[A]
       def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): F[B]
@@ -89,6 +90,9 @@ object pgconnection { module =>
     }
     final case class HandleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -169,7 +173,7 @@ object pgconnection { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PGConnectionOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): PGConnectionIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: PGConnectionIO[A], f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): PGConnectionIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): PGConnectionIO[B] = FF.liftF[PGConnectionOp, B](BracketCase(acquire, use, release))
@@ -198,16 +202,16 @@ object pgconnection { module =>
   // PGConnectionIO is an Async
   implicit val AsyncPGConnectionIO: Async[PGConnectionIO] =
     new Async[PGConnectionIO] {
-      val M = FF.catsFreeMonadForFree[PGConnectionOp]
+      val asyncM = FF.catsFreeMonadForFree[PGConnectionOp]
       def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): PGConnectionIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): PGConnectionIO[A] = M.pure(x)
+      def pure[A](x: A): PGConnectionIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): PGConnectionIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): PGConnectionIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => PGConnectionIO[Unit]): PGConnectionIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => PGConnectionIO[A]): PGConnectionIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => PGConnectionIO[A]): PGConnectionIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
 }

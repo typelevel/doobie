@@ -48,6 +48,7 @@ object copymanager { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): F[A]
       def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): F[B]
@@ -77,6 +78,9 @@ object copymanager { module =>
     }
     final case class HandleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -127,7 +131,7 @@ object copymanager { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyManagerOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): CopyManagerIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): CopyManagerIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = FF.liftF[CopyManagerOp, B](BracketCase(acquire, use, release))
@@ -146,16 +150,16 @@ object copymanager { module =>
   // CopyManagerIO is an Async
   implicit val AsyncCopyManagerIO: Async[CopyManagerIO] =
     new Async[CopyManagerIO] {
-      val M = FF.catsFreeMonadForFree[CopyManagerOp]
+      val asyncM = FF.catsFreeMonadForFree[CopyManagerOp]
       def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): CopyManagerIO[A] = M.pure(x)
+      def pure[A](x: A): CopyManagerIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): CopyManagerIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyManagerIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => CopyManagerIO[A]): CopyManagerIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => CopyManagerIO[A]): CopyManagerIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
 }

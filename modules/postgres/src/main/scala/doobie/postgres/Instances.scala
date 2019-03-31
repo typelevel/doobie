@@ -78,7 +78,7 @@ trait Instances {
   // automatic lifting to Meta will give us lifted and unlifted arrays, for a total of four variants
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
-  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals"))
+  @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals", "org.wartremover.warts.Throw"))
   private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeTag](elemType: String, arrayType: String, arrayTypeT: String*): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
     val raw = Meta.Advanced.array[A](elemType, arrayType, arrayTypeT: _*)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
@@ -93,13 +93,14 @@ trait Instances {
   // so you can xmap if you need Short[]. The type names provided here are what is reported by JDBC
   // when metadata is requested; there are numerous aliases but these are the ones we need. Nothing
   // about this is portable, sorry. (╯°□°）╯︵ ┻━┻
-  implicit val (unliftedBooleanArrayType, liftedBooleanArrayType) = boxedPair[java.lang.Boolean]("bit",     "_bit")
-  implicit val (unliftedIntegerArrayType, liftedIntegerArrayType) = boxedPair[java.lang.Integer]("int4",    "_int4")
-  implicit val (unliftedLongArrayType,    liftedLongArrayType)    = boxedPair[java.lang.Long]   ("int8",    "_int8")
-  implicit val (unliftedFloatArrayType,   liftedFloatArrayType)   = boxedPair[java.lang.Float]  ("float4",  "_float4")
-  implicit val (unliftedDoubleArrayType,  liftedDoubleArrayType)  = boxedPair[java.lang.Double] ("float8",  "_float8")
-  implicit val (unliftedStringArrayType,  liftedStringArrayType)  = boxedPair[java.lang.String] ("varchar", "_varchar", "_char", "_text", "_bpchar")
-  implicit val (unliftedUUIDArrayType,    liftedUUIDArrayType)    = boxedPair[java.util.UUID]   ("uuid", "_uuid")
+  implicit val (unliftedBooleanArrayType,    liftedBooleanArrayType)    = boxedPair[java.lang.Boolean]    ("bit",     "_bit")
+  implicit val (unliftedIntegerArrayType,    liftedIntegerArrayType)    = boxedPair[java.lang.Integer]    ("int4",    "_int4")
+  implicit val (unliftedLongArrayType,       liftedLongArrayType)       = boxedPair[java.lang.Long]       ("int8",    "_int8")
+  implicit val (unliftedFloatArrayType,      liftedFloatArrayType)      = boxedPair[java.lang.Float]      ("float4",  "_float4")
+  implicit val (unliftedDoubleArrayType,     liftedDoubleArrayType)     = boxedPair[java.lang.Double]     ("float8",  "_float8")
+  implicit val (unliftedStringArrayType,     liftedStringArrayType)     = boxedPair[java.lang.String]     ("varchar", "_varchar", "_char", "_text", "_bpchar")
+  implicit val (unliftedUUIDArrayType,       liftedUUIDArrayType)       = boxedPair[java.util.UUID]       ("uuid", "_uuid")
+  implicit val (unliftedBigDecimalArrayType, liftedBigDecimalArrayType) = boxedPair[java.math.BigDecimal] ("numeric", "_decimal", "_numeric")
 
   // Unboxed equivalents (actually identical in the lifted case). We require that B is the unboxed
   // equivalent of A, otherwise this will fail in spectacular fashion, and we're using a cast in the
@@ -134,7 +135,7 @@ trait Instances {
 
 
   private def enumPartialMeta(name: String): Meta[String] =
-    Meta.basic[String](
+    Meta.Basic.many[String](
       NonEmptyListOf(JdbcType.Other, JdbcType.VarChar), // https://github.com/tpolecat/doobie/issues/303
       NonEmptyListOf(JdbcType.Other, JdbcType.VarChar),
       Nil,
@@ -164,13 +165,14 @@ trait Instances {
    * Construct a `Meta` for values of the given type, mapped via `String` to the named PostgreSQL
    * enum type with tranparent partiality.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def pgEnumStringOpt[A: TypeTag](name: String, f: String => Option[A], g: A => String): Meta[A] =
     pgEnumString(name, {s: String => f(s).getOrElse(throw doobie.util.invariant.InvalidEnum[A](s))} ,g)
 
   /**
    * Construct a `Meta` for value members of the given `Enumeration`.
    */
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.ToString"))
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.ToString", "org.wartremover.warts.Throw"))
   def pgEnum(e: Enumeration, name: String): Meta[e.Value] =
     pgEnumString[e.Value](name,
       a => try e.withName(a) catch {
@@ -178,14 +180,14 @@ trait Instances {
       }, _.toString)
 
   /**
-   * Construct a `Meta` for value members of the given Jave `enum`.
+   * Construct a `Meta` for value members of the given Java `enum`.
    */
-   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   def pgJavaEnum[E <: java.lang.Enum[E]: TypeTag](name: String)(implicit E: ClassTag[E]): Meta[E] = {
     val clazz = E.runtimeClass.asInstanceOf[Class[E]]
     pgEnumString[E](name,
-      a => try java.lang.Enum.valueOf(clazz, a).asInstanceOf[E] catch {
-        case _: NoSuchElementException => throw InvalidEnum[E](a)
+      a => try java.lang.Enum.valueOf(clazz, a) catch {
+        case _: IllegalArgumentException => throw InvalidEnum[E](a)
       }, _.name)
   }
 

@@ -4,6 +4,7 @@
 
 package doobie.specs2
 
+import cats.Id
 import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.specs2.imports._
@@ -23,6 +24,11 @@ trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
   check(sql"select 1".query[Int])
 
+  // Abstract type parameters should be handled correctly
+  {
+    final case class Foo[F[_]](x: Int)
+    check(sql"select 1".query[Foo[Id]])
+  }
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {

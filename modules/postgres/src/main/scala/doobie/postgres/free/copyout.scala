@@ -40,6 +40,7 @@ object copyout { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): F[A]
       def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): F[B]
@@ -68,6 +69,9 @@ object copyout { module =>
     }
     final case class HandleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -115,7 +119,7 @@ object copyout { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyOutOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): CopyOutIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): CopyOutIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): CopyOutIO[A] = FF.liftF[CopyOutOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyOutIO[A] = FF.liftF[CopyOutOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = FF.liftF[CopyOutOp, B](BracketCase(acquire, use, release))
@@ -133,16 +137,16 @@ object copyout { module =>
   // CopyOutIO is an Async
   implicit val AsyncCopyOutIO: Async[CopyOutIO] =
     new Async[CopyOutIO] {
-      val M = FF.catsFreeMonadForFree[CopyOutOp]
+      val asyncM = FF.catsFreeMonadForFree[CopyOutOp]
       def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): CopyOutIO[A] = M.pure(x)
+      def pure[A](x: A): CopyOutIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): CopyOutIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyOutIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => CopyOutIO[A]): CopyOutIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => CopyOutIO[A]): CopyOutIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
 }

@@ -5,19 +5,17 @@ import microsites._
 resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "1.5.0"
+lazy val catsVersion          = "1.6.0"
+lazy val catsEffectVersion    = "1.2.0"
 lazy val circeVersion         = "0.11.1"
-def fs2CoreVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
-  case Some((2, v)) if v >= 13 => "1.0.3-SNAPSHOT"
-  case _                       => "1.0.2"
-}
+lazy val fs2Version           = "1.0.3"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.3.0"
 lazy val kindProjectorVersion = "0.9.9"
 lazy val monixVersion         = "3.0.0-RC2"
 lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
-lazy val refinedVersion       = "0.9.3"
+lazy val refinedVersion       = "0.9.4"
 lazy val scalaCheckVersion    = "1.14.0"
 def scalatestVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
   case Some((2, v)) if v >= 13 => "3.0.6-SNAP5"
@@ -25,6 +23,7 @@ def scalatestVersion(scalaVersion: String) = CrossVersion.partialVersion(scalaVe
 }
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.5"
+lazy val zioVersion           = "0.6.0"
 lazy val specs2Version        = "4.3.6"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
@@ -43,7 +42,6 @@ lazy val doobieWarts =
     Wart.Product,             // false positives
     Wart.Serializable,        // false positives
     Wart.ImplicitConversion,  // we know what we're doing
-    Wart.Throw,               // TODO: switch to ApplicativeError.fail in most places
     Wart.PublicInference,     // fails https://github.com/wartremover/wartremover/issues/398
     Wart.ImplicitParameter    // only used for Pos, but evidently can't be suppressed
   )
@@ -284,9 +282,10 @@ lazy val free = project
     scalacOptions += "-Yno-predef",
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"   % fs2CoreVersion(scalaVersion.value),
-      "org.typelevel"  %% "cats-core"  % catsVersion,
-      "org.typelevel"  %% "cats-free"  % catsVersion
+      "co.fs2"         %% "fs2-core"    % fs2Version,
+      "org.typelevel"  %% "cats-core"   % catsVersion,
+      "org.typelevel"  %% "cats-free"   % catsVersion,
+      "org.typelevel"  %% "cats-effect" % catsEffectVersion,
     ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
@@ -325,8 +324,23 @@ lazy val core = project
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
-      "com.h2database"        %  "h2"            % h2Version          % "test"
+      "com.h2database"        %  "h2"            % h2Version          % "test",
     ),
+
+    // temporary until a 2.13 version of zio has been published
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 12 => Seq(
+          "org.scalaz" %% "scalaz-zio"               % zioVersion % "test",
+          "org.scalaz" %% "scalaz-zio-interop-cats"  % zioVersion % "test",
+        )
+        case _ => Seq.empty
+      }
+    },
+    unmanagedJars in Test += unmanagedBase.value / scalaVersion.value / "scalaz-zio.jar",
+    unmanagedJars in Test += unmanagedBase.value / scalaVersion.value / "scalaz-zio-interop-shared.jar",
+    unmanagedJars in Test += unmanagedBase.value / scalaVersion.value / "scalaz-zio-interop-cats.jar",
+
     scalacOptions += "-Yno-predef",
     unmanagedSourceDirectories in Compile += {
       val sourceDir = (sourceDirectory in Compile).value
@@ -363,14 +377,14 @@ lazy val example = project
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2CoreVersion(scalaVersion.value)
+      "co.fs2" %% "fs2-io"     % fs2Version
     )
   )
 
 lazy val postgres = project
   .in(file("modules/postgres"))
   .enablePlugins(AutomateHeaderPlugin)
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(freeGen2Settings)
@@ -378,7 +392,7 @@ lazy val postgres = project
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2CoreVersion(scalaVersion.value),
+      "co.fs2" %% "fs2-io"     % fs2Version,
       "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided"
     ),
@@ -543,7 +557,7 @@ lazy val docs = project
       yamlCustomProperties = Map(
         "doobieVersion"    -> version.value,
         "catsVersion"      -> catsVersion,
-        "fs2Version"       -> fs2CoreVersion(scalaVersion.value),
+        "fs2Version"       -> fs2Version,
         "shapelessVersion" -> shapelessVersion,
         "h2Version"        -> h2Version,
         "postgresVersion"  -> postgresVersion,

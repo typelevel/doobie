@@ -16,7 +16,7 @@ import java.util.Map
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object ref { module =>
 
-  // Algebra of operations for Ref. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for Ref. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait RefOp[A] {
     def visit[F[_]](v: RefOp.Visitor[F]): F[A]
   }
@@ -43,6 +43,7 @@ object ref { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): F[A]
       def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): F[B]
@@ -69,6 +70,9 @@ object ref { module =>
     }
     final case class HandleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -110,7 +114,7 @@ object ref { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): RefIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): RefIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): RefIO[A] = FF.liftF[RefOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): RefIO[A] = FF.liftF[RefOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): RefIO[A] = FF.liftF[RefOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = FF.liftF[RefOp, B](BracketCase(acquire, use, release))

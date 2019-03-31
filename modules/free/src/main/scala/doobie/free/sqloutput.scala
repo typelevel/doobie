@@ -32,7 +32,7 @@ import java.sql.{ Array => SqlArray }
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object sqloutput { module =>
 
-  // Algebra of operations for SQLOutput. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for SQLOutput. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait SQLOutputOp[A] {
     def visit[F[_]](v: SQLOutputOp.Visitor[F]): F[A]
   }
@@ -59,6 +59,7 @@ object sqloutput { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): F[A]
       def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): F[B]
@@ -109,6 +110,9 @@ object sqloutput { module =>
     }
     final case class HandleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -222,7 +226,7 @@ object sqloutput { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLOutputOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): SQLOutputIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): SQLOutputIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): SQLOutputIO[B] = FF.liftF[SQLOutputOp, B](BracketCase(acquire, use, release))

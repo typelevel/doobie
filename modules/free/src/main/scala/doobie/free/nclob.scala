@@ -20,7 +20,7 @@ import java.sql.NClob
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object nclob { module =>
 
-  // Algebra of operations for NClob. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for NClob. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait NClobOp[A] {
     def visit[F[_]](v: NClobOp.Visitor[F]): F[A]
   }
@@ -47,6 +47,7 @@ object nclob { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => NClobIO[Unit]): F[A]
       def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): F[B]
@@ -82,6 +83,9 @@ object nclob { module =>
     }
     final case class HandleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends NClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -150,7 +154,7 @@ object nclob { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[NClobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): NClobIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]): NClobIO[A] = FF.liftF[NClobOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): NClobIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): NClobIO[A] = FF.liftF[NClobOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): NClobIO[A] = FF.liftF[NClobOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => NClobIO[Unit]): NClobIO[A] = FF.liftF[NClobOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): NClobIO[B] = FF.liftF[NClobOp, B](BracketCase(acquire, use, release))

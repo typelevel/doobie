@@ -43,6 +43,7 @@ object fastpath { module =>
       def embed[A](e: Embedded[A]): F[A]
       def delay[A](a: () => A): F[A]
       def handleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]): F[A]
+      def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Unit]): F[A]
       def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): F[B]
@@ -74,6 +75,9 @@ object fastpath { module =>
     }
     final case class HandleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
+    }
+    final case class RaiseError[A](e: Throwable) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
     final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -130,7 +134,7 @@ object fastpath { module =>
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[FastpathOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
   def delay[A](a: => A): FastpathIO[A] = FF.liftF(Delay(() => a))
   def handleErrorWith[A](fa: FastpathIO[A], f: Throwable => FastpathIO[A]): FastpathIO[A] = FF.liftF[FastpathOp, A](HandleErrorWith(fa, f))
-  def raiseError[A](err: Throwable): FastpathIO[A] = delay(throw err)
+  def raiseError[A](err: Throwable): FastpathIO[A] = FF.liftF[FastpathOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): FastpathIO[A] = FF.liftF[FastpathOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Unit]): FastpathIO[A] = FF.liftF[FastpathOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): FastpathIO[B] = FF.liftF[FastpathOp, B](BracketCase(acquire, use, release))
@@ -151,16 +155,16 @@ object fastpath { module =>
   // FastpathIO is an Async
   implicit val AsyncFastpathIO: Async[FastpathIO] =
     new Async[FastpathIO] {
-      val M = FF.catsFreeMonadForFree[FastpathOp]
+      val asyncM = FF.catsFreeMonadForFree[FastpathOp]
       def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): FastpathIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): FastpathIO[A] = M.pure(x)
+      def pure[A](x: A): FastpathIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: FastpathIO[A])(f: Throwable => FastpathIO[A]): FastpathIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): FastpathIO[A] = module.raiseError(e)
       def async[A](k: (Either[Throwable,A] => Unit) => Unit): FastpathIO[A] = module.async(k)
       def asyncF[A](k: (Either[Throwable,A] => Unit) => FastpathIO[Unit]): FastpathIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = M.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => FastpathIO[Either[A, B]]): FastpathIO[B] = M.tailRecM(a)(f)
-      def suspend[A](thunk: => FastpathIO[A]): FastpathIO[A] = M.flatten(module.delay(thunk))
+      def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = asyncM.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => FastpathIO[Either[A, B]]): FastpathIO[B] = asyncM.tailRecM(a)(f)
+      def suspend[A](thunk: => FastpathIO[A]): FastpathIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
 }

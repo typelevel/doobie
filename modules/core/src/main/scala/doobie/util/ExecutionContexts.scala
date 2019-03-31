@@ -5,7 +5,6 @@
 package doobie.util
 
 import cats.effect.{ Resource, Sync }
-import cats.implicits._
 import java.util.concurrent.{ Executors, ExecutorService }
 import scala.concurrent.ExecutionContext
 

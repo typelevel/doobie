@@ -7,7 +7,7 @@ package doobie.syntax
 import doobie.util.param.Param
 import doobie.util.pos.Pos
 import doobie.util.fragment.Fragment
-import shapeless.ProductArgs
+import shapeless.{ HList, ProductArgs }
 
 /**
  * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
@@ -16,9 +16,9 @@ import shapeless.ProductArgs
  */
 final class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
 
-  private def mkFragment[A](a: A, token: Boolean)(implicit ev: Param[A]): Fragment = {
+  private def mkFragment[A <: HList](a: A, token: Boolean)(implicit ev: Param[A]): Fragment = {
     val sql = sc.parts.mkString("", "?", if (token) " " else "")
-    Fragment(sql, a, Some(pos))(ev.write)
+    Fragment(sql, ev.elems(a), Some(pos))
   }
 
   /**
@@ -28,7 +28,7 @@ final class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
    * think about intervening whitespace. If you do not want this behavior, use `fr0`.
    */
   object fr extends ProductArgs {
-    def applyProduct[A: Param](a: A): Fragment = mkFragment(a, true)
+    def applyProduct[A <: HList : Param](a: A): Fragment = mkFragment(a, true)
   }
 
   /** Alternative name for the `fr0` interpolator. */
@@ -39,7 +39,7 @@ final class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
    * attempt is made to be helpful with respect to whitespace.
    */
   object fr0 extends ProductArgs {
-    def applyProduct[A: Param](a: A): Fragment = mkFragment(a, false)
+    def applyProduct[A <: HList : Param](a: A): Fragment = mkFragment(a, false)
   }
 
 }

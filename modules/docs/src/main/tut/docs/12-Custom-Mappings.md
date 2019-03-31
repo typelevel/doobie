@@ -142,13 +142,15 @@ In rare cases it is not possible to define a new mapping in terms of primitive J
 In this example we will create a mapping for PostgreSQL's `json` type, which is not part of the JDBC specification. On the Scala side we will use the `Json` type from [Circe](https://github.com/circe/circe). The PostgreSQL JDBC driver transfers `json` values via the JDBC type `OTHER`, with an uwrapped payload type `PGobject`. The only way to know this is by experimentation. You can expect to get this kind of mapping wrong a few times before it starts working. In any case the `OTHER` type is commonly used for nonstandard types and **doobie** provides a way to construct such mappings.
 
 ```tut:silent
+implicit val showPGobject: Show[PGobject] = Show.show(_.getValue.take(250))
+
 implicit val jsonGet: Get[Json] =
-  Get.Advanced.other[PGobject](NonEmptyList.of("json")).tmap[Json] { o =>
-    parse(o.getValue).leftMap[Json](throw _).merge
+  Get.Advanced.other[PGobject](NonEmptyList.of("json")).temap[Json] { o =>
+    parse(o.getValue).leftMap(_.show)
   }
 ```
 
-In the instance above we read a value via JDBC's `getOther` with schema type `json`, cast the result to `PGobject`, then parse its value (a `String`), throwing the parse exception on failure. Consider for a moment how comically optimistic this is. Many things have to work in order to get a `Json` value in hand, and if anything fails it's an unrecoverable error. Effective testing is essential when defining new mappings like this.
+In the instance above we read a value via JDBC's `getOther` with schema type `json`, cast the result to `PGobject`, then parse its value (a `String`), returning the parse exception as a string on failure. Consider for a moment how comically optimistic this is. Many things have to work in order to get a `Json` value in hand, and if anything fails it's an unrecoverable error. Effective testing is essential when defining new mappings like this.
 
 The `Put` instance is less error-prone since we know the `Json` we start with is valid. Here we construct and return a new `PGobject` whose schema type and string value are filled in explicitly.
 

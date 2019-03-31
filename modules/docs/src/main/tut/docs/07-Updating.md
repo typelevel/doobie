@@ -152,7 +152,7 @@ def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
 }
 ```
 
-The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (otherwise an exception will be thrown), and requires a list of columns to return. This isn't the most beautiful API but it's what JDBC gives us. And it does work.
+The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (otherwise an exception will be raised), and requires a list of columns to return. This isn't the most beautiful API but it's what JDBC gives us. And it does work.
 
 ```tut
 insert3("Elvis", None).quick.unsafeRunSync
