@@ -153,7 +153,7 @@ It is expected that these will be mapped to application-specific types via `xmap
 Mappings for postgis are provided in the `pgistypes` module. Doobie expects postgis dependency to be provided, so if you use this module you should add postgis as a dependency.
 
 ```scala
-libraryDependencies += "org.postgis" % "postgis-jdbc" % "1.3.3"
+libraryDependencies += "net.postgis" % "postgis-jdbc" % "2.3.0"
 ```
 
 ```tut:silent
