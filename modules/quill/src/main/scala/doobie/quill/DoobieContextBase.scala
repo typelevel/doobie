@@ -55,7 +55,7 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
 
   override def executeAction[A](
     sql:     String,
-    prepare: Prepare = identityPrepare,
+    prepare: Prepare = identityPrepare
   ): ConnectionIO[Long] =
     HC.prepareStatement(sql) {
       FPS.raw(prepare) *>
