@@ -583,7 +583,7 @@ lazy val refined = project
       description := "Quill support for doobie.",
       libraryDependencies ++= Seq(
         "io.getquill" %% "quill-jdbc" % quillVersion,
-        "org.slf4j"   %  "slf4j-nop"  % slf4jVersion
+        "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
       ),
       wartremoverErrors in (Compile, compile) := Nil, // quill quotes crash wartremover
       wartremoverErrors in (Test,    compile) := Nil,
