@@ -13,6 +13,7 @@ lazy val h2Version            = "1.4.199"
 lazy val hikariVersion        = "3.3.1"
 lazy val kindProjectorVersion = "0.9.9"
 lazy val monixVersion         = "3.0.0-RC2"
+lazy val quillVersion         = "3.1.0"
 lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
 lazy val refinedVersion       = "0.9.4"
@@ -243,8 +244,8 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .dependsOn(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined)
-  .aggregate(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined)
+  .dependsOn(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined, quill)
+  .aggregate(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined, quill)
   .settings(
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
@@ -568,3 +569,20 @@ lazy val refined = project
       "com.h2database"        %  "h2"             % h2Version          % "test"
     )
   )
+
+  lazy val quill = project
+    .in(file("modules/quill"))
+    .enablePlugins(AutomateHeaderPlugin)
+    .dependsOn(core, postgres)
+    .settings(doobieSettings)
+    .settings(publishSettings)
+    .settings(
+      name := "doobie-quill",
+      description := "Quill support for doobie.",
+      libraryDependencies ++= Seq(
+        "io.getquill" %% "quill-jdbc" % quillVersion,
+        "org.slf4j"   % "slf4j-nop"   % "1.7.26"
+      ),
+      wartremoverErrors in (Compile, compile) := Nil, // quill quotes crash wartremover
+      wartremoverErrors in (Test,    compile) := Nil,
+    )
