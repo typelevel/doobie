@@ -12,7 +12,6 @@ import io.getquill._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-// @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object PostgresDoobieContextSpec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
