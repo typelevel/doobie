@@ -41,6 +41,20 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
       }
     }
 
+  // N.B. this is implemented reasonably in the superclass, but here we're delegating to doobie's
+  // unique result handler to get doobie errors on execution rather than Quill errors.
+  override def executeQuerySingle[A](
+    sql:       String,
+    prepare:   Prepare      = identityPrepare,
+    extractor: Extractor[A] = identityExtractor
+  ): ConnectionIO[A] =
+    HC.prepareStatement(sql) {
+      FPS.raw(prepare) *>
+      HPS.executeQuery {
+        HRS.getUnique(extractor)
+      }
+    }
+
   def streamQuery[A](
     fetchSize: Option[Int],
     sql:       String,
@@ -65,21 +79,20 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
   // TODO: executeActionReturning
   // TODO: executeBatchAction
   // TODO: executeBatchActionReturning
-  // TODO: executeQuerySingle
 
   // This is very bad. We turn an extractor into a `Read` so we can use the existing resultset
   // machinery. In order to do this we shamelessly stub out the required metadata with nonsense
-  // which is ok because it's never used.
+  // which is ok because it's never used, heh-heh.
   private implicit def extractorToRead[A](ex: Extractor[A]): Read[A] =
     Read.fromGet(Get.Basic.one(null, Nil, (rs, _) => ex(rs))(typeTag[Unit].asInstanceOf[TypeTag[A]]))
 
-  // nothing to do here
+  // Nothing to do here.
   override def close(): Unit = ()
 
-  // nothing to do here either
+  // Nothing to do here either.
   override def probe(statement: String) = Success(())
 
-  // can't implement this but it won't be called anyway so ¯\_(ツ)_/¯
+  // We can't implement this but it won't be called anyway so ¯\_(ツ)_/¯
   override protected def withConnection[A](f: Connection => ConnectionIO[A]): ConnectionIO[A] = ???
 
 }
