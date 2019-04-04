@@ -10,5 +10,3 @@ import io.getquill.context.jdbc.PostgresJdbcContextBase
 class PostgresDoobieContext[N <: NamingStrategy](val naming: N)
   extends DoobieContextBase[PostgresDialect, N]
      with PostgresJdbcContextBase[N]
-
-// look at quill-jdbc-monix

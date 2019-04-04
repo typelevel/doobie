@@ -25,6 +25,7 @@ lazy val specs2Version        = "4.5.1"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
 lazy val scala213Version      = "2.13.0-M5"
+lazy val slf4jVersion         = "1.7.26"
 
 // Check bincompat versus this version.
 lazy val binaryCompatibleVersion = "0.6.0"
@@ -573,7 +574,8 @@ lazy val refined = project
   lazy val quill = project
     .in(file("modules/quill"))
     .enablePlugins(AutomateHeaderPlugin)
-    .dependsOn(core, postgres)
+    .dependsOn(core)
+    .dependsOn(postgres % "test")
     .settings(doobieSettings)
     .settings(publishSettings)
     .settings(
@@ -581,7 +583,7 @@ lazy val refined = project
       description := "Quill support for doobie.",
       libraryDependencies ++= Seq(
         "io.getquill" %% "quill-jdbc" % quillVersion,
-        "org.slf4j"   % "slf4j-nop"   % "1.7.26"
+        "org.slf4j"   %  "slf4j-nop"  % slf4jVersion
       ),
       wartremoverErrors in (Compile, compile) := Nil, // quill quotes crash wartremover
       wartremoverErrors in (Test,    compile) := Nil,

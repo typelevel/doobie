@@ -30,7 +30,7 @@ object PostgresDoobieContextSpec extends Specification {
   case class Country(code: String, name: String, population: Int)
 
   def lookup(code: String) =
-    quote { query[Country].filter(_.code like lift(code)) }
+    quote { query[Country].filter(_.code == lift(code)) }
 
   "executeQuery" should {
     "correctly select a country" in {
