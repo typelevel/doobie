@@ -4,6 +4,8 @@
 
 package doobie.quill
 
+import cats.data.Nested
+import cats.effect.Resource
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.util.query.DefaultChunkSize
@@ -11,7 +13,7 @@ import fs2.Stream
 import io.getquill.{ NamingStrategy, DoobieContextBaseStub }
 import io.getquill.context.sql.idiom.SqlIdiom
 import io.getquill.context.StreamingContext
-import java.sql.Connection
+import java.sql.{ Connection }
 import scala.reflect.runtime.universe.{ TypeTag, typeTag }
 import scala.util.Success
 
@@ -20,14 +22,16 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
   extends DoobieContextBaseStub[Dialect, Naming]
      with StreamingContext[Dialect, Naming] {
 
-  type Result[A]               = ConnectionIO[A]
-  type RunQueryResult[A]       = List[A]
-  type RunQuerySingleResult[A] = List[A]
-  type StreamResult[A]         = Stream[ConnectionIO, A]
-  type RunActionResult         = Long
-  // TODO: type RunActionReturningResult[A]
-  // TODO: type RunBatchActionResult
-  // TODO: type RunBatchActionReturningResult[A]
+  type Result[A]                        = ConnectionIO[A]
+  type RunQueryResult[A]                = List[A]
+  type RunQuerySingleResult[A]          = A
+  type StreamResult[A]                  = Stream[ConnectionIO, A]
+  type RunActionResult                  = Long
+  type RunBatchActionResult             = List[Long]
+
+  // These are declared but seem to be unused.
+  // type RunActionReturningResult[A]
+  // type RunBatchActionReturningResult[A]
 
   override def executeQuery[A](
     sql:       String,
@@ -41,8 +45,6 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
       }
     }
 
-  // N.B. this is implemented reasonably in the superclass, but here we're delegating to doobie's
-  // unique result handler to get doobie errors on execution rather than Quill errors.
   override def executeQuerySingle[A](
     sql:       String,
     prepare:   Prepare      = identityPrepare,
@@ -76,9 +78,39 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
       HPS.executeUpdate.map(_.toLong)
     }
 
-  // TODO: executeActionReturning
-  // TODO: executeBatchAction
-  // TODO: executeBatchActionReturning
+  override def executeActionReturning[A](
+    sql:       String,
+    prepare:   Prepare = identityPrepare,
+    extractor: Extractor[A],
+    column:    String
+  ): ConnectionIO[A] =
+    HC.prepareStatementS(sql, List(column)) {
+      FPS.raw(prepare)  *>
+      FPS.executeUpdate *>
+      HPS.getGeneratedKeys(HRS.getUnique(extractor))
+    }
+
+  override def executeBatchAction(
+    groups: List[BatchGroup]
+  ): ConnectionIO[List[Long]] =
+    groups.flatTraverse { case BatchGroup(sql, preps) =>
+      HC.prepareStatement(sql) {
+        preps.traverse(FPS.raw(_) *> FPS.addBatch) *>
+        Nested(HPS.executeBatch).map(_.toLong).value
+      }
+    }
+
+  override def executeBatchActionReturning[A](
+    groups:    List[BatchGroupReturning],
+    extractor: Extractor[A]
+  ): ConnectionIO[List[A]] =
+    groups.flatTraverse { case BatchGroupReturning(sql, column, preps) =>
+      HC.prepareStatementS(sql, List(column)) {
+        preps.traverse(FPS.raw(_) *> FPS.addBatch) *>
+        HPS.executeBatch *>
+        HPS.getGeneratedKeys(HRS.list(extractor))
+      }
+    }
 
   // This is very bad. We turn an extractor into a `Read` so we can use the existing resultset
   // machinery. In order to do this we shamelessly stub out the required metadata with nonsense
