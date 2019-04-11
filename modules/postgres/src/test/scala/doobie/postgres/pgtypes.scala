@@ -152,6 +152,7 @@ object pgtypesspec extends Specification {
   testInOut("varchar[]", List[String]("foo", "bar"))
   testInOut("uuid[]", List[UUID](UUID.fromString("7af2cb9a-9aee-47bc-910b-b9f4d608afa0"), UUID.fromString("643a05f3-463f-4dab-916c-5af4a84c3e4a")))
   testInOut("numeric[]", List[JBigDecimal](BigDecimal("3.14").bigDecimal, BigDecimal("42.0").bigDecimal))
+  testInOut("numeric[]", List[BigDecimal](BigDecimal("3.14"), BigDecimal("42.0")))
 
   // 8.16 Structs
   skip("structs")
