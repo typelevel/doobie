@@ -122,10 +122,12 @@ trait Instances {
   implicit val (unliftedUnboxedDoubleArrayType,  liftedUnboxedDoubleArrayType)  = unboxedPair[java.lang.Double,  scala.Double] (_.doubleValue,  java.lang.Double.valueOf)
 
   // Arrays of scala.BigDecimal - special case as BigDecimal can be null
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   implicit val bigDecimalMeta: Meta[Array[BigDecimal]] = Meta[Array[java.math.BigDecimal]]
-    .timap(_.map( a => if(a==null) null else BigDecimal.apply(a)))(_.map(a => if(a==null) null else a.bigDecimal))
+    .timap(_.map( a => if(a == null) null else BigDecimal.apply(a)))(_.map(a => if(a == null) null else a.bigDecimal))
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   implicit val optionBigDecimalMeta: Meta[Array[Option[BigDecimal]]] = Meta[Array[Option[java.math.BigDecimal]]]
-    .timap(_.map(_.map(a => if(a==null) null else BigDecimal.apply(a))))(_.map(_.map(a => if(a==null) null else a.bigDecimal)))
+    .timap(_.map(_.map(a => if(a == null) null else BigDecimal.apply(a))))(_.map(_.map(a => if(a == null) null else a.bigDecimal)))
 
 
 
