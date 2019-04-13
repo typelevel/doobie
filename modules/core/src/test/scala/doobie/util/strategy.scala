@@ -4,15 +4,14 @@
 
 package doobie.util
 
-import cats.Monad
 import cats.effect.{ Async, ContextShift, IO }
-import cats.implicits._
+import cats.syntax.apply._
+import cats.syntax.either._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
-import scala.Predef._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object strategyspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
@@ -25,6 +24,7 @@ object strategyspec extends Specification {
   )
 
   // an instrumented interpreter
+  @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class Interp extends KleisliInterpreter[IO] {
 
     val asyncM = Async[IO]
@@ -98,18 +98,6 @@ object strategyspec extends Specification {
       i.Connection.rollback must_== Some(())
     }
 
-    "Connection.close should be called on success" in {
-      val i = new Interp
-      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync
-      i.Connection.close must_== Some(())
-    }
-
-    "Connection.close should be called on failure" in {
-      val i = new Interp
-      sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
-      i.Connection.close must_== Some(())
-    }
-
   }
 
   "Connection configuration and safety (streaming)" >> {
@@ -142,18 +130,6 @@ object strategyspec extends Specification {
       val i = new Interp
       sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
       i.Connection.rollback must_== Some(())
-    }
-
-    "Connection.close should be called on success" in {
-      val i = new Interp
-      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync
-      i.Connection.close must_== Some(())
-    }
-
-    "Connection.close should be called on failure" in {
-      val i = new Interp
-      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
-      i.Connection.close must_== Some(())
     }
 
   }

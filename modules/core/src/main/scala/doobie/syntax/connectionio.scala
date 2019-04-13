@@ -12,20 +12,20 @@ import doobie.free.connection.{AsyncConnectionIO, ConnectionIO}
 import doobie.util.transactor.Transactor
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): M[A] = xa.transB.apply(ma)
+  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): M[A] = xa.trans.apply(ma)
 }
 
 class OptionTConnectionIOOps[A](ma: OptionT[ConnectionIO, A]) {
   def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): OptionT[M, A] =
     OptionT(
-      xa.transB.apply(ma.orElseF(HC.rollback.as(None)).value)
+      xa.trans.apply(ma.orElseF(HC.rollback.as(None)).value)
     )
 }
 
 class EitherTConnectionIOOps[E, A](ma: EitherT[ConnectionIO, E, A]) {
   def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): EitherT[M, E, A] =
     EitherT(
-      xa.transB.apply(ma.leftSemiflatMap(HC.rollback.as(_)).value)
+      xa.trans.apply(ma.leftSemiflatMap(HC.rollback.as(_)).value)
     )
 }
 

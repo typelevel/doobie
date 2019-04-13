@@ -5,6 +5,16 @@ section: "migration"
 position: 2
 ---
 
+# Upgrading to 0.7.x from 0.6.x
+
+`Transactor.connect` has changed from `A => Connection` to `A => Resource[M, Connection]`. Any connection retrieved from this function is expected to close itself.
+
+Methods on `Transactor` that turn a program into a `M` now require that `M` have an instance of `Bracket` instead of `Monad`.
+
+
+
+-----
+
 # Upgrading to 0.6.x from 0.5.x
 
 The major changes in 0.6.x are the addition of explicit threading controls for asynchronous operation and the restructuring of `Meta` and `Composite`, as described below. In preparation for upgrading please **fix all deprecation warnings** as all methods deprecated in 0.5.x have been removed.
