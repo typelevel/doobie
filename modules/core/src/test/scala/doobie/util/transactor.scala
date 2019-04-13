@@ -6,6 +6,7 @@ package doobie.util
 
 import cats.effect.{ Async, ContextShift, Effect, IO }
 import cats.effect.syntax.effect._
+import cats.syntax.either._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext

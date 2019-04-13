@@ -11,6 +11,7 @@ position: 2
 
 Methods on `Transactor` that turn a program into a `M` now require that `M` have an instance of `Bracket` instead of `Monad`.
 
+`guarantee` and `onError` have been removed from `catchsql`. `guarantee` should be replaced with `cats.effect.Bracket.guarantee` while `onError` should be replaced with `cats.ApplicativeError.onError`. All other methods now only require an `ApplicativeError` instance. As such the `monaderror` syntax has been renamed to `applicativeerror`.
 
 
 -----
