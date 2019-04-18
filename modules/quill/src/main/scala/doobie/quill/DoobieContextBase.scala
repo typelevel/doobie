@@ -27,11 +27,9 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
   type RunQuerySingleResult[A]          = A
   type StreamResult[A]                  = Stream[ConnectionIO, A]
   type RunActionResult                  = Long
+  type RunActionReturningResult[A]      = A
   type RunBatchActionResult             = List[Long]
-
-  // These are declared but seem to be unused.
-  // type RunActionReturningResult[A]
-  // type RunBatchActionReturningResult[A]
+  type RunBatchActionReturningResult[A] = List[A]
 
   override def executeQuery[A](
     sql:       String,

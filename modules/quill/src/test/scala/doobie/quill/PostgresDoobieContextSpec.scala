@@ -69,10 +69,6 @@ object PostgresDoobieContextSpec extends Specification {
     }
   }
 
-  "executeActionReturning" should {
-    failure("not implemented")
-  }
-
   "executeBatchAction" should {
     "correctly do multiple updates" in {
       val stmt = quote {
@@ -86,8 +82,34 @@ object PostgresDoobieContextSpec extends Specification {
     }
   }
 
+  // For these last two we need a new table with an auto-generated id, so we'll do a temp table.
+  val create: ConnectionIO[Unit] =
+    sql"""
+      CREATE TEMPORARY TABLE QuillTest (
+        id    SERIAL,
+        value VARCHAR(42)
+      ) ON COMMIT DROP
+    """.update.run.void
+
+  case class QuillTest(id: Int, value: String)
+
+  "executeActionReturning" should {
+    "correctly retrieve a generated key" in {
+      val stmt     = quote { query[QuillTest].insert(lift(QuillTest(0, "Joe"))).returning(_.id) }
+      val actual   = (create *> dc.run(stmt)).transact(xa).unsafeRunSync
+      val expected = 1
+      actual should_== expected
+    }
+  }
+
   "executeBatchActionReturning" should {
-    failure("not implemented")
+    "correctly retrieve a list of generated keys" in {
+      val values   = List(QuillTest(0, "Foo"), QuillTest(0, "Bar"), QuillTest(0, "Baz"))
+      val stmt     = quote { liftQuery(values).foreach { a => query[QuillTest].insert(a).returning(_.id) } }
+      val actual   = (create *> dc.run(stmt)).transact(xa).unsafeRunSync
+      val expected = List(1, 2, 3)
+      actual should_== expected
+    }
   }
 
 
