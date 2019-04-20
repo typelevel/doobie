@@ -4,11 +4,12 @@
 
 package doobie.util
 
-import cats.effect.{ Async, ContextShift, IO }
+import cats.effect.{ Async, ContextShift, Effect, IO }
+import cats.effect.syntax.effect._
+import cats.syntax.either._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
-import scala.Predef._
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object transactorspec extends Specification {
@@ -28,6 +29,65 @@ object transactorspec extends Specification {
 
     "support cats.effect.IO" in {
       q.transact(xa[IO]).unsafeRunSync must_=== 42
+    }
+
+    "support scalaz.zio.interop.Task" in {
+      implicit val E: Effect[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.taskEffectInstances
+      implicit val contextShift: ContextShift[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.ioContextShift
+      q.transact(xa[scalaz.zio.interop.Task]).toIO.unsafeRunSync() must_=== 42
+    }
+
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Var"))
+  class ConnectionTracker {
+    var connections = List.empty[java.sql.Connection]
+
+    def track[F[_]: Async: ContextShift](xa: Transactor[F]) = {
+      def withA(t: doobie.util.transactor.Transactor[F]): Transactor.Aux[F, t.A] = {
+        Transactor.connect.modify(t, f => a => {
+          f(a).map { conn =>
+            connections = conn :: connections
+            conn
+          }
+        })
+      }
+      withA(xa)
+    }
+  }
+
+  "Connection lifecycle" >> {
+
+    "Connection.close should be called on success" in {
+      val tracker = new ConnectionTracker
+      val transactor = tracker.track(xa[IO])
+      sql"select 1".query[Int].unique.transact(transactor).unsafeRunSync
+      tracker.connections.map(_.isClosed) must_== List(true)
+    }
+
+    "Connection.close should be called on failure" in {
+      val tracker = new ConnectionTracker
+      val transactor = tracker.track(xa[IO])
+      sql"abc".query[Int].unique.transact(transactor).attempt.unsafeRunSync.toOption must_== None
+      tracker.connections.map(_.isClosed) must_== List(true)
+    }
+
+  }
+
+  "Connection lifecycle (streaming)" >> {
+
+    "Connection.close should be called on success" in {
+      val tracker = new ConnectionTracker
+      val transactor = tracker.track(xa[IO])
+      sql"select 1".query[Int].stream.compile.toList.transact(transactor).unsafeRunSync
+      tracker.connections.map(_.isClosed) must_== List(true)
+    }
+
+    "Connection.close should be called on failure" in {
+      val tracker = new ConnectionTracker
+      val transactor = tracker.track(xa[IO])
+      sql"abc".query[Int].stream.compile.toList.transact(transactor).attempt.unsafeRunSync.toOption must_== None
+      tracker.connections.map(_.isClosed) must_== List(true)
     }
 
   }

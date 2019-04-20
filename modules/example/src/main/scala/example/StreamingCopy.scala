@@ -38,7 +38,7 @@ object StreamingCopy extends IOApp {
       f.foldMap(sinkXA.interpret).run
 
     // Open a connection in `F` via the sink transactor. Need patmat due to the existential.
-    val open: F[Connection] =
+    val conn: Resource[F, Connection] =
       sinkXA match { case xa => xa.connect(xa.kernel) }
 
     // Given a Connection we can construct the stream we want.
@@ -61,12 +61,8 @@ object StreamingCopy extends IOApp {
 
     }
 
-    // And our cleanup action.
-    val cleanup: Connection => F[Unit] =
-      interpS(sinkXA.strategy.always)
-
     // And we're done!
-    Stream.bracket(open)(cleanup).flatMap(mkStream)
+    Stream.resource(conn).flatMap(mkStream)
 
   }
 

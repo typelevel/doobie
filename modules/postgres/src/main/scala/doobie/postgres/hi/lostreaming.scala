@@ -4,9 +4,9 @@
 
 package doobie.postgres.hi
 
-import cats.implicits._
-import cats.effect.ContextShift
-import doobie._, doobie.implicits._
+import cats.syntax.functor._
+import doobie.ConnectionIO
+import doobie.implicits.AsyncConnectionIO
 import fs2.Stream
 import fs2.{io => FS2IO}
 import java.io.{InputStream, OutputStream}
@@ -18,7 +18,7 @@ object lostreaming {
   def createLOFromStream(data: Stream[ConnectionIO, Byte], blockingEc: ExecutionContext): ConnectionIO[Long] =
     createLO.flatMap { oid =>
       Stream.bracket(openLO(oid))(closeLO)
-        .flatMap(lo => data.to(FS2IO.writeOutputStream(getOutputStream(lo), blockingEc)))
+        .flatMap(lo => data.through(FS2IO.writeOutputStream(getOutputStream(lo), blockingEc)))
         .compile.drain.as(oid)
     }
 
