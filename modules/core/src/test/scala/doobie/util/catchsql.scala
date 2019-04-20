@@ -191,6 +191,3 @@ trait catchsqlspec[F[_]] extends Specification {
 object catchsqlspecIO extends catchsqlspec[IO] {
   implicit val E: Effect[IO] = IO.ioEffect
 }
-object catchsqlspecZIO extends catchsqlspec[scalaz.zio.interop.Task] {
-  implicit val E: Effect[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.taskEffectInstances
-}

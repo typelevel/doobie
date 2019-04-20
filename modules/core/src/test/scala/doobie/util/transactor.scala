@@ -31,12 +31,6 @@ object transactorspec extends Specification {
       q.transact(xa[IO]).unsafeRunSync must_=== 42
     }
 
-    "support scalaz.zio.interop.Task" in {
-      implicit val E: Effect[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.taskEffectInstances
-      implicit val contextShift: ContextShift[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.ioContextShift
-      q.transact(xa[scalaz.zio.interop.Task]).toIO.unsafeRunSync() must_=== 42
-    }
-
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
