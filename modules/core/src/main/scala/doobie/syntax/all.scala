@@ -5,7 +5,7 @@
 package doobie.syntax
 
 trait AllSyntax
-  extends ToMonadErrorOps
+  extends ToApplicativeErrorOps
      with ToFoldableOps
      with ToConnectionIOOps
      with ToStreamOps

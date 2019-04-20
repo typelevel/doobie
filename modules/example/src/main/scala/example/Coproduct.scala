@@ -92,7 +92,7 @@ object coproduct extends IOApp {
 
   // Exec it!
   def run(args: List[String]): IO[ExitCode] =
-    xa.execB.apply(iprog).as(ExitCode.Success)
+    xa.exec.apply(iprog).as(ExitCode.Success)
 
   // Enter a pattern:
   // U%
