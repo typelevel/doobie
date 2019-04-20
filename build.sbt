@@ -20,7 +20,6 @@ lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.7"
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.5"
-lazy val zioVersion           = "0.6.3"
 lazy val specs2Version        = "4.3.6"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
@@ -322,8 +321,6 @@ lazy val core = project
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
       "com.h2database"        %  "h2"            % h2Version % "test",
-      "org.scalaz"            %% "scalaz-zio"               % zioVersion % "test",
-      "org.scalaz"            %% "scalaz-zio-interop-cats"  % zioVersion % "test",
     ),
 
     scalacOptions += "-Yno-predef",
