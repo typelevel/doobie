@@ -5,7 +5,6 @@
 package doobie.quill
 
 import cats.data.Nested
-import cats.effect.Resource
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.util.query.DefaultChunkSize
