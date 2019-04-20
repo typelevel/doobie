@@ -6,11 +6,25 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ### <a name="0.7.0"></a>Work in Progress for Version 0.7.0
 
-This is a **compatibility-breaking** release intended to satisfy some lingering issues prior to switching to a tagless encoding.
+This is a **compatibility-breaking** release, although most source code should compile unmodified.
 
-- Added support for Scala 2.13.0-M5, many thanks to **Sam Guymer** for setting this up.
-- Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource leakage when using cancelable IO. Thanks **Sam Guymer** for this update.
+The big changes are improvements in resource safety:
+
+- Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource leakage when using cancelable IO; and improves transactor resource safety by using `Resource`. The migration guide contains slightly more information. Thanks **Sam Guymer** for these updates!
 - `Fragment` concatenation and derived combinators like `Fragments.in` are now stacksafe, so you can now have gigantic `IN` clauses. This required API changes in `Param`, `Fragment`, `Update[0]` and `Query[0]` but these should not affect most users.
+
+And an assortment of other improvements:
+
+- Postgis has been upgraded to v2.3.0. Thanks **Erlend Hamnaberg**!
+- Added support for Scala 2.13.0-M5, many thanks to **Sam Guymer** for setting this up!
+- `TypeTag` constraint on `Analyzable` has been relaxed to `WeakTypeTag`. Thanks **nigredo-tori**!
+- New syntax allows `.transact` on `OptionT` and `EitherT` of `ConnectionIO`, rolling back in the failure cases. Thanks **Julien Truffaut**!
+- Postgres now supports arrays of Scala `BigDecimal`. Thanks **Nicolas Rémond**!
+- Most calls to `throw` have been replaced with `raiseError`, which allows doobie to work with effect types that don't catch. Thanks **Sam Guymer**!
+- Some things in the build were preventing doobie from cooperating with the community build. This has been fixed, thanks **Seth Tisue**!
+- `Text[Char]` instance was added for Postgres `COPY FROM STDIN`. Thanks **Dermot Haughey**!
+- You can now create a `HikariTransactor` from a `HikariConfig`. Thanks **Yuriy Badalyantc**!
+- Thanks to **Harry Laoulakos** and **Daan Hoogenboezem** for documentation updates!
 
 ____
 
