@@ -8,7 +8,7 @@ import cats.effect._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
-import doobie.quill._
+import doobie.quill.DoobieContext
 import io.getquill._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
@@ -28,7 +28,7 @@ object PostgresDoobieContextSpec extends Specification {
       ), HC.rollback
     )
 
-  val dc = new PostgresDoobieContext(Literal)
+  val dc = new DoobieContext.Postgres(Literal)
   import dc._
 
   case class Country(code: String, name: String, population: Int)
