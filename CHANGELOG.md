@@ -25,6 +25,7 @@ And an assortment of other improvements:
 - `Text[Char]` instance was added for Postgres `COPY FROM STDIN`. Thanks **Dermot Haughey**!
 - You can now create a `HikariTransactor` from a `HikariConfig`. Thanks **Yuriy Badalyantc**!
 - Thanks to **Harry Laoulakos** and **Daan Hoogenboezem** for documentation updates!
+- `Fragment` combinators now parenthesize arguments so associativity in Scala is reflected in generated SQL. Thanks **Katrix**!
 
 ____
 
