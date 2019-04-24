@@ -13,6 +13,8 @@ import doobie.postgres._
 import org.postgresql._
 import fs2.Stream
 import fs2.Stream._
+import java.util.concurrent._
+import scala.concurrent._
 
 /**
   * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
@@ -24,6 +26,10 @@ import fs2.Stream._
   * to send a notification. The program will exit after reading five notifications.
   */
 object PostgresNotify extends IOApp {
+
+  // Use a dedicated thread to check for notifications. Otherwise, end up blocking the
+  // thread of execution.
+  private val pgPool = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
   /**
     * Construct a program that pauses the current thread. This doesn't scale, but neither do
@@ -40,7 +46,9 @@ object PostgresNotify extends IOApp {
   def notificationStream(channel: String, ms: Long): Stream[ConnectionIO, PGNotification] =
     (for {
       _  <- eval(PHC.pgListen(channel) *> HC.commit)
-      ns <- repeatEval(sleep(ms) *> PHC.pgGetNotifications <* HC.commit)
+      // repeatedly check for notifications, but use a different thread pool so we don't
+      // block execution of the "main" thread.
+      ns <- repeatEval(ContextShiftConnectionIO.evalOn(pgPool)(sleep(ms) *> PHC.pgGetNotifications <* HC.commit))
       n  <- emits(ns)
     } yield n).onComplete(eval_(PHC.pgUnlisten(channel) *> HC.commit))
 
