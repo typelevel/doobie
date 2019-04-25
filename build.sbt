@@ -6,7 +6,7 @@ resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/con
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "1.4.0"
-lazy val circeVersion         = "0.10.0"
+lazy val circeVersion         = "0.10.1"
 lazy val fs2CoreVersion       = "1.0.0"
 lazy val h2Version            = "1.4.197"
 lazy val hikariVersion        = "3.2.0"
