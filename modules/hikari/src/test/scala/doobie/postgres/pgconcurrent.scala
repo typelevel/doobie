@@ -31,7 +31,7 @@ trait pgconcurrent[F[_]] extends Specification {
     dataSource setJdbcUrl "jdbc:postgresql://localhost:5432/postgres"
     dataSource setUsername "postgres"
     dataSource setPassword ""
-    dataSource setMaximumPoolSize 100
+    dataSource setMaximumPoolSize 10
     dataSource setConnectionTimeout 2000
 
     Transactor.fromDataSource[F](dataSource, ExecutionContext.fromExecutor(Executors.newFixedThreadPool(32)),
@@ -47,9 +47,9 @@ trait pgconcurrent[F[_]] extends Specification {
     val poll: fs2.Stream[F, Int] =
       fr"select 1".query[Int].stream.transact(xa) ++ fs2.Stream.eval_(T.sleep(50.millis))
 
-    val pollingStream: F[Unit] = fs2.Stream.emits(List.fill(20)(poll.repeat))
+    val pollingStream: F[Unit] = fs2.Stream.emits(List.fill(4)(poll.repeat))
       .parJoinUnbounded
-      .take(200)
+      .take(20)
       .compile
       .drain
 
