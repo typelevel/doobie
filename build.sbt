@@ -447,6 +447,7 @@ lazy val hikari = project
   .in(file("modules/hikari"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
+  .dependsOn(postgres % "test")
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(
