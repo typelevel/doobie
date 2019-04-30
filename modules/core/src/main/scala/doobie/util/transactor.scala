@@ -165,14 +165,14 @@ object transactor  {
       λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
         Stream.resource(connect(kernel)).flatMap { conn =>
           s.translate(run(conn))
-        }
+        }.scope
       }
 
     def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
         Stream.resource(connect(kernel)).flatMap { c =>
           Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
-        }
+        }.scope
       }
 
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
