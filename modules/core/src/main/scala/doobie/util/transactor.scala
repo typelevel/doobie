@@ -18,6 +18,7 @@ import javax.sql.DataSource
 import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.concurrent.ExecutionContext
+import cats.Applicative
 
 object transactor  {
 
@@ -193,6 +194,17 @@ object transactor  {
       val interpret = interpret0
       val strategy = strategy0
     }
+
+    /*
+     * Convert the effect type of this transactor from M to M0
+     */
+    def mapK[M0[_]](fk: M ~> M0)(implicit B: Bracket[M, Throwable], D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
+      Transactor[M0, A](
+        kernel,
+        connect.andThen(_.mapK(fk)),
+        interpret.andThen(λ[Kleisli[M, Connection, ?] ~> Kleisli[M0, Connection, ?]](_.mapK(fk))),
+        strategy
+      )
   }
 
   object Transactor {
