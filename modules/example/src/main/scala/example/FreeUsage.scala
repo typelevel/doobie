@@ -21,7 +21,7 @@ object FreeUsage extends IOApp {
     val db = Transactor.fromDriverManager[IO](
       "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
     )
-    db.transB.apply(examples.void).as(ExitCode.Success)
+    db.trans.apply(examples.void).as(ExitCode.Success)
   }
 
   def examples: ConnectionIO[String] =

@@ -59,7 +59,3 @@ object pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
   implicit val E: Effect[IO] = IO.ioEffect
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 }
-object pgreaderrorsspecZIO extends pgreaderrorsspec[scalaz.zio.interop.Task] {
-  implicit val E: Effect[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.taskEffectInstances
-  implicit val contextShift: ContextShift[scalaz.zio.interop.Task] = scalaz.zio.interop.catz.ioContextShift
-}

@@ -27,11 +27,11 @@ object fragmentsspec extends Specification {
     }
 
     "and (many)" in {
-      and(fs: _*).query[Unit].sql must_== "? AND ? AND ? "
+      and(fs: _*).query[Unit].sql must_== "(? ) AND (? ) AND (? ) "
     }
 
     "and (single)" in {
-      and(fs(0)).query[Unit].sql must_== "? "
+      and(fs(0)).query[Unit].sql must_== "(? ) "
     }
 
     "and (empty)" in {
@@ -39,11 +39,11 @@ object fragmentsspec extends Specification {
     }
 
     "andOpt (many)" in {
-      andOpt(ofs: _*).query[Unit].sql must_== "? AND ? "
+      andOpt(ofs: _*).query[Unit].sql must_== "(? ) AND (? ) "
     }
 
     "andOpt (one)" in {
-      andOpt(ofs(0)).query[Unit].sql must_== "? "
+      andOpt(ofs(0)).query[Unit].sql must_== "(? ) "
     }
 
     "andOpt (none)" in {
@@ -51,11 +51,11 @@ object fragmentsspec extends Specification {
     }
 
     "or (many)" in {
-      or(fs: _*).query[Unit].sql must_== "? OR ? OR ? "
+      or(fs: _*).query[Unit].sql must_== "(? ) OR (? ) OR (? ) "
     }
 
     "or (single)" in {
-      or(fs(0)).query[Unit].sql must_== "? "
+      or(fs(0)).query[Unit].sql must_== "(? ) "
     }
 
     "or (empty)" in {
@@ -63,11 +63,11 @@ object fragmentsspec extends Specification {
     }
 
     "orOpt (many)" in {
-      orOpt(ofs: _*).query[Unit].sql must_== "? OR ? "
+      orOpt(ofs: _*).query[Unit].sql must_== "(? ) OR (? ) "
     }
 
     "orOpt (one)" in {
-      orOpt(ofs(0)).query[Unit].sql must_== "? "
+      orOpt(ofs(0)).query[Unit].sql must_== "(? ) "
     }
 
     "orOpt (none)" in {
@@ -75,11 +75,11 @@ object fragmentsspec extends Specification {
     }
 
     "whereAnd (many)" in {
-      whereAnd(fs: _*).query[Unit].sql must_== "WHERE ? AND ? AND ? "
+      whereAnd(fs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) AND (? ) "
     }
 
     "whereAnd (single)" in {
-      whereAnd(fs(0)).query[Unit].sql must_== "WHERE ? "
+      whereAnd(fs(0)).query[Unit].sql must_== "WHERE (? ) "
     }
 
     "whereAnd (empty)" in {
@@ -87,11 +87,11 @@ object fragmentsspec extends Specification {
     }
 
     "whereAndOpt (many)" in {
-      whereAndOpt(ofs: _*).query[Unit].sql must_== "WHERE ? AND ? "
+      whereAndOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) "
     }
 
     "whereAndOpt (one)" in {
-      whereAndOpt(ofs(0)).query[Unit].sql must_== "WHERE ? "
+      whereAndOpt(ofs(0)).query[Unit].sql must_== "WHERE (? ) "
     }
 
     "whereAndOpt (none)" in {
@@ -99,11 +99,11 @@ object fragmentsspec extends Specification {
     }
 
     "whereOr (many)" in {
-      whereOr(fs: _*).query[Unit].sql must_== "WHERE ? OR ? OR ? "
+      whereOr(fs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) OR (? ) "
     }
 
     "whereOr (single)" in {
-      whereOr(fs(0)).query[Unit].sql must_== "WHERE ? "
+      whereOr(fs(0)).query[Unit].sql must_== "WHERE (? ) "
     }
 
     "whereOr (empty)" in {
@@ -111,11 +111,11 @@ object fragmentsspec extends Specification {
     }
 
     "whereOrOpt (many)" in {
-      whereOrOpt(ofs: _*).query[Unit].sql must_== "WHERE ? OR ? "
+      whereOrOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) "
     }
 
     "whereOrOpt (one)" in {
-      whereOrOpt(ofs(0)).query[Unit].sql must_== "WHERE ? "
+      whereOrOpt(ofs(0)).query[Unit].sql must_== "WHERE (? ) "
     }
 
     "whereOrOpt (none)" in {

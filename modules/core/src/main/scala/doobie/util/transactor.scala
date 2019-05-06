@@ -4,25 +4,21 @@
 
 package doobie.util
 
-import doobie.free.connection.{ ConnectionIO, ConnectionOp, setAutoCommit, commit, rollback, close, unit, raiseError }
+import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-
-import cats.{ Monad, MonadError, ~> }
+import cats.{Defer, Monad, ~>}
 import cats.data.Kleisli
-import cats.implicits._
-import cats.effect.{ Bracket, Sync, Async, ContextShift }
-import cats.effect.syntax.bracket._
+import cats.effect.{Async, Bracket, ContextShift, ExitCase, Resource, Sync}
 import fs2.Stream
-import fs2.Stream.{ eval, eval_ }
+import java.sql.{Connection, DriverManager}
 
-import java.sql.{ Connection, DriverManager }
 import javax.sql.DataSource
-import java.util.concurrent.{ Executors, ThreadFactory }
+import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.concurrent.ExecutionContext
-import scala.util.control.NonFatal
+import cats.Applicative
 
 object transactor  {
 
@@ -37,7 +33,7 @@ object transactor  {
    * @param before a program to prepare the connection for use
    * @param after  a program to run on success
    * @param oops   a program to run on failure (catch)
-   * @param always a programe to run in all cases (finally)
+   * @param always a program to run in all cases (finally)
    * @group Data Types
    */
   final case class Strategy(
@@ -46,42 +42,17 @@ object transactor  {
     oops:   ConnectionIO[Unit],
     always: ConnectionIO[Unit]
   ) {
-
-    /** Natural transformation that wraps a `ConnectionIO` program. */
-    @deprecated("Use Transactor.transB", "0.7.0")
-    val wrap = λ[ConnectionIO ~> ConnectionIO] { ma =>
-      (before *> ma <* after)
-        .onError { case NonFatal(_) => oops }
-        .guarantee(always)
-    }
-
-    /** Natural transformation that wraps a `ConnectionIO` stream. */
-    @deprecated("Use Transactor.transP", "0.7.0")
-    val wrapP = λ[Stream[ConnectionIO, ?] ~> Stream[ConnectionIO, ?]] { pa =>
-      (eval_(before) ++ pa ++ eval_(after))
-        .onError { case NonFatal(e) => eval_(oops) ++ eval_(raiseError(e)) }
-        .onFinalize(always)
-    }
-
-    /**
-     * Natural transformation that wraps a `Kleisli` program, using the provided interpreter to
-     * interpret the `before`/`after`/`oops`/`always` strategy.
-     */
-    @deprecated("Use Transactor.execB", "0.7.0")
-    def wrapK[M[_]: MonadError[?[_], Throwable]](interp: Interpreter[M]) =
-      λ[Kleisli[M, Connection, ?] ~> Kleisli[M, Connection, ?]] { ka =>
-        import doobie.syntax.monaderror._
-
-        val beforeʹ = before foldMap interp
-        val afterʹ  = after  foldMap interp
-        val oopsʹ   = oops   foldMap interp
-        val alwaysʹ = always foldMap interp
-        (beforeʹ *> ka <* afterʹ)
-          .onError { case NonFatal(_) => oopsʹ }
-          .guarantee(alwaysʹ)
+    val resource: Resource[ConnectionIO, Unit] = for {
+      _ <- Resource.make(doobie.FC.unit)(_ => always)
+      _ <- Resource.makeCase(before) { case (_, exitCase) =>
+        exitCase match {
+          case ExitCase.Completed => after
+          case ExitCase.Error(_) | ExitCase.Canceled => oops
+        }
       }
-
+    } yield ()
   }
+
   object Strategy {
 
     /** @group Lenses */ val before: Strategy @> ConnectionIO[Unit] = Lens(_.before, (a, b) => a.copy(before = b))
@@ -93,10 +64,9 @@ object transactor  {
      * A default `Strategy` with the following properties:
      * - Auto-commit will be set to `false`;
      * - the transaction will `commit` on success and `rollback` on failure;
-     * - and finally the connection will be closed in all cases.
      * @group Constructors
      */
-    val default = Strategy(setAutoCommit(false), commit, rollback, close)
+    val default = Strategy(setAutoCommit(false), commit, rollback, unit)
 
     /**
      * A no-op `Strategy`. All actions simply return `()`.
@@ -122,7 +92,7 @@ object transactor  {
     def kernel: A
 
     /** A program in `M` that can provide a database connection, given the kernel **/
-    def connect: A => M[Connection]
+    def connect: A => Resource[M, Connection]
 
     /** A natural transformation for interpreting `ConnectionIO` **/
     def interpret: Interpreter[M]
@@ -134,7 +104,7 @@ object transactor  {
     def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
 
     /**
-     * Construct a program to peform arbitrary configuration on the kernel value (changing the
+     * Construct a program to perform arbitrary configuration on the kernel value (changing the
      * timeout on a connection pool, for example). This can be the basis for constructing a
      * configuration language for a specific kernel type `A`, whose operations can be added to
      * compatible `Transactor`s via implicit conversion.
@@ -149,34 +119,21 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: Monad[M]): Kleisli[M, Connection, ?] ~> M =
-      λ[Kleisli[M, Connection, ?] ~> M](k => connect(kernel).flatMap(k.run))
-
-    /**
-     * Natural transformation that provides a connection and binds through a `Kleisli` program
-     * using the given `Strategy`, yielding an independent program in `M`.
-     * @group Natural Transformations
-     */
-    @deprecated("Use execB", "0.7.0")
-    def exec(implicit ev: MonadError[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
-      strategy.wrapK(interpret) andThen rawExec(ev)
+    def rawExec(implicit ev: Bracket[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
+      λ[Kleisli[M, Connection, ?] ~> M](k => connect(kernel).use(k.run))
 
     /**
       * Natural transformation that provides a connection and binds through a `Kleisli` program
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def execB(implicit ev: Bracket[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
+    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M]): Kleisli[M, Connection, ?] ~> M =
       λ[Kleisli[M, Connection, ?] ~> M] { ka =>
-        val beforeʹ = strategy.before foldMap interpret
-        val afterʹ  = strategy.after  foldMap interpret
-        val oopsʹ   = strategy.oops   foldMap interpret
-        val alwaysʹ = strategy.always foldMap interpret
-
-        val wrap = (beforeʹ *> ka <* afterʹ)
-          .onError { case NonFatal(_) => oopsʹ }
-
-        connect(kernel).bracket(wrap.run)(alwaysʹ.run)
+        connect(kernel).use { conn =>
+          strategy.resource.mapK(run(conn)).use { _ =>
+            ka.run(conn)
+          }
+        }
       }
 
     /**
@@ -185,18 +142,12 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawTrans(implicit ev: Monad[M]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M](f => connect(kernel).flatMap(f.foldMap(interpret).run))
-
-    /**
-      * Natural transformation that provides a connection and binds through a `ConnectionIO` program
-      * interpreted via the given interpreter, using the given `Strategy`, yielding an independent
-      * program in `M`. This is the most common way to run a doobie program.
-      * @group Natural Transformations
-      */
-    @deprecated("Use transB", "0.7.0")
-    def trans(implicit ev: Monad[M]): ConnectionIO ~> M =
-      strategy.wrap andThen rawTrans
+    def rawTrans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+      λ[ConnectionIO ~> M] { f =>
+        connect(kernel).use { conn =>
+          f.foldMap(interpret).run(conn)
+        }
+      }
 
     /**
      * Natural transformation that provides a connection and binds through a `ConnectionIO` program
@@ -204,30 +155,25 @@ object transactor  {
      * program in `M`. This is the most common way to run a doobie program.
      * @group Natural Transformations
      */
-    def transB(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+    def trans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
-        val wrap = (strategy.before *> f <* strategy.after)
-          .onError { case NonFatal(_) => strategy.oops }
-        def release(c: Connection) = run(c).apply(strategy.always)
-
-        connect(kernel).bracket(c => run(c).apply(wrap))(release)
+        connect(kernel).use { conn =>
+          strategy.resource.use(_ => f).foldMap(interpret).run(conn)
+        }
       }
 
     def rawTransP[T](implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
-        eval(connect(kernel)).flatMap(c => s.translate(run(c)))
+        Stream.resource(connect(kernel)).flatMap { conn =>
+          s.translate(run(conn))
+        }.scope
       }
 
     def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
-        val acquire = connect(kernel)
-        def release(c: Connection) = run(c).apply(strategy.always)
-
-        Stream.bracket(acquire)(release).flatMap { c =>
-          (eval_(strategy.before) ++ s ++ eval_(strategy.after))
-            .onError { case NonFatal(e) => eval_(strategy.oops) ++ eval_(raiseError(e)) }
-            .translate(run(c))
-        }
+        Stream.resource(connect(kernel)).flatMap { c =>
+          Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
+        }.scope
       }
 
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
@@ -238,7 +184,7 @@ object transactor  {
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
       kernel0: A = self.kernel,
-      connect0: A => M[Connection] = self.connect,
+      connect0: A => Resource[M, Connection] = self.connect,
       interpret0: Interpreter[M] = self.interpret,
       strategy0: Strategy = self.strategy
     ): Transactor.Aux[M, A] = new Transactor[M] {
@@ -248,13 +194,24 @@ object transactor  {
       val interpret = interpret0
       val strategy = strategy0
     }
+
+    /*
+     * Convert the effect type of this transactor from M to M0
+     */
+    def mapK[M0[_]](fk: M ~> M0)(implicit B: Bracket[M, Throwable], D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
+      Transactor[M0, A](
+        kernel,
+        connect.andThen(_.mapK(fk)),
+        interpret.andThen(λ[Kleisli[M, Connection, ?] ~> Kleisli[M0, Connection, ?]](_.mapK(fk))),
+        strategy
+      )
   }
 
   object Transactor {
 
     def apply[M[_], A0](
       kernel0: A0,
-      connect0: A0 => M[Connection],
+      connect0: A0 => Resource[M, Connection],
       interpret0: Interpreter[M],
       strategy0: Strategy
     ): Transactor.Aux[M, A0] = new Transactor[M] {
@@ -267,8 +224,8 @@ object transactor  {
 
     type Aux[M[_], A0] = Transactor[M] { type A = A0  }
 
-    /** @group Lenses */ def kernel   [M[_], A]: Transactor.Aux[M, A] Lens A                    = Lens(_.kernel,    (a, b) => a.copy(kernel0    = b))
-    /** @group Lenses */ def connect  [M[_], A]: Transactor.Aux[M, A] Lens (A => M[Connection]) = Lens(_.connect,   (a, b) => a.copy(connect0   = b))
+    /** @group Lenses */ def kernel   [M[_], A]: Transactor.Aux[M, A] Lens A                              = Lens(_.kernel,    (a, b) => a.copy(kernel0    = b))
+    /** @group Lenses */ def connect  [M[_], A]: Transactor.Aux[M, A] Lens (A => Resource[M, Connection]) = Lens(_.connect,   (a, b) => a.copy(connect0   = b))
     /** @group Lenses */ def interpret[M[_]]: Transactor[M] Lens Interpreter[M]       = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
     /** @group Lenses */ def strategy [M[_]]: Transactor[M] Lens Strategy             = Lens(_.strategy,  (a, b) => a.copy(strategy0  = b))
     /** @group Lenses */ def before   [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.before
@@ -297,7 +254,11 @@ object transactor  {
         )(implicit ev: Async[M],
                    cs: ContextShift[M]
         ): Transactor.Aux[M, A] = {
-          val connect = (dataSource: A) => cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
+          val connect = (dataSource: A) => {
+            val acquire = cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
+            def release(c: Connection) = cs.evalOn(transactEC)(ev.delay(c.close()))
+            Resource.make(acquire)(release)
+          }
           val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
         }
@@ -306,8 +267,8 @@ object transactor  {
     }
 
     /**
-     * Construct a `Transactor` that wraps an existing `Connection`, using a `Strategy` that does
-     * not close the connection but is otherwise identical to `Strategy.default`.
+     * Construct a `Transactor` that wraps an existing `Connection`. Closing the connection is the
+     * responsibility of the caller.
      * @param connection a raw JDBC `Connection` to wrap
      * @param transactEC an `ExecutionContext` for blocking database operations
      * @group Constructors
@@ -316,9 +277,9 @@ object transactor  {
       connection: Connection,
       transactEC: ExecutionContext
     ): Transactor.Aux[M, Connection] = {
-      val connect = (c: Connection) => Async[M].pure(c)
+      val connect = (c: Connection) => Resource.pure[M, Connection](c)
       val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
-      Transactor(connection, connect, interp, Strategy.default.copy(always = unit))
+      Transactor(connection, connect, interp, Strategy.default)
     }
 
     /**
@@ -349,13 +310,17 @@ object transactor  {
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]](
-        driver:   String,
-        conn:  => Connection,
+        driver: String,
+        conn: () => Connection,
         strategy: Strategy
       )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
-          _ => cs.evalOn(blockingContext)(am.delay { Class.forName(driver); conn }),
+          _ => {
+            val acquire = cs.evalOn(blockingContext)(am.delay { Class.forName(driver); conn() })
+            def release(c: Connection) = cs.evalOn(blockingContext)(am.delay { c.close() })
+            Resource.make(acquire)(release)
+          },
           KleisliInterpreter[M](blockingContext).ConnectionInterpreter,
           strategy
         )
@@ -369,7 +334,7 @@ object transactor  {
         driver: String,
         url:    String
       ): Transactor.Aux[M, Unit] =
-        create(driver, DriverManager.getConnection(url), Strategy.default)
+        create(driver, () => DriverManager.getConnection(url), Strategy.default)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -384,7 +349,7 @@ object transactor  {
         user:   String,
         pass:   String
       ): Transactor.Aux[M, Unit] =
-        create(driver, DriverManager.getConnection(url, user, pass), Strategy.default)
+        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -397,7 +362,7 @@ object transactor  {
         url:    String,
         info:   java.util.Properties
       ): Transactor.Aux[M, Unit] =
-        create(driver, DriverManager.getConnection(url, info), Strategy.default)
+        create(driver, () => DriverManager.getConnection(url, info), Strategy.default)
 
     }
 

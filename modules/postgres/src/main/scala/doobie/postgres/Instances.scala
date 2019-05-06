@@ -121,6 +121,16 @@ trait Instances {
   implicit val (unliftedUnboxedFloatArrayType,   liftedUnboxedFloatArrayType)   = unboxedPair[java.lang.Float,   scala.Float]  (_.floatValue,   java.lang.Float.valueOf)
   implicit val (unliftedUnboxedDoubleArrayType,  liftedUnboxedDoubleArrayType)  = unboxedPair[java.lang.Double,  scala.Double] (_.doubleValue,  java.lang.Double.valueOf)
 
+  // Arrays of scala.BigDecimal - special case as BigDecimal can be null
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+  implicit val bigDecimalMeta: Meta[Array[BigDecimal]] = Meta[Array[java.math.BigDecimal]]
+    .timap(_.map( a => if(a == null) null else BigDecimal.apply(a)))(_.map(a => if(a == null) null else a.bigDecimal))
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+  implicit val optionBigDecimalMeta: Meta[Array[Option[BigDecimal]]] = Meta[Array[Option[java.math.BigDecimal]]]
+    .timap(_.map(_.map(a => if(a == null) null else BigDecimal.apply(a))))(_.map(_.map(a => if(a == null) null else a.bigDecimal)))
+
+
+
   // So, it turns out that arrays of structs don't work because something is missing from the
   // implementation. So this means we will only be able to support primitive types for arrays.
   //
