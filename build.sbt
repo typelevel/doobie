@@ -248,7 +248,6 @@ lazy val doobie = project.in(file("."))
   .dependsOn(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined, quill)
   .aggregate(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined, quill)
   .settings(
-    crossScalaVersions := List(scala212Version), // root project doesn't need cross
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
@@ -572,21 +571,21 @@ lazy val refined = project
     )
   )
 
-  lazy val quill = project
-    .in(file("modules/quill"))
-    .enablePlugins(AutomateHeaderPlugin)
-    .dependsOn(core)
-    .dependsOn(postgres % "test")
-    .settings(doobieSettings)
-    .settings(publishSettings)
-    .settings(
-      crossScalaVersions -= scala213Version, // until quill is out for 2.13
-      name := "doobie-quill",
-      description := "Quill support for doobie.",
-      libraryDependencies ++= Seq(
-        "io.getquill" %% "quill-jdbc" % quillVersion,
-        "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
-      ),
-      wartremoverErrors in (Compile, compile) := Nil, // quill quotes crash wartremover
-      wartremoverErrors in (Test,    compile) := Nil,
-    )
+lazy val quill = project
+  .in(file("modules/quill"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .dependsOn(postgres % "test")
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    crossScalaVersions -= scala213Version, // until quill is out for 2.13
+    name := "doobie-quill",
+    description := "Quill support for doobie.",
+    libraryDependencies ++= Seq(
+      "io.getquill" %% "quill-jdbc" % quillVersion,
+      "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
+    ),
+    wartremoverErrors in (Compile, compile) := Nil, // quill quotes crash wartremover
+    wartremoverErrors in (Test,    compile) := Nil,
+  )
