@@ -248,6 +248,7 @@ lazy val doobie = project.in(file("."))
   .dependsOn(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined, quill)
   .aggregate(free, core, h2, hikari, postgres, `postgres-circe`, specs2, example, bench, scalatest, docs, refined, quill)
   .settings(
+    crossScalaVersions := List(scala212Version), // root project doesn't need cross
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
