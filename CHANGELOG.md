@@ -13,6 +13,10 @@ The big changes are improvements in resource safety:
 - Replaced `MonadError`-based `guarantee` with `bracket`, which prevents potential resource leakage when using cancelable IO; and improves transactor resource safety by using `Resource`. The migration guide contains slightly more information. Thanks **Sam Guymer** for these updates!
 - `Fragment` concatenation and derived combinators like `Fragments.in` are now stacksafe, so you can now have gigantic `IN` clauses. This required API changes in `Param`, `Fragment`, `Update[0]` and `Query[0]` but these should not affect most users.
 
+New features:
+
+- At long last there is a `doobie-quill` module that allows constructing `ConnectionIO` values via [Quill](https://getquill.io/) quotes. There are a few examples in the tests but no other documentation at the moment. TBD. Many thanks to **Alex Ioffe** and **Chris Davenport** for their assistance!
+
 And an assortment of other improvements:
 
 - Postgis has been upgraded to v2.3.0. Thanks **Erlend Hamnaberg**!
