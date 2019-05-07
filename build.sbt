@@ -303,6 +303,7 @@ lazy val thirteen = project
   .aggregate(
     modules.filterNot {
       case LocalProject("quill") => true
+      case LocalProject("docs") => true
       case _ => false
     }: _*
   )
