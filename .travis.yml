@@ -54,6 +54,9 @@ jobs:
     - <<: *tests
       scala: *scala_version_213
       jdk: *java_11
+      script:
+        - sbt ++$TRAVIS_SCALA_VERSION thirteen/test
+        - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
 
 notifications:
   webhooks:
