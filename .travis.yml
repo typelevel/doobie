@@ -20,10 +20,10 @@ jobs:
       before_install:
         - export PATH=${PATH}:./vendor/bundle
       addons:
-      postgresql: "9.4"
-      apt:
-        packages:
-          - postgresql-9.4-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
+        postgresql: "9.4"
+        apt:
+          packages:
+            - postgresql-9.4-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
       install:
         - rvm use 2.4 --install --fuzzy
         - gem update --system
