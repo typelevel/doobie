@@ -271,7 +271,6 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .dependsOn(modules:_*)
   .aggregate(modules:_*)
   .settings(
     crossScalaVersions := Nil,
