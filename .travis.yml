@@ -1,10 +1,9 @@
 sudo: false
 language: scala
-dist: xenial
-sudo: required
+dist: trusty
 
 stages:
-- name: test
+  - name: test
 
 scala_version_211: &scala_version_211 2.11.12
 scala_version_212: &scala_version_212 2.12.8
