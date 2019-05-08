@@ -5,7 +5,8 @@
 // relies on streaming, so no cats for now
 package example
 
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.~>
+import cats.effect._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -13,6 +14,7 @@ import doobie.postgres._
 import org.postgresql._
 import fs2.Stream
 import fs2.Stream._
+import scala.concurrent.duration._
 
 /**
   * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
@@ -25,24 +27,28 @@ import fs2.Stream._
   */
 object PostgresNotify extends IOApp {
 
-  /**
-    * Construct a program that pauses the current thread. This doesn't scale, but neither do
-    * long- running connection-bound operations like NOTIFY/LISTEN. So the approach here is to
-    * burn a thread reading the events and multplex somewhere downstream.
-    */
-  def sleep(ms: Long): ConnectionIO[Unit] =
-    HC.delay(Thread.sleep(ms))
+  /** A nonblocking timer for ConnectionIO. */
+  implicit val ConnectionIOTimer: Timer[ConnectionIO] =
+    Timer[IO].mapK(λ[IO ~> ConnectionIO](_.to[ConnectionIO]))
+
+  /** A resource that listens on a channel and unlistens when we're done. */
+  def channel(name: String): Resource[ConnectionIO, Unit] =
+    Resource.make(PHC.pgListen(name) *> HC.commit)(_ => PHC.pgUnlisten(name) *> HC.commit)
 
   /**
-    * Construct a stream of PGNotifications on the specified channel, polling at the specified
-    * rate. Note that this process, when run, will commit the current transaction.
+    * Stream of PGNotifications on the specified channel, polling at the specified
+    * rate. Note that this stream, when run, will commit the current transaction.
     */
-  def notificationStream(channel: String, ms: Long): Stream[ConnectionIO, PGNotification] =
-    (for {
-      _  <- eval(PHC.pgListen(channel) *> HC.commit)
-      ns <- repeatEval(sleep(ms) *> PHC.pgGetNotifications <* HC.commit)
+  def notificationStream(
+    channelName:     String,
+    pollingInterval: FiniteDuration
+  ): Stream[ConnectionIO, PGNotification] =
+    for {
+      _  <- resource(channel(channelName))
+      _  <- awakeEvery[ConnectionIO](pollingInterval)
+      ns <- eval(PHC.pgGetNotifications <* HC.commit)
       n  <- emits(ns)
-    } yield n).onComplete(eval_(PHC.pgUnlisten(channel) *> HC.commit))
+    } yield n
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa = Transactor.fromDriverManager[IO](
@@ -54,7 +60,7 @@ object PostgresNotify extends IOApp {
     * runnable process using the transcactor above, and run it.
     */
   def run(args: List[String]): IO[ExitCode] =
-    notificationStream("foo", 1000)
+    notificationStream("foo", 1.second)
       .map(n => s"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
       .evalMap(s => HC.delay(Console.println(s))).compile.drain
