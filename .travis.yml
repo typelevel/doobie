@@ -1,40 +1,62 @@
 sudo: false
-
 language: scala
+dist: trusty
 
-jdk:
-  - oraclejdk8
-  - oraclejdk11
+stages:
+  - name: test
 
-scala:
-  - 2.11.12
-  - 2.12.8
-  - 2.13.0-M5
+scala_version_211: &scala_version_211 2.11.12
+scala_version_212: &scala_version_212 2.12.8
+scala_version_213: &scala_version_213 2.13.0-M5
 
-env:
-  global:
-    - MAIN_SCALA_VERSION=2.12.8
+java_8: &java_8 openjdk8
+java_11: &java_11 openjdk11
 
-before_install:
- - export PATH=${PATH}:./vendor/bundle
-
-install:
-  - rvm use 2.4 --install --fuzzy
-  - gem update --system
-  - gem install sass
-  - gem install jekyll -v 3.2.1
-
-addons:
-  postgresql: "9.4"
-  apt:
-    packages:
-    - postgresql-9.4-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
-
-before_script:
-  - project/travis-before-build.sh
-
-script:
-  - project/travis-build.sh
+jobs:
+  include:
+    - &tests
+      env: TEST="test"
+      before_install:
+        - export PATH=${PATH}:./vendor/bundle
+      addons:
+        postgresql: "9.4"
+        apt:
+          packages:
+            - postgresql-9.4-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
+      install:
+        - rvm use 2.4 --install --fuzzy
+        - gem update --system
+        - gem install sass
+        - gem install jekyll -v 3.2.1
+      before_script:
+        - project/travis-before-build.sh
+      script:
+        - sbt ++$TRAVIS_SCALA_VERSION test
+        - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
+      scala: *scala_version_211
+      jdk: *java_8
+    - <<: *tests
+      scala: *scala_version_212
+      jdk: *java_8
+      script:
+        - sbt ++$TRAVIS_SCALA_VERSION test
+        - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
+        - sbt ++$TRAVIS_SCALA_VERSION -J-XX:+UseG1GC docs/tutQuick
+    - <<: *tests
+      scala: *scala_version_213
+      jdk: *java_8
+      script:
+        - sbt ++$TRAVIS_SCALA_VERSION thirteen/test
+        - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
+    - <<: *tests
+      scala: *scala_version_212
+      jdk: *java_11
+    - <<: *tests
+      scala: *scala_version_213
+      jdk: *java_11
+      script:
+        - sbt ++$TRAVIS_SCALA_VERSION thirteen/test
+        - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
 
 notifications:
   webhooks:
