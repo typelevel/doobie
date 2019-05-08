@@ -12,6 +12,7 @@ In this chapter we address some frequently-asked questions, in no particular ord
 import cats._
 import cats.data._
 import cats.effect.IO
+import cats.effect.implicits._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -66,7 +67,7 @@ You can use a `for` comprehension to compose any number of `ConnectionIO` progra
  * starts a new transaction.
  */
 def withoutTransaction[A](p: ConnectionIO[A]): ConnectionIO[A] =
-  FC.setAutoCommit(true) *> p <* FC.setAutoCommit(false)
+  FC.setAutoCommit(true).bracket(_ => p)(_ => FC.setAutoCommit(false))
 ```
 
 Note that you need both of these operations if you are using a `Transactor` because it will always start a transaction and will try to commit on completion.
