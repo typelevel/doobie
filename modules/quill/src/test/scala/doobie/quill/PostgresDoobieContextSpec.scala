@@ -36,7 +36,7 @@ object PostgresDoobieContextSpec extends Specification {
   "executeQuery" should {
     "correctly select a country" in {
       val stmt     = quote { query[Country].filter(_.code == "GBR") }
-      val actual   = dc.run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync
       val expected = List(Country("GBR", "United Kingdom", 59623400))
       actual should_== expected
     }
@@ -45,7 +45,7 @@ object PostgresDoobieContextSpec extends Specification {
   "executeQuerySingle" should {
     "correctly select a constant" in {
       val stmt     = quote(42)
-      val actual   = dc.run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync
       val expected = 42
       actual should_== expected
     }
@@ -63,7 +63,7 @@ object PostgresDoobieContextSpec extends Specification {
   "executeAction" should {
     "correctly update a bunch of countries" in {
       val stmt     = quote { query[Country].filter(_.name like "U%").update(_.name -> "foo") }
-      val actual   = dc.run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync
       val expected = 8 // this many countries start with 'U'
       actual should_== expected
     }
@@ -76,7 +76,7 @@ object PostgresDoobieContextSpec extends Specification {
           query[Country].filter(_.name like pat).update(_.name -> "foo")
         }
       }
-      val actual   = dc.run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync
       val expected = List(8L, 15L)
       actual should_== expected
     }
@@ -96,7 +96,7 @@ object PostgresDoobieContextSpec extends Specification {
   "executeActionReturning" should {
     "correctly retrieve a generated key" in {
       val stmt     = quote { query[QuillTest].insert(lift(QuillTest(0, "Joe"))).returning(_.id) }
-      val actual   = (create *> dc.run(stmt)).transact(xa).unsafeRunSync
+      val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync
       val expected = 1
       actual should_== expected
     }
@@ -106,7 +106,7 @@ object PostgresDoobieContextSpec extends Specification {
     "correctly retrieve a list of generated keys" in {
       val values   = List(QuillTest(0, "Foo"), QuillTest(0, "Bar"), QuillTest(0, "Baz"))
       val stmt     = quote { liftQuery(values).foreach { a => query[QuillTest].insert(a).returning(_.id) } }
-      val actual   = (create *> dc.run(stmt)).transact(xa).unsafeRunSync
+      val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync
       val expected = List(1, 2, 3)
       actual should_== expected
     }
