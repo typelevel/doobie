@@ -75,4 +75,11 @@ object fragments {
   def orderBy(fs: Fragment*): Fragment =
     if (fs.isEmpty) Fragment.empty else fr"ORDER BY" ++ comma(fs: _*)
 
+  def combineWith[A](f: (Fragment*) => Fragment)(
+      fs: Fragment*): Option[Fragment] =
+    if (fs.isEmpty) None else Some(parentheses(f(fs: _*)))
+
+  def combineWith[A](f: (Option[Fragment]*) => Fragment)(
+      fs: Option[Fragment]*): Option[Fragment] =
+    if (fs.isEmpty) None else Some(parentheses(f(fs: _*)))
 }
