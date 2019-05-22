@@ -5,9 +5,9 @@
 package doobie
 package util
 
-import doobie.implicits._
 import cats.Reducible
 import cats.implicits._
+import doobie.implicits._
 
 /** Module of `Fragment` constructors. */
 object fragments {
@@ -54,7 +54,7 @@ object fragments {
 
   /** Returns `SET f1, f2, ... fn` or the empty fragment if `fs` is empty. */
   def set(fs: Fragment*): Fragment =
-    if (fs.isEmpty) Fragment.empty else fr"SET" ++ fs.toList.intercalate(fr",")
+    if (fs.isEmpty) Fragment.empty else fr"SET" ++ comma(fs: _*)
 
   /** Returns `SET f1, f2, ... fn` for defined `f`, if any, otherwise the empty fragment. */
   def setOpt(fs: Option[Fragment]*): Fragment =
@@ -66,5 +66,13 @@ object fragments {
   /** Returns `?,?,...,?` for the values in `a`. */
   def values[A](a: A)(implicit w: util.Write[A]): Fragment =
     w.toFragment(a)
+
+  /** Returns `f1, f2, ... fn` or the empty fragment if `fs` is empty. */
+  def comma(fs: Fragment*): Fragment =
+    fs.toList.intercalate(fr",")
+
+  /** Returns `ORDER BY f1, f2, ... fn` or the empty fragment if `fs` is empty. */
+  def orderBy(fs: Fragment*): Fragment =
+    if (fs.isEmpty) Fragment.empty else fr"ORDER BY" ++ comma(fs: _*)
 
 }
