@@ -11,7 +11,6 @@ import cats.effect.ContextShift
 import scala.concurrent.ExecutionContext
 import cats.effect.IO
 
-
 class fragmentsspec extends Specification {
   import Fragments._
 
@@ -21,14 +20,17 @@ class fragmentsspec extends Specification {
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    "sa",
+    ""
   )
 
   "Fragments" >> {
 
-    val nel  = List(1,2,3).toNel.getOrElse(sys.error("unpossible"))
-    val fs   = List(1,2,3).map(n => fr"$n")
-    val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
+    val nel = List(1, 2, 3).toNel.getOrElse(sys.error("unpossible"))
+    val fs = List(1, 2, 3).map(n => fr"$n")
+    val ofs = List(1, 2, 3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
+    val fsEmpty = List[Fragment]()
+    val ofsEmpty = List[Option[Fragment]](None, None)
 
     "in" in {
       in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
@@ -39,55 +41,99 @@ class fragmentsspec extends Specification {
     }
 
     "and (many)" in {
-      and(fs: _*).query[Unit].sql must_== "(? ) AND (? ) AND (? ) "
+      and(fs: _*).map(_.query[Unit].sql) must beSome("(? AND ? AND ? ) ")
     }
 
     "and (single)" in {
-      and(fs(0)).query[Unit].sql must_== "(? ) "
+      and(fs(0)).map(_.query[Unit].sql) must beSome("(? ) ")
     }
 
     "and (empty)" in {
-      and().query[Unit].sql must_== ""
+      and().map(_.query[Unit].sql) must beNone
     }
 
     "andOpt (many)" in {
-      andOpt(ofs: _*).query[Unit].sql must_== "(? ) AND (? ) "
+      andOpt(ofs: _*).map(_.query[Unit].sql) must beSome("(? AND ? ) ")
     }
 
     "andOpt (one)" in {
-      andOpt(ofs(0)).query[Unit].sql must_== "(? ) "
+      andOpt(ofs(0)).map(_.query[Unit].sql) must beSome("(? ) ")
     }
 
     "andOpt (none)" in {
-      andOpt(None, None).query[Unit].sql must_== ""
+      andOpt(None, None).map(_.query[Unit].sql) must beNone
     }
 
     "or (many)" in {
-      or(fs: _*).query[Unit].sql must_== "(? ) OR (? ) OR (? ) "
+      or(fs: _*).map(_.query[Unit].sql) must beSome("(? OR ? OR ? ) ")
     }
 
     "or (single)" in {
-      or(fs(0)).query[Unit].sql must_== "(? ) "
+      or(fs(0)).map(_.query[Unit].sql) must beSome("(? ) ")
     }
 
     "or (empty)" in {
-      or().query[Unit].sql must_== ""
+      or().map(_.query[Unit].sql) must beNone
     }
 
     "orOpt (many)" in {
-      orOpt(ofs: _*).query[Unit].sql must_== "(? ) OR (? ) "
+      orOpt(ofs: _*).map(_.query[Unit].sql) must beSome("(? OR ? ) ")
     }
 
     "orOpt (one)" in {
-      orOpt(ofs(0)).query[Unit].sql must_== "(? ) "
+      orOpt(ofs(0)).map(_.query[Unit].sql) must beSome("(? ) ")
     }
 
     "orOpt (none)" in {
-      orOpt(None, None).query[Unit].sql must_== ""
+      orOpt(None, None).map(_.query[Unit].sql) must beNone
+    }
+
+    "andOpt(or) (many)" in {
+      andOpt(or(fs: _*), or(fs: _*)).map(_.query[Unit].sql) must beSome(
+        "((? OR ? OR ? ) AND (? OR ? OR ? ) ) "
+      )
+    }
+
+    "andOpt(orOpt) (many)" in {
+      andOpt(orOpt(ofs: _*), orOpt(ofs: _*)).map(_.query[Unit].sql) must beSome(
+        "((? OR ? ) AND (? OR ? ) ) "
+      )
+    }
+
+    "andOpt(or) (some)" in {
+      andOpt(or(fs: _*), or(fsEmpty: _*))
+        .map(_.query[Unit].sql) must beSome("((? OR ? OR ? ) ) ")
+    }
+
+    "andOpt(orOpt) (some)" in {
+      andOpt(orOpt(ofsEmpty: _*), orOpt(ofs: _*))
+        .map(_.query[Unit].sql) must beSome("((? OR ? ) ) ")
+    }
+
+    "andOpt(or) (one)" in {
+      andOpt(or(fs(0)), or(fs: _*)).map(_.query[Unit].sql) must beSome(
+        "((? ) AND (? OR ? OR ? ) ) "
+      )
+    }
+
+    "andOpt(orOpt) (one)" in {
+      andOpt(orOpt(ofs: _*), orOpt(ofs(0))).map(_.query[Unit].sql) must beSome(
+        "((? OR ? ) AND (? ) ) "
+      )
+    }
+
+    "andOpt(or) (empty)" in {
+      andOpt(or(fsEmpty: _*), or(fsEmpty: _*))
+        .map(_.query[Unit].sql) must beNone
+    }
+
+    "andOpt(orOpt) (empty)" in {
+      andOpt(orOpt(ofsEmpty: _*), orOpt(ofsEmpty: _*))
+        .map(_.query[Unit].sql) must beNone
     }
 
     "whereAnd (many)" in {
-      whereAnd(fs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) AND (? ) "
+      whereAnd(fs: _*).query[Unit].sql must_== "WHERE (? AND ? AND ? ) "
     }
 
     "whereAnd (single)" in {
@@ -99,7 +145,7 @@ class fragmentsspec extends Specification {
     }
 
     "whereAndOpt (many)" in {
-      whereAndOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) "
+      whereAndOpt(ofs: _*).query[Unit].sql must_== "WHERE (? AND ? ) "
     }
 
     "whereAndOpt (one)" in {
@@ -111,7 +157,7 @@ class fragmentsspec extends Specification {
     }
 
     "whereOr (many)" in {
-      whereOr(fs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) OR (? ) "
+      whereOr(fs: _*).query[Unit].sql must_== "WHERE (? OR ? OR ? ) "
     }
 
     "whereOr (single)" in {
@@ -123,7 +169,7 @@ class fragmentsspec extends Specification {
     }
 
     "whereOrOpt (many)" in {
-      whereOrOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) "
+      whereOrOpt(ofs: _*).query[Unit].sql must_== "WHERE (? OR ? ) "
     }
 
     "whereOrOpt (one)" in {
