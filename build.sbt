@@ -295,6 +295,7 @@ lazy val doobie = project.in(file("."))
   )
 
 lazy val thirteen = project
+  .in(file("modules/thirteen"))
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
@@ -546,7 +547,7 @@ lazy val bench = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, hikari, h2, scalatest)
+  .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
   .enablePlugins(MicrositesPlugin)
   .settings(doobieSettings)
   .settings(crossScalaNo213)
@@ -597,7 +598,8 @@ lazy val docs = project
         "h2Version"        -> h2Version,
         "postgresVersion"  -> postgresVersion,
         "scalaVersion"     -> scalaVersion.value,
-        "scalaVersions"    -> crossScalaVersions.value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", "") // 2.11/12
+        "scalaVersions"    -> crossScalaVersions.value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""), // 2.11/12
+        "quillVersion"     -> quillVersion
       )
     ),
     micrositeExtraMdFiles := Map(

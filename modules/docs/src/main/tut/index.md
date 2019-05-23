@@ -62,6 +62,7 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-h2"        % "{{site.doobieVersion}}",          // H2 driver {{site.h2Version}} + type mappings.
   "org.tpolecat" %% "doobie-hikari"    % "{{site.doobieVersion}}",          // HikariCP transactor.
   "org.tpolecat" %% "doobie-postgres"  % "{{site.doobieVersion}}",          // Postgres driver {{site.postgresVersion}} + type mappings.
+  "org.tpolecat" %% "doobie-quill"     % "{{site.doobieVersion}}",          // Support for Quill {{site.quillVersion}}
   "org.tpolecat" %% "doobie-specs2"    % "{{site.doobieVersion}}" % "test", // Specs2 support for typechecking statements.
   "org.tpolecat" %% "doobie-scalatest" % "{{site.doobieVersion}}" % "test"  // ScalaTest support for typechecking statements.
 
