@@ -90,27 +90,27 @@ If you are not using PostgreSQL you can omit `doobie-postgres` and will need to 
 
 Each page begins with some imports, like this.
 
-```tut:silent
+```scala mdoc:silent
 import cats._, cats.data._, cats.implicits._
 import doobie._
 ```
 
 After that there is text interspersed with code examples. Sometimes definitions will stand alone.
 
-```tut:silent
+```scala mdoc:silent
 case class Person(name: String, age: Int)
 val nel = NonEmptyList.of(Person("Bob", 12), Person("Alice", 14))
 ```
-And sometimes they will appear as a REPL interaction.
 
-```tut
+And sometimes they will appear with output.
+
+```scala mdoc
 nel.head
 nel.tail
 ```
-
 Sometimes we demonstrate that something doesn't compile. In such cases it will be clear from the context that this is expected, and not a problem with the documentation.
 
-```tut:nofail
+```scala mdoc:fail
 woozle(nel) // doesn't compile
 ```
 

@@ -14,7 +14,7 @@ The most common kind of custom mapping operates on single column values, so we w
 
 In this chapter we're importing the essentials from Cats and **doobie**, as well as some other odds and ends we'll discuss below.
 
-```tut:silent
+```scala mdoc:silent
 import cats._, cats.data._, cats.implicits._
 import doobie._, doobie.implicits._
 import io.circe._, io.circe.jawn._, io.circe.syntax._
@@ -26,20 +26,20 @@ import org.postgresql.util.PGobject
 
 Your first evidence that you need a new type mapping will likely be a type error. There are two common cases. The first case appears when you try to use an unmapped type as a statement parameter.
 
-```tut:fail:book
+```scala mdoc:fail
 def nope(msg: String, ex: Exception): ConnectionIO[Int] =
   sql"INSERT INTO log (message, detail) VALUES ($msg, $ex)".update.run
 ```
 
 The second common case is when we try to read rows into a data type that includes an unmapped member type, such as this one.
 
-```tut:silent
+```scala mdoc:silent
 case class LogEntry(msg: String, ex: Exception)
 ```
 
 When we attept to define a `Query0[LogEntry]` we get a type error similar to the one above.
 
-```tut:fail:book
+```scala mdoc:fail
 sql"SELECT message, detail FROM log".query[LogEntry]
 ```
 
@@ -68,7 +68,7 @@ The above cases are defined by the JDBC specification. See later chapters on ven
 
 If we don't have the `Get` or `Put` instance we need, we can often one from an existing instance. Consider here a type `Nat` of natural numbers, along with a conversion to and from `Int`.
 
-```tut:silent
+```scala mdoc:silent
 object NatModule {
 
   sealed trait Nat
@@ -96,7 +96,7 @@ import NatModule._
 
 There is no direct schema mapping for `Nat`, but there *is* a schema mapping for `Int` that we get out of the box, and we can use it to define our mapping for `Nat`.
 
-```tut:silent
+```scala mdoc:silent
 // Bidirectional schema mapping for Nat, in terms of Int
 implicit val natGet: Get[Nat] = Get[Int].map(fromInt)
 implicit val natPut: Put[Nat] = Put[Int].contramap(toInt)
@@ -104,10 +104,10 @@ implicit val natPut: Put[Nat] = Put[Int].contramap(toInt)
 
 The `.map` and `.contramap` methods conform with the signatures of `Functor` and `Contravariant`, and indeed `Get` and `Put` are instances, respectively. However it's best to use the tagged versions `.tmap` and `.tcontramap` when possible because it makes the name of the type ("Nat" in this case) available to the query checker by requiring a `TypeTag` for the mapped type. This isn't always practical but it can result in better diagnostic messages so it should be preferred.
 
-```tut:silent
+```scala mdoc:silent
 // Prefer .tmap and .tcontramap when possible.
-implicit val natGet: Get[Nat] = Get[Int].tmap(fromInt)
-implicit val natPut: Put[Nat] = Put[Int].tcontramap(toInt)
+implicit val natGet2: Get[Nat] = Get[Int].tmap(fromInt)
+implicit val natPut2: Put[Nat] = Put[Int].tcontramap(toInt)
 ```
 
 #### Deriving Get and Put from Meta
@@ -116,16 +116,16 @@ Because it is common to define bidirectional mappings there is also a `Meta` typ
 
 Because a `Meta` instance exists for `Int` and other base types this is often the most convenient way to define a bidirectional mapping.
 
-```tut:silent
+```scala mdoc:silent
 // Bidirectional schema mapping for Nat, in terms of Int
 implicit val natMeta: Meta[Nat] = Meta[Int].imap(fromInt)(toInt)
 ```
 
 And as above, prefer `.timap` when possible.
 
-```tut:silent
+```scala mdoc:silent
 // Prefer .timap when possible.
-implicit val natMeta: Meta[Nat] = Meta[Int].timap(fromInt)(toInt)
+implicit val natMeta2: Meta[Nat] = Meta[Int].timap(fromInt)(toInt)
 ```
 
 **Note:** it is important to understand that `Meta` exists only to introduce `Get`/`Put` pairs into implicit scope. You should never demand `Meta` as evidence in user code: instead demand `Get`, `Put`, or both.
@@ -141,7 +141,7 @@ In rare cases it is not possible to define a new mapping in terms of primitive J
 
 In this example we will create a mapping for PostgreSQL's `json` type, which is not part of the JDBC specification. On the Scala side we will use the `Json` type from [Circe](https://github.com/circe/circe). The PostgreSQL JDBC driver transfers `json` values via the JDBC type `OTHER`, with an uwrapped payload type `PGobject`. The only way to know this is by experimentation. You can expect to get this kind of mapping wrong a few times before it starts working. In any case the `OTHER` type is commonly used for nonstandard types and **doobie** provides a way to construct such mappings.
 
-```tut:silent
+```scala mdoc:silent
 implicit val showPGobject: Show[PGobject] = Show.show(_.getValue.take(250))
 
 implicit val jsonGet: Get[Json] =
@@ -154,7 +154,7 @@ In the instance above we read a value via JDBC's `getOther` with schema type `js
 
 The `Put` instance is less error-prone since we know the `Json` we start with is valid. Here we construct and return a new `PGobject` whose schema type and string value are filled in explicitly.
 
-```tut:silent
+```scala mdoc:silent
 implicit val jsonPut: Put[Json] =
   Put.Advanced.other[PGobject](NonEmptyList.of("json")).tcontramap[Json] { j =>
       val o = new PGobject
@@ -166,7 +166,7 @@ implicit val jsonPut: Put[Json] =
 
 As above, with bidirectional mappings it's usually more convenient to use `Meta`, which provides an `other` constructor allowing the operations above to be combined.
 
-```tut:silent
+```scala mdoc:silent
 implicit val jsonMeta: Meta[Json] =
   Meta.Advanced.other[PGobject]("json").timap[Json](
     a => parse(a.getValue).leftMap[Json](e => throw e).merge)(
@@ -210,7 +210,7 @@ Although automatic derivation will suffice in most cases, it does not work with 
 
 Consider the `Point` class from Java AWT, which is logically a pair of `Int`s but is not a case class and is thus not eligable for automatic derivation of `Read` and `Write` instances. We can define these by hand by mapping to and from the Scala type `(Int, Int)` which *does* have automatically-derived instances.
 
-```tut
+```scala mdoc
 implicit val pointRead: Read[Point] =
   Read[(Int, Int)].map { case (x, y) => new Point(x, y) }
 

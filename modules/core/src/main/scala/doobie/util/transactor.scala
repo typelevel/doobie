@@ -288,15 +288,15 @@ object transactor  {
      * until server resources are exhausted. It is usually preferable to use `DataSourceTransactor`
      * with an underlying bounded connection pool (as with `H2Transactor` and `HikariTransactor` for
      * instance). Blocking operations on `DriverManagerTransactor` are executed on an unbounded
-     * cached daemon thread pool, so you are also at risk of exhausting system threads. TL;DR this
-     * is fine for console apps but don't use it for a web application.
+     * cached daemon thread pool by default, so you are also at risk of exhausting system threads.
+     * TL;DR this is fine for console apps but don't use it for a web application.
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     object fromDriverManager {
 
       // An unbounded cached pool of daemon threads.
-      private val blockingContext: ExecutionContext =
+      private val defaultBlockingContext: ExecutionContext =
         ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
           new ThreadFactory {
             def newThread(r: Runnable): Thread = {
@@ -312,7 +312,8 @@ object transactor  {
       private def create[M[_]](
         driver: String,
         conn: () => Connection,
-        strategy: Strategy
+        strategy: Strategy,
+        blockingContext: ExecutionContext
       )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
@@ -325,6 +326,13 @@ object transactor  {
           strategy
         )
 
+      def apply[M[_]: Async: ContextShift](
+        driver: String,
+        url:    String,
+        blockingContext: ExecutionContext
+      ): Transactor.Aux[M, Unit] =
+        create(driver, () => DriverManager.getConnection(url), Strategy.default, blockingContext)
+
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
        * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
@@ -334,7 +342,16 @@ object transactor  {
         driver: String,
         url:    String
       ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url), Strategy.default)
+        apply(driver, url, defaultBlockingContext)
+
+      def apply[M[_]: Async: ContextShift](
+        driver: String,
+        url:    String,
+        user:   String,
+        pass:   String,
+        blockingContext: ExecutionContext
+      ): Transactor.Aux[M, Unit] =
+        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default, blockingContext)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -349,7 +366,21 @@ object transactor  {
         user:   String,
         pass:   String
       ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default)
+        apply(driver, url, user, pass, defaultBlockingContext)
+
+      /**
+       * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
+       * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
+       * @param url        a connection URL, specific to your driver
+       * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
+       */
+      def apply[M[_]: Async: ContextShift](
+        driver: String,
+        url:    String,
+        info:   java.util.Properties,
+        blockingContext: ExecutionContext
+      ): Transactor.Aux[M, Unit] =
+        create(driver, () => DriverManager.getConnection(url, info), Strategy.default, blockingContext)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -362,7 +393,7 @@ object transactor  {
         url:    String,
         info:   java.util.Properties
       ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, info), Strategy.default)
+        apply(driver, url, info, defaultBlockingContext)
 
     }
 

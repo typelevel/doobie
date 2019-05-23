@@ -12,26 +12,27 @@ In this chapter we discuss how to log statement execution and timing.
 
 Once again we will set up our REPL with a transactor.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
 ```
 
@@ -47,13 +48,17 @@ CREATE TABLE country (
 )
 ```
 
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+```
+
 ### Basic Statement Logging
 
 When we construct a `Query0` or `Update0` we can provide an optional `LogHandler` that will be given a `LogEvent` on completion and can perform an arbitrary side-effect to report the event as desired.
 
 **doobie** provides an example `LogHandler` that writes a summary to a JDK logger, so let's try that one. Instead of calling `.query` let's call `.queryWithLogHandler`.
 
-```tut:silent
+```scala mdoc:silent
 def byName(pat: String) = {
   sql"select name, code from country where name like $pat"
     .queryWithLogHandler[(String, String)](LogHandler.jdkLogHandler)
@@ -64,7 +69,7 @@ def byName(pat: String) = {
 
 When we run our program we get our result as expected.
 
-```tut
+```scala mdoc
 byName("U%").unsafeRunSync
 ```
 
@@ -90,10 +95,10 @@ Let's break down what we're seeing:
 
 If you wish to turn on logging generally, you can introduce an implicit `LogHandler` that will get picked up and used by the `.query/.update` operations.
 
-```tut:silent
+```scala mdoc:silent
 implicit val han = LogHandler.jdkLogHandler
 
-def byName(pat: String) = {
+def byName2(pat: String) = {
   sql"select name, code from country where name like $pat"
     .query[(String, String)] // handler will be picked up here
     .to[List]
@@ -119,22 +124,22 @@ See the Scaladoc for details on this data type.
 
 The simplest possible `LogHandler` does nothing at all, and this is what you get by default.
 
-```tut:silent
+```scala mdoc:silent
 val nop = LogHandler(_ => ())
 ```
 
 But that's not interesting. Let's at least print the event out.
 
-```tut
+```scala mdoc
 val trivial = LogHandler(e => Console.println("*** " + e))
 sql"select 42".queryWithLogHandler[Int](trivial).unique.transact(xa).unsafeRunSync
 ```
 
 The `jdkLogHandler` implementation is straightforward. You might use it as a template to write a logger to suit your particular logging back-end.
 
-```tut:silent
+```scala mdoc:silent
 import java.util.logging.Logger
-import doobie.util.log._
+import doobie.util.log.{ Success, ProcessingFailure, ExecFailure }
 
 val jdkLogHandler: LogHandler = {
   val jdkLogger = Logger.getLogger(getClass.getName)

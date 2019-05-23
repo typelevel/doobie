@@ -14,7 +14,7 @@ layout: home
 
 **doobie** is a pure functional JDBC layer for Scala and [**Cats**](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases **doobie** provides a minimal but expressive high-level API:
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
 import cats.effect.IO
@@ -34,7 +34,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
 
 And then …
 
-```tut
+```scala mdoc
 find("France").transact(xa).unsafeRunSync
 ```
 
@@ -98,3 +98,10 @@ Listed newest first. If you have given a presentation or have written a blog pos
 ## Testing
 
 If you want to build and run the tests for yourself, you'll need a local postgresql database. Tests are run as the default **postgres** user, which should have no password for access in the local environment. You can see the `before_script` section of the [.travis.yml](./.travis.yml) file for an up-to-date list of steps for preparing the test database.
+
+<!-- This stuff isn't in the Home layout anymore so I pasted it here. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="{{site.url}}{{site.baseurl}}/highlight/highlight.pack.js"></script>
+<script>hljs.configure({languages:['scala','java','bash']}); hljs.initHighlighting();</script>
+<script src="{{ site.baseurl }}/js/main.js"></script>

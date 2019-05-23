@@ -12,30 +12,35 @@ In this chapter we discuss how to construct SQL statements at runtime.
 
 Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up a `Transactor` and YOLO mode.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
 
 val y = xa.yolo
 import y._
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 We're still playing with the `country` table, shown here for reference.
@@ -54,7 +59,7 @@ CREATE TABLE country (
 
 You can construct a SQL `Fragment` using the `fr` interpolator, which behaves just like the `sql` interpolator. Fragments are concatenated with `++`.
 
-```tut
+```scala mdoc
 val a = fr"select name from country"
 val b = fr"where code = 'USA'"
 val c = a ++ b // concatenation by ++
@@ -63,7 +68,7 @@ c.query[String].unique.quick.unsafeRunSync
 
 Fragments can capture arguments of any type with a `Put` instance, just as the `sql` interpolator does.
 
-```tut
+```scala mdoc
 def whereCode(s: String) = fr"where code = $s"
 val fra = whereCode("FRA")
 (fr"select name from country" ++ fra).query[String].quick.unsafeRunSync
@@ -71,7 +76,7 @@ val fra = whereCode("FRA")
 
 You can lift an arbitrary string value via `Fragment.const`, which allows you to parameterize on things that aren't valid SQL parameters.
 
-```tut
+```scala mdoc
 def count(table: String) = (fr"select count(*) from" ++ Fragment.const(table)).query[Int].unique
 count("city").quick.unsafeRunSync
 ```
@@ -84,7 +89,7 @@ The rendered SQL string for a `fr` or `const` fragment will have a single space 
 
 If you do *not* want a fragment to have trailing space you can use the `fr0` interpolator or `const0` constructor. This is used here and there in the `Fragments` module to yield prettier SQL strings.
 
-```tut
+```scala mdoc
 fr"IN (" ++ List(1, 2, 3).map(n => fr"$n").intercalate(fr",") ++ fr")"
 fr0"IN (" ++ List(1, 2, 3).map(n => fr0"$n").intercalate(fr",") ++ fr")"
 ```
@@ -96,7 +101,7 @@ The `Fragments` module provides some combinators for common patterns when workin
 
 Here we define a query with a three optional filter conditions.
 
-```tut:silent
+```scala mdoc:silent
 // Import some convenience combinators.
 import Fragments.{ in, whereAndOpt }
 
@@ -127,7 +132,7 @@ We first construct three optional filters, the third of which uses the `in` comb
 
 Let's look at a few possibilities.
 
-```tut
+```scala mdoc
 select(None, None, Nil, 10).check.unsafeRunSync // no filters
 select(Some("U%"), None, Nil, 10).check.unsafeRunSync // one filter
 select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync // three filters

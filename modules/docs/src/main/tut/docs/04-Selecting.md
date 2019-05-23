@@ -12,27 +12,33 @@ In this chapter will write some some programs to read from the database, mapping
 
 First let's get our imports out of the way and set up a `Transactor` as we did before. You can skip this step if you still have your REPL running from last chapter.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
+import fs2.Stream
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 We will be playing with the `country` table, shown here for reference. If you don't have the `world` database set up, go back to the [Introduction](01-Introduction.html) for instructions.
@@ -51,16 +57,14 @@ CREATE TABLE country (
 
 For our first query let's aim low and select some country names into a `List`, then print out the first few. There are several steps here so we have noted the types along the way.
 
-```tut
-{
-  sql"select name from country"
-    .query[String]    // Query0[String]
-    .to[List]         // ConnectionIO[List[String]]
-    .transact(xa)     // IO[List[String]]
-    .unsafeRunSync    // List[String]
-    .take(5)          // List[String]
-    .foreach(println) // Unit
-}
+```scala mdoc
+sql"select name from country"
+  .query[String]    // Query0[String]
+  .to[List]         // ConnectionIO[List[String]]
+  .transact(xa)     // IO[List[String]]
+  .unsafeRunSync    // List[String]
+  .take(5)          // List[String]
+  .foreach(println) // Unit
 ```
 
 Let's break this down a bit.
@@ -77,17 +81,15 @@ Let's break this down a bit.
 
 The example above is ok, but there's not much point reading all the results from the database when we only want the first five rows. So let's try a different approach.
 
-```tut
-{
-  sql"select name from country"
-    .query[String]    // Query0[String]
-    .stream           // Stream[ConnectionIO, String]
-    .take(5)          // Stream[ConnectionIO, String]
-    .compile.toList   // ConnectionIO[List[String]]
-    .transact(xa)     // IO[List[String]]
-    .unsafeRunSync    // List[String]
-    .foreach(println) // Unit
-}
+```scala mdoc
+sql"select name from country"
+  .query[String]    // Query0[String]
+  .stream           // Stream[ConnectionIO, String]
+  .take(5)          // Stream[ConnectionIO, String]
+  .compile.toList   // ConnectionIO[List[String]]
+  .transact(xa)     // IO[List[String]]
+  .unsafeRunSync    // List[String]
+  .foreach(println) // Unit
 ```
 
 The difference here is that `stream` gives us an [fs2](https://github.com/functional-streams-for-scala/fs2) `Stream[ConnectionIO, String]`
@@ -100,22 +102,20 @@ For more information see the [fs2](https://github.com/functional-streams-for-sca
 
 The API we have seen so far is ok, but it's tiresome to keep saying `transact(xa)` and doing `foreach(println)` to see what the results look like. So **just for REPL exploration** there is a module of extra syntax provided on your `Transactor` that you can import.
 
-```tut:silent
+```scala mdoc:silent
 val y = xa.yolo // a stable reference is required
 import y._
 ```
 
 We can now run our previous query in an abbreviated form.
 
-```tut
-{
-  sql"select name from country"
-    .query[String] // Query0[String]
-    .stream        // Stream[ConnectionIO, String]
-    .take(5)       // Stream[ConnectionIO, String]
-    .quick         // IO[Unit]
-    .unsafeRunSync
-}
+```scala mdoc
+sql"select name from country"
+  .query[String] // Query0[String]
+  .stream        // Stream[ConnectionIO, String]
+  .take(5)       // Stream[ConnectionIO, String]
+  .quick         // IO[Unit]
+  .unsafeRunSync
 ```
 
 This syntax allows you to quickly run a `Query0[A]` or `Stream[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around.
@@ -127,95 +127,83 @@ This syntax allows you to quickly run a `Query0[A]` or `Stream[ConnectionIO, A]`
 
 We can select multiple columns, of course, and map them to a tuple. The `gnp` column in our table is nullable so we'll select that one into an `Option[Double]`. In a later chapter we'll see how to check the types to be sure they're sensible.
 
-```tut
-{
-  sql"select code, name, population, gnp from country"
-    .query[(String, String, Int, Option[Double])]
-    .stream
-    .take(5)
-    .quick
-    .unsafeRunSync
-}
+```scala mdoc
+sql"select code, name, population, gnp from country"
+  .query[(String, String, Int, Option[Double])]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync
 ```
 **doobie** supports row mappings for atomic column types, as well as options, tuples, `HList`s, shapeless records, and case classes thereof. So let's try the same query with an `HList`:
 
-```tut
+```scala mdoc
 import shapeless._
 
-{
-  sql"select code, name, population, gnp from country"
-    .query[String :: String :: Int :: Option[Double] :: HNil]
-    .stream
-    .take(5)
-    .quick
-    .unsafeRunSync
-}
+sql"select code, name, population, gnp from country"
+  .query[String :: String :: Int :: Option[Double] :: HNil]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync
 ```
 
 And with a shapeless record:
 
-```tut
+```scala mdoc
 import shapeless.record.Record
 
 type Rec = Record.`'code -> String, 'name -> String, 'pop -> Int, 'gnp -> Option[Double]`.T
 
-{
-  sql"select code, name, population, gnp from country"
-    .query[Rec]
-    .stream
-    .take(5)
-    .quick
-    .unsafeRunSync
-}
+sql"select code, name, population, gnp from country"
+  .query[Rec]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync
 ```
 
 And again, mapping rows to a case class.
 
-```tut:silent
+```scala mdoc:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```
 
-```tut
-{
-  sql"select code, name, population, gnp from country"
-    .query[Country]
-    .stream
-    .take(5)
-    .quick
-    .unsafeRunSync
-}
+```scala mdoc
+sql"select code, name, population, gnp from country"
+  .query[Country]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync
 ```
 
 You can also nest case classes, `HList`s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
 
-```tut:silent
+```scala mdoc:silent
 case class Code(code: String)
-case class Country(name: String, pop: Int, gnp: Option[Double])
+case class Country2(name: String, pop: Int, gnp: Option[Double])
 ```
 
-```tut
-{
-  sql"select code, name, population, gnp from country"
-    .query[(Code, Country)]
-    .stream
-    .take(5)
-    .quick
-    .unsafeRunSync
-}
+```scala mdoc
+sql"select code, name, population, gnp from country"
+  .query[(Code, Country2)]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync
 ```
 
 And just for fun, since the `Code` values are constructed from the primary key, let's turn the results into a `Map`. Trivial but useful.
 
-```tut
-{
-  sql"select code, name, population, gnp from country"
-    .query[(Code, Country)]
-    .stream.take(5)
-    .compile.toList
-    .map(_.toMap)
-    .quick
-    .unsafeRunSync
-}
+```scala mdoc
+sql"select code, name, population, gnp from country"
+  .query[(Code, Country2)]
+  .stream.take(5)
+  .compile.toList
+  .map(_.toMap)
+  .quick
+  .unsafeRunSync
 ```
 
 ### Final Streaming
@@ -224,13 +212,12 @@ In the examples above we construct a `Stream[ConnectionIO, A]` and discharge it 
 
 However in some cases a stream is what we want as our "top level" type. For example, [http4s](https://github.com/http4s/http4s) can use a `Stream[IO, A]` directly as a response type, which could allow us to stream a resultset directly to the network socket. We can achieve this in **doobie** by calling `transact` directly on the `Stream[ConnectionIO, A]`.
 
-```tut
-val p = {
+```scala mdoc
+val p: Stream[IO, Country2] =
   sql"select name, population, gnp from country"
-    .query[Country] // Query0[Country]
-    .stream         // Stream[ConnectionIO, Country]
-    .transact(xa)   // Stream[IO, Country]
-}
+    .query[Country2] // Query0[Country2]
+    .stream          // Stream[ConnectionIO, Country2]
+    .transact(xa)    // Stream[IO, Country2]
 
 p.take(5).compile.toVector.unsafeRunSync.foreach(println)
 ```
@@ -239,21 +226,19 @@ p.take(5).compile.toVector.unsafeRunSync.foreach(println)
 
 The `sql` interpolator is sugar for constructors defined in the `doobie.hi.connection` module, aliased as `HC` if you use the standard imports. Using these constructors directly, the above program would look like this:
 
-```tut
+```scala mdoc
 
-val proc = HC.stream[(Code, Country)](
+val proc = HC.stream[(Code, Country2)](
   "select code, name, population, gnp from country", // statement
   ().pure[PreparedStatementIO],                      // prep (none)
   512                                                // chunk size
 )
 
-{
-  proc.take(5)        // Stream[ConnectionIO, (Code, Country)]
-      .compile.toList // ConnectionIO[List[(Code, Country)]]
-      .map(_.toMap)   // ConnectionIO[Map[Code, Country]]
-      .quick
-      .unsafeRunSync
-}
+proc.take(5)        // Stream[ConnectionIO, (Code, Country2)]
+    .compile.toList // ConnectionIO[List[(Code, Country2)]]
+    .map(_.toMap)   // ConnectionIO[Map[Code, Country2]]
+    .quick
+    .unsafeRunSync
 ```
 
 The `stream` combinator is parameterized on the element type and consumes a statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.

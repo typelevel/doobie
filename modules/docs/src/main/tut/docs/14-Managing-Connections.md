@@ -8,7 +8,7 @@ title: Managing Connections
 
 In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
 
-```tut:silent
+```scala mdoc:silent
 import cats._
 import cats.data._
 import cats.effect._
@@ -57,28 +57,33 @@ JDBC provides a bare-bones connection provider via `DriverManager.getConnection`
 
 However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is fine. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
-```tut:silent
-import scala.concurrent.ExecutionContext
+```scala mdoc:silent
+import doobie.util.ExecutionContexts
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 ### Using a HikariCP Connection Pool
 
 The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a `Resource`. A program that uses `HikariTransactor` will typically use `IOApp`.
 
-```tut:silent:reset
+```scala mdoc:silent:reset
 import cats.effect._
 import cats.implicits._
 import doobie._
@@ -120,7 +125,7 @@ object HikariApp extends IOApp {
 
 And running this program gives us the desired result.
 
-```tut
+```scala mdoc
 HikariApp.main(Array())
 ```
 
@@ -128,7 +133,7 @@ HikariApp.main(Array())
 
 If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`. You still need to provide execution contexts.
 
-```tut:silent
+```scala mdoc:silent
 import javax.sql.DataSource
 
 // Resource yielding a DataSourceTransactor[IO] wrapping the given `DataSource`
@@ -148,7 +153,7 @@ The `configure` method on `DataSourceTransactor` provides access to the underlyi
 
 If your application exposes an existing `Connection` you can use it directly by wrapping it in a `Transactor`. You still need to provide an execution context for blocking operations.
 
-```tut:silent
+```scala mdoc:silent
 import java.sql.Connection
 
 // Resource yielding a Transactor[IO] wrapping the given `Connection`
@@ -168,9 +173,9 @@ If the default `Transactor` behavior don't meet your needs you can replace any m
 val testXa = Transactor.after.set(xa, HC.rollback)
 ```
 
-As another exmaple, Hive's JDBC driver doesn't support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like: 
+As another exmaple, Hive's JDBC driver doesn't support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like:
 
-```scala 
+```scala
 import doobie.free.connection.unit
 
 val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))

@@ -10,30 +10,35 @@ In this chapter we examine a set of combinators that allow us to construct progr
 
 ### Setting Up
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
 
 val y = xa.yolo
 import y._
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 ### About Exceptions
@@ -55,7 +60,7 @@ All **doobie** monads provide an `Async` instance, which extends `MonadError[?[_
 
 So any **doobie** program can be lifted into a disjunction simply by adding `.attempt`.
 
-```tut
+```scala mdoc
 val p = 42.pure[ConnectionIO]
 p.attempt
 ```
@@ -80,7 +85,7 @@ See the ScalaDoc for more information.
 
 Ok let's set up a `person` table again, using a slightly different formulation just for fun. Note that the `name` column is marked as being unique.
 
-```tut
+```scala mdoc
 List(
   sql"""DROP TABLE IF EXISTS person""",
   sql"""CREATE TABLE person (
@@ -92,7 +97,7 @@ List(
 
 Alright, let's define a `Person` data type and a way to insert instances.
 
-```tut:silent
+```scala mdoc:silent
 case class Person(id: Int, name: String)
 
 def insert(s: String): ConnectionIO[Person] = {
@@ -104,13 +109,13 @@ def insert(s: String): ConnectionIO[Person] = {
 
 The first insert will work.
 
-```tut
+```scala mdoc
 insert("bob").quick.unsafeRunSync
 ```
 
 The second will fail with a unique constraint violation.
 
-```tut
+```scala mdoc
 try {
   insert("bob").quick.unsafeRunSync
 } catch {
@@ -123,7 +128,7 @@ try {
 So let's change our method to return an `Either[String, Person]` by using the `attemptSomeSql` combinator. This allows us to specify the `SQLState` value that we want to trap. In this case the culprit `"23505"` (yes, it's a string) is provided as a constant in the `doobie-postgres` add-on.
 
 
-```tut:silent
+```scala mdoc:silent
 import doobie.postgres._
 
 def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
@@ -135,7 +140,7 @@ def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
 Given this definition we can safely attempt to insert duplicate records and get a helpful error message rather than an exception.
 
 
-```tut
+```scala mdoc
 safeInsert("bob").quick.unsafeRunSync
 
 safeInsert("steve").quick.unsafeRunSync

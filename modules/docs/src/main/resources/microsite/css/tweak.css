@@ -8,3 +8,6 @@
 pre .hljs {
   padding: 15px;
 }
+.hljs-comment {
+  color: #aca;
+}

@@ -12,39 +12,44 @@ This chapter shows how we can map Scala sequence types to SQL `ARRAY` types, for
 
 Again we set up a transactor and pull in YOLO mode. We also need an import to get PostgreSQL-specific type mappings.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
 import doobie.postgres.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
 
 val y = xa.yolo
 import y._
 ```
 
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+```
+
 ### Reading and Writing Arrays
 
 Let's create a new table with an SQL array column. Note that this is likely to work only for PostgreSQL; the syntax for arrays differs significantly from vendor to vendor.
 
-```tut:silent
+```scala mdoc:silent
 val drop = sql"DROP TABLE IF EXISTS person".update.quick
 
 val create =
@@ -57,13 +62,13 @@ val create =
   """.update.quick
 ```
 
-```tut
+```scala mdoc
 (drop *> create).unsafeRunSync
 ```
 
 **doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default. No special handling is required, other than importing the vendor-specific array support above.
 
-```tut:silent
+```scala mdoc:silent
 case class Person(id: Long, name: String, pets: List[String])
 
 def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
@@ -75,7 +80,7 @@ def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
 
 Insert works fine, as does reading the result. No surprises.
 
-```tut
+```scala mdoc
 insert("Bob", List("Nixon", "Slappy")).quick.unsafeRunSync
 insert("Alice", Nil).quick.unsafeRunSync
 ```
@@ -88,7 +93,7 @@ However there is another axis of variation here: the *array cells* themselves ma
 
 So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a `NULL` cell would result in a `NullableCellRead` exception.
 
-```tut
+```scala mdoc
 sql"select array['foo','bar','baz']".query[List[String]].quick.unsafeRunSync
 sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRunSync
 sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync
