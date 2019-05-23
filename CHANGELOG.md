@@ -15,7 +15,7 @@ The big changes are improvements in resource safety:
 
 New features:
 
-- At long last there is a `doobie-quill` module that allows constructing `ConnectionIO` values via [Quill](https://getquill.io/) quotes. There are a few examples in the tests but no other documentation at the moment. TBD. Many thanks to **Alex Ioffe** and **Chris Davenport** for their assistance!
+- At long last there is a `doobie-quill` module that allows constructing `ConnectionIO` values via [Quill](https://getquill.io/) quotes. See the new book chapter for examples. Many thanks to **Alex Ioffe** and **Chris Davenport** for their assistance!
 
 And an assortment of other improvements:
 
