@@ -18,35 +18,37 @@ This library pulls in [PostgreSQL JDBC Driver](https://jdbc.postgresql.org) as a
 
 The following examples require a few imports.
 
-```tut:silent
+```scala mdoc:silent
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
 import doobie._
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
+import doobie.util.ExecutionContexts
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
+```
 
-val y = xa.yolo
-import y._
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
 
-```tut:silent
+```scala mdoc:silent
 import doobie.postgres._
 import doobie.postgres.implicits._
 ```
@@ -61,7 +63,7 @@ import doobie.postgres.implicits._
 - `float4[]` maps to `Array[Float]`
 - `float8[]` maps to `Array[Double]`
 - `varchar[]`, `char[]`, `text[],` and `bpchar[]` all map to `Array[String]`.
-- `uuid[]` maps to `Array[UUID]` 
+- `uuid[]` maps to `Array[UUID]`
 
 In addition to `Array` you can also map to `List` and `Vector`. Note that arrays of advanced types and structs are not supported by the driver; arrays of `Byte` are represented as `bytea`; and arrays of `int2` are incorrectly mapped by the driver as `Array[Int]` rather than `Array[Short]` and are not supported in **doobie**.
 
@@ -77,7 +79,7 @@ create type myenum as enum ('foo', 'bar')
 
 The first option is to map `myenum` to an instance of the execrable `scala.Enumeration` class via the `pgEnum` constructor.
 
-```tut:silent
+```scala mdoc:silent
 object MyEnum extends Enumeration {
   val foo, bar = Value
 }
@@ -85,8 +87,8 @@ object MyEnum extends Enumeration {
 implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
 ```
 
-```tut
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.quick.unsafeRunSync
+```scala mdoc
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.transact(xa).unsafeRunSync
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -102,7 +104,7 @@ implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
 
 And the final, most general construction simply requires evidence that your taget type can be translated to and from `String`.
 
-```tut:silent
+```scala mdoc:silent
 sealed trait FooBar
 
 object FooBar {
@@ -128,8 +130,8 @@ implicit val FoobarMeta: Meta[FooBar] =
   pgEnumStringOpt("myenum", FooBar.fromEnum, FooBar.toEnum)
 ```
 
-```tut
-sql"select 'foo'::myenum".query[FooBar].unique.quick.unsafeRunSync
+```scala mdoc
+sql"select 'foo'::myenum".query[FooBar].unique.transact(xa).unsafeRunSync
 ```
 
 
@@ -156,7 +158,7 @@ Mappings for postgis are provided in the `pgistypes` module. Doobie expects post
 libraryDependencies += "net.postgis" % "postgis-jdbc" % "2.3.0"
 ```
 
-```tut:silent
+```scala mdoc:silent
 // Not provided via doobie.postgres.imports._; you must import them explicitly.
 import doobie.postgres.pgisimplicits._
 ```
@@ -188,24 +190,24 @@ In addition to the general types above, **doobie** provides mappings for the fol
 
 A complete table of SQLSTATE values is provided in the `doobie.postgres.sqlstate` module. Recovery combinators for each of these states (`onUniqueViolation` for example) are provided in `doobie.postgres.syntax`.
 
-```tut:silent
+```scala mdoc:silent
 val p = sql"oops".query[String].unique // this won't work
 ```
 
 Some of the recovery combinators demonstrated:
 
-```tut
-p.attempt.quick.unsafeRunSync // attempt is provided by ApplicativeError instance
+```scala mdoc
+p.attempt.transact(xa).unsafeRunSync // attempt is provided by ApplicativeError instance
 
-p.attemptSqlState.quick.unsafeRunSync // this catches only SQL exceptions
+p.attemptSqlState.transact(xa).unsafeRunSync // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .quick.unsafeRunSync // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .transact(xa).unsafeRunSync // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .quick.unsafeRunSync // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .transact(xa).unsafeRunSync // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .quick.unsafeRunSync // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .transact(xa).unsafeRunSync // recover
 
-p.onSyntaxError("caught!".pure[ConnectionIO]).quick.unsafeRunSync // using recovery combinator
+p.onSyntaxError("caught!".pure[ConnectionIO]).transact(xa).unsafeRunSync // using recovery combinator
 ```
 
 
@@ -236,7 +238,7 @@ Please file an issue or ask questions on the [Gitter](https://gitter.im/tpolecat
 
 The PostgreSQL JDBC driver's [CopyManager](https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html) API provides a pass-through for the SQL [`COPY`](http://www.postgresql.org/docs/9.3/static/sql-copy.html) statement, allowing very fast data transfer via `java.io` streams. Here we construct a program that dumps a table to `Console.out` in CSV format, with quoted values.
 
-```tut:silent
+```scala mdoc:silent
 val q = """
   copy country (name, code, population)
   to stdout (
@@ -260,7 +262,7 @@ Note: the following API was introduced in version 0.5.2 and is experimental. Com
 
 First a temp table for our experiment.
 
-```tut:silent
+```scala mdoc:silent
 val create: ConnectionIO[Unit] =
   sql"""
     CREATE TEMPORARY TABLE food (
@@ -273,7 +275,7 @@ val create: ConnectionIO[Unit] =
 
 And some values to insert. `Text` instances are provided for all the data types we are using here.
 
-```tut:silent
+```scala mdoc:silent
 case class Food(name: String, isVegetarian: Boolean, caloriesPerServing: Int)
 
 val foods = List(
@@ -285,15 +287,15 @@ val foods = List(
 
 Our insert statement must have the form `COPY ... FROM STDIN`, and we can insert any `Foldable`.
 
-```tut:silent
+```scala mdoc:silent
 def insert[F[_]: Foldable](fa: F[Food]): ConnectionIO[Long] =
   sql"COPY food (name, vegetarian, calories) FROM STDIN".copyIn(fa)
 ```
 
 We can run it thus, yielding the number of affected rows.
 
-```tut
-(create *> insert(foods)).quick.unsafeRunSync
+```scala mdoc
+(create *> insert(foods)).transact(xa).unsafeRunSync
 ```
 
 ### Fastpath

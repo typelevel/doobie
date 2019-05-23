@@ -17,33 +17,34 @@ import fs2.Stream
 import scala.Predef._
 
 /** Module for implicit syntax useful in REPL session. */
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object yolo {
 
   import doobie.free.connection.AsyncConnectionIO
 
   class Yolo[M[_]: Sync](xa: Transactor[M]) {
 
-    private def out(s: String): ConnectionIO[Unit] =
-      delay(Console.println(s"${Console.BLUE}  $s${Console.RESET}"))
+    private def out(s: String, colors: Colors): ConnectionIO[Unit] =
+      delay(Console.println(s"${colors.BLUE}  $s${colors.RESET}"))
 
     implicit class Query0YoloOps[A: TypeTag](q: Query0[A]) {
 
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-      def quick: M[Unit] =
+      def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
         q.stream
          .map(_.toString)
-         .evalMap(out)
+         .evalMap(out(_, colors))
          .compile
          .drain
          .transact(xa)
 
-      def check: M[Unit] =
-        checkImpl(Analyzable.unpack(q))
+      def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        checkImpl(Analyzable.unpack(q), colors)
 
-      def checkOutput: M[Unit] =
+      def checkOutput(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(AnalysisArgs(
           s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
-        ))
+        ), colors)
     }
 
     implicit class QueryYoloOps[I: TypeTag, A: TypeTag](q: Query[I,A]) {
@@ -51,46 +52,48 @@ object yolo {
       def quick(i: I): M[Unit] =
         q.toQuery0(i).quick
 
-      def check: M[Unit] =
-        checkImpl(Analyzable.unpack(q))
+      def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        checkImpl(Analyzable.unpack(q), colors)
 
-      def checkOutput: M[Unit] =
+      def checkOutput(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(AnalysisArgs(
           s"Query[${typeName[I]}, ${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
-        ))
+        ), colors)
     }
 
     implicit class Update0YoloOps(u: Update0) {
 
-      def quick: M[Unit] =
-        u.run.flatMap(a => out(s"$a row(s) updated")).transact(xa)
+      def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        u.run.flatMap(a => out(s"$a row(s) updated", colors)).transact(xa)
 
-      def check: M[Unit] =
-        checkImpl(Analyzable.unpack(u))
+      def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        checkImpl(Analyzable.unpack(u), colors)
     }
 
     implicit class UpdateYoloOps[I: TypeTag](u: Update[I]) {
 
-      def quick(i: I): M[Unit] =
+      def quick(i: I)(implicit colors: Colors = Colors.Ansi): M[Unit] =
         u.toUpdate0(i).quick
 
-      def check: M[Unit] =
-        checkImpl(Analyzable.unpack(u))
+      def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        checkImpl(Analyzable.unpack(u), colors)
     }
 
     implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-      def quick: M[Unit] = ca.flatMap(a => out(a.toString)).transact(xa)
+      def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        ca.flatMap(a => out(a.toString, colors)).transact(xa)
     }
 
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-      def quick: M[Unit] = pa.evalMap(a => out(a.toString)).compile.drain.transact(xa)
+      def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
+        pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)
     }
 
-    private def checkImpl(args: AnalysisArgs): M[Unit] =
+    private def checkImpl(args: AnalysisArgs, colors: Colors): M[Unit] =
       analyze(args).flatMap { report =>
-        val formatted = formatReport(args, report)
+        val formatted = formatReport(args, report, colors)
         delay(println(formatted.padLeft("  ")))
       }.transact(xa)
   }

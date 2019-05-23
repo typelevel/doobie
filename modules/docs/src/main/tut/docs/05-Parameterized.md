@@ -12,29 +12,35 @@ In this chapter we learn how to construct parameterized queries, and introduce t
 
 Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up a `Transactor` and YOLO mode.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
+
 val y = xa.yolo
 import y._
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 We're still playing with the `country` table, shown here for reference.
@@ -53,11 +59,11 @@ CREATE TABLE country (
 
 Let's set up our Country class and re-run last chapter's query just to review.
 
-```tut:silent
+```scala mdoc:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 ```
 
-```tut
+```scala mdoc
 {
   sql"select code, name, population, gnp from country"
     .query[Country]
@@ -72,7 +78,7 @@ Still works. Ok.
 
 So let's factor our query into a method and add a parameter that selects only the countries with a population larger than some value the user will provide. We insert the `minPop` argument into our SQL statement as `$minPop`, just as if we were doing string interpolation.
 
-```tut:silent
+```scala mdoc:silent
 def biggerThan(minPop: Int) = sql"""
   select code, name, population, gnp
   from country
@@ -82,7 +88,7 @@ def biggerThan(minPop: Int) = sql"""
 
 And when we run the query ... surprise, it works!
 
-```tut
+```scala mdoc
 biggerThan(150000000).quick.unsafeRunSync // Let's see them all
 ```
 
@@ -101,7 +107,7 @@ We will discuss custom type mappings in a later chapter.
 
 Multiple parameters work the same way. No surprises here.
 
-```tut
+```scala mdoc
 def populationIn(range: Range) = sql"""
   select code, name, population, gnp
   from country
@@ -116,7 +122,7 @@ populationIn(150000000 to 200000000).quick.unsafeRunSync
 
 A common irritant when dealing with SQL literals is the desire to inline a *sequence* of arguments into an `IN` clause, but SQL does not support this notion (nor does JDBC do anything to assist). **doobie** supports this via *statement fragments* (see Chapter 8).
 
-```tut:silent
+```scala mdoc:silent
 def populationIn(range: Range, codes: NonEmptyList[String]) = {
   val q = fr"""
     select code, name, population, gnp
@@ -132,7 +138,7 @@ Note that the `IN` clause must be non-empty, so `codes` is a `NonEmptyList`.
 
 Running this query gives us the desired result.
 
-```tut
+```scala mdoc
 populationIn(100000000 to 300000000, NonEmptyList.of("USA", "BRA", "PAK", "GBR")).quick.unsafeRunSync
 ```
 
@@ -140,7 +146,7 @@ populationIn(100000000 to 300000000, NonEmptyList.of("USA", "BRA", "PAK", "GBR")
 
 In the previous chapter's *Diving Deeper* we saw how a query constructed with the `sql` interpolator is just sugar for the `stream` constructor defined in the `doobie.hi.connection` module (aliased as `HC`). Here we see that the second parameter, a `PreparedStatementIO` program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.
 
-```tut:silent
+```scala mdoc:silent
 import fs2.Stream
 
 val q = """
@@ -156,7 +162,7 @@ def proc(range: Range): Stream[ConnectionIO, Country] =
 
 Which produces the same output.
 
-```tut
+```scala mdoc
 proc(150000000 to 200000000).quick.unsafeRunSync
 ```
 
@@ -166,14 +172,14 @@ When setting parameters in the high-level API, we require an instance of `Write[
 
 `Write` instances are derived automatically for column types (and options thereof) that have `Put` instances, and for products of other writable types. We can summon their instances thus:
 
-```tut
+```scala mdoc
 Write[(String, Boolean)]
 Write[Country]
 ```
 
 The `set` constructor takes an argument of any type with a `Write` instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.
 
-```tut:silent
+```scala mdoc:silent
 // Set parameters as (String, Boolean) starting at index 1 (default)
 HPS.set(("foo", true))
 
@@ -189,7 +195,7 @@ HPS.set(2, true) *> HPS.set(1, "foo")
 
 Using the low level `doobie.free` constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the `Put` typeclass (discussed in a later chapter) is to abstract away these differences.
 
-```tut:silent
+```scala mdoc:silent
 FPS.setString(1, "foo") *> FPS.setBoolean(2, true)
 
 ```

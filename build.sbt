@@ -552,8 +552,7 @@ lazy val docs = project
   .settings(crossScalaNo213)
   .settings(noPublishSettings)
   .settings(
-    scalacOptions in Tut --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
-    scalacOptions in Tut ++= Seq("-Ydelambdafy:inline"), // http://fs2.io/faq.html
+    scalacOptions --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
 
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
@@ -604,7 +603,9 @@ lazy val docs = project
     micrositeExtraMdFiles := Map(
       file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "4")),
       file("LICENSE")      -> ExtraMdFileConfig("license.md",   "page", Map("title" -> "license",   "section" -> "license",   "position" -> "5"))
-    )
+    ),
+    micrositeCompilingDocsTool := WithMdoc,
+    mdocIn                     := sourceDirectory.value / "main" / "tut"
   )
 
 lazy val refined = project

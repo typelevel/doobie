@@ -12,30 +12,35 @@ In this chapter we examine operations that modify data in the database, and ways
 
 Again we set up a transactor and pull in YOLO mode, but this time we're not using the world database.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
 
 val y = xa.yolo
 import y._
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 ### Data Definition
@@ -44,7 +49,7 @@ It is uncommon to define database structures at runtime, but **doobie** handles 
 
 Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count.
 
-```tut:silent
+```scala mdoc:silent
 val drop =
   sql"""
     DROP TABLE IF EXISTS person
@@ -62,7 +67,7 @@ val create =
 
 We can compose these and run them together, yielding the total number of affected rows.
 
-```tut
+```scala mdoc
 (drop, create).mapN(_ + _).transact(xa).unsafeRunSync
 ```
 
@@ -72,25 +77,25 @@ We can compose these and run them together, yielding the total number of affecte
 
 Inserting is straightforward and works just as with selects. Here we define a method that constructs an `Update0` that inserts a row into the `person` table.
 
-```tut:silent
+```scala mdoc:silent
 def insert1(name: String, age: Option[Short]): Update0 =
   sql"insert into person (name, age) values ($name, $age)".update
 ```
 
 Let's insert a few rows.
 
-```tut
+```scala mdoc
 insert1("Alice", Some(12)).run.transact(xa).unsafeRunSync
 insert1("Bob", None).quick.unsafeRunSync // switch to YOLO mode
 ```
 
 And read them back.
 
-```tut:silent
+```scala mdoc:silent
 case class Person(id: Long, name: String, age: Option[Short])
 ```
 
-```tut
+```scala mdoc
 sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 ```
 
@@ -100,7 +105,7 @@ sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 
 Updating follows the same pattern. Here we update Alice's age.
 
-```tut
+```scala mdoc
 sql"update person set age = 15 where name = 'Alice'".update.quick.unsafeRunSync
 sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 ```
@@ -109,7 +114,7 @@ sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 
 When we insert we usually want the new row back, so let's do that. First we'll do it the hard way, by inserting, getting the last used key via `lastVal()`, then selecting the indicated row.
 
-```tut:silent
+```scala mdoc:silent
 def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
   for {
     _  <- sql"insert into person (name, age) values ($name, $age)".update.run
@@ -118,7 +123,7 @@ def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
   } yield p
 ```
 
-```tut
+```scala mdoc
 insert2("Jimmy", Some(42)).quick.unsafeRunSync
 ```
 
@@ -126,7 +131,7 @@ This is irritating but it is supported by all databases (although the "get the l
 
 Some database (like H2) allow you to return [only] the inserted id, allowing the above operation to be reduced to two statements (see below for an explanation of `withUniqueGeneratedKeys`).
 
-```tut:silent
+```scala mdoc:silent
 def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
   for {
     id <- sql"insert into person (name, age) values ($name, $age)"
@@ -138,13 +143,13 @@ def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
   } yield p
 ```
 
-```tut
+```scala mdoc
 insert2_H2("Ramone", Some(42)).quick.unsafeRunSync
 ```
 
 Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.
 
-```tut:silent
+```scala mdoc:silent
 def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
   sql"insert into person (name, age) values ($name, $age)"
     .update
@@ -154,14 +159,14 @@ def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
 
 The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (otherwise an exception will be raised), and requires a list of columns to return. This isn't the most beautiful API but it's what JDBC gives us. And it does work.
 
-```tut
+```scala mdoc
 insert3("Elvis", None).quick.unsafeRunSync
 ```
 
 This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit `unique` and get a `Stream[ConnectionIO, Person]` back.
 
 
-```tut:silent
+```scala mdoc:silent
 val up = {
   sql"update person set age = age + 1 where age is not null"
     .update
@@ -171,7 +176,7 @@ val up = {
 
 Running this process updates all rows with a non-`NULL` age and returns them.
 
-```tut
+```scala mdoc
 up.quick.unsafeRunSync
 up.quick.unsafeRunSync // and again!
 ```
@@ -180,7 +185,7 @@ up.quick.unsafeRunSync // and again!
 
 **doobie** supports batch updating via the `updateMany` and `updateManyWithGeneratedKeys` operations on the `Update` data type (which we haven't seen before). An `Update0`, which is the type of an `sql"...".update` expression, represents a parameterized statement where the arguments are known. An `Update[A]` is more general, and represents a parameterized statement where the composite argument of type `A` is *not* known.
 
-```tut:silent
+```scala mdoc:silent
 // Given some values ...
 val a = 1; val b = "foo"
 
@@ -193,7 +198,7 @@ Update[(Int, String)]("... ? ? ...").run((a, b))
 
 By using an `Update` directly we can apply *many* sets of arguments to the same statement, and execute it as a single batch operation.
 
-```tut:silent
+```scala mdoc:silent
 type PersonInfo = (String, Option[Short])
 
 def insertMany(ps: List[PersonInfo]): ConnectionIO[Int] = {
@@ -209,13 +214,13 @@ val data = List[PersonInfo](
 
 Running this program yields the number of updated rows.
 
-```tut
+```scala mdoc
 insertMany(data).quick.unsafeRunSync
 ```
 
 For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
 
-```tut:silent
+```scala mdoc:silent
 import fs2.Stream
 
 def insertMany2(ps: List[PersonInfo]): Stream[ConnectionIO, Person] = {
@@ -224,7 +229,7 @@ def insertMany2(ps: List[PersonInfo]): Stream[ConnectionIO, Person] = {
 }
 
 // Some rows to insert
-val data = List[PersonInfo](
+val data2 = List[PersonInfo](
   ("Banjo",   Some(39)),
   ("Skeeter", None),
   ("Jim-Bob", Some(12)))
@@ -232,6 +237,6 @@ val data = List[PersonInfo](
 
 Running this program yields the updated instances.
 
-```tut
-insertMany2(data).quick.unsafeRunSync
+```scala mdoc
+insertMany2(data2).quick.unsafeRunSync
 ```

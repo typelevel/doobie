@@ -42,7 +42,7 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
       Vector(
         // Avoid formatting if the check performed as expected
         LazyArg(()) { _ =>
-          formatReport(args, report).padLeft("  ").toString
+          formatReport(args, report, colors).padLeft("  ").toString
         }
       )
     )

@@ -27,6 +27,7 @@ package testing {
     // Effect type, required instances
     implicit def M: Effect[M]
     def transactor: Transactor[M]
+    def colors: Colors = Colors.Ansi
   }
 
   /** Common data for all query-like types. */
@@ -176,23 +177,24 @@ package object testing {
     */
   def formatReport(
     args: AnalysisArgs,
-    report: AnalysisReport
+    report: AnalysisReport,
+    colors: Colors
   ): Block = {
     val sql = args.cleanedSql
       .wrap(68)
       // SQL should use the default color
-      .padLeft(Console.RESET.toString)
-    val items = report.items.foldMap(formatItem)
+      .padLeft(colors.RESET.toString)
+    val items = report.items.foldMap(formatItem(colors))
     Block.fromString(args.header)
       .above(sql)
       .above(items)
   }
 
-  private val formatItem: AnalysisReport.Item => Block = {
+  private def formatItem(colors: Colors): AnalysisReport.Item => Block = {
     case AnalysisReport.Item(desc, None) =>
-      Block.fromString(s"${Console.GREEN}✓${Console.RESET} $desc")
+      Block.fromString(s"${colors.GREEN}✓${colors.RESET} $desc")
     case AnalysisReport.Item(desc, Some(err)) =>
-      Block.fromString(s"${Console.RED}✕${Console.RESET} $desc")
+      Block.fromString(s"${colors.RED}✕${colors.RESET} $desc")
         // No color for error details - ScalaTest paints each line of failure
         // red by default.
         .above(err.wrap(66).padLeft("  "))

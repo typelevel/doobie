@@ -12,14 +12,14 @@ In this chapter we start from the beginning. First we write a program that conne
 
 Before we can use **doobie** we need to import some symbols. We will use package imports here as a convenience; this will give us the most commonly-used symbols when working with the high-level API.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
 ```
 
 Let's also bring in Cats.
 
-```tut:silent
+```scala mdoc:silent
 import cats._
 import cats.effect._
 import cats.implicits._
@@ -29,27 +29,32 @@ In the **doobie** high level API the most common types we will deal with have th
 
 So let's start with a `ConnectionIO` program that simply returns a constant.
 
-```tut
+```scala mdoc
 val program1 = 42.pure[ConnectionIO]
 ```
 
 This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
-```tut:silent
-import scala.concurrent.ExecutionContext
+```scala mdoc:silent
+import doobie.util.ExecutionContexts
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 A `Transactor` is a data type that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IO`, which gives us a program we can run. Specifically it gives us an `IO` that, when run, will connect to the database and execute single transaction.
@@ -60,7 +65,7 @@ The `DriverManagerTransactor` simply delegates to the `java.sql.DriverManager` t
 
 And here we go.
 
-```tut
+```scala mdoc
 val io = program1.transact(xa)
 io.unsafeRunSync
 ```
@@ -75,7 +80,7 @@ Right. Now let's try something more interesting.
 
 Now let's use the `sql` string interpolator to construct a query that asks the *database* to compute a constant. We will cover this construction in great detail later on, but the meaning of `program2` is "run the query, interpret the resultset as a stream of `Int` values, and yield its one and only element."
 
-```tut
+```scala mdoc
 val program2 = sql"select 42".query[Int].unique
 val io2 = program2.transact(xa)
 io2.unsafeRunSync
@@ -87,7 +92,7 @@ Ok! We have now connected to a database to compute a constant. Considerably more
 
 What if we want to do more than one thing in a transaction? Easy! `ConnectionIO` is a monad, so we can use a `for` comprehension to compose two smaller programs into one larger program.
 
-```tut:silent
+```scala mdoc:silent
 val program3: ConnectionIO[(Int, Double)] =
   for {
     a <- sql"select 42".query[Int].unique
@@ -97,13 +102,13 @@ val program3: ConnectionIO[(Int, Double)] =
 
 And behold!
 
-```tut
+```scala mdoc
 program3.transact(xa).unsafeRunSync
 ```
 
 The astute among you will note that we don't actually need a monad to do this; an applicative functor is all we need here. So we could also write `program3` as:
 
-```tut:silent
+```scala mdoc:silent
 val program3a = {
   val a: ConnectionIO[Int] = sql"select 42".query[Int].unique
   val b: ConnectionIO[Double] = sql"select random()".query[Double].unique
@@ -113,13 +118,13 @@ val program3a = {
 
 And lo, it was good:
 
-```tut
+```scala mdoc
 program3a.transact(xa).unsafeRunSync
 ```
 
 And of course this composition can continue indefinitely.
 
-```tut
+```scala mdoc
 val valuesList = program3a.replicateA(5)
 val result = valuesList.transact(xa)
 result.unsafeRunSync.foreach(println)
@@ -131,16 +136,16 @@ All of the **doobie** monads are implemented via `Free` and have no operational 
 
 Out of the box **doobie** provides an interpreter from its free monads to `Kleisli[M, Foo, ?]` given `Async[M]`.
 
-```tut
+```scala mdoc
 import cats.~>
 import cats.data.Kleisli
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO](ExecutionContext.global).ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO](ExecutionContexts.synchronous).ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
-val io = IO(null: java.sql.Connection) >>= kleisli.run
-io.unsafeRunSync // sneaky; program1 never looks at the connection
+val io3 = IO(null: java.sql.Connection) >>= kleisli.run
+io3.unsafeRunSync // sneaky; program1 never looks at the connection
 ```
 
 So the interpreter above is used to transform a `ConnectionIO[A]` program into a `Kleisli[IO, Connection, A]`. Then we construct an `IO[Connection]` (returning `null`) and bind it through the `Kleisli`, yielding our `IO[Int]`. This of course only works because `program1` is a pure value that does not look at the connection.

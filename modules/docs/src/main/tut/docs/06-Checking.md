@@ -12,30 +12,35 @@ In this chapter we learn how to use YOLO mode to validate queries against the da
 
 Our setup here is the same as last chapter, so if you're still running from last chapter you can skip this section. Otherwise: imports, `Transactor`, and YOLO mode.
 
-```tut:silent
+```scala mdoc:silent
 import doobie._
 import doobie.implicits._
+import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-implicit val cs = IO.contextShift(ExecutionContext.global)
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+// on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", // driver classname
-  "jdbc:postgresql:world", // connect URL (driver-specific)
-  "postgres",              // user
-  ""                       // password
+  "org.postgresql.Driver",     // driver classname
+  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "postgres",                  // user
+  "",                          // password
+  ExecutionContexts.synchronous // just for testing
 )
 
 val y = xa.yolo
 import y._
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 And again, we're playing with the `country` table, shown here for reference.
@@ -55,13 +60,13 @@ CREATE TABLE country (
 
 In order to create a query that's not quite right, let's redefine our `Country` class with slightly different types.
 
-```tut:silent
+```scala mdoc:silent
 case class Country(code: Int, name: String, pop: Int, gnp: Double)
 ```
 
 Here's our parameterized query from last chapter, but with the new `Country` definition and the `minPop` parameter changed to a `Short`.
 
-```tut:silent
+```scala mdoc:silent
 def biggerThan(minPop: Short) =
   sql"""
     select code, name, population, gnp, indepyear
@@ -72,7 +77,7 @@ def biggerThan(minPop: Short) =
 
 Now let's try the `check` method provided by YOLO and see what happens.
 
-```tut:plain
+```scala mdoc
 biggerThan(0).check.unsafeRunSync
 ```
 
@@ -85,18 +90,18 @@ Yikes, there are quite a few problems, in several categories. In this case **doo
 
 If we fix all of these problems and try again, we get a clean bill of health.
 
-```tut:silent
-case class Country(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
+```scala mdoc:silent
+case class Country2(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
 
 def biggerThan(minPop: Int) =
   sql"""
     select code, name, population, gnp
     from country
     where population > $minPop
-  """.query[Country]
+  """.query[Country2]
 ```
 
-```tut:plain
+```scala mdoc
 biggerThan(0).check.unsafeRunSync
 ```
 
@@ -108,7 +113,7 @@ Some drivers do not implement the JDBC metadata specification very well, which l
 
 However a common case is that *parameter* metadata is unavailable but *output column* metadata is. And in these cases there is a workaround: use `checkOutput` rather than `check`. This instructs **doobie** to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.
 
-```tut:plain
+```scala mdoc
 biggerThan(0).checkOutput.unsafeRunSync
 ```
 

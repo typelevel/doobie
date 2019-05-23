@@ -54,7 +54,7 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
     val report = analyzeIO(args, transactor).unsafeRunSync
     if (!report.succeeded) {
       fail(
-        formatReport(args, report)
+        formatReport(args, report, colors)
           .padLeft("  ")
           .toString
       )
