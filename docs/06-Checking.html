@@ -1,4 +1,4 @@
-<html><head><title>doobie</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A functional JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A functional JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie" /><meta name="twitter:image" content="img/poster.png" /><meta name="twitter:description" content="A functional JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/tweak.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/doobie/" class="brand"><div class="brand-wrapper"><span>doobie</span></div></a></li><li><a href="/doobie/docs/01-Introduction.html" class="">Introduction</a></li><li><a href="/doobie/docs/02-Toolkit.html" class="">Toolkit</a></li><li><a href="/doobie/docs/03-Connecting.html" class="">Connecting to a Database</a></li><li><a href="/doobie/docs/04-Selecting.html" class="">Selecting Data</a></li><li><a href="/doobie/docs/05-Parameterized.html" class="">Parameterized Queries</a></li><li><a href="/doobie/docs/06-Checking.html" class=" active ">Typechecking Queries</a></li><li><a href="/doobie/docs/07-Updating.html" class="">DDL, Inserting, and Updating</a></li><li><a href="/doobie/docs/08-Fragments.html" class="">Statement Fragments</a></li><li><a href="/doobie/docs/09-Error-Handling.html" class="">Error Handling</a></li><li><a href="/doobie/docs/10-Logging.html" class="">Logging</a></li><li><a href="/doobie/docs/11-Arrays.html" class="">SQL Arrays</a></li><li><a href="/doobie/docs/12-Custom-Mappings.html" class="">Custom Mappings</a></li><li><a href="/doobie/docs/13-Unit-Testing.html" class="">Unit Testing</a></li><li><a href="/doobie/docs/14-Managing-Connections.html" class="">Managing Connections</a></li><li><a href="/doobie/docs/15-Extensions-PostgreSQL.html" class="">Extensions for PostgreSQL</a></li><li><a href="/doobie/docs/16-Extensions-H2.html" class="">Extensions for H2</a></li><li><a href="/doobie/docs/17-FAQ.html" class="">Frequently-Asked Questions</a></li><li><a href="/doobie/" class=""></a></li><li><a href="/doobie/css/palette.css" class=""></a></li><li><a href="/doobie/css/style.css" class=""></a></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('doobie A functional JDBC layer for Scala.');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('doobie A functional JDBC layer for Scala.');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="tpolecat" data-github-repo="doobie"><div class="content-wrapper"><section><h2 id="typechecking-queries">Typechecking Queries</h2>
+<html><head><title>doobie: Typechecking Queries</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A functional JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="image" property="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie: Typechecking Queries" /><meta name="title" property="og:title" content="doobie: Typechecking Queries" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A functional JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie: Typechecking Queries" /><meta name="twitter:image" content="/doobie/img/poster.png" /><meta name="twitter:description" content="A functional JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/tweak.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/doobie/" class="brand"><div class="brand-wrapper"><span>doobie</span></div></a></li><li><a href="/doobie/docs/01-Introduction.html" class="">Introduction</a></li><li><a href="/doobie/docs/02-Toolkit.html" class="">Toolkit</a></li><li><a href="/doobie/docs/03-Connecting.html" class="">Connecting to a Database</a></li><li><a href="/doobie/docs/04-Selecting.html" class="">Selecting Data</a></li><li><a href="/doobie/docs/05-Parameterized.html" class="">Parameterized Queries</a></li><li><a href="/doobie/docs/06-Checking.html" class=" active ">Typechecking Queries</a></li><li><a href="/doobie/docs/07-Updating.html" class="">DDL, Inserting, and Updating</a></li><li><a href="/doobie/docs/08-Fragments.html" class="">Statement Fragments</a></li><li><a href="/doobie/docs/09-Error-Handling.html" class="">Error Handling</a></li><li><a href="/doobie/docs/10-Logging.html" class="">Logging</a></li><li><a href="/doobie/docs/11-Arrays.html" class="">SQL Arrays</a></li><li><a href="/doobie/docs/12-Custom-Mappings.html" class="">Custom Mappings</a></li><li><a href="/doobie/docs/13-Unit-Testing.html" class="">Unit Testing</a></li><li><a href="/doobie/docs/14-Managing-Connections.html" class="">Managing Connections</a></li><li><a href="/doobie/docs/15-Extensions-PostgreSQL.html" class="">Extensions for PostgreSQL</a></li><li><a href="/doobie/docs/16-Extensions-H2.html" class="">Extensions for H2</a></li><li><a href="/doobie/docs/17-Quill.html" class="">Quill Integration</a></li><li><a href="/doobie/docs/18-FAQ.html" class="">Frequently-Asked Questions</a></li><li><a href="/doobie/" class=""></a></li><li><a href="/doobie/css/palette.css" class=""></a></li><li><a href="/doobie/css/style.css" class=""></a></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('doobie A functional JDBC layer for Scala.');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('doobie A functional JDBC layer for Scala.');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="tpolecat" data-github-repo="doobie"><div class="content-wrapper"><section><h2 id="typechecking-queries">Typechecking Queries</h2>
 
 <p>In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that our type mappings are correct (and if not, get some hints on how to fix them).</p>
 
@@ -8,23 +8,24 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
 <span class="k">import</span> <span class="nn">doobie.implicits._</span>
+<span class="k">import</span> <span class="nn">doobie.util.ExecutionContexts</span>
 <span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
 <span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
-<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
 
 <span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed.
-</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
+// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
+</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span>
 
-<span class="c1">// A transactor that gets connections from java.sql.DriverManager and excutes blocking operations
-// on an unbounded pool of daemon threads. See the chapter on connection handling for more info.
+<span class="c1">// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
+// on an our synchronous EC. See the chapter on connection handling for more info.
 </span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="c1">// driver classname
-</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="c1">// connect URL (driver-specific)
-</span>  <span class="s">"postgres"</span><span class="o">,</span>              <span class="c1">// user
-</span>  <span class="s">""</span>                       <span class="c1">// password
+  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span>     <span class="c1">// driver classname
+</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
+</span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
+</span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
+</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
@@ -66,8 +67,18 @@
 
 <p>Now let’s try the <code class="highlighter-rouge">check</code> method provided by YOLO and see what happens.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).check.unsafeRunSync
-</code></pre>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">biggerThan</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+<span class="c1">//   Query0[Session.App.Country2] defined at 06-Checking.md:83
+//   select code, name, population, gnp
+//   from country
+//   where population &gt; ?
+//   ✓ SQL Compiles and TypeChecks
+//   ✓ P01 Int  →  INTEGER (int4)
+//   ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
+//   ✓ C02 name       VARCHAR (varchar) NOT NULL  →  String
+//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
+//   ✓ C04 gnp        NUMERIC (numeric) NULL      →  Option[BigDecimal]
+</span></code></pre>
 </div>
 
 <p>Yikes, there are quite a few problems, in several categories. In this case <strong>doobie</strong> found</p>
@@ -81,19 +92,29 @@
 
 <p>If we fix all of these problems and try again, we get a clean bill of health.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">pop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">gnp</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">BigDecimal</span><span class="o">])</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country2</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">pop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">gnp</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">BigDecimal</span><span class="o">])</span>
 
 <span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span>
   <span class="n">sql</span><span class="s">"""
     select code, name, population, gnp
     from country
     where population &gt; $minPop
-  """</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
+  """</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country2</span><span class="o">]</span>
 </code></pre>
 </div>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).check.unsafeRunSync
-</code></pre>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">biggerThan</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="n">check</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+<span class="c1">//   Query0[Session.App.Country2] defined at 06-Checking.md:83
+//   select code, name, population, gnp
+//   from country
+//   where population &gt; ?
+//   ✓ SQL Compiles and TypeChecks
+//   ✓ P01 Int  →  INTEGER (int4)
+//   ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
+//   ✓ C02 name       VARCHAR (varchar) NOT NULL  →  String
+//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
+//   ✓ C04 gnp        NUMERIC (numeric) NULL      →  Option[BigDecimal]
+</span></code></pre>
 </div>
 
 <p><strong>doobie</strong> supports <code class="highlighter-rouge">check</code> for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the <code class="highlighter-rouge">doobie-specs2</code> and <code class="highlighter-rouge">doobie-scalatest</code> packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.</p>
@@ -104,8 +125,17 @@
 
 <p>However a common case is that <em>parameter</em> metadata is unavailable but <em>output column</em> metadata is. And in these cases there is a workaround: use <code class="highlighter-rouge">checkOutput</code> rather than <code class="highlighter-rouge">check</code>. This instructs <strong>doobie</strong> to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>scala&gt; biggerThan(0).checkOutput.unsafeRunSync
-</code></pre>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">biggerThan</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="n">checkOutput</span><span class="o">.</span><span class="n">unsafeRunSync</span>
+<span class="c1">//   Query0[Session.App.Country2] defined at 06-Checking.md:83
+//   select code, name, population, gnp
+//   from country
+//   where population &gt; ?
+//   ✓ SQL Compiles and TypeChecks
+//   ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
+//   ✓ C02 name       VARCHAR (varchar) NOT NULL  →  String
+//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
+//   ✓ C04 gnp        NUMERIC (numeric) NULL      →  Option[BigDecimal]
+</span></code></pre>
 </div>
 
 <h3 id="diving-deeper">Diving Deeper</h3>
@@ -120,8 +150,7 @@
   <li>Nullability. A parameter or column that is <em>provably</em> nullable must be mapped to a Scala <code class="highlighter-rouge">Option</code>. Note that this is a weak guarantee; columns introduced by an outer join might be nullable but JDBC will tend to report them as “might not be nullable” which isn’t useful information.</li>
   <li>Coercibility of types. Mapping of Scala types to JDBC types and JDBC types to vendor types, is asymmetric with respect to reading and writing, and the specification is quite terrible. <strong>doobie</strong> encodes the JDBC spec and combines this with vendor-specific metadata to determine whether a given asserted mapping is sensible or not, and if not, will suggest a fix via changing the Scala type, and another via changing the schema type.</li>
 </ul>
-</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({
-languages:['scala','java','bash']
-});
+
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
 hljs.initHighlighting();
-             </script><script src="/doobie/js/main.js"></script></body></html>
+              </script><script src="/doobie/js/main.js"></script></body></html>
