@@ -234,7 +234,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |        def embed[A](j: ${sname}, fa: FF[${opname}, A]) = Embedded.${oname}(j, fa)
     |      }
     |
-    |    // Interface for a natural tansformation ${opname} ~> F encoded via the visitor pattern.
+    |    // Interface for a natural transformation ${opname} ~> F encoded via the visitor pattern.
     |    // This approach is much more efficient than pattern-matching for large algebras.
     |    trait Visitor[F[_]] extends (${opname} ~> F) {
     |      final def apply[A](fa: ${opname}[A]): F[A] = fa.visit(this)

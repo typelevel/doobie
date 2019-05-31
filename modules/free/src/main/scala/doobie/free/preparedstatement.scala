@@ -54,7 +54,7 @@ object preparedstatement { module =>
         def embed[A](j: PreparedStatement, fa: FF[PreparedStatementOp, A]) = Embedded.PreparedStatement(j, fa)
       }
 
-    // Interface for a natural tansformation PreparedStatementOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation PreparedStatementOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (PreparedStatementOp ~> F) {
       final def apply[A](fa: PreparedStatementOp[A]): F[A] = fa.visit(this)

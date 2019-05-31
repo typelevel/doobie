@@ -47,7 +47,7 @@ object sqlinput { module =>
         def embed[A](j: SQLInput, fa: FF[SQLInputOp, A]) = Embedded.SQLInput(j, fa)
       }
 
-    // Interface for a natural tansformation SQLInputOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation SQLInputOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (SQLInputOp ~> F) {
       final def apply[A](fa: SQLInputOp[A]): F[A] = fa.visit(this)

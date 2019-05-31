@@ -33,7 +33,7 @@ object blob { module =>
         def embed[A](j: Blob, fa: FF[BlobOp, A]) = Embedded.Blob(j, fa)
       }
 
-    // Interface for a natural tansformation BlobOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation BlobOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (BlobOp ~> F) {
       final def apply[A](fa: BlobOp[A]): F[A] = fa.visit(this)

@@ -40,7 +40,7 @@ object pgconnection { module =>
         def embed[A](j: PGConnection, fa: FF[PGConnectionOp, A]) = Embedded.PGConnection(j, fa)
       }
 
-    // Interface for a natural tansformation PGConnectionOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation PGConnectionOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (PGConnectionOp ~> F) {
       final def apply[A](fa: PGConnectionOp[A]): F[A] = fa.visit(this)

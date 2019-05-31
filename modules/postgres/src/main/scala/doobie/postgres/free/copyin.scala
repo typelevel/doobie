@@ -30,7 +30,7 @@ object copyin { module =>
         def embed[A](j: PGCopyIn, fa: FF[CopyInOp, A]) = Embedded.CopyIn(j, fa)
       }
 
-    // Interface for a natural tansformation CopyInOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation CopyInOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (CopyInOp ~> F) {
       final def apply[A](fa: CopyInOp[A]): F[A] = fa.visit(this)

@@ -33,7 +33,7 @@ object ref { module =>
         def embed[A](j: Ref, fa: FF[RefOp, A]) = Embedded.Ref(j, fa)
       }
 
-    // Interface for a natural tansformation RefOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation RefOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (RefOp ~> F) {
       final def apply[A](fa: RefOp[A]): F[A] = fa.visit(this)
