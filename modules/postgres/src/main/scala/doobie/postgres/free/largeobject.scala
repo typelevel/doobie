@@ -32,7 +32,7 @@ object largeobject { module =>
         def embed[A](j: LargeObject, fa: FF[LargeObjectOp, A]) = Embedded.LargeObject(j, fa)
       }
 
-    // Interface for a natural tansformation LargeObjectOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation LargeObjectOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (LargeObjectOp ~> F) {
       final def apply[A](fa: LargeObjectOp[A]): F[A] = fa.visit(this)

@@ -36,7 +36,7 @@ object databasemetadata { module =>
         def embed[A](j: DatabaseMetaData, fa: FF[DatabaseMetaDataOp, A]) = Embedded.DatabaseMetaData(j, fa)
       }
 
-    // Interface for a natural tansformation DatabaseMetaDataOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation DatabaseMetaDataOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (DatabaseMetaDataOp ~> F) {
       final def apply[A](fa: DatabaseMetaDataOp[A]): F[A] = fa.visit(this)

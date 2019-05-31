@@ -53,7 +53,7 @@ object resultset { module =>
         def embed[A](j: ResultSet, fa: FF[ResultSetOp, A]) = Embedded.ResultSet(j, fa)
       }
 
-    // Interface for a natural tansformation ResultSetOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation ResultSetOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (ResultSetOp ~> F) {
       final def apply[A](fa: ResultSetOp[A]): F[A] = fa.visit(this)

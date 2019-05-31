@@ -38,7 +38,7 @@ object copymanager { module =>
         def embed[A](j: PGCopyManager, fa: FF[CopyManagerOp, A]) = Embedded.CopyManager(j, fa)
       }
 
-    // Interface for a natural tansformation CopyManagerOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation CopyManagerOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (CopyManagerOp ~> F) {
       final def apply[A](fa: CopyManagerOp[A]): F[A] = fa.visit(this)

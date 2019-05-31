@@ -37,7 +37,7 @@ object nclob { module =>
         def embed[A](j: NClob, fa: FF[NClobOp, A]) = Embedded.NClob(j, fa)
       }
 
-    // Interface for a natural tansformation NClobOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation NClobOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (NClobOp ~> F) {
       final def apply[A](fa: NClobOp[A]): F[A] = fa.visit(this)

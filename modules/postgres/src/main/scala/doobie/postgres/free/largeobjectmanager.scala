@@ -31,7 +31,7 @@ object largeobjectmanager { module =>
         def embed[A](j: LargeObjectManager, fa: FF[LargeObjectManagerOp, A]) = Embedded.LargeObjectManager(j, fa)
       }
 
-    // Interface for a natural tansformation LargeObjectManagerOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation LargeObjectManagerOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (LargeObjectManagerOp ~> F) {
       final def apply[A](fa: LargeObjectManagerOp[A]): F[A] = fa.visit(this)

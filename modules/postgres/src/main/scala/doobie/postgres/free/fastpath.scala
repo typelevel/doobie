@@ -33,7 +33,7 @@ object fastpath { module =>
         def embed[A](j: PGFastpath, fa: FF[FastpathOp, A]) = Embedded.Fastpath(j, fa)
       }
 
-    // Interface for a natural tansformation FastpathOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation FastpathOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (FastpathOp ~> F) {
       final def apply[A](fa: FastpathOp[A]): F[A] = fa.visit(this)

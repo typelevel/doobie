@@ -55,7 +55,7 @@ object callablestatement { module =>
         def embed[A](j: CallableStatement, fa: FF[CallableStatementOp, A]) = Embedded.CallableStatement(j, fa)
       }
 
-    // Interface for a natural tansformation CallableStatementOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation CallableStatementOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (CallableStatementOp ~> F) {
       final def apply[A](fa: CallableStatementOp[A]): F[A] = fa.visit(this)

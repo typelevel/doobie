@@ -48,7 +48,7 @@ object connection { module =>
         def embed[A](j: Connection, fa: FF[ConnectionOp, A]) = Embedded.Connection(j, fa)
       }
 
-    // Interface for a natural tansformation ConnectionOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation ConnectionOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (ConnectionOp ~> F) {
       final def apply[A](fa: ConnectionOp[A]): F[A] = fa.visit(this)

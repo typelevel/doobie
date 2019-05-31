@@ -30,7 +30,7 @@ object copyout { module =>
         def embed[A](j: PGCopyOut, fa: FF[CopyOutOp, A]) = Embedded.CopyOut(j, fa)
       }
 
-    // Interface for a natural tansformation CopyOutOp ~> F encoded via the visitor pattern.
+    // Interface for a natural transformation CopyOutOp ~> F encoded via the visitor pattern.
     // This approach is much more efficient than pattern-matching for large algebras.
     trait Visitor[F[_]] extends (CopyOutOp ~> F) {
       final def apply[A](fa: CopyOutOp[A]): F[A] = fa.visit(this)
