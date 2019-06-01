@@ -24,6 +24,10 @@ object fragments {
   def and(fs: Fragment*): Option[Fragment] =
     if (fs.isEmpty) None else Some(parentheses(fs.toList.intercalate(fr"AND")))
 
+  /** Returns `(f1 AND f2 AND ... fn)`. */
+  def andNe[F[_]: Reducible](fs: F[Fragment]): Fragment =
+    parentheses(fs.intercalate(fr"AND"))
+
   /** Returns `(f1 AND f2 AND ... fn)` for all defined fragments, or nothing for empty `fs`. */
   def andOpt(fs: Option[Fragment]*): Option[Fragment] =
     and(fs.toList.unite: _*)
@@ -31,6 +35,10 @@ object fragments {
   /** Returns `(f1 OR f2 OR ... fn)`, or nothing for empty `fs`. */
   def or(fs: Fragment*): Option[Fragment] =
     if (fs.isEmpty) None else Some(parentheses(fs.toList.intercalate(fr"OR")))
+
+  /** Returns `(f1 OR f2 OR ... fn)`. */
+  def orNe[F[_]: Reducible](fs: F[Fragment]): Fragment =
+    parentheses(fs.intercalate(fr"OR"))
 
   /** Returns `(f1 OR f2 OR ... fn)` for all defined fragments, or nothing for empty `fs`. */
   def orOpt(fs: Option[Fragment]*): Option[Fragment] =

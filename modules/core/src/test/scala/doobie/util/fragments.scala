@@ -6,6 +6,7 @@ package doobie.util
 
 import cats.implicits._
 import doobie._, doobie.implicits._
+import cats.data.NonEmptyList
 import org.specs2.mutable.Specification
 import cats.effect.ContextShift
 import scala.concurrent.ExecutionContext
@@ -26,8 +27,9 @@ class fragmentsspec extends Specification {
 
   "Fragments" >> {
 
-    val nel = List(1, 2, 3).toNel.getOrElse(sys.error("unpossible"))
+    val nel = NonEmptyList.of(1, 2, 3)
     val fs = List(1, 2, 3).map(n => fr"$n")
+    val fsNel = NonEmptyList.of(1, 2, 3).map(n => fr"$n")
     val ofs = List(1, 2, 3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
     val fsEmpty = List[Fragment]()
     val ofsEmpty = List[Option[Fragment]](None, None)
@@ -38,6 +40,10 @@ class fragmentsspec extends Specification {
 
     "notIn" in {
       notIn(fr"foo", nel).query[Unit].sql must_== "foo NOT IN (?, ?, ?) "
+    }
+
+    "andNe" in {
+      andNe(fsNel).query[Unit].sql must_=== "(? AND ? AND ? ) "
     }
 
     "and (many)" in {
@@ -62,6 +68,10 @@ class fragmentsspec extends Specification {
 
     "andOpt (none)" in {
       andOpt(None, None).map(_.query[Unit].sql) must beNone
+    }
+
+    "orNe" in {
+      orNe(fsNel).query[Unit].sql must_=== "(? OR ? OR ? ) "
     }
 
     "or (many)" in {
