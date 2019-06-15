@@ -5,6 +5,7 @@
 // relies on streaming, so no cats for now
 package example
 
+import cats.Show
 import cats.implicits._
 import cats.effect.{ IO, IOApp, ExitCode }
 import fs2.Stream
@@ -16,6 +17,9 @@ object FirstExample extends IOApp {
   // Our data model
   final case class Supplier(id: Int, name: String, street: String, city: String, state: String, zip: String)
   final case class Coffee(name: String, supId: Int, price: Double, sales: Int, total: Int)
+  object Coffee {
+    implicit val show: Show[Coffee] = Show.fromToString
+  }
 
   // Some suppliers
   val suppliers = List(
@@ -41,14 +45,14 @@ object FirstExample extends IOApp {
       _  <- DAO.create
       ns <- DAO.insertSuppliers(suppliers)
       nc <- DAO.insertCoffees(coffees)
-      _  <- putStrLn(s"Inserted $ns suppliers and $nc coffees.")
+      _  <- putStrLn(show"Inserted $ns suppliers and $nc coffees.")
 
       // Select and stream the coffees to stdout
-      _ <- DAO.allCoffees.evalMap(c => putStrLn(s"$c")).compile.drain
+      _ <- DAO.allCoffees.evalMap(c => putStrLn(show"$c")).compile.drain
 
       // Get the names and supplier names for all coffees costing less than $9.00,
       // again streamed directly to stdout
-      _ <- DAO.coffeesLessThan(9.0).evalMap(p => putStrLn(s"$p")).compile.drain
+      _ <- DAO.coffeesLessThan(9.0).evalMap(p => putStrLn(show"$p")).compile.drain
 
       // Same thing, but read into a list this time
       l <- DAO.coffeesLessThan(9.0).compile.toList
@@ -67,7 +71,7 @@ object FirstExample extends IOApp {
     )
     for {
       a <- examples.transact(db).attempt
-      _ <- IO(println(s"$a"))
+      _ <- IO(println(a))
     } yield ExitCode.Success
   }
 

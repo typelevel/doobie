@@ -138,7 +138,7 @@ object StreamingCopy extends IOApp {
     for {
       _ <- fuseMap(read, write)(pg, h2).compile.drain // do the copy with fuseMap
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
-      _ <- IO(Console.println(s"Copied $n cities!"))
+      _ <- IO(Console.println(show"Copied $n cities!"))
     } yield ExitCode.Success
 
 }

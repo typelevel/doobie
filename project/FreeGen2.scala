@@ -400,7 +400,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
        |
        |    val shift: Kleisli[M, $sname, Unit] =
-       |      Kleisli(j => contextShiftM.shift)
+       |      Kleisli(_ => contextShiftM.shift)
        |
        |    def evalOn[A](ec: ExecutionContext)(fa: $ioname[A]): Kleisli[M, $sname, A] =
        |      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))

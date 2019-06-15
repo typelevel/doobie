@@ -5,6 +5,8 @@
 package doobie.free
 
 // Library imports
+import java.util
+
 import cats.~>
 import cats.data.Kleisli
 import cats.effect.{ Async, ContextShift, ExitCase }
@@ -12,11 +14,7 @@ import scala.concurrent.ExecutionContext
 
 // Types referenced in the JDBC API
 import java.io.InputStream
-import java.io.OutputStream
 import java.io.Reader
-import java.io.Writer
-import java.lang.Class
-import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
 import java.sql.Blob
@@ -26,20 +24,15 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.Date
 import java.sql.Driver
-import java.sql.DriverPropertyInfo
 import java.sql.NClob
-import java.sql.ParameterMetaData
 import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
-import java.sql.ResultSetMetaData
 import java.sql.RowId
-import java.sql.RowIdLifetime
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 import java.sql.SQLType
-import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
 import java.sql.Statement
@@ -51,7 +44,6 @@ import java.util.Calendar
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
-import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.free.nclob.{ NClobIO, NClobOp }
@@ -168,7 +160,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, NClob, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: NClobIO[A]): Kleisli[M, NClob, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -215,7 +207,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, Blob, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): Kleisli[M, Blob, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -260,7 +252,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, Clob, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): Kleisli[M, Clob, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -307,7 +299,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, DatabaseMetaData, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -519,7 +511,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, Driver, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): Kleisli[M, Driver, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -560,7 +552,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, Ref, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]): Kleisli[M, Ref, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -598,7 +590,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, SQLData, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]): Kleisli[M, SQLData, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -635,7 +627,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, SQLInput, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): Kleisli[M, SQLInput, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -697,7 +689,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, SQLOutput, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): Kleisli[M, SQLOutput, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -759,7 +751,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, Connection, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): Kleisli[M, Connection, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -787,7 +779,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap = primitive(_.getTypeMap)
+    override def getTypeMap: Kleisli[M, Connection, util.Map[String, Class[_]]] = primitive(_.getTypeMap)
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)
@@ -847,7 +839,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, Statement, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): Kleisli[M, Statement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -933,7 +925,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, PreparedStatement, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -1077,7 +1069,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, CallableStatement, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]): Kleisli[M, CallableStatement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
@@ -1342,7 +1334,7 @@ trait KleisliInterpreter[M[_]] { outer =>
       Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
 
     val shift: Kleisli[M, ResultSet, Unit] =
-      Kleisli(j => contextShiftM.shift)
+      Kleisli(_ => contextShiftM.shift)
 
     def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): Kleisli[M, ResultSet, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))

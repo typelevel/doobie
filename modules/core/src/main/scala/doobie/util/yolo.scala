@@ -7,6 +7,9 @@ package doobie.util
 import scala.reflect.runtime.universe.TypeTag
 
 import cats.effect._
+import cats.instances.int._
+import cats.instances.string._
+import cats.syntax.show._
 import doobie.free.connection.{ ConnectionIO, delay }
 import doobie.syntax.connectionio._
 import doobie.util.query._
@@ -25,7 +28,7 @@ object yolo {
   class Yolo[M[_]: Sync](xa: Transactor[M]) {
 
     private def out(s: String, colors: Colors): ConnectionIO[Unit] =
-      delay(Console.println(s"${colors.BLUE}  $s${colors.RESET}"))
+      delay(Console.println(show"${colors.BLUE}  $s${colors.RESET}"))
 
     implicit class Query0YoloOps[A: TypeTag](q: Query0[A]) {
 
@@ -43,7 +46,7 @@ object yolo {
 
       def checkOutput(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(AnalysisArgs(
-          s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
+          show"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
         ), colors)
     }
 
@@ -57,14 +60,14 @@ object yolo {
 
       def checkOutput(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(AnalysisArgs(
-          s"Query[${typeName[I]}, ${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
+          show"Query[${typeName[I]}, ${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
         ), colors)
     }
 
     implicit class Update0YoloOps(u: Update0) {
 
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        u.run.flatMap(a => out(s"$a row(s) updated", colors)).transact(xa)
+        u.run.flatMap(a => out(show"$a row(s) updated", colors)).transact(xa)
 
       def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(Analyzable.unpack(u), colors)

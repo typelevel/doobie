@@ -4,6 +4,10 @@
 
 package doobie.util
 
+import cats.instances.int._
+import cats.instances.string._
+import cats.syntax.show._
+
 /** Module for source positions. */
 object pos {
 
@@ -17,7 +21,7 @@ object pos {
       }
 
     override def toString =
-      s"$file:$line"
+      show"$file:$line"
 
   }
 

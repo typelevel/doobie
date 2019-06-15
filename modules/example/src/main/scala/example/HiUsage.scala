@@ -4,6 +4,7 @@
 
 package example
 
+import cats.Show
 import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import fs2.Stream
@@ -15,6 +16,9 @@ object HiUsage extends IOApp {
 
   // A very simple data type we will read
   final case class CountryCode(code: Option[String])
+  object CountryCode {
+    implicit val show: Show[CountryCode] = Show.fromToString
+  }
 
   // Program entry point
   def run(args: List[String]): IO[ExitCode] = {
@@ -26,7 +30,7 @@ object HiUsage extends IOApp {
 
   // An example action. Streams results to stdout
   lazy val example: ConnectionIO[Unit] =
-    speakerQuery("English", 10).evalMap(c => FC.delay(println("~> " + s"$c"))).compile.drain
+    speakerQuery("English", 10).evalMap(c => FC.delay(println(show"~> $c"))).compile.drain
 
   // Construct an action to find countries where more than `pct` of the population speaks `lang`.
   // The result is a fs2.Stream that can be further manipulated by the caller.

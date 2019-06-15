@@ -38,6 +38,7 @@ object h2typesspec extends Specification {
       a0 <- sql"SELECT value FROM TEST".query[Option[A]].unique
     } yield (a0)
 
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" in {

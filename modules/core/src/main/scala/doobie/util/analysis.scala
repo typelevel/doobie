@@ -25,7 +25,7 @@ object analysis {
   /** Metadata for the JDBC end of a column/parameter mapping. */
   final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode)
 
-  sealed trait AlignmentError {
+  sealed trait AlignmentError extends Product with Serializable {
     def tag: String
     def index: Int
     def msg: String

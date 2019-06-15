@@ -8,9 +8,11 @@ import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, set
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-import cats.{Defer, Monad, ~>}
+import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.{Async, Bracket, ContextShift, ExitCase, Resource, Sync}
+import cats.instances.long._
+import cats.syntax.show._
 import fs2.Stream
 import java.sql.{Connection, DriverManager}
 
@@ -18,7 +20,6 @@ import javax.sql.DataSource
 import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.concurrent.ExecutionContext
-import cats.Applicative
 
 object transactor  {
 
@@ -301,7 +302,7 @@ object transactor  {
           new ThreadFactory {
             def newThread(r: Runnable): Thread = {
               val th = new Thread(r)
-              th.setName(s"doobie-fromDriverManager-pool-${th.getId}")
+              th.setName(show"doobie-fromDriverManager-pool-${th.getId}")
               th.setDaemon(true)
               th
             }

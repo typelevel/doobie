@@ -4,10 +4,9 @@
 
 package doobie.syntax
 
+import doobie.util.compat.=:=
 import doobie.util.transactor.Transactor
 import doobie.free.connection.ConnectionIO
-
-import scala.Predef.=:=
 
 import cats.Monad
 import cats.effect.Sync

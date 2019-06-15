@@ -32,7 +32,7 @@ object PostgresLargeObject extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     PHC.pgGetLargeObjectAPI(prog).transact(xa).flatMap { oid =>
-      IO(Console.println("oid was " + s"$oid"))
+      IO(Console.println(show"oid was $oid"))
     } .as(ExitCode.Success)
 
 }

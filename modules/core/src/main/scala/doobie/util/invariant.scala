@@ -4,9 +4,11 @@
 
 package doobie.util
 
-import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe.{TypeApi, TypeTag}
 
 import cats.Show
+import cats.instances.int._
+import cats.instances.string._
 import cats.syntax.show._
 import doobie.enum.JdbcType
 
@@ -18,6 +20,8 @@ import doobie.enum.JdbcType
  */
 object invariant {
 
+  private implicit val showTypeApi: Show[TypeApi] = Show.fromToString
+
   sealed abstract class InvariantViolation(msg: String) extends Exception(msg)
 
   sealed abstract class UnexpectedCursorPosition(msg: String) extends InvariantViolation(msg)
@@ -28,17 +32,17 @@ object invariant {
 
   /** Unexpected ordinal value for an enumerated type. */
   final case class InvalidOrdinal[A](value: Int)(implicit ev: TypeTag[A])
-    extends InvariantViolation(s"${ev.tpe}: invalid ordinal: $value")
+    extends InvariantViolation(show"${ev.tpe}: invalid ordinal: $value")
 
   /** Unexpected string value for an enumerated type. */
   final case class InvalidEnum[A](value: String)(implicit ev: TypeTag[A])
-    extends InvariantViolation(s"${ev.tpe}: invalid enum: $value")
+    extends InvariantViolation(show"${ev.tpe}: invalid enum: $value")
 
   final case class SecondaryValidationFailed[A](value: String)(implicit ev: TypeTag[A])
-    extends InvariantViolation(s"${ev.tpe}: validation failed: $value")
+    extends InvariantViolation(show"${ev.tpe}: validation failed: $value")
 
   final case class InvalidValue[A, B](value: A, reason: String)(implicit sA: Show[A], evA: TypeTag[A], evB: TypeTag[B])
-    extends InvariantViolation(s"${value.show}: ${evA.tpe} invalid for ${evB.tpe} because: $reason")
+    extends InvariantViolation(show"$value: ${evA.tpe} invalid for ${evB.tpe} because: $reason")
 
   /** The type of schema violations. */
   sealed abstract class MappingViolation(msg: String) extends InvariantViolation(msg) {
@@ -49,11 +53,11 @@ object invariant {
   private def oneBasedDisclaimer = "Note that JDBC column indexing is 1-based."
 
   final case class NonNullableParameter(index: Int, jdbcType: JdbcType)
-    extends MappingViolation(s"Scala `null` value passed as parameter $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
+    extends MappingViolation(show"Scala `null` value passed as parameter $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
   final case class NonNullableColumnUpdate(index: Int, jdbcType: JdbcType)
-    extends MappingViolation(s"Scala `null` value passed as update to column $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
+    extends MappingViolation(show"Scala `null` value passed as update to column $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
   final case class NonNullableColumnRead(index: Int, jdbcType: JdbcType)
-    extends MappingViolation(s"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here. $oneBasedDisclaimer")
+    extends MappingViolation(show"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here. $oneBasedDisclaimer")
 
   /** Array violations. Not terribly illuminating at this point. */
   sealed abstract class ArrayStructureViolation(msg: String) extends InvariantViolation(msg)
@@ -64,6 +68,6 @@ object invariant {
 
   /** Invalid JAVA_OBJECT mapping. */
   final case class InvalidObjectMapping[A, B](expected: Class[A], actual: Class[B])
-    extends InvariantViolation(s"SQL object of class ${actual.getName} cannot be cast to mapped class ${expected.getName}.")
+    extends InvariantViolation(show"SQL object of class ${actual.getName} cannot be cast to mapped class ${expected.getName}.")
 
 }

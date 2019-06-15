@@ -4,6 +4,7 @@
 
 package doobie.postgres.hi
 
+import cats.effect.Blocker
 import cats.syntax.functor._
 import doobie.ConnectionIO
 import doobie.implicits.AsyncConnectionIO
@@ -18,13 +19,13 @@ object lostreaming {
   def createLOFromStream(data: Stream[ConnectionIO, Byte], blockingEc: ExecutionContext): ConnectionIO[Long] =
     createLO.flatMap { oid =>
       Stream.bracket(openLO(oid))(closeLO)
-        .flatMap(lo => data.through(FS2IO.writeOutputStream(getOutputStream(lo), blockingEc)))
+        .flatMap(lo => data.through(FS2IO.writeOutputStream(getOutputStream(lo), Blocker.liftExecutionContext(blockingEc))))
         .compile.drain.as(oid)
     }
 
   def createStreamFromLO(oid: Long, chunkSize: Int, blockingEc: ExecutionContext): Stream[ConnectionIO, Byte] =
     Stream.bracket(openLO(oid))(closeLO)
-      .flatMap(lo => FS2IO.readInputStream(getInputStream(lo), chunkSize, blockingEc))
+      .flatMap(lo => FS2IO.readInputStream(getInputStream(lo), chunkSize, Blocker.liftExecutionContext(blockingEc)))
 
   private val createLO: ConnectionIO[Long] =
     PHC.pgGetLargeObjectAPI(PFLOM.createLO)
