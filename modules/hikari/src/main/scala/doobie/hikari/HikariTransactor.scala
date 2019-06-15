@@ -16,9 +16,9 @@ object HikariTransactor {
   def apply[M[_]: Async: ContextShift](
     hikariDataSource : HikariDataSource,
     connectEC:         ExecutionContext,
-    transactEC:        ExecutionContext
+    blocker:           Blocker
   ): HikariTransactor[M] =
-    Transactor.fromDataSource[M](hikariDataSource, connectEC, transactEC)
+    Transactor.fromDataSource[M](hikariDataSource, connectEC, blocker)
 
   private def createDataSourceResource[M[_]: Sync](factory: => HikariDataSource): Resource[M, HikariDataSource] = {
     val alloc = Sync[M].delay(factory)
@@ -28,21 +28,21 @@ object HikariTransactor {
 
   /** Resource yielding an unconfigured `HikariTransactor`. */
   def initial[M[_]: Async: ContextShift](
-    connectEC:  ExecutionContext,
-    transactEC: ExecutionContext
+    connectEC: ExecutionContext,
+    blocker: Blocker
   ): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource)
-      .map(Transactor.fromDataSource[M](_, connectEC, transactEC))
+      .map(Transactor.fromDataSource[M](_, connectEC, blocker))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig. */
   def fromHikariConfig[M[_]: Async: ContextShift](
     hikariConfig: HikariConfig,
-    connectEC:    ExecutionContext,
-    transactEC:   ExecutionContext
+    connectEC: ExecutionContext,
+    blocker: Blocker
   ): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource(hikariConfig))
-      .map(Transactor.fromDataSource[M](_, connectEC, transactEC))
+      .map(Transactor.fromDataSource[M](_, connectEC, blocker))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given info. */
@@ -52,11 +52,11 @@ object HikariTransactor {
     user:            String,
     pass:            String,
     connectEC:       ExecutionContext,
-    transactEC:      ExecutionContext
+    blocker:         Blocker
   ): Resource[M, HikariTransactor[M]] =
     for {
       _ <- Resource.liftF(Async[M].delay(Class.forName(driverClassName)))
-      t <- initial[M](connectEC, transactEC)
+      t <- initial[M](connectEC, blocker)
       _ <- Resource.liftF {
             t.configure { ds =>
               Async[M].delay {

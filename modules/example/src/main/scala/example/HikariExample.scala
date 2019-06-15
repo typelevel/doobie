@@ -16,12 +16,12 @@ object HikariExample extends IOApp {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](32)
-      te <- ExecutionContexts.cachedThreadPool[IO]
+      blocker <- Blocker[IO]
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
               "sa", "",
-              ce, te
+              ce, blocker
             )
     } yield xa
 

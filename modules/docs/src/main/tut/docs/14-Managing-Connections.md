@@ -47,7 +47,7 @@ Starting with version 0.6.0 **doobie** provides an asynchronous API that delegat
 
 - `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
-- A second `ExecutionContext` for **executing JDBC operations**. Because your connection pool limits the number of active connections it is usually fine for this to be an **unbounded** pool.
+- A `cats.effect.Blocker` for **executing JDBC operations**. Because your connection pool limits the number of active connections this should be an **unbounded** pool.
 
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 
@@ -71,7 +71,7 @@ val xa = Transactor.fromDriverManager[IO](
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
   "",                          // password
-  ExecutionContexts.synchronous // just for testing
+  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 ```
 
@@ -81,7 +81,7 @@ implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 
 ### Using a HikariCP Connection Pool
 
-The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connnection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a `Resource`. A program that uses `HikariTransactor` will typically use `IOApp`.
+The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool. The connection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a `Resource`. A program that uses `HikariTransactor` will typically use `IOApp`.
 
 ```scala mdoc:silent:reset
 import cats.effect._
@@ -97,14 +97,14 @@ object HikariApp extends IOApp {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
+      be <- Blocker[IO]    // our blocking EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
               ce,                                     // await connection here
-              te                                      // execute JDBC operations here
+              be                                      // execute JDBC operations here
             )
     } yield xa
 
@@ -142,8 +142,8 @@ def transactor(ds: DataSource)(
 ): Resource[IO, DataSourceTransactor[IO]] =
   for {
     ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-    te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
-  } yield Transactor.fromDataSource[IO](ds, ce, te)
+    be <- Blocker[IO]    // our blocking EC
+  } yield Transactor.fromDataSource[IO](ds, ce, be)
 ```
 
 The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
@@ -151,7 +151,7 @@ The `configure` method on `DataSourceTransactor` provides access to the underlyi
 
 ### Using an Existing JDBC Connection
 
-If your application exposes an existing `Connection` you can use it directly by wrapping it in a `Transactor`. You still need to provide an execution context for blocking operations.
+If your application exposes an existing `Connection` you can use it directly by wrapping it in a `Transactor`. You still need to provide an execution context for blocking operations. Note that you are responsible for closing the `Connection`.
 
 ```scala mdoc:silent
 import java.sql.Connection
@@ -160,8 +160,8 @@ import java.sql.Connection
 def transactor(c: Connection)(
   implicit ev: ContextShift[IO]
 ): Resource[IO, Transactor[IO]] =
-  ExecutionContexts.cachedThreadPool[IO].map { te =>
-    Transactor.fromConnection[IO](c, te)
+  Blocker[IO].map { b =>
+    Transactor.fromConnection[IO](c, b)
   }
 ```
 

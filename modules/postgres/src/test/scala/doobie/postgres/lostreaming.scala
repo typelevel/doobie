@@ -22,6 +22,8 @@ object lostreamingspec extends Specification with ScalaCheck {
   implicit val ioContextShift: ContextShift[IO] =
     IO.contextShift(global)
 
+  private val blocker = Blocker.liftExecutionContext(global)
+
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
@@ -39,9 +41,9 @@ object lostreamingspec extends Specification with ScalaCheck {
     "round-trip" in forAll(genFiniteStream[Pure, Byte]) { data =>
       val data0 = data.covary[ConnectionIO]
 
-      val result = Stream.bracket(PHLOS.createLOFromStream(data0, global))(
+      val result = Stream.bracket(PHLOS.createLOFromStream(data0, blocker))(
         oid => PHC.pgGetLargeObjectAPI(PFLOM.unlink(oid))
-      ).flatMap(oid => PHLOS.createStreamFromLO(oid, chunkSize = 1024 * 10, global))
+      ).flatMap(oid => PHLOS.createStreamFromLO(oid, chunkSize = 1024 * 10, blocker))
        .compile.toVector.transact(xa).unsafeRunSync()
 
       result must_=== data.toVector

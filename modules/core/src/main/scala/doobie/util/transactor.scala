@@ -10,7 +10,7 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.{Async, Bracket, ContextShift, ExitCase, Resource, Sync}
+import cats.effect.{Async, Blocker, Bracket, ContextShift, ExitCase, Resource, Sync}
 import cats.instances.long._
 import cats.syntax.show._
 import fs2.Stream
@@ -251,16 +251,16 @@ object transactor  {
         def apply[A <: DataSource](
           dataSource: A,
           connectEC:  ExecutionContext,
-          transactEC: ExecutionContext
+          blocker: Blocker
         )(implicit ev: Async[M],
                    cs: ContextShift[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
             val acquire = cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
-            def release(c: Connection) = cs.evalOn(transactEC)(ev.delay(c.close()))
+            def release(c: Connection) = blocker.blockOn(ev.delay(c.close()))
             Resource.make(acquire)(release)
           }
-          val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
+          val interp  = KleisliInterpreter[M](blocker).ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
         }
       }
@@ -271,15 +271,15 @@ object transactor  {
      * Construct a `Transactor` that wraps an existing `Connection`. Closing the connection is the
      * responsibility of the caller.
      * @param connection a raw JDBC `Connection` to wrap
-     * @param transactEC an `ExecutionContext` for blocking database operations
+     * @param blocker for blocking database operations
      * @group Constructors
      */
     def fromConnection[M[_]: Async: ContextShift](
       connection: Connection,
-      transactEC: ExecutionContext
+      blocker: Blocker
     ): Transactor.Aux[M, Connection] = {
       val connect = (c: Connection) => Resource.pure[M, Connection](c)
-      val interp  = KleisliInterpreter[M](transactEC).ConnectionInterpreter
+      val interp  = KleisliInterpreter[M](blocker).ConnectionInterpreter
       Transactor(connection, connect, interp, Strategy.default)
     }
 
@@ -297,7 +297,7 @@ object transactor  {
     object fromDriverManager {
 
       // An unbounded cached pool of daemon threads.
-      private val defaultBlockingContext: ExecutionContext =
+      private lazy val defaultBlocker: Blocker = Blocker.liftExecutionContext {
         ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
           new ThreadFactory {
             def newThread(r: Runnable): Thread = {
@@ -308,31 +308,32 @@ object transactor  {
             }
           }
         ))
+      }
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]](
         driver: String,
         conn: () => Connection,
         strategy: Strategy,
-        blockingContext: ExecutionContext
+        blocker: Blocker
       )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
           _ => {
-            val acquire = cs.evalOn(blockingContext)(am.delay { Class.forName(driver); conn() })
-            def release(c: Connection) = cs.evalOn(blockingContext)(am.delay { c.close() })
+            val acquire = blocker.blockOn(am.delay { Class.forName(driver); conn() })
+            def release(c: Connection) = blocker.blockOn(am.delay { c.close() })
             Resource.make(acquire)(release)
           },
-          KleisliInterpreter[M](blockingContext).ConnectionInterpreter,
+          KleisliInterpreter[M](blocker).ConnectionInterpreter,
           strategy
         )
 
       def apply[M[_]: Async: ContextShift](
         driver: String,
         url:    String,
-        blockingContext: ExecutionContext
+        blocker: Blocker
       ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url), Strategy.default, blockingContext)
+        create(driver, () => DriverManager.getConnection(url), Strategy.default, blocker)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -343,16 +344,16 @@ object transactor  {
         driver: String,
         url:    String
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, defaultBlockingContext)
+        apply(driver, url, defaultBlocker)
 
       def apply[M[_]: Async: ContextShift](
         driver: String,
         url:    String,
         user:   String,
         pass:   String,
-        blockingContext: ExecutionContext
+        blocker: Blocker
       ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default, blockingContext)
+        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default, blocker)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -367,7 +368,7 @@ object transactor  {
         user:   String,
         pass:   String
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, user, pass, defaultBlockingContext)
+        apply(driver, url, user, pass, defaultBlocker)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -379,9 +380,9 @@ object transactor  {
         driver: String,
         url:    String,
         info:   java.util.Properties,
-        blockingContext: ExecutionContext
+        blocker: Blocker
       ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, info), Strategy.default, blockingContext)
+        create(driver, () => DriverManager.getConnection(url, info), Strategy.default, blocker)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -394,7 +395,7 @@ object transactor  {
         url:    String,
         info:   java.util.Properties
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, info, defaultBlockingContext)
+        apply(driver, url, info, defaultBlocker)
 
     }
 

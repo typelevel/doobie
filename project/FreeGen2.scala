@@ -430,7 +430,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |// Library imports
       |import cats.~>
       |import cats.data.Kleisli
-      |import cats.effect.{ Async, ContextShift, ExitCase }
+      |import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
       |import scala.concurrent.ExecutionContext
       |
       |// Types referenced in the JDBC API
@@ -442,14 +442,14 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |object KleisliInterpreter {
       |
       |  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-      |  def apply[M[_]](blocking: ExecutionContext)(
+      |  def apply[M[_]](b: Blocker)(
       |    implicit am: Async[M],
       |             cs: ContextShift[M]
       |  ): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M] {
       |      val asyncM = am
       |      val contextShiftM = cs
-      |      val blockingContext = blocking
+      |      val blocker = b
       |    }
       |
       |}
@@ -462,7 +462,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
       |  // to support shifting blocking operations to another pool.
       |  val contextShiftM: ContextShift[M]
-      |  val blockingContext: ExecutionContext
+      |  val blocker: Blocker
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}
@@ -471,11 +471,11 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
       |    // primitive JDBC methods throw exceptions and so do we when reading values
       |    // so catch any non-fatal exceptions and lift them into the effect
-      |    contextShiftM.evalOn(blockingContext)(try {
+      |    blocker.blockOn[M, A](try {
       |      asyncM.delay(f(a))
       |    } catch {
       |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
-      |    })
+      |    })(contextShiftM)
       |  }
       |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
       |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)

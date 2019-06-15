@@ -7,7 +7,7 @@ package doobie.postgres
 import java.util.concurrent.Executors
 
 import cats.effect.syntax.effect._
-import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
+import cats.effect.{Blocker, ConcurrentEffect, ContextShift, IO, Timer}
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.implicits._
@@ -34,8 +34,10 @@ trait pgconcurrent[F[_]] extends Specification {
     dataSource setMaximumPoolSize 10
     dataSource setConnectionTimeout 2000
 
-    Transactor.fromDataSource[F](dataSource, ExecutionContext.fromExecutor(Executors.newFixedThreadPool(32)),
-      ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+    Transactor.fromDataSource[F](
+      dataSource,
+      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(32)),
+      Blocker.liftExecutorService(Executors.newCachedThreadPool())
     )
 
   }

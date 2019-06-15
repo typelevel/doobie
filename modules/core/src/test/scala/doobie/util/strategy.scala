@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ Async, ContextShift, IO }
+import cats.effect.{ Async, Blocker, ContextShift, IO }
 import cats.syntax.apply._
 import cats.syntax.either._
 import doobie._, doobie.implicits._
@@ -28,7 +28,7 @@ object strategyspec extends Specification {
   class Interp extends KleisliInterpreter[IO] {
 
     val asyncM = Async[IO]
-    val blockingContext = ExecutionContext.global
+    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     val contextShiftM = contextShift
 
     object Connection {

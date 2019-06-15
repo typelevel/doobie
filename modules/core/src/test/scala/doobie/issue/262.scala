@@ -6,7 +6,7 @@ package doobie.issue
 
 import cats.Monad
 import cats.implicits._
-import cats.effect.{ Async, ContextShift, IO }
+import cats.effect.{ Async, Blocker, ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
@@ -21,7 +21,7 @@ object `262` extends Specification {
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
     val asyncM = Async[IO]
-    val blockingContext = ExecutionContext.global
+    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     val contextShiftM = contextShift
 
     val M = implicitly[Async[IO]]

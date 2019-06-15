@@ -49,7 +49,7 @@ val xa = Transactor.fromDriverManager[IO](
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
   "",                          // password
-  ExecutionContexts.synchronous // just for testing
+  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 ```
 
@@ -139,10 +139,11 @@ Out of the box **doobie** provides an interpreter from its free monads to `Kleis
 ```scala mdoc
 import cats.~>
 import cats.data.Kleisli
+import cats.effect.Blocker
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO](ExecutionContexts.synchronous).ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO](Blocker.liftExecutionContext(ExecutionContexts.synchronous)).ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
 val io3 = IO(null: java.sql.Connection) >>= kleisli.run
 io3.unsafeRunSync // sneaky; program1 never looks at the connection

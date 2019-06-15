@@ -5,6 +5,13 @@ section: "migration"
 position: 2
 ---
 
+# Upgrading to 0.8.x from 0.7.x
+
+Creating a `Transactor` now requires that the `transactEC` parameter is a `cats.effect.Blocker` instead of an `ExecutionContext`.
+
+
+-----
+
 # Upgrading to 0.7.x from 0.6.x
 
 `Transactor.connect` has changed from `A => Connection` to `A => Resource[M, Connection]`. Any connection retrieved from this function is expected to close itself.
