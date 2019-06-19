@@ -17,7 +17,7 @@ import doobie._
 import doobie.implicits._
 import cats._
 import cats.data._
-import cats.effect.IO
+import cats.effect._
 import cats.implicits._
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
@@ -31,7 +31,7 @@ val xa = Transactor.fromDriverManager[IO](
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
   "",                          // password
-  ExecutionContexts.synchronous // just for testing
+  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 ```
 

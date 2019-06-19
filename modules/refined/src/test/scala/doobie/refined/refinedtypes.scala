@@ -4,6 +4,7 @@
 
 package doobie.refined
 
+import cats.Show
 import cats.effect.{ ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
@@ -37,6 +38,9 @@ object refinedtypes extends Specification {
   }
 
   final case class Point(x: Int, y: Int)
+  object Point {
+    implicit val show: Show[Point] = Show.fromToString
+  }
   final case class Quadrant1()
   type PointInQuadrant1 = Point Refined Quadrant1
 
@@ -44,7 +48,7 @@ object refinedtypes extends Specification {
     Write[(Int, Int)].contramap((p: Point) => (p.x, p.y))
 
   implicit val quadrant1Validate: Validate.Plain[Point, Quadrant1] =
-    Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => s"($p is in quadrant 1)", Quadrant1())
+    Validate.fromPredicate(p => p.x >= 0 && p.y >= 0, p => show"($p is in quadrant 1)", Quadrant1())
 
   "Write" should {
 

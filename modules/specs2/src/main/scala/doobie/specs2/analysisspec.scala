@@ -58,7 +58,7 @@ object analysisspec {
 
     private def checkImpl(args: AnalysisArgs): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early
-      s"${args.header}\n\n${args.cleanedSql.padLeft("  ")}\n" >> ok.continueWith {
+      s"${args.header}\n\n${args.cleanedSql.padLeft("  ").toString}\n" >> ok.continueWith {
         val report = analyzeIO(args, transactor).unsafeRunSync
         indentBlock(
           report.items.map { item =>

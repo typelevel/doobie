@@ -18,7 +18,7 @@ import doobie.implicits._
 import doobie.util.ExecutionContexts
 import cats._
 import cats.data._
-import cats.effect.IO
+import cats.effect._
 import cats.implicits._
 import fs2.Stream
 
@@ -33,7 +33,7 @@ val xa = Transactor.fromDriverManager[IO](
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
   "",                          // password
-  ExecutionContexts.synchronous // just for testing
+  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 ```
 

@@ -44,6 +44,7 @@ object pgtypesspec extends Specification {
       a0 <- Update[Option[A]](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[Option[A]]("value")(a)
     } yield a0
 
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" in {

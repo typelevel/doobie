@@ -21,7 +21,7 @@ The following examples require a few imports.
 ```scala mdoc:silent
 import cats._
 import cats.data._
-import cats.effect.IO
+import cats.effect._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -38,7 +38,7 @@ val xa = Transactor.fromDriverManager[IO](
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
   "",                          // password
-  ExecutionContexts.synchronous // just for testing
+  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 ```
 

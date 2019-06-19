@@ -4,6 +4,7 @@
 
 package example
 
+import cats.Show
 import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._, doobie.implicits._
@@ -98,6 +99,8 @@ object Orm extends IOApp {
   object Neighbor {
     implicit val dao: Dao.Aux[Neighbor, Int] =
       Dao.derive[Neighbor, Int]("neighbor", "id")
+
+    implicit val show: Show[Neighbor] = Show.fromToString
   }
 
   val ddl: ConnectionIO[Unit] =
@@ -118,7 +121,7 @@ object Orm extends IOApp {
       kb <- insert(Neighbor("Bob", 42))
       oa <- find(ka)
       _  <- delete(kb)
-    } yield s"Did some stuff. Keys were $ka and $kb. Selected value was $oa."
+    } yield show"Did some stuff. Keys were $ka and $kb. Selected value was ${oa.fold("<nothing>")(_.show)}."
   }
 
   val xa = Transactor.fromDriverManager[IO](

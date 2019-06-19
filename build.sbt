@@ -2,33 +2,31 @@ import FreeGen2._
 import ReleaseTransformations._
 import microsites._
 
-resolvers in Global += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "1.6.0"
-lazy val catsEffectVersion    = "1.3.0"
-lazy val circeVersion         = "0.11.1"
-lazy val fs2Version           = "1.0.4"
+lazy val catsVersion          = "2.0.0-M4"
+lazy val catsEffectVersion    = "2.0.0-M4"
+lazy val circeVersion         = "0.12.0-M3"
+lazy val fs2Version           = "1.1.0-M1"
 lazy val h2Version            = "1.4.199"
 lazy val hikariVersion        = "3.3.1"
-lazy val kindProjectorVersion = "0.9.9"
+lazy val kindProjectorVersion = "0.10.3"
 lazy val monixVersion         = "3.0.0-RC2"
 lazy val quillVersion         = "3.1.0"
 lazy val postGisVersion       = "2.3.0"
 lazy val postgresVersion      = "42.2.5"
-lazy val refinedVersion       = "0.9.4"
+lazy val refinedVersion       = "0.9.8"
 lazy val scalaCheckVersion    = "1.14.0"
-lazy val scalatestVersion     = "3.0.7"
+lazy val scalatestVersion     = "3.0.8"
 lazy val shapelessVersion     = "2.3.3"
-lazy val sourcecodeVersion    = "0.1.5"
+lazy val sourcecodeVersion    = "0.1.7"
 lazy val specs2Version        = "4.5.1"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
-lazy val scala213Version      = "2.13.0-M5"
+lazy val scala213Version      = "2.13.0"
 lazy val slf4jVersion         = "1.7.26"
 
 // Check bincompat versus this version.
-lazy val binaryCompatibleVersion = "0.6.0"
+lazy val binaryCompatibleVersion = "0.7.0"
 
 // Our set of warts
 lazy val doobieWarts =
@@ -69,7 +67,6 @@ lazy val compilerFlags = Seq(
           "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
           "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
           "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
-          "-Xfuture",                          // Turn on future language features.
           "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
           "-Xlint:constant",                   // Evaluation of a constant arithmetic expression results in an error.
           "-Xlint:delayedinit-select",         // Selecting member of DelayedInit.
@@ -104,6 +101,7 @@ lazy val compilerFlags = Seq(
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n == 12 =>
         Seq(
+          "-Xfuture",                          // Turn on future language features.
           "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
           "-Ypartial-unification"              // Enable partial unification in type constructor inference
         )
@@ -137,6 +135,7 @@ lazy val buildSettings = Seq(
 lazy val commonSettings =
   compilerFlags ++
   Seq(
+    scalaVersion := scala212Version,
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -161,7 +160,7 @@ lazy val commonSettings =
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % kindProjectorVersion),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion),
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isSnapshot.value)
@@ -255,15 +254,11 @@ lazy val modules: List[ProjectReference] = List(
 )
 
 
-val scala_213 = "2.13.0-M5"
-val scala_212 = "2.12.8"
-val scala_211 = "2.11.12"
-
 lazy val crossScalaAll = Seq(
-  crossScalaVersions := Seq(scala_213, scala_212, scala_211)
+  crossScalaVersions := Seq(scala211Version, scala212Version, scala213Version)
 )
 lazy val crossScalaNo213 = Seq(
-  crossScalaVersions := Seq(scala_212, scala_211)
+  crossScalaVersions := Seq(scala211Version, scala212Version)
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -372,8 +367,8 @@ lazy val core = project
     unmanagedSourceDirectories in Compile += {
       val sourceDir = (sourceDirectory in Compile).value
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
-        case _                       => sourceDir / "scala-2.13-"
+        case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
+        case _                       => sourceDir / "scala-2.13+"
       }
     },
     sourceGenerators in Compile += Def.task {
@@ -559,9 +554,7 @@ lazy val docs = project
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
       "io.circe"    %% "circe-parser"  % circeVersion,
-      // sbt seems to still look for 2.12 when 2.13 is excluded from `crossScalaVersions`
-      // so just comment out the dependency and readd it when Monix has version available for 2.13
-      //"io.monix"    %% "monix-eval"    % monixVersion
+      "io.monix"    %% "monix-eval"    % monixVersion,
     ),
     fork in Test := true,
 

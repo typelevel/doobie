@@ -4,6 +4,7 @@
 
 package doobie.hi
 
+import doobie.util.compat.propertiesToScala
 import doobie.enum.Holdability
 import doobie.enum.ResultSetType
 import doobie.enum.ResultSetConcurrency
@@ -16,7 +17,6 @@ import doobie.util.stream.repeatEvalChunks
 import java.sql.{ Savepoint, PreparedStatement, ResultSet }
 
 import scala.collection.immutable.Map
-import scala.collection.JavaConverters._
 
 import cats.Foldable
 import cats.implicits._
@@ -134,7 +134,7 @@ object connection {
 
   /** @group Connection Properties */
   val getClientInfo: ConnectionIO[Map[String, String]] =
-    FC.getClientInfo.map(_.asScala.toMap)
+    FC.getClientInfo.map(propertiesToScala)
 
   /** @group Connection Properties */
   val getHoldability: ConnectionIO[Holdability] =

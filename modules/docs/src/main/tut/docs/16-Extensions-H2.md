@@ -51,13 +51,13 @@ object H2App extends IOApp {
   val transactor: Resource[IO, H2Transactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
+      be <- Blocker[IO]    // our blocking EC
       xa <- H2Transactor.newH2Transactor[IO](
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
               "sa",                                   // username
               "",                                     // password
               ce,                                     // await connection here
-              te                                      // execute JDBC operations here
+              be                                      // execute JDBC operations here
             )
     } yield xa
 

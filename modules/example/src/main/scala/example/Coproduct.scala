@@ -7,7 +7,7 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect.{ Blocker, IO, IOApp, ExitCode }
 import cats.free.Free
 import cats.implicits._
 import cats.{InjectK, ~>}
@@ -78,8 +78,10 @@ object coproduct extends IOApp {
 
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
-  val interp: Cop ~> Kleisli[IO, Connection, ?] =
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](ExecutionContext.global).ConnectionInterpreter
+  val interp: Cop ~> Kleisli[IO, Connection, ?] = {
+    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
+  }
 
   // Our interpreted program
   val iprog: Kleisli[IO, Connection, Unit] = prog[Cop].foldMap(interp)

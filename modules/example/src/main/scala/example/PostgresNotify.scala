@@ -61,7 +61,7 @@ object PostgresNotify extends IOApp {
     */
   def run(args: List[String]): IO[ExitCode] =
     notificationStream("foo", 1.second)
-      .map(n => s"${n.getPID} ${n.getName} ${n.getParameter}")
+      .map(n => show"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
       .evalMap(s => HC.delay(Console.println(s))).compile.drain
       .transact(xa)

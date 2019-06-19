@@ -64,7 +64,7 @@ object log {
             |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
             |
             | arguments = [${a.mkString(", ")}]
-            |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (${(e1 + e2).toMillis} ms total)
+            |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (${(e1 + e2).toMillis.toString} ms total)
           """.stripMargin)
 
         case ProcessingFailure(s, a, e1, e2, t) =>
@@ -73,7 +73,7 @@ object log {
             |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
             |
             | arguments = [${a.mkString(", ")}]
-            |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (failed) (${(e1 + e2).toMillis} ms total)
+            |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (failed) (${(e1 + e2).toMillis.toString} ms total)
             |   failure = ${t.getMessage}
           """.stripMargin)
 
@@ -83,7 +83,7 @@ object log {
             |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
             |
             | arguments = [${a.mkString(", ")}]
-            |   elapsed = ${e1.toMillis} ms exec (failed)
+            |   elapsed = ${e1.toMillis.toString} ms exec (failed)
             |   failure = ${t.getMessage}
           """.stripMargin)
 

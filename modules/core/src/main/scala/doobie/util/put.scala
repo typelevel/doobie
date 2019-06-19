@@ -176,7 +176,7 @@ object Put extends PutInstances {
 }
 
 trait PutInstances {
-  import Predef.=:=
+  import doobie.util.compat.=:=
 
   /** @group Instances */
   implicit val ContravariantPut: Contravariant[Put] =

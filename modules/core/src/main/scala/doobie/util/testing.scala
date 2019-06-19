@@ -6,10 +6,13 @@ package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.{ Effect, IO }
+import cats.instances.int._
 import cats.instances.list._
+import cats.instances.string._
 import cats.syntax.list._
 import cats.syntax.applicativeError._
 import cats.syntax.foldable._
+import cats.syntax.show._
 import doobie._
 import doobie.implicits._
 import doobie.util.analysis._
@@ -46,10 +49,10 @@ package testing {
 
     private val location =
       pos
-        .map(f => s"${f.file}:${f.line}")
+        .map(f => show"${f.file}:${f.line}")
         .getOrElse("(source location unknown)")
 
-    val header: String = s"$typeName defined at $location"
+    val header: String = show"$typeName defined at $location"
   }
 
   /** Information from [[Analysis]], prepared for output. */
