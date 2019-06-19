@@ -301,3 +301,33 @@ We can run it thus, yielding the number of affected rows.
 ### Fastpath
 
 **doobie** provides an algebra and free monad for constructing programs that use the `FastPathAPI` provided by the PostgreSQL JDBC driver, however this API is mostly deprecated in favor of server-side statements (see above). And in any case I can't find an example of how you would use it from Java so I don't have an example here. But if you're using it let me know and we can figure it out.
+
+### EXPLAIN/EXPLAIN ANALYZE
+
+The PostgreSQL server can provide an analysis of any query, using the `EXPLAIN` keyword. **doobie** can run `EXPLAIN`
+on any `Query0` or `Query` object. As long as `doobie.postgres` and `doobie.postgres.implicits._` have been imported.
+Using an example from earlier in the book:
+
+```scala mdoc
+sql"select name from country"
+  .query[String]    // Query0[String]
+  .explain
+  .transact(xa)
+  .unsafeRunSync
+  .foreach(println)
+```
+
+Similary, `explainAnalyze` will analyze the query **and** run it, comparing the query planner's estimates with real
+performance (however, no results are returned). Using the example above again:
+
+```scala mdoc
+sql"select name from country"
+  .query[String]    // Query0[String]
+  .explainAnalyze
+  .transact(xa)
+  .unsafeRunSync
+  .foreach(println)
+```
+
+`explain` and `explainAnalyze` both return a `ConnectinIO[List[String]]` result, where each member of the list is one
+row of the query planner's output.

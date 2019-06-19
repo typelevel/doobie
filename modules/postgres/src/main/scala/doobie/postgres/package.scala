@@ -14,6 +14,7 @@ package object postgres
        with free.Instances
        with syntax.ToPostgresMonadErrorOps
        with syntax.ToFragmentOps
+       with syntax.ToPostgresExplainOps
 
   object pgisimplicits
     extends PgisInstances
