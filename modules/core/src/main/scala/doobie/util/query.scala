@@ -93,6 +93,28 @@ object query {
       HC.prepareQueryAnalysis0[B](sql)
 
     /**
+     * Apply the argument `a` to construct a program in
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
+     * for the query (i.e., `EXPLAIN` output). The query is not actually executed.
+     *
+     * @group Diagnostics
+     */
+    def explain(a: A): ConnectionIO[List[String]] =
+      HC.prepareStatement(s"EXPLAIN $sql")(HPS.set(a) *> executeQuery(a, HRS.build[List, String]))
+
+    /**
+     * Apply the argument `a` to construct a program in
+     * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
+     * for the query, as well as comparing the plan to the actual time
+     * to execute the query (i.e., `EXPLAIN ANALYZE` output). Note that query results are NOT
+     * returned.
+     *
+     * @group Diagnostics
+     */
+    def explainAnalyze(a: A): ConnectionIO[List[String]] =
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(HPS.set(a) *> executeQuery(a, HRS.build[List, String]))
+
+    /**
      * Apply the argument `a` to construct a `Stream` with the given chunking factor, with
      * effect type  `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of
      * type `B`.
@@ -194,6 +216,8 @@ object query {
         def option = outer.option(a)
         def nel = outer.nel(a)
         def map[C](f: B => C): Query0[C] = outer.map(f).toQuery0(a)
+        def explain = outer.explain(a)
+        def explainAnalyze = outer.explainAnalyze(a)
       }
 
   }
@@ -265,6 +289,24 @@ object query {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis]
+
+    /**
+     * Program which returns the server's query plan
+     * for the query (i.e., `EXPLAIN` output). The query is not actually executed.
+     *
+     * @group Diagnostics
+     */
+    def explain: ConnectionIO[List[String]]
+
+    /**
+     * Program which returns the server's query plan
+     * for the query, as well as comparing the plan to the actual time
+     * to execute the query (i.e., `EXPLAIN ANALYZE` output). Note that query results are NOT
+     * returned.
+     *
+     * @group Diagnostics
+     */
+    def explainAnalyze: ConnectionIO[List[String]]
 
     /**
      * Program to construct an analysis of this query's SQL statement and result set column types.
