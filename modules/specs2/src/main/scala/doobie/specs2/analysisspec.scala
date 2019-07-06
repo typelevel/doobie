@@ -5,8 +5,7 @@
 package doobie.specs2
 
 import cats.effect.{ Effect, IO }
-import doobie.imports._
-import doobie.util.analysis._
+import doobie.util.query.{ Query, Query0 }
 import doobie.util.testing._
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{ Fragment, Fragments }
@@ -35,9 +34,6 @@ import scala.reflect.runtime.universe.TypeTag
  * }}}
  */
 object analysisspec {
-
-  @deprecated("Use IOChecker.", "0.4.2")
-  type AnalysisSpec = IOChecker
 
   trait Checker[M[_]] extends CheckerBase[M] { this: Specification =>
 
