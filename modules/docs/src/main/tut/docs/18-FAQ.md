@@ -178,7 +178,7 @@ implicit val XmlMeta: Meta[Elem] =
 
 ## How do I set the chunk size for streaming results?
 
-By default streams constructed with the `sql` interpolator are fetched `Query.DefaultChunkSize` rows at a time (currently 512). If you wish to change this chunk size you can use `processWithChunkSize` for queries, and `withGeneratedKeysWithChunkSize` for updates that return results.
+By default streams constructed with the `sql` interpolator are fetched `Query.DefaultChunkSize` rows at a time (currently 512). If you wish to change this chunk size you can use `streamWithChunkSize` for queries, and `withGeneratedKeysWithChunkSize` for updates that return results.
 
 ## My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?
 
