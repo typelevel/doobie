@@ -499,8 +499,9 @@ lazy val hikari = project
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
     libraryDependencies ++= Seq(
-      "com.zaxxer"     % "HikariCP" % hikariVersion,
-      "com.h2database" % "h2"       % h2Version       % "test"
+      "com.zaxxer"     % "HikariCP"   % hikariVersion,
+      "com.h2database" % "h2"         % h2Version      % "test",
+      "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
     )
   )
 

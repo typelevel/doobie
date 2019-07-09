@@ -14,6 +14,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
+import java.util.concurrent.Executors
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 object `824` extends Specification {
@@ -27,14 +28,14 @@ object `824` extends Specification {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](16) // our connect EC
-      te <- ExecutionContexts.cachedThreadPool[IO]    // our transaction EC
+      te <- Resource.liftF(IO.delay(Executors.newCachedThreadPool)) // our transaction EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
               ce,                                     // await connection here
-              te                                      // execute JDBC operations here
+              Blocker.liftExecutorService(te)         // execute JDBC operations here
             )
     } yield xa
 
