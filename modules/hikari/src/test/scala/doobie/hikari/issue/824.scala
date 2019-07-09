@@ -40,6 +40,7 @@ object `824` extends Specification {
     } yield xa
 
     // Show the state of the pool
+    @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
     def report(ds: HikariDataSource): IO[Unit] =
       IO {
         val mx = ds.getHikariPoolMXBean; import mx._
