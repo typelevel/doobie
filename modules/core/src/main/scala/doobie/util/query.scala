@@ -326,14 +326,6 @@ object query {
     /** @group Transformations */
     def map[C](f: B => C): Query0[C]
 
-    /**
-     * Convenience method, equivalent to `stream.evalMap(f).compile.drain`.
-     * @group Results
-     */
-    @deprecated("use .stream.evalMap(f).compile.drain", "0.6.0")
-    def sink(f: B => ConnectionIO[Unit]): ConnectionIO[Unit] =
-      stream.evalMap(f).compile.drain
-
   }
 
   object Query0 {

@@ -9,6 +9,7 @@ position: 2
 
 Creating a `Transactor` now requires that the `transactEC` parameter is a `cats.effect.Blocker` instead of an `ExecutionContext`.
 
+Everything that has been deprecated since 0.6.x has been removed.
 
 -----
 

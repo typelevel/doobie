@@ -5,9 +5,9 @@
 package doobie.specs2
 
 import cats.effect.{ ContextShift, IO }
-import doobie._, doobie.implicits._
-import doobie.h2._
-import doobie.specs2.analysisspec._
+import doobie.syntax.connectionio._
+import doobie.syntax.string._
+import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import scala.concurrent.ExecutionContext
