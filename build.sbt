@@ -498,7 +498,11 @@ lazy val hikari = project
   .settings(
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
-    libraryDependencies += "com.zaxxer" % "HikariCP" % hikariVersion
+    libraryDependencies ++= Seq(
+      "com.zaxxer"     % "HikariCP"   % hikariVersion,
+      "com.h2database" % "h2"         % h2Version      % "test",
+      "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
+    )
   )
 
 lazy val specs2 = project

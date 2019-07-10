@@ -27,16 +27,11 @@ final class Meta[A](val get: Get[A], val put: Put[A]) {
   def timap[B: TypeTag](f: A => B)(g: B => A): Meta[B] =
     new Meta(get.tmap(f), put.tcontramap(g))
 
-  @deprecated("Use imap, or timap if a TypeTag is available.", "0.6.0")
-  def xmap[B: TypeTag](f: A => B, g: B => A): Meta[B] =
-    new Meta(get.tmap(f), put.tcontramap(g))
-
 }
 
 /** Module of constructors and instances for `Meta`. */
 object Meta extends MetaConstructors
                with MetaInstances
-               with MetaDeprecatedConstructors // until 0.7.x
 {
 
   /** Summon the `Meta` instance if possible. */
@@ -269,60 +264,5 @@ trait MetaInstances { this: MetaConstructors =>
   /** @group Instances */
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
     DateMeta.imap(_.toLocalDate)(java.sql.Date.valueOf)
-
-}
-
-trait MetaDeprecatedConstructors { this: MetaConstructors =>
-
-  /** @group Constructors (deprecated) */
-  @deprecated("Use Meta.Basic.many", "0.6.0")
-  def basic[A: TypeTag](
-    jdbcTarget: NonEmptyList[JdbcType],
-    jdbcSource: NonEmptyList[JdbcType],
-    jdbcSourceSecondary: List[JdbcType],
-    get: (ResultSet, Int) => A,
-    put: (PreparedStatement, Int, A) => Unit,
-    update: (ResultSet, Int, A) => Unit
-  ): Meta[A] =
-    Basic.many(jdbcTarget, jdbcSource, jdbcSourceSecondary, get, put, update)
-
-  /** @group Constructors (deprecated) */
-  @deprecated("Use Meta.Basic.one", "0.6.0")
-  def basic1[A: TypeTag](
-    jdbcType: JdbcType,
-    jdbcSourceSecondary: List[JdbcType],
-    get: (ResultSet, Int) => A,
-    put: (PreparedStatement, Int, A) => Unit,
-    update: (ResultSet, Int, A) => Unit
-  ): Meta[A] =
-    Basic.one(jdbcType, jdbcSourceSecondary, get, put, update)
-
-  /** @group Constructors (deprecated) */
-  @deprecated("Use Meta.Advanced.many", "0.6.0")
-  def advanced[A: TypeTag](
-    jdbcTypes: NonEmptyList[JdbcType],
-    schemaTypes: NonEmptyList[String],
-    get: (ResultSet, Int) => A,
-    put: (PreparedStatement, Int, A) => Unit,
-    update: (ResultSet, Int, A) => Unit
-  ): Meta[A] =
-    Advanced.many(jdbcTypes, schemaTypes, get, put, update)
-
-  /** @group Constructors (deprecated) */
-  @deprecated("Use Meta.Advanced.array", "0.6.0")
-  def array[A >: Null <: AnyRef: TypeTag](
-    elementType: String,
-    schemaH: String,
-    schemaT: String*
-  ): Meta[Array[A]] =
-    Advanced.array(elementType, schemaH, schemaT: _*)
-
-  /** @group Constructors (deprecated) */
-  @deprecated("Use Meta.Advanced.other", "0.6.0")
-  def other[A >: Null <: AnyRef: TypeTag: ClassTag](
-    schemaH: String,
-    schemaT: String*
-  ): Meta[A] =
-    Advanced.other(schemaH, schemaT: _*)
 
 }

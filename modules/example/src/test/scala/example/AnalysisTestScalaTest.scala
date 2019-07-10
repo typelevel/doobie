@@ -5,9 +5,8 @@
 package example
 
 import cats.effect.{ ContextShift, IO }
-import cats.effect.IO
-import doobie._
-import doobie.scalatest.imports._
+import doobie.scalatest.IOChecker
+import doobie.util.transactor.Transactor
 import org.scalatest._
 import scala.concurrent.ExecutionContext
 
