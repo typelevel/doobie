@@ -165,5 +165,5 @@ val mxa = Transactor.fromDriverManager[Task](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
 )
 
-sql"select 42".query[Int].unique.transact(xa)
+sql"select 42".query[Int].unique.transact(mxa)
 ```

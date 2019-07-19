@@ -102,7 +102,7 @@ public enum MyJavaEnum { foo, bar; }
 implicit val MyJavaEnumMeta = pgJavaEnum[MyJavaEnum]("myenum")
 ```
 
-And the final, most general construction simply requires evidence that your taget type can be translated to and from `String`.
+And the final, most general construction simply requires evidence that your target type can be translated to and from `String`.
 
 ```scala mdoc:silent
 sealed trait FooBar
