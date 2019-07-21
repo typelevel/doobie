@@ -305,7 +305,7 @@ We can run it thus, yielding the number of affected rows.
 ### EXPLAIN/EXPLAIN ANALYZE
 
 The PostgreSQL server can provide an analysis of any query, using the `EXPLAIN` keyword. **doobie** can run `EXPLAIN`
-on any `Query0` or `Query` object, as long as `doobie.postgres` and `doobie.postgres.implicits._` have been imported.
+on any `Query0` or `Query` object, as long as `doobie.postgres._` and `doobie.postgres.implicits._` have been imported.
 Using an example from earlier in the book:
 
 ```scala mdoc

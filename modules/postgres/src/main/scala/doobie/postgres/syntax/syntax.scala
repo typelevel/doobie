@@ -5,6 +5,8 @@
 package doobie.postgres.syntax
 
 import cats._
+import cats.implicits._
+import doobie.implicits._
 import doobie.postgres.sqlstate._
 import doobie._
 import doobie.util.catchsql.exceptSomeSqlState
@@ -634,10 +636,7 @@ class PostgresExplain0Ops(self: Query0[_]) {
    */
   def explain: ConnectionIO[List[String]] =
     self.inspect { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN $sql")(for {
-        _ <- prepare
-        result <- HPS.executeQuery(HRS.build[List, String])
-      } yield result )
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
   }
 
   /**
@@ -648,10 +647,7 @@ class PostgresExplain0Ops(self: Query0[_]) {
    */
   def explainAnalyze: ConnectionIO[List[String]] =
     self.inspect { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(for {
-        _ <- prepare
-        result <- HPS.executeQuery(HRS.build[List, String])
-      } yield result)
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
   }
 }
 
@@ -664,11 +660,7 @@ class PostgresExplainOps[A](self: Query[A, _]) {
    */
   def explain(a: A): ConnectionIO[List[String]] = {
     self.inspect(a){ (sql, prepare) =>
-        HC.prepareStatement(s"EXPLAIN $sql")(for {
-          _ <- prepare
-          result <- HPS.executeQuery(HRS.build[List, String])
-        } yield result
-      )
+        HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
     }
   }
 
@@ -680,10 +672,7 @@ class PostgresExplainOps[A](self: Query[A, _]) {
    */
   def explainAnalyze(a: A): ConnectionIO[List[String]] =
     self.inspect(a) { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(for {
-        _ <- prepare
-        result <- HPS.executeQuery(HRS.build[List, String])
-      } yield result)
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
   }
 }
 
