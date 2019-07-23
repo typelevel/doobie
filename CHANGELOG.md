@@ -4,6 +4,13 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### <a name="0.8.0"></a>New and Noteworthy for Version 0.8.0
+
+- cats 2.0
+- explain/explain-analyze
+
+---
+
 ### <a name="0.7.0"></a>New and Noteworthy for Version 0.7.0
 
 This is a **compatibility-breaking** release, although most source code should compile unmodified.
