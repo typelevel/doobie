@@ -95,7 +95,7 @@ object PostgresDoobieContextSpec extends Specification {
 
   "executeActionReturning" should {
     "correctly retrieve a generated key" in {
-      val stmt     = quote { query[QuillTest].insert(lift(QuillTest(0, "Joe"))).returning(_.id) }
+      val stmt     = quote { query[QuillTest].insert(lift(QuillTest(0, "Joe"))).returningGenerated(_.id) }
       val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync
       val expected = 1
       actual should_== expected
@@ -105,7 +105,7 @@ object PostgresDoobieContextSpec extends Specification {
   "executeBatchActionReturning" should {
     "correctly retrieve a list of generated keys" in {
       val values   = List(QuillTest(0, "Foo"), QuillTest(0, "Bar"), QuillTest(0, "Baz"))
-      val stmt     = quote { liftQuery(values).foreach { a => query[QuillTest].insert(a).returning(_.id) } }
+      val stmt     = quote { liftQuery(values).foreach { a => query[QuillTest].insert(a).returningGenerated(_.id) } }
       val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync
       val expected = List(1, 2, 3)
       actual should_== expected
