@@ -267,6 +267,7 @@ lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .aggregate(modules:_*)
+  .settings(mimaSettings)
   .settings(
     crossScalaVersions := Nil,
     releaseCrossBuild := true,
@@ -397,6 +398,7 @@ lazy val example = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings ++ noPublishSettings)
   .settings(crossScalaAll)
+  .settings(mimaSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
@@ -543,6 +545,7 @@ lazy val bench = project
   .settings(doobieSettings)
   .settings(crossScalaAll)
   .settings(noPublishSettings)
+  .settings(mimaSettings)
 
 lazy val docs = project
   .in(file("modules/docs"))
@@ -551,6 +554,7 @@ lazy val docs = project
   .settings(doobieSettings)
   .settings(crossScalaNo213)
   .settings(noPublishSettings)
+  .settings(mimaSettings)
   .settings(
     scalacOptions --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
 
