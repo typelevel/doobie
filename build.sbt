@@ -13,13 +13,13 @@ lazy val kindProjectorVersion = "0.10.3"
 lazy val monixVersion         = "3.0.0-RC2"
 lazy val quillVersion         = "3.3.0"
 lazy val postGisVersion       = "2.3.0"
-lazy val postgresVersion      = "42.2.5"
+lazy val postgresVersion      = "42.2.6"
 lazy val refinedVersion       = "0.9.8"
 lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.8"
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.7"
-lazy val specs2Version        = "4.5.1"
+lazy val specs2Version        = "4.6.0"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.8"
 lazy val scala213Version      = "2.13.0"
@@ -267,6 +267,7 @@ lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .aggregate(modules:_*)
+  .settings(mimaSettings)
   .settings(
     crossScalaVersions := Nil,
     releaseCrossBuild := true,
@@ -397,6 +398,7 @@ lazy val example = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings ++ noPublishSettings)
   .settings(crossScalaAll)
+  .settings(mimaSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
@@ -543,6 +545,7 @@ lazy val bench = project
   .settings(doobieSettings)
   .settings(crossScalaAll)
   .settings(noPublishSettings)
+  .settings(mimaSettings)
 
 lazy val docs = project
   .in(file("modules/docs"))
@@ -551,6 +554,7 @@ lazy val docs = project
   .settings(doobieSettings)
   .settings(crossScalaNo213)
   .settings(noPublishSettings)
+  .settings(mimaSettings)
   .settings(
     scalacOptions --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
 
