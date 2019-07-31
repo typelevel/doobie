@@ -14,16 +14,16 @@ import fs2.Stream
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
   def transact[M[_]: Monad](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
-
 }
-class KleisliStreamOps[F[_], A](fa: Stream[F, A]) {
-  def transact[M[_]: Monad, AA](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[Kleisli[ConnectionIO, AA, ?], A]): Stream[Kleisli[M, AA, ?], A] =
-    xa.transPK[AA].apply(fa)
+class KleisliStreamOps[A, B](fa: Stream[Kleisli[ConnectionIO, A, ?], B]) {
+  def transact[M[_]: Monad](xa: Transactor[M]): Stream[Kleisli[M, A, ?], B] = xa.transPK[A].apply(fa)
 }
 
 trait ToStreamOps {
   implicit def toDoobieStreamOps[F[_]: Sync, A](fa: Stream[F, A]): StreamOps[F, A] =
     new StreamOps(fa)
+  implicit def toDoobieKleisliStreamOps[A,  B](fa: Stream[Kleisli[ConnectionIO, A, ?], B]): KleisliStreamOps[A, B] =
+    new KleisliStreamOps(fa)
 }
 
 object stream extends ToStreamOps
