@@ -13,6 +13,7 @@ import cats.data.Kleisli
 import cats.effect.{Async, Blocker, Bracket, ContextShift, ExitCase, Resource, Sync}
 import cats.instances.long._
 import cats.syntax.show._
+
 import fs2.Stream
 import java.sql.{Connection, DriverManager}
 
@@ -177,9 +178,29 @@ object transactor  {
         }.scope
       }
 
+    def rawTransPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?] =
+      λ[Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?]] { s =>
+        Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
+          s.translate(runKleisli[I](c))
+        }.scope
+      }
+
+    def transPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?] =
+      λ[Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?]] { s =>
+        Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
+          Stream.resource(strategy.resource.mapK(Kleisli.liftK[ConnectionIO, I])).flatMap(_ => s)
+            .translate(runKleisli[I](c))
+        }.scope
+      }
+
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         f.foldMap(interpret).run(c)
+      }
+
+    private def runKleisli[B](c: Connection)(implicit ev: Monad[M]): Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?] =
+      λ[Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?]] { f =>
+        Kleisli(f.run(_).foldMap(interpret).run(c))
       }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))

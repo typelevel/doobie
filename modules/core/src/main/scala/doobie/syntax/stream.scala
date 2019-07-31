@@ -7,13 +7,18 @@ package doobie.syntax
 import doobie.util.compat.=:=
 import doobie.util.transactor.Transactor
 import doobie.free.connection.ConnectionIO
-
 import cats.Monad
+import cats.data.Kleisli
 import cats.effect.Sync
 import fs2.Stream
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
   def transact[M[_]: Monad](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
+
+}
+class KleisliStreamOps[F[_], A](fa: Stream[F, A]) {
+  def transact[M[_]: Monad, AA](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[Kleisli[ConnectionIO, AA, ?], A]): Stream[Kleisli[M, AA, ?], A] =
+    xa.transPK[AA].apply(fa)
 }
 
 trait ToStreamOps {
