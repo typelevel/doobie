@@ -3,8 +3,8 @@ import ReleaseTransformations._
 import microsites._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.0.0-M4"
-lazy val catsEffectVersion    = "2.0.0-M4"
+lazy val catsVersion          = "2.0.0-RC1"
+lazy val catsEffectVersion    = "2.0.0-RC1"
 lazy val circeVersion         = "0.12.0-M3"
 lazy val fs2Version           = "1.1.0-M1"
 lazy val h2Version            = "1.4.199"
