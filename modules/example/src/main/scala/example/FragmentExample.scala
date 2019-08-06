@@ -30,7 +30,7 @@ object FragmentExample extends IOApp {
       whereAndOpt(f1, f2, f3)                        ++
       fr"LIMIT $limit"
 
-    // Consruct a Query0
+    // Construct a Query0
     q.query[Info]
 
   }

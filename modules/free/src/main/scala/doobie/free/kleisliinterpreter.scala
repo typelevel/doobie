@@ -137,7 +137,7 @@ trait KleisliInterpreter[M[_]] { outer =>
   // Interpreters
   trait NClobInterpreter extends NClobOp.Visitor[Kleisli[M, NClob, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: NClob => A): Kleisli[M, NClob, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, NClob, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, NClob, A] = outer.delay(a)
@@ -184,7 +184,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait BlobInterpreter extends BlobOp.Visitor[Kleisli[M, Blob, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: Blob => A): Kleisli[M, Blob, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Blob, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Blob, A] = outer.delay(a)
@@ -229,7 +229,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait ClobInterpreter extends ClobOp.Visitor[Kleisli[M, Clob, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: Clob => A): Kleisli[M, Clob, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Clob, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Clob, A] = outer.delay(a)
@@ -276,7 +276,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait DatabaseMetaDataInterpreter extends DatabaseMetaDataOp.Visitor[Kleisli[M, DatabaseMetaData, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, DatabaseMetaData, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, DatabaseMetaData, A] = outer.delay(a)
@@ -488,7 +488,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait DriverInterpreter extends DriverOp.Visitor[Kleisli[M, Driver, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: Driver => A): Kleisli[M, Driver, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Driver, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Driver, A] = outer.delay(a)
@@ -529,7 +529,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait RefInterpreter extends RefOp.Visitor[Kleisli[M, Ref, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: Ref => A): Kleisli[M, Ref, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Ref, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Ref, A] = outer.delay(a)
@@ -567,7 +567,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait SQLDataInterpreter extends SQLDataOp.Visitor[Kleisli[M, SQLData, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: SQLData => A): Kleisli[M, SQLData, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, SQLData, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, SQLData, A] = outer.delay(a)
@@ -604,7 +604,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait SQLInputInterpreter extends SQLInputOp.Visitor[Kleisli[M, SQLInput, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: SQLInput => A): Kleisli[M, SQLInput, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, SQLInput, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, SQLInput, A] = outer.delay(a)
@@ -666,7 +666,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait SQLOutputInterpreter extends SQLOutputOp.Visitor[Kleisli[M, SQLOutput, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: SQLOutput => A): Kleisli[M, SQLOutput, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, SQLOutput, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, SQLOutput, A] = outer.delay(a)
@@ -728,7 +728,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait ConnectionInterpreter extends ConnectionOp.Visitor[Kleisli[M, Connection, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: Connection => A): Kleisli[M, Connection, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Connection, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Connection, A] = outer.delay(a)
@@ -816,7 +816,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait StatementInterpreter extends StatementOp.Visitor[Kleisli[M, Statement, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: Statement => A): Kleisli[M, Statement, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, Statement, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, Statement, A] = outer.delay(a)
@@ -902,7 +902,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait PreparedStatementInterpreter extends PreparedStatementOp.Visitor[Kleisli[M, PreparedStatement, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PreparedStatement, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PreparedStatement, A] = outer.delay(a)
@@ -1046,7 +1046,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait CallableStatementInterpreter extends CallableStatementOp.Visitor[Kleisli[M, CallableStatement, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: CallableStatement => A): Kleisli[M, CallableStatement, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, CallableStatement, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, CallableStatement, A] = outer.delay(a)
@@ -1311,7 +1311,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait ResultSetInterpreter extends ResultSetOp.Visitor[Kleisli[M, ResultSet, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: ResultSet => A): Kleisli[M, ResultSet, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, ResultSet, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, ResultSet, A] = outer.delay(a)

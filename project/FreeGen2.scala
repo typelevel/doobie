@@ -377,7 +377,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      s"""
        |  trait ${oname}Interpreter extends ${oname}Op.Visitor[Kleisli[M, $sname, ?]] {
        |
-       |    // common operations delegate to outer interpeter
+       |    // common operations delegate to outer interpreter
        |    override def raw[A](f: $sname => A): Kleisli[M, $sname, A] = outer.raw(f)
        |    override def embed[A](e: Embedded[A]): Kleisli[M, $sname, A] = outer.embed(e)
        |    override def delay[A](a: () => A): Kleisli[M, $sname, A] = outer.delay(a)
