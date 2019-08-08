@@ -5,9 +5,9 @@ dist: trusty
 stages:
   - name: test
 
-scala_version_211: &scala_version_211 2.11.12
-scala_version_212: &scala_version_212 2.12.9
-scala_version_213: &scala_version_213 2.13.0
+scala_version_211: &scala_version_211 "2.11.12"
+scala_version_212: &scala_version_212 "2.12.9"
+scala_version_213: &scala_version_213 "2.13.0"
 
 java_8: &java_8 openjdk8
 java_11: &java_11 openjdk11
