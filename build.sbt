@@ -3,8 +3,8 @@ import ReleaseTransformations._
 import microsites._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.0.0-M4"
-lazy val catsEffectVersion    = "2.0.0-M4"
+lazy val catsVersion          = "2.0.0-RC1"
+lazy val catsEffectVersion    = "2.0.0-RC1"
 lazy val circeVersion         = "0.12.0-M3"
 lazy val fs2Version           = "1.1.0-M1"
 lazy val h2Version            = "1.4.199"
@@ -21,9 +21,9 @@ lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.7"
 lazy val specs2Version        = "4.7.0"
 lazy val scala211Version      = "2.11.12"
-lazy val scala212Version      = "2.12.8"
+lazy val scala212Version      = "2.12.9"
 lazy val scala213Version      = "2.13.0"
-lazy val slf4jVersion         = "1.7.26"
+lazy val slf4jVersion         = "1.7.27"
 
 // Check bincompat versus this version.
 lazy val binaryCompatibleVersion = "0.7.0"
