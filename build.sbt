@@ -268,8 +268,8 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   .aggregate(modules:_*)
   .settings(mimaSettings)
+  .settings(crossScalaNo213)
   .settings(
-    crossScalaVersions := Nil,
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
@@ -294,9 +294,7 @@ lazy val thirteen = project
   .in(file("modules/thirteen"))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .settings(
-    crossScalaVersions := Nil
-  )
+  .settings(crossScalaAll)
   .aggregate(
     modules.filterNot {
       case LocalProject("quill") => true
