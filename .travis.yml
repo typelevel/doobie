@@ -1,6 +1,6 @@
 sudo: false
 language: scala
-dist: trusty
+dist: xenial
 
 stages:
   - name: test
