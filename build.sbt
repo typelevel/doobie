@@ -23,7 +23,7 @@ lazy val specs2Version        = "4.7.0"
 lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.9"
 lazy val scala213Version      = "2.13.0"
-lazy val slf4jVersion         = "1.7.27"
+lazy val slf4jVersion         = "1.7.28"
 
 // Check bincompat versus this version.
 lazy val binaryCompatibleVersion = "0.7.0"
