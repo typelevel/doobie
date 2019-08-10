@@ -1,13 +1,13 @@
 sudo: false
 language: scala
-dist: trusty
+dist: xenial
 
 stages:
   - name: test
 
-scala_version_211: &scala_version_211 2.11.12
-scala_version_212: &scala_version_212 2.12.8
-scala_version_213: &scala_version_213 2.13.0
+scala_version_211: &scala_version_211 "2.11.12"
+scala_version_212: &scala_version_212 "2.12.9"
+scala_version_213: &scala_version_213 "2.13.0"
 
 java_8: &java_8 openjdk8
 java_11: &java_11 openjdk11
@@ -22,7 +22,7 @@ jobs:
         postgresql: "9.4"
         apt:
           packages:
-            - postgresql-9.4-postgis-2.3 # This might not be necessary in the future. If the Travis people update the trusty env to include this package whenever it sees pg getting installed then this can go away.
+            - postgresql-9.4-postgis-2.4
       install:
         - rvm use 2.4 --install --fuzzy
         - gem update --system
