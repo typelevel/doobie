@@ -621,14 +621,20 @@ trait ToPostgresMonadErrorOps {
 }
 
 trait ToPostgresExplainOps {
-  implicit def toPostgresQuery0Ops(q: Query0[_]): PostgresExplain0Ops =
-    new PostgresExplain0Ops(q)
+  implicit def toPostgresExplainQuery0Ops(q: Query0[_]): PostgresExplainQuery0Ops =
+    new PostgresExplainQuery0Ops(q)
 
-  implicit def toPostgresQueryOps[A](q: Query[A, _]): PostgresExplainOps[A] =
-    new PostgresExplainOps(q)
+  implicit def toPostgresExplainQueryOps[A](q: Query[A, _]): PostgresExplainQueryOps[A] =
+    new PostgresExplainQueryOps(q)
+
+  implicit def toPostgresExplainUpdate0Ops(u: Update0): PostgresExplainUpdate0Ops =
+    new PostgresExplainUpdate0Ops(u)
+
+  implicit def toPostgresExplainUpdateOps[A](u: Update[A]): PostgresExplainUpdateOps[A] =
+    new PostgresExplainUpdateOps(u)
 }
 
-class PostgresExplain0Ops(self: Query0[_]) {
+class PostgresExplainQuery0Ops(self: Query0[_]) {
   /**
    * Construct a program in
    * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
@@ -651,7 +657,7 @@ class PostgresExplain0Ops(self: Query0[_]) {
   }
 }
 
-class PostgresExplainOps[A](self: Query[A, _]) {
+class PostgresExplainQueryOps[A](self: Query[A, _]) {
 
   /**
    * Apply the argument `a` to construct a program in
@@ -674,6 +680,54 @@ class PostgresExplainOps[A](self: Query[A, _]) {
     self.inspect(a) { (sql, prepare) =>
       HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
   }
+}
+
+class PostgresExplainUpdate0Ops(self: Update0) {
+  /**
+    * Construct a program in
+    * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
+    * for the query (i.e., `EXPLAIN` output). The query is not actually executed.
+    */
+  def explain: ConnectionIO[List[String]] =
+    self.inspect { (sql, prepare) =>
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+    }
+
+  /**
+    * Construct a program in
+    * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
+    * for the query, with a comparison to the actual execution (i.e., `EXPLAIN ANALYZE` output). The
+    * query will be executed, but no results are returned.
+    */
+  def explainAnalyze: ConnectionIO[List[String]] =
+    self.inspect { (sql, prepare) =>
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+    }
+}
+
+class PostgresExplainUpdateOps[A](self: Update[A]) {
+
+  /**
+    * Apply the argument `a` to construct a program in
+    * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
+    * for the query (i.e., `EXPLAIN` output). The query is not actually executed.
+    */
+  def explain(a: A): ConnectionIO[List[String]] = {
+    self.inspect(a){ (sql, prepare) =>
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+    }
+  }
+
+  /**
+    * Apply the argument `a` to construct a program in
+    * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query plan
+    * for the query, with a comparison to the actual execution (i.e., `EXPLAIN ANALYZE` output). The
+    * query will be executed, but no results are returned.
+    */
+  def explainAnalyze(a: A): ConnectionIO[List[String]] =
+    self.inspect(a) { (sql, prepare) =>
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+    }
 }
 
 object monaderror extends ToPostgresMonadErrorOps

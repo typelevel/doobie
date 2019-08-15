@@ -80,6 +80,16 @@ object update {
       HC.prepareUpdateAnalysis[A](sql)
 
     /**
+      * Program to construct an inspection of the query. Given arguments `a`, calls `f` with the SQL
+      * representation of the query and a statement with all arguments set. Returns the result
+      * of the `ConnectionIO` program constructed.
+      *
+      * @group Diagnostics
+      */
+    def inspect[R](a: A)(f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
+      f(sql, HPS.set(a))
+
+    /**
      * Construct a program to execute the update and yield a count of affected rows, given the
      * writable argument `a`.
      * @group Execution
@@ -161,6 +171,7 @@ object update {
           u.withGeneratedKeysWithChunkSize[K](columns: _*)(a, chunkSize)
         def withUniqueGeneratedKeys[K: Read](columns: String*) =
           u.withUniqueGeneratedKeys(columns: _*)(a)
+        def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]) = u.inspect(a)(f)
       }
 
   }
@@ -215,6 +226,15 @@ object update {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis]
+
+    /**
+      * Program to construct an inspection of the query. Calls `f` with the SQL
+      * representation of the query and a statement with all statement arguments set. Returns the result
+      * of the `ConnectionIO` program constructed.
+      *
+      * @group Diagnostics
+      */
+    def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R]
 
     /**
      * Program to execute the update and yield a count of affected rows.
