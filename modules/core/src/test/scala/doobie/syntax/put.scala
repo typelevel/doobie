@@ -34,12 +34,12 @@ object putspec extends Specification {
     }
 
     "work in a map" in {
-      List(1, 2, 3).map(_.fr).combineAll
+      List(1, 2, 3).foldMap(_.fr)
       true
     }
 
     "work in a map with fr0" in {
-      List(1, 2, 3).map(_.fr0).combineAll
+      List(1, 2, 3).foldMap(_.fr0)
       true
     }
 
