@@ -14,33 +14,27 @@ object putspec extends Specification {
   "put syntax" should {
 
     "convert to a fragment" in {
-      fr"SELECT" ++ 1.fr
-      true
+      (fr"SELECT" ++ 1.fr).query[Unit].sql must_== "SELECT ? "
     }
 
     "convert to a fragment0" in {
-      fr"SELECT" ++ 1.fr0
-      true
+      (fr"SELECT" ++ 1.fr0).query[Unit].sql must_== "SELECT ?"
     }
     
     "convert an option to a fragment" in {
-      fr"SELECT" ++ Some(1).fr
-      true
+      (fr"SELECT" ++ Some(1).fr).query[Unit].sql must_== "SELECT ? "
     }
 
     "convert an option to a fragment0" in {
-      fr"SELECT" ++ Some(1).fr0
-      true
+      (fr"SELECT" ++ Some(1).fr0).query[Unit].sql must_== "SELECT ?"
     }
 
     "work in a map" in {
-      List(1, 2, 3).foldMap(_.fr)
-      true
+      List(1, 2, 3).foldMap(_.fr).query[Unit].sql must_== "? ? ? "
     }
 
     "work in a map with fr0" in {
-      List(1, 2, 3).foldMap(_.fr0)
-      true
+      List(1, 2, 3).foldMap(_.fr0).query[Unit].sql must_== "???"
     }
 
   }
