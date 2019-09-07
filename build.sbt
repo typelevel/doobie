@@ -6,7 +6,7 @@ import microsites._
 lazy val catsVersion          = "2.0.0-RC1"
 lazy val catsEffectVersion    = "2.0.0-RC1"
 lazy val circeVersion         = "0.12.0-M3"
-lazy val fs2Version           = "1.1.0-M1"
+lazy val fs2Version           = "1.1.0-M2"
 lazy val h2Version            = "1.4.199"
 lazy val hikariVersion        = "3.3.1"
 lazy val kindProjectorVersion = "0.10.3"
