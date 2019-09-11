@@ -27,7 +27,7 @@ some debugging hints:
   in scope.
 - For case classes, HLists, and shapeless records ensure that each element
   has a Read instance in scope.
-- Lather, rinse, repeat, recusively until you find the problematic bit.
+- Lather, rinse, repeat, recursively until you find the problematic bit.
 
 You can check that an instance exists for Read in the REPL or in your code:
 
