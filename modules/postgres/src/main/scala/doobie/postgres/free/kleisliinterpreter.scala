@@ -81,7 +81,7 @@ trait KleisliInterpreter[M[_]] { outer =>
   // Interpreters
   trait CopyInInterpreter extends CopyInOp.Visitor[Kleisli[M, PGCopyIn, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: PGCopyIn => A): Kleisli[M, PGCopyIn, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGCopyIn, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGCopyIn, A] = outer.delay(a)
@@ -118,7 +118,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait CopyManagerInterpreter extends CopyManagerOp.Visitor[Kleisli[M, PGCopyManager, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: PGCopyManager => A): Kleisli[M, PGCopyManager, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGCopyManager, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGCopyManager, A] = outer.delay(a)
@@ -155,7 +155,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait CopyOutInterpreter extends CopyOutOp.Visitor[Kleisli[M, PGCopyOut, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: PGCopyOut => A): Kleisli[M, PGCopyOut, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGCopyOut, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGCopyOut, A] = outer.delay(a)
@@ -191,7 +191,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait FastpathInterpreter extends FastpathOp.Visitor[Kleisli[M, PGFastpath, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGFastpath, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGFastpath, A] = outer.delay(a)
@@ -230,7 +230,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait LargeObjectInterpreter extends LargeObjectOp.Visitor[Kleisli[M, LargeObject, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: LargeObject => A): Kleisli[M, LargeObject, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, LargeObject, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, LargeObject, A] = outer.delay(a)
@@ -278,7 +278,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait LargeObjectManagerInterpreter extends LargeObjectManagerOp.Visitor[Kleisli[M, LargeObjectManager, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, LargeObjectManager, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, LargeObjectManager, A] = outer.delay(a)
@@ -322,7 +322,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   trait PGConnectionInterpreter extends PGConnectionOp.Visitor[Kleisli[M, PGConnection, ?]] {
 
-    // common operations delegate to outer interpeter
+    // common operations delegate to outer interpreter
     override def raw[A](f: PGConnection => A): Kleisli[M, PGConnection, A] = outer.raw(f)
     override def embed[A](e: Embedded[A]): Kleisli[M, PGConnection, A] = outer.embed(e)
     override def delay[A](a: () => A): Kleisli[M, PGConnection, A] = outer.delay(a)

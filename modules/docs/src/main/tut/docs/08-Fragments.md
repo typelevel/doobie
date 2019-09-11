@@ -122,7 +122,7 @@ def select(name: Option[String], pop: Option[Int], codes: List[String], limit: L
     whereAndOpt(f1, f2, f3)                         ++
     fr"LIMIT $limit"
 
-  // Consruct a Query0
+  // Construct a Query0
   q.query[Info]
 
 }
