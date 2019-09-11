@@ -3,24 +3,23 @@ import ReleaseTransformations._
 import microsites._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.0.0-RC1"
-lazy val catsEffectVersion    = "2.0.0-RC1"
-lazy val circeVersion         = "0.12.0-M3"
-lazy val fs2Version           = "1.1.0-M1"
+lazy val catsVersion          = "2.0.0"
+lazy val catsEffectVersion    = "2.0.0"
+lazy val circeVersion         = "0.12.1"
+lazy val fs2Version           = "2.0.0"
 lazy val h2Version            = "1.4.199"
 lazy val hikariVersion        = "3.3.1"
 lazy val kindProjectorVersion = "0.10.3"
-lazy val monixVersion         = "3.0.0-RC2"
-lazy val quillVersion         = "3.4.1"
+lazy val monixVersion         = "3.0.0"
+lazy val quillVersion         = "3.4.4"
 lazy val postGisVersion       = "2.3.0"
-lazy val postgresVersion      = "42.2.6"
+lazy val postgresVersion      = "42.2.6"  // 42.2.7 has a bug in `inet` type, skip that release
 lazy val refinedVersion       = "0.9.9"
 lazy val scalaCheckVersion    = "1.14.0"
 lazy val scalatestVersion     = "3.0.8"
 lazy val shapelessVersion     = "2.3.3"
 lazy val sourcecodeVersion    = "0.1.7"
 lazy val specs2Version        = "4.7.0"
-lazy val scala211Version      = "2.11.12"
 lazy val scala212Version      = "2.12.9"
 lazy val scala213Version      = "2.13.0"
 lazy val slf4jVersion         = "1.7.28"
@@ -171,49 +170,6 @@ lazy val commonSettings =
     releaseProcess := Nil
   )
 
-lazy val mimaSettings = {
-  import sbtrelease.Version
-
-  def semverBinCompatVersions(major: Int, minor: Int, patch: Int): Set[(Int, Int, Int)] = {
-    val majorVersions: List[Int] = List(major)
-    val minorVersions : List[Int] =
-      if (major >= 1) Range(0, minor).inclusive.toList
-      else List(minor)
-    def patchVersions(currentMinVersion: Int): List[Int] =
-      if (minor == 0 && patch == 0) List.empty[Int]
-      else if (currentMinVersion != minor) List(0)
-      else Range(0, patch - 1).inclusive.toList
-
-    val versions = for {
-      maj <- majorVersions
-      min <- minorVersions
-      pat <- patchVersions(min)
-    } yield (maj, min, pat)
-    versions.toSet
-  }
-
-  def mimaVersions(version: String): Set[String] = {
-    Version(version) match {
-      case Some(Version(major, Seq(minor, patch), _)) =>
-        semverBinCompatVersions(major.toInt, minor.toInt, patch.toInt)
-          .map{case (maj, min, pat) => s"${maj}.${min}.${pat}"}
-      case _ =>
-        Set.empty[String]
-    }
-  }
-  // Safety Net For Exclusions
-  lazy val excludedVersions: Set[String] = Set()
-
-  // Safety Net for Inclusions
-  lazy val extraVersions: Set[String] = Set()
-
-  Seq(
-    mimaPreviousArtifacts := (mimaVersions(version.value) ++ extraVersions)
-      .filterNot(excludedVersions.contains(_))
-      .map(v => organization.value %% name.value % v)
-  )
-}
-
 lazy val publishSettings = Seq(
   useGpg := false,
   publishMavenStyle := true,
@@ -231,7 +187,7 @@ lazy val publishSettings = Seq(
   ),
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala")
-) ++ mimaSettings
+)
 
 lazy val noPublishSettings = Seq(
   skip in publish := true
@@ -255,10 +211,10 @@ lazy val modules: List[ProjectReference] = List(
 
 
 lazy val crossScalaAll = Seq(
-  crossScalaVersions := Seq(scala211Version, scala212Version, scala213Version)
+  crossScalaVersions := Seq(scala212Version, scala213Version)
 )
 lazy val crossScalaNo213 = Seq(
-  crossScalaVersions := Seq(scala211Version, scala212Version)
+  crossScalaVersions := Seq(scala212Version)
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -267,7 +223,6 @@ lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .aggregate(modules:_*)
-  .settings(mimaSettings)
   .settings(crossScalaNo213)
   .settings(
     releaseCrossBuild := true,
@@ -396,7 +351,6 @@ lazy val example = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings ++ noPublishSettings)
   .settings(crossScalaAll)
-  .settings(mimaSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
@@ -543,7 +497,6 @@ lazy val bench = project
   .settings(doobieSettings)
   .settings(crossScalaAll)
   .settings(noPublishSettings)
-  .settings(mimaSettings)
 
 lazy val docs = project
   .in(file("modules/docs"))
@@ -552,7 +505,6 @@ lazy val docs = project
   .settings(doobieSettings)
   .settings(crossScalaNo213)
   .settings(noPublishSettings)
-  .settings(mimaSettings)
   .settings(
     scalacOptions --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
 

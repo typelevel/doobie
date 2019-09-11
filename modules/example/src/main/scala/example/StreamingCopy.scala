@@ -22,8 +22,7 @@ import fs2.Stream
 object StreamingCopy extends IOApp {
 
   /**
-   * Stream from `source` through `sink`, where source and sink run on distinct transactors. To do
-   * this we have to wrap one transactor around the other. Thanks to @wedens for
+   * Cross-transactor streaming when the `source` and `sink` have the same schema.
    */
   def fuseMap[F[_]: Effect, A, B](
     source: Stream[ConnectionIO, A],
@@ -31,7 +30,23 @@ object StreamingCopy extends IOApp {
   )(
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
-  ): Stream[F, B] = {
+  ): Stream[F, B] =
+    fuseMapGeneric(source, identity[A], sink)(sourceXA, sinkXA)
+
+  /**
+   * Stream from `source` through `sink`, where source and sink run on distinct transactors. To do
+   * this we have to wrap one transactor around the other.
+   * The source output and sink input types can differ. This enables data transformations involving
+   * potentially different database schemas.
+   */
+  def fuseMapGeneric[F[_]: Effect, A, B, C](
+    source:       Stream[ConnectionIO, A],
+    sourceToSink: A => B,
+    sink:         B => ConnectionIO[C]
+  )(
+    sourceXA: Transactor[F],
+    sinkXA:   Transactor[F]
+  ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
     def interpS[T](f: ConnectionIO[T]): Connection => F[T] =
@@ -42,14 +57,14 @@ object StreamingCopy extends IOApp {
       sinkXA match { case xa => xa.connect(xa.kernel) }
 
     // Given a Connection we can construct the stream we want.
-    def mkStream(c: Connection): Stream[F, B] = {
+    def mkStream(c: Connection): Stream[F, C] = {
 
       // Now we can interpret a ConnectionIO into a Stream of F via the sink interpreter.
       def evalS(f: ConnectionIO[_]): Stream[F, Nothing] =
         Stream.eval_(interpS(f)(c))
 
       // And can thus lift all the sink operations into Stream of F
-      val sinkʹ  = (a: A) => evalS(sink(a))
+      val sinkʹ  = (a: A) => evalS(sink(sourceToSink(a)))
       val before = evalS(sinkXA.strategy.before)
       val after  = evalS(sinkXA.strategy.after )
       def oops(t: Throwable) = evalS(sinkXA.strategy.oops <* FC.raiseError(t))

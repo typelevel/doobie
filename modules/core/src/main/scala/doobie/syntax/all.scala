@@ -11,5 +11,6 @@ trait AllSyntax
      with ToStreamOps
      with ToSqlInterpolator
      with ToAlignSyntax
+     with ToPutOps
 
 object all extends AllSyntax
