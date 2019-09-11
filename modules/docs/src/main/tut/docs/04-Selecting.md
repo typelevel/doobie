@@ -213,11 +213,12 @@ In the examples above we construct a `Stream[ConnectionIO, A]` and discharge it 
 However in some cases a stream is what we want as our "top level" type. For example, [http4s](https://github.com/http4s/http4s) can use a `Stream[IO, A]` directly as a response type, which could allow us to stream a resultset directly to the network socket. We can achieve this in **doobie** by calling `transact` directly on the `Stream[ConnectionIO, A]`.
 
 ```scala mdoc
-val p: Stream[IO, Country2] =
+val p: Stream[IO, Country2] = {
   sql"select name, population, gnp from country"
     .query[Country2] // Query0[Country2]
     .stream          // Stream[ConnectionIO, Country2]
     .transact(xa)    // Stream[IO, Country2]
+}
 
 p.take(5).compile.toVector.unsafeRunSync.foreach(println)
 ```
