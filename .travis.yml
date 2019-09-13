@@ -4,6 +4,8 @@ dist: xenial
 
 stages:
   - name: test
+  - name: release
+    if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
 scala_version_212: &scala_version_212 "2.12.9"
 scala_version_213: &scala_version_213 "2.13.0"
@@ -50,6 +52,10 @@ jobs:
       script:
         - sbt ++$TRAVIS_SCALA_VERSION thirteen/test
         #- sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
+    - stage: release
+      before_install:
+        - git fetch --tags
+      script: sbt ci-release
 
 notifications:
   webhooks:
@@ -66,7 +72,7 @@ cache:
   - $HOME/.sbt/cache
   - $HOME/.sbt/launchers
   - $HOME/.ivy2
-  - $HOME/.coursier
+  - $HOME/.cache/coursier
   - $HOME/.rvm/
   - vendor/bundle
 
@@ -76,4 +82,4 @@ before_cache:
   - du -h -d 4 $HOME/.coursier/
   - find $HOME/.sbt -name "*.lock" -type f -delete
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
-  - find $HOME/.coursier/cache -name "*.lock" -type f -delete
+  - find $HOME/.cache/coursier -name "*.lock" -type f -delete
