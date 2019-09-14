@@ -1,6 +1,6 @@
 addSbtPlugin("com.47deg"          % "sbt-microsites"          % "0.9.1")
 addSbtPlugin("com.geirsson"       % "sbt-ci-release"          % "1.3.1")
-addSbtPlugin("org.scoverage"      % "sbt-scoverage"           % "1.5.1")
+addSbtPlugin("org.scoverage"      % "sbt-scoverage"           % "1.6.0")
 addSbtPlugin("org.wartremover"    % "sbt-wartremover"         % "2.4.2")
 addSbtPlugin("com.timushev.sbt"   % "sbt-updates"             % "0.4.2")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh"                 % "0.3.7")
