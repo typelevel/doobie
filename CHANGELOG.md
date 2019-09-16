@@ -4,10 +4,20 @@ This file summarizes **notable** changes for each release, but does not describe
 
 ----
 
+### Updates Available in the latest SNAPSHOT
+
+(none yet)
+
+
 ### <a name="0.8.0"></a>New and Noteworthy for Version 0.8.0
 
-- cats 2.0
-- explain/explain-analyze
+This is mostly an upgrade for Cats 2.0 and associated upstream releases. Note that **Scala 2.11** is no longer supported, please upgrade!
+
+- Updated to Cats 2.0, along with many other dependency upgrades.
+- Added `explain` and `explainAnalyze` to `Query[0]/Update[0]` with Postgres. See the book chapter on Postgres extensions for more information.
+- Added syntax so you can say `foo.fr` instead of `fr"$foo"`.
+
+Contributors for this release include Ben Plommer, Chris Davenport, dantb, deusaquilus, GRYE, Ikrom, Justin Bailey, Nick Hallstrom, Omer Zach, Sam Guymer, Scala Steward, Valy Dia, and Xie Yuheng. Thanks!
 
 ---
 
