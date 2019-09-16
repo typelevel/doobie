@@ -14,7 +14,7 @@ import java.net.InetAddress
 import org.postgresql.util._
 import org.postgresql.geometric._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag

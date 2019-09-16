@@ -7,7 +7,7 @@ stages:
   - name: release
     if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
-scala_version_212: &scala_version_212 "2.12.9"
+scala_version_212: &scala_version_212 "2.12.10"
 scala_version_213: &scala_version_213 "2.13.0"
 
 java_8: &java_8 openjdk8

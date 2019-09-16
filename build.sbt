@@ -5,6 +5,7 @@ import microsites._
 lazy val catsVersion          = "2.0.0"
 lazy val catsEffectVersion    = "2.0.0"
 lazy val circeVersion         = "0.12.1"
+lazy val collCompatVersion    = "2.1.2"
 lazy val fs2Version           = "2.0.0"
 lazy val h2Version            = "1.4.199"
 lazy val hikariVersion        = "3.3.1"
@@ -20,7 +21,7 @@ lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.4.3"
 lazy val sourcecodeVersion    = "0.1.7"
 lazy val specs2Version        = "4.7.1"
-lazy val scala212Version      = "2.12.9"
+lazy val scala212Version      = "2.12.10"
 lazy val scala213Version      = "2.13.0"
 lazy val slf4jVersion         = "1.7.28"
 
@@ -34,7 +35,8 @@ lazy val compilerFlags = Seq(
   ),
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
+    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
+    "org.scala-lang.modules" %% "scala-collection-compat" % collCompatVersion
   )
 )
 
