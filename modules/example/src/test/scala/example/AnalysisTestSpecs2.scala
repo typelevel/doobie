@@ -10,7 +10,7 @@ import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object AnalysisTestSpecs2 extends Specification with IOChecker {
 
   implicit def contextShift: ContextShift[IO] =

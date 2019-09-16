@@ -5,13 +5,12 @@
 package doobie.util
 
 import cats.effect.{ ContextShift, IO }
-import doobie._, doobie.implicits._
-import doobie.enum.JdbcType.{ Array => _, _ }
+import doobie._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import shapeless.test._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
+
 object PutSpec extends Specification {
   final case class X(x: Int)
   final case class Y(x: String) extends AnyVal

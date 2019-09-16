@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import shapeless._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
+
 object logspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

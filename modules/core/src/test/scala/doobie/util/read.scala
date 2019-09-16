@@ -8,7 +8,7 @@ package util
 import shapeless._, shapeless.record._
 import org.specs2.mutable.Specification
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object readspec extends Specification {
 
   final case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
@@ -45,11 +45,13 @@ object readspec extends Specification {
 
     "exist for shapeless record types" in {
 
-      type DL = (Double, Long)
+      type DL = (Double, Long) // used below
       type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
 
       Read[A]
       Read[(A, A)]
+
+      (null : DL, ())._2 // suppress unused warning for `DL` above
 
       true
     }

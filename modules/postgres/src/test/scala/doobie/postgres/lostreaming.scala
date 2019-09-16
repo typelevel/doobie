@@ -9,14 +9,12 @@ import cats.effect._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
-import cats.implicits._
 import doobie._, doobie.implicits._
-import doobie.postgres._, doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 import org.specs2.ScalaCheck
 import scala.concurrent.ExecutionContext.global
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object lostreamingspec extends Specification with ScalaCheck {
 
   implicit val ioContextShift: ContextShift[IO] =

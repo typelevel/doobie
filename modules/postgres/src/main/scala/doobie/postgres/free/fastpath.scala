@@ -5,18 +5,20 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.lang.String
 import java.sql.ResultSet
 import org.postgresql.fastpath.FastpathArg
 import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object fastpath { module =>
 
-  // Algebra of operations for PGFastpath. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for PGFastpath. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait FastpathOp[A] {
     def visit[F[_]](v: FastpathOp.Visitor[F]): F[A]
   }
@@ -47,6 +49,8 @@ object fastpath { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Unit]): F[A]
       def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: FastpathIO[A]): F[A]
 
       // PGFastpath
       def addFunction(a: String, b: Int): F[Unit]
@@ -87,6 +91,12 @@ object fastpath { module =>
     }
     final case class BracketCase[A, B](acquire: FastpathIO[A], use: A => FastpathIO[B], release: (A, ExitCase[Throwable]) => FastpathIO[Unit]) extends FastpathOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends FastpathOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: FastpathIO[A]) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // PGFastpath-specific operations.
@@ -138,6 +148,8 @@ object fastpath { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): FastpathIO[A] = FF.liftF[FastpathOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Unit]): FastpathIO[A] = FF.liftF[FastpathOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: FastpathIO[A])(use: A => FastpathIO[B])(release: (A, ExitCase[Throwable]) => FastpathIO[Unit]): FastpathIO[B] = FF.liftF[FastpathOp, B](BracketCase(acquire, use, release))
+  val shift: FastpathIO[Unit] = FF.liftF[FastpathOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: FastpathIO[A]) = FF.liftF[FastpathOp, A](EvalOn(ec, fa))
 
   // Smart constructors for Fastpath-specific operations.
   def addFunction(a: String, b: Int): FastpathIO[Unit] = FF.liftF(AddFunction(a, b))
@@ -167,5 +179,11 @@ object fastpath { module =>
       def suspend[A](thunk: => FastpathIO[A]): FastpathIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // FastpathIO is a ContextShift
+  implicit val ContextShiftFastpathIO: ContextShift[FastpathIO] =
+    new ContextShift[FastpathIO] {
+      def shift: FastpathIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: FastpathIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

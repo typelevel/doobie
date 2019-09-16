@@ -11,7 +11,7 @@ import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
   implicit def contextShift: ContextShift[M]

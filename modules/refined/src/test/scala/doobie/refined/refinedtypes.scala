@@ -16,7 +16,7 @@ import eu.timepit.refined._
 import doobie.util.invariant._
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object refinedtypes extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

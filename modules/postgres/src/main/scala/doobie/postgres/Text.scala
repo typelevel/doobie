@@ -8,6 +8,7 @@ import cats.{ ContravariantSemigroupal, Foldable }
 import cats.syntax.foldable._
 
 import shapeless.{ HList, HNil, ::, <:!<, Generic, Lazy }
+import com.github.ghik.silencer.silent
 
 /**
  * Typeclass for types that can be written as Postgres literal text, using the default DELIMETER
@@ -15,7 +16,7 @@ import shapeless.{ HList, HNil, ::, <:!<, Generic, Lazy }
  * the documentation at the link below.
  * @see [[https://www.postgresql.org/docs/9.6/static/sql-copy.html Postgres `COPY` command]]
  */
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait Text[A] { outer =>
 
   /**
@@ -71,7 +72,7 @@ object Text extends TextInstances {
 
 }
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait TextInstances extends TextInstances0 { this: Text.type =>
 
   /** `Text` is both contravariant and semigroupal. */
@@ -114,26 +115,26 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
           case '\\' => sb.append("\\\\\\\\") // srsly
           case c    => stdChar(c, sb)
         }
-        sb.append('"')
+        sb.append('"') : @silent
       }
     }
 
   //Char
-  implicit val charInstance:    Text[Char]    = instance((n, sb) => sb.append(n.toString))
+  implicit val charInstance:    Text[Char]    = instance((n, sb) => sb.append(n.toString)) : @silent
 
   // Primitive Numerics
-  implicit val intInstance:    Text[Int]    = instance((n, sb) => sb.append(n))
-  implicit val shortInstance:  Text[Short]  = instance((n, sb) => sb.append(n))
-  implicit val longInstance:   Text[Long]   = instance((n, sb) => sb.append(n))
-  implicit val floatInstance:  Text[Float]  = instance((n, sb) => sb.append(n))
-  implicit val doubleInstance: Text[Double] = instance((n, sb) => sb.append(n))
+  implicit val intInstance:    Text[Int]    = instance((n, sb) => sb.append(n)) : @silent
+  implicit val shortInstance:  Text[Short]  = instance((n, sb) => sb.append(n)) : @silent
+  implicit val longInstance:   Text[Long]   = instance((n, sb) => sb.append(n)) : @silent
+  implicit val floatInstance:  Text[Float]  = instance((n, sb) => sb.append(n)) : @silent
+  implicit val doubleInstance: Text[Double] = instance((n, sb) => sb.append(n)) : @silent
 
   // Big Numerics
-  implicit val bigDecimalInstance: Text[BigDecimal] = instance { (n, sb) => sb.append(n.toString) }
+  implicit val bigDecimalInstance: Text[BigDecimal] = instance { (n, sb) => sb.append(n.toString) : @silent }
 
   // Boolean
   implicit val booleanInstance: Text[Boolean] =
-    instance((b, sb) => sb.append(b))
+    instance((b, sb) => sb.append(b)) : @silent
 
   // Date, Time, etc.
 
@@ -145,19 +146,19 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
       if (bs.length > 0) {
         val hex = BigInt(1, bs).toString(16)
         val pad = bs.length * 2 - hex.length
-        (0 until pad).foreach(a => sb.append("0"))
-        sb.append(hex)
+        (0 until pad).foreach(_ => sb.append("0"))
+        sb.append(hex) : @silent
       }
     }
 
   // Any non-option Text can be lifted to Option
   implicit def option[A](
     implicit csv: Text[A],
-             nope: A <:!< Option[X] forSome { type X }
+             @silent nope: A <:!< Option[X] forSome { type X }
   ): Text[Option[A]] =
     instance {
       case (Some(a), sb) => csv.unsafeEncode(a, sb)
-      case (None, sb)    => sb.append(Text.NULL)
+      case (None, sb)    => sb.append(Text.NULL) : @silent
     }
 
   // HNil isn't a valid Text but a single-element HList is
@@ -199,7 +200,7 @@ trait TextInstances0 extends TextInstances1 { this: Text.type =>
         else sb.append(',')
         ev.unsafeArrayEncode(a, sb)
       }
-      sb.append('}')
+      sb.append('}') : @silent
     }
 
 }

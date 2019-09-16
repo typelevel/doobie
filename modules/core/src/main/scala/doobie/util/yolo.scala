@@ -20,7 +20,7 @@ import fs2.Stream
 import scala.Predef._
 
 /** Module for implicit syntax useful in REPL session. */
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+
 object yolo {
 
   import doobie.free.connection.AsyncConnectionIO

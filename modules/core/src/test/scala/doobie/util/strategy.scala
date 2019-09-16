@@ -6,12 +6,11 @@ package doobie.util
 
 import cats.effect.{ Async, Blocker, ContextShift, IO }
 import cats.syntax.apply._
-import cats.syntax.either._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object strategyspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

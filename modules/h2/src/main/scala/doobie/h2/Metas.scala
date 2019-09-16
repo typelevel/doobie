@@ -16,7 +16,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
-@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
+
 trait Instances {
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))

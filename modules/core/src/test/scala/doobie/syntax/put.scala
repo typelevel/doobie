@@ -8,7 +8,7 @@ import cats.implicits._
 import doobie.implicits._
 import org.specs2.mutable.Specification
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object putspec extends Specification {
 
   "put syntax" should {
@@ -20,7 +20,7 @@ object putspec extends Specification {
     "convert to a fragment0" in {
       (fr"SELECT" ++ 1.fr0).query[Unit].sql must_== "SELECT ?"
     }
-    
+
     "convert an option to a fragment" in {
       (fr"SELECT" ++ Some(1).fr).query[Unit].sql must_== "SELECT ? "
     }

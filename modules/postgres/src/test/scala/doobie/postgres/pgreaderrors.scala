@@ -15,7 +15,7 @@ import doobie.util.invariant._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait pgreaderrorsspec[F[_]] extends Specification {
 
   implicit def E: Effect[F]

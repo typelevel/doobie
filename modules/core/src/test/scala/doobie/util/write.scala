@@ -7,8 +7,9 @@ package util
 
 import shapeless._, shapeless.record._
 import org.specs2.mutable.Specification
+import com.github.ghik.silencer.silent
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object writespec extends Specification {
 
   final case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
@@ -45,7 +46,7 @@ object writespec extends Specification {
 
     "exist for shapeless record types" in {
 
-      type DL = (Double, Long)
+      @silent type DL = (Double, Long)
       type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
 
       Write[A]

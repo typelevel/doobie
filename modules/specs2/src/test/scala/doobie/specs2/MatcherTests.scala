@@ -10,7 +10,7 @@ import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait MatcherChecks[M[_]] extends Specification
     with Checker[M]
     with AnalysisMatchers[M] {

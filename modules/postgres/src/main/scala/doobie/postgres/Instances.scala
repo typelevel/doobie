@@ -14,14 +14,14 @@ import java.net.InetAddress
 import org.postgresql.util._
 import org.postgresql.geometric._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
-@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
+
 trait Instances {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.

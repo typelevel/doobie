@@ -8,6 +8,7 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.Reader
@@ -29,7 +30,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object sqloutput { module =>
 
   // Algebra of operations for SQLOutput. Each accepts a visitor as an alternative to pattern-matching.

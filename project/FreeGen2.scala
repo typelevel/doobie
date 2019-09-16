@@ -211,10 +211,11 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |import cats.effect.{ Async, ContextShift, ExitCase }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
     |import scala.concurrent.ExecutionContext
+    |import com.github.ghik.silencer.silent
     |
     |${imports[A].mkString("\n")}
     |
-    |@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    |@silent("deprecated")
     |object $mname { module =>
     |
     |  // Algebra of operations for $sname. Each accepts a visitor as an alternative to pattern-matching.
@@ -353,11 +354,14 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      |package $pkg
      |
      |import cats.free.Free
+     |import com.github.ghik.silencer.silent
      |
      |${managed.map(ioImport).mkString("\n")}
      |
      |// A pair (J, Free[F, A]) with constructors that tie down J and F.
      |sealed trait Embedded[A]
+     |
+     |@silent("deprecated")
      |object Embedded {
      |  ${managed.map(ClassTag(_)).map(embed(_)).mkString("\n  ") }
      |}
@@ -432,6 +436,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import cats.data.Kleisli
       |import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
       |import scala.concurrent.ExecutionContext
+      |import com.github.ghik.silencer.silent
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
@@ -441,7 +446,6 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |
       |object KleisliInterpreter {
       |
-      |  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
       |  def apply[M[_]](b: Blocker)(
       |    implicit am: Async[M],
       |             cs: ContextShift[M]
@@ -455,6 +459,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
+      |@silent("deprecated")
       |trait KleisliInterpreter[M[_]] { outer =>
       |
       |  implicit val asyncM: Async[M]

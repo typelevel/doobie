@@ -10,7 +10,7 @@ import doobie.util.transactor.Transactor
 import org.scalatest._
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait MatcherChecks[M[_]] extends FunSuite
     with MustMatchers
     with AnalysisMatchers[M] {

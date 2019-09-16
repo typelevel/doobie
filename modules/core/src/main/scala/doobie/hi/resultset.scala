@@ -23,7 +23,7 @@ import java.sql.{ ResultSetMetaData, SQLWarning }
  * Module of high-level constructors for `ResultSetIO` actions.
  * @group Modules
  */
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+
 object resultset {
   import implicits._
 
