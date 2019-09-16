@@ -5,5 +5,5 @@
 package doobie.postgres.enums
 
 // create type myenum as enum ('foo', 'bar') <-- part of setup
-@SuppressWarnings(Array("org.wartremover.warts.Enumeration"))
+
 object MyScalaEnum extends Enumeration { val foo, bar = Value }

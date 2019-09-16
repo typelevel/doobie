@@ -5,16 +5,17 @@
 package doobie.free
 
 // Library imports
-import java.util
-
 import cats.~>
 import cats.data.Kleisli
 import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
 import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 // Types referenced in the JDBC API
 import java.io.InputStream
 import java.io.Reader
+import java.lang.Class
+import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
 import java.sql.Blob
@@ -77,6 +78,7 @@ object KleisliInterpreter {
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
+@silent("deprecated")
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: Async[M]
@@ -779,7 +781,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap: Kleisli[M, Connection, util.Map[String, Class[_]]] = primitive(_.getTypeMap)
+    override def getTypeMap = primitive(_.getTypeMap : Map[String, Class[_]]) // inferred is `Map[String, Class[_ <: Object]]` and 2.13 cares down the road because we end up with a refined type for this definition
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)

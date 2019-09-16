@@ -10,7 +10,7 @@ import doobie.postgres.enums._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object pgcheck extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

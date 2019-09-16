@@ -4,15 +4,13 @@
 
 package doobie.issue
 
-import cats.Monad
-import cats.implicits._
 import cats.effect.{ Async, Blocker, ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import Predef._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object `262` extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

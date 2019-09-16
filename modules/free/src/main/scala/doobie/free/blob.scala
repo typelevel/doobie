@@ -8,12 +8,13 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object blob { module =>
 
   // Algebra of operations for Blob. Each accepts a visitor as an alternative to pattern-matching.

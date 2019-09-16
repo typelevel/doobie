@@ -16,7 +16,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 trait pgconcurrent[F[_]] extends Specification {
 
   implicit def E: ConcurrentEffect[F]

@@ -10,7 +10,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import scala.Predef._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object queryspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

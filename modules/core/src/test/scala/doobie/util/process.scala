@@ -13,7 +13,7 @@ import org.specs2.mutable.Specification
 import scala.Predef._
 import scala.util.Random
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
+
 object processspec extends Specification with ScalaCheck {
 
   "repeatEvalChunks must" >> {

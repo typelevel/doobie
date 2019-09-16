@@ -10,7 +10,7 @@ import org.specs2.mutable.Specification
 
 import cats.data.State
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object lensspec extends Specification {
 
   final case class Name(first: String, last: String)

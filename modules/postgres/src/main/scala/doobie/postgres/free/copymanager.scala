@@ -5,8 +5,10 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -18,10 +20,10 @@ import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object copymanager { module =>
 
-  // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait CopyManagerOp[A] {
     def visit[F[_]](v: CopyManagerOp.Visitor[F]): F[A]
   }
@@ -52,6 +54,8 @@ object copymanager { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): F[A]
       def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]): F[A]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -90,6 +94,12 @@ object copymanager { module =>
     }
     final case class BracketCase[A, B](acquire: CopyManagerIO[A], use: A => CopyManagerIO[B], release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]) extends CopyManagerOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends CopyManagerOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: CopyManagerIO[A]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // PGCopyManager-specific operations.
@@ -135,6 +145,8 @@ object copymanager { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = FF.liftF[CopyManagerOp, B](BracketCase(acquire, use, release))
+  val shift: CopyManagerIO[Unit] = FF.liftF[CopyManagerOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](EvalOn(ec, fa))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
@@ -162,5 +174,11 @@ object copymanager { module =>
       def suspend[A](thunk: => CopyManagerIO[A]): CopyManagerIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // CopyManagerIO is a ContextShift
+  implicit val ContextShiftCopyManagerIO: ContextShift[CopyManagerIO] =
+    new ContextShift[CopyManagerIO] {
+      def shift: CopyManagerIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

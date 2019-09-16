@@ -11,7 +11,7 @@ import doobie._, doobie.implicits._
 import java.sql.SQLException
 import org.specs2.mutable.Specification
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
+
 trait catchsqlspec[F[_]] extends Specification {
 
   implicit def E: Effect[F]

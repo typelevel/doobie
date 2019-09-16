@@ -13,7 +13,7 @@ import org.specs2.specification.BeforeAll
 import scala.concurrent.ExecutionContext
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object beforeall extends Specification with IOChecker with BeforeAll {
   // Setup
   val initQ = sql"create table some_table (value varchar not null)".update

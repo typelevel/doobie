@@ -7,13 +7,12 @@ package doobie.postgres
 import cats.effect.{ ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
-import doobie.postgres._, doobie.postgres.implicits._
+import doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
-import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object pglargeobjectspec extends Specification with FileEquality {
 
   implicit def contextShift: ContextShift[IO] =

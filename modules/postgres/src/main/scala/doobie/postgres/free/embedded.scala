@@ -5,6 +5,7 @@
 package doobie.postgres.free
 
 import cats.free.Free
+import com.github.ghik.silencer.silent
 
 import copyin.CopyInIO
 import copymanager.CopyManagerIO
@@ -16,6 +17,8 @@ import pgconnection.PGConnectionIO
 
 // A pair (J, Free[F, A]) with constructors that tie down J and F.
 sealed trait Embedded[A]
+
+@silent("deprecated")
 object Embedded {
   final case class CopyIn[A](j: org.postgresql.copy.CopyIn, fa: CopyInIO[A]) extends Embedded[A]
   final case class CopyManager[A](j: org.postgresql.copy.CopyManager, fa: CopyManagerIO[A]) extends Embedded[A]

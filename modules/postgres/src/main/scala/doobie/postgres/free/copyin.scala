@@ -5,12 +5,14 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object copyin { module =>
 
   // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternative to pattern-matching.
@@ -44,6 +46,8 @@ object copyin { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Unit]): F[A]
       def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]): F[A]
 
       // PGCopyIn
       def cancelCopy: F[Unit]
@@ -82,6 +86,12 @@ object copyin { module =>
     }
     final case class BracketCase[A, B](acquire: CopyInIO[A], use: A => CopyInIO[B], release: (A, ExitCase[Throwable]) => CopyInIO[Unit]) extends CopyInOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: CopyInIO[A]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // PGCopyIn-specific operations.
@@ -127,6 +137,8 @@ object copyin { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyInIO[A] = FF.liftF[CopyInOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Unit]): CopyInIO[A] = FF.liftF[CopyInOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): CopyInIO[B] = FF.liftF[CopyInOp, B](BracketCase(acquire, use, release))
+  val shift: CopyInIO[Unit] = FF.liftF[CopyInOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]) = FF.liftF[CopyInOp, A](EvalOn(ec, fa))
 
   // Smart constructors for CopyIn-specific operations.
   val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)
@@ -154,5 +166,11 @@ object copyin { module =>
       def suspend[A](thunk: => CopyInIO[A]): CopyInIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // CopyInIO is a ContextShift
+  implicit val ContextShiftCopyInIO: ContextShift[CopyInIO] =
+    new ContextShift[CopyInIO] {
+      def shift: CopyInIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

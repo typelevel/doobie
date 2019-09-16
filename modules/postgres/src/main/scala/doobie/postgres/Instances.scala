@@ -21,7 +21,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 
-@SuppressWarnings(Array("org.wartremover.warts.ExplicitImplicitTypes"))
+
 trait Instances {
 
   // N.B. `Meta` is the lowest-level mapping and must always cope with NULL. Easy to forget.

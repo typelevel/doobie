@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 import java.util.concurrent.Executors
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object `824` extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

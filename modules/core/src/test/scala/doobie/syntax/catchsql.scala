@@ -8,7 +8,7 @@ import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object catchsqlspec extends Specification {
 
   "catchsql syntax" should {

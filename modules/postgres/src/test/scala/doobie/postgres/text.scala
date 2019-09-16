@@ -10,12 +10,12 @@ import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 import org.specs2.ScalaCheck
-import org.scalacheck.{ Arbitrary, Gen }
+import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object textspec extends Specification with ScalaCheck {
 
   implicit def contextShift: ContextShift[IO] =

@@ -5,15 +5,17 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object copyout { module =>
 
-  // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait CopyOutOp[A] {
     def visit[F[_]](v: CopyOutOp.Visitor[F]): F[A]
   }
@@ -44,6 +46,8 @@ object copyout { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): F[A]
       def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]): F[A]
 
       // PGCopyOut
       def cancelCopy: F[Unit]
@@ -81,6 +85,12 @@ object copyout { module =>
     }
     final case class BracketCase[A, B](acquire: CopyOutIO[A], use: A => CopyOutIO[B], release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]) extends CopyOutOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends CopyOutOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // PGCopyOut-specific operations.
@@ -123,6 +133,8 @@ object copyout { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyOutIO[A] = FF.liftF[CopyOutOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = FF.liftF[CopyOutOp, B](BracketCase(acquire, use, release))
+  val shift: CopyOutIO[Unit] = FF.liftF[CopyOutOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]) = FF.liftF[CopyOutOp, A](EvalOn(ec, fa))
 
   // Smart constructors for CopyOut-specific operations.
   val cancelCopy: CopyOutIO[Unit] = FF.liftF(CancelCopy)
@@ -149,5 +161,11 @@ object copyout { module =>
       def suspend[A](thunk: => CopyOutIO[A]): CopyOutIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // CopyOutIO is a ContextShift
+  implicit val ContextShiftCopyOutIO: ContextShift[CopyOutIO] =
+    new ContextShift[CopyOutIO] {
+      def shift: CopyOutIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

@@ -8,6 +8,7 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.lang.Class
 import java.lang.String
@@ -16,7 +17,7 @@ import java.sql.ResultSet
 import java.sql.SQLWarning
 import java.sql.Statement
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object statement { module =>
 
   // Algebra of operations for Statement. Each accepts a visitor as an alternative to pattern-matching.

@@ -4,11 +4,11 @@
 
 package doobie.util
 
-import cats.{ Reducible => Foldable1, _}, cats.implicits._
+import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object fragmentsspec extends Specification {
   import Fragments._
 

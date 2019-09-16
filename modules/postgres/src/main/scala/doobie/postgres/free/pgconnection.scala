@@ -5,12 +5,15 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.lang.Class
 import java.lang.String
 import java.sql.{ Array => SqlArray }
+import java.util.Map
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
@@ -20,10 +23,10 @@ import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
 import org.postgresql.replication.PGReplicationConnection
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object pgconnection { module =>
 
-  // Algebra of operations for PGConnection. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for PGConnection. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait PGConnectionOp[A] {
     def visit[F[_]](v: PGConnectionOp.Visitor[F]): F[A]
   }
@@ -54,6 +57,8 @@ object pgconnection { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): F[A]
       def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]): F[A]
 
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
@@ -69,6 +74,8 @@ object pgconnection { module =>
       def getLargeObjectAPI: F[LargeObjectManager]
       def getNotifications: F[Array[PGNotification]]
       def getNotifications(a: Int): F[Array[PGNotification]]
+      def getParameterStatus(a: String): F[String]
+      def getParameterStatuses: F[Map[String, String]]
       def getPreferQueryMode: F[PreferQueryMode]
       def getPrepareThreshold: F[Int]
       def getReplicationAPI: F[PGReplicationConnection]
@@ -102,6 +109,12 @@ object pgconnection { module =>
     }
     final case class BracketCase[A, B](acquire: PGConnectionIO[A], use: A => PGConnectionIO[B], release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]) extends PGConnectionOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: PGConnectionIO[A]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // PGConnection-specific operations.
@@ -144,6 +157,12 @@ object pgconnection { module =>
     final case class  GetNotifications1(a: Int) extends PGConnectionOp[Array[PGNotification]] {
       def visit[F[_]](v: Visitor[F]) = v.getNotifications(a)
     }
+    final case class  GetParameterStatus(a: String) extends PGConnectionOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.getParameterStatus(a)
+    }
+    final case object GetParameterStatuses extends PGConnectionOp[Map[String, String]] {
+      def visit[F[_]](v: Visitor[F]) = v.getParameterStatuses
+    }
     final case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
       def visit[F[_]](v: Visitor[F]) = v.getPreferQueryMode
     }
@@ -177,6 +196,8 @@ object pgconnection { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Unit]): PGConnectionIO[A] = FF.liftF[PGConnectionOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: PGConnectionIO[A])(use: A => PGConnectionIO[B])(release: (A, ExitCase[Throwable]) => PGConnectionIO[Unit]): PGConnectionIO[B] = FF.liftF[PGConnectionOp, B](BracketCase(acquire, use, release))
+  val shift: PGConnectionIO[Unit] = FF.liftF[PGConnectionOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]) = FF.liftF[PGConnectionOp, A](EvalOn(ec, fa))
 
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
@@ -192,6 +213,8 @@ object pgconnection { module =>
   val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] = FF.liftF(GetLargeObjectAPI)
   val getNotifications: PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications)
   def getNotifications(a: Int): PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications1(a))
+  def getParameterStatus(a: String): PGConnectionIO[String] = FF.liftF(GetParameterStatus(a))
+  val getParameterStatuses: PGConnectionIO[Map[String, String]] = FF.liftF(GetParameterStatuses)
   val getPreferQueryMode: PGConnectionIO[PreferQueryMode] = FF.liftF(GetPreferQueryMode)
   val getPrepareThreshold: PGConnectionIO[Int] = FF.liftF(GetPrepareThreshold)
   val getReplicationAPI: PGConnectionIO[PGReplicationConnection] = FF.liftF(GetReplicationAPI)
@@ -214,5 +237,11 @@ object pgconnection { module =>
       def suspend[A](thunk: => PGConnectionIO[A]): PGConnectionIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // PGConnectionIO is a ContextShift
+  implicit val ContextShiftPGConnectionIO: ContextShift[PGConnectionIO] =
+    new ContextShift[PGConnectionIO] {
+      def shift: PGConnectionIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: PGConnectionIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

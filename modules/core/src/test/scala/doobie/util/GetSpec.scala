@@ -14,7 +14,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import shapeless.test._
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object GetSpec extends Specification {
 
   final case class X(x: Int)
@@ -53,7 +53,7 @@ object GetSpec extends Specification {
 final case class Foo(s: String)
 final case class Bar(n: Int)
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Equals"))
+
 trait GetDBSpec[F[_]] extends Specification {
 
   implicit def E: Effect[F]

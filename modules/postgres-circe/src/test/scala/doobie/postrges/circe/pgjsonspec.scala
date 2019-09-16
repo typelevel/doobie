@@ -11,7 +11,7 @@ import io.circe.{Json, Encoder, Decoder}
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object pgjsonspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =

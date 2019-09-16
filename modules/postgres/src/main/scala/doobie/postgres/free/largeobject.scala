@@ -5,17 +5,19 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object largeobject { module =>
 
-  // Algebra of operations for LargeObject. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for LargeObject. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait LargeObjectOp[A] {
     def visit[F[_]](v: LargeObjectOp.Visitor[F]): F[A]
   }
@@ -46,6 +48,8 @@ object largeobject { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): F[A]
       def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]): F[A]
 
       // LargeObject
       def close: F[Unit]
@@ -95,6 +99,12 @@ object largeobject { module =>
     }
     final case class BracketCase[A, B](acquire: LargeObjectIO[A], use: A => LargeObjectIO[B], release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]) extends LargeObjectOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends LargeObjectOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // LargeObject-specific operations.
@@ -173,6 +183,8 @@ object largeobject { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): LargeObjectIO[B] = FF.liftF[LargeObjectOp, B](BracketCase(acquire, use, release))
+  val shift: LargeObjectIO[Unit] = FF.liftF[LargeObjectOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](EvalOn(ec, fa))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
@@ -211,5 +223,11 @@ object largeobject { module =>
       def suspend[A](thunk: => LargeObjectIO[A]): LargeObjectIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // LargeObjectIO is a ContextShift
+  implicit val ContextShiftLargeObjectIO: ContextShift[LargeObjectIO] =
+    new ContextShift[LargeObjectIO] {
+      def shift: LargeObjectIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 

@@ -8,13 +8,14 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import java.lang.String
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternative to pattern-matching.

@@ -4,14 +4,12 @@
 
 package doobie.util
 
-import cats.effect.{ Async, ContextShift, Effect, IO }
-import cats.effect.syntax.effect._
-import cats.syntax.either._
+import cats.effect.{ Async, ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object transactorspec extends Specification {
 
   val q = sql"select 42".query[Int].unique

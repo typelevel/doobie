@@ -18,9 +18,10 @@ import org.postgresql.util._
 import org.postgresql.geometric._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 // Establish that we can write and read various types.
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+
 object pgtypesspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
@@ -91,9 +92,9 @@ object pgtypesspec extends Specification {
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
   testInOut("timestamp", java.time.Instant.now)
   skip("timestamp with time zone")
-  testInOut("date", new java.sql.Date(4,5,6))
+  testInOut("date", new java.sql.Date(4,5,6) : @silent)
   testInOut("date", java.time.LocalDate.of(4,5,6))
-  testInOut("time", new java.sql.Time(3,4,5))
+  testInOut("time", new java.sql.Time(3,4,5) : @silent)
   skip("time with time zone")
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
 

@@ -5,16 +5,18 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ExitCase }
+import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.ExecutionContext
+import com.github.ghik.silencer.silent
 
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object largeobjectmanager { module =>
 
-  // Algebra of operations for LargeObjectManager. Each accepts a visitor as an alternatie to pattern-matching.
+  // Algebra of operations for LargeObjectManager. Each accepts a visitor as an alternative to pattern-matching.
   sealed trait LargeObjectManagerOp[A] {
     def visit[F[_]](v: LargeObjectManagerOp.Visitor[F]): F[A]
   }
@@ -45,6 +47,8 @@ object largeobjectmanager { module =>
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectManagerIO[Unit]): F[A]
       def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): F[B]
+      def shift: F[Unit]
+      def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]): F[A]
 
       // LargeObjectManager
       def create: F[Int]
@@ -90,6 +94,12 @@ object largeobjectmanager { module =>
     }
     final case class BracketCase[A, B](acquire: LargeObjectManagerIO[A], use: A => LargeObjectManagerIO[B], release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]) extends LargeObjectManagerOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    }
+    final case object Shift extends LargeObjectManagerOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.shift
+    }
+    final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // LargeObjectManager-specific operations.
@@ -156,6 +166,8 @@ object largeobjectmanager { module =>
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): LargeObjectManagerIO[A] = FF.liftF[LargeObjectManagerOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = FF.liftF[LargeObjectManagerOp, A](AsyncF(k))
   def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): LargeObjectManagerIO[B] = FF.liftF[LargeObjectManagerOp, B](BracketCase(acquire, use, release))
+  val shift: LargeObjectManagerIO[Unit] = FF.liftF[LargeObjectManagerOp, Unit](Shift)
+  def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](EvalOn(ec, fa))
 
   // Smart constructors for LargeObjectManager-specific operations.
   val create: LargeObjectManagerIO[Int] = FF.liftF(Create)
@@ -190,5 +202,11 @@ object largeobjectmanager { module =>
       def suspend[A](thunk: => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
+  // LargeObjectManagerIO is a ContextShift
+  implicit val ContextShiftLargeObjectManagerIO: ContextShift[LargeObjectManagerIO] =
+    new ContextShift[LargeObjectManagerIO] {
+      def shift: LargeObjectManagerIO[Unit] = module.shift
+      def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]) = module.evalOn(ec)(fa)
+    }
 }
 
