@@ -33,6 +33,9 @@ lazy val compilerFlags = Seq(
     "-Ydelambdafy:inline",    // http://fs2.io/faq.html
     "-P:silencer:checkUnused" // https://github.com/ghik/silencer#detecting-unused-annotations
   ),
+  scalacOptions in (Compile, doc) --= Seq(
+    "-Xfatal-warnings"
+  ),
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
     "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
