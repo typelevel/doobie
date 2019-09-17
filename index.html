@@ -38,11 +38,11 @@
 
 <h2 id="quick-start">Quick Start</h2>
 
-<p>The current version is <strong>0.7.0</strong> for <strong>Scala 2.11/12/13 (M5)</strong> with</p>
+<p>The current version is <strong>0.8.2</strong> for <strong>Scala 2.12/13</strong> with</p>
 
 <ul>
-  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 1.6.0</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 1.0.4</li>
+  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.0.0</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 2.0.0</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.3</li>
 </ul>
 
@@ -53,15 +53,15 @@
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
 
   <span class="c1">// Start with this one
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.7.0"</span><span class="o">,</span>
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.8.2"</span><span class="o">,</span>
 
   <span class="c1">// And add any of these as needed
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.7.0"</span><span class="o">,</span>          <span class="c1">// H2 driver 1.4.199 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.7.0"</span><span class="o">,</span>          <span class="c1">// HikariCP transactor.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.7.0"</span><span class="o">,</span>          <span class="c1">// Postgres driver 42.2.5 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span>     <span class="o">%</span> <span class="s">"0.7.0"</span><span class="o">,</span>          <span class="c1">// Support for Quill 3.1.0
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.7.0"</span> <span class="o">%</span> <span class="s">"test"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.7.0"</span> <span class="o">%</span> <span class="s">"test"</span>  <span class="c1">// ScalaTest support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.8.2"</span><span class="o">,</span>          <span class="c1">// H2 driver 1.4.199 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.8.2"</span><span class="o">,</span>          <span class="c1">// HikariCP transactor.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.8.2"</span><span class="o">,</span>          <span class="c1">// Postgres driver 42.2.8 + type mappings.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span>     <span class="o">%</span> <span class="s">"0.8.2"</span><span class="o">,</span>          <span class="c1">// Support for Quill 3.4.4
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.8.2"</span> <span class="o">%</span> <span class="s">"test"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
+</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.8.2"</span> <span class="o">%</span> <span class="s">"test"</span>  <span class="c1">// ScalaTest support for typechecking statements.
 </span>
 <span class="o">)</span>
 </code></pre>
@@ -114,4 +114,5 @@
 
 <script src="/doobie/js/main.js"></script>
 
-</div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>doobie is designed and developed by <a href="" target="_blank">Rob Norris</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/tpolecat/doobie"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank">Sbt-microsites</a> - © 2016 <a href="https://www.47deg.com/" target="_blank">47 Degrees</a></p></div></div></div></footer></body></html>
+</div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>doobie is designed and developed by <a href="" target="_blank">Rob Norris</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/tpolecat/doobie"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank">Sbt-microsites</a> - © 2016 <a href="https://www.47deg.com/" target="_blank">47 Degrees</a></p></div></div><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.initHighlighting();
+              </script></div></footer></body></html>

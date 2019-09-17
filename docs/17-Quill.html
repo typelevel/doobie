@@ -2,15 +2,15 @@
 
 <p>As of version 0.7 doobie now lets us use <a href="https://getquill.io">Quill</a> quotes to construct <code class="highlighter-rouge">ConnectionIO</code> programs. Quill provides statement construction and type mapping, and doobie takes care of statement execution.</p>
 
-<p>In order to use this feature we need to add the following dependency, which pulls in <code class="highlighter-rouge">quill-jdbc</code> 3.1.0 transitively.</p>
+<p>In order to use this feature we need to add the following dependency, which pulls in <code class="highlighter-rouge">quill-jdbc</code> 3.4.4 transitively.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span> <span class="o">%</span> <span class="s">"0.7.0"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span> <span class="o">%</span> <span class="s">"0.8.2"</span>
 </code></pre>
 </div>
 
 <p>The examples below require the following imports.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.getquill._</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.getquill.</span><span class="o">{</span> <span class="n">idiom</span> <span class="k">=&gt;</span> <span class="k">_</span><span class="o">,</span> <span class="k">_</span> <span class="o">}</span>
 <span class="k">import</span> <span class="nn">doobie.quill.DoobieContext</span>
 </code></pre>
 </div>
@@ -39,7 +39,7 @@
 <p>Here is a query.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">q1</span> <span class="k">=</span> <span class="n">quote</span> <span class="o">{</span> <span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="s">"GBR"</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// q1: AnyRef with Quoted[EntityQuery[Country]]{def quoted: io.getquill.ast.Filter;def ast: io.getquill.ast.Filter;def id166371798(): Unit;val liftings: Object} = querySchema("Country").filter(x1 =&gt; x1.code == "GBR")
+<span class="c1">// q1: AnyRef with Quoted[EntityQuery[Country]]{def quoted: io.getquill.ast.Filter;def ast: io.getquill.ast.Filter;def id952829075(): Unit;val liftings: Object} = querySchema("Country").filter(x1 =&gt; x1.code == "GBR")
 </span>
 <span class="c1">// Select all at once
 </span><span class="n">run</span><span class="o">(</span><span class="n">q1</span><span class="o">)</span>
@@ -50,8 +50,8 @@
 //         "SELECT x1.code, x1.name, x1.population FROM Country x1 WHERE x1.code = 'GBR'"
 //       )
 //     ),
-//     doobie.hi.connection$$$Lambda$15121/322757691@5a35bd49,
-//     cats.effect.Bracket$$Lambda$15123/1232635455@6c0cda64
+//     doobie.hi.connection$$$Lambda$38399/1814260793@5a5c60aa,
+//     cats.effect.Bracket$$Lambda$38401/379260450@13e69297
 //   )
 // )
 </span>
@@ -64,7 +64,7 @@
 <p>A simple update.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">u1</span> <span class="k">=</span> <span class="n">quote</span> <span class="o">{</span> <span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="n">like</span> <span class="s">"U%"</span><span class="o">).</span><span class="n">update</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="o">-&gt;</span> <span class="s">"foo"</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// u1: AnyRef with Quoted[Update[Country]]{def quoted: io.getquill.ast.Update;def ast: io.getquill.ast.Update;def id282277417(): Unit;val liftings: Object} = querySchema("Country").filter(x2 =&gt; infix"${x2.name} like ${"U%"}").update(x3 =&gt; x3.name -&gt; "foo")
+<span class="c1">// u1: AnyRef with Quoted[Update[Country]]{def quoted: io.getquill.ast.Update;def ast: io.getquill.ast.Update;def id1438815230(): Unit;val liftings: Object} = querySchema("Country").filter(x2 =&gt; infix"${x2.name} like ${"U%"}").update(x3 =&gt; x3.name -&gt; "foo")
 </span>
 <span class="c1">// Update yielding count of affected rows
 </span><span class="n">run</span><span class="o">(</span><span class="n">u1</span><span class="o">)</span>
@@ -73,8 +73,8 @@
 //     Suspend(
 //       PrepareStatement("UPDATE Country SET name = 'foo' WHERE name like 'U%'")
 //     ),
-//     doobie.hi.connection$$$Lambda$15121/322757691@7c120bed,
-//     cats.effect.Bracket$$Lambda$15123/1232635455@6e9732b7
+//     doobie.hi.connection$$$Lambda$38399/1814260793@24543dcc,
+//     cats.effect.Bracket$$Lambda$38401/379260450@1fcaf2
 //   )
 // )
 </span></code></pre>
@@ -87,7 +87,7 @@
     <span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="n">like</span> <span class="n">pat</span><span class="o">).</span><span class="n">update</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="o">-&gt;</span> <span class="s">"foo"</span><span class="o">)</span>
   <span class="o">}</span>
 <span class="o">}</span>
-<span class="c1">// u2: AnyRef with Quoted[BatchAction[Update[Country]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id2076281801(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[String]("U%", "A%"): io.getquill.quotation.ScalarValueLifting[List[String],String]}} = ?.foreach((pat) =&gt; querySchema("Country").filter(x4 =&gt; infix"${x4.name} like $pat").update(x5 =&gt; x5.name -&gt; "foo"))
+<span class="c1">// u2: AnyRef with Quoted[BatchAction[Update[Country]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id2130859377(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[String]("U%", "A%"): io.getquill.quotation.ScalarValueLifting[List[String],String]}} = ?.foreach((pat) =&gt; querySchema("Country").filter(x4 =&gt; infix"${x4.name} like $pat").update(x5 =&gt; x5.name -&gt; "foo"))
 </span>
 <span class="c1">// Update yielding list of counts of affected rows
 </span><span class="n">run</span><span class="o">(</span><span class="n">u2</span><span class="o">)</span>
@@ -98,13 +98,13 @@
 //         Suspend(
 //           PrepareStatement("UPDATE Country SET name = 'foo' WHERE name like ?")
 //         ),
-//         doobie.hi.connection$$$Lambda$15121/322757691@c2ee536,
-//         cats.effect.Bracket$$Lambda$15123/1232635455@7247f719
+//         doobie.hi.connection$$$Lambda$38399/1814260793@68c48e30,
+//         cats.effect.Bracket$$Lambda$38401/379260450@5b6169e2
 //       )
 //     ),
-//     cats.FlatMap$$Lambda$15171/597342699@1ee6d7df
+//     cats.FlatMap$$Lambda$38449/745265126@5e5e851f
 //   ),
-//   cats.Monad$$Lambda$15037/441700193@49334c3e
+//   cats.Monad$$Lambda$38315/1209016539@20e88c7c
 // )
 </span></code></pre>
 </div>
@@ -129,17 +129,20 @@
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">u3</span> <span class="k">=</span> <span class="n">quote</span> <span class="o">{</span>
   <span class="n">query</span><span class="o">[</span><span class="kt">Foo</span><span class="o">].</span><span class="n">insert</span><span class="o">(</span><span class="n">lift</span><span class="o">(</span><span class="nc">Foo</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="s">"Joe"</span><span class="o">))).</span><span class="n">returning</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">id</span><span class="o">)</span>
 <span class="o">}</span>
-<span class="c1">// u3: AnyRef with Quoted[ActionReturning[Foo, Int]]{def quoted: io.getquill.ast.Returning;def ast: io.getquill.ast.Returning;def id66432136(): Unit;val liftings: AnyRef{val App.this.Foo.apply(0, "Joe").id: io.getquill.quotation.ScalarValueLifting[Int,Int]; val App.this.Foo.apply(0, "Joe").value: io.getquill.quotation.ScalarValueLifting[String,String]}} = querySchema("Foo").insert(v =&gt; v.id -&gt; ?, v =&gt; v.value -&gt; ?).returning((x6) =&gt; x6.id)
+<span class="c1">// u3: AnyRef with Quoted[ActionReturning[Foo, Int]]{def quoted: io.getquill.ast.Returning;def ast: io.getquill.ast.Returning;def id2089592651(): Unit;val liftings: AnyRef{val App.this.Foo.apply(0, "Joe").id: io.getquill.quotation.ScalarValueLifting[Int,Int]; val App.this.Foo.apply(0, "Joe").value: io.getquill.quotation.ScalarValueLifting[String,String]}} = querySchema("Foo").insert(v =&gt; v.id -&gt; ?, v =&gt; v.value -&gt; ?).returning((x6) =&gt; x6.id)
 </span>
 <span class="c1">// Update yielding a single id
 </span><span class="n">run</span><span class="o">(</span><span class="n">u3</span><span class="o">)</span>
 <span class="c1">// res4: doobie.package.ConnectionIO[Int] = Suspend(
 //   BracketCase(
 //     Suspend(
-//       PrepareStatement2("INSERT INTO Foo (value) VALUES (?)", Array("id"))
+//       PrepareStatement3(
+//         "INSERT INTO Foo (id,value) VALUES (?, ?) RETURNING id",
+//         1
+//       )
 //     ),
-//     doobie.hi.connection$$$Lambda$15730/2146825645@7f7dc104,
-//     cats.effect.Bracket$$Lambda$15123/1232635455@578da91b
+//     doobie.hi.connection$$$Lambda$40375/497354144@6c91335f,
+//     cats.effect.Bracket$$Lambda$38401/379260450@3cef7956
 //   )
 // )
 </span></code></pre>
@@ -152,7 +155,7 @@
     <span class="n">query</span><span class="o">[</span><span class="kt">Foo</span><span class="o">].</span><span class="n">insert</span><span class="o">(</span><span class="n">a</span><span class="o">).</span><span class="n">returning</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">id</span><span class="o">)</span>
   <span class="o">}</span>
 <span class="o">}</span>
-<span class="c1">// u4: AnyRef with Quoted[BatchAction[ActionReturning[Foo, Int]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id433617130(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[repl.Session.App.Foo](App.this.Foo.apply(0, "Joe"), App.this.Foo.apply(0, "Bob")): io.getquill.quotation.CaseClassValueLifting[List[repl.Session.App.Foo]]}} = ?.foreach((a) =&gt; querySchema("Foo").insert(v =&gt; v.id -&gt; a.id, v =&gt; v.value -&gt; a.value).returning((x7) =&gt; x7.id))
+<span class="c1">// u4: AnyRef with Quoted[BatchAction[ActionReturning[Foo, Int]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id1096483810(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[repl.Session.App.Foo](App.this.Foo.apply(0, "Joe"), App.this.Foo.apply(0, "Bob")): io.getquill.quotation.CaseClassValueLifting[List[repl.Session.App.Foo]]}} = ?.foreach((a) =&gt; querySchema("Foo").insert(v =&gt; v.id -&gt; a.id, v =&gt; v.value -&gt; a.value).returning((x7) =&gt; x7.id))
 </span>
 <span class="c1">// Update yielding a list of ids
 </span><span class="n">run</span><span class="o">(</span><span class="n">u4</span><span class="o">)</span>
@@ -161,15 +164,18 @@
 //     Suspend(
 //       BracketCase(
 //         Suspend(
-//           PrepareStatement2("INSERT INTO Foo (value) VALUES (?)", Array("id"))
+//           PrepareStatement3(
+//             "INSERT INTO Foo (id,value) VALUES (?, ?) RETURNING id",
+//             1
+//           )
 //         ),
-//         doobie.hi.connection$$$Lambda$15730/2146825645@40c4d68,
-//         cats.effect.Bracket$$Lambda$15123/1232635455@4eb2e65d
+//         doobie.hi.connection$$$Lambda$40375/497354144@16b365a9,
+//         cats.effect.Bracket$$Lambda$38401/379260450@725c906f
 //       )
 //     ),
-//     cats.FlatMap$$Lambda$15171/597342699@5fd67b6e
+//     cats.FlatMap$$Lambda$38449/745265126@17324eb0
 //   ),
-//   cats.Monad$$Lambda$15037/441700193@6529c4fe
+//   cats.Monad$$Lambda$38315/1209016539@50d0b0c9
 // )
 </span></code></pre>
 </div>

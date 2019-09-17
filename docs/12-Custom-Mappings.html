@@ -64,7 +64,7 @@
 //   in scope.
 // - For case classes, HLists, and shapeless records ensure that each element
 //   has a Read instance in scope.
-// - Lather, rinse, repeat, recusively until you find the problematic bit.
+// - Lather, rinse, repeat, recursively until you find the problematic bit.
 // 
 // You can check that an instance exists for Read in the REPL or in your code:
 // 
@@ -260,11 +260,11 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">pointRead</span><span class="k">:</span> <span class="kt">Read</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Read</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">map</span> <span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Point</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// pointRead: Read[Point] = doobie.util.Read@698e07b1
+<span class="c1">// pointRead: Read[Point] = doobie.util.Read@2db4392a
 </span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="n">pointWrite</span><span class="k">:</span> <span class="kt">Write</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Write</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">contramap</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">))</span>
-<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@186345c0
+<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@669b2dbc
 </span></code></pre>
 </div>
 

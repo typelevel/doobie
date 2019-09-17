@@ -11,7 +11,7 @@
 <span class="k">import</span> <span class="nn">doobie.util.ExecutionContexts</span>
 <span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 
 <span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
@@ -25,7 +25,7 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 </code></pre>
 </div>
@@ -137,7 +137,7 @@ INFO: Successful Statement Execution:
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">trivial</span> <span class="k">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="nc">Console</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">"*** "</span> <span class="o">+</span> <span class="n">e</span><span class="o">))</span>
 <span class="c1">// trivial: LogHandler = LogHandler(&lt;function1&gt;)
 </span><span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">queryWithLogHandler</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="n">trivial</span><span class="o">).</span><span class="n">unique</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="c1">// *** Success(select 42,List(),782016 nanoseconds,353189 nanoseconds)
+<span class="c1">// *** Success(select 42,List(),810151 nanoseconds,330298 nanoseconds)
 // res1: Int = 42
 </span></code></pre>
 </div>

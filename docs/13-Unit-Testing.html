@@ -10,7 +10,7 @@
 <span class="k">import</span> <span class="nn">doobie.implicits._</span>
 <span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 
 <span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
@@ -24,7 +24,7 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 </code></pre>
 </div>
@@ -112,12 +112,12 @@
 // [info]   + SQL Compiles and TypeChecks
 // [error]   x P01 Short  →  INTEGER (int4)
 // [error]    Short is not coercible to INTEGER (int4) according to the JDBC
-//    specification. Expected schema type was SMALLINT. (analysisspec.scala:66)
+//    specification. Expected schema type was SMALLINT. (analysisspec.scala:62)
 // [info] 
 // [error]   x C01 code       CHAR     (bpchar)  NOT NULL  →  Int
 // [error]    CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
 //    specification but is not a recommended target type. Expected schema
-//    type was INTEGER. (analysisspec.scala:66)
+//    type was INTEGER. (analysisspec.scala:62)
 // [info] 
 // [info]   + C02 name       VARCHAR  (varchar) NOT NULL  →  String
 // [info]   + C03 population INTEGER  (int4)    NOT NULL  →  Int
@@ -127,10 +127,10 @@
 //    schema type was FLOAT or DOUBLE.
 //    Reading a NULL value into Double will result in a runtime failure. Fix
 //    this by making the schema type NOT NULL or by changing the Scala type
-//    to Option[Double] (analysisspec.scala:66)
+//    to Option[Double] (analysisspec.scala:62)
 // [info] 
 // [error]   x C05 indepyear  SMALLINT (int2)    NULL      →  
-// [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:66)
+// [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:62)
 // [info] 
 // [info] + Update0 defined at 13-Unit-Testing.md:65
 // [info]   
@@ -142,7 +142,7 @@
 // [info] 
 // [info] 
 // [info] Total for specification repl.Session$App$AnalysisTestSpec$
-// [info] Finished in 797 ms
+// [info] Finished in 399 ms
 // 16 examples, 4 failures, 0 error
 // [info]
 </span></code></pre>

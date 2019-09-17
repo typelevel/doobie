@@ -11,7 +11,7 @@
 <span class="k">import</span> <span class="nn">doobie.util.ExecutionContexts</span>
 <span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 <span class="k">import</span> <span class="nn">fs2.Stream</span>
 
@@ -26,7 +26,7 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 </code></pre>
 </div>
@@ -251,12 +251,13 @@ For more information see the <a href="https://github.com/functional-streams-for-
 
 <p>However in some cases a stream is what we want as our “top level” type. For example, <a href="https://github.com/http4s/http4s">http4s</a> can use a <code class="highlighter-rouge">Stream[IO, A]</code> directly as a response type, which could allow us to stream a resultset directly to the network socket. We can achieve this in <strong>doobie</strong> by calling <code class="highlighter-rouge">transact</code> directly on the <code class="highlighter-rouge">Stream[ConnectionIO, A]</code>.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">p</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Country2</span><span class="o">]</span> <span class="k">=</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">p</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Country2</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
   <span class="n">sql</span><span class="s">"select name, population, gnp from country"</span>
     <span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country2</span><span class="o">]</span> <span class="c1">// Query0[Country2]
 </span>    <span class="o">.</span><span class="n">stream</span>          <span class="c1">// Stream[ConnectionIO, Country2]
 </span>    <span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>    <span class="c1">// Stream[IO, Country2]
-// p: Stream[IO, Country2] = Stream(..)    // Stream[IO, Country2]
+</span><span class="o">}</span>
+<span class="c1">// p: Stream[IO, Country2] = Stream(..)
 </span>
 <span class="n">p</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="n">compile</span><span class="o">.</span><span class="n">toVector</span><span class="o">.</span><span class="n">unsafeRunSync</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">// Country2(Afghanistan,22720000,Some(5976.0))

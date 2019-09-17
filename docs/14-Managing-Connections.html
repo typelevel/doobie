@@ -49,7 +49,7 @@
 <ul>
   <li><code class="highlighter-rouge">ContextShift[M]</code>, which provides a CPU-bound pool for <strong>non-blocking operations</strong>. This is typically backed by <code class="highlighter-rouge">ExecutionContext.global</code>. If you use <code class="highlighter-rouge">IOApp</code> and interpret into <code class="highlighter-rouge">IO</code> this will be available for free.</li>
   <li>An <code class="highlighter-rouge">ExecutionContext</code> for <strong>awaiting connection</strong> to the database. Because there can be an unbounded number of connections awaiting database access this should be a <strong>bounded</strong> pool.</li>
-  <li>A second <code class="highlighter-rouge">ExecutionContext</code> for <strong>executing JDBC operations</strong>. Because your connection pool limits the number of active connections it is usually fine for this to be an <strong>unbounded</strong> pool.</li>
+  <li>A <code class="highlighter-rouge">cats.effect.Blocker</code> for <strong>executing JDBC operations</strong>. Because your connection pool limits the number of active connections this should be an <strong>unbounded</strong> pool.</li>
 </ul>
 
 <p>Because these pools need to be shut down in order to exit cleanly it is typical to use <code class="highlighter-rouge">Resource</code> to manage their lifetimes. See below for examples.</p>
@@ -73,14 +73,14 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 </code></pre>
 </div>
 
 <h3 id="using-a-hikaricp-connection-pool">Using a HikariCP Connection Pool</h3>
 
-<p>The <code class="highlighter-rouge">doobie-hikari</code> add-on provides a <code class="highlighter-rouge">Transactor</code> implementation backed by a <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a> connection pool. The connnection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a <code class="highlighter-rouge">Resource</code>. A program that uses <code class="highlighter-rouge">HikariTransactor</code> will typically use <code class="highlighter-rouge">IOApp</code>.</p>
+<p>The <code class="highlighter-rouge">doobie-hikari</code> add-on provides a <code class="highlighter-rouge">Transactor</code> implementation backed by a <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a> connection pool. The connection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a <code class="highlighter-rouge">Resource</code>. A program that uses <code class="highlighter-rouge">HikariTransactor</code> will typically use <code class="highlighter-rouge">IOApp</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
@@ -95,14 +95,14 @@
 </span>  <span class="k">val</span> <span class="n">transactor</span><span class="k">:</span> <span class="kt">Resource</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">HikariTransactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">]]</span> <span class="k">=</span>
     <span class="k">for</span> <span class="o">{</span>
       <span class="n">ce</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">fixedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="mi">32</span><span class="o">)</span> <span class="c1">// our connect EC
-</span>      <span class="n">te</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">cachedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our transaction EC
+</span>      <span class="n">be</span> <span class="k">&lt;-</span> <span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our blocking EC
 </span>      <span class="n">xa</span> <span class="k">&lt;-</span> <span class="nc">HikariTransactor</span><span class="o">.</span><span class="n">newHikariTransactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
               <span class="s">"org.h2.Driver"</span><span class="o">,</span>                        <span class="c1">// driver classname
 </span>              <span class="s">"jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"</span><span class="o">,</span>   <span class="c1">// connect URL
 </span>              <span class="s">"sa"</span><span class="o">,</span>                                   <span class="c1">// username
 </span>              <span class="s">""</span><span class="o">,</span>                                     <span class="c1">// password
 </span>              <span class="n">ce</span><span class="o">,</span>                                     <span class="c1">// await connection here
-</span>              <span class="n">te</span>                                      <span class="c1">// execute JDBC operations here
+</span>              <span class="n">be</span>                                      <span class="c1">// execute JDBC operations here
 </span>            <span class="o">)</span>
     <span class="o">}</span> <span class="k">yield</span> <span class="n">xa</span>
 
@@ -141,8 +141,8 @@
 <span class="o">)</span><span class="k">:</span> <span class="kt">Resource</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">DataSourceTransactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">]]</span> <span class="k">=</span>
   <span class="k">for</span> <span class="o">{</span>
     <span class="n">ce</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">fixedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="mi">32</span><span class="o">)</span> <span class="c1">// our connect EC
-</span>    <span class="n">te</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">cachedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our transaction EC
-</span>  <span class="o">}</span> <span class="k">yield</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDataSource</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">ds</span><span class="o">,</span> <span class="n">ce</span><span class="o">,</span> <span class="n">te</span><span class="o">)</span>
+</span>    <span class="n">be</span> <span class="k">&lt;-</span> <span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our blocking EC
+</span>  <span class="o">}</span> <span class="k">yield</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDataSource</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">ds</span><span class="o">,</span> <span class="n">ce</span><span class="o">,</span> <span class="n">be</span><span class="o">)</span>
 </code></pre>
 </div>
 
@@ -150,7 +150,7 @@
 
 <h3 id="using-an-existing-jdbc-connection">Using an Existing JDBC Connection</h3>
 
-<p>If your application exposes an existing <code class="highlighter-rouge">Connection</code> you can use it directly by wrapping it in a <code class="highlighter-rouge">Transactor</code>. You still need to provide an execution context for blocking operations.</p>
+<p>If your application exposes an existing <code class="highlighter-rouge">Connection</code> you can use it directly by wrapping it in a <code class="highlighter-rouge">Transactor</code>. You still need to provide an execution context for blocking operations. Note that you are responsible for closing the <code class="highlighter-rouge">Connection</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">java.sql.Connection</span>
 
@@ -158,8 +158,8 @@
 </span><span class="k">def</span> <span class="n">transactor</span><span class="o">(</span><span class="n">c</span><span class="k">:</span> <span class="kt">Connection</span><span class="o">)(</span>
   <span class="k">implicit</span> <span class="n">ev</span><span class="k">:</span> <span class="kt">ContextShift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
 <span class="o">)</span><span class="k">:</span> <span class="kt">Resource</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Transactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">]]</span> <span class="k">=</span>
-  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">cachedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="n">map</span> <span class="o">{</span> <span class="n">te</span> <span class="k">=&gt;</span>
-    <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromConnection</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">c</span><span class="o">,</span> <span class="n">te</span><span class="o">)</span>
+  <span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="n">map</span> <span class="o">{</span> <span class="n">b</span> <span class="k">=&gt;</span>
+    <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromConnection</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">c</span><span class="o">,</span> <span class="n">b</span><span class="o">)</span>
   <span class="o">}</span>
 </code></pre>
 </div>

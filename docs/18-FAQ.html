@@ -4,7 +4,7 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.effect.implicits._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 <span class="k">import</span> <span class="nn">doobie._</span>
@@ -25,7 +25,7 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 </code></pre>
 </div>
@@ -200,7 +200,7 @@
 
 <h2 id="how-do-i-set-the-chunk-size-for-streaming-results">How do I set the chunk size for streaming results?</h2>
 
-<p>By default streams constructed with the <code class="highlighter-rouge">sql</code> interpolator are fetched <code class="highlighter-rouge">Query.DefaultChunkSize</code> rows at a time (currently 512). If you wish to change this chunk size you can use <code class="highlighter-rouge">processWithChunkSize</code> for queries, and <code class="highlighter-rouge">withGeneratedKeysWithChunkSize</code> for updates that return results.</p>
+<p>By default streams constructed with the <code class="highlighter-rouge">sql</code> interpolator are fetched <code class="highlighter-rouge">Query.DefaultChunkSize</code> rows at a time (currently 512). If you wish to change this chunk size you can use <code class="highlighter-rouge">streamWithChunkSize</code> for queries, and <code class="highlighter-rouge">withGeneratedKeysWithChunkSize</code> for updates that return results.</p>
 
 <h2 id="my-postgres-domains-are-all-type-checking-as-distinct-how-can-i-get-my-yolo-tests-to-pass">My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?</h2>
 

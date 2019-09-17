@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.7.0"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.8.2"</span>
 </code></pre>
 </div>
 
@@ -14,7 +14,7 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 <span class="k">import</span> <span class="nn">doobie._</span>
 <span class="k">import</span> <span class="nn">doobie.implicits._</span>
@@ -31,7 +31,7 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 </code></pre>
 </div>
@@ -95,7 +95,7 @@
 </code></pre>
 </div>
 
-<p>And the final, most general construction simply requires evidence that your taget type can be translated to and from <code class="highlighter-rouge">String</code>.</p>
+<p>And the final, most general construction simply requires evidence that your target type can be translated to and from <code class="highlighter-rouge">String</code>.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">FooBar</span>
 
@@ -313,6 +313,40 @@ Note: the following API was introduced in version 0.5.2 and is experimental. Com
 <h3 id="fastpath">Fastpath</h3>
 
 <p><strong>doobie</strong> provides an algebra and free monad for constructing programs that use the <code class="highlighter-rouge">FastPathAPI</code> provided by the PostgreSQL JDBC driver, however this API is mostly deprecated in favor of server-side statements (see above). And in any case I can’t find an example of how you would use it from Java so I don’t have an example here. But if you’re using it let me know and we can figure it out.</p>
+
+<h3 id="explainexplain-analyze">EXPLAIN/EXPLAIN ANALYZE</h3>
+
+<p>The PostgreSQL server can provide an analysis of any query, using the <code class="highlighter-rouge">EXPLAIN</code> keyword. <strong>doobie</strong> can run <code class="highlighter-rouge">EXPLAIN</code>
+on any <code class="highlighter-rouge">Query0</code> or <code class="highlighter-rouge">Query</code> object, as long as <code class="highlighter-rouge">doobie.postgres._</code> and <code class="highlighter-rouge">doobie.postgres.implicits._</code> have been imported.
+Using an example from earlier in the book:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">sql</span><span class="s">"select name from country"</span>
+  <span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>    <span class="c1">// Query0[String]
+</span>  <span class="o">.</span><span class="n">explain</span>
+  <span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
+  <span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
+<span class="c1">// Seq Scan on country  (cost=0.00..8.87 rows=287 width=11)
+</span></code></pre>
+</div>
+
+<p>Similary, <code class="highlighter-rouge">explainAnalyze</code> will analyze the query <strong>and</strong> run it, comparing the query planner’s estimates with real
+performance. Using the example above again:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">sql</span><span class="s">"select name from country"</span>
+  <span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>    <span class="c1">// Query0[String]
+</span>  <span class="o">.</span><span class="n">explainAnalyze</span>
+  <span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
+  <span class="o">.</span><span class="n">unsafeRunSync</span>
+  <span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
+<span class="c1">// Seq Scan on country  (cost=0.00..8.87 rows=287 width=11) (actual time=0.018..0.114 rows=239 loops=1)
+// Planning time: 0.654 ms
+// Execution time: 0.218 ms
+</span></code></pre>
+</div>
+
+<p><code class="highlighter-rouge">explain</code> and <code class="highlighter-rouge">explainAnalyze</code> both return a <code class="highlighter-rouge">ConnectinIO[List[String]]</code> result, where each member of the list is one
+row of the query planner’s output.</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
 hljs.initHighlighting();
               </script><script src="/doobie/js/main.js"></script></body></html>

@@ -9,7 +9,7 @@
 <span class="k">import</span> <span class="nn">doobie.util.ExecutionContexts</span>
 <span class="k">import</span> <span class="nn">cats._</span>
 <span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 
 <span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
@@ -23,7 +23,7 @@
 </span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
 </span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
 </span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span> <span class="c1">// just for testing
+</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
 </span><span class="o">)</span>
 
 <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
@@ -59,8 +59,8 @@
 </span><span class="n">p</span><span class="o">.</span><span class="n">attempt</span>
 <span class="c1">// res0: ConnectionIO[Either[Throwable, Int]] = Suspend(
 //   HandleErrorWith(
-//     FlatMapped(Pure(42), cats.Monad$$Lambda$15037/441700193@4477e901),
-//     cats.ApplicativeError$$Lambda$15132/305444267@27d27086
+//     FlatMapped(Pure(42), cats.Monad$$Lambda$38315/1209016539@7effbdaa),
+//     cats.ApplicativeError$$Lambda$38410/10447997@72f1425d
 //   )
 // )
 </span></code></pre>

@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.h2database.com/html/main.html">H2</a> . To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span> <span class="o">%</span> <span class="s">"0.7.0"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span> <span class="o">%</span> <span class="s">"0.8.2"</span>
 </code></pre>
 </div>
 
@@ -48,13 +48,13 @@
 </span>  <span class="k">val</span> <span class="n">transactor</span><span class="k">:</span> <span class="kt">Resource</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">H2Transactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">]]</span> <span class="k">=</span>
     <span class="k">for</span> <span class="o">{</span>
       <span class="n">ce</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">fixedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="mi">32</span><span class="o">)</span> <span class="c1">// our connect EC
-</span>      <span class="n">te</span> <span class="k">&lt;-</span> <span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">cachedThreadPool</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our transaction EC
+</span>      <span class="n">be</span> <span class="k">&lt;-</span> <span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>    <span class="c1">// our blocking EC
 </span>      <span class="n">xa</span> <span class="k">&lt;-</span> <span class="n">H2Transactor</span><span class="o">.</span><span class="n">newH2Transactor</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
               <span class="s">"jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"</span><span class="o">,</span> <span class="c1">// connect URL
 </span>              <span class="s">"sa"</span><span class="o">,</span>                                   <span class="c1">// username
 </span>              <span class="s">""</span><span class="o">,</span>                                     <span class="c1">// password
 </span>              <span class="n">ce</span><span class="o">,</span>                                     <span class="c1">// await connection here
-</span>              <span class="n">te</span>                                      <span class="c1">// execute JDBC operations here
+</span>              <span class="n">be</span>                                      <span class="c1">// execute JDBC operations here
 </span>            <span class="o">)</span>
     <span class="o">}</span> <span class="k">yield</span> <span class="n">xa</span>
 
