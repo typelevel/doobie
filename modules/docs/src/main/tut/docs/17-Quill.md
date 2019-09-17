@@ -17,7 +17,7 @@ libraryDependencies += "org.tpolecat" %% "doobie-quill" % "{{site.doobieVersion}
 The examples below require the following imports.
 
 ```scala mdoc:silent
-import io.getquill._
+import io.getquill.{ idiom => _, _ }
 import doobie.quill.DoobieContext
 ```
 

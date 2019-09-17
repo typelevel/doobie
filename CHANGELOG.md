@@ -9,7 +9,9 @@ This file summarizes **notable** changes for each release, but does not describe
 (none yet)
 
 
-### <a name="0.8.0"></a>New and Noteworthy for Version 0.8.0
+### <a name="0.8.2"></a>New and Noteworthy for Version 0.8.2
+
+*Note that tags exist for 0.8.0 and 0.8.1 but there are no artifacts due to various screwups. 0.8.2 is the first release on the 0.8.x series.*
 
 This is mostly an upgrade for Cats 2.0 and associated upstream releases. Note that **Scala 2.11** is no longer supported, please upgrade!
 
