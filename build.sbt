@@ -25,6 +25,9 @@ lazy val scala212Version      = "2.12.10"
 lazy val scala213Version      = "2.13.0"
 lazy val slf4jVersion         = "1.7.28"
 
+// These are releases to ignore during MiMa checks
+lazy val botchedReleases = Set("0.8.0", "0.8.1")
+
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
@@ -80,11 +83,13 @@ lazy val publishSettings = Seq(
   developers := List(
     Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
   ),
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala")
+  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala"),
+  mimaPreviousArtifacts ~= { as => as.filterNot(a => botchedReleases.contains(a.revision)) }
 )
 
 lazy val noPublishSettings = Seq(
-  skip in publish := true
+  skip in publish := true,
+  mimaPreviousArtifacts := Set()
 )
 
 lazy val modules: List[ProjectReference] = List(
