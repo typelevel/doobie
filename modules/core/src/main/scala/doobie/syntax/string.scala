@@ -4,21 +4,19 @@
 
 package doobie.syntax
 
-import doobie.util.param.Param
+import doobie.util.fragment.{Elem, Fragment}
 import doobie.util.pos.Pos
-import doobie.util.fragment.Fragment
-import shapeless.{ HList, ProductArgs }
 
 /**
  * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
- * interpolated values of type `A` and `B` (which must have `[[Param]]` instances, derived
- * automatically from `Put`) yields a value of type `[[Fragment]]`.
+ * interpolated values of type `A` and `B` (which must have instances of `Put`)
+ * yields a value of type `[[Fragment]]`.
  */
-final class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
+final class SqlInterpolator(private val sc: StringContext) extends AnyVal {
 
-  private def mkFragment[A <: HList](a: A, token: Boolean)(implicit ev: Param[A]): Fragment = {
+  private def mkFragment(parts: List[Elem], token: Boolean, pos: Pos): Fragment = {
     val sql = sc.parts.mkString("", "?", if (token) " " else "")
-    Fragment(sql, ev.elems(a), Some(pos))
+    Fragment(sql, parts, Some(pos))
   }
 
   /**
@@ -27,26 +25,22 @@ final class SqlInterpolator(private val sc: StringContext)(implicit pos: Pos) {
    * what you want, and it makes it easier to concatenate fragments because you don't need to
    * think about intervening whitespace. If you do not want this behavior, use `fr0`.
    */
-  object fr extends ProductArgs {
-    def applyProduct[A <: HList : Param](a: A): Fragment = mkFragment(a, true)
-  }
+  def fr(a: Elem*)(implicit pos: Pos) = mkFragment(a.toList, true, pos)
 
   /** Alternative name for the `fr0` interpolator. */
-  final val sql: fr0.type = fr0
+  def sql(a: Elem*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
 
   /**
    * Interpolator for a statement fragment that can contain interpolated values. Unlike `fr` no
    * attempt is made to be helpful with respect to whitespace.
    */
-  object fr0 extends ProductArgs {
-    def applyProduct[A <: HList : Param](a: A): Fragment = mkFragment(a, false)
-  }
+  def fr0(a: Elem*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
 
 }
 
 trait ToSqlInterpolator {
-  implicit def toSqlInterpolator(sc: StringContext)(implicit pos: Pos): SqlInterpolator =
-    new SqlInterpolator(sc)(pos)
+  implicit def toSqlInterpolator(sc: StringContext): SqlInterpolator =
+    new SqlInterpolator(sc)
 }
 
 object string extends ToSqlInterpolator
