@@ -260,11 +260,11 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">pointRead</span><span class="k">:</span> <span class="kt">Read</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Read</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">map</span> <span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Point</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// pointRead: Read[Point] = doobie.util.Read@2db4392a
+<span class="c1">// pointRead: Read[Point] = doobie.util.Read@75905b15
 </span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="n">pointWrite</span><span class="k">:</span> <span class="kt">Write</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Write</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">contramap</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">))</span>
-<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@669b2dbc
+<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@4c3cd1de
 </span></code></pre>
 </div>
 

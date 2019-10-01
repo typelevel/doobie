@@ -2,7 +2,7 @@
 
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.8.2"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span> <span class="o">%</span> <span class="s">"0.8.4"</span>
 </code></pre>
 </div>
 
@@ -339,9 +339,9 @@ performance. Using the example above again:</p>
   <span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
   <span class="o">.</span><span class="n">unsafeRunSync</span>
   <span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
-<span class="c1">// Seq Scan on country  (cost=0.00..8.87 rows=287 width=11) (actual time=0.018..0.114 rows=239 loops=1)
-// Planning time: 0.654 ms
-// Execution time: 0.218 ms
+<span class="c1">// Seq Scan on country  (cost=0.00..8.87 rows=287 width=11) (actual time=0.009..0.086 rows=239 loops=1)
+// Planning time: 0.344 ms
+// Execution time: 0.175 ms
 </span></code></pre>
 </div>
 

@@ -137,7 +137,7 @@ INFO: Successful Statement Execution:
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">trivial</span> <span class="k">=</span> <span class="nc">LogHandler</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="nc">Console</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">"*** "</span> <span class="o">+</span> <span class="n">e</span><span class="o">))</span>
 <span class="c1">// trivial: LogHandler = LogHandler(&lt;function1&gt;)
 </span><span class="n">sql</span><span class="s">"select 42"</span><span class="o">.</span><span class="n">queryWithLogHandler</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="n">trivial</span><span class="o">).</span><span class="n">unique</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="c1">// *** Success(select 42,List(),810151 nanoseconds,330298 nanoseconds)
+<span class="c1">// *** Success(select 42,List(),691803 nanoseconds,196654 nanoseconds)
 // res1: Int = 42
 </span></code></pre>
 </div>
