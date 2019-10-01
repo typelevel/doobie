@@ -6,7 +6,7 @@ package doobie.syntax
 
 import doobie.util.Put
 import doobie.util.fragment.Fragment
-import doobie.util.param.Param.Elem.{Arg, Opt}
+import doobie.util.fragment.Elem.{Arg, Opt}
 import doobie.util.pos.Pos
 
 final class PutOps[A : Put](a: A) {
