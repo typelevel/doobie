@@ -33,7 +33,7 @@ jobs:
         - project/travis-before-build.sh
       script:
         - sbt ++$TRAVIS_SCALA_VERSION test
-        - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
+        # - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
         - sbt ++$TRAVIS_SCALA_VERSION -J-XX:+UseG1GC docs/mdoc
       scala: *scala_version_212
       jdk: *java_8
