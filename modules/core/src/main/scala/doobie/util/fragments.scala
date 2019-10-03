@@ -63,4 +63,8 @@ object fragments {
   /** Returns `(f)`. */
   def parentheses(f: Fragment): Fragment = fr0"(" ++ f ++ fr")"
 
+  /** Returns `?,?,...,?` for the values in `a`. */
+  def values[A](a: A)(implicit w: Write[A]): Fragment =
+    w.toFragment(a)
+
 }
