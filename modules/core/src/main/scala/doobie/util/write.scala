@@ -45,8 +45,7 @@ final class Write[A](
       { case (rs, n, (a, b)) => unsafeUpdate(rs, n, a); fb.unsafeUpdate(rs, n + length, b) }
     )
 
-  def toFragment(a: A): Fragment = {
-    val sql = List.fill(length)("?").mkString(",")
+  def toFragment(a: A, sql: String = List.fill(length)("?").mkString(",")): Fragment = {
     val elems: List[Elem] = (puts zip toList(a)).map {
       case ((p: Put[a], NoNulls), a) => Elem.Arg(a.asInstanceOf[a], p)
       case ((p: Put[a], Nullable), a) => Elem.Opt(a.asInstanceOf[Option[a]], p)
