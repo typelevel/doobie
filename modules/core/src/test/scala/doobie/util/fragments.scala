@@ -7,10 +7,22 @@ package doobie.util
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
+import cats.effect.ContextShift
+import scala.concurrent.ExecutionContext
+import cats.effect.IO
 
 
 object fragmentsspec extends Specification {
   import Fragments._
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+
+  val xa = Transactor.fromDriverManager[IO](
+    "org.h2.Driver",
+    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    "sa", ""
+  )
 
   "Fragments" >> {
 
@@ -120,6 +132,21 @@ object fragmentsspec extends Specification {
 
     "whereOrOpt (none)" in {
       whereOrOpt(None, None).query[Unit].sql must_== ""
+    }
+
+    case class Person(name: String, age: Int)
+    case class Contact(person: Person, address: Option[String])
+
+    "values (1)" in {
+      val c = Contact(Person("Bob", 42), Some("addr"))
+      val f = fr"select" ++ Fragments.values(c)
+      f.query[Contact].unique.transact(xa).unsafeRunSync must_== c
+    }
+
+    "values (2)" in {
+      val c = Contact(Person("Bob", 42), None)
+      val f = fr"select" ++ Fragments.values(c)
+      f.query[Contact].unique.transact(xa).unsafeRunSync must_== c
     }
 
   }
