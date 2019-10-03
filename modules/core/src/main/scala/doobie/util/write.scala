@@ -45,6 +45,10 @@ final class Write[A](
       { case (rs, n, (a, b)) => unsafeUpdate(rs, n, a); fb.unsafeUpdate(rs, n + length, b) }
     )
 
+  /**
+   * Given a value of type `A` and an appropriately parameterized SQL string we can construct a
+   * `Fragment`. If `sql` is unspecified a comma-separated list of `length` placeholders will be used.
+   */
   def toFragment(a: A, sql: String = List.fill(length)("?").mkString(",")): Fragment = {
     val elems: List[Elem] = (puts zip toList(a)).map {
       case ((p: Put[a], NoNulls), a) => Elem.Arg(a.asInstanceOf[a], p)
