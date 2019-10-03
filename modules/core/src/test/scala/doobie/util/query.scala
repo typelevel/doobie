@@ -124,4 +124,12 @@ object queryspec extends Specification {
     }
   }
 
+  val qf = sql"select 'foo', ${1:Int}, ${Option.empty[Int]}, ${Option(42)}".query[String] // wrong!
+  "Query to Fragment and back" >> {
+    "test" in {
+      val qfʹ = qf.toFragment.query[(String, Int, Option[Int], Option[Int])]
+      qfʹ.unique.transact(xa).unsafeRunSync must_=== (("foo", 1, None, Some(42)))
+    }
+  }
+
 }
