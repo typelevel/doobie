@@ -10,6 +10,9 @@ import doobie.free.{ FPS, FRS, PreparedStatementIO, ResultSetIO }
 import java.sql.{ PreparedStatement, ResultSet }
 import shapeless.{ HList, HNil, ::, Generic, Lazy, <:!< }
 import shapeless.labelled.{ FieldType }
+import doobie.util.fragment.Fragment
+import doobie.util.pos.Pos
+import doobie.util.param.Param.Elem
 
 final class Write[A](
   val puts: List[(Put[_], NullabilityKnown)],
@@ -41,6 +44,15 @@ final class Write[A](
       { case (ps, n, (a, b)) => unsafeSet(ps, n, a); fb.unsafeSet(ps, n + length, b) },
       { case (rs, n, (a, b)) => unsafeUpdate(rs, n, a); fb.unsafeUpdate(rs, n + length, b) }
     )
+
+  def toFragment(a: A): Fragment = {
+    val sql = List.fill(length)("?").mkString(",")
+    val elems: List[Elem] = (puts zip toList(a)).map {
+      case ((p: Put[a], NoNulls), a) => Elem.Arg(a.asInstanceOf[a], p)
+      case ((p: Put[a], Nullable), a) => Elem.Opt(a.asInstanceOf[Option[a]], p)
+    }
+    Fragment(sql, elems, None)
+  }
 
 }
 
