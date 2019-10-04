@@ -32,7 +32,7 @@ jobs:
         - project/travis-before-build.sh
       script:
         - sbt ++$TRAVIS_SCALA_VERSION test
-        - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
+        # - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
       scala: *scala_version_211
       jdk: *java_8
     - <<: *tests
@@ -40,14 +40,14 @@ jobs:
       jdk: *java_8
       script:
         - sbt ++$TRAVIS_SCALA_VERSION test
-        - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
+        # - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues
         - sbt ++$TRAVIS_SCALA_VERSION -J-XX:+UseG1GC docs/tutQuick
     - <<: *tests
       scala: *scala_version_213
       jdk: *java_8
       script:
         - sbt ++$TRAVIS_SCALA_VERSION thirteen/test
-        - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
+        # - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
     - <<: *tests
       scala: *scala_version_212
       jdk: *java_11
@@ -56,7 +56,7 @@ jobs:
       jdk: *java_11
       script:
         - sbt ++$TRAVIS_SCALA_VERSION thirteen/test
-        - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
+        # - sbt ++$TRAVIS_SCALA_VERSION thirteen/mimaReportBinaryIssues
 
 notifications:
   webhooks:
