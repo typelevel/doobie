@@ -48,6 +48,7 @@ final class Write[A](
    * Given a value of type `A` and an appropriately parameterized SQL string we can construct a
    * `Fragment`. If `sql` is unspecified a comma-separated list of `length` placeholders will be used.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.AsInstanceOf"))
   def toFragment(a: A, sql: String = List.fill(length)("?").mkString(",")): Fragment = {
     val elems: List[Elem] = (puts zip toList(a)).map {
       case ((p: Put[a], NoNulls), a) => Elem.Arg(a.asInstanceOf[a], p)

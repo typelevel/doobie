@@ -134,8 +134,8 @@ object fragmentsspec extends Specification {
       whereOrOpt(None, None).query[Unit].sql must_== ""
     }
 
-    case class Person(name: String, age: Int)
-    case class Contact(person: Person, address: Option[String])
+    final case class Person(name: String, age: Int)
+    final case class Contact(person: Person, address: Option[String])
 
     "values (1)" in {
       val c = Contact(Person("Bob", 42), Some("addr"))
