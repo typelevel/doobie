@@ -216,7 +216,8 @@ lazy val mimaSettings = {
 }
 
 lazy val publishSettings = Seq(
-  useGpg := false,
+  // same public key used for 0.8.x
+  usePgpKeyHex("EB2C59E7E893D8B3EC807D5880E48CCCBA03186B"),
   publishMavenStyle := true,
   publishArtifact in Test := false,
   homepage := Some(url("https://github.com/tpolecat/doobie")),
