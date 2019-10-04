@@ -277,17 +277,17 @@ lazy val doobie = project.in(file("."))
     releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
-      releaseStepCommand("mimaReportBinaryIssues"),
+      // releaseStepCommand("mimaReportBinaryIssues"),
       inquireVersions,
       runClean,
       runTest,
-      releaseStepCommand("docs/tut"), // annoying that we have to do this twice
+      // releaseStepCommand("docs/tut"), // annoying that we have to do this twice
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       releaseStepCommandAndRemaining("+publishSigned"), // publishArtifacts,
       releaseStepCommand("sonatypeReleaseAll"),
-      releaseStepCommand("docs/publishMicrosite"),
+      // releaseStepCommand("docs/publishMicrosite"),
       setNextVersion,
       commitNextVersion,
       pushChanges
