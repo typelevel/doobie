@@ -77,6 +77,10 @@ object query {
      */
     def pos: Option[Pos]
 
+    /** Convert this Query to a `Fragment`. */
+    def toFragment(a: A): Fragment =
+      write.toFragment(a, sql)
+
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
      * column types.
@@ -194,7 +198,7 @@ object query {
       new Query0[B] {
         def sql = outer.sql
         def pos = outer.pos
-        // def toFragment = outer.toFragment(a)
+        def toFragment = outer.toFragment(a)
         def analysis = outer.analysis
         def outputAnalysis = outer.outputAnalysis
         def streamWithChunkSize(n: Int) = outer.streamWithChunkSize(a, n)
@@ -276,6 +280,9 @@ object query {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis]
+
+    /** Convert this Query0 to a `Fragment`. */
+    def toFragment: Fragment
 
     /**
      * Program to construct an inspection of the query. Calls `f` with the SQL

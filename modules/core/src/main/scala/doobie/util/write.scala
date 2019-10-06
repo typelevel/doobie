@@ -10,6 +10,8 @@ import doobie.free.{ FPS, FRS, PreparedStatementIO, ResultSetIO }
 import java.sql.{ PreparedStatement, ResultSet }
 import shapeless.{ HList, HNil, ::, Generic, Lazy, <:!< }
 import shapeless.labelled.{ FieldType }
+import doobie.util.fragment.Fragment
+import doobie.util.param.Param.Elem
 
 final class Write[A](
   val puts: List[(Put[_], NullabilityKnown)],
@@ -41,6 +43,18 @@ final class Write[A](
       { case (ps, n, (a, b)) => unsafeSet(ps, n, a); fb.unsafeSet(ps, n + length, b) },
       { case (rs, n, (a, b)) => unsafeUpdate(rs, n, a); fb.unsafeUpdate(rs, n + length, b) }
     )
+
+  /**
+   * Given a value of type `A` and an appropriately parameterized SQL string we can construct a
+   * `Fragment`. If `sql` is unspecified a comma-separated list of `length` placeholders will be used.
+   */
+  def toFragment(a: A, sql: String = List.fill(length)("?").mkString(",")): Fragment = {
+    val elems: List[Elem] = (puts zip toList(a)).map {
+      case ((p: Put[a], NoNulls), a) => Elem.Arg(a.asInstanceOf[a], p)
+      case ((p: Put[a], Nullable), a) => Elem.Opt(a.asInstanceOf[Option[a]], p)
+    }
+    Fragment(sql, elems, None)
+  }
 
 }
 
