@@ -163,5 +163,24 @@ object sqldata { module =>
       def shift: SQLDataIO[Unit] = module.shift
       def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]) = module.evalOn(ec)(fa)
     }
+
+  // SQLDataIO is a Logger
+  implicit val LoggerSQLDataIO: io.chrisdavenport.log4cats.Logger[SQLDataIO] =
+    new io.chrisdavenport.log4cats.Logger[SQLDataIO] {
+
+      def error(t: Throwable)(message: => String) = module.error(t)(message)
+      def warn (t: Throwable)(message: => String) = module.warn (t)(message)
+      def info (t: Throwable)(message: => String) = module.info (t)(message)
+      def debug(t: Throwable)(message: => String) = module.debug(t)(message)
+      def trace(t: Throwable)(message: => String) = module.trace(t)(message)
+
+      def error(message: => String) = module.error(message)
+      def warn (message: => String) = module.warn (message)
+      def info (message: => String) = module.info (message)
+      def debug(message: => String) = module.debug(message)
+      def trace(message: => String) = module.trace(message)
+
+    }
+
 }
 

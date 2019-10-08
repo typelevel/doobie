@@ -6,6 +6,7 @@ package doobie.free
 
 import cats.effect.Async
 import cats.effect._
+import io.chrisdavenport.log4cats.Logger
 
 trait Types {
   /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]
@@ -125,6 +126,48 @@ trait Instances {
 
   /** @group Typeclass Instances */  implicit val ContextShiftStatementIO: ContextShift[StatementIO] =
     statement.ContextShiftStatementIO
+
+  /** @group Typeclass Instances */  implicit val LoggerBlobIO: Logger[BlobIO] =
+    blob.LoggerBlobIO
+
+  /** @group Typeclass Instances */  implicit val LoggerCallableStatementIO: Logger[CallableStatementIO] =
+    callablestatement.LoggerCallableStatementIO
+
+  /** @group Typeclass Instances */  implicit val LoggerClobIO: Logger[ClobIO] =
+    clob.LoggerClobIO
+
+  /** @group Typeclass Instances */  implicit val LoggerConnectionIO: Logger[ConnectionIO] =
+    connection.LoggerConnectionIO
+
+  /** @group Typeclass Instances */  implicit val LoggerDatabaseMetaDataIO: Logger[DatabaseMetaDataIO] =
+    databasemetadata.LoggerDatabaseMetaDataIO
+
+  /** @group Typeclass Instances */  implicit val LoggerDriverIO: Logger[DriverIO] =
+    driver.LoggerDriverIO
+
+  /** @group Typeclass Instances */  implicit val LoggerNClobIO: Logger[NClobIO] =
+    nclob.LoggerNClobIO
+
+  /** @group Typeclass Instances */  implicit val LoggerPreparedStatementIO: Logger[PreparedStatementIO] =
+    preparedstatement.LoggerPreparedStatementIO
+
+  /** @group Typeclass Instances */  implicit val LoggerRefIO: Logger[RefIO] =
+    ref.LoggerRefIO
+
+  /** @group Typeclass Instances */  implicit val LoggerResultSetIO: Logger[ResultSetIO] =
+    resultset.LoggerResultSetIO
+
+  /** @group Typeclass Instances */  implicit val LoggerSQLDataIO: Logger[SQLDataIO] =
+    sqldata.LoggerSQLDataIO
+
+  /** @group Typeclass Instances */  implicit val LoggerSQLInputIO: Logger[SQLInputIO] =
+    sqlinput.LoggerSQLInputIO
+
+  /** @group Typeclass Instances */  implicit val LoggerSQLOutputIO: Logger[SQLOutputIO] =
+    sqloutput.LoggerSQLOutputIO
+
+  /** @group Typeclass Instances */  implicit val LoggerStatementIO: Logger[StatementIO] =
+    statement.LoggerStatementIO
 
 
 }
