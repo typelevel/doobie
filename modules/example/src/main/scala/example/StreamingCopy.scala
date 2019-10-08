@@ -13,18 +13,19 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import fs2.Stream
+import io.chrisdavenport.log4cats.Logger
 
 /**
  * Example of resource-safe transactional database-to-database copy with fs2. If you induce failures
  * on either side (by putting a typo in the `read` or `write` statements) both transactions will
  * roll back.
  */
-object StreamingCopy extends IOApp {
+object StreamingCopy extends IOApp with DefaultLogger {
 
   /**
    * Cross-transactor streaming when the `source` and `sink` have the same schema.
    */
-  def fuseMap[F[_]: Effect, A, B](
+  def fuseMap[F[_]: Effect: Logger, A, B](
     source: Stream[ConnectionIO, A],
     sink:   A => ConnectionIO[B]
   )(
@@ -39,7 +40,7 @@ object StreamingCopy extends IOApp {
    * The source output and sink input types can differ. This enables data transformations involving
    * potentially different database schemas.
    */
-  def fuseMapGeneric[F[_]: Effect, A, B, C](
+  def fuseMapGeneric[F[_]: Effect: Logger, A, B, C](
     source:       Stream[ConnectionIO, A],
     sourceToSink: A => B,
     sink:         B => ConnectionIO[C]
@@ -49,7 +50,7 @@ object StreamingCopy extends IOApp {
   ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
-    def interpS[T](f: ConnectionIO[T]): Connection => F[T] =
+    def interpS[T](f: ConnectionIO[T]): ((Connection, Logger[F])) => F[T] =
       f.foldMap(sinkXA.interpret).run
 
     // Open a connection in `F` via the sink transactor. Need patmat due to the existential.
@@ -61,7 +62,7 @@ object StreamingCopy extends IOApp {
 
       // Now we can interpret a ConnectionIO into a Stream of F via the sink interpreter.
       def evalS(f: ConnectionIO[_]): Stream[F, Nothing] =
-        Stream.eval_(interpS(f)(c))
+        Stream.eval_(interpS(f)((c, Logger[F])))
 
       // And can thus lift all the sink operations into Stream of F
       val sinkʹ  = (a: A) => evalS(sink(sourceToSink(a)))

@@ -15,9 +15,13 @@ import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined._
 import doobie.util.invariant._
 import scala.concurrent.ExecutionContext
-
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object refinedtypes extends Specification {
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

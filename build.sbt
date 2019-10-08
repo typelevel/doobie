@@ -72,10 +72,11 @@ lazy val commonSettings =
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
-      "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
-      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
-    ),
+      "org.scalacheck"    %% "scalacheck"        % scalaCheckVersion % "test",
+      "org.specs2"        %% "specs2-core"       % specs2Version     % "test",
+      "org.specs2"        %% "specs2-scalacheck" % specs2Version     % "test",
+      "io.chrisdavenport" %% "log4cats-slf4j"    % log4CatsVersion   % "test"
+      ),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion),
   )
 
@@ -235,9 +236,10 @@ lazy val example = project
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2Version
+      "co.fs2"            %% "fs2-io"         % fs2Version,
+      "io.chrisdavenport" %% "log4cats-slf4j" % log4CatsVersion
     )
-  )
+)
 
 lazy val postgres = project
   .in(file("modules/postgres"))
@@ -365,8 +367,9 @@ lazy val scalatest = project
     name := s"doobie-scalatest",
     description := "Scalatest support for doobie.",
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.h2database"  %  "h2"       % h2Version % "test"
+      "org.scalatest"     %% "scalatest"      % scalatestVersion,
+      "com.h2database"     %  "h2"            % h2Version         % "test",
+      "io.chrisdavenport" %% "log4cats-slf4j" % log4CatsVersion   % "test"
     )
   )
 
@@ -378,6 +381,9 @@ lazy val bench = project
   .settings(doobieSettings)
   .settings(crossScalaAll)
   .settings(noPublishSettings)
+  .settings(
+    libraryDependencies += "io.chrisdavenport" %% "log4cats-slf4j" % log4CatsVersion
+  )
 
 lazy val docs = project
   .in(file("modules/docs"))

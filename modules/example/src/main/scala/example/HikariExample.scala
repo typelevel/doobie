@@ -10,7 +10,7 @@ import doobie._
 import doobie.hikari._
 import doobie.implicits._
 
-object HikariExample extends IOApp {
+object HikariExample extends IOApp with DefaultLogger {
 
   // Typically you construct a transactor this way, using lifetime-managed thread pools.
   val transactor: Resource[IO, HikariTransactor[IO]] =

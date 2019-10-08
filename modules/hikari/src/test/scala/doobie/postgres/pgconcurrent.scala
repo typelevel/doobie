@@ -15,6 +15,8 @@ import org.specs2.mutable.Specification
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 
 trait pgconcurrent[F[_]] extends Specification {
@@ -22,6 +24,7 @@ trait pgconcurrent[F[_]] extends Specification {
   implicit def E: ConcurrentEffect[F]
   implicit def T: Timer[F]
   implicit def contextShift: ContextShift[F]
+  implicit def logger: Logger[F]
 
   def transactor() = {
 
@@ -63,6 +66,7 @@ trait pgconcurrent[F[_]] extends Specification {
 
 object pgconcurrentIO extends pgconcurrent[IO] {
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
-  implicit def T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
+  val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
+  val T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
+  val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 }

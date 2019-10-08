@@ -15,9 +15,13 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import java.util.concurrent.Executors
-
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object `824` extends Specification {
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

@@ -4,28 +4,14 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, Effect, IO }
 import cats.effect.syntax.effect._
-import cats.syntax.applicativeError._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.postgres.enums._
 import doobie.util.invariant._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 
-
-trait pgreaderrorsspec[F[_]] extends Specification {
-
-  implicit def E: Effect[F]
-  implicit def contextShift: ContextShift[F]
-
-  lazy val xa = Transactor.fromDriverManager[F](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+trait pgreaderrorsspec extends PgSpec {
 
   implicit val MyEnumMetaOpt: Meta[MyEnum] = pgEnumStringOpt("myenum", {
     case "foo" => Some(MyEnum.Foo)
@@ -53,9 +39,4 @@ trait pgreaderrorsspec[F[_]] extends Specification {
     r must_== Left(InvalidEnum[MyJavaEnum]("invalid"))
   }
 
-}
-
-object pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
-  implicit val E: Effect[IO] = IO.ioEffect
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 }

@@ -17,7 +17,7 @@ import doobie.util.stream.repeatEvalChunks
  * From a user question on Gitter, how can we have an equivalent to `Stream[A]` that constructs a
  * stream of untyped maps.
  */
-object GenericStream extends IOApp {
+object GenericStream extends IOApp with DefaultLogger {
 
   type Row = Map[String, Any]
 

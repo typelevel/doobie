@@ -8,7 +8,7 @@ import cats.effect.{ IO, IOApp, ExitCode }
 import cats.implicits._
 import doobie._, doobie.implicits._
 
-object FragmentExample extends IOApp {
+object FragmentExample extends IOApp with DefaultLogger {
 
   // Import some convenience constructors.
   import Fragments.{ in, whereAndOpt }

@@ -25,7 +25,7 @@ import scala.concurrent.duration._
   *
   * to send a notification. The program will exit after reading five notifications.
   */
-object PostgresNotify extends IOApp {
+object PostgresNotify extends IOApp with DefaultLogger {
 
   /** A nonblocking timer for ConnectionIO. */
   implicit val ConnectionIOTimer: Timer[ConnectionIO] =

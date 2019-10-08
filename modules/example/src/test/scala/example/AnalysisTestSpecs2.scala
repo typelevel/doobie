@@ -9,12 +9,16 @@ import doobie._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
-
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object AnalysisTestSpecs2 extends Specification with IOChecker {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

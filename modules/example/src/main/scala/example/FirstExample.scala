@@ -12,7 +12,7 @@ import fs2.Stream
 import doobie._, doobie.implicits._
 
 // Example lifted from slick
-object FirstExample extends IOApp {
+object FirstExample extends IOApp with DefaultLogger {
 
   // Our data model
   final case class Supplier(id: Int, name: String, street: String, city: String, state: String, zip: String)

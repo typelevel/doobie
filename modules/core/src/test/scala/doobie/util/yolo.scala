@@ -6,13 +6,10 @@ package doobie
 package util
 
 import cats.effect.IO
+import com.github.ghik.silencer.silent
 import doobie.util.yolo._
 
-import org.specs2.mutable.Specification
-import com.github.ghik.silencer.silent
-
-
-object yolospec extends Specification {
+object yolospec extends H2Spec {
 
   // Kind of a bogus test; just checking for compilation
   "YOLO checks" should {

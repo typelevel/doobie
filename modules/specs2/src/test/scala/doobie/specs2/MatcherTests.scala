@@ -9,6 +9,8 @@ import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 
 trait MatcherChecks[M[_]] extends Specification
@@ -37,6 +39,11 @@ trait MatcherChecks[M[_]] extends Specification
 }
 
 class IOMatcherCheck extends MatcherChecks[IO] with IOChecker {
+
   def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
+
 }

@@ -16,8 +16,9 @@ import doobie.free.connection.ConnectionOp
 import doobie.implicits._
 import scala.concurrent.ExecutionContext
 import scala.io.StdIn
+import io.chrisdavenport.log4cats.Logger
 
-object coproduct extends IOApp {
+object coproduct extends IOApp with DefaultLogger {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
@@ -78,13 +79,13 @@ object coproduct extends IOApp {
 
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
-  val interp: Cop ~> Kleisli[IO, Connection, ?] = {
+  val interp: Cop ~> Kleisli[IO, (Connection, Logger[IO]), ?] = {
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
+    consoleInterp.liftK[(Connection, Logger[IO])] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
   }
 
   // Our interpreted program
-  val iprog: Kleisli[IO, Connection, Unit] = prog[Cop].foldMap(interp)
+  val iprog: Kleisli[IO, (Connection, Logger[IO]), Unit] = prog[Cop].foldMap(interp)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

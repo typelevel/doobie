@@ -11,12 +11,13 @@ import cats.Monad
 import cats.data.Kleisli
 import cats.effect.Sync
 import fs2.Stream
+import io.chrisdavenport.log4cats.Logger
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
-  def transact[M[_]: Monad](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
+  def transact[M[_]: Monad: Logger](xa: Transactor[M])(implicit ev: Stream[F, A] =:= Stream[ConnectionIO, A]): Stream[M, A] = xa.transP.apply(fa)
 }
 class KleisliStreamOps[A, B](fa: Stream[Kleisli[ConnectionIO, A, ?], B]) {
-  def transact[M[_]: Monad](xa: Transactor[M]): Stream[Kleisli[M, A, ?], B] = xa.transPK[A].apply(fa)
+  def transact[M[_]: Monad: Logger](xa: Transactor[M]): Stream[Kleisli[M, A, ?], B] = xa.transPK[A].apply(fa)
 }
 
 trait ToStreamOps {

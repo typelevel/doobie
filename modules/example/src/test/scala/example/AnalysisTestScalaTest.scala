@@ -9,11 +9,16 @@ import doobie.scalatest.IOChecker
 import doobie.util.transactor.Transactor
 import org.scalatest._
 import scala.concurrent.ExecutionContext
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

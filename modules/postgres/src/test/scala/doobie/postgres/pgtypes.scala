@@ -16,22 +16,11 @@ import java.math.{BigDecimal => JBigDecimal}
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
 
 // Establish that we can write and read various types.
 
-object pgtypesspec extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+object pgtypesspec extends PgSpec {
 
   def inOut[A: Get: Put](col: String, a: A): ConnectionIO[A] =
     for {

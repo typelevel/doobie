@@ -4,29 +4,17 @@
 
 package doobie.util
 
-import cats.effect.{ Async, ContextShift, IO }
+import cats.effect.{ Async, ContextShift }
 import doobie._, doobie.implicits._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 
-
-object transactorspec extends Specification {
+object transactorspec extends H2Spec {
 
   val q = sql"select 42".query[Int].unique
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  def xa[A[_]: Async: ContextShift] = Transactor.fromDriverManager[A](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
-  )
 
   "transactor" should {
 
     "support cats.effect.IO" in {
-      q.transact(xa[IO]).unsafeRunSync must_=== 42
+      q.transact(xa).unsafeRunSync must_=== 42
     }
 
   }
@@ -52,14 +40,14 @@ object transactorspec extends Specification {
 
     "Connection.close should be called on success" in {
       val tracker = new ConnectionTracker
-      val transactor = tracker.track(xa[IO])
+      val transactor = tracker.track(xa)
       sql"select 1".query[Int].unique.transact(transactor).unsafeRunSync
       tracker.connections.map(_.isClosed) must_== List(true)
     }
 
     "Connection.close should be called on failure" in {
       val tracker = new ConnectionTracker
-      val transactor = tracker.track(xa[IO])
+      val transactor = tracker.track(xa)
       sql"abc".query[Int].unique.transact(transactor).attempt.unsafeRunSync.toOption must_== None
       tracker.connections.map(_.isClosed) must_== List(true)
     }
@@ -70,14 +58,14 @@ object transactorspec extends Specification {
 
     "Connection.close should be called on success" in {
       val tracker = new ConnectionTracker
-      val transactor = tracker.track(xa[IO])
+      val transactor = tracker.track(xa)
       sql"select 1".query[Int].stream.compile.toList.transact(transactor).unsafeRunSync
       tracker.connections.map(_.isClosed) must_== List(true)
     }
 
     "Connection.close should be called on failure" in {
       val tracker = new ConnectionTracker
-      val transactor = tracker.track(xa[IO])
+      val transactor = tracker.track(xa)
       sql"abc".query[Int].stream.compile.toList.transact(transactor).attempt.unsafeRunSync.toOption must_== None
       tracker.connections.map(_.isClosed) must_== List(true)
     }

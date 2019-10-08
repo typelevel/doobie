@@ -12,7 +12,7 @@ import fs2.{ io, text }
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 
-object StreamToFile extends IOApp {
+object StreamToFile extends IOApp with DefaultLogger {
 
   private val blockerR = Blocker.fromExecutorService(IO(Executors.newFixedThreadPool(2)))
 

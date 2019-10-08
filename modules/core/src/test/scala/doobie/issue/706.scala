@@ -6,25 +6,13 @@ package doobie.issue
 
 import cats._
 import cats.implicits._
-import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.scalacheck.Prop.forAll
 import org.specs2.ScalaCheck
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import scala.Predef._
 
 
-object `706` extends Specification with ScalaCheck {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:issue-706;DB_CLOSE_DELAY=-1",
-    "sa", ""
-  )
+object `706` extends H2Spec with ScalaCheck {
 
   val setup: ConnectionIO[Unit] =
     sql"CREATE TABLE IF NOT EXISTS test (value INTEGER)".update.run.void

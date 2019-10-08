@@ -5,24 +5,11 @@
 package doobie.util
 
 import cats.implicits._
-import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import shapeless._
 
-
-object logspec extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
-  )
+object logspec extends H2Spec {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def eventForUniqueQuery[A: Write](sql: String, arg: A = HNil : HNil): LogEvent = {

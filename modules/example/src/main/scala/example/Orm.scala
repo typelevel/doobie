@@ -17,7 +17,7 @@ import shapeless.ops.hlist._
  * A super-simple ORM for super-simple data types. We assume auto-generated keys, represented
  * externally, and columns map 1:1 with fields and have the same names.
  */
-object Orm extends IOApp {
+object Orm extends IOApp with DefaultLogger {
 
   // to silence unused warnings
   def void[A](a: A): Unit = (a, ())._2

@@ -13,7 +13,7 @@ import doobie.free.connection.ConnectionIO
 import doobie.syntax.connectionio._
 import doobie.util.transactor.Transactor
 
-object CallableStatementExample extends IOApp {
+object CallableStatementExample extends IOApp with DefaultLogger {
 
   // cant be in world.sql as H2 does not support SQL functions
   def createFunc: ConnectionIO[Int] = {

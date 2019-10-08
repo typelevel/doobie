@@ -12,7 +12,7 @@ import doobie._
 import doobie.implicits._
 
 // JDBC program using the high-level API
-object HiUsage extends IOApp {
+object HiUsage extends IOApp with DefaultLogger {
 
   // A very simple data type we will read
   final case class CountryCode(code: Option[String])

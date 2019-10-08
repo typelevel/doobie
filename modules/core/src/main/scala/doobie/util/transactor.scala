@@ -8,7 +8,7 @@ import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, set
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-import cats.{Applicative, Defer, Monad, ~>}
+import cats.{ Defer, Monad, ~> }
 import cats.data.Kleisli
 import cats.effect.{Async, Blocker, Bracket, ContextShift, ExitCase, Resource, Sync}
 import cats.instances.long._
@@ -21,13 +21,14 @@ import javax.sql.DataSource
 import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.concurrent.ExecutionContext
+import _root_.io.chrisdavenport.log4cats.Logger
 
 object transactor  {
 
   import doobie.free.connection.AsyncConnectionIO
 
   /** @group Type Aliases */
-  type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Connection, ?]
+  type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, (Connection, Logger[M]), ?]
 
   /**
    * Data type representing the common setup, error-handling, and cleanup strategy associated with
@@ -103,7 +104,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev1: Sync[M], ev2: Logger[M]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to perform arbitrary configuration on the kernel value (changing the
@@ -121,19 +122,19 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: Bracket[M, Throwable]): Kleisli[M, Connection, ?] ~> M =
-      λ[Kleisli[M, Connection, ?] ~> M](k => connect(kernel).use(k.run))
+    def rawExec(implicit ev: Bracket[M, Throwable], lo: Logger[M]): Kleisli[M, (Connection, Logger[M]), ?] ~> M =
+      λ[Kleisli[M, (Connection, Logger[M]), ?] ~> M](k => connect(kernel).use(c => k.run((c, lo))))
 
     /**
       * Natural transformation that provides a connection and binds through a `Kleisli` program
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M]): Kleisli[M, Connection, ?] ~> M =
-      λ[Kleisli[M, Connection, ?] ~> M] { ka =>
-        connect(kernel).use { conn =>
-          strategy.resource.mapK(run(conn)).use { _ =>
-            ka.run(conn)
+    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M], lo: Logger[M]): Kleisli[M, (Connection, Logger[M]), ?] ~> M =
+      λ[Kleisli[M, (Connection, Logger[M]), ?] ~> M] { ka =>
+        connect(kernel).use { e =>
+          strategy.resource.mapK(run(e)).use { _ =>
+            ka.run((e, lo))
           }
         }
       }
@@ -144,10 +145,13 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawTrans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+    def rawTrans(
+      implicit ev: Bracket[M, Throwable],
+               lo: Logger[M]
+    ): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
-          f.foldMap(interpret).run(conn)
+          f.foldMap(interpret).run((conn, lo))
         }
       }
 
@@ -157,35 +161,38 @@ object transactor  {
      * program in `M`. This is the most common way to run a doobie program.
      * @group Natural Transformations
      */
-    def trans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+    def trans(
+      implicit ev: Bracket[M, Throwable],
+               lo: Logger[M]
+    ): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
-          strategy.resource.use(_ => f).foldMap(interpret).run(conn)
+          strategy.resource.use(_ => f).foldMap(interpret).run((conn, lo))
         }
       }
 
-    def rawTransP[T](implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
+    def rawTransP[T](implicit ev: Monad[M], lo: Logger[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
         Stream.resource(connect(kernel)).flatMap { conn =>
           s.translate(run(conn))
         }.scope
       }
 
-    def transP(implicit ev: Monad[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
+    def transP(implicit ev: Monad[M], lo: Logger[M]): Stream[ConnectionIO, ?] ~> Stream[M, ?] =
       λ[Stream[ConnectionIO, ?] ~> Stream[M, ?]] { s =>
         Stream.resource(connect(kernel)).flatMap { c =>
           Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
         }.scope
       }
 
-    def rawTransPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?] =
+    def rawTransPK[I](implicit ev: Monad[M], lo: Logger[M]): Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?] =
       λ[Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?]] { s =>
         Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
           s.translate(runKleisli[I](c))
         }.scope
       }
 
-    def transPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?] =
+    def transPK[I](implicit ev: Monad[M], lo: Logger[M]): Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?] =
       λ[Stream[Kleisli[ConnectionIO, I, ?], ?] ~> Stream[Kleisli[M, I, ?], ?]] { s =>
         Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
           Stream.resource(strategy.resource.mapK(Kleisli.liftK[ConnectionIO, I])).flatMap(_ => s)
@@ -193,14 +200,20 @@ object transactor  {
         }.scope
       }
 
-    private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
+    private def run(c: Connection)(
+      implicit ev: Monad[M],
+               lo: Logger[M]
+    ): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
-        f.foldMap(interpret).run(c)
+        f.foldMap(interpret).run((c, lo))
       }
 
-    private def runKleisli[B](c: Connection)(implicit ev: Monad[M]): Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?] =
+    private def runKleisli[B](c: Connection)(
+      implicit ev: Monad[M],
+               lo: Logger[M]
+    ): Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?] =
       λ[Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?]] { f =>
-        Kleisli(f.run(_).foldMap(interpret).run(c))
+        Kleisli(f.run(_).foldMap(interpret).run((c, lo)))
       }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -217,16 +230,6 @@ object transactor  {
       val strategy = strategy0
     }
 
-    /*
-     * Convert the effect type of this transactor from M to M0
-     */
-    def mapK[M0[_]](fk: M ~> M0)(implicit B: Bracket[M, Throwable], D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
-      Transactor[M0, A](
-        kernel,
-        connect.andThen(_.mapK(fk)),
-        interpret.andThen(λ[Kleisli[M, Connection, ?] ~> Kleisli[M0, Connection, ?]](_.mapK(fk))),
-        strategy
-      )
   }
 
   object Transactor {

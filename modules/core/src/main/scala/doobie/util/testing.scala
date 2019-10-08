@@ -22,6 +22,7 @@ import scala.Predef.augmentString
 import scala.reflect.runtime.universe.WeakTypeTag
 
 package testing {
+import _root_.io.chrisdavenport.log4cats.Logger
 
   /**
     * Common base trait for various checkers and matchers.
@@ -29,6 +30,7 @@ package testing {
   trait CheckerBase[M[_]] {
     // Effect type, required instances
     implicit def M: Effect[M]
+    implicit def logger: Logger[M]
     def transactor: Transactor[M]
     def colors: Colors = Colors.Ansi
   }
@@ -124,6 +126,7 @@ package testing {
   * Common utilities for query testing
   */
 package object testing {
+import _root_.io.chrisdavenport.log4cats.Logger
 
   def analyze(args: AnalysisArgs): ConnectionIO[AnalysisReport] =
     args.analysis.attempt
@@ -136,7 +139,7 @@ package object testing {
         )
       }
 
-  def analyzeIO[F[_]: Effect](
+  def analyzeIO[F[_]: Effect: Logger](
     args: AnalysisArgs,
     xa: Transactor[F]
   ): IO[AnalysisReport] =

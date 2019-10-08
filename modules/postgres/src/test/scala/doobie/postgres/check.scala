@@ -4,23 +4,10 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
-import doobie._, doobie.implicits._
+import doobie.implicits._
 import doobie.postgres.enums._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 
-
-object pgcheck extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+object pgcheck extends PgSpec {
 
   "pgEnumString" should {
 

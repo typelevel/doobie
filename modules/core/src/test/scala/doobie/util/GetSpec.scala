@@ -4,16 +4,12 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, Effect, IO }
 import cats.effect.syntax.effect._
 import cats.instances.int._
-import cats.syntax.applicativeError._
 import doobie._, doobie.implicits._
 import doobie.enum.JdbcType.{ Array => _, _ }
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import shapeless.test._
-
 
 object GetSpec extends Specification {
 
@@ -54,16 +50,7 @@ final case class Foo(s: String)
 final case class Bar(n: Int)
 
 
-trait GetDBSpec[F[_]] extends Specification {
-
-  implicit def E: Effect[F]
-  implicit def contextShift: ContextShift[F]
-
-  lazy val xa = Transactor.fromDriverManager[F](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
-  )
+object GetDBSpecIO extends H2Spec {
 
   // Both of these will fail at runtime if called with a null value, we check that this is
   // avoided below.
@@ -109,9 +96,4 @@ trait GetDBSpec[F[_]] extends Specification {
 
   }
 
-}
-
-object GetDBSpecIO extends GetDBSpec[IO] {
-  implicit val E: Effect[IO] = IO.ioEffect
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 }

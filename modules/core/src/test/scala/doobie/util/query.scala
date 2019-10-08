@@ -4,23 +4,10 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import scala.Predef._
 
-
-object queryspec extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
-  )
+object queryspec extends H2Spec {
 
   val q = Query[String,Int]("select 123 where ? = 'foo'", None)
 

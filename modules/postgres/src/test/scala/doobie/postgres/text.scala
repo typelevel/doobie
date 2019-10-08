@@ -4,28 +4,15 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
-import org.specs2.mutable.Specification
 import org.specs2.ScalaCheck
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
-import scala.concurrent.ExecutionContext
 
-
-object textspec extends Specification with ScalaCheck {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+object textspec extends PgSpec with ScalaCheck {
 
   implicit val byteListInstance: Text[List[Byte]] =
     Text[Array[Byte]].contramap(_.toArray)

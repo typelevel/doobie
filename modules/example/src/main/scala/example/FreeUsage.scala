@@ -13,7 +13,7 @@ import doobie._
 import doobie.implicits.{ AsyncConnectionIO, AsyncPreparedStatementIO, AsyncResultSetIO }
 
 // JDBC program using the low-level API
-object FreeUsage extends IOApp {
+object FreeUsage extends IOApp with DefaultLogger {
 
   final case class CountryCode(code: String)
 

@@ -11,6 +11,8 @@ import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import scala.concurrent.ExecutionContext
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
 
@@ -22,6 +24,9 @@ object beforeall extends Specification with IOChecker with BeforeAll {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

@@ -22,7 +22,7 @@ import org.postgresql.util._
  *   );
  *
  */
-object OtherSchema extends IOApp {
+object OtherSchema extends IOApp with DefaultLogger {
 
   // Ok this mapping goes via String when reading and PGObject when writing, and it understands
   // when the type is reported as OTHER (schemaType).

@@ -4,23 +4,11 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO, Sync }
 import doobie._, doobie.implicits._
 import java.io.ByteArrayOutputStream
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
+import cats.effect.Sync
 
-
-object pgcopyspec extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+object pgcopyspec extends PgSpec {
 
   "copy out" should {
 

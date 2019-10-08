@@ -18,6 +18,7 @@ import doobie.util.testing._
 import doobie.util.transactor._
 import fs2.Stream
 import scala.Predef._
+import _root_.io.chrisdavenport.log4cats.Logger
 
 /** Module for implicit syntax useful in REPL session. */
 
@@ -25,7 +26,7 @@ object yolo {
 
   import doobie.free.connection.AsyncConnectionIO
 
-  class Yolo[M[_]: Sync](xa: Transactor[M]) {
+  class Yolo[M[_]: Sync: Logger](xa: Transactor[M]) {
 
     private def out(s: String, colors: Colors): ConnectionIO[Unit] =
       delay(Console.println(show"${colors.BLUE}  $s${colors.RESET}"))

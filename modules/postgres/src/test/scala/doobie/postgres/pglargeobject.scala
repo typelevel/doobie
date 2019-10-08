@@ -4,25 +4,12 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
 import cats.implicits._
-import doobie._, doobie.implicits._
+import doobie.implicits._
 import doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 
-
-object pglargeobjectspec extends Specification with FileEquality {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+object pglargeobjectspec extends PgSpec with FileEquality {
 
   "large object support" should {
 

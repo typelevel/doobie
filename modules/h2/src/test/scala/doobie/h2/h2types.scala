@@ -11,9 +11,14 @@ import java.util.UUID
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 object h2typesspec extends Specification {
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

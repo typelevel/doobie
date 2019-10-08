@@ -4,26 +4,15 @@
 
 package doobie.postgres
 
-import cats.effect.{ IO, ContextShift, Sync }
+import cats.effect.IO
+import cats.effect.Sync
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.postgresql.PGNotification
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 
-
-object pgnotifyspec extends Specification {
+object pgnotifyspec extends PgSpec {
 
   import FC.{commit, delay}
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
 
   // Listen on the given channel, notify on another connection
   def listen[A](channel: String, notify: ConnectionIO[A]): IO[List[PGNotification]] =

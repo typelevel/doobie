@@ -9,11 +9,16 @@ import doobie._, doobie.implicits._
 import java.sql.DriverManager
 import org.openjdk.jmh.annotations._
 import scala.concurrent.ExecutionContext
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object shared {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   @State(Scope.Benchmark)
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")

@@ -4,22 +4,9 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
-import doobie._, doobie.implicits._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
+import doobie.implicits._
 
-
-object manyrows extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+object manyrows extends PgSpec {
 
   "select" should {
 

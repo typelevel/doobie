@@ -17,7 +17,7 @@ import cats.effect.IO
   * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the
   * source in doobie.contrib.postgresql for more information.
   */
-object PostgresLargeObject extends IOApp {
+object PostgresLargeObject extends IOApp with DefaultLogger {
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

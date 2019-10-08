@@ -10,9 +10,13 @@ import doobie.implicits._
 import io.circe.{Json, Encoder, Decoder}
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
-
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object pgjsonspec extends Specification {
+
+  implicit val logger: Logger[IO] =
+    Slf4jLogger.getLogger[IO]
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

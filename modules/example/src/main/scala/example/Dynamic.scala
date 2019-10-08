@@ -11,7 +11,7 @@ import cats.implicits._
 
 // Sketch of a program to run a query and get the output without knowing how many columns will
 // come back, or their types. This can be useful for building query tools, etc.
-object Dynamic extends IOApp {
+object Dynamic extends IOApp with DefaultLogger {
 
   type Headers = List[String]
   type Data    = List[List[Object]]

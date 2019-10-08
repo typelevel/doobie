@@ -10,7 +10,7 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import org.postgresql.geometric.PGpoint
 
-object PostgresPoint extends IOApp {
+object PostgresPoint extends IOApp with DefaultLogger {
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

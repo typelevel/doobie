@@ -5,23 +5,10 @@
 package doobie.util
 
 import cats.implicits._
-import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import shapeless._
 
-
-object fragmentspec extends Specification {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:fragmentspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
-  )
+object fragmentspec extends H2Spec {
 
   "Fragment" should {
 

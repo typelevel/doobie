@@ -10,27 +10,28 @@ import cats.syntax.functor._
 import doobie.HC
 import doobie.free.connection.{AsyncConnectionIO, ConnectionIO}
 import doobie.util.transactor.Transactor
+import io.chrisdavenport.log4cats.Logger
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): M[A] = xa.trans.apply(ma)
+  def transact[M[_]: Bracket[?[_], Throwable] : Logger](xa: Transactor[M]): M[A] = xa.trans.apply(ma)
 }
 
 class OptionTConnectionIOOps[A](ma: OptionT[ConnectionIO, A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): OptionT[M, A] =
+  def transact[M[_]: Bracket[?[_], Throwable]: Logger](xa: Transactor[M]): OptionT[M, A] =
     OptionT(
       xa.trans.apply(ma.orElseF(HC.rollback.as(None)).value)
     )
 }
 
 class EitherTConnectionIOOps[E, A](ma: EitherT[ConnectionIO, E, A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): EitherT[M, E, A] =
+  def transact[M[_]: Bracket[?[_], Throwable] : Logger](xa: Transactor[M]): EitherT[M, E, A] =
     EitherT(
       xa.trans.apply(ma.leftSemiflatMap(HC.rollback.as(_)).value)
     )
 }
 
 class KleisliConnectionIOOps[A, B](ma: Kleisli[ConnectionIO, A, B]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): Kleisli[M, A, B] =
+  def transact[M[_]: Bracket[?[_], Throwable] : Logger](xa: Transactor[M]): Kleisli[M, A, B] =
     ma.mapK(xa.trans)
 }
 
