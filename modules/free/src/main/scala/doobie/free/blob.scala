@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -50,6 +51,7 @@ object blob { module =>
       def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // Blob
       def free: F[Unit]
@@ -96,6 +98,9 @@ object blob { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: BlobIO[A]) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends BlobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // Blob-specific operations.
@@ -149,6 +154,19 @@ object blob { module =>
   def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = FF.liftF[BlobOp, B](BracketCase(acquire, use, release))
   val shift: BlobIO[Unit] = FF.liftF[BlobOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]) = FF.liftF[BlobOp, A](EvalOn(ec, fa))
+
+  // Logging primitives
+  def error(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[BlobOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
 
   // Smart constructors for Blob-specific operations.
   val free: BlobIO[Unit] = FF.liftF(Free)

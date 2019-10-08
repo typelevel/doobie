@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -54,6 +55,7 @@ object nclob { module =>
       def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: NClobIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // NClob
       def free: F[Unit]
@@ -102,6 +104,9 @@ object nclob { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: NClobIO[A]) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends NClobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // NClob-specific operations.
@@ -161,6 +166,19 @@ object nclob { module =>
   def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): NClobIO[B] = FF.liftF[NClobOp, B](BracketCase(acquire, use, release))
   val shift: NClobIO[Unit] = FF.liftF[NClobOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: NClobIO[A]) = FF.liftF[NClobOp, A](EvalOn(ec, fa))
+
+  // Logging primitives
+  def error(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[NClobOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
 
   // Smart constructors for NClob-specific operations.
   val free: NClobIO[Unit] = FF.liftF(Free)

@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import java.io.InputStream
 import java.io.Reader
@@ -70,6 +71,7 @@ object resultset { module =>
       def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -300,6 +302,9 @@ object resultset { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: ResultSetIO[A]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends ResultSetOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // ResultSet-specific operations.
@@ -905,6 +910,19 @@ object resultset { module =>
   def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))
   val shift: ResultSetIO[Unit] = FF.liftF[ResultSetOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]) = FF.liftF[ResultSetOp, A](EvalOn(ec, fa))
+
+  // Logging primitives
+  def error(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[ResultSetOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))

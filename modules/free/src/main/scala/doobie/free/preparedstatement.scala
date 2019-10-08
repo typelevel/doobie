@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import java.io.InputStream
 import java.io.Reader
@@ -71,6 +72,7 @@ object preparedstatement { module =>
       def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // PreparedStatement
       def addBatch: F[Unit]
@@ -216,6 +218,9 @@ object preparedstatement { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends PreparedStatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // PreparedStatement-specific operations.
@@ -566,6 +571,19 @@ object preparedstatement { module =>
   def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): PreparedStatementIO[B] = FF.liftF[PreparedStatementOp, B](BracketCase(acquire, use, release))
   val shift: PreparedStatementIO[Unit] = FF.liftF[PreparedStatementOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](EvalOn(ec, fa))
+
+  // Logging primitives
+  def error(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[PreparedStatementOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
 
   // Smart constructors for PreparedStatement-specific operations.
   val addBatch: PreparedStatementIO[Unit] = FF.liftF(AddBatch)

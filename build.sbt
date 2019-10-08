@@ -10,6 +10,7 @@ lazy val fs2Version           = "2.0.1"
 lazy val h2Version            = "1.4.199"
 lazy val hikariVersion        = "3.4.1"
 lazy val kindProjectorVersion = "0.10.3"
+lazy val log4CatsVersion      = "1.0.0"
 lazy val monixVersion         = "3.0.0"
 lazy val quillVersion         = "3.4.9"
 lazy val postGisVersion       = "2.3.0"
@@ -150,11 +151,12 @@ lazy val free = project
     scalacOptions += "-Yno-predef",
     scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"    % fs2Version,
-      "org.typelevel"  %% "cats-core"   % catsVersion,
-      "org.typelevel"  %% "cats-free"   % catsVersion,
-      "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-    ),
+      "co.fs2"            %% "fs2-core"       % fs2Version,
+      "org.typelevel"     %% "cats-core"      % catsVersion,
+      "org.typelevel"     %% "cats-free"      % catsVersion,
+      "org.typelevel"     %% "cats-effect"    % catsEffectVersion,
+      "io.chrisdavenport" %% "log4cats-core"  % log4CatsVersion,
+      ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {

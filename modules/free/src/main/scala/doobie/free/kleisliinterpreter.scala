@@ -10,10 +10,13 @@ import cats.data.Kleisli
 import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 // Types referenced in the JDBC API
 import java.io.InputStream
+import java.io.OutputStream
 import java.io.Reader
+import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.math.BigDecimal
@@ -25,15 +28,20 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.Date
 import java.sql.Driver
+import java.sql.DriverPropertyInfo
 import java.sql.NClob
+import java.sql.ParameterMetaData
 import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
+import java.sql.ResultSetMetaData
 import java.sql.RowId
+import java.sql.RowIdLifetime
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 import java.sql.SQLType
+import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
 import java.sql.Statement
@@ -45,6 +53,7 @@ import java.util.Calendar
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
+import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.free.nclob.{ NClobIO, NClobOp }
@@ -64,7 +73,6 @@ import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply[M[_]](b: Blocker)(
     implicit am: Async[M],
              cs: ContextShift[M]
@@ -167,6 +175,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: NClobIO[A]): Kleisli[M, NClob, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, NClob, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free)
     override def getAsciiStream = primitive(_.getAsciiStream)
@@ -214,6 +241,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): Kleisli[M, Blob, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, Blob, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free)
     override def getBinaryStream = primitive(_.getBinaryStream)
@@ -258,6 +304,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): Kleisli[M, Clob, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, Clob, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free)
@@ -305,6 +370,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, DatabaseMetaData, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def allProceduresAreCallable = primitive(_.allProceduresAreCallable)
@@ -518,6 +602,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): Kleisli[M, Driver, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, Driver, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def acceptsURL(a: String) = primitive(_.acceptsURL(a))
     override def connect(a: String, b: Properties) = primitive(_.connect(a, b))
@@ -559,6 +662,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]): Kleisli[M, Ref, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, Ref, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def getBaseTypeName = primitive(_.getBaseTypeName)
     override def getObject = primitive(_.getObject)
@@ -597,6 +719,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]): Kleisli[M, SQLData, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, SQLData, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def getSQLTypeName = primitive(_.getSQLTypeName)
     override def readSQL(a: SQLInput, b: String) = primitive(_.readSQL(a, b))
@@ -633,6 +774,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): Kleisli[M, SQLInput, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, SQLInput, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def readArray = primitive(_.readArray)
@@ -696,6 +856,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): Kleisli[M, SQLOutput, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, SQLOutput, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def writeArray(a: SqlArray) = primitive(_.writeArray(a))
     override def writeAsciiStream(a: InputStream) = primitive(_.writeAsciiStream(a))
@@ -758,6 +937,25 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): Kleisli[M, Connection, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, Connection, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
+
     // domain-specific operations are implemented in terms of `primitive`
     override def abort(a: Executor) = primitive(_.abort(a))
     override def clearWarnings = primitive(_.clearWarnings)
@@ -781,7 +979,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap = primitive(_.getTypeMap : Map[String, Class[_]]) // inferred is `Map[String, Class[_ <: Object]]` and 2.13 cares down the road because we end up with a refined type for this definition
+    override def getTypeMap = primitive(_.getTypeMap)
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)
@@ -845,6 +1043,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): Kleisli[M, Statement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, Statement, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch(a: String) = primitive(_.addBatch(a))
@@ -931,6 +1148,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, PreparedStatement, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch)
@@ -1075,6 +1311,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]): Kleisli[M, CallableStatement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, CallableStatement, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch)
@@ -1340,6 +1595,25 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): Kleisli[M, ResultSet, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+
+    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, ResultSet, Unit] =
+      Kleisli { _ =>
+        (level, throwable) match {
+
+          case (LogLevel.Error, None)    => asyncM.pure(())
+          case (LogLevel.Warn,  None)    => asyncM.pure(())
+          case (LogLevel.Info,  None)    => asyncM.pure(())
+          case (LogLevel.Debug, None)    => asyncM.pure(())
+          case (LogLevel.Trace, None)    => asyncM.pure(())
+
+          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+
+        }
+      }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def absolute(a: Int) = primitive(_.absolute(a))

@@ -212,6 +212,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
     |import scala.concurrent.ExecutionContext
     |import com.github.ghik.silencer.silent
+    |import io.chrisdavenport.log4cats.extras.LogLevel
     |
     |${imports[A].mkString("\n")}
     |
@@ -251,6 +252,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): F[B]
     |      def shift: F[Unit]
     |      def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]): F[A]
+    |      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
     |
     |      // $sname
           ${ctors[A].map(_.visitor).mkString("\n    ")}
@@ -288,6 +290,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    final case class EvalOn[A](ec: ExecutionContext, fa: ${ioname}[A]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     |    }
+    |    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends ${opname}[Unit] {
+    |      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
+    |    }
     |
     |    // $sname-specific operations.
     |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
@@ -308,6 +313,19 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  def bracketCase[A, B](acquire: ${ioname}[A])(use: A => ${ioname}[B])(release: (A, ExitCase[Throwable]) => ${ioname}[Unit]): ${ioname}[B] = FF.liftF[${opname}, B](BracketCase(acquire, use, release))
     |  val shift: ${ioname}[Unit] = FF.liftF[${opname}, Unit](Shift)
     |  def evalOn[A](ec: ExecutionContext)(fa: ${ioname}[A]) = FF.liftF[${opname}, A](EvalOn(ec, fa))
+    |
+    |  // Logging primitives
+    |  def error(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Error, None, () => message))
+    |  def warn (message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Warn,  None, () => message))
+    |  def info (message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Info,  None, () => message))
+    |  def debug(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Debug, None, () => message))
+    |  def trace(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Trace, None, () => message))
+    |
+    |  def error(t: Throwable)(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Error, Some(t), () => message))
+    |  def warn (t: Throwable)(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+    |  def info (t: Throwable)(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Info,  Some(t), () => message))
+    |  def debug(t: Throwable)(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Debug, Some(t), () => message))
+    |  def trace(t: Throwable)(message: => String) = FF.liftF[${opname}, Unit](Log(LogLevel.Trace, Some(t), () => message))
     |
     |  // Smart constructors for $oname-specific operations.
     |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
@@ -409,6 +427,25 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    def evalOn[A](ec: ExecutionContext)(fa: $ioname[A]): Kleisli[M, $sname, A] =
        |      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
        |
+       |    def log(level: LogLevel, throwable: Option[Throwable], message: => String): Kleisli[M, $sname, Unit] =
+       |      Kleisli { _ =>
+       |        (level, throwable) match {
+       |
+       |          case (LogLevel.Error, None)    => asyncM.pure(())
+       |          case (LogLevel.Warn,  None)    => asyncM.pure(())
+       |          case (LogLevel.Info,  None)    => asyncM.pure(())
+       |          case (LogLevel.Debug, None)    => asyncM.pure(())
+       |          case (LogLevel.Trace, None)    => asyncM.pure(())
+       |
+       |          case (LogLevel.Error, Some(_)) => asyncM.pure(())
+       |          case (LogLevel.Warn,  Some(_)) => asyncM.pure(())
+       |          case (LogLevel.Info,  Some(_)) => asyncM.pure(())
+       |          case (LogLevel.Debug, Some(_)) => asyncM.pure(())
+       |          case (LogLevel.Trace, Some(_)) => asyncM.pure(())
+       |
+       |        }
+       |      }
+       |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
        |
@@ -437,6 +474,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
       |import scala.concurrent.ExecutionContext
       |import com.github.ghik.silencer.silent
+      |import io.chrisdavenport.log4cats.extras.LogLevel
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
