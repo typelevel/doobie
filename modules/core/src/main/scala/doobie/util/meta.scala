@@ -265,4 +265,7 @@ trait MetaInstances { this: MetaConstructors =>
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
     DateMeta.imap(_.toLocalDate)(java.sql.Date.valueOf)
 
+  implicit val JavaTimeLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
+    TimestampMeta.imap(_.toLocalDateTime)(java.sql.Timestamp.valueOf)
+
 }
