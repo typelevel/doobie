@@ -75,7 +75,8 @@ lazy val commonSettings =
       "org.scalacheck"    %% "scalacheck"        % scalaCheckVersion % "test",
       "org.specs2"        %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"        %% "specs2-scalacheck" % specs2Version     % "test",
-      "io.chrisdavenport" %% "log4cats-slf4j"    % log4CatsVersion   % "test"
+      "io.chrisdavenport" %% "log4cats-slf4j"    % log4CatsVersion   % "test",
+      "org.slf4j" % "slf4j-simple" % slf4jVersion % "test"
       ),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion),
   )
@@ -336,9 +337,8 @@ lazy val hikari = project
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
     libraryDependencies ++= Seq(
-      "com.zaxxer"     % "HikariCP"   % hikariVersion,
-      "com.h2database" % "h2"         % h2Version      % "test",
-      "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
+      "com.zaxxer"     % "HikariCP" % hikariVersion,
+      "com.h2database" % "h2"       % h2Version      % "test",
     )
   )
 

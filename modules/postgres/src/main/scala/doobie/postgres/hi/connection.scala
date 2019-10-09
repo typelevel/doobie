@@ -8,7 +8,7 @@ import cats.~>
 import cats.data.Kleisli
 import org.postgresql.{ PGConnection, PGNotification }
 import doobie._, doobie.implicits._
-import doobie.postgres.free.KleisliInterpreter
+import doobie.postgres.free.{ Env, KleisliInterpreter }
 import cats.effect.Blocker
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.Executors
@@ -30,14 +30,14 @@ object connection {
   )
 
   // An intepreter for lifting PGConnectionIO into ConnectionIO
-  val defaultInterpreter: PFPC.PGConnectionOp ~> Kleisli[ConnectionIO, PGConnection, ?] =
+  val defaultInterpreter: PFPC.PGConnectionOp ~> Kleisli[ConnectionIO, Env[ConnectionIO, PGConnection], ?] =
     KleisliInterpreter[ConnectionIO](blocker).PGConnectionInterpreter
 
   val pgGetBackendPID: ConnectionIO[Int] =
     pgGetConnection(PFPC.getBackendPID)
 
   def pgGetConnection[A](k: PGConnectionIO[A]): ConnectionIO[A] =
-    FC.unwrap(classOf[PGConnection]).flatMap(k.foldMap(defaultInterpreter).run)
+    FC.unwrap(classOf[PGConnection]).flatMap(c => k.foldMap(defaultInterpreter).run(Env(c, implicitly)))
 
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getCopyAPI(k))

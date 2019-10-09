@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -56,6 +57,7 @@ object copymanager { module =>
       def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -100,6 +102,9 @@ object copymanager { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CopyManagerIO[A]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends CopyManagerOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // PGCopyManager-specific operations.
@@ -148,6 +153,19 @@ object copymanager { module =>
   val shift: CopyManagerIO[Unit] = FF.liftF[CopyManagerOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](EvalOn(ec, fa))
 
+  // Logging primitives
+  def error(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[CopyManagerOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
+
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
   def copyIn(a: String): CopyManagerIO[PGCopyIn] = FF.liftF(CopyIn(a))
@@ -180,5 +198,24 @@ object copymanager { module =>
       def shift: CopyManagerIO[Unit] = module.shift
       def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = module.evalOn(ec)(fa)
     }
+
+  // CopyManagerIO is a Logger
+  implicit val LoggerCopyManagerIO: io.chrisdavenport.log4cats.Logger[CopyManagerIO] =
+    new io.chrisdavenport.log4cats.Logger[CopyManagerIO] {
+
+      def error(t: Throwable)(message: => String) = module.error(t)(message)
+      def warn (t: Throwable)(message: => String) = module.warn (t)(message)
+      def info (t: Throwable)(message: => String) = module.info (t)(message)
+      def debug(t: Throwable)(message: => String) = module.debug(t)(message)
+      def trace(t: Throwable)(message: => String) = module.trace(t)(message)
+
+      def error(message: => String) = module.error(message)
+      def warn (message: => String) = module.warn (message)
+      def info (message: => String) = module.info (message)
+      def debug(message: => String) = module.debug(message)
+      def trace(message: => String) = module.trace(message)
+
+    }
+
 }
 

@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
@@ -49,6 +50,7 @@ object largeobjectmanager { module =>
       def bracketCase[A, B](acquire: LargeObjectManagerIO[A])(use: A => LargeObjectManagerIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectManagerIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // LargeObjectManager
       def create: F[Int]
@@ -100,6 +102,9 @@ object largeobjectmanager { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends LargeObjectManagerOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // LargeObjectManager-specific operations.
@@ -169,6 +174,19 @@ object largeobjectmanager { module =>
   val shift: LargeObjectManagerIO[Unit] = FF.liftF[LargeObjectManagerOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](EvalOn(ec, fa))
 
+  // Logging primitives
+  def error(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[LargeObjectManagerOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
+
   // Smart constructors for LargeObjectManager-specific operations.
   val create: LargeObjectManagerIO[Int] = FF.liftF(Create)
   def create(a: Int): LargeObjectManagerIO[Int] = FF.liftF(Create1(a))
@@ -208,5 +226,24 @@ object largeobjectmanager { module =>
       def shift: LargeObjectManagerIO[Unit] = module.shift
       def evalOn[A](ec: ExecutionContext)(fa: LargeObjectManagerIO[A]) = module.evalOn(ec)(fa)
     }
+
+  // LargeObjectManagerIO is a Logger
+  implicit val LoggerLargeObjectManagerIO: io.chrisdavenport.log4cats.Logger[LargeObjectManagerIO] =
+    new io.chrisdavenport.log4cats.Logger[LargeObjectManagerIO] {
+
+      def error(t: Throwable)(message: => String) = module.error(t)(message)
+      def warn (t: Throwable)(message: => String) = module.warn (t)(message)
+      def info (t: Throwable)(message: => String) = module.info (t)(message)
+      def debug(t: Throwable)(message: => String) = module.debug(t)(message)
+      def trace(t: Throwable)(message: => String) = module.trace(t)(message)
+
+      def error(message: => String) = module.error(message)
+      def warn (message: => String) = module.warn (message)
+      def info (message: => String) = module.info (message)
+      def debug(message: => String) = module.debug(message)
+      def trace(message: => String) = module.trace(message)
+
+    }
+
 }
 

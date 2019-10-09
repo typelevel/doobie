@@ -14,15 +14,15 @@ object `262` extends H2Spec {
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
-    val asyncM = Async[IO]
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    val contextShiftM = contextShift
+    lazy val asyncM = Async[IO]
+    lazy val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
+    lazy val contextShiftM = contextShift
 
     val M = implicitly[Async[IO]]
 
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {
-        override def getMetaData = primitive(_ => null)
+        override def getMetaData = primitive(_ => null, "getMetaData")
       }
 
   }

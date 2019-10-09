@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -50,6 +51,7 @@ object largeobject { module =>
       def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // LargeObject
       def close: F[Unit]
@@ -105,6 +107,9 @@ object largeobject { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends LargeObjectOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // LargeObject-specific operations.
@@ -186,6 +191,19 @@ object largeobject { module =>
   val shift: LargeObjectIO[Unit] = FF.liftF[LargeObjectOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](EvalOn(ec, fa))
 
+  // Logging primitives
+  def error(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[LargeObjectOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
+
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
   val copy: LargeObjectIO[LargeObject] = FF.liftF(Copy)
@@ -229,5 +247,24 @@ object largeobject { module =>
       def shift: LargeObjectIO[Unit] = module.shift
       def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = module.evalOn(ec)(fa)
     }
+
+  // LargeObjectIO is a Logger
+  implicit val LoggerLargeObjectIO: io.chrisdavenport.log4cats.Logger[LargeObjectIO] =
+    new io.chrisdavenport.log4cats.Logger[LargeObjectIO] {
+
+      def error(t: Throwable)(message: => String) = module.error(t)(message)
+      def warn (t: Throwable)(message: => String) = module.warn (t)(message)
+      def info (t: Throwable)(message: => String) = module.info (t)(message)
+      def debug(t: Throwable)(message: => String) = module.debug(t)(message)
+      def trace(t: Throwable)(message: => String) = module.trace(t)(message)
+
+      def error(message: => String) = module.error(message)
+      def warn (message: => String) = module.warn (message)
+      def info (message: => String) = module.info (message)
+      def debug(message: => String) = module.debug(message)
+      def trace(message: => String) = module.trace(message)
+
+    }
+
 }
 

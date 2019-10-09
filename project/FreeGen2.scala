@@ -127,12 +127,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
         case ps  => s"class  $cname(${cargs.mkString(", ")})"
       }
 
-    // Case clause mapping this constructor to the corresponding primitive action
-    def prim(sname:String): String =
-      (if (cargs.isEmpty)
-        s"case $cname => primitive(_.$mname)"
-      else
-        s"case $cname($args) => primitive(_.$mname($args))")
+    // // Case clause mapping this constructor to the corresponding primitive action
+    // def prim(sname:String): String =
+    //   if (cargs.isEmpty)
+    //     s"""case $cname => primitive(_.$mname, "$mname")"""
+    //   else
+    //     s"""case $cname($args) => primitive(_.$mname($args), "$mname", $args)"""
 
     // Smart constructor
     def lifted(ioname: String): String =
@@ -146,13 +146,15 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       if (cargs.isEmpty) s"|      def $mname: F[$ret]"
       else s"|      def $mname$ctparams(${cargs.mkString(", ")}): F[$ret]"
 
-    def stub: String =
-      if (cargs.isEmpty) s"""|      def $mname: F[$ret] = sys.error("Not implemented: $mname")"""
-      else s"""|      def $mname$ctparams(${cargs.mkString(", ")}): F[$ret] = sys.error("Not implemented: $mname$ctparams(${cparams.mkString(", ")})")"""
+    // def stub: String =
+    //   if (cargs.isEmpty) s"""|      def $mname: F[$ret] = sys.error("Not implemented: $mname")"""
+    //   else s"""|      def $mname$ctparams(${cargs.mkString(", ")}): F[$ret] = sys.error("Not implemented: $mname$ctparams(${cparams.mkString(", ")})")"""
 
     def kleisliImpl: String =
-      if (cargs.isEmpty) s"|    override def $mname = primitive(_.$mname)"
-      else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args))"
+      if (cargs.isEmpty)
+        s"""|    override def $mname = primitive(_.$mname, "$mname")"""
+      else
+        s"""|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args), "$mname", ${cargs.mkString(", ")})"""
 
   }
 
@@ -491,6 +493,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import cats.~>
       |import cats.data.Kleisli
       |import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
+      |import cats.implicits._
+      |import cats.effect.implicits._
+      |import doobie.util.Sketch.sketch
       |import scala.concurrent.ExecutionContext
       |import com.github.ghik.silencer.silent
       |import io.chrisdavenport.log4cats.extras.LogLevel
@@ -509,9 +514,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |             cs: ContextShift[M]
       |  ): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M] {
-      |      val asyncM = am
-      |      val contextShiftM = cs
-      |      val blocker = b
+      |      lazy val asyncM = am
+      |      lazy val contextShiftM = cs
+      |      lazy val blocker = b
       |    }
       |
       |}
@@ -524,24 +529,32 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |
       |  // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
       |  // to support shifting blocking operations to another pool.
-      |  val contextShiftM: ContextShift[M]
+      |  implicit val contextShiftM: ContextShift[M]
       |  val blocker: Blocker
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}
       |
       |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
-      |  def primitive[J, A](f: J => A): Kleisli[M, Env[M, J], A] = Kleisli { case Env(a, _) =>
-      |    // primitive JDBC methods throw exceptions and so do we when reading values
-      |    // so catch any non-fatal exceptions and lift them into the effect
-      |    blocker.blockOn[M, A](try {
-      |      asyncM.delay(f(a))
-      |    } catch {
-      |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
-      |    })(contextShiftM)
-      |  }
+      |  private val now = asyncM.delay(System.currentTimeMillis)
+      |  protected def primitive[J, A](f: J => A, method: String, args: Any*): Kleisli[M, Env[M, J], A] =
+      |    Kleisli { e =>
+      |      blocker.blockOn[M, A] {
+      |        lazy val prefix = s"$${sketch(e.jdbc)}.$$method($${args.map(sketch).mkString(",")})"
+      |        now.flatMap { t0 =>
+      |          asyncM.delay(f(e.jdbc)).guaranteeCase {
+      |            case ExitCase.Completed => asyncM.unit // we'll handls this case later
+      |            case ExitCase.Canceled  => now.flatMap { t1 => e.logger.info(s"$$prefix Canceled $${t1 - t0}ms") }
+      |            case ExitCase.Error(t)  => now.flatMap { t1 => e.logger.info(t)(s"$$prefix Error $${t1 - t0}ms") }
+      |          } .flatTap { a =>
+      |            now.flatMap { t1 => e.logger.info(s"$$prefix Completed $${t1 - t0}ms $${sketch(a)}") }
+      |          }
+      |        }
+      |      }
+      |    }
+      |
       |  def delay[J, A](a: () => A): Kleisli[M, Env[M, J], A] = Kleisli(_ => asyncM.delay(a()))
-      |  def raw[J, A](f: J => A): Kleisli[M, Env[M, J], A] = primitive(f)
+      |  def raw[J, A](f: J => A): Kleisli[M, Env[M, J], A] = primitive(f, "raw") // for now
       |  def raiseError[J, A](e: Throwable): Kleisli[M, Env[M, J], A] = Kleisli(_ => asyncM.raiseError(e))
       |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Env[M, J], A] = Kleisli(_ => asyncM.async(k))
       |  def embed[J, A](e: Embedded[A]): Kleisli[M, Env[M, J], A] =

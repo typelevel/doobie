@@ -4,121 +4,121 @@
 
 package doobie.util
 
-import cats.implicits._
+// import cats.implicits._
 import doobie._, doobie.implicits._
 
 object fragmentsspec extends H2Spec {
-  import Fragments._
+  // import Fragments._
 
   "Fragments" >> {
 
-    val nel  = List(1,2,3).toNel.getOrElse(sys.error("unpossible"))
-    val fs   = List(1,2,3).map(n => fr"$n")
-    val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
+    // val nel  = List(1,2,3).toNel.getOrElse(sys.error("unpossible"))
+    // val fs   = List(1,2,3).map(n => fr"$n")
+    // val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
 
-    "in" in {
-      in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
-    }
+    // "in" in {
+    //   in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
+    // }
 
-    "notIn" in {
-      notIn(fr"foo", nel).query[Unit].sql must_== "foo NOT IN (?, ?, ?) "
-    }
+    // "notIn" in {
+    //   notIn(fr"foo", nel).query[Unit].sql must_== "foo NOT IN (?, ?, ?) "
+    // }
 
-    "and (many)" in {
-      and(fs: _*).query[Unit].sql must_== "(? ) AND (? ) AND (? ) "
-    }
+    // "and (many)" in {
+    //   and(fs: _*).query[Unit].sql must_== "(? ) AND (? ) AND (? ) "
+    // }
 
-    "and (single)" in {
-      and(fs(0)).query[Unit].sql must_== "(? ) "
-    }
+    // "and (single)" in {
+    //   and(fs(0)).query[Unit].sql must_== "(? ) "
+    // }
 
-    "and (empty)" in {
-      and().query[Unit].sql must_== ""
-    }
+    // "and (empty)" in {
+    //   and().query[Unit].sql must_== ""
+    // }
 
-    "andOpt (many)" in {
-      andOpt(ofs: _*).query[Unit].sql must_== "(? ) AND (? ) "
-    }
+    // "andOpt (many)" in {
+    //   andOpt(ofs: _*).query[Unit].sql must_== "(? ) AND (? ) "
+    // }
 
-    "andOpt (one)" in {
-      andOpt(ofs(0)).query[Unit].sql must_== "(? ) "
-    }
+    // "andOpt (one)" in {
+    //   andOpt(ofs(0)).query[Unit].sql must_== "(? ) "
+    // }
 
-    "andOpt (none)" in {
-      andOpt(None, None).query[Unit].sql must_== ""
-    }
+    // "andOpt (none)" in {
+    //   andOpt(None, None).query[Unit].sql must_== ""
+    // }
 
-    "or (many)" in {
-      or(fs: _*).query[Unit].sql must_== "(? ) OR (? ) OR (? ) "
-    }
+    // "or (many)" in {
+    //   or(fs: _*).query[Unit].sql must_== "(? ) OR (? ) OR (? ) "
+    // }
 
-    "or (single)" in {
-      or(fs(0)).query[Unit].sql must_== "(? ) "
-    }
+    // "or (single)" in {
+    //   or(fs(0)).query[Unit].sql must_== "(? ) "
+    // }
 
-    "or (empty)" in {
-      or().query[Unit].sql must_== ""
-    }
+    // "or (empty)" in {
+    //   or().query[Unit].sql must_== ""
+    // }
 
-    "orOpt (many)" in {
-      orOpt(ofs: _*).query[Unit].sql must_== "(? ) OR (? ) "
-    }
+    // "orOpt (many)" in {
+    //   orOpt(ofs: _*).query[Unit].sql must_== "(? ) OR (? ) "
+    // }
 
-    "orOpt (one)" in {
-      orOpt(ofs(0)).query[Unit].sql must_== "(? ) "
-    }
+    // "orOpt (one)" in {
+    //   orOpt(ofs(0)).query[Unit].sql must_== "(? ) "
+    // }
 
-    "orOpt (none)" in {
-      orOpt(None, None).query[Unit].sql must_== ""
-    }
+    // "orOpt (none)" in {
+    //   orOpt(None, None).query[Unit].sql must_== ""
+    // }
 
-    "whereAnd (many)" in {
-      whereAnd(fs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) AND (? ) "
-    }
+    // "whereAnd (many)" in {
+    //   whereAnd(fs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) AND (? ) "
+    // }
 
-    "whereAnd (single)" in {
-      whereAnd(fs(0)).query[Unit].sql must_== "WHERE (? ) "
-    }
+    // "whereAnd (single)" in {
+    //   whereAnd(fs(0)).query[Unit].sql must_== "WHERE (? ) "
+    // }
 
-    "whereAnd (empty)" in {
-      whereAnd().query[Unit].sql must_== ""
-    }
+    // "whereAnd (empty)" in {
+    //   whereAnd().query[Unit].sql must_== ""
+    // }
 
-    "whereAndOpt (many)" in {
-      whereAndOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) "
-    }
+    // "whereAndOpt (many)" in {
+    //   whereAndOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) AND (? ) "
+    // }
 
-    "whereAndOpt (one)" in {
-      whereAndOpt(ofs(0)).query[Unit].sql must_== "WHERE (? ) "
-    }
+    // "whereAndOpt (one)" in {
+    //   whereAndOpt(ofs(0)).query[Unit].sql must_== "WHERE (? ) "
+    // }
 
-    "whereAndOpt (none)" in {
-      whereAndOpt(None, None).query[Unit].sql must_== ""
-    }
+    // "whereAndOpt (none)" in {
+    //   whereAndOpt(None, None).query[Unit].sql must_== ""
+    // }
 
-    "whereOr (many)" in {
-      whereOr(fs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) OR (? ) "
-    }
+    // "whereOr (many)" in {
+    //   whereOr(fs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) OR (? ) "
+    // }
 
-    "whereOr (single)" in {
-      whereOr(fs(0)).query[Unit].sql must_== "WHERE (? ) "
-    }
+    // "whereOr (single)" in {
+    //   whereOr(fs(0)).query[Unit].sql must_== "WHERE (? ) "
+    // }
 
-    "whereOr (empty)" in {
-      whereOr().query[Unit].sql must_== ""
-    }
+    // "whereOr (empty)" in {
+    //   whereOr().query[Unit].sql must_== ""
+    // }
 
-    "whereOrOpt (many)" in {
-      whereOrOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) "
-    }
+    // "whereOrOpt (many)" in {
+    //   whereOrOpt(ofs: _*).query[Unit].sql must_== "WHERE (? ) OR (? ) "
+    // }
 
-    "whereOrOpt (one)" in {
-      whereOrOpt(ofs(0)).query[Unit].sql must_== "WHERE (? ) "
-    }
+    // "whereOrOpt (one)" in {
+    //   whereOrOpt(ofs(0)).query[Unit].sql must_== "WHERE (? ) "
+    // }
 
-    "whereOrOpt (none)" in {
-      whereOrOpt(None, None).query[Unit].sql must_== ""
-    }
+    // "whereOrOpt (none)" in {
+    //   whereOrOpt(None, None).query[Unit].sql must_== ""
+    // }
 
     case class Person(name: String, age: Int)
     case class Contact(person: Person, address: Option[String])

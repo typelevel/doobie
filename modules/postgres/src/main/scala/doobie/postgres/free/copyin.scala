@@ -9,6 +9,7 @@ import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
+import io.chrisdavenport.log4cats.extras.LogLevel
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 
@@ -48,6 +49,7 @@ object copyin { module =>
       def bracketCase[A, B](acquire: CopyInIO[A])(use: A => CopyInIO[B])(release: (A, ExitCase[Throwable]) => CopyInIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]): F[A]
+      def log(level: LogLevel, throwable: Option[Throwable], message: => String): F[Unit]
 
       // PGCopyIn
       def cancelCopy: F[Unit]
@@ -92,6 +94,9 @@ object copyin { module =>
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CopyInIO[A]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    }
+    final case class Log(level: LogLevel, throwable: Option[Throwable], message: () => String) extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.log(level, throwable, message())
     }
 
     // PGCopyIn-specific operations.
@@ -140,6 +145,19 @@ object copyin { module =>
   val shift: CopyInIO[Unit] = FF.liftF[CopyInOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]) = FF.liftF[CopyInOp, A](EvalOn(ec, fa))
 
+  // Logging primitives
+  def error(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Error, None, () => message))
+  def warn (message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Warn,  None, () => message))
+  def info (message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Info,  None, () => message))
+  def debug(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Debug, None, () => message))
+  def trace(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Trace, None, () => message))
+
+  def error(t: Throwable)(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Error, Some(t), () => message))
+  def warn (t: Throwable)(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Warn,  Some(t), () => message))
+  def info (t: Throwable)(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Info,  Some(t), () => message))
+  def debug(t: Throwable)(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Debug, Some(t), () => message))
+  def trace(t: Throwable)(message: => String) = FF.liftF[CopyInOp, Unit](Log(LogLevel.Trace, Some(t), () => message))
+
   // Smart constructors for CopyIn-specific operations.
   val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)
   val endCopy: CopyInIO[Long] = FF.liftF(EndCopy)
@@ -172,5 +190,24 @@ object copyin { module =>
       def shift: CopyInIO[Unit] = module.shift
       def evalOn[A](ec: ExecutionContext)(fa: CopyInIO[A]) = module.evalOn(ec)(fa)
     }
+
+  // CopyInIO is a Logger
+  implicit val LoggerCopyInIO: io.chrisdavenport.log4cats.Logger[CopyInIO] =
+    new io.chrisdavenport.log4cats.Logger[CopyInIO] {
+
+      def error(t: Throwable)(message: => String) = module.error(t)(message)
+      def warn (t: Throwable)(message: => String) = module.warn (t)(message)
+      def info (t: Throwable)(message: => String) = module.info (t)(message)
+      def debug(t: Throwable)(message: => String) = module.debug(t)(message)
+      def trace(t: Throwable)(message: => String) = module.trace(t)(message)
+
+      def error(message: => String) = module.error(message)
+      def warn (message: => String) = module.warn (message)
+      def info (message: => String) = module.info (message)
+      def debug(message: => String) = module.debug(message)
+      def trace(message: => String) = module.trace(message)
+
+    }
+
 }
 

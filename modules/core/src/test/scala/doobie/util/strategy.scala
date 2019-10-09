@@ -15,9 +15,9 @@ object strategyspec extends H2Spec {
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class Interp extends KleisliInterpreter[IO] {
 
-    val asyncM = Async[IO]
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    val contextShiftM = contextShift
+    lazy val asyncM = Async[IO]
+    lazy val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
+    lazy val contextShiftM = contextShift
 
     object Connection {
       var autoCommit: Option[Boolean] = None
