@@ -12,11 +12,11 @@ import cats.free.Free
 import cats.implicits._
 import cats.{InjectK, ~>}
 import doobie._
+import doobie.free.Env
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
 import scala.concurrent.ExecutionContext
 import scala.io.StdIn
-import io.chrisdavenport.log4cats.Logger
 
 object coproduct extends IOApp with DefaultLogger {
 
@@ -79,13 +79,13 @@ object coproduct extends IOApp with DefaultLogger {
 
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
-  val interp: Cop ~> Kleisli[IO, (Connection, Logger[IO]), ?] = {
+  val interp: Cop ~> Kleisli[IO, Env[IO, Connection], ?] = {
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    consoleInterp.liftK[(Connection, Logger[IO])] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
+    consoleInterp.liftK[Env[IO, Connection]] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
   }
 
   // Our interpreted program
-  val iprog: Kleisli[IO, (Connection, Logger[IO]), Unit] = prog[Cop].foldMap(interp)
+  val iprog: Kleisli[IO, Env[IO, Connection], Unit] = prog[Cop].foldMap(interp)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

@@ -12,6 +12,7 @@ import cats.effect._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
+import doobie.free.Env
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 
@@ -50,7 +51,7 @@ object StreamingCopy extends IOApp with DefaultLogger {
   ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
-    def interpS[T](f: ConnectionIO[T]): ((Connection, Logger[F])) => F[T] =
+    def interpS[T](f: ConnectionIO[T]): Env[F, Connection] => F[T] =
       f.foldMap(sinkXA.interpret).run
 
     // Open a connection in `F` via the sink transactor. Need patmat due to the existential.
@@ -62,7 +63,7 @@ object StreamingCopy extends IOApp with DefaultLogger {
 
       // Now we can interpret a ConnectionIO into a Stream of F via the sink interpreter.
       def evalS(f: ConnectionIO[_]): Stream[F, Nothing] =
-        Stream.eval_(interpS(f)((c, Logger[F])))
+        Stream.eval_(interpS(f)(Env(c, Logger[F])))
 
       // And can thus lift all the sink operations into Stream of F
       val sinkʹ  = (a: A) => evalS(sink(sourceToSink(a)))

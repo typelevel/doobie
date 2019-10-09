@@ -5,7 +5,7 @@
 package doobie.util
 
 import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
-import doobie.free.KleisliInterpreter
+import doobie.free.{ Env, KleisliInterpreter }
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{ Defer, Monad, ~> }
@@ -28,7 +28,7 @@ object transactor  {
   import doobie.free.connection.AsyncConnectionIO
 
   /** @group Type Aliases */
-  type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, (Connection, Logger[M]), ?]
+  type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Env[M, Connection], ?]
 
   /**
    * Data type representing the common setup, error-handling, and cleanup strategy associated with
@@ -122,19 +122,19 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: Bracket[M, Throwable], lo: Logger[M]): Kleisli[M, (Connection, Logger[M]), ?] ~> M =
-      λ[Kleisli[M, (Connection, Logger[M]), ?] ~> M](k => connect(kernel).use(c => k.run((c, lo))))
+    def rawExec(implicit ev: Bracket[M, Throwable], lo: Logger[M]): Kleisli[M, Env[M, Connection], ?] ~> M =
+      λ[Kleisli[M, Env[M, Connection], ?] ~> M](k => connect(kernel).use(c => k.run(Env(c, lo))))
 
     /**
       * Natural transformation that provides a connection and binds through a `Kleisli` program
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M], lo: Logger[M]): Kleisli[M, (Connection, Logger[M]), ?] ~> M =
-      λ[Kleisli[M, (Connection, Logger[M]), ?] ~> M] { ka =>
+    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M], lo: Logger[M]): Kleisli[M, Env[M, Connection], ?] ~> M =
+      λ[Kleisli[M, Env[M, Connection], ?] ~> M] { ka =>
         connect(kernel).use { e =>
           strategy.resource.mapK(run(e)).use { _ =>
-            ka.run((e, lo))
+            ka.run(Env(e, lo))
           }
         }
       }
@@ -151,7 +151,7 @@ object transactor  {
     ): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
-          f.foldMap(interpret).run((conn, lo))
+          f.foldMap(interpret).run(Env(conn, lo))
         }
       }
 
@@ -167,7 +167,7 @@ object transactor  {
     ): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
-          strategy.resource.use(_ => f).foldMap(interpret).run((conn, lo))
+          strategy.resource.use(_ => f).foldMap(interpret).run(Env(conn, lo))
         }
       }
 
@@ -205,7 +205,7 @@ object transactor  {
                lo: Logger[M]
     ): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
-        f.foldMap(interpret).run((c, lo))
+        f.foldMap(interpret).run(Env(c, lo))
       }
 
     private def runKleisli[B](c: Connection)(
@@ -213,7 +213,7 @@ object transactor  {
                lo: Logger[M]
     ): Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?] =
       λ[Kleisli[ConnectionIO, B, ?] ~> Kleisli[M, B, ?]] { f =>
-        Kleisli(f.run(_).foldMap(interpret).run((c, lo)))
+        Kleisli(f.run(_).foldMap(interpret).run(Env(c, lo)))
       }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
