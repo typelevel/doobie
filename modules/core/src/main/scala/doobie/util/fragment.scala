@@ -174,9 +174,6 @@ object fragment {
   object Elem {
     final case class Arg[A](a: A, p: Put[A]) extends Elem
     final case class Opt[A](a: Option[A], p: Put[A]) extends Elem
-
-    implicit def fromPut[A](a: A)(implicit put: Put[A]): Elem = Arg(a, put)
-    implicit def fromPutOption[A](a: Option[A])(implicit put: Put[A]): Elem = Opt(a, put)
   }
 
 }
