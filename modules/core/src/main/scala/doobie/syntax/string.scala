@@ -48,8 +48,8 @@ final class SqlInterpolator(private val sc: StringContext) extends AnyVal {
 }
 
 object SqlInterpolator {
-  private final case class SingleFragment(fr: Fragment) extends AnyVal
-  private object SingleFragment {
+  final case class SingleFragment(fr: Fragment) extends AnyVal
+  object SingleFragment {
     val empty = SingleFragment(Fragment.empty)
 
     implicit def fromPut[A](a: A)(implicit put: Put[A]): SingleFragment = SingleFragment(Fragment("?", Elem.Arg(a, put) :: Nil, None))
