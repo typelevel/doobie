@@ -470,5 +470,5 @@ lazy val quill = project
     libraryDependencies ++= Seq(
       "io.getquill" %% "quill-jdbc" % quillVersion,
       "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
-    ),
+    )
   )
