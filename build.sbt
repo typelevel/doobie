@@ -71,9 +71,9 @@ lazy val commonSettings =
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
-      "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
-      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
+      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % Test,
+      "org.specs2"     %% "specs2-core"       % specs2Version     % Test,
+      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % Test
     ),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion),
   )
@@ -193,7 +193,7 @@ lazy val core = project
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
       "com.chuusai"           %% "shapeless"     % shapelessVersion,
       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
-      "com.h2database"        %  "h2"            % h2Version % "test",
+      "com.h2database"        %  "h2"            % h2Version % Test
     ),
 
     scalacOptions += "-Yno-predef",
@@ -324,7 +324,7 @@ lazy val hikari = project
   .in(file("modules/hikari"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
-  .dependsOn(postgres % "test")
+  .dependsOn(postgres % Test)
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(crossScalaAll)
@@ -333,8 +333,8 @@ lazy val hikari = project
     description := "Hikari support for doobie.",
     libraryDependencies ++= Seq(
       "com.zaxxer"     % "HikariCP"   % hikariVersion,
-      "com.h2database" % "h2"         % h2Version      % "test",
-      "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
+      "com.h2database" % "h2"         % h2Version      % Test,
+      "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % Test
     )
   )
 
@@ -342,7 +342,7 @@ lazy val specs2 = project
   .in(file("modules/specs2"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
-  .dependsOn(h2 % "test")
+  .dependsOn(h2 % Test)
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(crossScalaAll)
@@ -364,7 +364,7 @@ lazy val scalatest = project
     description := "Scalatest support for doobie.",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.h2database"  %  "h2"       % h2Version % "test"
+      "com.h2database"  %  "h2"       % h2Version % Test
     )
   )
 
@@ -452,7 +452,7 @@ lazy val refined = project
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
       "eu.timepit"     %% "refined" % refinedVersion,
-      "com.h2database" %  "h2"      % h2Version       % "test"
+      "com.h2database" %  "h2"      % h2Version       % Test
     )
   )
 
@@ -460,7 +460,7 @@ lazy val quill = project
   .in(file("modules/quill"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
-  .dependsOn(postgres % "test")
+  .dependsOn(postgres % Test)
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(crossScalaNo213)
@@ -470,6 +470,6 @@ lazy val quill = project
     description := "Quill support for doobie.",
     libraryDependencies ++= Seq(
       "io.getquill" %% "quill-jdbc" % quillVersion,
-      "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
-    ),
+      "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % Test
+    )
   )
