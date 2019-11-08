@@ -158,7 +158,6 @@ lazy val free = project
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
-      import java.sql._
       List[Class[_]](
         classOf[java.sql.NClob],
         classOf[java.sql.Blob],
@@ -257,7 +256,6 @@ lazy val postgres = project
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
     freeGen2Classes := {
-      import java.sql._
       List[Class[_]](
         classOf[org.postgresql.copy.CopyIn],
         classOf[org.postgresql.copy.CopyManager],
@@ -428,7 +426,7 @@ lazy val docs = project
         "h2Version"        -> h2Version,
         "postgresVersion"  -> postgresVersion,
         "scalaVersion"     -> scalaVersion.value,
-        "scalaVersions"    -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""), // 2.12/13
+        "scalaVersions"    -> (crossScalaVersions in core).value.flatMap(CrossVersion.partialVersion).map(_._2).mkString("2.", "/", ""), // 2.12/13
         "quillVersion"     -> quillVersion
       )
     ),
