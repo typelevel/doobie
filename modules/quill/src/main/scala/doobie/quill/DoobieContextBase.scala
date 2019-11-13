@@ -123,11 +123,9 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
       }
     }
 
-  // This is very bad. We turn an extractor into a `Read` so we can use the existing resultset
-  // machinery. In order to do this we shamelessly stub out the required metadata with nonsense
-  // which is ok because it's never used, heh-heh.
+  // Turn an extractor into a `Read` so we can use the existing resultset.
   private implicit def extractorToRead[A](ex: Extractor[A]): Read[A] =
-    Read.fromGet(Get.Basic.one(null, Nil, (rs, _) => ex(rs))(typeTag[Unit].asInstanceOf[TypeTag[A]]))
+    new Read[A](Nil, (rs, _) => ex(rs))
 
   // Nothing to do here.
   override def close(): Unit = ()
