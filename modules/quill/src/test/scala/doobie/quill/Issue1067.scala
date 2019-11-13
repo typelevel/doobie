@@ -17,15 +17,11 @@ object Issue1067 extends Specification {
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
 
-  // A transactor that always rolls back.
-  lazy val xa =
-    Transactor.after.set(
-      Transactor.fromDriverManager[IO](
-        "org.postgresql.Driver",
-        "jdbc:postgresql:world",
-        "postgres", ""
-      ), HC.rollback
-    )
+  lazy val xa = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver",
+    "jdbc:postgresql:world",
+    "postgres", ""
+  )
 
   val dc = new DoobieContext.Postgres(Literal)
   import dc._
