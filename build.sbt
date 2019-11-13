@@ -54,7 +54,8 @@ lazy val buildSettings = Seq(
 lazy val commonSettings =
   compilerFlags ++
   Seq(
-    scalaVersion := scala212Version,
+    scalaVersion := scala213Version,
+    crossScalaVersions := Seq(scala212Version, scala213Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -92,49 +93,25 @@ lazy val noPublishSettings = Seq(
   mimaPreviousArtifacts := Set()
 )
 
-lazy val modules: List[ProjectReference] = List(
-  free,
-  core,
-  h2,
-  hikari,
-  postgres,
-  `postgres-circe`,
-  specs2,
-  example,
-  bench,
-  scalatest,
-  docs,
-  refined,
-  quill
-)
-
-
-lazy val crossScalaAll = Seq(
-  crossScalaVersions := Seq(scala212Version, scala213Version)
-)
-lazy val crossScalaNo213 = Seq(
-  crossScalaVersions := Seq(scala212Version)
-)
-
 lazy val doobieSettings = buildSettings ++ commonSettings
 
 lazy val doobie = project.in(file("."))
   .settings(doobieSettings)
   .settings(noPublishSettings)
-  .aggregate(modules:_*)
-  .settings(crossScalaNo213)
-
-lazy val thirteen = project
-  .in(file("modules/thirteen"))
-  .settings(doobieSettings)
-  .settings(noPublishSettings)
-  .settings(crossScalaAll)
   .aggregate(
-    modules.filterNot {
-      case LocalProject("quill") => true
-      case LocalProject("docs") => true
-      case _ => false
-    }: _*
+    bench,
+    core,
+    docs,
+    example,
+    free,
+    h2,
+    hikari,
+    postgres,
+    `postgres-circe`,
+    quill,
+    refined,
+    scalatest,
+    specs2,
   )
 
 lazy val free = project
@@ -143,7 +120,6 @@ lazy val free = project
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(freeGen2Settings)
-  .settings(crossScalaAll)
   .settings(
     name := "doobie-free",
     description := "Pure functional JDBC layer for Scala.",
@@ -185,7 +161,6 @@ lazy val core = project
   .dependsOn(free)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .settings(
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
@@ -229,7 +204,6 @@ lazy val example = project
   .in(file("modules/example"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings ++ noPublishSettings)
-  .settings(crossScalaAll)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
@@ -244,7 +218,6 @@ lazy val postgres = project
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(freeGen2Settings)
-  .settings(crossScalaAll)
   .settings(
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
@@ -296,7 +269,6 @@ lazy val `postgres-circe` = project
   .dependsOn(core, postgres)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .settings(
     name  := "doobie-postgres-circe",
     description := "Postgres circe support for doobie.",
@@ -311,7 +283,6 @@ lazy val h2 = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .dependsOn(core)
   .settings(
     name  := "doobie-h2",
@@ -327,7 +298,6 @@ lazy val hikari = project
   .dependsOn(postgres % "test")
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .settings(
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
@@ -345,7 +315,6 @@ lazy val specs2 = project
   .dependsOn(h2 % "test")
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .settings(
     name := "doobie-specs2",
     description := "Specs2 support for doobie.",
@@ -358,7 +327,6 @@ lazy val scalatest = project
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .settings(
     name := s"doobie-scalatest",
     description := "Scalatest support for doobie.",
@@ -374,7 +342,6 @@ lazy val bench = project
   .enablePlugins(JmhPlugin)
   .dependsOn(core, postgres)
   .settings(doobieSettings)
-  .settings(crossScalaAll)
   .settings(noPublishSettings)
 
 lazy val docs = project
@@ -382,10 +349,9 @@ lazy val docs = project
   .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
   .enablePlugins(MicrositesPlugin)
   .settings(doobieSettings)
-  .settings(crossScalaNo213)
   .settings(noPublishSettings)
   .settings(
-    scalacOptions --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
+    scalacOptions := Nil,
 
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
@@ -446,7 +412,6 @@ lazy val refined = project
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaAll)
   .settings(
     name := "doobie-refined",
     description := "Refined support for doobie.",
@@ -463,9 +428,7 @@ lazy val quill = project
   .dependsOn(postgres % "test")
   .settings(doobieSettings)
   .settings(publishSettings)
-  .settings(crossScalaNo213)
   .settings(
-    crossScalaVersions -= scala213Version, // until quill is out for 2.13
     name := "doobie-quill",
     description := "Quill support for doobie.",
     libraryDependencies ++= Seq(
