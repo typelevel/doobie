@@ -351,7 +351,7 @@ lazy val docs = project
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
-    scalacOptions --= Seq("-Ywarn-unused:imports", "-Yno-imports", "-Ywarn-unused:params"),
+    scalacOptions := Nil,
 
     libraryDependencies ++= Seq(
       "io.circe"    %% "circe-core"    % circeVersion,
