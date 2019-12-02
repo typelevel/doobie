@@ -9,8 +9,10 @@ import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.scalatest._
 import scala.concurrent.ExecutionContext
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-trait CheckerChecks[M[_]] extends FunSuite with Matchers with Checker[M] {
+trait CheckerChecks[M[_]] extends AnyFunSuite with Matchers with Checker[M] {
 
   implicit def contextShift: ContextShift[M]
 
