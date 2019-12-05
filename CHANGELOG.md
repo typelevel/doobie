@@ -78,7 +78,7 @@ In 0.5.x we provided some single-element `Stream`s that would emit values and gu
 
 Prior to the 0.6.x series we provided two typeclasses for **bidirectional** type mapping:
 - `Meta` defined nullable mappings between column/parameter values and scala types.
-- `Composite` defined null-safe mappings betwen column/parameter **vectors** and scala types.
+- `Composite` defined null-safe mappings between column/parameter **vectors** and scala types.
 
 Starting with version 0.6.0 type mappings are **unidirectional**:
 - `Meta` has been split into `Get` and `Put` typeclasses, for reads and writes of column/parameter values, respectively.
