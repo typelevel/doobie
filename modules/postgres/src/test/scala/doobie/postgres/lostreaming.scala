@@ -15,7 +15,7 @@ import org.specs2.ScalaCheck
 import scala.concurrent.ExecutionContext.global
 
 
-object lostreamingspec extends Specification with ScalaCheck {
+class lostreamingspec extends Specification with ScalaCheck {
 
   implicit val ioContextShift: ContextShift[IO] =
     IO.contextShift(global)

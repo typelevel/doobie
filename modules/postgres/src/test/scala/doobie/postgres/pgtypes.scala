@@ -22,7 +22,7 @@ import com.github.ghik.silencer.silent
 
 // Establish that we can write and read various types.
 
-object pgtypesspec extends Specification {
+class pgtypesspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

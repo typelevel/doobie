@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
-object h2typesspec extends Specification {
+class h2typesspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

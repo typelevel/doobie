@@ -9,7 +9,7 @@ import doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 
 
-object syntaxspec extends Specification {
+class syntaxspec extends Specification {
 
   "syntax" should {
 

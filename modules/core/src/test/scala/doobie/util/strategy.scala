@@ -11,7 +11,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object strategyspec extends Specification {
+class strategyspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

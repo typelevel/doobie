@@ -14,7 +14,7 @@ import scala.Predef._
 import scala.util.Random
 
 
-object processspec extends Specification with ScalaCheck {
+class processspec extends Specification with ScalaCheck {
 
   "repeatEvalChunks must" >> {
 

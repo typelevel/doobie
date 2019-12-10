@@ -13,7 +13,9 @@ import io.getquill._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
-object PostgresDoobieContextSpec extends Specification {
+class PostgresDoobieContextSpec extends Specification {
+
+  sys.props.put("Dquill.binds.log", "true")
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

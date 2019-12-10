@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object pgjsonspec extends Specification {
+class pgjsonspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -85,7 +85,7 @@ object pgjsonspec extends Specification {
   }
 
   // Encoder / Decoders
-  private final case class Foo(x: Json)
+  private case class Foo(x: Json)
   private object Foo{
     import doobie.postgres.circe.json.implicits._
     implicit val fooEncoder: Encoder[Foo] = Encoder[Json].contramap(_.x)
