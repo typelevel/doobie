@@ -11,7 +11,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object pgcheck extends Specification {
+class pgcheck extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

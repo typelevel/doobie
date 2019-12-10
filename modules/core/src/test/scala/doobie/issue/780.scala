@@ -9,7 +9,7 @@ import org.specs2.mutable.Specification
 import shapeless.{::, HNil}
 
 
-object `780` extends Specification {
+class `780` extends Specification {
 
   "deriving instances" should {
     "work correctly for Param from class scope" in {

@@ -9,7 +9,7 @@ import shapeless.test.illTyped
 import org.specs2.mutable.Specification
 
 
-object stringspec extends Specification {
+class stringspec extends Specification {
 
   "sql interpolator" should {
 

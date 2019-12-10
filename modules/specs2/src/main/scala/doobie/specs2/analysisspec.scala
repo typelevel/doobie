@@ -17,7 +17,7 @@ import scala.reflect.runtime.universe.TypeTag
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
  * {{{
  * // An example specification, taken from the examples project.
- * object AnalysisTestSpec extends Specification with AnalysisSpec {
+ * class AnalysisTestSpec extends Specification with AnalysisSpec {
  *
  *   // The transactor to use for the tests.
  *   val transactor = Transactor.fromDriverManager[IO](

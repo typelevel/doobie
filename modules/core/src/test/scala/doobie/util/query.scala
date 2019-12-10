@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 import scala.Predef._
 
 
-object queryspec extends Specification {
+class queryspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

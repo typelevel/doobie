@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object pgnotifyspec extends Specification {
+class pgnotifyspec extends Specification {
 
   import FC.{commit, delay}
 

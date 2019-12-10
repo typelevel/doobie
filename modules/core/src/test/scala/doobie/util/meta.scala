@@ -7,7 +7,7 @@ package doobie.util
 import org.specs2.mutable.Specification
 
 
-object metaspec extends Specification {
+class metaspec extends Specification {
 
   "Meta" should {
 

@@ -16,7 +16,7 @@ import org.scalacheck.Prop.forAll
 import scala.concurrent.ExecutionContext
 
 
-object textspec extends Specification with ScalaCheck {
+class textspec extends Specification with ScalaCheck {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

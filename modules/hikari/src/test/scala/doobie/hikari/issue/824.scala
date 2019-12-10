@@ -17,7 +17,7 @@ import scala.util.Random
 import java.util.concurrent.Executors
 
 
-object `824` extends Specification {
+class `824` extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

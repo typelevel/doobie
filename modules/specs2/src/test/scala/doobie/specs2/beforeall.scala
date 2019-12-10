@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext
 
 // Check that AnalysisSpec plays nice with Specs2 execution flow (issue #454)
 
-object beforeall extends Specification with IOChecker with BeforeAll {
+class beforeall extends Specification with IOChecker with BeforeAll {
   // Setup
   val initQ = sql"create table some_table (value varchar not null)".update
 

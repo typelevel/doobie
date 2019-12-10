@@ -55,7 +55,7 @@ trait pgreaderrorsspec[F[_]] extends Specification {
 
 }
 
-object pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
+class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
   implicit val E: Effect[IO] = IO.ioEffect
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 }
