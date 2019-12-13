@@ -260,7 +260,10 @@ trait MetaInstances { this: MetaConstructors =>
 
   /** @group Instances */
   implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
-    TimestampMeta.imap(_.toInstant)(java.sql.Timestamp.from)
+    Basic.one[java.time.Instant](
+      Timestamp,
+      List(Char, VarChar, LongVarChar, Date, Time),
+      _.getObject(_, classOf[java.time.Instant]), _.setObject(_, _), _.updateObject(_, _))
 
   /** @group Instances */
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
