@@ -105,21 +105,14 @@ class pgtypesspec extends Specification {
 
   // 8.5 Date/Time Types"
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
-  testInOut("timestamp", java.time.Instant.now)
   testInOut("timestamp", java.time.LocalDateTime.of(1, 2, 3, 4, 5))
   testInOutWithCustomMatch("timestamp with time zone",
     java.time.OffsetDateTime.of(1, 2, 3, 4, 5, 6, 7, ZoneOffset.UTC)
   )(_.withNano(0))
-  testInOutWithCustomMatch("timestamp with time zone",
-    java.time.ZonedDateTime.of(1, 2, 3, 4, 5, 6, 0, ZoneId.systemDefault())
-  )(_.withFixedOffsetZone())
   testInOut("date", new java.sql.Date(4,5,6) : @silent)
   testInOut("date", java.time.LocalDate.of(4,5,6))
   testInOut("time", new java.sql.Time(3,4,5) : @silent)
   testInOut("time", java.time.LocalTime.of(2, 3))
-  testInOutWithCustomMatch("time with time zone",
-    java.time.OffsetTime.of(1, 2, 3, 3, ZoneOffset.UTC))(_.withNano(0))
-  testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
 
   // 8.6 Boolean Type
   testInOut("boolean", true)
