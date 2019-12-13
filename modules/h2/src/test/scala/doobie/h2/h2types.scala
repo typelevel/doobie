@@ -66,10 +66,7 @@ class h2typesspec extends Specification {
   testInOut[BigDecimal]("DECIMAL", 123.45)
   testInOut[java.sql.Time]("TIME", new java.sql.Time(3,4,5)) : @silent
   testInOut[java.sql.Date]("DATE", new java.sql.Date(4,5,6)) : @silent
-
-  // RCN: follow up here, this stopped working for some reason
-  // testInOut[java.time.LocalDate]("DATE", java.time.LocalDate.of(4,5,6))
-
+  testInOut[java.time.LocalDate]("DATE", java.time.LocalDate.of(4,5,6))
   testInOut[java.sql.Timestamp]("TIMESTAMP", new java.sql.Timestamp(System.currentTimeMillis))
   testInOut[java.time.Instant]("TIMESTAMP", java.time.Instant.now)
   testInOut[List[Byte]]("BINARY", BigInt("DEADBEEF",16).toByteArray.toList)
