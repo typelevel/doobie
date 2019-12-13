@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ ContextShift, IO }
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -14,12 +14,10 @@ import java.net.InetAddress
 import java.util.UUID
 import java.math.{BigDecimal => JBigDecimal}
 import java.time.{ZoneId, ZoneOffset}
-
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
 import org.specs2.mutable.Specification
-
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
 
