@@ -113,7 +113,8 @@ class pgtypesspec extends Specification {
   testInOut("date", java.time.LocalDate.of(4,5,6))
   testInOut("time", new java.sql.Time(3,4,5) : @silent)
   testInOut("time", java.time.LocalTime.of(2, 3))
-
+  skip("time with time zone")
+  testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
   // 8.6 Boolean Type
   testInOut("boolean", true)
 
