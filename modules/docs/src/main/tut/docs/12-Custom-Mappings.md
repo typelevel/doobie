@@ -59,7 +59,7 @@ Instances are provided for the following Scala types:
 - `Boolean`, `String`, and `Array[Byte]`;
 - `Date`, `Time`, and `Timestamp` from the `java.sql` package;
 - `Date` from the `java.util` package;
-- `Instant` and `LocalDate` from the `java.time` package; and
+- `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime` and `ZonedDateTime` from the `java.time` package; and
 - single-element case classes wrapping one of the above types.
 
 The above cases are defined by the JDBC specification. See later chapters on vendor-specific additions, which provide mappings for some non-standard types such as `UUID`s and network addresses.
