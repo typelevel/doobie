@@ -13,6 +13,7 @@ import doobie.postgres.enums._
 import java.net.InetAddress
 import java.util.UUID
 import java.math.{BigDecimal => JBigDecimal}
+import java.time.{ZoneId, ZoneOffset}
 import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
@@ -59,6 +60,20 @@ class pgtypesspec extends Specification {
       }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
+  def testInOutWithCustomMatch[A](col: String, a: A)(f: A => A)(implicit m: Get[A], p: Put[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" in {
+        inOut(col, a).transact(xa).attempt.unsafeRunSync.map(f) must_== Right(a).map(f)
+      }
+      s"write+read $col as Option[${m.typeStack}] (Some)" in {
+        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync.map(_.map(f)) must_== Right(Some(a)).map(_.map(f))
+      }
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+      }
+    }
+
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def skip(col: String, msg: String = "not yet implemented") =
     s"Mapping for $col" >> {
@@ -90,14 +105,16 @@ class pgtypesspec extends Specification {
 
   // 8.5 Date/Time Types"
   testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
-  testInOut("timestamp", java.time.Instant.now)
-  skip("timestamp with time zone")
+  testInOut("timestamp", java.time.LocalDateTime.of(1, 2, 3, 4, 5))
+  testInOutWithCustomMatch("timestamp with time zone",
+    java.time.OffsetDateTime.of(1, 2, 3, 4, 5, 6, 7, ZoneOffset.UTC)
+  )(_.withNano(0))
   testInOut("date", new java.sql.Date(4,5,6) : @silent)
   testInOut("date", java.time.LocalDate.of(4,5,6))
   testInOut("time", new java.sql.Time(3,4,5) : @silent)
+  testInOut("time", java.time.LocalTime.of(2, 3))
   skip("time with time zone")
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
-
   // 8.6 Boolean Type
   testInOut("boolean", true)
 
