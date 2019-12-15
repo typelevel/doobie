@@ -4,26 +4,35 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
+import java.math.{BigDecimal => JBigDecimal}
+import java.net.InetAddress
+import java.sql.Timestamp
+import java.time.{LocalDate, ZoneOffset}
+import java.util.UUID
+
+import cats.effect.{ContextShift, IO}
+import com.github.ghik.silencer.silent
 import doobie._
 import doobie.implicits._
+import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
-import doobie.postgres.enums._
-import java.net.InetAddress
-import java.util.UUID
-import java.math.{BigDecimal => JBigDecimal}
-import java.time.{ZoneId, ZoneOffset}
+import doobie.util.arbitraries.SQLArbitraries._
+import doobie.util.arbitraries.StringArbitraries._
+import doobie.util.arbitraries.TimeArbitraries._
 import org.postgis._
-import org.postgresql.util._
 import org.postgresql.geometric._
+import org.postgresql.util._
+import org.scalacheck.Prop.forAll
+import org.scalacheck.{Arbitrary, Gen}
+import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
+
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 // Establish that we can write and read various types.
 
-class pgtypesspec extends Specification {
+class pgtypesspec extends Specification with ScalaCheck {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -34,17 +43,31 @@ class pgtypesspec extends Specification {
     "postgres", ""
   )
 
-  def inOut[A: Get: Put](col: String, a: A): ConnectionIO[A] =
+  def inOut[A: Get : Put](col: String, a: A): ConnectionIO[A] =
     for {
-      _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
+      _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
 
-  def inOutOpt[A: Get: Put](col: String, a: Option[A]): ConnectionIO[Option[A]] =
+  def inOutOpt[A: Get : Put](col: String, a: Option[A]): ConnectionIO[Option[A]] =
     for {
-      _  <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
+      _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[Option[A]](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[Option[A]]("value")(a)
     } yield a0
+
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
+  def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
+        inOut(col, x).transact(xa).attempt.unsafeRunSync must_== Right(x)
+      }
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
+        inOutOpt[A](col, Some(x)).transact(xa).attempt.unsafeRunSync must_== Right(Some(x))
+      }
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+      }
+    }
 
   @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
@@ -61,13 +84,45 @@ class pgtypesspec extends Specification {
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOutWithCustomMatch[A](col: String, a: A)(f: A => A)(implicit m: Get[A], p: Put[A]) =
+  def testInOutWithCustomTransform[A](col: String)(t: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" in {
-        inOut(col, a).transact(xa).attempt.unsafeRunSync.map(f) must_== Right(a).map(f)
+      s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
+        inOut(col, t(x)).transact(xa).attempt.unsafeRunSync must_== Right(t(x))
       }
-      s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync.map(_.map(f)) must_== Right(Some(a)).map(_.map(f))
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
+        inOutOpt[A](col, Some(t(x))).transact(xa).attempt.unsafeRunSync must_== Right(Some(t(x)))
+      }
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+      }
+    }
+
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
+  def testInOutWithCustomTransformAndMatch[A, B](col: String)(tr: A => A)(mtch: A => B)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
+        inOut(col, tr(x)).transact(xa).attempt.unsafeRunSync.map(mtch) must_== Right(tr(x)).map(mtch)
+      }
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
+        inOutOpt[A](col, Some(tr(x))).transact(xa).attempt.unsafeRunSync.map(_.map(mtch)) must_== Right(Some(tr(x))).map(_.map(mtch))
+      }
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+      }
+    }
+
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
+  def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" ! forAll(gen) { t: A =>
+        t match {
+          case x: java.sql.Time => println(s"TIME: ${x.toString}")
+          case _ =>
+        }
+        inOut(col, t).transact(xa).attempt.unsafeRunSync must_== Right(t)
+      }
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll(gen) { t: A =>
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync must_== Right(Some(t))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
         inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
@@ -81,45 +136,65 @@ class pgtypesspec extends Specification {
     }
 
   // 8.1 Numeric Types
-  testInOut[Short]("smallint", 123)
-  testInOut[Int]("integer", 123)
-  testInOut[Long]("bigint", 123)
-  testInOut[BigDecimal]("decimal", 123)
-  testInOut[BigDecimal]("numeric", 123)
-  testInOut[Float]("real", 123.45f)
-  testInOut[Double]("double precision", 123.45)
+  testInOut[Short]("smallint")
+  testInOut[Int]("integer")
+  testInOut[Long]("bigint")
+  testInOut[BigDecimal]("decimal")
+  testInOut[BigDecimal]("numeric")
+  testInOut[Float]("real")
+  testInOut[Double]("double precision")
 
   // 8.2 Monetary Types
   skip("pgmoney", "getObject returns Double")
 
   // 8.3 Character Types"
-  testInOut("character varying", "abcdef")
-  testInOut("varchar", "abcdef")
-  testInOut("character(6)", "abcdef")
-  testInOut("char(6)", "abcdef")
-  testInOut("text", "abcdef")
+  testInOut[String]("character varying")
+  testInOut[String]("varchar")
+  testInOutWithCustomGen("character(6)", nLongString(6))
+  testInOutWithCustomGen("char(6)", nLongString(6))
+  testInOut[String]("text")
 
   // 8.4 Binary Types
-  testInOut[List[Byte]]  ("bytea", BigInt("DEADBEEF",16).toByteArray.toList)
-  testInOut[Vector[Byte]]("bytea", BigInt("DEADBEEF",16).toByteArray.toVector)
+  testInOut[List[Byte]]("bytea")
+  testInOut[Vector[Byte]]("bytea")
 
   // 8.5 Date/Time Types"
-  testInOut("timestamp", new java.sql.Timestamp(System.currentTimeMillis))
-  testInOut("timestamp", java.time.LocalDateTime.of(1, 2, 3, 4, 5))
-  testInOutWithCustomMatch("timestamp with time zone",
-    java.time.OffsetDateTime.of(1, 2, 3, 4, 5, 6, 7, ZoneOffset.UTC)
-  )(_.withNano(0))
-  testInOut("date", new java.sql.Date(4,5,6) : @silent)
-  testInOut("date", java.time.LocalDate.of(4,5,6))
-  testInOut("time", new java.sql.Time(3,4,5) : @silent)
-  testInOut("time", java.time.LocalTime.of(2, 3))
+
+  /*
+      timestamp
+      The allowed range of p is from 0 to 6 for the timestamp and interval types.
+   */
+  testInOutWithCustomTransform[java.sql.Timestamp]("timestamp") { ts => ts.setNanos(0); ts }
+  testInOutWithCustomTransform[java.time.LocalDateTime]("timestamp")(_.withNano(0))
+
+  /*
+      timestamp with time zone
+      For the time types, the allowed range of p is from 0 to 6 when eight-byte integer storage is used, or from 0 to 10 when floating-point storage is used.
+   */
+  testInOutWithCustomTransformAndMatch[java.time.OffsetDateTime, java.sql.Timestamp]("timestamp with time zone")(_.withNano(0)) {
+    dt =>
+      Timestamp.valueOf(dt.atZoneSameInstant(ZoneOffset.UTC).toLocalDateTime)
+  }
+
+  testInOut[java.sql.Date]("date")
+  // TODO LocalDate.of(-500,1,1) is failing
+  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))
+
+  /*
+      time
+      The allowed range of p is from 0 to 6 for the timestamp and interval types.
+   */
+  testInOut[java.sql.Time]("time")
+  testInOutWithCustomTransform[java.time.LocalTime]("time")(_.withNano(0))
+
   skip("time with time zone")
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
+
   // 8.6 Boolean Type
-  testInOut("boolean", true)
+  testInOut[Boolean]("boolean")
 
   // 8.7 Enumerated Types
-  testInOut("myenum", MyEnum.Foo : MyEnum)
+  testInOut("myenum", MyEnum.Foo: MyEnum)
 
   // as scala.Enumeration
   implicit val MyEnumMeta: Meta[MyScalaEnum.Value] = pgEnum(MyScalaEnum, "myenum")
@@ -153,7 +228,7 @@ class pgtypesspec extends Specification {
   skip("tsquery")
 
   // 8.12 UUID Type
-  testInOut("uuid", UUID.randomUUID)
+  testInOut[UUID]("uuid")
 
   // 8.13 XML Type
   skip("xml")
@@ -164,14 +239,14 @@ class pgtypesspec extends Specification {
   // 8.15 Arrays
   skip("bit[]", "Requires a cast")
   skip("smallint[]", "always comes back as Array[Int]")
-  testInOut("integer[]", List[Int](1,2))
-  testInOut("bigint[]", List[Long](1,2))
-  testInOut("real[]", List[Float](1.2f, 3.4f))
-  testInOut("double precision[]", List[Double](1.2, 3.4))
-  testInOut("varchar[]", List[String]("foo", "bar"))
-  testInOut("uuid[]", List[UUID](UUID.fromString("7af2cb9a-9aee-47bc-910b-b9f4d608afa0"), UUID.fromString("643a05f3-463f-4dab-916c-5af4a84c3e4a")))
+  testInOut[List[Int]]("integer[]")
+  testInOut[List[Long]]("bigint[]")
+  testInOut[List[Float]]("real[]")
+  testInOut[List[Double]]("double precision[]")
+  testInOut[List[String]]("varchar[]")
+  testInOut[List[UUID]]("uuid[]")
   testInOut("numeric[]", List[JBigDecimal](BigDecimal("3.14").bigDecimal, BigDecimal("42.0").bigDecimal))
-  testInOut("numeric[]", List[BigDecimal](BigDecimal("3.14"), BigDecimal("42.0")))
+  testInOut[List[BigDecimal]]("numeric[]", List[BigDecimal](BigDecimal("3.14"), BigDecimal("42.0")))
 
   // 8.16 Structs
   skip("structs")
@@ -188,20 +263,23 @@ class pgtypesspec extends Specification {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double]     = Stream.continually(scala.util.Random.nextDouble).iterator : @silent("deprecated")
-  lazy val pts: Iterator[Point]      = Stream.continually(new Point(rnd.next, rnd.next)).iterator : @silent("deprecated")
-  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator : @silent("deprecated")
-  lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({ lazy val p = pts.next; Array(p, pts.next, pts.next, pts.next, p) })).iterator : @silent("deprecated")
-  lazy val pls: Iterator[Polygon]    = Stream.continually(new Polygon(lras.next)).iterator : @silent("deprecated")
+  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble).iterator: @silent("deprecated")
+  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next, rnd.next)).iterator: @silent("deprecated")
+  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator: @silent("deprecated")
+  lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
+    lazy val p = pts.next;
+    Array(p, pts.next, pts.next, pts.next, p)
+  })).iterator: @silent("deprecated")
+  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next)).iterator: @silent("deprecated")
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]]      = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator : @silent("deprecated")
-  lazy val plas: Iterator[Array[Polygon]]    = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator : @silent("deprecated")
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator : @silent("deprecated")
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator : @silent("deprecated")
+  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator: @silent("deprecated")
+  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator: @silent("deprecated")
+  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator: @silent("deprecated")
+  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator: @silent("deprecated")
 
   // All these types map to `geometry`
-  def testInOutGeom[A <: Geometry: Meta](a: A) =
+  def testInOutGeom[A <: Geometry : Meta](a: A) =
     testInOut[A]("geometry", a)
 
   testInOutGeom[Geometry](pts.next)
@@ -216,6 +294,6 @@ class pgtypesspec extends Specification {
   testInOutGeom[Point](pts.next)
 
   // hstore
-  testInOut("hstore", Map("foo" -> "1", "bar" -> "2", "baz" -> "3"))
+  testInOut[Map[String, String]]("hstore")
 
 }
