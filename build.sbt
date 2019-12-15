@@ -13,7 +13,7 @@ lazy val kindProjectorVersion = "0.10.3"
 lazy val monixVersion         = "3.1.0"
 lazy val quillVersion         = "3.4.10"
 lazy val postGisVersion       = "2.3.0"
-lazy val postgresVersion      = "42.2.8"
+lazy val postgresVersion      = "42.2.9"
 lazy val refinedVersion       = "0.9.10"
 lazy val scalaCheckVersion    = "1.14.2"
 lazy val scalatestVersion     = "3.0.8"
@@ -283,7 +283,7 @@ lazy val h2 = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     name  := "doobie-h2",
     description := "H2 support for doobie.",
