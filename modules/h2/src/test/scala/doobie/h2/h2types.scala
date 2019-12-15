@@ -4,21 +4,26 @@
 
 package doobie.h2
 
-import java.time.{Instant, LocalDateTime, ZoneId, ZoneOffset}
-
-import cats.effect.{ContextShift, IO}
-import doobie._
-import doobie.implicits._
-import doobie.h2.implicits._
+import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
 
+import cats.effect.{ContextShift, IO}
+import com.github.ghik.silencer.silent
+import doobie._
+import doobie.h2.implicits._
+import doobie.implicits._
+import doobie.util.arbitraries.SQLArbitraries._
+import doobie.util.arbitraries.StringArbitraries._
+import doobie.util.arbitraries.TimeArbitraries._
+import org.scalacheck.Prop.forAll
+import org.scalacheck.{Arbitrary, Gen}
+import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
-class h2typesspec extends Specification {
+class h2typesspec extends Specification with ScalaCheck {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -29,28 +34,28 @@ class h2typesspec extends Specification {
     "sa", ""
   )
 
-  def inOut[A: Put: Get](col: String, a: A): ConnectionIO[A] =
+  def inOut[A: Put : Get](col: String, a: A): ConnectionIO[A] =
     for {
-      _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
-      _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
+      _ <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
+      _ <- sql"INSERT INTO TEST VALUES ($a)".update.run
       a0 <- sql"SELECT value FROM TEST".query[A].unique
     } yield (a0)
 
-  def inOutOpt[A: Put: Get](col: String, a: Option[A]): ConnectionIO[Option[A]] =
+  def inOutOpt[A: Put : Get](col: String, a: Option[A]): ConnectionIO[Option[A]] =
     for {
-      _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
-      _  <- sql"INSERT INTO TEST VALUES ($a)".update.run
+      _ <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value $col)", None).run
+      _ <- sql"INSERT INTO TEST VALUES ($a)".update.run
       a0 <- sql"SELECT value FROM TEST".query[Option[A]].unique
     } yield (a0)
 
   @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
+  def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" in {
-        inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
+      s"write+read $col as ${m.typeStack}" ! forAll { t: A =>
+        inOut(col, t).transact(xa).attempt.unsafeRunSync must_== Right(t)
       }
-      s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { t: A =>
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync must_== Right(Some(t))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
         inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
@@ -58,13 +63,31 @@ class h2typesspec extends Specification {
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOutWithCustomMatch[A](col: String, a: A)(f: A => A)(implicit m: Get[A], p: Put[A]) =
+  def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" in {
-        inOut(col, a).transact(xa).attempt.unsafeRunSync.map(f) must_== Right(a).map(f)
+      s"write+read $col as ${m.typeStack}" ! forAll(gen) { t: A =>
+        t match {
+          case x: java.sql.Time => println(s"TIME: ${x.toString}")
+          case _ =>
+        }
+        inOut(col, t).transact(xa).attempt.unsafeRunSync must_== Right(t)
       }
-      s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync.map(_.map(f)) must_== Right(Some(a)).map(_.map(f))
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll(gen) { t: A =>
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync must_== Right(Some(t))
+      }
+      s"write+read $col as Option[${m.typeStack}] (None)" in {
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+      }
+    }
+
+  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
+  def testInOutWithCustomTransform[A](col: String)(f: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
+    s"Mapping for $col as ${m.typeStack}" >> {
+      s"write+read $col as ${m.typeStack}" ! forAll { t: A =>
+        inOut(col, f(t)).transact(xa).attempt.unsafeRunSync must_== Right(f(t))
+      }
+      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { t: A =>
+        inOutOpt[A](col, Some(f(t))).transact(xa).attempt.unsafeRunSync must_== Right(Some(f(t)))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
         inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
@@ -77,37 +100,53 @@ class h2typesspec extends Specification {
       "PENDING:" in pending(msg)
     }
 
-  testInOut[Int]("INT", 123)
-  testInOut("BOOLEAN", true)
-  testInOut[Byte]("TINYINT", 123)
-  testInOut[Short]("SMALLINT", 123)
-  testInOut[Long]("BIGINT", 123)
-  testInOut[BigDecimal]("DECIMAL", 123.45)
-  testInOut("TIME", new java.sql.Time(3, 4, 5)): @silent
-  testInOut("DATE", new java.sql.Date(4, 5, 6)): @silent
-  testInOut("DATE", java.time.LocalDate.of(4, 5, 6))
-  testInOut("TIMESTAMP", new java.sql.Timestamp(System.currentTimeMillis))
-  testInOut("TIMESTAMP", java.time.Instant.now)
-  testInOut("TIME", java.time.LocalTime.of(2, 3))
-  testInOut("TIMESTAMP", java.time.LocalDateTime.of(1, 2, 3, 4, 5))
-  testInOutWithCustomMatch("TIME WITH TIME ZONE",
-    java.time.OffsetTime.of(1, 2, 3, 3, ZoneOffset.UTC)
-  )(_.withNano(0))
-  testInOutWithCustomMatch("TIMESTAMP WITH TIME ZONE",
-    java.time.OffsetDateTime.of(1, 2, 3, 4, 5, 6, 7, ZoneOffset.UTC)
-  )(_.withNano(0))
-  testInOutWithCustomMatch("TIMESTAMP WITH TIME ZONE",
-    java.time.ZonedDateTime.of(1, 2, 3, 4, 5, 6, 0, ZoneId.systemDefault())
-  )(_.withFixedOffsetZone())
-  testInOut[List[Byte]]("BINARY", BigInt("DEADBEEF", 16).toByteArray.toList)
+  testInOut[Int]("INT")
+  testInOut[Boolean]("BOOLEAN")
+  testInOut[Byte]("TINYINT")
+  testInOut[Short]("SMALLINT")
+  testInOut[Long]("BIGINT")
+  testInOut[BigDecimal]("DECIMAL")
+
+  /*
+      TIME
+      If fractional seconds precision is specified it should be from 0 to 9, 0 is default.
+   */
+  testInOut[java.sql.Time]("TIME"): @silent
+  testInOutWithCustomTransform[java.time.LocalTime]("TIME")(_.withNano(0))
+
+  testInOut[java.sql.Date]("DATE"): @silent
+  testInOut[java.time.LocalDate]("DATE")
+
+  /*
+      TIMESTAMP
+      If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+   */
+  testInOutWithCustomTransform[java.sql.Timestamp]("TIMESTAMP") { ts => ts.setNanos(0); ts }
+  testInOutWithCustomTransform[java.time.LocalDateTime]("TIMESTAMP")(_.withNano(0))
+  testInOutWithCustomTransform[java.time.Instant]("TIMESTAMP")(_.`with`(NANO_OF_SECOND, 0))
+
+  /*
+      TIME WITH TIMEZONE
+      If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+   */
+  testInOutWithCustomTransform[java.time.OffsetTime]("TIME WITH TIME ZONE")(_.withNano(0))
+
+  /*
+      TIMESTAMP WITH TIME ZONE
+      If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+   */
+  testInOutWithCustomTransform[java.time.OffsetDateTime]("TIMESTAMP WITH TIME ZONE")(_.withNano(0))
+  testInOutWithCustomTransform[java.time.ZonedDateTime]("TIMESTAMP WITH TIME ZONE")(_.withFixedOffsetZone().withNano(0))
+
+  testInOut[List[Byte]]("BINARY")
   skip("OTHER")
-  testInOut("VARCHAR", "abc")
-  testInOut("CHAR(3)", "abc")
+  testInOut[String]("VARCHAR")
+  testInOutWithCustomGen[String]("CHAR(3)", nLongString(3))
   skip("BLOB")
   skip("CLOB")
-  testInOut("UUID", UUID.randomUUID)
-  testInOut[List[Int]]("ARRAY", List(1, 2, 3))
-  testInOut[List[String]]("ARRAY", List("foo", "bar"))
+  testInOut[UUID]("UUID")
+  testInOut[List[Int]]("ARRAY")
+  testInOut[List[String]]("ARRAY")
   skip("GEOMETRY")
 
   "Mapping for Boolean" should {
@@ -135,4 +174,5 @@ class h2typesspec extends Specification {
       a.alignmentErrors must_== Nil
     }
   }
+
 }
