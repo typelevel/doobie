@@ -7,6 +7,7 @@ package doobie.postgres
 import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
 import java.sql.Timestamp
+import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
 
@@ -166,6 +167,7 @@ class pgtypesspec extends Specification with ScalaCheck {
    */
   testInOutWithCustomTransform[java.sql.Timestamp]("timestamp") { ts => ts.setNanos(0); ts }
   testInOutWithCustomTransform[java.time.LocalDateTime]("timestamp")(_.withNano(0))
+  testInOutWithCustomTransform[java.time.Instant]("timestamp")(_.`with`(NANO_OF_SECOND, 0))
 
   /*
       timestamp with time zone
