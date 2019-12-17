@@ -11,7 +11,7 @@ import java.util.UUID
 import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
-import cats.data.NonEmptyList.{of => NonEmptyListOf}
+import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import doobie.util.meta.Meta
 
 
