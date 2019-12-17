@@ -6,7 +6,6 @@ jdk:
 before_install:
   - git fetch --tags
   - export PATH=${PATH}:./vendor/bundle
-  - gem update bundler
 
 addons:
   postgresql: "9.4"
@@ -15,7 +14,7 @@ addons:
       - postgresql-9.4-postgis-2.4
 
 install:
-  - rvm use 2.4 --install --fuzzy
+  - rvm use 2.6 --install --fuzzy
   - gem update --system
   - gem install sass
   - gem install jekyll -v 3.2.1
