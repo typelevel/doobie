@@ -2,8 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package doobie.util.meta
 
+import doobie.util.{Get, Put}
 import org.specs2.mutable.Specification
 
 
