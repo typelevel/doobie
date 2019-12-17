@@ -6,6 +6,7 @@ jdk:
 before_install:
   - git fetch --tags
   - export PATH=${PATH}:./vendor/bundle
+  - gem update bundler
 
 addons:
   postgresql: "9.4"
