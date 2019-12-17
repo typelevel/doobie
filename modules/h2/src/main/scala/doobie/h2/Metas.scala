@@ -5,16 +5,14 @@
 package doobie.h2
 
 import doobie.enum.JdbcType
-import doobie.util.Meta
 import doobie.util.invariant._
-
 import java.util.UUID
 
 import scala.Predef._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
-
-import cats.data.NonEmptyList.{ of => NonEmptyListOf }
+import cats.data.NonEmptyList.{of => NonEmptyListOf}
+import doobie.util.meta.Meta
 
 
 trait Instances {
