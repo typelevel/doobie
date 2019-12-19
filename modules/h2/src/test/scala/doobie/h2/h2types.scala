@@ -19,7 +19,9 @@ import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
-
+import doobie.implicits.javasql._
+import doobie.implicits.javatime.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
+import doobie.implicits.legacy.instant.{JavaTimeInstantMeta => LegacyJavaTimeInstantMeta}
 import scala.concurrent.ExecutionContext
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
@@ -123,7 +125,12 @@ class h2typesspec extends Specification with ScalaCheck {
    */
   testInOutWithCustomTransform[java.sql.Timestamp]("TIMESTAMP") { ts => ts.setNanos(0); ts }
   testInOutWithCustomTransform[java.time.LocalDateTime]("TIMESTAMP")(_.withNano(0))
-  testInOutWithCustomTransform[java.time.Instant]("TIMESTAMP")(_.`with`(NANO_OF_SECOND, 0))
+  testInOutWithCustomTransform[java.time.Instant]("TIMESTAMP")(_.`with`(NANO_OF_SECOND, 0))(
+    LegacyJavaTimeInstantMeta.get, LegacyJavaTimeInstantMeta.put, arbitraryInstant
+  )
+  testInOutWithCustomTransform[java.time.Instant]("TIMESTAMP")(_.`with`(NANO_OF_SECOND, 0))(
+    NewJavaTimeInstantMeta.get, NewJavaTimeInstantMeta.put, arbitraryInstant
+  )
 
   /*
       TIME WITH TIMEZONE

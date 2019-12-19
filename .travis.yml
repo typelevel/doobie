@@ -14,8 +14,7 @@ addons:
       - postgresql-9.4-postgis-2.4
 
 install:
-  - rvm use 2.4 --install --fuzzy
-  - gem update --system
+  - rvm use 2.6 --install --fuzzy
   - gem install sass
   - gem install jekyll -v 3.2.1
 
