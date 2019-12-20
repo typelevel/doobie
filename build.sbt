@@ -364,7 +364,9 @@ lazy val docs = project
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
 
+
     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
+    version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
     micrositeName             := "doobie",
     micrositeDescription      := "A functional JDBC layer for Scala.",
