@@ -5,7 +5,8 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 
-/** Example interpreter that fails if it encounters any constructors. This lets you run
+/**
+ * Example interpreter that fails if it encounters any constructors. This lets you run
  * `ConnectionIO` programs that rely only on pure values, for example.
  */
 object Noop {
