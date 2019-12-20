@@ -432,7 +432,7 @@ lazy val quill = project
     name := "doobie-quill",
     description := "Quill support for doobie.",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % quillVersion,
-      "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
+      "io.getquill" %% "quill-jdbc"   % quillVersion,
+      "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
     ),
   )
