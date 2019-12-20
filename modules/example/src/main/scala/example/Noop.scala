@@ -4,16 +4,14 @@ import cats._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
-import doobie.free.connection.ConnectionOp
 
-/**
- * Example interpreter that fails if it encounters any `ConnectionOp` constructors. This lets you
- * run `ConnectionIO` programs that rely only on pure values.
+/** Example interpreter that fails if it encounters any constructors. This lets you run
+ * `ConnectionIO` programs that rely only on pure values, for example.
  */
 object Noop {
 
-  val noop: ConnectionOp ~> Either[String, ?] =
-    λ[ConnectionOp ~> Either[String, ?]] { c =>
+  def noop[S[_]]: S ~> Either[String, ?] =
+    λ[S ~> Either[String, ?]] { c =>
       Left(s"Can't interpret $c")
     }
 
