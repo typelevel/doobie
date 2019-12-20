@@ -23,7 +23,7 @@
 <p>The example code assumes a local <a href="http://www.postgresql.org/">PostgreSQL</a> server with a <code class="highlighter-rouge">postgres</code> user with no password, <a href="http://postgis.net/">PostGIS</a> extensions (optional), and the sample <code class="highlighter-rouge">world</code> database loaded up. If you’re on a Mac you might check out the excellent <a href="http://postgresapp.com/">Postgres.app</a> if you don’t want to install PostgreSQL as a service. You can set up the user and sample database (and an <code class="highlighter-rouge">enum</code> we use in a few examples) as follows:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>$ curl -O https://raw.githubusercontent.com/tpolecat/doobie/series/0.7.x/world.sql
-$ psql -c 'create user postgres createdb'
+$ psql -c 'create user postgres createdb' postgres
 $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
 $ psql -d world -c "create type myenum as enum ('foo', 'bar')" -U postgres
@@ -65,7 +65,7 @@ $
 </span>
 <span class="n">scalacOptions</span> <span class="o">+=</span> <span class="s">"-Ypartial-unification"</span> <span class="c1">// 2.11.9+
 </span>
-<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.8.6"</span>
+<span class="k">lazy</span> <span class="k">val</span> <span class="n">doobieVersion</span> <span class="k">=</span> <span class="s">"0.8.8"</span>
 
 <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
   <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>     <span class="o">%</span> <span class="n">doobieVersion</span><span class="o">,</span>

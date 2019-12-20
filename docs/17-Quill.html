@@ -4,7 +4,7 @@
 
 <p>In order to use this feature we need to add the following dependency, which pulls in <code class="highlighter-rouge">quill-jdbc</code> 3.4.10 transitively.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span> <span class="o">%</span> <span class="s">"0.8.6"</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span> <span class="o">%</span> <span class="s">"0.8.8"</span>
 </code></pre>
 </div>
 
@@ -39,7 +39,7 @@
 <p>Here is a query.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">q1</span> <span class="k">=</span> <span class="n">quote</span> <span class="o">{</span> <span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="s">"GBR"</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// q1: AnyRef with Quoted[EntityQuery[Country]]{def quoted: io.getquill.ast.Filter;def ast: io.getquill.ast.Filter;def id423853999(): Unit;val liftings: Object} = querySchema("Country").filter(x2 =&gt; x2.code == "GBR")
+<span class="c1">// q1: AnyRef with Quoted[EntityQuery[Country]]{def quoted: io.getquill.ast.Filter;def ast: io.getquill.ast.Filter;def id50738446(): Unit;val liftings: Object} = querySchema("Country").filter(x2 =&gt; x2.code == "GBR")
 </span>
 <span class="c1">// Select all at once
 </span><span class="n">run</span><span class="o">(</span><span class="n">q1</span><span class="o">)</span>
@@ -50,8 +50,8 @@
 //         "SELECT x2.code, x2.name, x2.population FROM Country x2 WHERE x2.code = 'GBR'"
 //       )
 //     ),
-//     doobie.hi.connection$$$Lambda$8996/103832080@4c3bde81,
-//     cats.effect.Bracket$$Lambda$8998/1394484798@592093a1
+//     doobie.hi.connection$$$Lambda$8172/902966097@1117263f,
+//     cats.effect.Bracket$$Lambda$8174/1752249240@6fd4d6c3
 //   )
 // )
 </span>
@@ -64,7 +64,7 @@
 <p>A simple update.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">u1</span> <span class="k">=</span> <span class="n">quote</span> <span class="o">{</span> <span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="n">like</span> <span class="s">"U%"</span><span class="o">).</span><span class="n">update</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="o">-&gt;</span> <span class="s">"foo"</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// u1: AnyRef with Quoted[Update[Country]]{def quoted: io.getquill.ast.Update;def ast: io.getquill.ast.Update;def id632805160(): Unit;val liftings: Object} = querySchema("Country").filter(x3 =&gt; infix"${x3.name} like ${"U%"}").update(x4 =&gt; x4.name -&gt; "foo")
+<span class="c1">// u1: AnyRef with Quoted[Update[Country]]{def quoted: io.getquill.ast.Update;def ast: io.getquill.ast.Update;def id1396135128(): Unit;val liftings: Object} = querySchema("Country").filter(x3 =&gt; infix"${x3.name} like ${"U%"}").update(x4 =&gt; x4.name -&gt; "foo")
 </span>
 <span class="c1">// Update yielding count of affected rows
 </span><span class="n">run</span><span class="o">(</span><span class="n">u1</span><span class="o">)</span>
@@ -73,8 +73,8 @@
 //     Suspend(
 //       PrepareStatement("UPDATE Country SET name = 'foo' WHERE name like 'U%'")
 //     ),
-//     doobie.hi.connection$$$Lambda$8996/103832080@c9a0b3d,
-//     cats.effect.Bracket$$Lambda$8998/1394484798@3eee515f
+//     doobie.hi.connection$$$Lambda$8172/902966097@1713a04c,
+//     cats.effect.Bracket$$Lambda$8174/1752249240@8502c3a
 //   )
 // )
 </span></code></pre>
@@ -87,7 +87,7 @@
     <span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="n">like</span> <span class="n">pat</span><span class="o">).</span><span class="n">update</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">name</span> <span class="o">-&gt;</span> <span class="s">"foo"</span><span class="o">)</span>
   <span class="o">}</span>
 <span class="o">}</span>
-<span class="c1">// u2: AnyRef with Quoted[BatchAction[Update[Country]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id2064946526(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[String]("U%", "A%"): io.getquill.quotation.ScalarValueLifting[List[String],String]}} = ?.foreach((pat) =&gt; querySchema("Country").filter(x5 =&gt; infix"${x5.name} like $pat").update(x6 =&gt; x6.name -&gt; "foo"))
+<span class="c1">// u2: AnyRef with Quoted[BatchAction[Update[Country]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id519296784(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[String]("U%", "A%"): io.getquill.quotation.ScalarValueLifting[List[String],String]}} = ?.foreach((pat) =&gt; querySchema("Country").filter(x5 =&gt; infix"${x5.name} like $pat").update(x6 =&gt; x6.name -&gt; "foo"))
 </span>
 <span class="c1">// Update yielding list of counts of affected rows
 </span><span class="n">run</span><span class="o">(</span><span class="n">u2</span><span class="o">)</span>
@@ -98,13 +98,13 @@
 //         Suspend(
 //           PrepareStatement("UPDATE Country SET name = 'foo' WHERE name like ?")
 //         ),
-//         doobie.hi.connection$$$Lambda$8996/103832080@412c187a,
-//         cats.effect.Bracket$$Lambda$8998/1394484798@1e28840d
+//         doobie.hi.connection$$$Lambda$8172/902966097@66e96a2,
+//         cats.effect.Bracket$$Lambda$8174/1752249240@48101194
 //       )
 //     ),
-//     cats.FlatMap$$Lambda$9167/930107868@42b7b716
+//     cats.FlatMap$$Lambda$8343/722281023@428bd91a
 //   ),
-//   cats.Monad$$Lambda$8968/1197202183@e9f62b6
+//   cats.Monad$$Lambda$8144/773217938@4bb31c8d
 // )
 </span></code></pre>
 </div>
@@ -129,7 +129,7 @@
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">u3</span> <span class="k">=</span> <span class="n">quote</span> <span class="o">{</span>
   <span class="n">query</span><span class="o">[</span><span class="kt">Foo</span><span class="o">].</span><span class="n">insert</span><span class="o">(</span><span class="n">lift</span><span class="o">(</span><span class="nc">Foo</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="s">"Joe"</span><span class="o">))).</span><span class="n">returning</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">id</span><span class="o">)</span>
 <span class="o">}</span>
-<span class="c1">// u3: AnyRef with Quoted[ActionReturning[Foo, Int]]{def quoted: io.getquill.ast.Returning;def ast: io.getquill.ast.Returning;def id1110227106(): Unit;val liftings: AnyRef{val App.this.Foo.apply(0, "Joe").id: io.getquill.quotation.ScalarValueLifting[Int,Int]; val App.this.Foo.apply(0, "Joe").value: io.getquill.quotation.ScalarValueLifting[String,String]}} = querySchema("Foo").insert(v =&gt; v.id -&gt; ?, v =&gt; v.value -&gt; ?).returning((x7) =&gt; x7.id)
+<span class="c1">// u3: AnyRef with Quoted[ActionReturning[Foo, Int]]{def quoted: io.getquill.ast.Returning;def ast: io.getquill.ast.Returning;def id1302982979(): Unit;val liftings: AnyRef{val App.this.Foo.apply(0, "Joe").id: io.getquill.quotation.ScalarValueLifting[Int,Int]; val App.this.Foo.apply(0, "Joe").value: io.getquill.quotation.ScalarValueLifting[String,String]}} = querySchema("Foo").insert(v =&gt; v.id -&gt; ?, v =&gt; v.value -&gt; ?).returning((x7) =&gt; x7.id)
 </span>
 <span class="c1">// Update yielding a single id
 </span><span class="n">run</span><span class="o">(</span><span class="n">u3</span><span class="o">)</span>
@@ -141,8 +141,8 @@
 //         1
 //       )
 //     ),
-//     doobie.hi.connection$$$Lambda$10019/1167470769@2fd154d7,
-//     cats.effect.Bracket$$Lambda$8998/1394484798@7503b5cc
+//     doobie.hi.connection$$$Lambda$9198/581532532@399a48df,
+//     cats.effect.Bracket$$Lambda$8174/1752249240@714e72c9
 //   )
 // )
 </span></code></pre>
@@ -155,7 +155,7 @@
     <span class="n">query</span><span class="o">[</span><span class="kt">Foo</span><span class="o">].</span><span class="n">insert</span><span class="o">(</span><span class="n">a</span><span class="o">).</span><span class="n">returning</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">id</span><span class="o">)</span>
   <span class="o">}</span>
 <span class="o">}</span>
-<span class="c1">// u4: AnyRef with Quoted[BatchAction[ActionReturning[Foo, Int]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id659556223(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[repl.Session.App.Foo](App.this.Foo.apply(0, "Joe"), App.this.Foo.apply(0, "Bob")): io.getquill.quotation.CaseClassValueLifting[List[repl.Session.App.Foo]]}} = ?.foreach((a) =&gt; querySchema("Foo").insert(v =&gt; v.id -&gt; a.id, v =&gt; v.value -&gt; a.value).returning((x8) =&gt; x8.id))
+<span class="c1">// u4: AnyRef with Quoted[BatchAction[ActionReturning[Foo, Int]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id1086843774(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[repl.Session.App.Foo](App.this.Foo.apply(0, "Joe"), App.this.Foo.apply(0, "Bob")): io.getquill.quotation.CaseClassValueLifting[List[repl.Session.App.Foo]]}} = ?.foreach((a) =&gt; querySchema("Foo").insert(v =&gt; v.id -&gt; a.id, v =&gt; v.value -&gt; a.value).returning((x8) =&gt; x8.id))
 </span>
 <span class="c1">// Update yielding a list of ids
 </span><span class="n">run</span><span class="o">(</span><span class="n">u4</span><span class="o">)</span>
@@ -169,13 +169,13 @@
 //             1
 //           )
 //         ),
-//         doobie.hi.connection$$$Lambda$10019/1167470769@a73a37d,
-//         cats.effect.Bracket$$Lambda$8998/1394484798@7f8cea57
+//         doobie.hi.connection$$$Lambda$9198/581532532@6d1126f3,
+//         cats.effect.Bracket$$Lambda$8174/1752249240@3e9518a8
 //       )
 //     ),
-//     cats.FlatMap$$Lambda$9167/930107868@5a5e6e9d
+//     cats.FlatMap$$Lambda$8343/722281023@55227315
 //   ),
-//   cats.Monad$$Lambda$8968/1197202183@321b1dcf
+//   cats.Monad$$Lambda$8144/773217938@57789b42
 // )
 </span></code></pre>
 </div>

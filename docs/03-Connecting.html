@@ -58,7 +58,7 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="n">program1</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
 <span class="c1">// io: IO[Int] = Async(
-//   cats.effect.internals.IOBracket$$$Lambda$9004/1032454161@57dce873,
+//   cats.effect.internals.IOBracket$$$Lambda$8180/248688506@6db044f4,
 //   false
 // )
 </span><span class="n">io</span><span class="o">.</span><span class="n">unsafeRunSync</span>
@@ -82,13 +82,13 @@
 <span class="c1">// program2: ConnectionIO[Int] = Suspend(
 //   BracketCase(
 //     Suspend(PrepareStatement("select 42")),
-//     doobie.hi.connection$$$Lambda$8996/103832080@42feb9b0,
-//     cats.effect.Bracket$$Lambda$8998/1394484798@4d0942ce
+//     doobie.hi.connection$$$Lambda$8172/902966097@4b8e53c9,
+//     cats.effect.Bracket$$Lambda$8174/1752249240@7f379812
 //   )
 // )
 </span><span class="k">val</span> <span class="n">io2</span> <span class="k">=</span> <span class="n">program2</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
 <span class="c1">// io2: IO[Int] = Async(
-//   cats.effect.internals.IOBracket$$$Lambda$9004/1032454161@1970642f,
+//   cats.effect.internals.IOBracket$$$Lambda$8180/248688506@713156d6,
 //   false
 // )
 </span><span class="n">io2</span><span class="o">.</span><span class="n">unsafeRunSync</span>
@@ -113,7 +113,7 @@
 <p>And behold!</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">program3</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="c1">// res2: (Int, Double) = (42, 0.26638218155130744)
+<span class="c1">// res2: (Int, Double) = (42, 0.011002501472830772)
 </span></code></pre>
 </div>
 
@@ -130,7 +130,7 @@
 <p>And lo, it was good:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">program3a</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="c1">// res3: (Int, Double) = (42, 0.5860782093368471)
+<span class="c1">// res3: (Int, Double) = (42, 0.7195786754600704)
 </span></code></pre>
 </div>
 
@@ -143,27 +143,27 @@
 //       Suspend(
 //         BracketCase(
 //           Suspend(PrepareStatement("select 42")),
-//           doobie.hi.connection$$$Lambda$8996/103832080@561af7d2,
-//           cats.effect.Bracket$$Lambda$8998/1394484798@5182d0ed
+//           doobie.hi.connection$$$Lambda$8172/902966097@5dd987f7,
+//           cats.effect.Bracket$$Lambda$8174/1752249240@1e6d7356
 //         )
 //       ),
-//       cats.FlatMap$$Lambda$9421/654224713@4b4987ee
+//       cats.FlatMap$$Lambda$8597/1341541765@651111ab
 //     ),
-//     cats.Monad$$Lambda$8968/1197202183@5d4a2ace
+//     cats.Monad$$Lambda$8144/773217938@584306a
 //   ),
-//   cats.FlatMap$$Lambda$9167/930107868@5c6ff2d2
+//   cats.FlatMap$$Lambda$8343/722281023@14f3f912
 // )
 </span><span class="k">val</span> <span class="n">result</span> <span class="k">=</span> <span class="n">valuesList</span><span class="o">.</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">)</span>
 <span class="c1">// result: IO[List[(Int, Double)]] = Async(
-//   cats.effect.internals.IOBracket$$$Lambda$9004/1032454161@1bad440a,
+//   cats.effect.internals.IOBracket$$$Lambda$8180/248688506@6171cf19,
 //   false
 // )
 </span><span class="n">result</span><span class="o">.</span><span class="n">unsafeRunSync</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
-<span class="c1">// (42,0.780200338922441)
-// (42,0.4319880777038634)
-// (42,0.6671303543262184)
-// (42,0.9981543058529496)
-// (42,0.8176866471767426)
+<span class="c1">// (42,0.19134460762143135)
+// (42,0.6406009765341878)
+// (42,0.22629678901284933)
+// (42,0.932811641599983)
+// (42,0.7562076565809548)
 </span></code></pre>
 </div>
 
@@ -180,15 +180,15 @@
 <span class="k">import</span> <span class="nn">java.sql.Connection</span>
 
 <span class="k">val</span> <span class="n">interpreter</span> <span class="k">=</span> <span class="nc">KleisliInterpreter</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)).</span><span class="nc">ConnectionInterpreter</span>
-<span class="c1">// interpreter: ConnectionOp ~&gt; Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$11@1cdcd666
+<span class="c1">// interpreter: ConnectionOp ~&gt; Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$11@c8016d5
 </span><span class="k">val</span> <span class="n">kleisli</span> <span class="k">=</span> <span class="n">program1</span><span class="o">.</span><span class="n">foldMap</span><span class="o">(</span><span class="n">interpreter</span><span class="o">)</span>
 <span class="c1">// kleisli: Kleisli[IO, Connection, Int] = Kleisli(
-//   cats.data.KleisliFlatMap$$Lambda$9031/739361988@104c8369
+//   cats.data.KleisliFlatMap$$Lambda$8207/142389822@2823704f
 // )
 </span><span class="k">val</span> <span class="n">io3</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="kc">null</span><span class="k">:</span> <span class="kt">java.sql.Connection</span><span class="o">)</span> <span class="o">&gt;&gt;=</span> <span class="n">kleisli</span><span class="o">.</span><span class="n">run</span>
 <span class="c1">// io3: IO[Int] = Bind(
 //   Delay(&lt;function0&gt;),
-//   cats.data.KleisliFlatMap$$Lambda$9031/739361988@104c8369
+//   cats.data.KleisliFlatMap$$Lambda$8207/142389822@2823704f
 // )
 </span><span class="n">io3</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// sneaky; program1 never looks at the connection
 // res5: Int = 42

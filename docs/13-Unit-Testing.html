@@ -73,7 +73,7 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">org.specs2.mutable.Specification</span>
 
-<span class="k">object</span> <span class="nc">AnalysisTestSpec</span> <span class="k">extends</span> <span class="nc">Specification</span> <span class="k">with</span> <span class="n">doobie</span><span class="o">.</span><span class="n">specs2</span><span class="o">.</span><span class="nc">IOChecker</span> <span class="o">{</span>
+<span class="k">class</span> <span class="nc">AnalysisTestSpec</span> <span class="k">extends</span> <span class="nc">Specification</span> <span class="k">with</span> <span class="n">doobie</span><span class="o">.</span><span class="n">specs2</span><span class="o">.</span><span class="nc">IOChecker</span> <span class="o">{</span>
 
   <span class="k">val</span> <span class="n">transactor</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
     <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
@@ -93,8 +93,8 @@
 <span class="k">import</span> <span class="nn">_root_.org.specs2.main.</span><span class="o">{</span> <span class="nc">Arguments</span><span class="o">,</span> <span class="nc">Report</span> <span class="o">}</span>
 
 <span class="c1">// Run a test programmatically. Usually you would do this from sbt, bloop, etc.
-</span><span class="n">runTest</span><span class="o">(</span><span class="nc">AnalysisTestSpec</span><span class="o">)(</span><span class="nc">Arguments</span><span class="o">(</span><span class="n">report</span> <span class="k">=</span> <span class="nc">Report</span><span class="o">(</span><span class="nc">_color</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="kc">false</span><span class="o">))))</span>
-<span class="c1">// [info] repl.Session$App$AnalysisTestSpec$
+</span><span class="n">runTest</span><span class="o">(</span><span class="k">new</span> <span class="nc">AnalysisTestSpec</span><span class="o">)(</span><span class="nc">Arguments</span><span class="o">(</span><span class="n">report</span> <span class="k">=</span> <span class="nc">Report</span><span class="o">(</span><span class="nc">_color</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="kc">false</span><span class="o">))))</span>
+<span class="c1">// [info] repl.Session$App$AnalysisTestSpec
 // [info] 
 // [info] + Query0[(Int, String)] defined at 13-Unit-Testing.md:51
 // [info]   
@@ -141,8 +141,8 @@
 // [info]   + P02 String  →  VARCHAR (text)
 // [info] 
 // [info] 
-// [info] Total for specification repl.Session$App$AnalysisTestSpec$
-// [info] Finished in 203 ms
+// [info] Total for specification repl.Session$App$AnalysisTestSpec
+// [info] Finished in 218 ms
 // 16 examples, 4 failures, 0 error
 // [info]
 </span></code></pre>

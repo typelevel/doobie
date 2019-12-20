@@ -101,7 +101,7 @@
   <li><code class="highlighter-rouge">Boolean</code>, <code class="highlighter-rouge">String</code>, and <code class="highlighter-rouge">Array[Byte]</code>;</li>
   <li><code class="highlighter-rouge">Date</code>, <code class="highlighter-rouge">Time</code>, and <code class="highlighter-rouge">Timestamp</code> from the <code class="highlighter-rouge">java.sql</code> package;</li>
   <li><code class="highlighter-rouge">Date</code> from the <code class="highlighter-rouge">java.util</code> package;</li>
-  <li><code class="highlighter-rouge">Instant</code> and <code class="highlighter-rouge">LocalDate</code> from the <code class="highlighter-rouge">java.time</code> package; and</li>
+  <li><code class="highlighter-rouge">Instant</code>, <code class="highlighter-rouge">LocalDate</code>, <code class="highlighter-rouge">LocalTime</code>, <code class="highlighter-rouge">LocalDateTime</code>, <code class="highlighter-rouge">OffsetTime</code>, <code class="highlighter-rouge">OffsetDateTime</code> and <code class="highlighter-rouge">ZonedDateTime</code> from the <code class="highlighter-rouge">java.time</code> package; and</li>
   <li>single-element case classes wrapping one of the above types.</li>
 </ul>
 
@@ -260,11 +260,11 @@
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">pointRead</span><span class="k">:</span> <span class="kt">Read</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Read</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">map</span> <span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Point</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// pointRead: Read[Point] = doobie.util.Read@57bca612
+<span class="c1">// pointRead: Read[Point] = doobie.util.Read@2e67456a
 </span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="n">pointWrite</span><span class="k">:</span> <span class="kt">Write</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
   <span class="nc">Write</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">contramap</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">))</span>
-<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@b1b8566
+<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@7bb3c285
 </span></code></pre>
 </div>
 
