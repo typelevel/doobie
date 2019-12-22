@@ -58,7 +58,7 @@ trait TimeMetaInstances { this: MetaConstructors =>
       _.getObject(_, classOf[java.time.OffsetDateTime]), _.setObject(_, _), _.updateObject(_, _))
 
   /** @group Instances */
-  implicit val JavaZonedDateTime: Meta[java.time.ZonedDateTime] =
+  implicit val JavaZonedDateTimeMeta: Meta[java.time.ZonedDateTime] =
     Basic.one[java.time.ZonedDateTime](
       TimestampWithTimezone,
       List(Char, VarChar, LongVarChar, Date, Time, Timestamp),
