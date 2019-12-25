@@ -4,6 +4,6 @@
 
 package doobie.util
 
-object MultiVersionTypeSupport {
+private[util] object MultiVersionTypeSupport {
   type =:=[A, B] = scala.=:=[A, B]
 }
