@@ -30,7 +30,7 @@ class queryspec extends Specification {
       q.to[List]("foo").transact(xa).unsafeRunSync must_=== List(123)
     }
     "toMap" in {
-      pairQuery.toMap("foo").transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+      pairQuery.toMap[String, Int]("foo").transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
     }
     "unique" in {
       q.unique("foo").transact(xa).unsafeRunSync must_=== 123
@@ -51,7 +51,7 @@ class queryspec extends Specification {
       q.to[List]("bar").transact(xa).unsafeRunSync must_=== Nil
     }
     "toMap" in {
-      pairQuery.toMap("bar").transact(xa).unsafeRunSync must_=== Map.empty
+      pairQuery.toMap[String, Int]("bar").transact(xa).unsafeRunSync must_=== Map.empty
     }
     "unique" in {
       q.unique("bar").transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
@@ -72,7 +72,7 @@ class queryspec extends Specification {
       q.toQuery0("foo").to[List].transact(xa).unsafeRunSync must_=== List(123)
     }
     "toMap" in {
-      pairQuery.toQuery0("foo").toMap.transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+      pairQuery.toQuery0("foo").toMap[String, Int].transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
     }
     "unique" in {
       q.toQuery0("foo").unique.transact(xa).unsafeRunSync must_=== 123
@@ -90,7 +90,7 @@ class queryspec extends Specification {
       q.toQuery0("bar").to[List].transact(xa).unsafeRunSync must_=== Nil
     }
     "toMap" in {
-      pairQuery.toQuery0("bar").toMap.transact(xa).unsafeRunSync must_=== Map.empty
+      pairQuery.toQuery0("bar").toMap[String, Int].transact(xa).unsafeRunSync must_=== Map.empty
     }
     "unique" in {
       q.toQuery0("bar").unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
@@ -111,7 +111,7 @@ class queryspec extends Specification {
       q0n.to[List].transact(xa).unsafeRunSync must_=== List(123)
     }
     "toMap" in {
-      pairQ0n.toMap.transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+      pairQ0n.toMap[String, Int].transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
     }
     "unique" in {
       q0n.unique.transact(xa).unsafeRunSync must_=== 123
@@ -132,7 +132,7 @@ class queryspec extends Specification {
       q0e.to[List].transact(xa).unsafeRunSync must_=== Nil
     }
     "toMap" in {
-      pairQ0e.toMap.transact(xa).unsafeRunSync must_=== Map.empty
+      pairQ0e.toMap[String, Int].transact(xa).unsafeRunSync must_=== Map.empty
     }
     "unique" in {
       q0e.unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
