@@ -19,6 +19,7 @@ import fs2.Stream
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
 import scala.collection.immutable.Map
+import doobie.util.MultiVersionTypeSupport.=:=
 
 /** Module defining queries parameterized by input and output types. */
 object query {
