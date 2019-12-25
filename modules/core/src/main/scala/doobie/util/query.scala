@@ -18,6 +18,7 @@ import doobie.util.pos.Pos
 import fs2.Stream
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
+import scala.collection.immutable.Map
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -135,6 +136,16 @@ object query {
 
     /**
      * Apply the argument `a` to construct a program in
+     *`[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `Map[(K, V)]` accumulated
+     * via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
+     * this function can call only when B is (K, V).
+     * @group Results
+     */
+    def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
+      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.buildPair[Map, K, V](f, read.map(ev))))
+
+    /**
+     * Apply the argument `a` to construct a program in
      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated
      * via `MonadPlus` append. This method is more general but less efficient than `to`.
      * @group Results
@@ -204,6 +215,7 @@ object query {
         def streamWithChunkSize(n: Int) = outer.streamWithChunkSize(a, n)
         def accumulate[F[_]: Alternative] = outer.accumulate[F](a)
         def to[F[_]](implicit f: FactoryCompat[B, F[B]]) = outer.to[F](a)
+        def toMap[K, V](implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]) = outer.toMap(a)
         def unique = outer.unique(a)
         def option = outer.option(a)
         def nel = outer.nel(a)
@@ -321,6 +333,15 @@ object query {
      * @group Results
      */
     def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
+
+    /**
+     * Apply the argument `a` to construct a program in
+     *`[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `Map[(K, V)]` accumulated
+     * via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
+     * this function can call only when B is (K, V).
+     * @group Results
+     */
+    def toMap[K, V](implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]]
 
     /**
      * Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]`

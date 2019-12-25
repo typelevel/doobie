@@ -92,6 +92,19 @@ object resultset {
     }
 
   /**
+   * Consumes the remainder of the resultset, reading each row as a value of type `(A, B)` and
+   * accumulating them in a standard library collection via `CanBuildFrom`.
+   * @group Results
+   */
+  def buildPair[F[_, _], A, B](implicit F: FactoryCompat[(A, B), F[A, B]], A: Read[(A, B)]): ResultSetIO[F[A, B]] =
+    FRS.raw { rs =>
+      val b = F.newBuilder
+      while (rs.next)
+        b += A.unsafeGet(rs, 1)
+      b.result()
+    }
+
+  /**
    * Consumes the remainder of the resultset, reading each row as a value of type `A`, mapping to
    * `B`, and accumulating them in a standard library collection via `CanBuildFrom`. This unusual
    * constructor is a workaround for the CanBuildFrom not having a sensible contravariant functor
