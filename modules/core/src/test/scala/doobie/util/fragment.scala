@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 import shapeless._
 
 
-object fragmentspec extends Specification {
+class fragmentspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

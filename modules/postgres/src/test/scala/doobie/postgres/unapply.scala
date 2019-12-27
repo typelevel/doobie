@@ -11,7 +11,7 @@ import org.specs2.mutable.Specification
 import cats.implicits._
 
 
-object unapplyspec extends Specification {
+class unapplyspec extends Specification {
 
   "Partial Unification" should {
 

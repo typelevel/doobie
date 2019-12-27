@@ -9,7 +9,7 @@ import doobie.implicits._
 import org.specs2.mutable.Specification
 
 
-object putspec extends Specification {
+class putspec extends Specification {
 
   "put syntax" should {
 

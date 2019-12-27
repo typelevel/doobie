@@ -15,6 +15,8 @@ import scala.reflect.runtime.universe.{ Type, TypeTag }
 import shapeless._
 import shapeless.ops.hlist.IsHCons
 
+import doobie.util.meta.Meta
+
 sealed abstract class Get[A](
   val typeStack: NonEmptyList[Option[Type]],
   val jdbcSources: NonEmptyList[JdbcType],

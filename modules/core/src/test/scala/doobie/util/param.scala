@@ -9,9 +9,9 @@ import shapeless._, shapeless.test._
 import org.specs2.mutable.Specification
 
 
-object paramspec extends Specification {
+class paramspec extends Specification {
 
-  final case class Z(i: Int, s: String)
+  case class Z(i: Int, s: String)
   object S
 
   "Param" should {

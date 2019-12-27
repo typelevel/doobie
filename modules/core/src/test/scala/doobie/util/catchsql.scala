@@ -188,6 +188,6 @@ trait catchsqlspec[F[_]] extends Specification {
 
 }
 
-object catchsqlspecIO extends catchsqlspec[IO] {
+class catchsqlspecIO extends catchsqlspec[IO] {
   implicit val E: Effect[IO] = IO.ioEffect
 }

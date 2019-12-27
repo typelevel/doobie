@@ -13,7 +13,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object pglargeobjectspec extends Specification with FileEquality {
+class pglargeobjectspec extends Specification with FileEquality {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

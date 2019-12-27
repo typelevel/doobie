@@ -11,7 +11,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object AnalysisTestSpecs2 extends Specification with IOChecker {
+class AnalysisTestSpecs2 extends Specification with IOChecker {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
