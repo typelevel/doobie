@@ -49,6 +49,7 @@ object JdbcType {
   /** @group Values */ case object SqlXml                 extends JdbcType(SQLXML)
   /** @group Values */ case object Struct                 extends JdbcType(STRUCT)
   /** @group Values */ case object Time                   extends JdbcType(TIME)
+  /** @group Values */ case object TimeWithTimezone       extends JdbcType(TIME_WITH_TIMEZONE)
   /** @group Values */ case object Timestamp              extends JdbcType(TIMESTAMP)
   /** @group Values */ case object TimestampWithTimezone  extends JdbcType(TIMESTAMP_WITH_TIMEZONE)
   /** @group Values */ case object TinyInt                extends JdbcType(TINYINT)
@@ -99,6 +100,7 @@ object JdbcType {
       case SqlXml.toInt                => SqlXml
       case Struct.toInt                => Struct
       case Time.toInt                  => Time
+      case TimeWithTimezone.toInt      => TimeWithTimezone
       case Timestamp.toInt             => Timestamp
       case TimestampWithTimezone.toInt => TimestampWithTimezone
       case TinyInt.toInt               => TinyInt

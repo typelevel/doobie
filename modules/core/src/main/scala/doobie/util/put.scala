@@ -8,9 +8,12 @@ import cats.Contravariant
 import cats.free.ContravariantCoyoneda
 import cats.data.NonEmptyList
 import doobie.enum.JdbcType
-import java.sql.{ PreparedStatement, ResultSet }
+import java.sql.{PreparedStatement, ResultSet}
+
+import doobie.util.meta.Meta
+
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{ Type, TypeTag }
+import scala.reflect.runtime.universe.{Type, TypeTag}
 import shapeless._
 import shapeless.ops.hlist.IsHCons
 

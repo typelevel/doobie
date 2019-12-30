@@ -14,15 +14,18 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import shapeless.test._
 
-
-object GetSpec extends Specification {
-
-  final case class X(x: Int)
+object GetSpec {
   final case class Y(x: String) extends AnyVal
   final case class P(x: Int) extends AnyVal
-  final case class Q(x: String)
+}
 
-  final case class Z(i: Int, s: String)
+class GetSpec extends Specification {
+  import GetSpec._
+
+  case class X(x: Int)
+  case class Q(x: String)
+
+  case class Z(i: Int, s: String)
   object S
 
   "Get" should {

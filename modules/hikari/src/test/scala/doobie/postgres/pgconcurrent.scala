@@ -61,7 +61,7 @@ trait pgconcurrent[F[_]] extends Specification {
 
 }
 
-object pgconcurrentIO extends pgconcurrent[IO] {
+class pgconcurrentIO extends pgconcurrent[IO] {
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
   implicit def T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)

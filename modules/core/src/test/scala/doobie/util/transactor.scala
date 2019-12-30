@@ -10,7 +10,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-object transactorspec extends Specification {
+class transactorspec extends Specification {
 
   val q = sql"select 42".query[Int].unique
 

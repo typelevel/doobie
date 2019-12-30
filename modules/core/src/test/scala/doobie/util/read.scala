@@ -9,13 +9,13 @@ import shapeless._, shapeless.record._
 import org.specs2.mutable.Specification
 
 
-object readspec extends Specification {
+class readspec extends Specification {
 
-  final case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
+  case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
-  final case class LenStr1(n: Int, s: String)
+  case class LenStr1(n: Int, s: String)
 
-  final case class LenStr2(n: Int, s: String)
+  case class LenStr2(n: Int, s: String)
   object LenStr2 {
     implicit val LenStrMeta: Meta[LenStr2] =
       Meta[String].timap(s => LenStr2(s.length, s))(_.s)

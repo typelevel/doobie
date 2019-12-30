@@ -1,13 +1,14 @@
 # changelog
 
-This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
+### CHANGELOG is Deprecated
+
+**doobie** now uses [GitHub Releases](https://github.com/tpolecat/doobie/releases) for release notes.
+
+The old log remains below for your enjoyment.
 
 ----
 
-### Updates Available in the latest SNAPSHOT
-
-(none yet)
-
+This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
 
 ### <a name="0.8.2"></a>New and Noteworthy for Version 0.8.2
 

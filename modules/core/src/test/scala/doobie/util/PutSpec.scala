@@ -10,18 +10,21 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import shapeless.test._
 
-
-object PutSpec extends Specification {
-  final case class X(x: Int)
+object PutSpec {
   final case class Y(x: String) extends AnyVal
   final case class P(x: Int) extends AnyVal
-  final case class Q(x: String)
+}
 
-  final case class Z(i: Int, s: String)
+class PutSpec extends Specification {
+  import PutSpec._
+  case class X(x: Int)
+  case class Q(x: String)
+
+  case class Z(i: Int, s: String)
   object S
 
-  final case class Reg1(x: Int)
-  final case class Reg2(x: Int)
+  case class Reg1(x: Int)
+  case class Reg2(x: Int)
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -32,8 +35,8 @@ object PutSpec extends Specification {
     "sa", ""
   )
 
-  final case class Foo(s: String)
-  final case class Bar(n: Int)
+  case class Foo(s: String)
+  case class Bar(n: Int)
 
   "Put" should {
 

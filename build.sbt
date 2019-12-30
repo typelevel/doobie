@@ -13,7 +13,7 @@ lazy val kindProjectorVersion = "0.10.3"
 lazy val monixVersion         = "3.1.0"
 lazy val quillVersion         = "3.4.10"
 lazy val postGisVersion       = "2.3.0"
-lazy val postgresVersion      = "42.2.8"
+lazy val postgresVersion      = "42.2.9"
 lazy val refinedVersion       = "0.9.10"
 lazy val scalaCheckVersion    = "1.14.2"
 lazy val scalatestVersion     = "3.0.8"
@@ -283,7 +283,7 @@ lazy val h2 = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     name  := "doobie-h2",
     description := "H2 support for doobie.",
@@ -364,7 +364,9 @@ lazy val docs = project
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
 
+
     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
+    version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
     micrositeName             := "doobie",
     micrositeDescription      := "A functional JDBC layer for Scala.",
@@ -432,7 +434,7 @@ lazy val quill = project
     name := "doobie-quill",
     description := "Quill support for doobie.",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % quillVersion,
-      "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
+      "io.getquill" %% "quill-jdbc"   % quillVersion,
+      "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
     ),
   )

@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 import cats.effect.IO
 
 
-object fragmentsspec extends Specification {
+class fragmentsspec extends Specification {
   import Fragments._
 
   implicit def contextShift: ContextShift[IO] =
