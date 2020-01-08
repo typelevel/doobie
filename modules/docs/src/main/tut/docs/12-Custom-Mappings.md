@@ -208,7 +208,7 @@ The above rules allow you to map between column/parameter vectors and [nested] t
 
 Although automatic derivation will suffice in most cases, it does not work with traits and non-case classes. In these cases we must provide a mapping between the unruly data type and a type that has a defined mapping.
 
-Consider the `Point` class from Java AWT, which is logically a pair of `Int`s but is not a case class and is thus not eligable for automatic derivation of `Read` and `Write` instances. We can define these by hand by mapping to and from the Scala type `(Int, Int)` which *does* have automatically-derived instances.
+Consider the `Point` class from Java AWT, which is logically a pair of `Int`s but is not a case class and is thus not eligible for automatic derivation of `Read` and `Write` instances. We can define these by hand by mapping to and from the Scala type `(Int, Int)` which *does* have automatically-derived instances.
 
 ```scala mdoc
 implicit val pointRead: Read[Point] =
