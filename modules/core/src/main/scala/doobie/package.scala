@@ -21,5 +21,8 @@ package object doobie
   object implicits
     extends free.Instances
        with syntax.AllSyntax
+       with util.meta.SqlMeta
+       with util.meta.TimeMeta
+       with util.meta.LegacyMeta
 
 }

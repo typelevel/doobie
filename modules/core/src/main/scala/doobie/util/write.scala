@@ -11,7 +11,7 @@ import java.sql.{ PreparedStatement, ResultSet }
 import shapeless.{ HList, HNil, ::, Generic, Lazy, <:!< }
 import shapeless.labelled.{ FieldType }
 import doobie.util.fragment.Fragment
-import doobie.util.param.Param.Elem
+import doobie.util.fragment.Elem
 
 final class Write[A](
   val puts: List[(Put[_], NullabilityKnown)],

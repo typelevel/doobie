@@ -7,6 +7,7 @@ package doobie.postgres
 import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
 import java.sql.Timestamp
+import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
 
@@ -16,6 +17,10 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
+import doobie.implicits.javasql._
+import doobie.implicits.javatime.{JavaTimeInstantMeta => _, JavaTimeLocalDateMeta => NewJavaTimeLocalDateMeta,_}
+import doobie.implicits.legacy.instant._
+import doobie.implicits.legacy.localdate.{JavaTimeLocalDateMeta => LegacyLocalDateMeta}
 import doobie.postgres.pgisimplicits._
 import doobie.util.arbitraries.SQLArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
@@ -29,6 +34,7 @@ import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
 import scala.concurrent.ExecutionContext
+
 
 // Establish that we can write and read various types.
 
@@ -166,6 +172,8 @@ class pgtypesspec extends Specification with ScalaCheck {
    */
   testInOutWithCustomTransform[java.sql.Timestamp]("timestamp") { ts => ts.setNanos(0); ts }
   testInOutWithCustomTransform[java.time.LocalDateTime]("timestamp")(_.withNano(0))
+  testInOutWithCustomTransform[java.time.Instant]("timestamp")(_.`with`(NANO_OF_SECOND, 0))
+
 
   /*
       timestamp with time zone
@@ -178,7 +186,8 @@ class pgtypesspec extends Specification with ScalaCheck {
 
   testInOut[java.sql.Date]("date")
   // TODO LocalDate.of(-500,1,1) is failing
-  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))
+  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))(NewJavaTimeLocalDateMeta.get, NewJavaTimeLocalDateMeta.put)
+  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))(LegacyLocalDateMeta.get, LegacyLocalDateMeta.put)
 
   /*
       time

@@ -15,7 +15,9 @@ import scala.concurrent.ExecutionContext
 
 class PostgresDoobieContextSpec extends Specification {
 
-  sys.props.put("Dquill.binds.log", "true")
+  // Logging should appear in test output
+  sys.props.put("quill.binds.log", "true")
+  sys.props.put("org.slf4j.simpleLogger.defaultLogLevel", "debug")
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
