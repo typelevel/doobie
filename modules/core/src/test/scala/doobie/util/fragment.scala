@@ -41,6 +41,10 @@ class fragmentspec extends Specification {
       (fr"foo" ++ fr"bar $a baz").query[HNil].sql must_== "foo bar ? baz "
     }
 
+    "interpolate fragments properly" in {
+      fr"foo ${fr0"bar $a baz"}".query[HNil].sql must_== "foo bar ? baz "
+    }
+
     "maintain parameter indexing (in-order)" in {
       val s = fr"select" ++ List(fra, frb, frc).intercalate(fr",")
       s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))

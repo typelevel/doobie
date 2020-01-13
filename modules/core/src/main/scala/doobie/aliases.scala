@@ -4,8 +4,6 @@
 
 package doobie
 
-import shapeless.HList
-
 /** Mixin containing aliases for the most commonly used types and modules from doobie-core. */
 trait Aliases extends Types with Modules
 
@@ -21,7 +19,6 @@ trait Types {
   /** @group Type Aliases - Core */ type Query0[A]                = doobie.util.query.Query0[A]
   /** @group Type Aliases - Core */ type Update0                  = doobie.util.update.Update0
   /** @group Type Aliases - Core */ type SqlState                 = doobie.enum.SqlState
-  /** @group Type Aliases - Core */ type Param[A <: HList]        = doobie.util.param.Param[A]
   /** @group Type Aliases - Core */ type Transactor[M[_]]         = doobie.util.transactor.Transactor[M]
   /** @group Type Aliases - Core */ type LogHandler               = doobie.util.log.LogHandler
   /** @group Type Aliases - Core */ type Fragment                 = doobie.util.fragment.Fragment
@@ -41,7 +38,6 @@ trait Modules {
   /** @group Module Aliases - Core */ val  Query0             = doobie.util.query.Query0
   /** @group Module Aliases - Core */ val  Update0            = doobie.util.update.Update0
   /** @group Module Aliases - Core */ val  SqlState           = doobie.enum.SqlState
-  /** @group Module Aliases - Core */ val  Param              = doobie.util.param.Param
   /** @group Module Aliases - Core */ val  Transactor         = doobie.util.transactor.Transactor
   /** @group Module Aliases - Core */ val  LogHandler         = doobie.util.log.LogHandler
   /** @group Module Aliases - Core */ val  Fragment           = doobie.util.fragment.Fragment
