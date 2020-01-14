@@ -25,23 +25,23 @@ class writespec extends Specification {
   "Write" should {
 
     "exist for some fancy types" in {
-      Write[Int]
-      Write[(Int, Int)]
-      Write[(Int, Int, String)]
-      Write[(Int, (Int, String))]
-      Write[Woozle]
+      util.Write[Int]
+      util.Write[(Int, Int)]
+      util.Write[(Int, Int, String)]
+      util.Write[(Int, (Int, String))]
+      util.Write[Woozle]
 
       // https://github.com/tpolecat/doobie/pull/126 was reverted because these
       // derivations were failing with SOE
-      Write[(Woozle, String)]
-      Write[(Int, Woozle :: Woozle :: String :: HNil)]
+      util.Write[(Woozle, String)]
+      util.Write[(Int, Woozle :: Woozle :: String :: HNil)]
 
       true
     }
 
     "exist for Unit" in {
-      Write[Unit]
-      Write[(Int, Unit)].length must_== 1
+      util.Write[Unit]
+      util.Write[(Int, Unit)].length must_== 1
     }
 
     "exist for shapeless record types" in {
@@ -49,27 +49,27 @@ class writespec extends Specification {
       @silent type DL = (Double, Long)
       type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
 
-      Write[A]
-      Write[(A, A)]
+      util.Write[A]
+      util.Write[(A, A)]
 
       true
     }
 
     "exist for option of some fancy types" in {
-      Write[Option[Int]]
-      Write[Option[(Int, Int)]]
-      Write[Option[(Int, Int, String)]]
-      Write[Option[(Int, (Int, String))]]
-      Write[Option[(Int, Option[(Int, String)])]]
-      Write[Option[Woozle]]
-      Write[Option[(Woozle, String)]]
-      Write[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
+      util.Write[Option[Int]]
+      util.Write[Option[(Int, Int)]]
+      util.Write[Option[(Int, Int, String)]]
+      util.Write[Option[(Int, (Int, String))]]
+      util.Write[Option[(Int, Option[(Int, String)])]]
+      util.Write[Option[Woozle]]
+      util.Write[Option[(Woozle, String)]]
+      util.Write[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
       true
     }
 
     "exist for option of Unit" in {
-      Write[Option[Unit]]
-      Write[Option[(Int, Unit)]].length must_== 1
+      util.Write[Option[Unit]]
+      util.Write[Option[(Int, Unit)]].length must_== 1
     }
 
     // This doesn't work because of the issue with tagged element as HList members.
@@ -86,11 +86,11 @@ class writespec extends Specification {
     // }
 
     "select multi-column instance by default" in {
-      Write[LenStr1].length must_== 2
+      util.Write[LenStr1].length must_== 2
     }
 
     "select 1-column instance when available" in {
-      Write[LenStr2].length must_== 1
+      util.Write[LenStr2].length must_== 1
     }
 
     // "work for products of ludicrous size (128)" in {
