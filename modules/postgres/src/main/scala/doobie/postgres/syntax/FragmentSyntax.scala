@@ -4,10 +4,9 @@
 
 package doobie.postgres.syntax
 
-import cats.Foldable
+import cats.{ Foldable, ~> }
 import cats.implicits._
-import cats.effect.syntax.bracket._
-import cats.effect.{ConcurrentEffect, LiftIO}
+import cats.effect._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
@@ -15,6 +14,7 @@ import fs2._
 import fs2.io._
 import fs2.text._
 import java.io.StringReader
+import java.io.InputStream
 
 class FragmentOps(f: Fragment) {
 
@@ -38,22 +38,21 @@ class FragmentOps(f: Fragment) {
    * `ConnectionIO` that inserts the values provided by `stream`, returning the number of affected
    * rows. Chunks input `stream` for more efficient sending to `STDIN` with `minChunkSize`.
    */
-  def copyIn[F[_], A](stream: Stream[F, A], minChunkSize: Int)(
-    implicit
-    F: ConcurrentEffect[F],
-    ev: Text[A]): ConnectionIO[Long] = {
+  def copyIn[F[_]: ConcurrentEffect, A: Text](
+    stream: Stream[F, A],
+    minChunkSizeBytes: Int
+  ): ConnectionIO[Long] = {
 
     val byteStream: Stream[F, Byte] =
-      stream.chunkMin(minChunkSize).map(chunk => foldToString(chunk)).through(utf8Encode)
+      stream.chunkMin(minChunkSizeBytes).map(foldToString(_)).through(utf8Encode)
 
-    liftToCIO(toInputStreamResource(byteStream).allocated).flatMap {
-      case (stream, cleanup) =>
-        PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, stream)).guarantee(liftToCIO(cleanup))
-    }
+    val streamResource: Resource[ConnectionIO, InputStream] =
+      toInputStreamResource(byteStream)
+        .mapK(λ[F ~> ConnectionIO](Effect[F].toIO(_).to[ConnectionIO]))
+
+    streamResource.use(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))
+
   }
-
-  private def liftToCIO[F[_], A](ioa: F[A])(implicit F: ConcurrentEffect[F], L: LiftIO[ConnectionIO]): ConnectionIO[A] =
-    L.liftIO(F.toIO(ioa))
 
   /** Folds given `F` to string, encoding each `A` with `Text` instance and joining resulting strings with `\n` */
   private def foldToString[F[_]: Foldable, A](fa: F[A])(implicit ev: Text[A]): String =
@@ -61,6 +60,7 @@ class FragmentOps(f: Fragment) {
       ev.unsafeEncode(a, b)
       b.append("\n")
     }.toString
+
 }
 
 trait ToFragmentOps {
