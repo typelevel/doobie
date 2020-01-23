@@ -40,11 +40,11 @@ class FragmentOps(f: Fragment) {
    */
   def copyIn[F[_]: ConcurrentEffect, A: Text](
     stream: Stream[F, A],
-    minChunkSizeBytes: Int
+    minChunkSize: Int
   ): ConnectionIO[Long] = {
 
     val byteStream: Stream[F, Byte] =
-      stream.chunkMin(minChunkSizeBytes).map(foldToString(_)).through(utf8Encode)
+      stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
 
     val streamResource: Resource[ConnectionIO, InputStream] =
       toInputStreamResource(byteStream)
