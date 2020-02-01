@@ -23,10 +23,14 @@ class queryspec extends Specification {
   )
 
   val q = Query[String,Int]("select 123 where ? = 'foo'", None)
+  val pairQuery = Query[String, (String, Int)]("select 'xxx', 123 where ? = 'foo'", None)
 
   "Query (non-empty)" >> {
     "to" in {
       q.to[List]("foo").transact(xa).unsafeRunSync must_=== List(123)
+    }
+    "toMap" in {
+      pairQuery.toMap[String, Int]("foo").transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
     }
     "unique" in {
       q.unique("foo").transact(xa).unsafeRunSync must_=== 123
@@ -46,6 +50,9 @@ class queryspec extends Specification {
     "to" in {
       q.to[List]("bar").transact(xa).unsafeRunSync must_=== Nil
     }
+    "toMap" in {
+      pairQuery.toMap[String, Int]("bar").transact(xa).unsafeRunSync must_=== Map.empty
+    }
     "unique" in {
       q.unique("bar").transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
     }
@@ -64,6 +71,9 @@ class queryspec extends Specification {
     "to" in {
       q.toQuery0("foo").to[List].transact(xa).unsafeRunSync must_=== List(123)
     }
+    "toMap" in {
+      pairQuery.toQuery0("foo").toMap[String, Int].transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+    }
     "unique" in {
       q.toQuery0("foo").unique.transact(xa).unsafeRunSync must_=== 123
     }
@@ -79,6 +89,9 @@ class queryspec extends Specification {
     "to" in {
       q.toQuery0("bar").to[List].transact(xa).unsafeRunSync must_=== Nil
     }
+    "toMap" in {
+      pairQuery.toQuery0("bar").toMap[String, Int].transact(xa).unsafeRunSync must_=== Map.empty
+    }
     "unique" in {
       q.toQuery0("bar").unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
     }
@@ -91,10 +104,14 @@ class queryspec extends Specification {
   }
 
   val q0n = Query0[Int]("select 123 where 'foo' = 'foo'", None)
+  val pairQ0n = Query0[(String, Int)]("select 'xxx', 123 where 'foo' = 'foo'", None)
 
   "Query0 via constructor (non-empty)" >> {
     "to" in {
       q0n.to[List].transact(xa).unsafeRunSync must_=== List(123)
+    }
+    "toMap" in {
+      pairQ0n.toMap[String, Int].transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
     }
     "unique" in {
       q0n.unique.transact(xa).unsafeRunSync must_=== 123
@@ -108,10 +125,14 @@ class queryspec extends Specification {
   }
 
   val q0e = Query0[Int]("select 123 where 'bar' = 'foo'", None)
+  val pairQ0e = Query0[(String, Int)]("select 'xxx', 123 where 'bar' = 'foo'", None)
 
   "Query0 via constructor (empty)" >> {
     "to" in {
       q0e.to[List].transact(xa).unsafeRunSync must_=== Nil
+    }
+    "toMap" in {
+      pairQ0e.toMap[String, Int].transact(xa).unsafeRunSync must_=== Map.empty
     }
     "unique" in {
       q0e.unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
