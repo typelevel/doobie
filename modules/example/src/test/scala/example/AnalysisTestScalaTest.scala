@@ -10,7 +10,7 @@ import doobie.util.transactor.Transactor
 import org.scalatest._
 import scala.concurrent.ExecutionContext
 
-class AnalysisTestScalaCheck extends FunSuite with Matchers with IOChecker {
+class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with IOChecker {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
