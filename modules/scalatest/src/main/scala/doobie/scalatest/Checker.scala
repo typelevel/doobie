@@ -18,7 +18,7 @@ import scala.reflect.runtime.universe.TypeTag
   *
   * {{{
   * // An example specification, taken from the examples project.
-  * class ExampleSpec extends FunSuite with IOChecker {
+  * class ExampleSpec extends AnyFunSuite with IOChecker {
   *
   *   // The transactor to use for the tests.
   *   val transactor = Transactor.fromDriverManager[IO](

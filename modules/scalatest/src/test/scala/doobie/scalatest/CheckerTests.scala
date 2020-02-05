@@ -10,7 +10,7 @@ import doobie.util.transactor.Transactor
 import org.scalatest._
 import scala.concurrent.ExecutionContext
 
-trait CheckerChecks[M[_]] extends FunSuite with Matchers with Checker[M] {
+trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matchers with Checker[M] {
 
   implicit def contextShift: ContextShift[M]
 
