@@ -3,7 +3,7 @@ import microsites._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.0.0"
-lazy val catsEffectVersion    = "2.0.0"
+lazy val catsEffectVersion    = "2.1.1"
 lazy val circeVersion         = "0.12.1"
 lazy val collCompatVersion    = "2.1.2"
 lazy val fs2Version           = "2.2.2"
