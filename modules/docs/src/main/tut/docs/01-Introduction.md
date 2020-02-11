@@ -71,7 +71,7 @@ On the Scala side you just need a console with the proper dependencies. A minima
 ```scala
 scalaVersion := "{{site.scalaVersion}}" // Scala {{site.scalaVersions}}
 
-scalacOptions += "-Ypartial-unification" // 2.11.9+
+//scalacOptions += "-Ypartial-unification" // 2.11.9+
 
 lazy val doobieVersion = "{{site.doobieVersion}}"
 
@@ -82,7 +82,7 @@ libraryDependencies ++= Seq(
 )
 ```
 
-The `-Ypartial-unification` compiler flag enables a bug fix that makes working with functional code significantly easier. See the Cats [Getting Started](https://github.com/typelevel/cats#getting-started) for more info on this if it interests you.
+The `-Ypartial-unification` compiler flag enables a bug fix that makes working with functional code significantly easier. See the Cats [Getting Started](https://github.com/typelevel/cats#getting-started) for more info on this if it interests you. **If you're using Scala 2.13+ the compiler no longer accepts that option**.
 
 If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
 
