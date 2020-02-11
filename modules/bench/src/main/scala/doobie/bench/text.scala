@@ -4,10 +4,12 @@
 
 package doobie.bench
 
+import cats.effect.IO
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
+import fs2._
 import org.openjdk.jmh.annotations._
 
 
@@ -40,7 +42,10 @@ class text {
       }
     )
 
-  def copyin(n: Int): ConnectionIO[Long] =
+  def copyin_stream(n: Int): ConnectionIO[Long] =
+    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(Stream.emits[IO, Person](people(n)), 10000)
+
+  def copyin_foldable(n: Int): ConnectionIO[Long] =
     ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(people(n))
 
   @Benchmark
@@ -53,6 +58,9 @@ class text {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def fast_copyin: Long = copyin(10000).transact(xa).unsafeRunSync
+  def fast_copyin_stream: Long = copyin_stream(10000).transact(xa).unsafeRunSync
 
+  @Benchmark
+  @OperationsPerInvocation(10000)
+  def fast_copyin_foldable: Long = copyin_foldable(10000).transact(xa).unsafeRunSync
 }

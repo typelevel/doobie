@@ -109,12 +109,12 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 
 ### The ScalaTest Package
 
-The `doobie-scalatest` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the Specs2 package above.
+The `doobie-scalatest` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `AnyFunSuite`) much like the Specs2 package above.
 
 ```scala mdoc:silent
 import org.scalatest._
 
-class AnalysisTestScalaCheck extends FunSuite with Matchers with doobie.scalatest.IOChecker {
+class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with doobie.scalatest.IOChecker {
 
   override val colors = doobie.util.Colors.None // just for docs
 

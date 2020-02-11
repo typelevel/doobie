@@ -40,3 +40,4 @@ bin/
 
 # Metals
 .metals/
+project/metals.sbt

@@ -8,6 +8,7 @@ import cats.effect.{ ContextShift, IO }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
+import fs2._
 import org.specs2.mutable.Specification
 import org.specs2.ScalaCheck
 import org.scalacheck.Gen
@@ -99,6 +100,11 @@ class textspec extends Specification with ScalaCheck {
   "copyIn" should {
     "correctly insert batches of rows" in forAll(genRows) { rs =>
       val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync
+      rs must_=== rsʹ
+    }
+
+    "correctly insert batches of rows via Stream" in forAll(genRows) { rs =>
+      val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync
       rs must_=== rsʹ
     }
   }
