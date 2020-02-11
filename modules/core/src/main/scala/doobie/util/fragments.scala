@@ -13,11 +13,11 @@ import cats.implicits._
 object fragments {
 
   /** Returns `f IN (fs0, fs1, ...)`. */
-  def in[F[_]: Reducible, A: Put](f: Fragment, fs: F[A]): Fragment =
+  def in[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
     fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"IN (", fr",", fr")")
 
   /** Returns `f NOT IN (fs0, fs1, ...)`. */
-  def notIn[F[_]: Reducible, A: Put](f: Fragment, fs: F[A]): Fragment =
+  def notIn[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
     fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"NOT IN (", fr",", fr")")
 
   /** Returns `(f1) AND (f2) AND ... (fn)`. */
@@ -64,7 +64,7 @@ object fragments {
   def parentheses(f: Fragment): Fragment = fr0"(" ++ f ++ fr")"
 
   /** Returns `?,?,...,?` for the values in `a`. */
-  def values[A](a: A)(implicit w: Write[A]): Fragment =
+  def values[A](a: A)(implicit w: util.Write[A]): Fragment =
     w.toFragment(a)
 
 }

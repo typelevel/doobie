@@ -9,7 +9,7 @@ import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
 
-object catchsqlspec extends Specification {
+class catchsqlspec extends Specification {
 
   "catchsql syntax" should {
 

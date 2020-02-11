@@ -59,7 +59,7 @@ Instances are provided for the following Scala types:
 - `Boolean`, `String`, and `Array[Byte]`;
 - `Date`, `Time`, and `Timestamp` from the `java.sql` package;
 - `Date` from the `java.util` package;
-- `Instant` and `LocalDate` from the `java.time` package; and
+- `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime` and `ZonedDateTime` from the `java.time` package; and
 - single-element case classes wrapping one of the above types.
 
 The above cases are defined by the JDBC specification. See later chapters on vendor-specific additions, which provide mappings for some non-standard types such as `UUID`s and network addresses.
@@ -208,7 +208,7 @@ The above rules allow you to map between column/parameter vectors and [nested] t
 
 Although automatic derivation will suffice in most cases, it does not work with traits and non-case classes. In these cases we must provide a mapping between the unruly data type and a type that has a defined mapping.
 
-Consider the `Point` class from Java AWT, which is logically a pair of `Int`s but is not a case class and is thus not eligable for automatic derivation of `Read` and `Write` instances. We can define these by hand by mapping to and from the Scala type `(Int, Int)` which *does* have automatically-derived instances.
+Consider the `Point` class from Java AWT, which is logically a pair of `Int`s but is not a case class and is thus not eligible for automatic derivation of `Read` and `Write` instances. We can define these by hand by mapping to and from the Scala type `(Int, Int)` which *does* have automatically-derived instances.
 
 ```scala mdoc
 implicit val pointRead: Read[Point] =

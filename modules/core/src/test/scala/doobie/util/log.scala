@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext
 import shapeless._
 
 
-object logspec extends Specification {
+class logspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

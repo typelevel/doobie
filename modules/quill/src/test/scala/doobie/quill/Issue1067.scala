@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 // https://github.com/tpolecat/doobie/issues/1067
-object Issue1067 extends Specification {
+class Issue1067 extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

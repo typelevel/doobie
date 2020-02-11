@@ -84,7 +84,7 @@ Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IO]`.
 ```scala mdoc:silent
 import org.specs2.mutable.Specification
 
-object AnalysisTestSpec extends Specification with doobie.specs2.IOChecker {
+class AnalysisTestSpec extends Specification with doobie.specs2.IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -104,17 +104,17 @@ import _root_.specs2.{ run => runTest }
 import _root_.org.specs2.main.{ Arguments, Report }
 
 // Run a test programmatically. Usually you would do this from sbt, bloop, etc.
-runTest(AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
+runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 ```
 
 ### The ScalaTest Package
 
-The `doobie-scalatest` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the Specs2 package above.
+The `doobie-scalatest` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `AnyFunSuite`) much like the Specs2 package above.
 
 ```scala mdoc:silent
 import org.scalatest._
 
-class AnalysisTestScalaCheck extends FunSuite with Matchers with doobie.scalatest.IOChecker {
+class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with doobie.scalatest.IOChecker {
 
   override val colors = doobie.util.Colors.None // just for docs
 

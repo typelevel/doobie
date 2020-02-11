@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 import com.github.ghik.silencer.silent
 
 
-object yolospec extends Specification {
+class yolospec extends Specification {
 
   // Kind of a bogus test; just checking for compilation
   "YOLO checks" should {

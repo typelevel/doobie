@@ -9,16 +9,9 @@ import org.specs2.mutable.Specification
 import shapeless.{::, HNil}
 
 
-object `780` extends Specification {
+class `780` extends Specification {
 
   "deriving instances" should {
-    "work correctly for Param from class scope" in {
-      class Foo[A: Put, B: Put] {
-        Param[A :: B :: HNil]
-      }
-      true
-    }
-
     "work correctly for Write from class scope" in {
       class Foo[A: Write, B: Write] {
         Write[A :: B :: HNil]

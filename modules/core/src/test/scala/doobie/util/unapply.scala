@@ -11,7 +11,7 @@ import cats.Monad
 import cats.free.{ Free, Coyoneda }
 
 
-object unapplyspec extends Specification {
+class unapplyspec extends Specification {
 
   "Partial Unification" should {
 

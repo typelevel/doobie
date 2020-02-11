@@ -17,7 +17,7 @@ import doobie.util.invariant._
 import scala.concurrent.ExecutionContext
 
 
-object refinedtypes extends Specification {
+class refinedtypes extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -37,11 +37,11 @@ object refinedtypes extends Specification {
     }
   }
 
-  final case class Point(x: Int, y: Int)
+  case class Point(x: Int, y: Int)
   object Point {
     implicit val show: Show[Point] = Show.fromToString
   }
-  final case class Quadrant1()
+  case class Quadrant1()
   type PointInQuadrant1 = Point Refined Quadrant1
 
   implicit val PointComposite: Write[Point] =

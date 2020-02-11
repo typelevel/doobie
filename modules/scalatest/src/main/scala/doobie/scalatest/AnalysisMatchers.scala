@@ -8,10 +8,10 @@ import cats.effect.{ Effect, IO }
 import doobie.util.testing._
 import org.scalatest.matchers.{
   Matcher,
-  MatcherFactory2,
   MatchResult,
   LazyArg
 }
+import org.scalatest.matchers.dsl.MatcherFactory2
 import scala.reflect.ClassTag
 
 /**

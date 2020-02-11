@@ -173,7 +173,7 @@ If the default `Transactor` behavior don't meet your needs you can replace any m
 val testXa = Transactor.after.set(xa, HC.rollback)
 ```
 
-As another exmaple, Hive's JDBC driver doesn't support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like:
+As another example, Hive's JDBC driver doesn't support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like:
 
 ```scala
 import doobie.free.connection.unit

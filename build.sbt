@@ -3,26 +3,26 @@ import microsites._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.0.0"
-lazy val catsEffectVersion    = "2.0.0"
+lazy val catsEffectVersion    = "2.1.1"
 lazy val circeVersion         = "0.12.1"
-lazy val collCompatVersion    = "2.1.2"
-lazy val fs2Version           = "2.1.0"
+lazy val collCompatVersion    = "2.1.4"
+lazy val fs2Version           = "2.2.2"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.1"
-lazy val kindProjectorVersion = "0.10.3"
+lazy val kindProjectorVersion = "0.11.0"
 lazy val monixVersion         = "3.1.0"
 lazy val quillVersion         = "3.4.10"
 lazy val postGisVersion       = "2.3.0"
-lazy val postgresVersion      = "42.2.8"
-lazy val refinedVersion       = "0.9.10"
+lazy val postgresVersion      = "42.2.9"
+lazy val refinedVersion       = "0.9.12"
 lazy val scalaCheckVersion    = "1.14.2"
-lazy val scalatestVersion     = "3.0.8"
+lazy val scalatestVersion     = "3.1.0"
 lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.4.4"
 lazy val sourcecodeVersion    = "0.1.8"
-lazy val specs2Version        = "4.8.1"
+lazy val specs2Version        = "4.8.2"
 lazy val scala212Version      = "2.12.10"
-lazy val scala213Version      = "2.13.0"
+lazy val scala213Version      = "2.13.1"
 lazy val slf4jVersion         = "1.7.29"
 
 // These are releases to ignore during MiMa checks
@@ -76,7 +76,7 @@ lazy val commonSettings =
       "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion cross CrossVersion.full),
   )
 
 lazy val publishSettings = Seq(
@@ -283,7 +283,7 @@ lazy val h2 = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     name  := "doobie-h2",
     description := "H2 support for doobie.",
@@ -364,7 +364,9 @@ lazy val docs = project
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
 
+
     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
+    version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
     micrositeName             := "doobie",
     micrositeDescription      := "A functional JDBC layer for Scala.",
@@ -432,7 +434,7 @@ lazy val quill = project
     name := "doobie-quill",
     description := "Quill support for doobie.",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % quillVersion,
-      "org.slf4j"   %  "slf4j-nop"  % slf4jVersion % "test"
+      "io.getquill" %% "quill-jdbc"   % quillVersion,
+      "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
     ),
   )

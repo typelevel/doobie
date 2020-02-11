@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 import shapeless._
 
 
-object fragmentspec extends Specification {
+class fragmentspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -39,6 +39,10 @@ object fragmentspec extends Specification {
 
     "concatenate properly" in {
       (fr"foo" ++ fr"bar $a baz").query[HNil].sql must_== "foo bar ? baz "
+    }
+
+    "interpolate fragments properly" in {
+      fr"foo ${fr0"bar $a baz"}".query[HNil].sql must_== "foo bar ? baz "
     }
 
     "maintain parameter indexing (in-order)" in {

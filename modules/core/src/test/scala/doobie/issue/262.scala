@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 import Predef._
 
 
-object `262` extends Specification {
+class `262` extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)

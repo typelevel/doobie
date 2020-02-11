@@ -11,8 +11,8 @@ import org.scalatest._
 import scala.concurrent.ExecutionContext
 
 
-trait MatcherChecks[M[_]] extends FunSuite
-    with MustMatchers
+trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite
+    with matchers.must.Matchers
     with AnalysisMatchers[M] {
 
   implicit def contextShift: ContextShift[M]

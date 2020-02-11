@@ -9,13 +9,13 @@ import shapeless._, shapeless.record._
 import org.specs2.mutable.Specification
 
 
-object readspec extends Specification {
+class readspec extends Specification {
 
-  final case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
+  case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
-  final case class LenStr1(n: Int, s: String)
+  case class LenStr1(n: Int, s: String)
 
-  final case class LenStr2(n: Int, s: String)
+  case class LenStr2(n: Int, s: String)
   object LenStr2 {
     implicit val LenStrMeta: Meta[LenStr2] =
       Meta[String].timap(s => LenStr2(s.length, s))(_.s)
@@ -24,23 +24,23 @@ object readspec extends Specification {
   "Read" should {
 
     "exist for some fancy types" in {
-      Read[Int]
-      Read[(Int, Int)]
-      Read[(Int, Int, String)]
-      Read[(Int, (Int, String))]
-      Read[Woozle]
+      util.Read[Int]
+      util.Read[(Int, Int)]
+      util.Read[(Int, Int, String)]
+      util.Read[(Int, (Int, String))]
+      util.Read[Woozle]
 
       // https://github.com/tpolecat/doobie/pull/126 was reverted because these
       // derivations were failing with SOE
-      Read[(Woozle, String)]
-      Read[(Int, Woozle :: Woozle :: String :: HNil)]
+      util.Read[(Woozle, String)]
+      util.Read[(Int, Woozle :: Woozle :: String :: HNil)]
 
       true
     }
 
     "exist for Unit" in {
-      Read[Unit]
-      Read[(Int, Unit)].length must_== 1
+      util.Read[Unit]
+      util.Read[(Int, Unit)].length must_== 1
     }
 
     "exist for shapeless record types" in {
@@ -48,8 +48,8 @@ object readspec extends Specification {
       type DL = (Double, Long) // used below
       type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
 
-      Read[A]
-      Read[(A, A)]
+      util.Read[A]
+      util.Read[(A, A)]
 
       (null : DL, ())._2 // suppress unused warning for `DL` above
 
@@ -57,20 +57,20 @@ object readspec extends Specification {
     }
 
     "exist for option of some fancy types" in {
-      Read[Option[Int]]
-      Read[Option[(Int, Int)]]
-      Read[Option[(Int, Int, String)]]
-      Read[Option[(Int, (Int, String))]]
-      Read[Option[(Int, Option[(Int, String)])]]
-      Read[Option[Woozle]]
-      Read[Option[(Woozle, String)]]
-      Read[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
+      util.Read[Option[Int]]
+      util.Read[Option[(Int, Int)]]
+      util.Read[Option[(Int, Int, String)]]
+      util.Read[Option[(Int, (Int, String))]]
+      util.Read[Option[(Int, Option[(Int, String)])]]
+      util.Read[Option[Woozle]]
+      util.Read[Option[(Woozle, String)]]
+      util.Read[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
       true
     }
 
     "exist for option of Unit" in {
-      Read[Option[Unit]]
-      Read[Option[(Int, Unit)]].length must_== 1
+      util.Read[Option[Unit]]
+      util.Read[Option[(Int, Unit)]].length must_== 1
     }
 
     // This doesn't work because of the issue with tagged element as HList members.
@@ -87,11 +87,11 @@ object readspec extends Specification {
     // }
 
     "select multi-column instance by default" in {
-      Read[LenStr1].length must_== 2
+      util.Read[LenStr1].length must_== 2
     }
 
     "select 1-column instance when available" in {
-      Read[LenStr2].length must_== 1
+      util.Read[LenStr2].length must_== 1
     }
 
     // "work for products of ludicrous size (128)" in {
