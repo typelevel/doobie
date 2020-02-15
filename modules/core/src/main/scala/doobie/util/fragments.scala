@@ -12,13 +12,33 @@ import doobie.implicits._
 /** Module of `Fragment` constructors. */
 object fragments {
 
-  /** Returns `f IN (fs0, fs1, ...)`. */
-  def in[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
-    fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"IN (", fr",", fr")")
+  /** Returns `(f IN (fs0, fs1, ...))`, or nothing for empty `fs`. */
+  def in(f: Fragment, fs: Fragment*): Option[Fragment] =
+    if (fs.isEmpty) None
+    else
+      Some(parentheses(f ++ fr"IN" ++ parentheses(comma(fs: _*))))
 
-  /** Returns `f NOT IN (fs0, fs1, ...)`. */
-  def notIn[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
-    fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"NOT IN (", fr",", fr")")
+  /** Returns `(f IN (fs0, fs1, ...))`. */
+  def inNe[F[_]: Reducible](f: Fragment, fs: F[Fragment]): Fragment =
+    parentheses(f ++ fr"IN" ++ parentheses(comma(fs.toList: _*)))
+
+  /** Returns `(f IN (fs0, fs1, ...))` for all defined fragments, or nothing for empty `fs`. */
+  def inOpt(f: Fragment, fs: Option[Fragment]*): Option[Fragment] =
+    in(f, fs.toList.unite: _*)
+
+  /** Returns `(f NOT IN (fs0, fs1, ...))`, or nothing for empty `fs`. */
+  def notIn(f: Fragment, fs: Fragment*): Option[Fragment] =
+    if (fs.isEmpty) None
+    else
+      Some(parentheses(f ++ fr"NOT IN" ++ parentheses(comma(fs: _*))))
+
+  /** Returns `(f NOT IN (fs0, fs1, ...))`. */
+  def notInNe[F[_]: Reducible](f: Fragment, fs: F[Fragment]): Fragment =
+    parentheses(f ++ fr"NOT IN" ++ parentheses(comma(fs.toList: _*)))
+
+  /** Returns `(f NOT IN (fs0, fs1, ...))` for all defined fragments, or nothing for empty `fs`. */
+  def notInOpt(f: Fragment, fs: Option[Fragment]*): Option[Fragment] =
+    notIn(f, fs.toList.unite: _*)
 
   /** Returns `(f1 AND f2 AND ... fn)`, or nothing for empty `fs`. */
   def and(fs: Fragment*): Option[Fragment] =

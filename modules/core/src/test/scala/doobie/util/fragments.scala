@@ -27,19 +27,80 @@ class fragmentsspec extends Specification {
 
   "Fragments" >> {
 
-    val nel = NonEmptyList.of(1, 2, 3)
     val fs = List(1, 2, 3).map(n => fr"$n")
     val fsNel = NonEmptyList.of(1, 2, 3).map(n => fr"$n")
     val ofs = List(1, 2, 3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
     val fsEmpty = List[Fragment]()
     val ofsEmpty = List[Option[Fragment]](None, None)
 
-    "in" in {
-      in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
+    "inNe" in {
+      inNe(fr"foo", fsNel).query[Unit].sql must_=== "(foo IN (? , ? , ? ) ) "
     }
 
-    "notIn" in {
-      notIn(fr"foo", nel).query[Unit].sql must_== "foo NOT IN (?, ?, ?) "
+    "in (many)" in {
+      in(fr"foo", fs: _*).map(_.query[Unit].sql) must
+        beSome("(foo IN (? , ? , ? ) ) ")
+    }
+
+    "in (single)" in {
+      in(fr"foo", fs(0)).map(_.query[Unit].sql) must
+        beSome("(foo IN (? ) ) ")
+    }
+
+    "in (empty)" in {
+      in(fr"foo").map(_.query[Unit].sql) must
+        beNone
+    }
+
+    "inOpt (many)" in {
+      inOpt(fr"foo", ofs: _*).map(_.query[Unit].sql) must
+        beSome("(foo IN (? , ? ) ) ")
+    }
+
+    "inOpt (one)" in {
+      inOpt(fr"foo", ofs(0)).map(_.query[Unit].sql) must
+        beSome("(foo IN (? ) ) ")
+    }
+
+    "inOpt (none)" in {
+      inOpt(fr"foo", None, None).map(_.query[Unit].sql) must
+        beNone
+    }
+
+    "notInNe" in {
+      notInNe(fr"foo", fsNel)
+        .query[Unit]
+        .sql must_=== "(foo NOT IN (? , ? , ? ) ) "
+    }
+
+    "notIn (many)" in {
+      notIn(fr"foo", fs: _*).map(_.query[Unit].sql) must
+        beSome("(foo NOT IN (? , ? , ? ) ) ")
+    }
+
+    "notIn (single)" in {
+      notIn(fr"foo", fs(0)).map(_.query[Unit].sql) must
+        beSome("(foo NOT IN (? ) ) ")
+    }
+
+    "notIn (empty)" in {
+      notIn(fr"foo").map(_.query[Unit].sql) must
+        beNone
+    }
+
+    "notInOpt (many)" in {
+      notInOpt(fr"foo", ofs: _*).map(_.query[Unit].sql) must
+        beSome("(foo NOT IN (? , ? ) ) ")
+    }
+
+    "notInOpt (one)" in {
+      notInOpt(fr"foo", ofs(0)).map(_.query[Unit].sql) must
+        beSome("(foo NOT IN (? ) ) ")
+    }
+
+    "notInOpt (none)" in {
+      notInOpt(fr"foo", None, None).map(_.query[Unit].sql) must
+        beNone
     }
 
     "andNe" in {
