@@ -48,7 +48,7 @@ cache:
 before_cache:
   - du -h -d 1 $HOME/.ivy2/
   - du -h -d 2 $HOME/.sbt/
-  - du -h -d 4 $HOME/.cache/coursier/
+  - du -h -d 6 $HOME/.cache/coursier/
   - find $HOME/.sbt -name "*.lock" -type f -delete
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
   - find $HOME/.cache/coursier -name "*.lock" -type f -delete
