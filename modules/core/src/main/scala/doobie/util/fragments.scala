@@ -102,4 +102,8 @@ object fragments {
   /** Returns `ORDER BY f1, f2, ... fn` or the empty fragment if `fs` is empty. */
   def orderBy(fs: Fragment*): Fragment =
     if (fs.isEmpty) Fragment.empty else fr"ORDER BY" ++ comma(fs: _*)
+
+  /** Returns `ORDER BY f1, f2, ... fn` for defined `f`, if any, otherwise the empty fragment. */
+  def orderByOpt(fs: Option[Fragment]*): Fragment =
+    orderBy(fs.toList.unite: _*)
 }
