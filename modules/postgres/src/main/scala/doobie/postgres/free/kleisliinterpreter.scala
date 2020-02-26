@@ -64,13 +64,13 @@ trait KleisliInterpreter[M[_]] { outer =>
   val blocker: Blocker
 
   // The 7 interpreters, with definitions below. These can be overridden to customize behavior.
-  lazy val CopyInInterpreter: CopyInOp ~> Kleisli[M, PGCopyIn, ?] = new CopyInInterpreter { }
-  lazy val CopyManagerInterpreter: CopyManagerOp ~> Kleisli[M, PGCopyManager, ?] = new CopyManagerInterpreter { }
-  lazy val CopyOutInterpreter: CopyOutOp ~> Kleisli[M, PGCopyOut, ?] = new CopyOutInterpreter { }
-  lazy val FastpathInterpreter: FastpathOp ~> Kleisli[M, PGFastpath, ?] = new FastpathInterpreter { }
-  lazy val LargeObjectInterpreter: LargeObjectOp ~> Kleisli[M, LargeObject, ?] = new LargeObjectInterpreter { }
-  lazy val LargeObjectManagerInterpreter: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, ?] = new LargeObjectManagerInterpreter { }
-  lazy val PGConnectionInterpreter: PGConnectionOp ~> Kleisli[M, PGConnection, ?] = new PGConnectionInterpreter { }
+  lazy val CopyInInterpreter: CopyInOp ~> Kleisli[M, PGCopyIn, *] = new CopyInInterpreter { }
+  lazy val CopyManagerInterpreter: CopyManagerOp ~> Kleisli[M, PGCopyManager, *] = new CopyManagerInterpreter { }
+  lazy val CopyOutInterpreter: CopyOutOp ~> Kleisli[M, PGCopyOut, *] = new CopyOutInterpreter { }
+  lazy val FastpathInterpreter: FastpathOp ~> Kleisli[M, PGFastpath, *] = new FastpathInterpreter { }
+  lazy val LargeObjectInterpreter: LargeObjectOp ~> Kleisli[M, LargeObject, *] = new LargeObjectInterpreter { }
+  lazy val LargeObjectManagerInterpreter: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, *] = new LargeObjectManagerInterpreter { }
+  lazy val PGConnectionInterpreter: PGConnectionOp ~> Kleisli[M, PGConnection, *] = new PGConnectionInterpreter { }
 
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
   def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
@@ -98,7 +98,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     }
 
   // Interpreters
-  trait CopyInInterpreter extends CopyInOp.Visitor[Kleisli[M, PGCopyIn, ?]] {
+  trait CopyInInterpreter extends CopyInOp.Visitor[Kleisli[M, PGCopyIn, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: PGCopyIn => A): Kleisli[M, PGCopyIn, A] = outer.raw(f)
@@ -141,7 +141,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait CopyManagerInterpreter extends CopyManagerOp.Visitor[Kleisli[M, PGCopyManager, ?]] {
+  trait CopyManagerInterpreter extends CopyManagerOp.Visitor[Kleisli[M, PGCopyManager, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: PGCopyManager => A): Kleisli[M, PGCopyManager, A] = outer.raw(f)
@@ -184,7 +184,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait CopyOutInterpreter extends CopyOutOp.Visitor[Kleisli[M, PGCopyOut, ?]] {
+  trait CopyOutInterpreter extends CopyOutOp.Visitor[Kleisli[M, PGCopyOut, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: PGCopyOut => A): Kleisli[M, PGCopyOut, A] = outer.raw(f)
@@ -226,7 +226,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait FastpathInterpreter extends FastpathOp.Visitor[Kleisli[M, PGFastpath, ?]] {
+  trait FastpathInterpreter extends FastpathOp.Visitor[Kleisli[M, PGFastpath, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: PGFastpath => A): Kleisli[M, PGFastpath, A] = outer.raw(f)
@@ -271,7 +271,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait LargeObjectInterpreter extends LargeObjectOp.Visitor[Kleisli[M, LargeObject, ?]] {
+  trait LargeObjectInterpreter extends LargeObjectOp.Visitor[Kleisli[M, LargeObject, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: LargeObject => A): Kleisli[M, LargeObject, A] = outer.raw(f)
@@ -325,7 +325,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait LargeObjectManagerInterpreter extends LargeObjectManagerOp.Visitor[Kleisli[M, LargeObjectManager, ?]] {
+  trait LargeObjectManagerInterpreter extends LargeObjectManagerOp.Visitor[Kleisli[M, LargeObjectManager, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: LargeObjectManager => A): Kleisli[M, LargeObjectManager, A] = outer.raw(f)
@@ -375,7 +375,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait PGConnectionInterpreter extends PGConnectionOp.Visitor[Kleisli[M, PGConnection, ?]] {
+  trait PGConnectionInterpreter extends PGConnectionOp.Visitor[Kleisli[M, PGConnection, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: PGConnection => A): Kleisli[M, PGConnection, A] = outer.raw(f)

@@ -20,7 +20,7 @@ import doobie.util.meta.Meta
 sealed abstract class Get[A](
   val typeStack: NonEmptyList[Option[Type]],
   val jdbcSources: NonEmptyList[JdbcType],
-  val get: Coyoneda[(ResultSet, Int) => ?, A]
+  val get: Coyoneda[(ResultSet, Int) => *, A]
 ) {
 
   protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B]
@@ -79,7 +79,7 @@ object Get extends GetInstances {
     override val typeStack: NonEmptyList[Option[Type]],
     override val jdbcSources: NonEmptyList[JdbcType],
              val jdbcSourceSecondary: List[JdbcType],
-    override val get: Coyoneda[(ResultSet, Int) => ?, A]
+    override val get: Coyoneda[(ResultSet, Int) => *, A]
   ) extends Get[A](typeStack, jdbcSources, get) {
 
     protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B] =
@@ -112,7 +112,7 @@ object Get extends GetInstances {
     override val typeStack: NonEmptyList[Option[Type]],
     override val jdbcSources: NonEmptyList[JdbcType],
              val schemaTypes: NonEmptyList[String],
-    override val get: Coyoneda[(ResultSet, Int) => ?, A]
+    override val get: Coyoneda[(ResultSet, Int) => *, A]
   ) extends Get[A](typeStack, jdbcSources, get) {
 
     protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B] =

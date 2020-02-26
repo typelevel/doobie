@@ -20,8 +20,8 @@ import shapeless.ops.hlist.IsHCons
 sealed abstract class Put[A](
   val typeStack: NonEmptyList[Option[Type]],
   val jdbcTargets: NonEmptyList[JdbcType],
-  val put: ContravariantCoyoneda[(PreparedStatement, Int, ?) => Unit, A],
-  val update: ContravariantCoyoneda[(ResultSet, Int, ?) => Unit, A]
+  val put: ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
+  val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
 ) {
 
   protected def contramapImpl[B](f: B => A, typ: Option[Type]): Put[B]
@@ -65,8 +65,8 @@ object Put extends PutInstances {
   final case class Basic[A](
     override val typeStack: NonEmptyList[Option[Type]],
     override val jdbcTargets: NonEmptyList[JdbcType],
-    override val put:  ContravariantCoyoneda[(PreparedStatement, Int, ?) => Unit, A],
-    override val update: ContravariantCoyoneda[(ResultSet, Int, ?) => Unit, A]
+    override val put:  ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
+    override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
   ) extends Put[A](typeStack, jdbcTargets, put, update) {
 
     protected def contramapImpl[B](f: B => A, typ: Option[Type]): Put[B] =
@@ -87,8 +87,8 @@ object Put extends PutInstances {
       Basic(
         NonEmptyList.of(Some(ev.tpe)),
         jdbcTargets,
-        ContravariantCoyoneda.lift[(PreparedStatement, Int, ?) => Unit, A](put),
-        ContravariantCoyoneda.lift[(ResultSet, Int, ?) => Unit, A](update)
+        ContravariantCoyoneda.lift[(PreparedStatement, Int, *) => Unit, A](put),
+        ContravariantCoyoneda.lift[(ResultSet, Int, *) => Unit, A](update)
       )
 
     def one[A](
@@ -104,8 +104,8 @@ object Put extends PutInstances {
     override val typeStack: NonEmptyList[Option[Type]],
     override val jdbcTargets: NonEmptyList[JdbcType],
              val schemaTypes: NonEmptyList[String],
-    override val put:  ContravariantCoyoneda[(PreparedStatement, Int, ?) => Unit, A],
-    override val update: ContravariantCoyoneda[(ResultSet, Int, ?) => Unit, A]
+    override val put:  ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
+    override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
   ) extends Put[A](typeStack, jdbcTargets, put, update) {
 
     protected def contramapImpl[B](f: B => A, typ: Option[Type]): Put[B] =
@@ -127,8 +127,8 @@ object Put extends PutInstances {
         NonEmptyList.of(Some(ev.tpe)),
         jdbcTargets,
         schemaTypes,
-        ContravariantCoyoneda.lift[(PreparedStatement, Int, ?) => Unit, A](put),
-        ContravariantCoyoneda.lift[(ResultSet, Int, ?) => Unit, A](update)
+        ContravariantCoyoneda.lift[(PreparedStatement, Int, *) => Unit, A](put),
+        ContravariantCoyoneda.lift[(ResultSet, Int, *) => Unit, A](update)
       )
 
     def one[A: TypeTag](

@@ -15,8 +15,8 @@ import doobie.implicits._
  */
 object Noop {
 
-  def noop[S[_]]: S ~> Either[String, ?] =
-    λ[S ~> Either[String, ?]] { c =>
+  def noop[S[_]]: S ~> Either[String, *] =
+    λ[S ~> Either[String, *]] { c =>
       Left(s"Can't interpret $c")
     }
 
