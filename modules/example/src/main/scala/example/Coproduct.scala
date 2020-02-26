@@ -27,7 +27,7 @@ object coproduct extends IOApp {
 
   // This is kind of eh … we need to interpret into Kleisli so this is helpful
   implicit class MoreNaturalTransformationOps[F[_], G[_]](nat: F ~> G) {
-    def liftK[E] = λ[F ~> Kleisli[G, E, ?]](fa => Kleisli(_ => nat(fa)))
+    def liftK[E] = λ[F ~> Kleisli[G, E, *]](fa => Kleisli(_ => nat(fa)))
   }
 
   // A console algebra
@@ -78,7 +78,7 @@ object coproduct extends IOApp {
 
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
-  val interp: Cop ~> Kleisli[IO, Connection, ?] = {
+  val interp: Cop ~> Kleisli[IO, Connection, *] = {
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     consoleInterp.liftK[Connection] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
   }

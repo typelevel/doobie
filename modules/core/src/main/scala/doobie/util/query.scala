@@ -252,15 +252,15 @@ object query {
       }
 
     /** @group Typeclass Instances */
-    implicit def queryCovariant[A]: Functor[Query[A, ?]] =
-      new Functor[Query[A, ?]] {
+    implicit def queryCovariant[A]: Functor[Query[A, *]] =
+      new Functor[Query[A, *]] {
         def map[B, C](fa: Query[A, B])(f: B => C): Query[A, C] =
           fa.map(f)
       }
 
     /** @group Typeclass Instances */
-    implicit def queryContravariant[B]: Contravariant[Query[?, B]] =
-      new Contravariant[Query[?, B]] {
+    implicit def queryContravariant[B]: Contravariant[Query[*, B]] =
+      new Contravariant[Query[*, B]] {
         def contramap[A, C](fa: Query[A, B])(f: C => A): Query[C, B] =
           fa.contramap(f)
       }

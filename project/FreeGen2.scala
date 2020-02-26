@@ -379,7 +379,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      val ioname = s"${oname}IO"
      val mname  = oname.toLowerCase
      s"""
-       |  trait ${oname}Interpreter extends ${oname}Op.Visitor[Kleisli[M, $sname, ?]] {
+       |  trait ${oname}Interpreter extends ${oname}Op.Visitor[Kleisli[M, $sname, *]] {
        |
        |    // common operations delegate to outer interpreter
        |    override def raw[A](f: $sname => A): Kleisli[M, $sname, A] = outer.raw(f)
@@ -422,7 +422,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      val opname = s"${oname}Op"
      val ioname = s"${oname}IO"
      val mname  = oname.toLowerCase
-     s"lazy val ${oname}Interpreter: ${opname} ~> Kleisli[M, $sname, ?] = new ${oname}Interpreter { }"
+     s"lazy val ${oname}Interpreter: ${opname} ~> Kleisli[M, $sname, *] = new ${oname}Interpreter { }"
    }
 
 

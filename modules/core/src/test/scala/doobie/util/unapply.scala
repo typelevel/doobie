@@ -15,9 +15,9 @@ class unapplyspec extends Specification {
 
   "Partial Unification" should {
 
-    "allow inference of Monad[Free[Coyoneda[F, ?], ?]]" in {
+    "allow inference of Monad[Free[Coyoneda[F, *], *]]" in {
       trait Foo[A]
-      Monad[Free[Coyoneda[Foo, ?], ?]]
+      Monad[Free[Coyoneda[Foo, *], *]]
       true
     }
 

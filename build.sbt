@@ -396,7 +396,7 @@ lazy val docs = project
         "h2Version"        -> h2Version,
         "postgresVersion"  -> postgresVersion,
         "scalaVersion"     -> scalaVersion.value,
-        "scalaVersions"    -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""), // 2.12/13
+        "scalaVersions"    -> (crossScalaVersions in core).value.flatMap(CrossVersion.partialVersion).map(_._2).mkString("2.", "/", ""), // 2.12/13
         "quillVersion"     -> quillVersion
       )
     ),
