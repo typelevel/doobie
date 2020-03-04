@@ -7,7 +7,10 @@ package doobie.scalatest
 import cats.effect.{ Effect, IO }
 import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
+import monix.eval.Task
+import monix.execution.Scheduler
 import org.scalatest.Assertions
+
 import scala.reflect.runtime.universe.TypeTag
 
 /**
@@ -65,5 +68,12 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 /** Implementation of Checker[IO] */
 trait IOChecker extends Checker[IO] {
   self: Assertions =>
-  val M: Effect[IO] = implicitly
+  override val M: Effect[IO] = implicitly
+}
+
+/** Implementation of Checker[Task] */
+trait TaskChecker extends Checker[Task] {
+  self: Assertions =>
+  implicit val scheduler: Scheduler = Scheduler.global
+  override val M: Effect[Task] = Task.catsEffect
 }

@@ -332,6 +332,7 @@ lazy val scalatest = project
     description := "Scalatest support for doobie.",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
+      "io.monix"      %% "monix-eval" % monixVersion,
       "com.h2database"  %  "h2"       % h2Version % "test"
     )
   )

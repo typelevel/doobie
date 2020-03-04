@@ -7,7 +7,9 @@ package doobie.scalatest
 import cats.effect.{ ContextShift, IO }
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
+import monix.eval.Task
 import org.scalatest._
+
 import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matchers with Checker[M] {
@@ -27,4 +29,8 @@ trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matc
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
   def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+}
+
+class TaskCheckerCheck extends CheckerChecks[Task] with TaskChecker {
+  def contextShift: ContextShift[Task] = Task.contextShift(scheduler)
 }

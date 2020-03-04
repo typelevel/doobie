@@ -6,12 +6,11 @@ package doobie.scalatest
 
 import cats.effect.{ Effect, IO }
 import doobie.util.testing._
-import org.scalatest.matchers.{
-  Matcher,
-  MatchResult,
-  LazyArg
-}
+import monix.eval.Task
+import monix.execution.Scheduler
+import org.scalatest.matchers.{LazyArg, MatchResult, Matcher}
 import org.scalatest.matchers.dsl.MatcherFactory2
+
 import scala.reflect.ClassTag
 
 /**
@@ -50,5 +49,10 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
 }
 
 trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
-  val M: Effect[IO] = implicitly
+  override val M: Effect[IO] = implicitly
+}
+
+trait TaskAnalysisMatchers extends AnalysisMatchers[Task] {
+  implicit val scheduler: Scheduler = Scheduler.global
+  override val M: Effect[Task] = Task.catsEffect
 }

@@ -7,7 +7,9 @@ package doobie.scalatest
 import cats.effect.{ ContextShift, IO }
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
+import monix.eval.Task
 import org.scalatest._
+
 import scala.concurrent.ExecutionContext
 
 
@@ -39,4 +41,8 @@ trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite
 class IOMatcherCheck extends MatcherChecks[IO] with IOChecker {
   def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+}
+
+class TaskMatcherCheck extends MatcherChecks[Task] with TaskChecker {
+  def contextShift: ContextShift[Task] = Task.contextShift(scheduler)
 }
