@@ -60,7 +60,7 @@ lazy val commonSettings =
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
     headerLicense  := Some(HeaderLicense.Custom(
-      """|Copyright (c) 2013-2018 Rob Norris and Contributors
+      """|Copyright (c) 2013-2020 Rob Norris and Contributors
          |This software is licensed under the MIT License (MIT).
          |For more information see LICENSE or https://opensource.org/licenses/MIT
          |""".stripMargin
@@ -375,7 +375,9 @@ lazy val docs = project
     micrositeGithubRepo       := "doobie",
     micrositeGitterChannel    := false, // no me gusta
     micrositeBaseUrl          := "/doobie",
-    micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12",
+    micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.13",
+    micrositeDocumentationLabelDescription := "Scaladoc",
+    micrositeTheme := "pattern",
     micrositeHighlightTheme   := "color-brewer",
     micrositePalette := Map(
       "brand-primary"     -> "#E35D31",
