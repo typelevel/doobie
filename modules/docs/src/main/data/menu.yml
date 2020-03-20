@@ -1,0 +1,54 @@
+options:
+  - title: Introduction
+    url: book/introduction
+
+  - title: Toolkit
+    url: book/toolkit
+
+  - title: Connecting to a Database
+    url: book/connecting-to-a-database
+
+  - title: Selecting Data
+    url: book/selecting-data
+
+  - title: Parameterized Queries
+    url: book/parameterized-queries
+
+  - title: Typechecking Queries
+    url: book/checking
+
+  - title: DDL, Inserting, and Updating
+    url: book/updating
+
+  - title: Statement Fragments
+    url: book/fragments
+
+  - title: Error Handling
+    url: book/error-handling
+
+  - title: Logging
+    url: book/logging
+
+  - title: SQL Arrays
+    url: book/sql-arrays
+
+  - title: Custom Mappings
+    url: book/custom-mappings
+
+  - title: Unit Testing
+    url: book/unit-testing
+
+  - title: Managing Connections
+    url: book/managing-connections
+
+  - title: Extensions for PostgreSQL
+    url: book/extensions-for-postgresql
+
+  - title: Extensions for H2
+    url: book/extensions-h2
+
+  - title: Quill Integration
+    url: book/quill
+
+  - title: Frequently-Asked Questions
+    url: book/faq
