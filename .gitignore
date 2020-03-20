@@ -41,3 +41,6 @@ bin/
 # Metals
 .metals/
 project/metals.sbt
+
+# Jekyll
+_site
