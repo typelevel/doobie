@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 5
 title: Parameterized Queries
+permalink: book/parameterized-queries
 ---
 
 ## {{page.title}}

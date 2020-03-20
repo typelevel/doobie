@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 2
 title: Toolkit
+permalink: book/toolkit
 ---
 
 ## {{page.title}}

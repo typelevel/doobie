@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 4
 title: Selecting Data
+permalink: book/selecting-data
 ---
 
 ## {{page.title}}

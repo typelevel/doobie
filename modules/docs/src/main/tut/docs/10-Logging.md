@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 10
 title: Logging
+permalink: book/logging
 ---
 
 ## {{page.title}}

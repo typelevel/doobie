@@ -2,7 +2,8 @@
 layout: page
 title:  "migration"
 section: "migration"
-position: 2
+position: 3
+permalink: "migration"
 ---
 
 # Upgrading to 0.8.x from 0.7.x
@@ -146,4 +147,3 @@ In no particular order:
 
 - All `.process` combinators and constructors are deprecated in the `Query/Update` API and removed in the lower-level APIs; use the `.stream` equivalents.
 - The `.list` and `.vector` methods on `Query/Query0` are deprecated in favor of `.to[List]` and `.to[Vector]` respectively.
-

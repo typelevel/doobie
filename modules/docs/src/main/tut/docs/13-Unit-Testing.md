@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 13
 title: Unit Testing
+permalink: book/unit-testing
 ---
 
 ## {{page.title}}

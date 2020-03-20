@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 7
 title: DDL, Inserting, and Updating
+permalink: book/updating
 ---
 
 ## {{page.title}}

@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 3
 title: Connecting to a Database
+permalink: book/connecting-to-a-database
 ---
 
 ## {{page.title}}

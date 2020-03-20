@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 1
 title: Introduction
+permalink: book/introduction
 ---
 
 <div style="margin-bottom: 20px; text-align: center"><img src="../img/yeah.png"/></div>

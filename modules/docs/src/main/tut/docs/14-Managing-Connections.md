@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 14
 title: Managing Connections
+permalink: book/managing-connections
 ---
 
 ## {{page.title}}

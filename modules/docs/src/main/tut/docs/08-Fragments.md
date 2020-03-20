@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 8
 title: Statement Fragments
+permalink: book/fragments
 ---
 
 ## {{page.title}}

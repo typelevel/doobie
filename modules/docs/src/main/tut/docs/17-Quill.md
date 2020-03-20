@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 17
 title: Quill Integration
+permalink: book/quill
 ---
 
 ## {{page.title}}
@@ -114,6 +114,3 @@ val u4 = quote {
 // Update yielding a list of ids
 run(u4)
 ```
-
-
-

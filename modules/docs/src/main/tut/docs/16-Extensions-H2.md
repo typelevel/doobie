@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 16
 title: Extensions for H2
+permalink: book/extensions-h2
 ---
 
 ## {{page.title}}

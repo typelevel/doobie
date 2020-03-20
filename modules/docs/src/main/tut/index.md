@@ -1,6 +1,8 @@
 ---
 layout: home
-
+title:  "home"
+section: "home"
+position: 1
 ---
 # doobie
 

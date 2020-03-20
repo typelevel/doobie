@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 15
 title: Extensions for PostgreSQL
+permalink: book/extensions-for-postgresql
 ---
 
 ## {{page.title}}

@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 6
 title: Typechecking Queries
+permalink: book/checking
 ---
 
 ## {{page.title}}

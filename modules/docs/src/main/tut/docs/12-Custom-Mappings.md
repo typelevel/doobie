@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 12
 title: Custom Mappings
+permalink: book/custom-mappings
 ---
 
 ## {{page.title}}

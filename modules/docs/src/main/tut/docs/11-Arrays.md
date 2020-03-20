@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 11
 title: SQL Arrays
+permalink: book/sql-arrays
 ---
 
 ## {{page.title}}

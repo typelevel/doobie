@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 9
 title: Error Handling
+permalink: book/error-handling
 ---
 
 ## {{page.title}}

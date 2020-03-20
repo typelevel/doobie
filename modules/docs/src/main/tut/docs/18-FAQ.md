@@ -1,7 +1,7 @@
 ---
 layout: docs
-number: 18
 title: Frequently-Asked Questions
+permalink: book/faq
 ---
 
 ## {{page.title}}
