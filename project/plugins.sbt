@@ -1,4 +1,4 @@
-addSbtPlugin("com.47deg"                 % "sbt-microsites"          % "1.1.3")
+addSbtPlugin("com.47deg"                 % "sbt-microsites"          % "1.1.4")
 addSbtPlugin("com.geirsson"              % "sbt-ci-release"          % "1.5.2")
 addSbtPlugin("org.scoverage"             % "sbt-scoverage"           % "1.6.1")
 addSbtPlugin("com.timushev.sbt"          % "sbt-updates"             % "0.4.3")
