@@ -414,12 +414,19 @@ lazy val docs = project
     paradoxTheme       := Some(builtinParadoxTheme("generic")),
     version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     paradoxProperties ++= Map(
-      "scala-versions"          -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
-      "org"                     -> organization.value,
-      "scala.binary.version"    -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-      "core-dep"                -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-      "version"                 -> version.value,
-      "scaladoc.atto.base_url" -> s"https://static.javadoc.io/org.tpolecat/atto-core_2.12/${version.value}",
+      "scala-versions"           -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
+      "org"                      -> organization.value,
+      "scala.binary.version"     -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "core-dep"                 -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "version"                  -> version.value,
+      "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
+      "catsVersion"              -> catsVersion,
+      "fs2Version"               -> fs2Version,
+      "shapelessVersion"         -> shapelessVersion,
+      "h2Version"                -> h2Version,
+      "postgresVersion"          -> postgresVersion,
+      "quillVersion"             -> quillVersion,
+      "scalaVersion"             -> scalaVersion.value,
     )
 
   )

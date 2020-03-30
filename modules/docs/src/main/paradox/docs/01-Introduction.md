@@ -63,12 +63,11 @@ You can of course change this setup if you like, but you will need to adjust you
 
 On the Scala side you just need a console with the proper dependencies. A minimal `build.sbt` would look something like this.
 
+@@@vars
 ```scala
-scalaVersion := "{{site.scalaVersion}}" // Scala {{site.scalaVersions}}
+scalaVersion := "$scalaVersion$" // Scala $scalaVersion$
 
-//scalacOptions += "-Ypartial-unification" // 2.11.9+
-
-lazy val doobieVersion = "{{site.doobieVersion}}"
+lazy val doobieVersion = "$version$"
 
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core"     % doobieVersion,
@@ -76,6 +75,7 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-specs2"   % doobieVersion
 )
 ```
+@@@
 
 The `-Ypartial-unification` compiler flag enables a bug fix that makes working with functional code significantly easier. See the Cats [Getting Started](https://github.com/typelevel/cats#getting-started) for more info on this if it interests you. **If you're using Scala 2.13+ the compiler no longer accepts that option**.
 

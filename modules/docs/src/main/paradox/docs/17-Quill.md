@@ -2,11 +2,13 @@
 
 As of version 0.7 doobie now lets us use [Quill](https://getquill.io) quotes to construct `ConnectionIO` programs. Quill provides statement construction and type mapping, and doobie takes care of statement execution.
 
-In order to use this feature we need to add the following dependency, which pulls in `quill-jdbc` {{site.quillVersion}} transitively.
+In order to use this feature we need to add the following dependency, which pulls in `quill-jdbc` $quillVersion$ transitively.
 
+@@@ vars
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-quill" % "{{site.doobieVersion}}"
+libraryDependencies += "org.tpolecat" %% "doobie-quill" % "$version$"
 ```
+@@@
 
 The examples below require the following imports.
 

@@ -20,3 +20,5 @@
 @@@
 
 # Book of Doobie
+
+@@toc { depth=1 }
