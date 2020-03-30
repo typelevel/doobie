@@ -349,6 +349,7 @@ lazy val docs = project
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
+  .enablePlugins(MdocPlugin)
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
@@ -427,7 +428,11 @@ lazy val docs = project
       "postgresVersion"          -> postgresVersion,
       "quillVersion"             -> quillVersion,
       "scalaVersion"             -> scalaVersion.value,
-    )
+    ),
+
+    mdocIn := (baseDirectory.value) / "src" / "main" / "mdoc",
+    Paradox / sourceDirectory := mdocOut.value,
+    makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
 
   )
 
