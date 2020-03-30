@@ -1,10 +1,4 @@
----
-layout: docs
-number: 3
-title: Connecting to a Database
----
-
-## {{page.title}}
+## Connecting to a Database
 
 In this chapter we start from the beginning. First we write a program that connects to a database and returns a value, and then we run that program in the REPL. We also touch on composing small programs to construct larger ones.
 

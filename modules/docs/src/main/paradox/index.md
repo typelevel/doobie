@@ -1,7 +1,10 @@
----
-layout: home
+@@@ index
+* [Infographic](infographic.md)
+* [Migration](migration.md)
+* [Book of Doobie](docs/index.md)
+@@@
 
----
+
 # doobie
 
 <img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>

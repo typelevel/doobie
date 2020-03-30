@@ -1,4 +1,6 @@
-addSbtPlugin("com.47deg"                 % "sbt-microsites"          % "1.1.3")
+addSbtPlugin("com.lightbend.paradox"     % "sbt-paradox"             % "0.6.8")
+addSbtPlugin("com.typesafe.sbt"          % "sbt-site"                % "1.4.0")
+addSbtPlugin("com.typesafe.sbt"          % "sbt-ghpages"             % "0.6.3")
 addSbtPlugin("com.geirsson"              % "sbt-ci-release"          % "1.5.2")
 addSbtPlugin("org.scoverage"             % "sbt-scoverage"           % "1.6.1")
 addSbtPlugin("com.timushev.sbt"          % "sbt-updates"             % "0.4.3")

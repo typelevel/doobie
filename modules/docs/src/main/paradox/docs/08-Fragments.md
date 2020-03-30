@@ -1,10 +1,4 @@
----
-layout: docs
-number: 8
-title: Statement Fragments
----
-
-## {{page.title}}
+## Statement Fragments
 
 In this chapter we discuss how to construct SQL statements at runtime.
 

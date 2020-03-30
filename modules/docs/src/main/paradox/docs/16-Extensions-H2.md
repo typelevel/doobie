@@ -1,10 +1,4 @@
----
-layout: docs
-number: 16
-title: Extensions for H2
----
-
-## {{page.title}}
+## Extensions for H2
 
 In this chapter we discuss the extended support that **doobie** offers for users of [H2](http://www.h2database.com/html/main.html) . To use these extensions you must add an additional dependency to your project:
 

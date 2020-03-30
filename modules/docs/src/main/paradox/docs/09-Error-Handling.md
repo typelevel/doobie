@@ -1,10 +1,4 @@
----
-layout: docs
-number: 9
-title: Error Handling
----
-
-## {{page.title}}
+## Error Handling
 
 In this chapter we examine a set of combinators that allow us to construct programs that trap and handle exceptions.
 

@@ -1,10 +1,4 @@
----
-layout: docs
-number: 4
-title: Selecting Data
----
-
-## {{page.title}}
+## Selecting Data
 
 In this chapter will write some some programs to read from the database, mapping rows to Scala types on the way. We also introduce YOLO mode for experimenting with **doobie** in the REPL.
 
