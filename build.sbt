@@ -409,7 +409,7 @@ lazy val docs = project
     // micrositeCompilingDocsTool := WithMdoc,
     // mdocIn                     := sourceDirectory.value / "main" / "tut"
 
-    git.remoteRepo     := "git@github.com:tpolecat/atto.git",
+    git.remoteRepo     := "git@github.com:tpolecat/doobie.git",
     ghpagesNoJekyll    := true,
     publish / skip     := true,
     paradoxTheme       := Some(builtinParadoxTheme("generic")),
@@ -431,7 +431,7 @@ lazy val docs = project
     ),
 
     mdocIn := (baseDirectory.value) / "src" / "main" / "mdoc",
-    Paradox / sourceDirectory := mdocOut.value,
+    Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
 
   )
