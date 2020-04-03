@@ -1,10 +1,4 @@
----
-layout: docs
-number: 5
-title: Parameterized Queries
----
-
-## {{page.title}}
+## Parameterized Queries
 
 In this chapter we learn how to construct parameterized queries, and introduce the `Put` and `Write` typeclasses.
 

@@ -1,10 +1,4 @@
----
-layout: docs
-number: 18
-title: Frequently-Asked Questions
----
-
-## {{page.title}}
+## Frequently-Asked Questions
 
 In this chapter we address some frequently-asked questions, in no particular order. First a bit of set-up.
 

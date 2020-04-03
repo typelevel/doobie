@@ -1,10 +1,4 @@
----
-layout: docs
-number: 7
-title: DDL, Inserting, and Updating
----
-
-## {{page.title}}
+## DDL, Inserting, and Updating
 
 In this chapter we examine operations that modify data in the database, and ways to retrieve the results of these updates.
 

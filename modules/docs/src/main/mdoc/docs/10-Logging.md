@@ -1,10 +1,4 @@
----
-layout: docs
-number: 10
-title: Logging
----
-
-## {{page.title}}
+## Logging
 
 In this chapter we discuss how to log statement execution and timing.
 

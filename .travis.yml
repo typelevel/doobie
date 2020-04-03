@@ -13,11 +13,6 @@ addons:
     packages:
       - postgresql-9.4-postgis-2.4
 
-install:
-  - rvm use 2.6 --install --fuzzy
-  - gem install sass
-  - gem install jekyll -v 3.2.1
-
 before_script:
   - project/travis-before-build.sh
 
@@ -30,7 +25,7 @@ jobs:
   include:
     - script:
       - sbt +test
-      - sbt -J-XX:+UseG1GC docs/mdoc
+      - sbt -J-XX:+UseG1GC docs/makeSite
     - stage: release
       script: sbt ci-release
 

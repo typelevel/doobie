@@ -1,10 +1,4 @@
----
-layout: docs
-number: 6
-title: Typechecking Queries
----
-
-## {{page.title}}
+## Typechecking Queries
 
 In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that our type mappings are correct (and if not, get some hints on how to fix them).
 

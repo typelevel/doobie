@@ -1,10 +1,4 @@
----
-layout: docs
-number: 12
-title: Custom Mappings
----
-
-## {{page.title}}
+## Custom Mappings
 
 **doobie** provides two families of abstractions that define mappings between Scala types and schema types. These are used when we pass query arguments to the database, and when we interpret results that come back. Many such mappings are provided for free but it is sometimes necessary to define your own, and this is the subject of this chapter.
 

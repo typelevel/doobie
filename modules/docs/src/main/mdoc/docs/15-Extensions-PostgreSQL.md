@@ -1,16 +1,12 @@
----
-layout: docs
-number: 15
-title: Extensions for PostgreSQL
----
-
-## {{page.title}}
+## Extensions for PostgreSQL
 
 In this chapter we discuss the extended support that **doobie** offers for users of [PostgreSQL](http://www.postgresql.org/). To use these extensions you must add an additional dependency to your project:
 
+@@@ vars
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-postgres" % "{{site.doobieVersion}}"
+libraryDependencies += "org.tpolecat" %% "doobie-postgres" % "$version$"
 ```
+@@@
 
 This library pulls in [PostgreSQL JDBC Driver](https://jdbc.postgresql.org) as a transitive dependency.
 

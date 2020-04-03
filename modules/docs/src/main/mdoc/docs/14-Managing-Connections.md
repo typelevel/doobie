@@ -1,10 +1,4 @@
----
-layout: docs
-number: 14
-title: Managing Connections
----
-
-## {{page.title}}
+## Managing Connections
 
 In this chapter we discuss several ways to manage connections in applications that use **doobie**, including managed/pooled connections and re-use of existing connections. For this chapter we have a few imports and no other setup.
 

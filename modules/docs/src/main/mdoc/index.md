@@ -1,7 +1,10 @@
----
-layout: home
+@@@ index
+* [Infographic](infographic.md)
+* [Migration](migration.md)
+* [Book of Doobie](docs/index.md)
+@@@
 
----
+
 # doobie
 
 <img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
@@ -42,32 +45,36 @@ find("France").transact(xa).unsafeRunSync
 
 ## Quick Start
 
-The current version is **{{site.doobieVersion}}** for **Scala {{site.scalaVersions}}** with
+The current version is **$version$** for **Scala $scala-versions$** with
 
-- [**cats**](http://typelevel.org/cats/) {{site.catsVersion}}
-- [**fs2**](https://github.com/functional-streams-for-scala/fs2) {{site.fs2Version}}
-- [**shapeless**](https://github.com/milessabin/shapeless) {{site.shapelessVersion}}
+- [**cats**](http://typelevel.org/cats/) $catsVersion$
+- [**fs2**](https://github.com/functional-streams-for-scala/fs2) $fs2Version$
+- [**shapeless**](https://github.com/milessabin/shapeless) $shapelessVersion$
+
+
+
+
 
 To use **doobie** you need to add the following to your `build.sbt`. If you're not using the Postgres or H2 add-ons you'll also need to provide a JDBC driver for the database you're using.
 
+@@@ vars
 ```scala
-scalacOptions += "-Ypartial-unification" // 2.11.9+
-
 libraryDependencies ++= Seq(
 
   // Start with this one
-  "org.tpolecat" %% "doobie-core"      % "{{site.doobieVersion}}",
+  "org.tpolecat" %% "doobie-core"      % "$version$",
 
   // And add any of these as needed
-  "org.tpolecat" %% "doobie-h2"        % "{{site.doobieVersion}}",          // H2 driver {{site.h2Version}} + type mappings.
-  "org.tpolecat" %% "doobie-hikari"    % "{{site.doobieVersion}}",          // HikariCP transactor.
-  "org.tpolecat" %% "doobie-postgres"  % "{{site.doobieVersion}}",          // Postgres driver {{site.postgresVersion}} + type mappings.
-  "org.tpolecat" %% "doobie-quill"     % "{{site.doobieVersion}}",          // Support for Quill {{site.quillVersion}}
-  "org.tpolecat" %% "doobie-specs2"    % "{{site.doobieVersion}}" % "test", // Specs2 support for typechecking statements.
-  "org.tpolecat" %% "doobie-scalatest" % "{{site.doobieVersion}}" % "test"  // ScalaTest support for typechecking statements.
+  "org.tpolecat" %% "doobie-h2"        % "$version$",          // H2 driver $h2Version$ + type mappings.
+  "org.tpolecat" %% "doobie-hikari"    % "$version$",          // HikariCP transactor.
+  "org.tpolecat" %% "doobie-postgres"  % "$version$",          // Postgres driver $postgresVersion$ + type mappings.
+  "org.tpolecat" %% "doobie-quill"     % "$version$",          // Support for Quill $quillVersion$
+  "org.tpolecat" %% "doobie-specs2"    % "$version$" % "test", // Specs2 support for typechecking statements.
+  "org.tpolecat" %% "doobie-scalatest" % "$version$" % "test"  // ScalaTest support for typechecking statements.
 
 )
 ```
+@@@
 
 See the [**documentation**](docs/01-Introduction.html) for more information on these add-ons.
 
@@ -100,9 +107,14 @@ Listed newest first. If you have given a presentation or have written a blog pos
 
 If you want to build and run the tests for yourself, you'll need a local postgresql database. Tests are run as the default **postgres** user, which should have no password for access in the local environment. You can see the `before_script` section of the [.travis.yml](./.travis.yml) file for an up-to-date list of steps for preparing the test database.
 
-<!-- This stuff isn't in the Home layout anymore so I pasted it here. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-<script src="{{site.url}}{{site.baseurl}}/highlight/highlight.pack.js"></script>
-<script>hljs.configure({languages:['scala','java','bash']}); hljs.initHighlighting();</script>
-<script src="{{ site.baseurl }}/js/main.js"></script>
+## Building the Doc Site
+
+I have to look this up every time. So here's the dance.
+
+```
+% sbt
+sbt:doobie> project docs
+sbt:docs> clean
+sbt:docs> makeSite
+sbt:doce> ghpagesPushSite
+```
