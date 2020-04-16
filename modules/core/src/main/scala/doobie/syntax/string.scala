@@ -48,7 +48,7 @@ final class SqlInterpolator(private val sc: StringContext) extends AnyVal {
 }
 
 object SqlInterpolator {
-  final case class SingleFragment[A](fr: Fragment) extends AnyVal
+  final case class SingleFragment[+A](fr: Fragment) extends AnyVal
   object SingleFragment {
     val empty = SingleFragment(Fragment.empty)
 

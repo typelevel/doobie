@@ -47,7 +47,7 @@ class fragmentspec extends Specification {
 
     // https://github.com/tpolecat/doobie/issues/1186
     "interpolate an expression `Option(1).getOrElse(2)` properly" in {
-      sql"${Option(1).getOrElse(2)}"
+      sql"${Option(1).getOrElse(2)} ${false} ${"xx"}"
       fr"${Option(1).getOrElse(2)}"
       fr0"${Option(1).getOrElse(2)}"
       true
