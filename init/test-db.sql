@@ -1,5 +1,11 @@
 --
--- H2 port of the PostgreSQL port of the MySQL "World" database.
+-- Some stuff specifically for doobie testing
+--
+
+create extension postgis;
+create extension hstore;
+create type myenum as enum ('foo', 'bar', 'invalid');
+
 --
 -- The sample data used in the world database is Copyright Statistics
 -- Finland, http://www.stat.fi/worldinfigures.

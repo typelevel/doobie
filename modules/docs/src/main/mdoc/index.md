@@ -105,7 +105,7 @@ Listed newest first. If you have given a presentation or have written a blog pos
 
 ## Testing
 
-If you want to build and run the tests for yourself, you'll need a local postgresql database. Tests are run as the default **postgres** user, which should have no password for access in the local environment. You can see the `before_script` section of the [.travis.yml](./.travis.yml) file for an up-to-date list of steps for preparing the test database.
+If you want to build and run the tests for yourself, you'll need a local postgresql database. The easiest way to do this is to run `docker-compose up` from the project root.
 
 ## Building the Doc Site
 
@@ -118,3 +118,4 @@ sbt:docs> clean
 sbt:docs> makeSite
 sbt:doce> ghpagesPushSite
 ```
+

@@ -76,6 +76,10 @@ lazy val commonSettings =
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion cross CrossVersion.full),
+
+    // For some reason tests started hanginging with docker-compose so let's disable parallelism.
+    Test / parallelExecution := false,
+
   )
 
 lazy val publishSettings = Seq(
