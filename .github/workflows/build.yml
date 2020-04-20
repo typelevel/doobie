@@ -20,6 +20,8 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+        volumes:
+          - ./init/:/docker-entrypoint-initdb.d/
 
     steps:
       - uses: actions/checkout@v2
