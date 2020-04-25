@@ -38,14 +38,14 @@ object transactor  {
    * @param always a program to run in all cases (finally)
    * @group Data Types
    */
-  final case class Strategy(
-    before: ConnectionIO[Unit],
-    after:  ConnectionIO[Unit],
-    oops:   ConnectionIO[Unit],
-    always: ConnectionIO[Unit]
+  final case class Strategy[F[_]](
+    before: F[Unit],
+    after:  F[Unit],
+    oops:   F[Unit],
+    always: F[Unit]
   ) {
-    val resource: Resource[ConnectionIO, Unit] = for {
-      _ <- Resource.make(doobie.FC.unit)(_ => always)
+    def resource(implicit F: Monad[F]): Resource[F, Unit] = for {
+      _ <- Resource.make(F.unit)(_ => always)
       _ <- Resource.makeCase(before) { case (_, exitCase) =>
         exitCase match {
           case ExitCase.Completed => after
@@ -57,10 +57,10 @@ object transactor  {
 
   object Strategy {
 
-    /** @group Lenses */ val before: Strategy @> ConnectionIO[Unit] = Lens(_.before, (a, b) => a.copy(before = b))
-    /** @group Lenses */ val after:  Strategy @> ConnectionIO[Unit] = Lens(_.after,  (a, b) => a.copy(after  = b))
-    /** @group Lenses */ val oops:   Strategy @> ConnectionIO[Unit] = Lens(_.oops,   (a, b) => a.copy(oops   = b))
-    /** @group Lenses */ val always: Strategy @> ConnectionIO[Unit] = Lens(_.always, (a, b) => a.copy(always = b))
+    /** @group Lenses */ val before: Strategy[ConnectionIO] @> ConnectionIO[Unit] = Lens(_.before, (a, b) => a.copy(before = b))
+    /** @group Lenses */ val after:  Strategy[ConnectionIO] @> ConnectionIO[Unit] = Lens(_.after,  (a, b) => a.copy(after  = b))
+    /** @group Lenses */ val oops:   Strategy[ConnectionIO] @> ConnectionIO[Unit] = Lens(_.oops,   (a, b) => a.copy(oops   = b))
+    /** @group Lenses */ val always: Strategy[ConnectionIO] @> ConnectionIO[Unit] = Lens(_.always, (a, b) => a.copy(always = b))
 
     /**
      * A default `Strategy` with the following properties:
@@ -68,13 +68,13 @@ object transactor  {
      * - the transaction will `commit` on success and `rollback` on failure;
      * @group Constructors
      */
-    val default = Strategy(setAutoCommit(false), commit, rollback, unit)
+    val default = Strategy[ConnectionIO](setAutoCommit(false), commit, rollback, unit)
 
     /**
      * A no-op `Strategy`. All actions simply return `()`.
      * @group Constructors
      */
-    val void = Strategy(unit, unit, unit, unit)
+    val void = Strategy[ConnectionIO](unit, unit, unit, unit)
 
   }
 
@@ -100,7 +100,7 @@ object transactor  {
     def interpret: Interpreter[M]
 
     /** A `Strategy` for running a program on a connection **/
-    def strategy: Strategy
+    def strategy: Strategy[ConnectionIO]
 
     /** Construct a [[Yolo]] for REPL experimentation. */
     def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
@@ -208,7 +208,7 @@ object transactor  {
       kernel0: A = self.kernel,
       connect0: A => Resource[M, Connection] = self.connect,
       interpret0: Interpreter[M] = self.interpret,
-      strategy0: Strategy = self.strategy
+      strategy0: Strategy[ConnectionIO] = self.strategy
     ): Transactor.Aux[M, A] = new Transactor[M] {
       type A = self.A
       val kernel = kernel0
@@ -235,7 +235,7 @@ object transactor  {
       kernel0: A0,
       connect0: A0 => Resource[M, Connection],
       interpret0: Interpreter[M],
-      strategy0: Strategy
+      strategy0: Strategy[ConnectionIO]
     ): Transactor.Aux[M, A0] = new Transactor[M] {
       type A = A0
       val kernel = kernel0
@@ -248,8 +248,8 @@ object transactor  {
 
     /** @group Lenses */ def kernel   [M[_], A]: Transactor.Aux[M, A] Lens A                              = Lens(_.kernel,    (a, b) => a.copy(kernel0    = b))
     /** @group Lenses */ def connect  [M[_], A]: Transactor.Aux[M, A] Lens (A => Resource[M, Connection]) = Lens(_.connect,   (a, b) => a.copy(connect0   = b))
-    /** @group Lenses */ def interpret[M[_]]: Transactor[M] Lens Interpreter[M]       = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
-    /** @group Lenses */ def strategy [M[_]]: Transactor[M] Lens Strategy             = Lens(_.strategy,  (a, b) => a.copy(strategy0  = b))
+    /** @group Lenses */ def interpret[M[_]]: Transactor[M] Lens Interpreter[M]         = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
+    /** @group Lenses */ def strategy [M[_]]: Transactor[M] Lens Strategy[ConnectionIO] = Lens(_.strategy,  (a, b) => a.copy(strategy0  = b))
     /** @group Lenses */ def before   [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.before
     /** @group Lenses */ def after    [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.after
     /** @group Lenses */ def oops     [M[_]]: Transactor[M] Lens ConnectionIO[Unit]   = strategy[M] >=> Strategy.oops
@@ -335,7 +335,7 @@ object transactor  {
       private def create[M[_]](
         driver: String,
         conn: () => Connection,
-        strategy: Strategy,
+        strategy: Strategy[ConnectionIO],
         blocker: Blocker
       )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
         Transactor(
