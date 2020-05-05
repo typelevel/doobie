@@ -1,11 +1,4 @@
----
-layout: page
-title:  "infographic"
-section: "infographic"
-position: 3
----
-
-# doobie infographic
+# Infographic
 
 This is an embedded SVG image. Click it to visit the [repository](https://github.com/tpolecat/doobie-infographic), which also has a PDF export and the OmniGraffle source if you care to contribute. This is very much a **work in progress** and feedback in the form of issues and/or stars would be helpful!
 

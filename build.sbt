@@ -1,29 +1,28 @@
 import FreeGen2._
-import microsites._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.0.0"
-lazy val catsEffectVersion    = "2.1.1"
-lazy val circeVersion         = "0.12.1"
+lazy val catsVersion          = "2.1.1"
+lazy val catsEffectVersion    = "2.1.2"
+lazy val circeVersion         = "0.13.0"
 lazy val collCompatVersion    = "2.1.4"
-lazy val fs2Version           = "2.2.2"
+lazy val fs2Version           = "2.3.0"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "3.4.1"
+lazy val hikariVersion        = "3.4.2"
 lazy val kindProjectorVersion = "0.11.0"
 lazy val monixVersion         = "3.1.0"
-lazy val quillVersion         = "3.4.10"
-lazy val postGisVersion       = "2.3.0"
-lazy val postgresVersion      = "42.2.9"
-lazy val refinedVersion       = "0.9.12"
+lazy val quillVersion         = "3.5.1"
+lazy val postGisVersion       = "2.5.0"
+lazy val postgresVersion      = "42.2.12"
+lazy val refinedVersion       = "0.9.13"
 lazy val scalaCheckVersion    = "1.14.2"
-lazy val scalatestVersion     = "3.1.0"
+lazy val scalatestVersion     = "3.1.1"
 lazy val shapelessVersion     = "2.3.3"
-lazy val silencerVersion      = "1.4.4"
-lazy val sourcecodeVersion    = "0.1.8"
-lazy val specs2Version        = "4.8.2"
+lazy val silencerVersion      = "1.6.0"
+lazy val sourcecodeVersion    = "0.2.1"
+lazy val specs2Version        = "4.9.2"
 lazy val scala212Version      = "2.12.10"
 lazy val scala213Version      = "2.13.1"
-lazy val slf4jVersion         = "1.7.29"
+lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
 lazy val botchedReleases = Set("0.8.0", "0.8.1")
@@ -77,6 +76,10 @@ lazy val commonSettings =
       "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
     ),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion cross CrossVersion.full),
+
+    // For some reason tests started hanginging with docker-compose so let's disable parallelism.
+    Test / parallelExecution := false,
+
   )
 
 lazy val publishSettings = Seq(
@@ -347,7 +350,10 @@ lazy val bench = project
 lazy val docs = project
   .in(file("modules/docs"))
   .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
-  .enablePlugins(MicrositesPlugin)
+  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(ParadoxSitePlugin)
+  .enablePlugins(GhpagesPlugin)
+  .enablePlugins(MdocPlugin)
   .settings(doobieSettings)
   .settings(noPublishSettings)
   .settings(
@@ -366,46 +372,72 @@ lazy val docs = project
 
 
     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
-    version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
-    micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
-    micrositeName             := "doobie",
-    micrositeDescription      := "A functional JDBC layer for Scala.",
-    micrositeAuthor           := "Rob Norris",
-    micrositeGithubOwner      := "tpolecat",
-    micrositeGithubRepo       := "doobie",
-    micrositeGitterChannel    := false, // no me gusta
-    micrositeBaseUrl          := "/doobie",
-    micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12",
-    micrositeHighlightTheme   := "color-brewer",
-    micrositePalette := Map(
-      "brand-primary"     -> "#E35D31",
-      "brand-secondary"   -> "#B24916",
-      "brand-tertiary"    -> "#B24916",
-      "gray-dark"         -> "#453E46",
-      "gray"              -> "#837F84",
-      "gray-light"        -> "#E3E2E3",
-      "gray-lighter"      -> "#F4F3F4",
-      "white-color"       -> "#FFFFFF"
+    // version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
+    // micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
+    // micrositeName             := "doobie",
+    // micrositeDescription      := "A functional JDBC layer for Scala.",
+    // micrositeAuthor           := "Rob Norris",
+    // micrositeGithubOwner      := "tpolecat",
+    // micrositeGithubRepo       := "doobie",
+    // micrositeGitterChannel    := false, // no me gusta
+    // micrositeBaseUrl          := "/doobie",
+    // micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12",
+    // micrositeHighlightTheme   := "color-brewer",
+    // micrositePalette := Map(
+    //   "brand-primary"     -> "#E35D31",
+    //   "brand-secondary"   -> "#B24916",
+    //   "brand-tertiary"    -> "#B24916",
+    //   "gray-dark"         -> "#453E46",
+    //   "gray"              -> "#837F84",
+    //   "gray-light"        -> "#E3E2E3",
+    //   "gray-lighter"      -> "#F4F3F4",
+    //   "white-color"       -> "#FFFFFF"
+    // ),
+    // micrositeConfigYaml := ConfigYml(
+    //   yamlCustomProperties = Map(
+    //     "doobieVersion"    -> version.value,
+    //     "catsVersion"      -> catsVersion,
+    //     "fs2Version"       -> fs2Version,
+    //     "shapelessVersion" -> shapelessVersion,
+    //     "h2Version"        -> h2Version,
+    //     "postgresVersion"  -> postgresVersion,
+    //     "scalaVersion"     -> scalaVersion.value,
+    //     "scalaVersions"    -> (crossScalaVersions in core).value.flatMap(CrossVersion.partialVersion).map(_._2).mkString("2.", "/", ""), // 2.12/13
+    //     "quillVersion"     -> quillVersion
+    //   )
+    // ),
+    // micrositeExtraMdFiles := Map(
+    //   file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "4")),
+    //   file("LICENSE")      -> ExtraMdFileConfig("license.md",   "page", Map("title" -> "license",   "section" -> "license",   "position" -> "5"))
+    // ),
+    // micrositeCompilingDocsTool := WithMdoc,
+    // mdocIn                     := sourceDirectory.value / "main" / "tut"
+
+    git.remoteRepo     := "git@github.com:tpolecat/doobie.git",
+    ghpagesNoJekyll    := true,
+    publish / skip     := true,
+    paradoxTheme       := Some(builtinParadoxTheme("generic")),
+    version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
+    paradoxProperties ++= Map(
+      "scala-versions"           -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
+      "org"                      -> organization.value,
+      "scala.binary.version"     -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "core-dep"                 -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "version"                  -> version.value,
+      "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
+      "catsVersion"              -> catsVersion,
+      "fs2Version"               -> fs2Version,
+      "shapelessVersion"         -> shapelessVersion,
+      "h2Version"                -> h2Version,
+      "postgresVersion"          -> postgresVersion,
+      "quillVersion"             -> quillVersion,
+      "scalaVersion"             -> scalaVersion.value,
     ),
-    micrositeConfigYaml := ConfigYml(
-      yamlCustomProperties = Map(
-        "doobieVersion"    -> version.value,
-        "catsVersion"      -> catsVersion,
-        "fs2Version"       -> fs2Version,
-        "shapelessVersion" -> shapelessVersion,
-        "h2Version"        -> h2Version,
-        "postgresVersion"  -> postgresVersion,
-        "scalaVersion"     -> scalaVersion.value,
-        "scalaVersions"    -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""), // 2.12/13
-        "quillVersion"     -> quillVersion
-      )
-    ),
-    micrositeExtraMdFiles := Map(
-      file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "4")),
-      file("LICENSE")      -> ExtraMdFileConfig("license.md",   "page", Map("title" -> "license",   "section" -> "license",   "position" -> "5"))
-    ),
-    micrositeCompilingDocsTool := WithMdoc,
-    mdocIn                     := sourceDirectory.value / "main" / "tut"
+
+    mdocIn := (baseDirectory.value) / "src" / "main" / "mdoc",
+    Compile / paradox / sourceDirectory := mdocOut.value,
+    makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
+
   )
 
 lazy val refined = project

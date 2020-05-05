@@ -89,20 +89,20 @@ trait KleisliInterpreter[M[_]] { outer =>
   val blocker: Blocker
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
-  lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, ?] = new NClobInterpreter { }
-  lazy val BlobInterpreter: BlobOp ~> Kleisli[M, Blob, ?] = new BlobInterpreter { }
-  lazy val ClobInterpreter: ClobOp ~> Kleisli[M, Clob, ?] = new ClobInterpreter { }
-  lazy val DatabaseMetaDataInterpreter: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, ?] = new DatabaseMetaDataInterpreter { }
-  lazy val DriverInterpreter: DriverOp ~> Kleisli[M, Driver, ?] = new DriverInterpreter { }
-  lazy val RefInterpreter: RefOp ~> Kleisli[M, Ref, ?] = new RefInterpreter { }
-  lazy val SQLDataInterpreter: SQLDataOp ~> Kleisli[M, SQLData, ?] = new SQLDataInterpreter { }
-  lazy val SQLInputInterpreter: SQLInputOp ~> Kleisli[M, SQLInput, ?] = new SQLInputInterpreter { }
-  lazy val SQLOutputInterpreter: SQLOutputOp ~> Kleisli[M, SQLOutput, ?] = new SQLOutputInterpreter { }
-  lazy val ConnectionInterpreter: ConnectionOp ~> Kleisli[M, Connection, ?] = new ConnectionInterpreter { }
-  lazy val StatementInterpreter: StatementOp ~> Kleisli[M, Statement, ?] = new StatementInterpreter { }
-  lazy val PreparedStatementInterpreter: PreparedStatementOp ~> Kleisli[M, PreparedStatement, ?] = new PreparedStatementInterpreter { }
-  lazy val CallableStatementInterpreter: CallableStatementOp ~> Kleisli[M, CallableStatement, ?] = new CallableStatementInterpreter { }
-  lazy val ResultSetInterpreter: ResultSetOp ~> Kleisli[M, ResultSet, ?] = new ResultSetInterpreter { }
+  lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }
+  lazy val BlobInterpreter: BlobOp ~> Kleisli[M, Blob, *] = new BlobInterpreter { }
+  lazy val ClobInterpreter: ClobOp ~> Kleisli[M, Clob, *] = new ClobInterpreter { }
+  lazy val DatabaseMetaDataInterpreter: DatabaseMetaDataOp ~> Kleisli[M, DatabaseMetaData, *] = new DatabaseMetaDataInterpreter { }
+  lazy val DriverInterpreter: DriverOp ~> Kleisli[M, Driver, *] = new DriverInterpreter { }
+  lazy val RefInterpreter: RefOp ~> Kleisli[M, Ref, *] = new RefInterpreter { }
+  lazy val SQLDataInterpreter: SQLDataOp ~> Kleisli[M, SQLData, *] = new SQLDataInterpreter { }
+  lazy val SQLInputInterpreter: SQLInputOp ~> Kleisli[M, SQLInput, *] = new SQLInputInterpreter { }
+  lazy val SQLOutputInterpreter: SQLOutputOp ~> Kleisli[M, SQLOutput, *] = new SQLOutputInterpreter { }
+  lazy val ConnectionInterpreter: ConnectionOp ~> Kleisli[M, Connection, *] = new ConnectionInterpreter { }
+  lazy val StatementInterpreter: StatementOp ~> Kleisli[M, Statement, *] = new StatementInterpreter { }
+  lazy val PreparedStatementInterpreter: PreparedStatementOp ~> Kleisli[M, PreparedStatement, *] = new PreparedStatementInterpreter { }
+  lazy val CallableStatementInterpreter: CallableStatementOp ~> Kleisli[M, CallableStatement, *] = new CallableStatementInterpreter { }
+  lazy val ResultSetInterpreter: ResultSetOp ~> Kleisli[M, ResultSet, *] = new ResultSetInterpreter { }
 
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
   def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
@@ -137,7 +137,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     }
 
   // Interpreters
-  trait NClobInterpreter extends NClobOp.Visitor[Kleisli[M, NClob, ?]] {
+  trait NClobInterpreter extends NClobOp.Visitor[Kleisli[M, NClob, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: NClob => A): Kleisli[M, NClob, A] = outer.raw(f)
@@ -184,7 +184,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait BlobInterpreter extends BlobOp.Visitor[Kleisli[M, Blob, ?]] {
+  trait BlobInterpreter extends BlobOp.Visitor[Kleisli[M, Blob, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: Blob => A): Kleisli[M, Blob, A] = outer.raw(f)
@@ -229,7 +229,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait ClobInterpreter extends ClobOp.Visitor[Kleisli[M, Clob, ?]] {
+  trait ClobInterpreter extends ClobOp.Visitor[Kleisli[M, Clob, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: Clob => A): Kleisli[M, Clob, A] = outer.raw(f)
@@ -276,7 +276,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait DatabaseMetaDataInterpreter extends DatabaseMetaDataOp.Visitor[Kleisli[M, DatabaseMetaData, ?]] {
+  trait DatabaseMetaDataInterpreter extends DatabaseMetaDataOp.Visitor[Kleisli[M, DatabaseMetaData, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] = outer.raw(f)
@@ -488,7 +488,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait DriverInterpreter extends DriverOp.Visitor[Kleisli[M, Driver, ?]] {
+  trait DriverInterpreter extends DriverOp.Visitor[Kleisli[M, Driver, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: Driver => A): Kleisli[M, Driver, A] = outer.raw(f)
@@ -529,7 +529,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait RefInterpreter extends RefOp.Visitor[Kleisli[M, Ref, ?]] {
+  trait RefInterpreter extends RefOp.Visitor[Kleisli[M, Ref, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: Ref => A): Kleisli[M, Ref, A] = outer.raw(f)
@@ -567,7 +567,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait SQLDataInterpreter extends SQLDataOp.Visitor[Kleisli[M, SQLData, ?]] {
+  trait SQLDataInterpreter extends SQLDataOp.Visitor[Kleisli[M, SQLData, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: SQLData => A): Kleisli[M, SQLData, A] = outer.raw(f)
@@ -604,7 +604,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait SQLInputInterpreter extends SQLInputOp.Visitor[Kleisli[M, SQLInput, ?]] {
+  trait SQLInputInterpreter extends SQLInputOp.Visitor[Kleisli[M, SQLInput, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: SQLInput => A): Kleisli[M, SQLInput, A] = outer.raw(f)
@@ -666,7 +666,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait SQLOutputInterpreter extends SQLOutputOp.Visitor[Kleisli[M, SQLOutput, ?]] {
+  trait SQLOutputInterpreter extends SQLOutputOp.Visitor[Kleisli[M, SQLOutput, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: SQLOutput => A): Kleisli[M, SQLOutput, A] = outer.raw(f)
@@ -728,7 +728,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait ConnectionInterpreter extends ConnectionOp.Visitor[Kleisli[M, Connection, ?]] {
+  trait ConnectionInterpreter extends ConnectionOp.Visitor[Kleisli[M, Connection, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: Connection => A): Kleisli[M, Connection, A] = outer.raw(f)
@@ -816,7 +816,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait StatementInterpreter extends StatementOp.Visitor[Kleisli[M, Statement, ?]] {
+  trait StatementInterpreter extends StatementOp.Visitor[Kleisli[M, Statement, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: Statement => A): Kleisli[M, Statement, A] = outer.raw(f)
@@ -902,7 +902,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait PreparedStatementInterpreter extends PreparedStatementOp.Visitor[Kleisli[M, PreparedStatement, ?]] {
+  trait PreparedStatementInterpreter extends PreparedStatementOp.Visitor[Kleisli[M, PreparedStatement, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] = outer.raw(f)
@@ -1046,7 +1046,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait CallableStatementInterpreter extends CallableStatementOp.Visitor[Kleisli[M, CallableStatement, ?]] {
+  trait CallableStatementInterpreter extends CallableStatementOp.Visitor[Kleisli[M, CallableStatement, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: CallableStatement => A): Kleisli[M, CallableStatement, A] = outer.raw(f)
@@ -1311,7 +1311,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait ResultSetInterpreter extends ResultSetOp.Visitor[Kleisli[M, ResultSet, ?]] {
+  trait ResultSetInterpreter extends ResultSetOp.Visitor[Kleisli[M, ResultSet, *]] {
 
     // common operations delegate to outer interpreter
     override def raw[A](f: ResultSet => A): Kleisli[M, ResultSet, A] = outer.raw(f)

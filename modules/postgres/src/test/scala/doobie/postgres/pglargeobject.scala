@@ -24,10 +24,12 @@ class pglargeobjectspec extends Specification with FileEquality {
     "postgres", ""
   )
 
+  // A big file. Contents are irrelevant.
+  val in = new File("init/test-db.sql")
+
   "large object support" should {
 
     "allow round-trip from file to large object and back" in  {
-      val in   = new File("world.sql")
       val out  = File.createTempFile("doobie", "tst")
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
         PHLOM.createFileFromLO(1024 * 16, oid, out) *> PHLOM.delete(oid)
@@ -38,7 +40,6 @@ class pglargeobjectspec extends Specification with FileEquality {
     }
 
     "allow round-trip from stream to large object and back" in  {
-      val in   = new File("world.sql")
       val out  = File.createTempFile("doobie", "tst")
       val is = new FileInputStream(in)
       val os = new FileOutputStream(out)

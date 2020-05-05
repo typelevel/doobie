@@ -1,10 +1,4 @@
----
-layout: docs
-number: 13
-title: Unit Testing
----
-
-## {{page.title}}
+## Unit Testing
 
 The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/) or [ScalaTest](http://www.scalatest.org/) unit tests.
 

@@ -1,10 +1,4 @@
----
-layout: docs
-number: 6
-title: Typechecking Queries
----
-
-## {{page.title}}
+## Typechecking Queries
 
 In this chapter we learn how to use YOLO mode to validate queries against the database schema and ensure that our type mappings are correct (and if not, get some hints on how to fix them).
 
@@ -93,7 +87,7 @@ If we fix all of these problems and try again, we get a clean bill of health.
 ```scala mdoc:silent
 case class Country2(code: String, name: String, pop: Int, gnp: Option[BigDecimal])
 
-def biggerThan(minPop: Int) =
+def biggerThan2(minPop: Int) =
   sql"""
     select code, name, population, gnp
     from country
@@ -102,7 +96,7 @@ def biggerThan(minPop: Int) =
 ```
 
 ```scala mdoc
-biggerThan(0).check.unsafeRunSync
+biggerThan2(0).check.unsafeRunSync
 ```
 
 **doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2` and `doobie-scalatest` packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.

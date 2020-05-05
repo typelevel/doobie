@@ -1,0 +1,29 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 13
+        uses: olafurpg/setup-scala@v2
+        with:
+          java-version: 13
+      - name: Start up Postgres
+        run: docker-compose up -d
+      - name: Run tests
+        run: csbt headerCheck compile test:compile test
+      - name: Shut down Postgres
+        run: docker-compose down
+      - name: Cache Coursier
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/coursier
+          key: sbt-coursier-cache
+      - name: Cache SBT
+        uses: actions/cache@v1
+        with:
+          path: ~/.sbt
+          key: sbt-${{ hashFiles('**/build.sbt') }}

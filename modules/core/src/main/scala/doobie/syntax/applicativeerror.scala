@@ -9,7 +9,7 @@ import doobie.util.{ catchsql => C }
 import doobie.enum.SqlState
 import java.sql.SQLException
 
-class ApplicativeErrorOps[M[_]: ApplicativeError[?[_], Throwable], A](self: M[A]) {
+class ApplicativeErrorOps[M[_]: ApplicativeError[*[_], Throwable], A](self: M[A]) {
   def attemptSql: M[Either[SQLException, A]] = C.attemptSql(self)
   def attemptSqlState: M[Either[SqlState, A]] = C.attemptSqlState(self)
   def attemptSomeSqlState[B](f: PartialFunction[SqlState, B]): M[Either[B, A]] = C.attemptSomeSqlState(self)(f)
@@ -20,7 +20,7 @@ class ApplicativeErrorOps[M[_]: ApplicativeError[?[_], Throwable], A](self: M[A]
 }
 
 trait ToApplicativeErrorOps {
-  implicit def toDoobieApplicativeErrorOps[M[_]: ApplicativeError[?[_], Throwable], A](ma: M[A]): ApplicativeErrorOps[M, A] =
+  implicit def toDoobieApplicativeErrorOps[M[_]: ApplicativeError[*[_], Throwable], A](ma: M[A]): ApplicativeErrorOps[M, A] =
     new ApplicativeErrorOps(ma)
 }
 
