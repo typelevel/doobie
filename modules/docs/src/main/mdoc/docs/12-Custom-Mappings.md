@@ -10,7 +10,7 @@ In this chapter we're importing the essentials from Cats and **doobie**, as well
 
 ```scala mdoc:silent
 import cats._, cats.data._, cats.implicits._
-import doobie._, doobie.implicits._
+import doobie._, doobie.implicits._, doobie.implicits.javatime._
 import io.circe._, io.circe.jawn._, io.circe.syntax._
 import java.awt.Point
 import org.postgresql.util.PGobject
