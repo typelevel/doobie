@@ -1,2 +1,2 @@
 // Required for the freegen definition for postgres in ../build.sbt
-libraryDependencies += "org.postgresql" % "postgresql" % "42.2.12"
+libraryDependencies += "org.postgresql" % "postgresql" % "42.2.13"
