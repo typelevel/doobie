@@ -60,7 +60,7 @@ The above cases are defined by the JDBC specification. See later chapters on ven
 
 #### Deriving Get and Put from Existing Instances
 
-If we don't have the `Get` or `Put` instance we need, we can often one from an existing instance. Consider here a type `Nat` of natural numbers, along with a conversion to and from `Int`.
+If we don't have the `Get` or `Put` instance we need, we can often make one from an existing instance. Consider here a type `Nat` of natural numbers, along with a conversion to and from `Int`.
 
 ```scala mdoc:silent
 object NatModule {
