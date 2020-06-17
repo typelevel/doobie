@@ -31,7 +31,7 @@ The second common case is when we try to read rows into a data type that include
 case class LogEntry(msg: String, ex: Exception)
 ```
 
-When we attept to define a `Query0[LogEntry]` we get a type error similar to the one above.
+When we attempt to define a `Query0[LogEntry]` we get a type error similar to the one above.
 
 ```scala mdoc:fail
 sql"SELECT message, detail FROM log".query[LogEntry]
