@@ -16,6 +16,7 @@ lazy val postgresVersion      = "42.2.12"
 lazy val refinedVersion       = "0.9.13"
 lazy val scalaCheckVersion    = "1.14.2"
 lazy val scalatestVersion     = "3.1.1"
+lazy val munitVersion         = "0.7.9"
 lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.6.0"
 lazy val sourcecodeVersion    = "0.2.1"
@@ -114,6 +115,7 @@ lazy val doobie = project.in(file("."))
     quill,
     refined,
     scalatest,
+    munit,
     specs2,
   )
 
@@ -336,6 +338,22 @@ lazy val scalatest = project
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
       "com.h2database"  %  "h2"       % h2Version % "test"
+    )
+  )
+
+lazy val munit = project
+  .in(file("modules/munit"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := s"doobie-munit",
+    description := "MUnit support for doobie.",
+    testFrameworks += new TestFramework("munit.Framework"),
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % munitVersion,
+      "com.h2database"  %  "h2"  % h2Version % "test"
     )
   )
 
