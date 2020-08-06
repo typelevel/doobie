@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -27,79 +27,79 @@ class queryspec extends Specification {
 
   "Query (non-empty)" >> {
     "to" in {
-      q.to[List]("foo").transact(xa).unsafeRunSync must_=== List(123)
+      q.to[List]("foo").transact(xa).unsafeRunSync() must_=== List(123)
     }
     "toMap" in {
-      pairQuery.toMap[String, Int]("foo").transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+      pairQuery.toMap[String, Int]("foo").transact(xa).unsafeRunSync() must_=== Map("xxx" -> 123)
     }
     "unique" in {
-      q.unique("foo").transact(xa).unsafeRunSync must_=== 123
+      q.unique("foo").transact(xa).unsafeRunSync() must_=== 123
     }
     "option" in {
-      q.option("foo").transact(xa).unsafeRunSync must_=== Some(123)
+      q.option("foo").transact(xa).unsafeRunSync() must_=== Some(123)
     }
     "map" in {
-      q.map("x" * _).to[List]("foo").transact(xa).unsafeRunSync must_=== List("x" * 123)
+      q.map("x" * _).to[List]("foo").transact(xa).unsafeRunSync() must_=== List("x" * 123)
     }
     "contramap" in {
-      q.contramap[Int](n => "foo" * n).to[List](1).transact(xa).unsafeRunSync must_=== List(123)
+      q.contramap[Int](n => "foo" * n).to[List](1).transact(xa).unsafeRunSync() must_=== List(123)
     }
   }
 
   "Query (empty)" >> {
     "to" in {
-      q.to[List]("bar").transact(xa).unsafeRunSync must_=== Nil
+      q.to[List]("bar").transact(xa).unsafeRunSync() must_=== Nil
     }
     "toMap" in {
-      pairQuery.toMap[String, Int]("bar").transact(xa).unsafeRunSync must_=== Map.empty
+      pairQuery.toMap[String, Int]("bar").transact(xa).unsafeRunSync() must_=== Map.empty
     }
     "unique" in {
-      q.unique("bar").transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
+      q.unique("bar").transact(xa).attempt.unsafeRunSync() must_=== Left(invariant.UnexpectedEnd)
     }
     "option" in {
-      q.option("bar").transact(xa).unsafeRunSync must_=== None
+      q.option("bar").transact(xa).unsafeRunSync() must_=== None
     }
     "map" in {
-      q.map("x" * _).to[List]("bar").transact(xa).unsafeRunSync must_=== Nil
+      q.map("x" * _).to[List]("bar").transact(xa).unsafeRunSync() must_=== Nil
     }
     "contramap" in {
-      q.contramap[Int](n => "bar" * n).to[List](1).transact(xa).unsafeRunSync must_=== Nil
+      q.contramap[Int](n => "bar" * n).to[List](1).transact(xa).unsafeRunSync() must_=== Nil
     }
   }
 
   "Query0 from Query (non-empty)" >> {
     "to" in {
-      q.toQuery0("foo").to[List].transact(xa).unsafeRunSync must_=== List(123)
+      q.toQuery0("foo").to[List].transact(xa).unsafeRunSync() must_=== List(123)
     }
     "toMap" in {
-      pairQuery.toQuery0("foo").toMap[String, Int].transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+      pairQuery.toQuery0("foo").toMap[String, Int].transact(xa).unsafeRunSync() must_=== Map("xxx" -> 123)
     }
     "unique" in {
-      q.toQuery0("foo").unique.transact(xa).unsafeRunSync must_=== 123
+      q.toQuery0("foo").unique.transact(xa).unsafeRunSync() must_=== 123
     }
     "option" in {
-      q.toQuery0("foo").option.transact(xa).unsafeRunSync must_=== Some(123)
+      q.toQuery0("foo").option.transact(xa).unsafeRunSync() must_=== Some(123)
     }
     "map" in {
-      q.toQuery0("foo").map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== List(246)
+      q.toQuery0("foo").map(_ * 2).to[List].transact(xa).unsafeRunSync() must_=== List(246)
     }
   }
 
   "Query0 from Query (empty)" >> {
     "to" in {
-      q.toQuery0("bar").to[List].transact(xa).unsafeRunSync must_=== Nil
+      q.toQuery0("bar").to[List].transact(xa).unsafeRunSync() must_=== Nil
     }
     "toMap" in {
-      pairQuery.toQuery0("bar").toMap[String, Int].transact(xa).unsafeRunSync must_=== Map.empty
+      pairQuery.toQuery0("bar").toMap[String, Int].transact(xa).unsafeRunSync() must_=== Map.empty
     }
     "unique" in {
-      q.toQuery0("bar").unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
+      q.toQuery0("bar").unique.transact(xa).attempt.unsafeRunSync() must_=== Left(invariant.UnexpectedEnd)
     }
     "option" in {
-      q.toQuery0("bar").option.transact(xa).unsafeRunSync must_=== None
+      q.toQuery0("bar").option.transact(xa).unsafeRunSync() must_=== None
     }
     "map" in {
-      q.toQuery0("bar").map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== Nil
+      q.toQuery0("bar").map(_ * 2).to[List].transact(xa).unsafeRunSync() must_=== Nil
     }
   }
 
@@ -108,19 +108,19 @@ class queryspec extends Specification {
 
   "Query0 via constructor (non-empty)" >> {
     "to" in {
-      q0n.to[List].transact(xa).unsafeRunSync must_=== List(123)
+      q0n.to[List].transact(xa).unsafeRunSync() must_=== List(123)
     }
     "toMap" in {
-      pairQ0n.toMap[String, Int].transact(xa).unsafeRunSync must_=== Map("xxx" -> 123)
+      pairQ0n.toMap[String, Int].transact(xa).unsafeRunSync() must_=== Map("xxx" -> 123)
     }
     "unique" in {
-      q0n.unique.transact(xa).unsafeRunSync must_=== 123
+      q0n.unique.transact(xa).unsafeRunSync() must_=== 123
     }
     "option" in {
-      q0n.option.transact(xa).unsafeRunSync must_=== Some(123)
+      q0n.option.transact(xa).unsafeRunSync() must_=== Some(123)
     }
     "map" in {
-      q0n.map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== List(246)
+      q0n.map(_ * 2).to[List].transact(xa).unsafeRunSync() must_=== List(246)
     }
   }
 
@@ -129,19 +129,19 @@ class queryspec extends Specification {
 
   "Query0 via constructor (empty)" >> {
     "to" in {
-      q0e.to[List].transact(xa).unsafeRunSync must_=== Nil
+      q0e.to[List].transact(xa).unsafeRunSync() must_=== Nil
     }
     "toMap" in {
-      pairQ0e.toMap[String, Int].transact(xa).unsafeRunSync must_=== Map.empty
+      pairQ0e.toMap[String, Int].transact(xa).unsafeRunSync() must_=== Map.empty
     }
     "unique" in {
-      q0e.unique.transact(xa).attempt.unsafeRunSync must_=== Left(invariant.UnexpectedEnd)
+      q0e.unique.transact(xa).attempt.unsafeRunSync() must_=== Left(invariant.UnexpectedEnd)
     }
     "option" in {
-      q0e.option.transact(xa).unsafeRunSync must_=== None
+      q0e.option.transact(xa).unsafeRunSync() must_=== None
     }
     "map" in {
-      q0e.map(_ * 2).to[List].transact(xa).unsafeRunSync must_=== Nil
+      q0e.map(_ * 2).to[List].transact(xa).unsafeRunSync() must_=== Nil
     }
   }
 
@@ -149,7 +149,7 @@ class queryspec extends Specification {
   "Query to Fragment and back" >> {
     "test" in {
       val qfʹ = qf.toFragment.query[(String, Int, Option[Int], Option[Int])]
-      qfʹ.unique.transact(xa).unsafeRunSync must_=== (("foo", 1, None, Some(42)))
+      qfʹ.unique.transact(xa).unsafeRunSync() must_=== (("foo", 1, None, Some(42)))
     }
   }
 

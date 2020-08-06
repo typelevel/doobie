@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -99,12 +99,12 @@ class textspec extends Specification with ScalaCheck {
 
   "copyIn" should {
     "correctly insert batches of rows" in forAll(genRows) { rs =>
-      val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync
+      val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync()
       rs must_=== rsʹ
     }
 
     "correctly insert batches of rows via Stream" in forAll(genRows) { rs =>
-      val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync
+      val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
       rs must_=== rsʹ
     }
   }

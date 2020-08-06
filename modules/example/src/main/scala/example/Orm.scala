@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -52,7 +52,7 @@ object Orm extends IOApp {
             void(ev)
 
             type Key = K
-            val cols = ks.apply.toList.map(_.name)
+            val cols = ks.apply().toList.map(_.name)
 
             def insert(a: A): ConnectionIO[Key] =
               Update[A](s"""

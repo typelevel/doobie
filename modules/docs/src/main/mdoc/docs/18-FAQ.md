@@ -47,8 +47,8 @@ Interpolated parameters are replaced with `?` placeholders, so if you need to as
   val y = xa.yolo
   import y._
   val s = "foo"
-  sql"select $s".query[String].check.unsafeRunSync
-  sql"select $s :: char".query[String].check.unsafeRunSync
+  sql"select $s".query[String].check.unsafeRunSync()
+  sql"select $s :: char".query[String].check.unsafeRunSync()
 }
 ```
 
@@ -98,7 +98,7 @@ We can check the resulting `Query0` as expected.
 {
   val y = xa.yolo
   import y._
-  cities(Code("USA"), true).check.unsafeRunSync
+  cities(Code("USA"), true).check.unsafeRunSync()
 }
 ```
 
@@ -108,8 +108,8 @@ And it works!
 {
   val y = xa.yolo
   import y._
-  cities(Code("USA"), true).stream.take(5).quick.unsafeRunSync
-  cities(Code("USA"), false).stream.take(5).quick.unsafeRunSync
+  cities(Code("USA"), true).stream.take(5).quick.unsafeRunSync()
+  cities(Code("USA"), false).stream.take(5).quick.unsafeRunSync()
 }
 ```
 
@@ -137,7 +137,7 @@ Some examples, filtered for size.
 {
   val y = xa.yolo
   import y._
-  join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
+  join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync()
 }
 ```
 

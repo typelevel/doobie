@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -33,7 +33,7 @@ object analysismatchers {
           val report = analyzeIO(
             analyzable.unpack(t.value),
             transactor
-          ).unsafeRunSync
+          ).unsafeRunSync()
           reportToMatchResult(report, t)
         }
       }

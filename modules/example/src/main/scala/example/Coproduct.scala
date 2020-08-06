@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -46,7 +46,7 @@ object coproduct extends IOApp {
 
   // An interpreter into IO
   val consoleInterp = λ[ConsoleOp ~> IO] {
-    case ReadLn     => IO(StdIn.readLine)
+    case ReadLn     => IO(StdIn.readLine())
     case PrintLn(s) => IO(Console.println(s))
   }
 

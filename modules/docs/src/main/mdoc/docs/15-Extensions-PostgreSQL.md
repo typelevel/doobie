@@ -110,7 +110,7 @@ implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
 ```
 
 ```scala mdoc
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.transact(xa).unsafeRunSync
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.transact(xa).unsafeRunSync()
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -153,7 +153,7 @@ implicit val FoobarMeta: Meta[FooBar] =
 ```
 
 ```scala mdoc
-sql"select 'foo'::myenum".query[FooBar].unique.transact(xa).unsafeRunSync
+sql"select 'foo'::myenum".query[FooBar].unique.transact(xa).unsafeRunSync()
 ```
 
 
@@ -219,17 +219,17 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```scala mdoc
-p.attempt.transact(xa).unsafeRunSync // attempt is provided by ApplicativeError instance
+p.attempt.transact(xa).unsafeRunSync() // attempt is provided by ApplicativeError instance
 
-p.attemptSqlState.transact(xa).unsafeRunSync // this catches only SQL exceptions
+p.attemptSqlState.transact(xa).unsafeRunSync() // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .transact(xa).unsafeRunSync // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .transact(xa).unsafeRunSync() // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .transact(xa).unsafeRunSync // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .transact(xa).unsafeRunSync() // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .transact(xa).unsafeRunSync // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .transact(xa).unsafeRunSync() // recover
 
-p.onSyntaxError("caught!".pure[ConnectionIO]).transact(xa).unsafeRunSync // using recovery combinator
+p.onSyntaxError("caught!".pure[ConnectionIO]).transact(xa).unsafeRunSync() // using recovery combinator
 ```
 
 
@@ -317,7 +317,7 @@ def insert[F[_]: Foldable](fa: F[Food]): ConnectionIO[Long] =
 We can run it thus, yielding the number of affected rows.
 
 ```scala mdoc
-(create *> insert(foods)).transact(xa).unsafeRunSync
+(create *> insert(foods)).transact(xa).unsafeRunSync()
 ```
 
 ### Fastpath
@@ -335,7 +335,7 @@ sql"select name from country"
   .query[String]    // Query0[String]
   .explain
   .transact(xa)
-  .unsafeRunSync
+  .unsafeRunSync()
   .foreach(println)
 ```
 
@@ -347,7 +347,7 @@ sql"select name from country"
   .query[String]    // Query0[String]
   .explainAnalyze
   .transact(xa)
-  .unsafeRunSync
+  .unsafeRunSync()
   .foreach(println)
 ```
 

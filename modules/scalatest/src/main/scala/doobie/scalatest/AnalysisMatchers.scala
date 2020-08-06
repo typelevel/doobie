@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -33,7 +33,7 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
     implicit analyzable: Analyzable[T]
   ): MatchResult = {
     val args = analyzable.unpack(t)
-    val report = analyzeIO(args, transactor).unsafeRunSync
+    val report = analyzeIO(args, transactor).unsafeRunSync()
 
     MatchResult(
       report.succeeded,

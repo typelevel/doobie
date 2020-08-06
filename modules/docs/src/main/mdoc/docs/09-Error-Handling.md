@@ -86,7 +86,7 @@ List(
           id    SERIAL,
           name  VARCHAR NOT NULL UNIQUE
         )"""
-).traverse(_.update.quick).void.unsafeRunSync
+).traverse(_.update.quick).void.unsafeRunSync()
 ```
 
 Alright, let's define a `Person` data type and a way to insert instances.
@@ -104,14 +104,14 @@ def insert(s: String): ConnectionIO[Person] = {
 The first insert will work.
 
 ```scala mdoc
-insert("bob").quick.unsafeRunSync
+insert("bob").quick.unsafeRunSync()
 ```
 
 The second will fail with a unique constraint violation.
 
 ```scala mdoc
 try {
-  insert("bob").quick.unsafeRunSync
+  insert("bob").quick.unsafeRunSync()
 } catch {
   case e: java.sql.SQLException =>
     println(e.getMessage)
@@ -135,7 +135,7 @@ Given this definition we can safely attempt to insert duplicate records and get 
 
 
 ```scala mdoc
-safeInsert("bob").quick.unsafeRunSync
+safeInsert("bob").quick.unsafeRunSync()
 
-safeInsert("steve").quick.unsafeRunSync
+safeInsert("steve").quick.unsafeRunSync()
 ```
