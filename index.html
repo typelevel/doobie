@@ -1,78 +1,191 @@
-<html><head><title>doobie</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A functional JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="image" property="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie" /><meta name="title" property="og:title" content="doobie" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A functional JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie" /><meta name="twitter:image" content="/doobie/img/poster.png" /><meta name="twitter:description" content="A functional JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/tweak.css" /></head><body><header id="site-header"><div class="navbar-wrapper"><div class="container"><div class="row"><div class="col-xs-6"><a href="/doobie/" class="brand"><div class="icon-wrapper"><span>doobie</span></div></a></div><div class="col-xs-6"><nav class="text-right"><ul class=""><li><a href="https://github.com/tpolecat/doobie"><i class="fa fa-github"></i><span class="hidden-xs">GitHub</span></a></li><li><a href="https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12"><i class="fa fa-file-text"></i><span class="hidden-xs">Documentation</span></a></li></ul></nav></div></div></div></div><div class="jumbotron"><div class="container"><h1 class="text-center">A functional JDBC layer for Scala.</h1><h2></h2><p class="text-center"><a href="https://github.com/tpolecat/doobie" class="btn btn-outline-inverse">View on GitHub</a></p></div></div><div><ul class="horizontalNav">                                           <li><a class="" href="/doobie/book.html">book of doobie</a></li>  <li><a class="" href="/doobie/migration.html">migration</a></li>  <li><a class="" href="/doobie/infographic.html">infographic</a></li>  <li><a class="" href="/doobie/changelog.html">changelog</a></li>  <li><a class="" href="/doobie/license.html">license</a></li> </ul></div></header><main id="site-main"><section class="use"><div class="container"><div id="content"><h1 id="doobie">doobie</h1>
+<!DOCTYPE html>
+<html class="no-js" lang="en">
 
-<p><img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px" /></p>
+<head>
+<title>doobie</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="js/page.js"></script>
+<script type="text/javascript" src="js/warnOldVersion.js"></script>
+<script type="text/javascript" src="js/groups.js"></script>
+<link rel="stylesheet" type="text/css" href="lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="css/page.css"/>
 
-<p><a href="https://travis-ci.org/tpolecat/doobie"><img src="https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.5.x" alt="Travis CI" /></a>
-<a href="https://gitter.im/tpolecat/doobie?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/tpolecat/doobie" /></a>
-<a href="https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12"><img src="https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg" alt="Maven Central" /></a>
-<a href="https://javadoc.io/doc/org.tpolecat/doobie-core_2.12"><img src="https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg" alt="Javadocs" /></a></p>
+<!--
+<link rel="shortcut icon" href="images/favicon.ico" />
+-->
+</head>
 
-<p><strong>doobie</strong> is a pure functional JDBC layer for Scala and <a href="http://typelevel.org/cats/"><strong>Cats</strong></a>. It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases <strong>doobie</strong> provides a minimal but expressive high-level API:</p>
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
-<span class="k">import</span> <span class="nn">doobie.implicits._</span>
-<span class="k">import</span> <span class="nn">cats.effect.IO</span>
-<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContext</span><span class="o">.</span><span class="n">global</span><span class="o">)</span>
-
-<span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span> <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">,</span> <span class="s">""</span>
-<span class="o">)</span>
-
-<span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">population</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span>
-
-<span class="k">def</span> <span class="n">find</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Country</span><span class="o">]]</span> <span class="k">=</span>
-  <span class="n">sql</span><span class="s">"select code, name, population from country where name = $n"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">].</span><span class="n">option</span>
-</code></pre>
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="index.html" class="active">
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
 </div>
-
-<p>And then …</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">find</span><span class="o">(</span><span class="s">"France"</span><span class="o">).</span><span class="n">transact</span><span class="o">(</span><span class="n">xa</span><span class="o">).</span><span class="n">unsafeRunSync</span>
-<span class="c1">// res0: Option[Country] = Some(Country("FRA", "France", 59225700L))
-</span></code></pre>
 </div>
-
-<p><strong>doobie</strong> is a <a href="http://typelevel.org/"><strong>Typelevel</strong></a> project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala <a href="http://scala-lang.org/conduct.html"><strong>Code of Conduct</strong></a>.</p>
-
-<h2 id="quick-start">Quick Start</h2>
-
-<p>The current version is <strong>0.8.8</strong> for <strong>Scala 2.12/13</strong> with</p>
-
+<div class="nav-toc">
 <ul>
-  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.0.0</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 2.1.0</li>
+  <li><a href="infographic.html" class="page">Infographic</a></li>
+  <li><a href="migration.html" class="page">Migration Notes</a></li>
+  <li><a href="docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="index.html" class="active">doobie</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="index.html" class="active">
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="infographic.html" class="page">Infographic</a></li>
+  <li><a href="migration.html" class="page">Migration Notes</a></li>
+  <li><a href="docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#doobie" name="doobie" class="anchor"><span class="anchor-link"></span></a>doobie</h1>
+<img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
+<p><a href="https://travis-ci.org/tpolecat/doobie"><img src="https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.5.x" alt="Travis CI" /></a> <a href="https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/tpolecat/doobie" /></a> <a href="https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12"><img src="https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg" alt="Maven Central" /></a> <a href="https://javadoc.io/doc/org.tpolecat/doobie-core_2.12"><img src="https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg" alt="Javadocs" /></a></p>
+<p><strong>doobie</strong> is a pure functional JDBC layer for Scala and <a href="http://typelevel.org/cats/"><strong>Cats</strong></a>. It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases <strong>doobie</strong> provides a minimal but expressive high-level API:</p>
+<pre class="prettyprint"><code class="language-scala">import doobie._
+import doobie.implicits._
+import cats.effect.IO
+import scala.concurrent.ExecutionContext
+
+implicit val cs = IO.contextShift(ExecutionContext.global)
+
+val xa = Transactor.fromDriverManager[IO](
+  &quot;org.postgresql.Driver&quot;, &quot;jdbc:postgresql:world&quot;, &quot;postgres&quot;, &quot;&quot;
+)
+
+case class Country(code: String, name: String, population: Long)
+
+def find(n: String): ConnectionIO[Option[Country]] =
+  sql&quot;select code, name, population from country where name = $n&quot;.query[Country].option
+</code></pre>
+<p>And then …</p>
+<pre class="prettyprint"><code class="language-scala">find(&quot;France&quot;).transact(xa).unsafeRunSync
+// res0: Option[Country] = Some(Country(&quot;FRA&quot;, &quot;France&quot;, 59225700L))
+</code></pre>
+<p><strong>doobie</strong> is a <a href="http://typelevel.org/"><strong>Typelevel</strong></a> project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala <a href="http://scala-lang.org/conduct.html"><strong>Code of Conduct</strong></a>.</p>
+<h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
+<p>The current version is <strong>0.9.0</strong> for <strong>Scala 2.12/13</strong> with</p>
+<ul>
+  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.1.1</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 2.3.0</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.3</li>
 </ul>
+<p>To use <strong>doobie</strong> you need to add the following to your <code>build.sbt</code>. If you&rsquo;re not using the Postgres or H2 add-ons you&rsquo;ll also need to provide a JDBC driver for the database you&rsquo;re using.</p>
+<pre class="prettyprint"><code class="language-scala">libraryDependencies ++= Seq(
 
-<p>To use <strong>doobie</strong> you need to add the following to your <code class="highlighter-rouge">build.sbt</code>. If you’re not using the Postgres or H2 add-ons you’ll also need to provide a JDBC driver for the database you’re using.</p>
+  // Start with this one
+  &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;      % &quot;0.9.0&quot;,
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">scalacOptions</span> <span class="o">+=</span> <span class="s">"-Ypartial-unification"</span> <span class="c1">// 2.11.9+
-</span>
-<span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
+  // And add any of these as needed
+  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;0.9.0&quot;,          // H2 driver 1.4.200 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;0.9.0&quot;,          // HikariCP transactor.
+  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;0.9.0&quot;,          // Postgres driver 42.2.12 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-quill&quot;     % &quot;0.9.0&quot;,          // Support for Quill 3.5.1
+  &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;0.9.0&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
+  &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;0.9.0&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
 
-  <span class="c1">// Start with this one
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-core"</span>      <span class="o">%</span> <span class="s">"0.8.8"</span><span class="o">,</span>
-
-  <span class="c1">// And add any of these as needed
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-h2"</span>        <span class="o">%</span> <span class="s">"0.8.8"</span><span class="o">,</span>          <span class="c1">// H2 driver 1.4.200 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-hikari"</span>    <span class="o">%</span> <span class="s">"0.8.8"</span><span class="o">,</span>          <span class="c1">// HikariCP transactor.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-postgres"</span>  <span class="o">%</span> <span class="s">"0.8.8"</span><span class="o">,</span>          <span class="c1">// Postgres driver 42.2.9 + type mappings.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-quill"</span>     <span class="o">%</span> <span class="s">"0.8.8"</span><span class="o">,</span>          <span class="c1">// Support for Quill 3.4.10
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-specs2"</span>    <span class="o">%</span> <span class="s">"0.8.8"</span> <span class="o">%</span> <span class="s">"test"</span><span class="o">,</span> <span class="c1">// Specs2 support for typechecking statements.
-</span>  <span class="s">"org.tpolecat"</span> <span class="o">%%</span> <span class="s">"doobie-scalatest"</span> <span class="o">%</span> <span class="s">"0.8.8"</span> <span class="o">%</span> <span class="s">"test"</span>  <span class="c1">// ScalaTest support for typechecking statements.
-</span>
-<span class="o">)</span>
+)
 </code></pre>
-</div>
-
 <p>See the <a href="docs/01-Introduction.html"><strong>documentation</strong></a> for more information on these add-ons.</p>
-
-<p>Note that <strong>doobie</strong> is pre-1.0 software and is still undergoing active development. New versions are <strong>not</strong> binary compatible with prior versions, although in most cases user code will be source compatible. Starting with the 0.5.x we’re trying to be a bit more careful about versioning.</p>
-
-<h2 id="documentation-and-support">Documentation and Support</h2>
-
+<p>Note that <strong>doobie</strong> is pre-1.0 software and is still undergoing active development. New versions are <strong>not</strong> binary compatible with prior versions, although in most cases user code will be source compatible. Starting with the 0.5.x we&rsquo;re trying to be a bit more careful about versioning.</p>
+<h2><a href="#documentation-and-support" name="documentation-and-support" class="anchor"><span class="anchor-link"></span></a>Documentation and Support</h2>
 <ul>
   <li>Behold the sparkly <a href="docs/01-Introduction.html"><strong>documentation</strong></a> ← start here</li>
   <li>The <a href="https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12"><strong>Scaladoc</strong></a> will be handy once you get your feet wet.</li>
@@ -82,37 +195,117 @@
   <li>There is also the <a href="https://github.com/tpolecat/doobie"><strong>source</strong></a>. Check out the examples too.</li>
   <li>If you have comments or run into trouble, please file an issue.</li>
 </ul>
-
-<h2 id="presentations-blog-posts-etc">Presentations, Blog Posts, etc.</h2>
-
-<p>Listed newest first. If you have given a presentation or have written a blog post that includes <strong>doobie</strong>, let me know and I’ll add it to this list.</p>
-
+<h2><a href="#presentations-blog-posts-etc-" name="presentations-blog-posts-etc-" class="anchor"><span class="anchor-link"></span></a>Presentations, Blog Posts, etc.</h2>
+<p>Listed newest first. If you have given a presentation or have written a blog post that includes <strong>doobie</strong>, let me know and I&rsquo;ll add it to this list.</p>
 <ul>
   <li><a href="https://blog.godatadriven.com/doobie-monix-jdbc-example">Typechecking SQL queries with doobie</a> by Bas Beelen, GoDataDriven, 13-Feb 2018</li>
   <li><a href="http://fr.slideshare.net/normation/doobie-feedbacks-from-the-trenches-scalaio-2016">Doobie - Feedback from the Trenches</a> by François Armand, ScalaIO, October 2016</li>
   <li><a href="https://www.youtube.com/watch?v=7xSfLPD6tiQ">Pure Functional Database Programming with Fixpoint Types</a> by Rob Norris - Scala World, 2016 - <a href="http://tpolecat.github.io/presentations/sw2016/slides.html#1">slides</a></li>
   <li><a href="http://www.lyranthe.org/presentations/http4s_doobie_circe.pdf">The Functional Web Stack</a> by Gary Coady - Dublin Scala Users Group, April 2016</li>
-  <li><a href="https://www.youtube.com/watch?v=lMW_yMkxX4Q&amp;list=PL_5uJkfWNxdkQd7FbN1whrTOsJPMgHgLg&amp;index=2">End to End and On The Level</a> by Dave Gurnell - Typelevel Summit, Philadelphia, March 2016</li>
+  <li><a href="https://www.youtube.com/watch?v=lMW_yMkxX4Q&list=PL_5uJkfWNxdkQd7FbN1whrTOsJPMgHgLg&index=2">End to End and On The Level</a> by Dave Gurnell - Typelevel Summit, Philadelphia, March 2016</li>
   <li><a href="https://www.youtube.com/watch?v=M5MF6M7FHPo">Programs as Values: JDBC Programming with doobie</a> by Rob Norris - Scala by the Bay, 2015 - <a href="http://tpolecat.github.io/assets/sbtb-slides.pdf">slides</a></li>
   <li><a href="http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html">Typechecking SQL in Slick and doobie</a> by Richard Dallaway</li>
   <li><a href="http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/">DB to JSON with a Microservice</a> by Da Terry - <a href="https://bitbucket.org/da_terry/scalasyd-doobie-http4s">code</a></li>
 </ul>
+<h2><a href="#testing" name="testing" class="anchor"><span class="anchor-link"></span></a>Testing</h2>
+<p>If you want to build and run the tests for yourself, you&rsquo;ll need a local postgresql database. The easiest way to do this is to run <code>docker-compose up</code> from the project root.</p>
+<h2><a href="#building-the-doc-site" name="building-the-doc-site" class="anchor"><span class="anchor-link"></span></a>Building the Doc Site</h2>
+<p>I have to look this up every time. So here&rsquo;s the dance.</p>
+<pre><code>% sbt
+sbt:doobie&gt; project docs
+sbt:docs&gt; clean
+sbt:docs&gt; makeSite
+sbt:doce&gt; ghpagesPushSite
+</code></pre>
+<div class="source-github">
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/index.md">here</a>.
+</div>
 
-<h2 id="testing">Testing</h2>
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="infographic.html">Infographic</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="index.html#doobie" class="header">doobie</a>
+  <ul>
+    <li><a href="index.html#quick-start" class="header">Quick Start</a></li>
+    <li><a href="index.html#documentation-and-support" class="header">Documentation and Support</a></li>
+    <li><a href="index.html#presentations-blog-posts-etc-" class="header">Presentations, Blog Posts, etc.</a></li>
+    <li><a href="index.html#testing" class="header">Testing</a></li>
+    <li><a href="index.html#building-the-doc-site" class="header">Building the Doc Site</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
 
-<p>If you want to build and run the tests for yourself, you’ll need a local postgresql database. Tests are run as the default <strong>postgres</strong> user, which should have no password for access in the local environment. You can see the <code class="highlighter-rouge">before_script</code> section of the <a href="./.travis.yml">.travis.yml</a> file for an up-to-date list of steps for preparing the test database.</p>
+</section>
+</div>
 
-<!-- This stuff isn't in the Home layout anymore so I pasted it here. -->
+</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<footer class="site-footer">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
 
-<script src="/doobie/highlight/highlight.pack.js"></script>
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
 
-<script>hljs.configure({languages:['scala','java','bash']}); hljs.initHighlighting();</script>
+</div>
+</div>
+</div>
+</section>
 
-<script src="/doobie/js/main.js"></script>
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
 
-</div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>doobie is designed and developed by <a href="" target="_blank" rel="noopener noreferrer">Rob Norris</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/tpolecat/doobie"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank" rel="noopener noreferrer">sbt-microsites</a> - © 2019 <a href="https://www.47deg.com/" target="_blank" rel="noopener noreferrer">47 Degrees</a></p></div></div><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.initHighlighting();
-              </script></div></footer></body></html>
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2020</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="js/magellan.js"></script>
+
+<style type="text/css">@import "lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+
+
+</html>

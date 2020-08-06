@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Extensions for H2 · doobie</title>
+<title>Book of Doobie · doobie</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
@@ -37,7 +37,7 @@
 <ul>
   <li><a href="../infographic.html" class="page">Infographic</a></li>
   <li><a href="../migration.html" class="page">Migration Notes</a></li>
-  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <li><a href="../docs/index.html" class="active page">Book of Doobie</a>
   <ul>
     <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
     <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
@@ -54,7 +54,7 @@
     <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
-    <li><a href="../docs/16-Extensions-H2.html" class="active page">Extensions for H2</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
     <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
@@ -96,7 +96,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <ul>
   <li><a href="../infographic.html" class="page">Infographic</a></li>
   <li><a href="../migration.html" class="page">Migration Notes</a></li>
-  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <li><a href="../docs/index.html" class="active page">Book of Doobie</a>
   <ul>
     <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
     <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
@@ -113,7 +113,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
-    <li><a href="../docs/16-Extensions-H2.html" class="active page">Extensions for H2</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
     <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
@@ -133,8 +133,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-breadcrumbs">
 <ul>
   <li><a href="../index.html">doobie</a></li>
-  <li><a href="../docs/index.html">Book of Doobie</a></li>
-  <li>Extensions for H2</li>
+  <li>Book of Doobie</li>
 </ul>
 </div>
 </div>
@@ -142,90 +141,38 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h2><a href="#extensions-for-h2" name="extensions-for-h2" class="anchor"><span class="anchor-link"></span></a>Extensions for H2</h2>
-<p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.h2database.com/html/main.html">H2</a> . To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot; % &quot;0.9.0&quot;
-</code></pre>
-<p>This library pulls in H2 as a transitive dependency.</p>
-<h3><a href="#array-types" name="array-types" class="anchor"><span class="anchor-link"></span></a>Array Types</h3>
-<p><strong>doobie</strong> supports H2 arrays of the following types:</p>
+<h1><a href="#book-of-doobie" name="book-of-doobie" class="anchor"><span class="anchor-link"></span></a>Book of Doobie</h1>
+<div class="toc ">
 <ul>
-  <li><code>Boolean</code></li>
-  <li><code>Int</code></li>
-  <li><code>Long</code></li>
-  <li><code>Float</code></li>
-  <li><code>Double</code></li>
-  <li><code>String</code></li>
+  <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+  <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+  <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+  <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+  <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+  <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+  <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+  <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+  <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+  <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+  <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+  <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+  <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+  <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+  <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+  <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+  <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
+  <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
 </ul>
-<p>In addition to <code>Array</code> you can also map to <code>List</code> and <code>Vector</code>.</p>
-<p>See the previous chapter on <strong>SQL Arrays</strong> for usage examples.</p>
-<h3><a href="#other-nonstandard-types" name="other-nonstandard-types" class="anchor"><span class="anchor-link"></span></a>Other Nonstandard Types</h3>
-<ul>
-  <li>The <code>uuid</code> type is supported and maps to <code>java.util.UUID</code>.</li>
-</ul>
-<h3><a href="#h2-connection-pool" name="h2-connection-pool" class="anchor"><span class="anchor-link"></span></a>H2 Connection Pool</h3>
-<p><strong>doobie</strong> provides a <code>Transactor</code> that wraps the connection pool provided by H2. Because the transactor has internal state, constructing one is a side-effect that must be captured (here by <code>IO</code>).</p>
-<pre class="prettyprint"><code class="language-scala">import cats.effect._
-import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.h2._
-
-object H2App extends IOApp {
-
-  // Resource yielding a transactor configured with a bounded connect EC and an unbounded
-  // transaction EC. Everything will be closed and shut down cleanly after use.
-  val transactor: Resource[IO, H2Transactor[IO]] =
-    for {
-      ce &lt;- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      be &lt;- Blocker[IO]    // our blocking EC
-      xa &lt;- H2Transactor.newH2Transactor[IO](
-              &quot;jdbc:h2:mem:test;DB_CLOSE_DELAY=-1&quot;, // connect URL
-              &quot;sa&quot;,                                   // username
-              &quot;&quot;,                                     // password
-              ce,                                     // await connection here
-              be                                      // execute JDBC operations here
-            )
-    } yield xa
-
-
-  def run(args: List[String]): IO[ExitCode] =
-    transactor.use { xa =&gt;
-
-      // Construct and run your server here!
-      for {
-        n &lt;- sql&quot;select 42&quot;.query[Int].unique.transact(xa)
-        _ &lt;- IO(println(n))
-      } yield ExitCode.Success
-
-    }
-
-}
-</code></pre>
+</div>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/16-Extensions-H2.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/index.md">here</a>.
 </div>
 
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../docs/17-Quill.html">Quill Integration</a></p>
+<p><strong>Next:</strong> <a href="../docs/01-Introduction.html">Introduction</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
-<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
-<div class="page-nav">
-<div class="nav-title">On this page:</div>
-<div class="nav-toc">
-<ul>
-  <li><a href="../docs/16-Extensions-H2.html#extensions-for-h2" class="header">Extensions for H2</a>
-  <ul>
-    <li><a href="../docs/16-Extensions-H2.html#array-types" class="header">Array Types</a></li>
-    <li><a href="../docs/16-Extensions-H2.html#other-nonstandard-types" class="header">Other Nonstandard Types</a></li>
-    <li><a href="../docs/16-Extensions-H2.html#h2-connection-pool" class="header">H2 Connection Pool</a></li>
-  </ul></li>
-</ul>
-</div>
-</div>
-</nav>
 </div>
 </div>
 

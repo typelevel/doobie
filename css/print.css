@@ -1,0 +1,27 @@
+h2 {
+    page-break-before: always;
+}
+nav.print .toc-page-line {
+    border-bottom: 1px dashed #bbb;
+}
+nav.print .toc-page-no {
+    float: right;
+}
+nav.print li {
+    list-style: none;
+}
+
+.print-cover-title {
+    font-size: 15mm;
+    padding-top: 150mm;
+    text-align: center;
+    width: 100%;
+}
+
+.print-cover-version {
+    font-size: 10mm;
+    font-style: italic;
+    padding-top: 20mm;
+    text-align: center;
+    width: 100%;
+}

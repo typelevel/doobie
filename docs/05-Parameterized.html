@@ -1,217 +1,394 @@
-<html><head><title>doobie: Parameterized Queries</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A functional JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="image" property="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie: Parameterized Queries" /><meta name="title" property="og:title" content="doobie: Parameterized Queries" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A functional JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie: Parameterized Queries" /><meta name="twitter:image" content="/doobie/img/poster.png" /><meta name="twitter:description" content="A functional JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/tweak.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/doobie/" class="brand"><div class="brand-wrapper"><span>doobie</span></div></a></li><li><a href="/doobie/css/style.css" class=""></a></li><li><a href="/doobie/docs/02-Toolkit.html" class="">Toolkit</a></li><li><a href="/doobie/docs/03-Connecting.html" class="">Connecting to a Database</a></li><li><a href="/doobie/docs/04-Selecting.html" class="">Selecting Data</a></li><li><a href="/doobie/docs/05-Parameterized.html" class=" active ">Parameterized Queries</a></li><li><a href="/doobie/docs/06-Checking.html" class="">Typechecking Queries</a></li><li><a href="/doobie/docs/07-Updating.html" class="">DDL, Inserting, and Updating</a></li><li><a href="/doobie/docs/08-Fragments.html" class="">Statement Fragments</a></li><li><a href="/doobie/docs/09-Error-Handling.html" class="">Error Handling</a></li><li><a href="/doobie/docs/10-Logging.html" class="">Logging</a></li><li><a href="/doobie/docs/11-Arrays.html" class="">SQL Arrays</a></li><li><a href="/doobie/docs/12-Custom-Mappings.html" class="">Custom Mappings</a></li><li><a href="/doobie/docs/13-Unit-Testing.html" class="">Unit Testing</a></li><li><a href="/doobie/docs/14-Managing-Connections.html" class="">Managing Connections</a></li><li><a href="/doobie/docs/15-Extensions-PostgreSQL.html" class="">Extensions for PostgreSQL</a></li><li><a href="/doobie/docs/16-Extensions-H2.html" class="">Extensions for H2</a></li><li><a href="/doobie/docs/17-Quill.html" class="">Quill Integration</a></li><li><a href="/doobie/docs/18-FAQ.html" class="">Frequently-Asked Questions</a></li><li><a href="/doobie/" class=""></a></li><li><a href="/doobie/css/palette.css" class=""></a></li><li><a href="/doobie/docs/01-Introduction.html" class="">Introduction</a></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('doobie A functional JDBC layer for Scala.');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('doobie A functional JDBC layer for Scala.');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="tpolecat" data-github-repo="doobie"><div class="content-wrapper"><section><h2 id="parameterized-queries">Parameterized Queries</h2>
+<!DOCTYPE html>
+<html class="no-js" lang="en">
 
-<p>In this chapter we learn how to construct parameterized queries, and introduce the <code class="highlighter-rouge">Put</code> and <code class="highlighter-rouge">Write</code> typeclasses.</p>
+<head>
+<title>Parameterized Queries · doobie</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
-<h3 id="setting-up">Setting Up</h3>
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
 
-<p>Same as last chapter, so if you’re still set up you can skip this section. Otherwise let’s set up a <code class="highlighter-rouge">Transactor</code> and YOLO mode.</p>
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">doobie._</span>
-<span class="k">import</span> <span class="nn">doobie.implicits._</span>
-<span class="k">import</span> <span class="nn">doobie.util.ExecutionContexts</span>
-<span class="k">import</span> <span class="nn">cats._</span>
-<span class="k">import</span> <span class="nn">cats.data._</span>
-<span class="k">import</span> <span class="nn">cats.effect._</span>
-<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="active page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
 
-<span class="c1">// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">cs</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">contextShift</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span>
+</nav>
+</div>
 
-<span class="c1">// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="../index.html">doobie</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="active page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">doobie</a></li>
+  <li><a href="../docs/index.html">Book of Doobie</a></li>
+  <li>Parameterized Queries</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h2><a href="#parameterized-queries" name="parameterized-queries" class="anchor"><span class="anchor-link"></span></a>Parameterized Queries</h2>
+<p>In this chapter we learn how to construct parameterized queries, and introduce the <code>Put</code> and <code>Write</code> typeclasses.</p>
+<h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
+<p>Same as last chapter, so if you&rsquo;re still set up you can skip this section. Otherwise let&rsquo;s set up a <code>Transactor</code> and YOLO mode.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie._
+import doobie.implicits._
+import doobie.util.ExecutionContexts
+import cats._
+import cats.data._
+import cats.effect._
+import cats.implicits._
+
+// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
+// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
+implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+
+// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
-</span><span class="k">val</span> <span class="n">xa</span> <span class="k">=</span> <span class="nc">Transactor</span><span class="o">.</span><span class="n">fromDriverManager</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span>
-  <span class="s">"org.postgresql.Driver"</span><span class="o">,</span>     <span class="c1">// driver classname
-</span>  <span class="s">"jdbc:postgresql:world"</span><span class="o">,</span>     <span class="c1">// connect URL (driver-specific)
-</span>  <span class="s">"postgres"</span><span class="o">,</span>                  <span class="c1">// user
-</span>  <span class="s">""</span><span class="o">,</span>                          <span class="c1">// password
-</span>  <span class="nc">Blocker</span><span class="o">.</span><span class="n">liftExecutionContext</span><span class="o">(</span><span class="nc">ExecutionContexts</span><span class="o">.</span><span class="n">synchronous</span><span class="o">)</span> <span class="c1">// just for testing
-</span><span class="o">)</span>
+val xa = Transactor.fromDriverManager[IO](
+  &quot;org.postgresql.Driver&quot;,     // driver classname
+  &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
+  &quot;postgres&quot;,                  // user
+  &quot;&quot;,                          // password
+  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+)
 
-<span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">yolo</span>
-<span class="k">import</span> <span class="nn">y._</span>
+val y = xa.yolo
+import y._
 </code></pre>
-</div>
-
-<p>We’re still playing with the <code class="highlighter-rouge">country</code> table, shown here for reference.</p>
-
-<div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">country</span> <span class="p">(</span>
-  <span class="n">code</span>       <span class="n">character</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-  <span class="n">name</span>       <span class="n">text</span>          <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-  <span class="n">population</span> <span class="n">integer</span>       <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-  <span class="n">gnp</span>        <span class="n">numeric</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
-  <span class="c1">-- more columns, but we won't use them here</span>
-<span class="p">)</span>
+<p>We&rsquo;re still playing with the <code>country</code> table, shown here for reference.</p>
+<pre class="prettyprint"><code class="language-sql">CREATE TABLE country (
+  code       character(3)  NOT NULL,
+  name       text          NOT NULL,
+  population integer       NOT NULL,
+  gnp        numeric(10,2)
+  -- more columns, but we won&#39;t use them here
+)
 </code></pre>
-</div>
-
-<h3 id="adding-a-parameter">Adding a Parameter</h3>
-
-<p>Let’s set up our Country class and re-run last chapter’s query just to review.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Country</span><span class="o">(</span><span class="n">code</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">pop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">gnp</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Double</span><span class="o">])</span>
+<h3><a href="#adding-a-parameter" name="adding-a-parameter" class="anchor"><span class="anchor-link"></span></a>Adding a Parameter</h3>
+<p>Let&rsquo;s set up our Country class and re-run last chapter&rsquo;s query just to review.</p>
+<pre class="prettyprint"><code class="language-scala">case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
 </code></pre>
-</div>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="o">{</span>
-  <span class="n">sql</span><span class="s">"select code, name, population, gnp from country"</span>
-    <span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
-    <span class="o">.</span><span class="n">stream</span>
-    <span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
-    <span class="o">.</span><span class="n">quick</span>
-    <span class="o">.</span><span class="n">unsafeRunSync</span>
-<span class="o">}</span>
-<span class="c1">//   Country(AFG,Afghanistan,22720000,Some(5976.0))
+<pre class="prettyprint"><code class="language-scala">{
+  sql&quot;select code, name, population, gnp from country&quot;
+    .query[Country]
+    .stream
+    .take(5)
+    .quick
+    .unsafeRunSync
+}
+//   Country(AFG,Afghanistan,22720000,Some(5976.0))
 //   Country(NLD,Netherlands,15864000,Some(371362.0))
 //   Country(ANT,Netherlands Antilles,217000,Some(1941.0))
 //   Country(ALB,Albania,3401200,Some(3205.0))
 //   Country(DZA,Algeria,31471000,Some(49982.0))
-</span></code></pre>
-</div>
-
+</code></pre>
 <p>Still works. Ok.</p>
-
-<p>So let’s factor our query into a method and add a parameter that selects only the countries with a population larger than some value the user will provide. We insert the <code class="highlighter-rouge">minPop</code> argument into our SQL statement as <code class="highlighter-rouge">$minPop</code>, just as if we were doing string interpolation.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">biggerThan</span><span class="o">(</span><span class="n">minPop</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
+<p>So let&rsquo;s factor our query into a method and add a parameter that selects only the countries with a population larger than some value the user will provide. We insert the <code>minPop</code> argument into our SQL statement as <code>$minPop</code>, just as if we were doing string interpolation.</p>
+<pre class="prettyprint"><code class="language-scala">def biggerThan(minPop: Int) = sql&quot;&quot;&quot;
   select code, name, population, gnp
   from country
   where population &gt; $minPop
-"""</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
+&quot;&quot;&quot;.query[Country]
 </code></pre>
-</div>
-
-<p>And when we run the query … surprise, it works!</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">biggerThan</span><span class="o">(</span><span class="mi">150000000</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span> <span class="c1">// Let's see them all
+<p>And when we run the query &hellip; surprise, it works!</p>
+<pre class="prettyprint"><code class="language-scala">biggerThan(150000000).quick.unsafeRunSync // Let&#39;s see them all
 //   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(IDN,Indonesia,212107000,Some(84982.0))
 //   Country(IND,India,1013662000,Some(447114.0))
 //   Country(CHN,China,1277558000,Some(982268.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
 //   Country(USA,United States,278357000,Some(8510700.0))
-</span></code></pre>
-</div>
-
-<p>So what’s going on? It looks like we’re just dropping a string literal into our SQL string, but actually we’re constructing a <code class="highlighter-rouge">PreparedStatement</code>, and the <code class="highlighter-rouge">minPop</code> value is ultimately set via a call to <code class="highlighter-rouge">setInt</code> (see “Diving Deeper” below).</p>
-
-<p><strong>doobie</strong> allows you to interpolate values of any type (and options thereof) with a <code class="highlighter-rouge">Put</code> instance, which includes</p>
-
+</code></pre>
+<p>So what&rsquo;s going on? It looks like we&rsquo;re just dropping a string literal into our SQL string, but actually we&rsquo;re constructing a <code>PreparedStatement</code>, and the <code>minPop</code> value is ultimately set via a call to <code>setInt</code> (see &ldquo;Diving Deeper&rdquo; below).</p>
+<p><strong>doobie</strong> allows you to interpolate values of any type (and options thereof) with a <code>Put</code> instance, which includes</p>
 <ul>
   <li>any JVM type that has a target mapping defined by the JDBC specification,</li>
   <li>vendor-specific types defined by extension packages,</li>
   <li>custom column types that you define, and</li>
   <li>single-member products (case classes, typically) of any of the above.</li>
 </ul>
-
 <p>We will discuss custom type mappings in a later chapter.</p>
-
-<h3 id="multiple-parameters">Multiple Parameters</h3>
-
+<h3><a href="#multiple-parameters" name="multiple-parameters" class="anchor"><span class="anchor-link"></span></a>Multiple Parameters</h3>
 <p>Multiple parameters work the same way. No surprises here.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">populationIn</span><span class="o">(</span><span class="n">range</span><span class="k">:</span> <span class="kt">Range</span><span class="o">)</span> <span class="k">=</span> <span class="n">sql</span><span class="s">"""
+<pre class="prettyprint"><code class="language-scala">def populationIn(range: Range) = sql&quot;&quot;&quot;
   select code, name, population, gnp
   from country
   where population &gt; ${range.min}
   and   population &lt; ${range.max}
-"""</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
+&quot;&quot;&quot;.query[Country]
 
-<span class="n">populationIn</span><span class="o">(</span><span class="mi">150000000</span> <span class="n">to</span> <span class="mi">200000000</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-<span class="c1">//   Country(BRA,Brazil,170115000,Some(776739.0))
+populationIn(150000000 to 200000000).quick.unsafeRunSync
+//   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
-</span></code></pre>
-</div>
-
-<h3 id="dealing-with-in-clauses">Dealing with <code class="highlighter-rouge">IN</code> Clauses</h3>
-
-<p>A common irritant when dealing with SQL literals is the desire to inline a <em>sequence</em> of arguments into an <code class="highlighter-rouge">IN</code> clause, but SQL does not support this notion (nor does JDBC do anything to assist). <strong>doobie</strong> supports this via <em>statement fragments</em> (see Chapter 8).</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">populationIn</span><span class="o">(</span><span class="n">range</span><span class="k">:</span> <span class="kt">Range</span><span class="o">,</span> <span class="n">codes</span><span class="k">:</span> <span class="kt">NonEmptyList</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="n">fr</span><span class="s">"""
+</code></pre>
+<h3><a href="#dealing-with-in-clauses" name="dealing-with-in-clauses" class="anchor"><span class="anchor-link"></span></a>Dealing with <code>IN</code> Clauses</h3>
+<p>A common irritant when dealing with SQL literals is the desire to inline a <em>sequence</em> of arguments into an <code>IN</code> clause, but SQL does not support this notion (nor does JDBC do anything to assist). <strong>doobie</strong> supports this via <em>statement fragments</em> (see Chapter 8).</p>
+<pre class="prettyprint"><code class="language-scala">def populationIn(range: Range, codes: NonEmptyList[String]) = {
+  val q = fr&quot;&quot;&quot;
     select code, name, population, gnp
     from country
     where population &gt; ${range.min}
     and   population &lt; ${range.max}
-    and   """</span> <span class="o">++</span> <span class="nc">Fragments</span><span class="o">.</span><span class="n">in</span><span class="o">(</span><span class="n">fr</span><span class="s">"code"</span><span class="o">,</span> <span class="n">codes</span><span class="o">)</span> <span class="c1">// code IN (...)
-</span>  <span class="n">q</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
-<span class="o">}</span>
+    and   &quot;&quot;&quot; ++ Fragments.in(fr&quot;code&quot;, codes) // code IN (...)
+  q.query[Country]
+}
 </code></pre>
-</div>
-
-<p>Note that the <code class="highlighter-rouge">IN</code> clause must be non-empty, so <code class="highlighter-rouge">codes</code> is a <code class="highlighter-rouge">NonEmptyList</code>.</p>
-
+<p>Note that the <code>IN</code> clause must be non-empty, so <code>codes</code> is a <code>NonEmptyList</code>.</p>
 <p>Running this query gives us the desired result.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">populationIn</span><span class="o">(</span><span class="mi">100000000</span> <span class="n">to</span> <span class="mi">300000000</span><span class="o">,</span> <span class="nc">NonEmptyList</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="s">"USA"</span><span class="o">,</span> <span class="s">"BRA"</span><span class="o">,</span> <span class="s">"PAK"</span><span class="o">,</span> <span class="s">"GBR"</span><span class="o">)).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-<span class="c1">//   Country(BRA,Brazil,170115000,Some(776739.0))
+<pre class="prettyprint"><code class="language-scala">populationIn(100000000 to 300000000, NonEmptyList.of(&quot;USA&quot;, &quot;BRA&quot;, &quot;PAK&quot;, &quot;GBR&quot;)).quick.unsafeRunSync
+//   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
 //   Country(USA,United States,278357000,Some(8510700.0))
-</span></code></pre>
-</div>
+</code></pre>
+<h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
+<p>In the previous chapter&rsquo;s <em>Diving Deeper</em> we saw how a query constructed with the <code>sql</code> interpolator is just sugar for the <code>stream</code> constructor defined in the <code>doobie.hi.connection</code> module (aliased as <code>HC</code>). Here we see that the second parameter, a <code>PreparedStatementIO</code> program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.</p>
+<pre class="prettyprint"><code class="language-scala">import fs2.Stream
 
-<h3 id="diving-deeper">Diving Deeper</h3>
-
-<p>In the previous chapter’s <em>Diving Deeper</em> we saw how a query constructed with the <code class="highlighter-rouge">sql</code> interpolator is just sugar for the <code class="highlighter-rouge">stream</code> constructor defined in the <code class="highlighter-rouge">doobie.hi.connection</code> module (aliased as <code class="highlighter-rouge">HC</code>). Here we see that the second parameter, a <code class="highlighter-rouge">PreparedStatementIO</code> program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.Stream</span>
-
-<span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="s">"""
+val q = &quot;&quot;&quot;
   select code, name, population, gnp
   from country
   where population &gt; ?
   and   population &lt; ?
-  """</span>
+  &quot;&quot;&quot;
 
-<span class="k">def</span> <span class="n">proc</span><span class="o">(</span><span class="n">range</span><span class="k">:</span> <span class="kt">Range</span><span class="o">)</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">ConnectionIO</span>, <span class="kt">Country</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">HC</span><span class="o">.</span><span class="n">stream</span><span class="o">[</span><span class="kt">Country</span><span class="o">](</span><span class="n">q</span><span class="o">,</span> <span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">((</span><span class="n">range</span><span class="o">.</span><span class="n">min</span><span class="o">,</span> <span class="n">range</span><span class="o">.</span><span class="n">max</span><span class="o">)),</span> <span class="mi">512</span><span class="o">)</span>
+def proc(range: Range): Stream[ConnectionIO, Country] =
+  HC.stream[Country](q, HPS.set((range.min, range.max)), 512)
 </code></pre>
-</div>
-
 <p>Which produces the same output.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">proc</span><span class="o">(</span><span class="mi">150000000</span> <span class="n">to</span> <span class="mi">200000000</span><span class="o">).</span><span class="n">quick</span><span class="o">.</span><span class="n">unsafeRunSync</span>
-<span class="c1">//   Country(BRA,Brazil,170115000,Some(776739.0))
+<pre class="prettyprint"><code class="language-scala">proc(150000000 to 200000000).quick.unsafeRunSync
+//   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
-</span></code></pre>
-</div>
-
-<p>But how does the <code class="highlighter-rouge">set</code> constructor work?</p>
-
-<p>When setting parameters in the high-level API, we require an instance of <code class="highlighter-rouge">Write[A]</code> for the input type. It is not immediately obvious when using the <code class="highlighter-rouge">sql</code> interpolator, but the parameters (each of which require a <code class="highlighter-rouge">Put</code> instance, to be discussed in a later chapter) are gathered into an <code class="highlighter-rouge">HList</code> and treated as a single writable parameter.</p>
-
-<p><code class="highlighter-rouge">Write</code> instances are derived automatically for column types (and options thereof) that have <code class="highlighter-rouge">Put</code> instances, and for products of other writable types. We can summon their instances thus:</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="nc">Write</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">Boolean</span><span class="o">)]</span>
-<span class="c1">// res5: Write[(String, Boolean)] = doobie.util.Write@39ca38c2
-</span><span class="nc">Write</span><span class="o">[</span><span class="kt">Country</span><span class="o">]</span>
-<span class="c1">// res6: Write[Country] = doobie.util.Write@66f6394b
-</span></code></pre>
-</div>
-
-<p>The <code class="highlighter-rouge">set</code> constructor takes an argument of any type with a <code class="highlighter-rouge">Write</code> instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Set parameters as (String, Boolean) starting at index 1 (default)
-</span><span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">((</span><span class="s">"foo"</span><span class="o">,</span> <span class="kc">true</span><span class="o">))</span>
-
-<span class="c1">// Set parameters as (String, Boolean) starting at index 1 (explicit)
-</span><span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="o">(</span><span class="s">"foo"</span><span class="o">,</span> <span class="kc">true</span><span class="o">))</span>
-
-<span class="c1">// Set parameters individually
-</span><span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="s">"foo"</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="kc">true</span><span class="o">)</span>
-
-<span class="c1">// Or out of order, who cares?
-</span><span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="kc">true</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="nc">HPS</span><span class="o">.</span><span class="n">set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="s">"foo"</span><span class="o">)</span>
 </code></pre>
-</div>
+<p>But how does the <code>set</code> constructor work?</p>
+<p>When setting parameters in the high-level API, we require an instance of <code>Write[A]</code> for the input type. It is not immediately obvious when using the <code>sql</code> interpolator, but the parameters (each of which require a <code>Put</code> instance, to be discussed in a later chapter) are gathered into an <code>HList</code> and treated as a single writable parameter.</p>
+<p><code>Write</code> instances are derived automatically for column types (and options thereof) that have <code>Put</code> instances, and for products of other writable types. We can summon their instances thus:</p>
+<pre class="prettyprint"><code class="language-scala">Write[(String, Boolean)]
+// res5: Write[(String, Boolean)] = doobie.util.Write@48881c09
+Write[Country]
+// res6: Write[Country] = doobie.util.Write@4bbf39f9
+</code></pre>
+<p>The <code>set</code> constructor takes an argument of any type with a <code>Write</code> instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.</p>
+<pre class="prettyprint"><code class="language-scala">// Set parameters as (String, Boolean) starting at index 1 (default)
+HPS.set((&quot;foo&quot;, true))
 
-<p>Using the low level <code class="highlighter-rouge">doobie.free</code> constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the <code class="highlighter-rouge">Put</code> typeclass (discussed in a later chapter) is to abstract away these differences.</p>
+// Set parameters as (String, Boolean) starting at index 1 (explicit)
+HPS.set(1, (&quot;foo&quot;, true))
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="nc">FPS</span><span class="o">.</span><span class="n">setString</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="s">"foo"</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="nc">FPS</span><span class="o">.</span><span class="n">setBoolean</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="kc">true</span><span class="o">)</span>
+// Set parameters individually
+HPS.set(1, &quot;foo&quot;) *&gt; HPS.set(2, true)
+
+// Or out of order, who cares?
+HPS.set(2, true) *&gt; HPS.set(1, &quot;foo&quot;)
+</code></pre>
+<p>Using the low level <code>doobie.free</code> constructors there is no typeclass-driven type mapping, so each parameter type requires a distinct method, exactly as in the underlying JDBC API. The purpose of the <code>Put</code> typeclass (discussed in a later chapter) is to abstract away these differences.</p>
+<pre class="prettyprint"><code class="language-scala">FPS.setString(1, &quot;foo&quot;) *&gt; FPS.setBoolean(2, true)
 
 </code></pre>
+<div class="source-github">
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/05-Parameterized.md">here</a>.
 </div>
 
-</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
-hljs.initHighlighting();
-              </script><script src="/doobie/js/main.js"></script></body></html>
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../docs/06-Checking.html">Typechecking Queries</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../docs/05-Parameterized.html#parameterized-queries" class="header">Parameterized Queries</a>
+  <ul>
+    <li><a href="../docs/05-Parameterized.html#setting-up" class="header">Setting Up</a></li>
+    <li><a href="../docs/05-Parameterized.html#adding-a-parameter" class="header">Adding a Parameter</a></li>
+    <li><a href="../docs/05-Parameterized.html#multiple-parameters" class="header">Multiple Parameters</a></li>
+    <li><a href="../docs/05-Parameterized.html#dealing-with-in-clauses" class="header">Dealing with <code>IN</code> Clauses</a></li>
+    <li><a href="../docs/05-Parameterized.html#diving-deeper" class="header">Diving Deeper</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2020</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+
+
+</html>

@@ -1,268 +1,440 @@
-<html><head><title>doobie: migration</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A functional JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="image" property="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie: migration" /><meta name="title" property="og:title" content="doobie: migration" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A functional JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie: migration" /><meta name="twitter:image" content="/doobie/img/poster.png" /><meta name="twitter:description" content="A functional JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/tweak.css" /></head><body><header id="site-header"><div class="navbar-wrapper navbar-inverse"><div class="container"><div class="navbar-header"><button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/doobie/" class="brand"><div class="icon-wrapper"><span>doobie</span></div></a></div><nav class="text-right"><ul class=""><li><a href="https://github.com/tpolecat/doobie"><i class="fa fa-github"></i><span class="hidden-xs">GitHub</span></a></li><li><a href="https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12"><i class="fa fa-file-text"></i><span class="hidden-xs">Documentation</span></a></li></ul></nav></div></div><div class="jumbotron" style="background-image:url('/doobie/img/jumbotron_pattern.png')"></div><div><ul class="horizontalNav">                                           <li><a class="" href="/doobie/book.html">book of doobie</a></li>  <li><a class=" active " href="/doobie/migration.html">migration</a></li>  <li><a class="" href="/doobie/infographic.html">infographic</a></li>  <li><a class="" href="/doobie/changelog.html">changelog</a></li>  <li><a class="" href="/doobie/license.html">license</a></li> </ul></div></header><main id="site-main"><section class="use"><div class="container"><div id="content"><h1 id="upgrading-to-08x-from-07x">Upgrading to 0.8.x from 0.7.x</h1>
+<!DOCTYPE html>
+<html class="no-js" lang="en">
 
-<p>Creating a <code class="highlighter-rouge">Transactor</code> now requires that the <code class="highlighter-rouge">transactEC</code> parameter is a <code class="highlighter-rouge">cats.effect.Blocker</code> instead of an <code class="highlighter-rouge">ExecutionContext</code>.</p>
+<head>
+<title>Migration Notes · doobie</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="js/page.js"></script>
+<script type="text/javascript" src="js/warnOldVersion.js"></script>
+<script type="text/javascript" src="js/groups.js"></script>
+<link rel="stylesheet" type="text/css" href="lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="css/page.css"/>
 
+<!--
+<link rel="shortcut icon" href="images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="infographic.html" class="page">Infographic</a></li>
+  <li><a href="migration.html" class="active page">Migration Notes</a></li>
+  <li><a href="docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="index.html">doobie</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="infographic.html" class="page">Infographic</a></li>
+  <li><a href="migration.html" class="active page">Migration Notes</a></li>
+  <li><a href="docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="index.html">doobie</a></li>
+  <li>Migration Notes</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#migration-notes" name="migration-notes" class="anchor"><span class="anchor-link"></span></a>Migration Notes</h1>
+<h2><a href="#upgrading-to-0-8-x-from-0-7-x" name="upgrading-to-0-8-x-from-0-7-x" class="anchor"><span class="anchor-link"></span></a>Upgrading to 0.8.x from 0.7.x</h2>
+<p>Creating a <code>Transactor</code> now requires that the <code>transactEC</code> parameter is a <code>cats.effect.Blocker</code> instead of an <code>ExecutionContext</code>.</p>
 <p>Everything that has been deprecated since 0.6.x has been removed.</p>
-
-<hr />
-
-<h1 id="upgrading-to-07x-from-06x">Upgrading to 0.7.x from 0.6.x</h1>
-
-<p><code class="highlighter-rouge">Transactor.connect</code> has changed from <code class="highlighter-rouge">A =&gt; Connection</code> to <code class="highlighter-rouge">A =&gt; Resource[M, Connection]</code>. Any connection retrieved from this function is expected to close itself.</p>
-
-<p>Methods on <code class="highlighter-rouge">Transactor</code> that turn a program into a <code class="highlighter-rouge">M</code> now require that <code class="highlighter-rouge">M</code> have an instance of <code class="highlighter-rouge">Bracket</code> instead of <code class="highlighter-rouge">Monad</code>.</p>
-
-<p><code class="highlighter-rouge">guarantee</code> and <code class="highlighter-rouge">onError</code> have been removed from <code class="highlighter-rouge">catchsql</code>. <code class="highlighter-rouge">guarantee</code> should be replaced with <code class="highlighter-rouge">cats.effect.Bracket.guarantee</code> while <code class="highlighter-rouge">onError</code> should be replaced with <code class="highlighter-rouge">cats.ApplicativeError.onError</code>. All other methods now only require an <code class="highlighter-rouge">ApplicativeError</code> instance. As such the <code class="highlighter-rouge">monaderror</code> syntax has been renamed to <code class="highlighter-rouge">applicativeerror</code>.</p>
-
-<hr />
-
-<h1 id="upgrading-to-06x-from-05x">Upgrading to 0.6.x from 0.5.x</h1>
-
-<p>The major changes in 0.6.x are the addition of explicit threading controls for asynchronous operation and the restructuring of <code class="highlighter-rouge">Meta</code> and <code class="highlighter-rouge">Composite</code>, as described below. In preparation for upgrading please <strong>fix all deprecation warnings</strong> as all methods deprecated in 0.5.x have been removed.</p>
-
-<h2 id="transactors-and-threading">Transactors and Threading</h2>
-
-<p>Prior to 0.6.x <strong>doobie</strong> had nothing to say about threading; it was up to users to shift interpreted <code class="highlighter-rouge">IO</code> programs onto dedicated pools if desired. This has changed. We now identify three distinct execution contexts that are relevant to database applications.</p>
-
+<hr/>
+<h2><a href="#upgrading-to-0-7-x-from-0-6-x" name="upgrading-to-0-7-x-from-0-6-x" class="anchor"><span class="anchor-link"></span></a>Upgrading to 0.7.x from 0.6.x</h2>
+<p><code>Transactor.connect</code> has changed from <code>A =&gt; Connection</code> to <code>A =&gt; Resource[M, Connection]</code>. Any connection retrieved from this function is expected to close itself.</p>
+<p>Methods on <code>Transactor</code> that turn a program into a <code>M</code> now require that <code>M</code> have an instance of <code>Bracket</code> instead of <code>Monad</code>.</p>
+<p><code>guarantee</code> and <code>onError</code> have been removed from <code>catchsql</code>. <code>guarantee</code> should be replaced with <code>cats.effect.Bracket.guarantee</code> while <code>onError</code> should be replaced with <code>cats.ApplicativeError.onError</code>. All other methods now only require an <code>ApplicativeError</code> instance. As such the <code>monaderror</code> syntax has been renamed to <code>applicativeerror</code>.</p>
+<hr/>
+<h2><a href="#upgrading-to-0-6-x-from-0-5-x" name="upgrading-to-0-6-x-from-0-5-x" class="anchor"><span class="anchor-link"></span></a>Upgrading to 0.6.x from 0.5.x</h2>
+<p>The major changes in 0.6.x are the addition of explicit threading controls for asynchronous operation and the restructuring of <code>Meta</code> and <code>Composite</code>, as described below. In preparation for upgrading please <strong>fix all deprecation warnings</strong> as all methods deprecated in 0.5.x have been removed.</p>
+<h3><a href="#transactors-and-threading" name="transactors-and-threading" class="anchor"><span class="anchor-link"></span></a>Transactors and Threading</h3>
+<p>Prior to 0.6.x <strong>doobie</strong> had nothing to say about threading; it was up to users to shift interpreted <code>IO</code> programs onto dedicated pools if desired. This has changed. We now identify three distinct execution contexts that are relevant to database applications.</p>
 <ol>
-  <li>All <em>non-blocking</em> work is performed on the execution context identified by <a href="https://typelevel.org/cats-effect/datatypes/contextshift.html"><code class="highlighter-rouge">ContextShift[F]</code></a>. If you are using <a href="https://typelevel.org/cats-effect/datatypes/ioapp.html"><code class="highlighter-rouge">IOApp</code></a> (which you should) this instance is provided for you. All interpreters (and thus all transactors) need this instance on construction.</li>
+  <li>All <em>non-blocking</em> work is performed on the execution context identified by <a href="https://typelevel.org/cats-effect/datatypes/contextshift.html"><code>ContextShift[F]</code></a>. If you are using <a href="https://typelevel.org/cats-effect/datatypes/ioapp.html"><code>IOApp</code></a> (which you should) this instance is provided for you. All interpreters (and thus all transactors) need this instance on construction.</li>
   <li>Requesting a JDBC connection is a blocking operation, so to avoid deadlock these requests cannot be placed in competition with running programs (which need to make progress in order to finish up and return their connections to the pool). Therefore we need a distinct, bounded, blocking execution context for the single purpose of awaiting database connections. All transactors that use a connection pool will require this execution context to be specified.</li>
   <li>All JDBC primitive operations are [potentially] blocking, so we need a distinct, typically unbounded (since the connection context above provides a logical bound) execution context for scheduling these operations. All transactors that use a connection pool will require this execution context to be specified.</li>
 </ol>
-
-<p>For convenience we provide an <code class="highlighter-rouge">ExecutionContexts</code> module that provides <a href=""><code class="highlighter-rouge">Resource</code></a>s yielding the kinds of <code class="highlighter-rouge">ExecutionContext</code>s that will tend to be useful for the scenarios above. Note that <code class="highlighter-rouge">DriverManagerTransactor</code> provides an unbounded number of connections and is unsuitable for production use anyway, so we do not require the blocking pools here (it uses an unbounded pool internally). Fine for testing but don’t use it in real life.</p>
-
+<p>For convenience we provide an <code>ExecutionContexts</code> module that provides <a href=""><code>Resource</code></a>s yielding the kinds of <code>ExecutionContext</code>s that will tend to be useful for the scenarios above. Note that <code>DriverManagerTransactor</code> provides an unbounded number of connections and is unsuitable for production use anyway, so we do not require the blocking pools here (it uses an unbounded pool internally). Fine for testing but don&rsquo;t use it in real life.</p>
 <p>See the book chapter on <strong>Managing Connections</strong> for more information and examples.</p>
-
-<h4 id="streams-and-resources">Streams and Resources</h4>
-
-<p>In 0.5.x we provided some single-element <code class="highlighter-rouge">Stream</code>s that would emit values and guarantee resource cleanup. This has been generalized as <code class="highlighter-rouge">Resource</code> in cats-effect 1.x, and all such constructors (<code class="highlighter-rouge">H2Transactor.newH2Transactor</code> for example) now use <code class="highlighter-rouge">Resource</code> rather than <code class="highlighter-rouge">Stream</code>. You can use <code class="highlighter-rouge">Stream.resource</code> to regain the old functionality if desired.</p>
-
-<h2 id="meta-and-composite">Meta and Composite</h2>
-
-<p>Prior to the 0.6.x series we provided two typeclasses for <strong>bidirectional</strong> type mapping:</p>
-<ul>
-  <li><code class="highlighter-rouge">Meta</code> defined nullable mappings between column/parameter values and scala types.</li>
-  <li><code class="highlighter-rouge">Composite</code> defined null-safe mappings between column/parameter <strong>vectors</strong> and scala types.</li>
-</ul>
-
-<p>Starting with version 0.6.0 type mappings are <strong>unidirectional</strong>:</p>
-<ul>
-  <li><code class="highlighter-rouge">Meta</code> has been split into <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> typeclasses, for reads and writes of column/parameter values, respectively.</li>
-  <li><code class="highlighter-rouge">Composite</code> has been split into <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> typeclasses, for reads and writes of column/parameter vectors, respecitively.</li>
-</ul>
-
-<p>Note that <code class="highlighter-rouge">Meta</code> does still exist, but only as a mechanism for introducing <code class="highlighter-rouge">Get/Put</code> pairs. An implicit <code class="highlighter-rouge">Meta[A]</code> induces both an implicit <code class="highlighter-rouge">Get[A]</code> and an implicit <code class="highlighter-rouge">Put[A]</code>, and the old mechanism of <code class="highlighter-rouge">Meta[A].imap(...)(...)</code> is still supported for this purpose. The <code class="highlighter-rouge">xmap</code> method has been replaced with parametric <code class="highlighter-rouge">imap</code> and <code class="highlighter-rouge">TypeTag</code>-constrained <code class="highlighter-rouge">timap</code>. Prefer <code class="highlighter-rouge">timap</code> when possible because it yields better diagnostic information when typechecking queries. <code class="highlighter-rouge">Meta[A]#(t)imap</code> is the combinatioon of <code class="highlighter-rouge">Get[A]#(t)map</code> and <code class="highlighter-rouge">Put[A]#(t)contramap</code>.</p>
-
+<h5><a href="#streams-and-resources" name="streams-and-resources" class="anchor"><span class="anchor-link"></span></a>Streams and Resources</h5>
+<p>In 0.5.x we provided some single-element <code>Stream</code>s that would emit values and guarantee resource cleanup. This has been generalized as <code>Resource</code> in cats-effect 1.x, and all such constructors (<code>H2Transactor.newH2Transactor</code> for example) now use <code>Resource</code> rather than <code>Stream</code>. You can use <code>Stream.resource</code> to regain the old functionality if desired.</p>
+<h3><a href="#meta-and-composite" name="meta-and-composite" class="anchor"><span class="anchor-link"></span></a>Meta and Composite</h3>
+<p>Prior to the 0.6.x series we provided two typeclasses for <strong>bidirectional</strong> type mapping: - <code>Meta</code> defined nullable mappings between column/parameter values and scala types. - <code>Composite</code> defined null-safe mappings between column/parameter <strong>vectors</strong> and scala types.</p>
+<p>Starting with version 0.6.0 type mappings are <strong>unidirectional</strong>: - <code>Meta</code> has been split into <code>Get</code> and <code>Put</code> typeclasses, for reads and writes of column/parameter values, respectively. - <code>Composite</code> has been split into <code>Read</code> and <code>Write</code> typeclasses, for reads and writes of column/parameter vectors, respecitively.</p>
+<p>Note that <code>Meta</code> does still exist, but only as a mechanism for introducing <code>Get/Put</code> pairs. An implicit <code>Meta[A]</code> induces both an implicit <code>Get[A]</code> and an implicit <code>Put[A]</code>, and the old mechanism of <code>Meta[A].imap(...)(...)</code> is still supported for this purpose. The <code>xmap</code> method has been replaced with parametric <code>imap</code> and <code>TypeTag</code>-constrained <code>timap</code>. Prefer <code>timap</code> when possible because it yields better diagnostic information when typechecking queries. <code>Meta[A]#(t)imap</code> is the combinatioon of <code>Get[A]#(t)map</code> and <code>Put[A]#(t)contramap</code>.</p>
 <p>To summarize:</p>
-
 <table>
   <thead>
     <tr>
-      <th>0.5.x</th>
-      <th>0.6.x</th>
-      <th>Notes</th>
+      <th>0.5.x </th>
+      <th>0.6.x </th>
+      <th>Notes </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code class="highlighter-rouge">[A: Meta]</code></td>
-      <td><code class="highlighter-rouge">[A: Get : Put]</code></td>
-      <td>Or just one, depending on usage.</td>
+      <td><code>[A: Meta]</code> </td>
+      <td><code>[A: Get : Put]</code> </td>
+      <td>Or just one, depending on usage. </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">[A: Composite]</code></td>
-      <td><code class="highlighter-rouge">[A: Read : Write]</code></td>
-      <td>Or just one, depending on usage.</td>
+      <td><code>[A: Composite]</code> </td>
+      <td><code>[A: Read : Write]</code> </td>
+      <td>Or just one, depending on usage. </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">Meta[A].xmap(..)</code></td>
-      <td><code class="highlighter-rouge">Meta[A].timap(...)</code></td>
-      <td>Or <code class="highlighter-rouge">imap</code> when a <code class="highlighter-rouge">TypeTag</code> is unavailable.</td>
+      <td><code>Meta[A].xmap(..)</code> </td>
+      <td><code>Meta[A].timap(...)</code> </td>
+      <td>Or <code>imap</code> when a <code>TypeTag</code> is unavailable. </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">Composite[A].xmap(...)</code></td>
-      <td><code class="highlighter-rouge">Read[A].map(...)</code> <br /> <code class="highlighter-rouge">Write[A].contramap(...)</code></td>
-      <td>This takes two steps now.</td>
+      <td><code>Composite[A].xmap(...)</code> </td>
+      <td><code>Read[A].map(...)</code> <br> <code>Write[A].contramap(...)</code> </td>
+      <td>This takes two steps now. </td>
     </tr>
   </tbody>
 </table>
-
-<p>Please refer to the <code class="highlighter-rouge">examples</code> project for example usage, or ask questions on the Gitter channel if you have questions or concerns about this change.</p>
-
-<hr />
-
-<h1 id="upgrading-to-05x-from-04x-with-scalaz">Upgrading to 0.5.x from 0.4.x with Scalaz</h1>
-
-<p><strong>doobie</strong> has standardized on <a href="https://github.com/typelevel/cats">cats</a> as its FP support library. If you are using scalaz for other parts of your application you can interpret <code class="highlighter-rouge">ConnectionIO</code> into <code class="highlighter-rouge">scalaz.concurrent.Task</code> at the boundary by using a <code class="highlighter-rouge">Transactor[Task]</code>. The required instance of <code class="highlighter-rouge">Async[Task]</code> is provided by <a href="https://github.com/functional-streams-for-scala/fs2-scalaz">fs2-scalaz</a>.</p>
-
-<h1 id="upgrading-to-05x-from-04x-with-cats">Upgrading to 0.5.x from 0.4.x with Cats</h1>
-
+<p>Please refer to the <code>examples</code> project for example usage, or ask questions on the Gitter channel if you have questions or concerns about this change.</p>
+<hr/>
+<h2><a href="#upgrading-to-0-5-x-from-0-4-x-with-scalaz" name="upgrading-to-0-5-x-from-0-4-x-with-scalaz" class="anchor"><span class="anchor-link"></span></a>Upgrading to 0.5.x from 0.4.x with Scalaz</h2>
+<p><strong>doobie</strong> has standardized on <a href="https://github.com/typelevel/cats">cats</a> as its FP support library. If you are using scalaz for other parts of your application you can interpret <code>ConnectionIO</code> into <code>scalaz.concurrent.Task</code> at the boundary by using a <code>Transactor[Task]</code>. The required instance of <code>Async[Task]</code> is provided by <a href="https://github.com/functional-streams-for-scala/fs2-scalaz">fs2-scalaz</a>.</p>
+<h2><a href="#upgrading-to-0-5-x-from-0-4-x-with-cats" name="upgrading-to-0-5-x-from-0-4-x-with-cats" class="anchor"><span class="anchor-link"></span></a>Upgrading to 0.5.x from 0.4.x with Cats</h2>
 <p>This guide covers the changes that are specific to <strong>doobie</strong>, but you will also need to deal with changes between cats 0.9 and cats 1.0 (the provided Scalafix rules may be helpful) and between fs2 0.9 and fs2 0.10. Please join the <a href="https://gitter.im/tpolecat/doobie">gitter channel</a> if you run into trouble. We will update this document to reflect common issues as they arise.</p>
-
-<h2 id="artifacts">Artifacts</h2>
-
-<p>Artifact names have changed. The <code class="highlighter-rouge">-cats</code> segment is now redundant and has been removed.</p>
-
+<h3><a href="#artifacts" name="artifacts" class="anchor"><span class="anchor-link"></span></a>Artifacts</h3>
+<p>Artifact names have changed. The <code>-cats</code> segment is now redundant and has been removed.</p>
 <table>
   <thead>
     <tr>
-      <th>0.4.x Artifact</th>
-      <th>0.5.x Artifact</th>
+      <th>0.4.x Artifact </th>
+      <th>0.5.x Artifact </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-core-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-core"</code></td>
+      <td><code>&quot;doobie-core-cats&quot;</code> </td>
+      <td><code>&quot;doobie-core&quot;</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-h2-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-h2"</code></td>
+      <td><code>&quot;doobie-h2-cats&quot;</code> </td>
+      <td><code>&quot;doobie-h2&quot;</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-hikari-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-hikari"</code></td>
+      <td><code>&quot;doobie-hikari-cats&quot;</code> </td>
+      <td><code>&quot;doobie-hikari&quot;</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-postgres-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-postgres"</code></td>
+      <td><code>&quot;doobie-postgres-cats&quot;</code> </td>
+      <td><code>&quot;doobie-postgres&quot;</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-refined-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-refined"</code></td>
+      <td><code>&quot;doobie-refined-cats&quot;</code> </td>
+      <td><code>&quot;doobie-refined&quot;</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-scalatest-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-scalatest"</code></td>
+      <td><code>&quot;doobie-scalatest-cats&quot;</code> </td>
+      <td><code>&quot;doobie-scalatest&quot;</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">"doobie-specs2-cats"</code></td>
-      <td><code class="highlighter-rouge">"doobie-specs2"</code></td>
+      <td><code>&quot;doobie-specs2-cats&quot;</code> </td>
+      <td><code>&quot;doobie-specs2&quot;</code> </td>
     </tr>
   </tbody>
 </table>
-
-<h2 id="imports">Imports</h2>
-
-<p>Doobie imports have been split into normal and implicit slices, to mirror the pattern in cats (old imports will work but are deprecated) and a few things have been renamed. fs2’s interop layer for cats is gone.</p>
-
+<h3><a href="#imports" name="imports" class="anchor"><span class="anchor-link"></span></a>Imports</h3>
+<p>Doobie imports have been split into normal and implicit slices, to mirror the pattern in cats (old imports will work but are deprecated) and a few things have been renamed. fs2&rsquo;s interop layer for cats is gone.</p>
 <table>
   <thead>
     <tr>
-      <th>0.4.x Import</th>
-      <th>0.5.x Import</th>
+      <th>0.4.x Import </th>
+      <th>0.5.x Import </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code class="highlighter-rouge">doobie.imports._</code></td>
-      <td><code class="highlighter-rouge">doobie._</code> <br /> <code class="highlighter-rouge">doobie.implicits._</code></td>
+      <td><code>doobie.imports._</code> </td>
+      <td><code>doobie._</code> <br> <code>doobie.implicits._</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">doobie.postgres.imports._</code></td>
-      <td><code class="highlighter-rouge">doobie.postgres._</code> <br /> <code class="highlighter-rouge">doobie.postgres.implicits._</code></td>
+      <td><code>doobie.postgres.imports._</code> </td>
+      <td><code>doobie.postgres._</code> <br> <code>doobie.postgres.implicits._</code> </td>
     </tr>
     <tr>
       <td>and so on</td>
-      <td> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">doobie.util.process</code></td>
-      <td><code class="highlighter-rouge">doobie.util.stream</code></td>
+      <td><code>doobie.util.process</code> </td>
+      <td><code>doobie.util.stream</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">fs2.interop.cats._</code></td>
-      <td>n/a</td>
+      <td><code>fs2.interop.cats._</code> </td>
+      <td>n/a </td>
     </tr>
   </tbody>
 </table>
-
-<h2 id="data-types">Data Types</h2>
-
-<p>The IO data types provided by fs2 and doobie have been subsumed by <code class="highlighter-rouge">cats.effect.IO</code> or any data type with a <code class="highlighter-rouge">cats.effect.Async</code> instance, such as <code class="highlighter-rouge">monix.eval.Task</code>.</p>
-
+<h3><a href="#data-types" name="data-types" class="anchor"><span class="anchor-link"></span></a>Data Types</h3>
+<p>The IO data types provided by fs2 and doobie have been subsumed by <code>cats.effect.IO</code> or any data type with a <code>cats.effect.Async</code> instance, such as <code>monix.eval.Task</code>.</p>
 <table>
   <thead>
     <tr>
-      <th>0.4.x Data Type</th>
-      <th>0.5.x Data Type</th>
+      <th>0.4.x Data Type </th>
+      <th>0.5.x Data Type </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code class="highlighter-rouge">fs2.Task</code></td>
-      <td><code class="highlighter-rouge">cats.effect.IO</code></td>
+      <td><code>fs2.Task</code> </td>
+      <td><code>cats.effect.IO</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">doobie.util.IOLite</code></td>
-      <td><code class="highlighter-rouge">cats.effect.IO</code></td>
+      <td><code>doobie.util.IOLite</code> </td>
+      <td><code>cats.effect.IO</code> </td>
     </tr>
   </tbody>
 </table>
-
-<p>Note that the “end of the world” operation for <code class="highlighter-rouge">IO</code> is called <code class="highlighter-rouge">unsafeRunSync</code>.</p>
-
-<h2 id="typeclasses">Typeclasses</h2>
-
+<p>Note that the &ldquo;end of the world&rdquo; operation for <code>IO</code> is called <code>unsafeRunSync</code>.</p>
+<h3><a href="#typeclasses" name="typeclasses" class="anchor"><span class="anchor-link"></span></a>Typeclasses</h3>
 <p>The typeclass hierarchy in fs2 has been removed.</p>
-
 <table>
   <thead>
     <tr>
-      <th>0.4.x  Typeclass</th>
-      <th>0.5.x Typeclass</th>
+      <th>0.4.x Typeclass </th>
+      <th>0.5.x Typeclass </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code class="highlighter-rouge">fs2.util.Catchable</code></td>
-      <td><code class="highlighter-rouge">cats.MonadError[?[_], Throwable]</code></td>
+      <td><code>fs2.util.Catchable</code> </td>
+      <td><code>cats.MonadError[?[_], Throwable]</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">fs2.util.Suspendable</code></td>
-      <td><code class="highlighter-rouge">cats.effect.Sync</code></td>
+      <td><code>fs2.util.Suspendable</code> </td>
+      <td><code>cats.effect.Sync</code> </td>
     </tr>
   </tbody>
 </table>
-
-<h2 id="transactors">Transactors</h2>
-
-<p>The built-in <code class="highlighter-rouge">Transactor</code> constructors are now on <code class="highlighter-rouge">Transactor</code> itself.</p>
-
+<h3><a href="#transactors" name="transactors" class="anchor"><span class="anchor-link"></span></a>Transactors</h3>
+<p>The built-in <code>Transactor</code> constructors are now on <code>Transactor</code> itself.</p>
 <table>
   <thead>
     <tr>
-      <th>0.4.x  Constructor</th>
-      <th>0.5.x Constructor</th>
+      <th>0.4.x Constructor </th>
+      <th>0.5.x Constructor </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code class="highlighter-rouge">DriverManagerTransactor(...)</code></td>
-      <td><code class="highlighter-rouge">Transactor.fromDriverManager(...)</code></td>
+      <td><code>DriverManagerTransactor(...)</code> </td>
+      <td><code>Transactor.fromDriverManager(...)</code> </td>
     </tr>
     <tr>
-      <td><code class="highlighter-rouge">DataSourceTransactor(...)</code></td>
-      <td><code class="highlighter-rouge">Transactor.fromDataSource(...)</code></td>
+      <td><code>DataSourceTransactor(...)</code> </td>
+      <td><code>Transactor.fromDataSource(...)</code> </td>
     </tr>
   </tbody>
 </table>
-
-<h2 id="error-handling-combinators">Error-Handling Combinators</h2>
-
-<p><strong>doobie</strong>’s provided <code class="highlighter-rouge">ensuring</code> combinator has been renamed to <code class="highlighter-rouge">guarantee</code> to avoid conflicts with Scala’s standard library. The combinators for <code class="highlighter-rouge">Catchable</code> have been removed; use <code class="highlighter-rouge">ApplicativeError</code> and <code class="highlighter-rouge">MonadError</code> instead.</p>
-
-<h2 id="miscellaneous-changes">Miscellaneous Changes</h2>
-
+<h3><a href="#error-handling-combinators" name="error-handling-combinators" class="anchor"><span class="anchor-link"></span></a>Error-Handling Combinators</h3>
+<p><strong>doobie</strong>&rsquo;s provided <code>ensuring</code> combinator has been renamed to <code>guarantee</code> to avoid conflicts with Scala&rsquo;s standard library. The combinators for <code>Catchable</code> have been removed; use <code>ApplicativeError</code> and <code>MonadError</code> instead.</p>
+<h3><a href="#miscellaneous-changes" name="miscellaneous-changes" class="anchor"><span class="anchor-link"></span></a>Miscellaneous Changes</h3>
 <p>In no particular order:</p>
-
 <ul>
-  <li>All <code class="highlighter-rouge">.process</code> combinators and constructors are deprecated in the <code class="highlighter-rouge">Query/Update</code> API and removed in the lower-level APIs; use the <code class="highlighter-rouge">.stream</code> equivalents.</li>
-  <li>The <code class="highlighter-rouge">.list</code> and <code class="highlighter-rouge">.vector</code> methods on <code class="highlighter-rouge">Query/Query0</code> are deprecated in favor of <code class="highlighter-rouge">.to[List]</code> and <code class="highlighter-rouge">.to[Vector]</code> respectively.</li>
+  <li>All <code>.process</code> combinators and constructors are deprecated in the <code>Query/Update</code> API and removed in the lower-level APIs; use the <code>.stream</code> equivalents.</li>
+  <li>The <code>.list</code> and <code>.vector</code> methods on <code>Query/Query0</code> are deprecated in favor of <code>.to[List]</code> and <code>.to[Vector]</code> respectively.</li>
 </ul>
+<div class="source-github">
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/migration.md">here</a>.
+</div>
 
-</div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>doobie is designed and developed by <a href="" target="_blank" rel="noopener noreferrer">Rob Norris</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/tpolecat/doobie"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank" rel="noopener noreferrer">sbt-microsites</a> - © 2019 <a href="https://www.47deg.com/" target="_blank" rel="noopener noreferrer">47 Degrees</a></p></div></div><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.initHighlighting();
-              </script></div></footer><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
-hljs.initHighlighting();
-              </script></body></html>
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="docs/index.html">Book of Doobie</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="migration.html#migration-notes" class="header">Migration Notes</a>
+  <ul>
+    <li><a href="migration.html#upgrading-to-0-8-x-from-0-7-x" class="header">Upgrading to 0.8.x from 0.7.x</a></li>
+    <li><a href="migration.html#upgrading-to-0-7-x-from-0-6-x" class="header">Upgrading to 0.7.x from 0.6.x</a></li>
+    <li><a href="migration.html#upgrading-to-0-6-x-from-0-5-x" class="header">Upgrading to 0.6.x from 0.5.x</a></li>
+    <li><a href="migration.html#upgrading-to-0-5-x-from-0-4-x-with-scalaz" class="header">Upgrading to 0.5.x from 0.4.x with Scalaz</a></li>
+    <li><a href="migration.html#upgrading-to-0-5-x-from-0-4-x-with-cats" class="header">Upgrading to 0.5.x from 0.4.x with Cats</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2020</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="js/magellan.js"></script>
+
+<style type="text/css">@import "lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+
+
+</html>

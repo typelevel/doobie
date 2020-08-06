@@ -1,61 +1,180 @@
-<html><head><title>doobie: Custom Mappings</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Rob Norris" /><meta name="description" content="A functional JDBC layer for Scala." /><meta name="og:image" content="/doobie/img/poster.png" /><meta name="image" property="og:image" content="/doobie/img/poster.png" /><meta name="og:title" content="doobie: Custom Mappings" /><meta name="title" property="og:title" content="doobie: Custom Mappings" /><meta name="og:site_name" content="doobie" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="A functional JDBC layer for Scala." /><link rel="icon" type="image/png" href="/doobie/img/favicon.png" /><meta name="twitter:title" content="doobie: Custom Mappings" /><meta name="twitter:image" content="/doobie/img/poster.png" /><meta name="twitter:description" content="A functional JDBC layer for Scala." /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/doobie/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/doobie/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/doobie/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/doobie/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/doobie/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/doobie/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/doobie/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/doobie/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/doobie/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/doobie/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/doobie/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/doobie/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/doobie/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/doobie/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/doobie/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/doobie/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/doobie/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/doobie/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/doobie/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/doobie/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/doobie/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/doobie/css/style.css" /><link rel="stylesheet" href="/doobie/css/palette.css" /><link rel="stylesheet" href="/doobie/css/codemirror.css" /><link rel="stylesheet" href="/doobie/css/tweak.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/doobie/" class="brand"><div class="brand-wrapper"><span>doobie</span></div></a></li><li><a href="/doobie/css/style.css" class=""></a></li><li><a href="/doobie/docs/02-Toolkit.html" class="">Toolkit</a></li><li><a href="/doobie/docs/03-Connecting.html" class="">Connecting to a Database</a></li><li><a href="/doobie/docs/04-Selecting.html" class="">Selecting Data</a></li><li><a href="/doobie/docs/05-Parameterized.html" class="">Parameterized Queries</a></li><li><a href="/doobie/docs/06-Checking.html" class="">Typechecking Queries</a></li><li><a href="/doobie/docs/07-Updating.html" class="">DDL, Inserting, and Updating</a></li><li><a href="/doobie/docs/08-Fragments.html" class="">Statement Fragments</a></li><li><a href="/doobie/docs/09-Error-Handling.html" class="">Error Handling</a></li><li><a href="/doobie/docs/10-Logging.html" class="">Logging</a></li><li><a href="/doobie/docs/11-Arrays.html" class="">SQL Arrays</a></li><li><a href="/doobie/docs/12-Custom-Mappings.html" class=" active ">Custom Mappings</a></li><li><a href="/doobie/docs/13-Unit-Testing.html" class="">Unit Testing</a></li><li><a href="/doobie/docs/14-Managing-Connections.html" class="">Managing Connections</a></li><li><a href="/doobie/docs/15-Extensions-PostgreSQL.html" class="">Extensions for PostgreSQL</a></li><li><a href="/doobie/docs/16-Extensions-H2.html" class="">Extensions for H2</a></li><li><a href="/doobie/docs/17-Quill.html" class="">Quill Integration</a></li><li><a href="/doobie/docs/18-FAQ.html" class="">Frequently-Asked Questions</a></li><li><a href="/doobie/" class=""></a></li><li><a href="/doobie/css/palette.css" class=""></a></li><li><a href="/doobie/docs/01-Introduction.html" class="">Introduction</a></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/tpolecat/doobie"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('doobie A functional JDBC layer for Scala.');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('doobie A functional JDBC layer for Scala.');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="tpolecat" data-github-repo="doobie"><div class="content-wrapper"><section><h2 id="custom-mappings">Custom Mappings</h2>
+<!DOCTYPE html>
+<html class="no-js" lang="en">
 
+<head>
+<title>Custom Mappings · doobie</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="active page">Custom Mappings</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="../index.html">doobie</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+0.9.0
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="active page">Custom Mappings</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
+    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">doobie</a></li>
+  <li><a href="../docs/index.html">Book of Doobie</a></li>
+  <li>Custom Mappings</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h2><a href="#custom-mappings" name="custom-mappings" class="anchor"><span class="anchor-link"></span></a>Custom Mappings</h2>
 <p><strong>doobie</strong> provides two families of abstractions that define mappings between Scala types and schema types. These are used when we pass query arguments to the database, and when we interpret results that come back. Many such mappings are provided for free but it is sometimes necessary to define your own, and this is the subject of this chapter.</p>
-
-<p>The most common kind of custom mapping operates on single column values, so we will examine this kind of mapping first. We will then talk about column vector mappings for “wide” structures.</p>
-
-<h2 id="setup">Setup</h2>
-
-<p>In this chapter we’re importing the essentials from Cats and <strong>doobie</strong>, as well as some other odds and ends we’ll discuss below.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats._</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">doobie._</span><span class="o">,</span> <span class="n">doobie</span><span class="o">.</span><span class="n">implicits</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">io.circe._</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">jawn</span><span class="o">.</span><span class="k">_</span><span class="o">,</span> <span class="n">io</span><span class="o">.</span><span class="n">circe</span><span class="o">.</span><span class="n">syntax</span><span class="o">.</span><span class="k">_</span>
-<span class="k">import</span> <span class="nn">java.awt.Point</span>
-<span class="k">import</span> <span class="nn">org.postgresql.util.PGobject</span>
+<p>The most common kind of custom mapping operates on single column values, so we will examine this kind of mapping first. We will then talk about column vector mappings for &ldquo;wide&rdquo; structures.</p>
+<h2><a href="#setup" name="setup" class="anchor"><span class="anchor-link"></span></a>Setup</h2>
+<p>In this chapter we&rsquo;re importing the essentials from Cats and <strong>doobie</strong>, as well as some other odds and ends we&rsquo;ll discuss below.</p>
+<pre class="prettyprint"><code class="language-scala">import cats._, cats.data._, cats.implicits._
+import doobie._, doobie.implicits._
+import io.circe._, io.circe.jawn._, io.circe.syntax._
+import java.awt.Point
+import org.postgresql.util.PGobject
 </code></pre>
-</div>
-
-<h2 id="when-do-i-need-a-custom-type-mapping">When do I need a custom type mapping?</h2>
-
+<h2><a href="#when-do-i-need-a-custom-type-mapping-" name="when-do-i-need-a-custom-type-mapping-" class="anchor"><span class="anchor-link"></span></a>When do I need a custom type mapping?</h2>
 <p>Your first evidence that you need a new type mapping will likely be a type error. There are two common cases. The first case appears when you try to use an unmapped type as a statement parameter.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">nope</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">Exception</span><span class="o">)</span><span class="k">:</span> <span class="kt">ConnectionIO</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span>
-  <span class="n">sql</span><span class="s">"INSERT INTO log (message, detail) VALUES ($msg, $ex)"</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">run</span>
-<span class="c1">// error:
-// Cannot construct a parameter vector of the following type:
-// 
-//   String :: Exception :: shapeless.HNil
-// 
-// Because one or more types therein (disregarding HNil) does not have a Put
-// instance in scope. Try them one by one in the REPL or in your code:
-// 
-//   scala&gt; Put[Foo]
-// 
-// and find the one that has no instance, then construct one as needed. Refer to
-// Chapter 12 of the book of doobie for more information.
-// 
-//   sql"INSERT INTO log (message, detail) VALUES ($msg, $ex)".update.run
-//   ^^^
-</span></code></pre>
-</div>
-
-<p>The second common case is when we try to read rows into a data type that includes an unmapped member type, such as this one.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">LogEntry</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">Exception</span><span class="o">)</span>
+<pre class="prettyprint"><code class="language-scala">def nope(msg: String, ex: Exception): ConnectionIO[Int] =
+  sql&quot;INSERT INTO log (message, detail) VALUES ($msg, $ex)&quot;.update.run
+// error: type mismatch;
+//  found   : Exception
+//  required: doobie.syntax.SqlInterpolator.SingleFragment
+//   sql&quot;INSERT INTO log (message, detail) VALUES ($msg, $ex)&quot;.update.run
+//                                                        ^^
 </code></pre>
-</div>
-
-<p>When we attept to define a <code class="highlighter-rouge">Query0[LogEntry]</code> we get a type error similar to the one above.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="n">sql</span><span class="s">"SELECT message, detail FROM log"</span><span class="o">.</span><span class="n">query</span><span class="o">[</span><span class="kt">LogEntry</span><span class="o">]</span>
-<span class="c1">// error:
+<p>The second common case is when we try to read rows into a data type that includes an unmapped member type, such as this one.</p>
+<pre class="prettyprint"><code class="language-scala">case class LogEntry(msg: String, ex: Exception)
+</code></pre>
+<p>When we attept to define a <code>Query0[LogEntry]</code> we get a type error similar to the one above.</p>
+<pre class="prettyprint"><code class="language-scala">sql&quot;SELECT message, detail FROM log&quot;.query[LogEntry]
+// error:
 // Cannot find or construct a Read instance for type:
 // 
 //   repl.Session.App.LogEntry
 // 
 // This can happen for a few reasons, but the most common case is that a data
-// member somewhere within this type doesn't have a Get instance in scope. Here are
+// member somewhere within this type doesn&#39;t have a Get instance in scope. Here are
 // some debugging hints:
 // 
 // - For Option types, ensure that a Read instance is in scope for the non-Option
@@ -77,198 +196,229 @@
 // And find the missing instance and construct it as needed. Refer to Chapter 12
 // of the book of doobie for more information.
 // 
-// sql"SELECT message, detail FROM log".query[LogEntry]
+// sql&quot;SELECT message, detail FROM log&quot;.query[LogEntry]
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-</span></code></pre>
-</div>
-
-<p>In both cases some hints are provided and refer you to this very chapter! So let’s keep on going and look at type mappings in detail.</p>
-
-<h2 id="single-column-type-mappings">Single-Column Type Mappings</h2>
-
-<p>JDBC defines mappings between JVM types like <code class="highlighter-rouge">Int</code> and <code class="highlighter-rouge">String</code> and standard schema types like <code class="highlighter-rouge">INTEGER</code> and <code class="highlighter-rouge">VARCHAR</code>. These suffice for most cases, and <strong>doobie</strong> provides them out of the box. We abstract over such mappings via the <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> typeclasses.</p>
-
+</code></pre>
+<p>In both cases some hints are provided and refer you to this very chapter! So let&rsquo;s keep on going and look at type mappings in detail.</p>
+<h2><a href="#single-column-type-mappings" name="single-column-type-mappings" class="anchor"><span class="anchor-link"></span></a>Single-Column Type Mappings</h2>
+<p>JDBC defines mappings between JVM types like <code>Int</code> and <code>String</code> and standard schema types like <code>INTEGER</code> and <code>VARCHAR</code>. These suffice for most cases, and <strong>doobie</strong> provides them out of the box. We abstract over such mappings via the <code>Get</code> and <code>Put</code> typeclasses.</p>
 <ul>
-  <li><code class="highlighter-rouge">Get[A]</code> describes a mapping from some non-nullable schema type to Scala type <code class="highlighter-rouge">A</code>, and from the equivalent nullable schema type to <code class="highlighter-rouge">Option[A]</code>. This lets us read column values and statement return values.</li>
-  <li><code class="highlighter-rouge">Put[A]</code> describes a mapping from Scala type <code class="highlighter-rouge">A</code> to some non-nullable schema type, and from <code class="highlighter-rouge">Option[A]</code> to the equivalent nullable schema type. This lets us set statement parameters and update columns.</li>
+  <li><code>Get[A]</code> describes a mapping from some non-nullable schema type to Scala type <code>A</code>, and from the equivalent nullable schema type to <code>Option[A]</code>. This lets us read column values and statement return values.</li>
+  <li><code>Put[A]</code> describes a mapping from Scala type <code>A</code> to some non-nullable schema type, and from <code>Option[A]</code> to the equivalent nullable schema type. This lets us set statement parameters and update columns.</li>
 </ul>
-
 <p>Instances are provided for the following Scala types:</p>
-
 <ul>
-  <li>JVM numeric types <code class="highlighter-rouge">Byte</code>, <code class="highlighter-rouge">Short</code>, <code class="highlighter-rouge">Int</code>, <code class="highlighter-rouge">Long</code>, <code class="highlighter-rouge">Float</code>, and <code class="highlighter-rouge">Double</code>;</li>
-  <li><code class="highlighter-rouge">BigDecimal</code> (both Java and Scala versions);</li>
-  <li><code class="highlighter-rouge">Boolean</code>, <code class="highlighter-rouge">String</code>, and <code class="highlighter-rouge">Array[Byte]</code>;</li>
-  <li><code class="highlighter-rouge">Date</code>, <code class="highlighter-rouge">Time</code>, and <code class="highlighter-rouge">Timestamp</code> from the <code class="highlighter-rouge">java.sql</code> package;</li>
-  <li><code class="highlighter-rouge">Date</code> from the <code class="highlighter-rouge">java.util</code> package;</li>
-  <li><code class="highlighter-rouge">Instant</code>, <code class="highlighter-rouge">LocalDate</code>, <code class="highlighter-rouge">LocalTime</code>, <code class="highlighter-rouge">LocalDateTime</code>, <code class="highlighter-rouge">OffsetTime</code>, <code class="highlighter-rouge">OffsetDateTime</code> and <code class="highlighter-rouge">ZonedDateTime</code> from the <code class="highlighter-rouge">java.time</code> package; and</li>
+  <li>JVM numeric types <code>Byte</code>, <code>Short</code>, <code>Int</code>, <code>Long</code>, <code>Float</code>, and <code>Double</code>;</li>
+  <li><code>BigDecimal</code> (both Java and Scala versions);</li>
+  <li><code>Boolean</code>, <code>String</code>, and <code>Array[Byte]</code>;</li>
+  <li><code>Date</code>, <code>Time</code>, and <code>Timestamp</code> from the <code>java.sql</code> package;</li>
+  <li><code>Date</code> from the <code>java.util</code> package;</li>
+  <li><code>Instant</code>, <code>LocalDate</code>, <code>LocalTime</code>, <code>LocalDateTime</code>, <code>OffsetTime</code>, <code>OffsetDateTime</code> and <code>ZonedDateTime</code> from the <code>java.time</code> package; and</li>
   <li>single-element case classes wrapping one of the above types.</li>
 </ul>
+<p>The above cases are defined by the JDBC specification. See later chapters on vendor-specific additions, which provide mappings for some non-standard types such as <code>UUID</code>s and network addresses.</p>
+<h4><a href="#deriving-get-and-put-from-existing-instances" name="deriving-get-and-put-from-existing-instances" class="anchor"><span class="anchor-link"></span></a>Deriving Get and Put from Existing Instances</h4>
+<p>If we don&rsquo;t have the <code>Get</code> or <code>Put</code> instance we need, we can often one from an existing instance. Consider here a type <code>Nat</code> of natural numbers, along with a conversion to and from <code>Int</code>.</p>
+<pre class="prettyprint"><code class="language-scala">object NatModule {
 
-<p>The above cases are defined by the JDBC specification. See later chapters on vendor-specific additions, which provide mappings for some non-standard types such as <code class="highlighter-rouge">UUID</code>s and network addresses.</p>
+  sealed trait Nat
+  case object Zero extends Nat
+  case class  Succ(n: Nat) extends Nat
 
-<h4 id="deriving-get-and-put-from-existing-instances">Deriving Get and Put from Existing Instances</h4>
+  def toInt(n: Nat): Int = {
+    def go(n: Nat, acc: Int): Int =
+      n match {
+        case Zero    =&gt; acc
+        case Succ(n) =&gt; go(n, acc + 1)
+      }
+    go(n, 0)
+  }
 
-<p>If we don’t have the <code class="highlighter-rouge">Get</code> or <code class="highlighter-rouge">Put</code> instance we need, we can often one from an existing instance. Consider here a type <code class="highlighter-rouge">Nat</code> of natural numbers, along with a conversion to and from <code class="highlighter-rouge">Int</code>.</p>
+  def fromInt(n: Int): Nat = {
+    def go(n: Int, acc: Nat): Nat =
+      if (n &lt;= 0) acc else go(n - 1, Succ(acc))
+    go(n, Zero)
+  }
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">object</span> <span class="nc">NatModule</span> <span class="o">{</span>
-
-  <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Nat</span>
-  <span class="k">case</span> <span class="k">object</span> <span class="nc">Zero</span> <span class="k">extends</span> <span class="nc">Nat</span>
-  <span class="k">case</span> <span class="k">class</span>  <span class="nc">Succ</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Nat</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Nat</span>
-
-  <span class="k">def</span> <span class="n">toInt</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Nat</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="o">{</span>
-    <span class="k">def</span> <span class="n">go</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Nat</span><span class="o">,</span> <span class="n">acc</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span>
-      <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
-        <span class="k">case</span> <span class="nc">Zero</span>    <span class="k">=&gt;</span> <span class="n">acc</span>
-        <span class="k">case</span> <span class="nc">Succ</span><span class="o">(</span><span class="n">n</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">go</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="n">acc</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
-      <span class="o">}</span>
-    <span class="n">go</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="mi">0</span><span class="o">)</span>
-  <span class="o">}</span>
-
-  <span class="k">def</span> <span class="n">fromInt</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Nat</span> <span class="o">=</span> <span class="o">{</span>
-    <span class="k">def</span> <span class="n">go</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">acc</span><span class="k">:</span> <span class="kt">Nat</span><span class="o">)</span><span class="k">:</span> <span class="kt">Nat</span> <span class="o">=</span>
-      <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="n">acc</span> <span class="k">else</span> <span class="n">go</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="nc">Succ</span><span class="o">(</span><span class="n">acc</span><span class="o">))</span>
-    <span class="n">go</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="nc">Zero</span><span class="o">)</span>
-  <span class="o">}</span>
-
-<span class="o">}</span>
-<span class="k">import</span> <span class="nn">NatModule._</span>
+}
+import NatModule._
 </code></pre>
-</div>
-
-<p>There is no direct schema mapping for <code class="highlighter-rouge">Nat</code>, but there <em>is</em> a schema mapping for <code class="highlighter-rouge">Int</code> that we get out of the box, and we can use it to define our mapping for <code class="highlighter-rouge">Nat</code>.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Bidirectional schema mapping for Nat, in terms of Int
-</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">natGet</span><span class="k">:</span> <span class="kt">Get</span><span class="o">[</span><span class="kt">Nat</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Get</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">map</span><span class="o">(</span><span class="n">fromInt</span><span class="o">)</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="n">natPut</span><span class="k">:</span> <span class="kt">Put</span><span class="o">[</span><span class="kt">Nat</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Put</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">contramap</span><span class="o">(</span><span class="n">toInt</span><span class="o">)</span>
+<p>There is no direct schema mapping for <code>Nat</code>, but there <em>is</em> a schema mapping for <code>Int</code> that we get out of the box, and we can use it to define our mapping for <code>Nat</code>.</p>
+<pre class="prettyprint"><code class="language-scala">// Bidirectional schema mapping for Nat, in terms of Int
+implicit val natGet: Get[Nat] = Get[Int].map(fromInt)
+implicit val natPut: Put[Nat] = Put[Int].contramap(toInt)
 </code></pre>
-</div>
-
-<p>The <code class="highlighter-rouge">.map</code> and <code class="highlighter-rouge">.contramap</code> methods conform with the signatures of <code class="highlighter-rouge">Functor</code> and <code class="highlighter-rouge">Contravariant</code>, and indeed <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> are instances, respectively. However it’s best to use the tagged versions <code class="highlighter-rouge">.tmap</code> and <code class="highlighter-rouge">.tcontramap</code> when possible because it makes the name of the type (“Nat” in this case) available to the query checker by requiring a <code class="highlighter-rouge">TypeTag</code> for the mapped type. This isn’t always practical but it can result in better diagnostic messages so it should be preferred.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Prefer .tmap and .tcontramap when possible.
-</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">natGet2</span><span class="k">:</span> <span class="kt">Get</span><span class="o">[</span><span class="kt">Nat</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Get</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">tmap</span><span class="o">(</span><span class="n">fromInt</span><span class="o">)</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="n">natPut2</span><span class="k">:</span> <span class="kt">Put</span><span class="o">[</span><span class="kt">Nat</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Put</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">tcontramap</span><span class="o">(</span><span class="n">toInt</span><span class="o">)</span>
+<p>The <code>.map</code> and <code>.contramap</code> methods conform with the signatures of <code>Functor</code> and <code>Contravariant</code>, and indeed <code>Get</code> and <code>Put</code> are instances, respectively. However it&rsquo;s best to use the tagged versions <code>.tmap</code> and <code>.tcontramap</code> when possible because it makes the name of the type (&ldquo;Nat&rdquo; in this case) available to the query checker by requiring a <code>TypeTag</code> for the mapped type. This isn&rsquo;t always practical but it can result in better diagnostic messages so it should be preferred.</p>
+<pre class="prettyprint"><code class="language-scala">// Prefer .tmap and .tcontramap when possible.
+implicit val natGet2: Get[Nat] = Get[Int].tmap(fromInt)
+implicit val natPut2: Put[Nat] = Put[Int].tcontramap(toInt)
 </code></pre>
-</div>
-
-<h4 id="deriving-get-and-put-from-meta">Deriving Get and Put from Meta</h4>
-
-<p>Because it is common to define bidirectional mappings there is also a <code class="highlighter-rouge">Meta</code> typeclass which serves to introduce both a <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> into implicit scope. If you have an implicit <code class="highlighter-rouge">Meta[A]</code> then you get an implicit <code class="highlighter-rouge">Put[A]</code> and a <code class="highlighter-rouge">Get[A]</code> for free.</p>
-
-<p>Because a <code class="highlighter-rouge">Meta</code> instance exists for <code class="highlighter-rouge">Int</code> and other base types this is often the most convenient way to define a bidirectional mapping.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Bidirectional schema mapping for Nat, in terms of Int
-</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">natMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">Nat</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">imap</span><span class="o">(</span><span class="n">fromInt</span><span class="o">)(</span><span class="n">toInt</span><span class="o">)</span>
+<h4><a href="#deriving-get-and-put-from-meta" name="deriving-get-and-put-from-meta" class="anchor"><span class="anchor-link"></span></a>Deriving Get and Put from Meta</h4>
+<p>Because it is common to define bidirectional mappings there is also a <code>Meta</code> typeclass which serves to introduce both a <code>Get</code> and <code>Put</code> into implicit scope. If you have an implicit <code>Meta[A]</code> then you get an implicit <code>Put[A]</code> and a <code>Get[A]</code> for free.</p>
+<p>Because a <code>Meta</code> instance exists for <code>Int</code> and other base types this is often the most convenient way to define a bidirectional mapping.</p>
+<pre class="prettyprint"><code class="language-scala">// Bidirectional schema mapping for Nat, in terms of Int
+implicit val natMeta: Meta[Nat] = Meta[Int].imap(fromInt)(toInt)
 </code></pre>
-</div>
-
-<p>And as above, prefer <code class="highlighter-rouge">.timap</code> when possible.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="c1">// Prefer .timap when possible.
-</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">natMeta2</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">Nat</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Meta</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">timap</span><span class="o">(</span><span class="n">fromInt</span><span class="o">)(</span><span class="n">toInt</span><span class="o">)</span>
+<p>And as above, prefer <code>.timap</code> when possible.</p>
+<pre class="prettyprint"><code class="language-scala">// Prefer .timap when possible.
+implicit val natMeta2: Meta[Nat] = Meta[Int].timap(fromInt)(toInt)
 </code></pre>
-</div>
-
-<p><strong>Note:</strong> it is important to understand that <code class="highlighter-rouge">Meta</code> exists only to introduce <code class="highlighter-rouge">Get</code>/<code class="highlighter-rouge">Put</code> pairs into implicit scope. You should never demand <code class="highlighter-rouge">Meta</code> as evidence in user code: instead demand <code class="highlighter-rouge">Get</code>, <code class="highlighter-rouge">Put</code>, or both.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">foo</span><span class="o">[</span><span class="kt">A:</span> <span class="kt">Meta</span><span class="o">](...)</span>     <span class="c1">// don't do this
-</span><span class="k">def</span> <span class="n">foo</span><span class="o">[</span><span class="kt">A:</span> <span class="kt">Get:</span> <span class="kt">Put</span><span class="o">](...)</span> <span class="c1">// ok
-</span></code></pre>
-</div>
-
-<h4 id="defining-get-and-put-for-exotic-types">Defining Get and Put for Exotic Types</h4>
-
+<p><strong>Note:</strong> it is important to understand that <code>Meta</code> exists only to introduce <code>Get</code>/<code>Put</code> pairs into implicit scope. You should never demand <code>Meta</code> as evidence in user code: instead demand <code>Get</code>, <code>Put</code>, or both.</p>
+<pre class="prettyprint"><code class="language-scala">def foo[A: Meta](...)     // don&#39;t do this
+def foo[A: Get: Put](...) // ok
+</code></pre>
+<h4><a href="#defining-get-and-put-for-exotic-types" name="defining-get-and-put-for-exotic-types" class="anchor"><span class="anchor-link"></span></a>Defining Get and Put for Exotic Types</h4>
 <p>In rare cases it is not possible to define a new mapping in terms of primitive JDBC types because the underlying schema type is vendor-specific or otherwise not part of the JDBC specification. In these cases it is necessary to define mappings explicitly.</p>
+<p>In this example we will create a mapping for PostgreSQL&rsquo;s <code>json</code> type, which is not part of the JDBC specification. On the Scala side we will use the <code>Json</code> type from <a href="https://github.com/circe/circe">Circe</a>. The PostgreSQL JDBC driver transfers <code>json</code> values via the JDBC type <code>OTHER</code>, with an uwrapped payload type <code>PGobject</code>. The only way to know this is by experimentation. You can expect to get this kind of mapping wrong a few times before it starts working. In any case the <code>OTHER</code> type is commonly used for nonstandard types and <strong>doobie</strong> provides a way to construct such mappings.</p>
+<pre class="prettyprint"><code class="language-scala">implicit val showPGobject: Show[PGobject] = Show.show(_.getValue.take(250))
 
-<p>In this example we will create a mapping for PostgreSQL’s <code class="highlighter-rouge">json</code> type, which is not part of the JDBC specification. On the Scala side we will use the <code class="highlighter-rouge">Json</code> type from <a href="https://github.com/circe/circe">Circe</a>. The PostgreSQL JDBC driver transfers <code class="highlighter-rouge">json</code> values via the JDBC type <code class="highlighter-rouge">OTHER</code>, with an uwrapped payload type <code class="highlighter-rouge">PGobject</code>. The only way to know this is by experimentation. You can expect to get this kind of mapping wrong a few times before it starts working. In any case the <code class="highlighter-rouge">OTHER</code> type is commonly used for nonstandard types and <strong>doobie</strong> provides a way to construct such mappings.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">showPGobject</span><span class="k">:</span> <span class="kt">Show</span><span class="o">[</span><span class="kt">PGobject</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Show</span><span class="o">.</span><span class="n">show</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">getValue</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">250</span><span class="o">))</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="n">jsonGet</span><span class="k">:</span> <span class="kt">Get</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Get</span><span class="o">.</span><span class="nc">Advanced</span><span class="o">.</span><span class="n">other</span><span class="o">[</span><span class="kt">PGobject</span><span class="o">](</span><span class="nc">NonEmptyList</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="s">"json"</span><span class="o">)).</span><span class="n">temap</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="o">{</span> <span class="n">o</span> <span class="k">=&gt;</span>
-    <span class="n">parse</span><span class="o">(</span><span class="n">o</span><span class="o">.</span><span class="n">getValue</span><span class="o">).</span><span class="n">leftMap</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">show</span><span class="o">)</span>
-  <span class="o">}</span>
+implicit val jsonGet: Get[Json] =
+  Get.Advanced.other[PGobject](NonEmptyList.of(&quot;json&quot;)).temap[Json] { o =&gt;
+    parse(o.getValue).leftMap(_.show)
+  }
 </code></pre>
-</div>
-
-<p>In the instance above we read a value via JDBC’s <code class="highlighter-rouge">getOther</code> with schema type <code class="highlighter-rouge">json</code>, cast the result to <code class="highlighter-rouge">PGobject</code>, then parse its value (a <code class="highlighter-rouge">String</code>), returning the parse exception as a string on failure. Consider for a moment how comically optimistic this is. Many things have to work in order to get a <code class="highlighter-rouge">Json</code> value in hand, and if anything fails it’s an unrecoverable error. Effective testing is essential when defining new mappings like this.</p>
-
-<p>The <code class="highlighter-rouge">Put</code> instance is less error-prone since we know the <code class="highlighter-rouge">Json</code> we start with is valid. Here we construct and return a new <code class="highlighter-rouge">PGobject</code> whose schema type and string value are filled in explicitly.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">jsonPut</span><span class="k">:</span> <span class="kt">Put</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Put</span><span class="o">.</span><span class="nc">Advanced</span><span class="o">.</span><span class="n">other</span><span class="o">[</span><span class="kt">PGobject</span><span class="o">](</span><span class="nc">NonEmptyList</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="s">"json"</span><span class="o">)).</span><span class="n">tcontramap</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="o">{</span> <span class="n">j</span> <span class="k">=&gt;</span>
-      <span class="k">val</span> <span class="n">o</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PGobject</span>
-      <span class="n">o</span><span class="o">.</span><span class="n">setType</span><span class="o">(</span><span class="s">"json"</span><span class="o">)</span>
-      <span class="n">o</span><span class="o">.</span><span class="n">setValue</span><span class="o">(</span><span class="n">j</span><span class="o">.</span><span class="n">noSpaces</span><span class="o">)</span>
-      <span class="n">o</span>
-  <span class="o">}</span>
+<p>In the instance above we read a value via JDBC&rsquo;s <code>getOther</code> with schema type <code>json</code>, cast the result to <code>PGobject</code>, then parse its value (a <code>String</code>), returning the parse exception as a string on failure. Consider for a moment how comically optimistic this is. Many things have to work in order to get a <code>Json</code> value in hand, and if anything fails it&rsquo;s an unrecoverable error. Effective testing is essential when defining new mappings like this.</p>
+<p>The <code>Put</code> instance is less error-prone since we know the <code>Json</code> we start with is valid. Here we construct and return a new <code>PGobject</code> whose schema type and string value are filled in explicitly.</p>
+<pre class="prettyprint"><code class="language-scala">implicit val jsonPut: Put[Json] =
+  Put.Advanced.other[PGobject](NonEmptyList.of(&quot;json&quot;)).tcontramap[Json] { j =&gt;
+      val o = new PGobject
+      o.setType(&quot;json&quot;)
+      o.setValue(j.noSpaces)
+      o
+  }
 </code></pre>
-</div>
-
-<p>As above, with bidirectional mappings it’s usually more convenient to use <code class="highlighter-rouge">Meta</code>, which provides an <code class="highlighter-rouge">other</code> constructor allowing the operations above to be combined.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">jsonMeta</span><span class="k">:</span> <span class="kt">Meta</span><span class="o">[</span><span class="kt">Json</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Meta</span><span class="o">.</span><span class="nc">Advanced</span><span class="o">.</span><span class="n">other</span><span class="o">[</span><span class="kt">PGobject</span><span class="o">](</span><span class="s">"json"</span><span class="o">).</span><span class="n">timap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span>
-    <span class="n">a</span> <span class="k">=&gt;</span> <span class="n">parse</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">getValue</span><span class="o">).</span><span class="n">leftMap</span><span class="o">[</span><span class="kt">Json</span><span class="o">](</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="k">throw</span> <span class="n">e</span><span class="o">).</span><span class="n">merge</span><span class="o">)(</span>
-    <span class="n">a</span> <span class="k">=&gt;</span> <span class="o">{</span>
-      <span class="k">val</span> <span class="n">o</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PGobject</span>
-      <span class="n">o</span><span class="o">.</span><span class="n">setType</span><span class="o">(</span><span class="s">"json"</span><span class="o">)</span>
-      <span class="n">o</span><span class="o">.</span><span class="n">setValue</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="n">noSpaces</span><span class="o">)</span>
-      <span class="n">o</span>
-    <span class="o">}</span>
-  <span class="o">)</span>
+<p>As above, with bidirectional mappings it&rsquo;s usually more convenient to use <code>Meta</code>, which provides an <code>other</code> constructor allowing the operations above to be combined.</p>
+<pre class="prettyprint"><code class="language-scala">implicit val jsonMeta: Meta[Json] =
+  Meta.Advanced.other[PGobject](&quot;json&quot;).timap[Json](
+    a =&gt; parse(a.getValue).leftMap[Json](e =&gt; throw e).merge)(
+    a =&gt; {
+      val o = new PGobject
+      o.setType(&quot;json&quot;)
+      o.setValue(a.noSpaces)
+      o
+    }
+  )
 </code></pre>
-</div>
-
-<p>There are similar constructors for array types and other possibilities, but <code class="highlighter-rouge">other</code> is by far the most common in user code and we won’t discuss the others here. See the Scaladoc for more information.</p>
-
-<h2 id="column-vector-mappings">Column Vector Mappings</h2>
-
-<p>The <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> typeclasses described above define mappings between Scala types and single-column schema types, however in general we need more than this. Queries return <strong>heterogeneous vectors</strong> of values that we wish to map to composite Scala data types, and similarly we may wish to map a composite Scala data type to a heterogeneous vector of schema values (when setting a <code class="highlighter-rouge">VALUES</code> clause in an update, for instance). Mappings for these “wide” data types are provided by the <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> typeclasses.</p>
-
+<p>There are similar constructors for array types and other possibilities, but <code>other</code> is by far the most common in user code and we won&rsquo;t discuss the others here. See the Scaladoc for more information.</p>
+<h2><a href="#column-vector-mappings" name="column-vector-mappings" class="anchor"><span class="anchor-link"></span></a>Column Vector Mappings</h2>
+<p>The <code>Get</code> and <code>Put</code> typeclasses described above define mappings between Scala types and single-column schema types, however in general we need more than this. Queries return <strong>heterogeneous vectors</strong> of values that we wish to map to composite Scala data types, and similarly we may wish to map a composite Scala data type to a heterogeneous vector of schema values (when setting a <code>VALUES</code> clause in an update, for instance). Mappings for these &ldquo;wide&rdquo; data types are provided by the <code>Read</code> and <code>Write</code> typeclasses.</p>
 <ul>
-  <li><code class="highlighter-rouge">Read[A]</code> describes a mapping from some vector of schema types to Scala type <code class="highlighter-rouge">A</code>. This lets us read rows as composite values.</li>
-  <li><code class="highlighter-rouge">Write[A]</code> describes a mapping from Scala type <code class="highlighter-rouge">A</code> to some vector of schema types. This lets us set multiple statement parameters.</li>
+  <li><code>Read[A]</code> describes a mapping from some vector of schema types to Scala type <code>A</code>. This lets us read rows as composite values.</li>
+  <li><code>Write[A]</code> describes a mapping from Scala type <code>A</code> to some vector of schema types. This lets us set multiple statement parameters.</li>
 </ul>
-
-<p>As <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> instances are [logically] built from vectors of <code class="highlighter-rouge">Get</code> and <code class="highlighter-rouge">Put</code> instances we can construct them automatically in almost all cases. The base cases are:</p>
-
+<p>As <code>Read</code> and <code>Write</code> instances are [logically] built from vectors of <code>Get</code> and <code>Put</code> instances we can construct them automatically in almost all cases. The base cases are:</p>
 <ul>
-  <li>We can <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> the zero-width types <code class="highlighter-rouge">Unit</code> and <code class="highlighter-rouge">HNil</code>.</li>
-  <li>We can <code class="highlighter-rouge">Read</code> or <code class="highlighter-rouge">Write</code> single-column types that have <code class="highlighter-rouge">Get</code> or <code class="highlighter-rouge">Put</code> instance, respectively; as well as <code class="highlighter-rouge">Option</code>s thereof.</li>
+  <li>We can <code>Read</code> and <code>Write</code> the zero-width types <code>Unit</code> and <code>HNil</code>.</li>
+  <li>We can <code>Read</code> or <code>Write</code> single-column types that have <code>Get</code> or <code>Put</code> instance, respectively; as well as <code>Option</code>s thereof.</li>
 </ul>
-
 <p>The inductive cases that build on the base cases above are:</p>
-
 <ul>
-  <li>We can <code class="highlighter-rouge">Read</code> or <code class="highlighter-rouge">Write</code> a shapeless <code class="highlighter-rouge">HList</code> if its elements can be read or written, respectively.</li>
-  <li>We can <code class="highlighter-rouge">Read</code> or <code class="highlighter-rouge">Write</code> a shapeless record if its values can be read or written, respectively.</li>
-  <li>We can <code class="highlighter-rouge">Read</code> or <code class="highlighter-rouge">Write</code> a product type (case class or tuple) if its shapeless <code class="highlighter-rouge">Generic</code> representation (i.e., its fields as an <code class="highlighter-rouge">HList</code>) can be read or written, respectively.</li>
+  <li>We can <code>Read</code> or <code>Write</code> a shapeless <code>HList</code> if its elements can be read or written, respectively.</li>
+  <li>We can <code>Read</code> or <code>Write</code> a shapeless record if its values can be read or written, respectively.</li>
+  <li>We can <code>Read</code> or <code>Write</code> a product type (case class or tuple) if its shapeless <code>Generic</code> representation (i.e., its fields as an <code>HList</code>) can be read or written, respectively.</li>
 </ul>
-
-<p>In addition, <strong>doobie</strong> provides <code class="highlighter-rouge">Read[Option[A]]</code> and <code class="highlighter-rouge">Write[Option[A]]</code> in the three cases above, mapping all columns to <em>nullable</em> schema types. This allows you to map the columns from an <code class="highlighter-rouge">OUTER JOIN</code> to an <em>optional</em> data type. For instance, reading parent/child pairs we might map output rows to the type <code class="highlighter-rouge">(Parent, Option[Child])</code>.</p>
-
+<p>In addition, <strong>doobie</strong> provides <code>Read[Option[A]]</code> and <code>Write[Option[A]]</code> in the three cases above, mapping all columns to <em>nullable</em> schema types. This allows you to map the columns from an <code>OUTER JOIN</code> to an <em>optional</em> data type. For instance, reading parent/child pairs we might map output rows to the type <code>(Parent, Option[Child])</code>.</p>
 <p>The above rules allow you to map between column/parameter vectors and [nested] tuples and case classes, which covers most use cases.</p>
-
-<h4 id="deriving-read-and-write-from-existing-instances">Deriving Read and Write from Existing Instances</h4>
-
+<h4><a href="#deriving-read-and-write-from-existing-instances" name="deriving-read-and-write-from-existing-instances" class="anchor"><span class="anchor-link"></span></a>Deriving Read and Write from Existing Instances</h4>
 <p>Although automatic derivation will suffice in most cases, it does not work with traits and non-case classes. In these cases we must provide a mapping between the unruly data type and a type that has a defined mapping.</p>
+<p>Consider the <code>Point</code> class from Java AWT, which is logically a pair of <code>Int</code>s but is not a case class and is thus not eligible for automatic derivation of <code>Read</code> and <code>Write</code> instances. We can define these by hand by mapping to and from the Scala type <code>(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
+<pre class="prettyprint"><code class="language-scala">implicit val pointRead: Read[Point] =
+  Read[(Int, Int)].map { case (x, y) =&gt; new Point(x, y) }
+// pointRead: Read[Point] = doobie.util.Read@d52479c
 
-<p>Consider the <code class="highlighter-rouge">Point</code> class from Java AWT, which is logically a pair of <code class="highlighter-rouge">Int</code>s but is not a case class and is thus not eligable for automatic derivation of <code class="highlighter-rouge">Read</code> and <code class="highlighter-rouge">Write</code> instances. We can define these by hand by mapping to and from the Scala type <code class="highlighter-rouge">(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="n">pointRead</span><span class="k">:</span> <span class="kt">Read</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Read</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">map</span> <span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Point</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">}</span>
-<span class="c1">// pointRead: Read[Point] = doobie.util.Read@2e67456a
-</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="n">pointWrite</span><span class="k">:</span> <span class="kt">Write</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span>
-  <span class="nc">Write</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)].</span><span class="n">contramap</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">))</span>
-<span class="c1">// pointWrite: Write[Point] = doobie.util.Write@7bb3c285
-</span></code></pre>
+implicit val pointWrite: Write[Point] =
+  Write[(Int, Int)].contramap(p =&gt; (p.x, p.y))
+// pointWrite: Write[Point] = doobie.util.Write@761c5042
+</code></pre>
+<p>There is no equivalent to <code>Meta</code> for bidirectional column vector mappings.</p>
+<div class="source-github">
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/12-Custom-Mappings.md">here</a>.
 </div>
 
-<p>There is no equivalent to <code class="highlighter-rouge">Meta</code> for bidirectional column vector mappings.</p>
-</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/doobie/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
-hljs.initHighlighting();
-              </script><script src="/doobie/js/main.js"></script></body></html>
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../docs/13-Unit-Testing.html">Unit Testing</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../docs/12-Custom-Mappings.html#custom-mappings" class="header">Custom Mappings</a>
+  <ul>
+    <li><a href="../docs/12-Custom-Mappings.html#setup" class="header">Setup</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html#when-do-i-need-a-custom-type-mapping-" class="header">When do I need a custom type mapping?</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html#single-column-type-mappings" class="header">Single-Column Type Mappings</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html#column-vector-mappings" class="header">Column Vector Mappings</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2020</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+
+
+</html>
