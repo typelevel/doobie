@@ -50,7 +50,7 @@ There are three main types of exceptions that are likely to arise:
 All **doobie** monads provide an `Async` instance, which extends `MonadError[?[_], Throwable]`. This means `ConnectionIO`, etc., have the following primitive operations:
 
 - `.attempt` converts `M[A]` into `M[Either[Throwable, A]]`
-- `fail` constructs an `M[A]` that fails with a provided `Throwable`
+- `raiseError` constructs an `M[A]` that fails with a provided `Throwable`
 
 So any **doobie** program can be lifted into a disjunction simply by adding `.attempt`.
 
@@ -59,7 +59,7 @@ val p = 42.pure[ConnectionIO]
 p.attempt
 ```
 
-From the `.attempt` and `fail` combinators we can derive many other operations, as described in the Cats documentation. In addition **doobie** provides the following specialized combinators that only pay attention to `SQLException`:
+From the `.attempt` and `raiseError` combinators we can derive many other operations, as described in the Cats documentation. In addition **doobie** provides the following specialized combinators that only pay attention to `SQLException`:
 
 - `attemptSql` is like `attempt` but only traps `SQLException`.
 - `attemptSomeSql` traps only specified `SQLException`s.
