@@ -2,26 +2,26 @@ import FreeGen2._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.1.1"
-lazy val catsEffectVersion    = "2.1.2"
+lazy val catsEffectVersion    = "2.1.4"
 lazy val circeVersion         = "0.13.0"
-lazy val collCompatVersion    = "2.1.4"
-lazy val fs2Version           = "2.3.0"
+lazy val collCompatVersion    = "2.1.6"
+lazy val fs2Version           = "2.4.2"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "3.4.2"
+lazy val hikariVersion        = "3.4.5"
 lazy val kindProjectorVersion = "0.11.0"
-lazy val monixVersion         = "3.1.0"
-lazy val quillVersion         = "3.5.1"
+lazy val monixVersion         = "3.2.2"
+lazy val quillVersion         = "3.5.2"
 lazy val postGisVersion       = "2.5.0"
-lazy val postgresVersion      = "42.2.12"
-lazy val refinedVersion       = "0.9.13"
-lazy val scalaCheckVersion    = "1.14.2"
-lazy val scalatestVersion     = "3.1.1"
+lazy val postgresVersion      = "42.2.14"
+lazy val refinedVersion       = "0.9.15"
+lazy val scalaCheckVersion    = "1.14.3"
+lazy val scalatestVersion     = "3.2.0"
 lazy val shapelessVersion     = "2.3.3"
-lazy val silencerVersion      = "1.6.0"
+lazy val silencerVersion      = "1.7.1"
 lazy val sourcecodeVersion    = "0.2.1"
-lazy val specs2Version        = "4.9.2"
-lazy val scala212Version      = "2.12.10"
-lazy val scala213Version      = "2.13.1"
+lazy val specs2Version        = "4.10.2"
+lazy val scala212Version      = "2.12.12"
+lazy val scala213Version      = "2.13.3"
 lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
@@ -59,7 +59,7 @@ lazy val commonSettings =
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
     headerLicense  := Some(HeaderLicense.Custom(
-      """|Copyright (c) 2013-2018 Rob Norris and Contributors
+      """|Copyright (c) 2013-2020 Rob Norris and Contributors
          |This software is licensed under the MIT License (MIT).
          |For more information see LICENSE or https://opensource.org/licenses/MIT
          |""".stripMargin

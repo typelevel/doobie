@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -26,7 +26,7 @@ object PostgresPoint extends IOApp {
   }
 
   val q = sql"select '(1, 2)'::point".query[Point]
-  val a = q.to[List].transact(xa).unsafeRunSync
+  val a = q.to[List].transact(xa).unsafeRunSync()
 
   def run(args: List[String]): IO[ExitCode] =
     for {

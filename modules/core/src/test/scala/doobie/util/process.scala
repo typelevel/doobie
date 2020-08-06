@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -21,7 +21,7 @@ class processspec extends Specification with ScalaCheck {
     "yield the same result irrespective of chunk size" ! forAll { (n0: Int) =>
       val dataSize  = 1000
       val chunkSize = (n0 % dataSize).abs max 1
-      val data      = Seq.fill(dataSize)(Random.nextInt)
+      val data      = Seq.fill(dataSize)(Random.nextInt())
       val fa = {
         var temp = data
         IO {
@@ -30,7 +30,7 @@ class processspec extends Specification with ScalaCheck {
           h
         }
       }
-      val result = repeatEvalChunks(fa).compile.toVector.unsafeRunSync
+      val result = repeatEvalChunks(fa).compile.toVector.unsafeRunSync()
       result must_== data
     }
 

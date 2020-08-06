@@ -57,7 +57,7 @@ You can construct a SQL `Fragment` using the `fr` interpolator, which behaves ju
 val a = fr"select name from country"
 val b = fr"where code = 'USA'"
 val c = a ++ b // concatenation by ++
-c.query[String].unique.quick.unsafeRunSync
+c.query[String].unique.quick.unsafeRunSync()
 ```
 
 Fragments can capture arguments of any type with a `Put` instance, just as the `sql` interpolator does.
@@ -65,14 +65,14 @@ Fragments can capture arguments of any type with a `Put` instance, just as the `
 ```scala mdoc
 def whereCode(s: String) = fr"where code = $s"
 val fra = whereCode("FRA")
-(fr"select name from country" ++ fra).query[String].quick.unsafeRunSync
+(fr"select name from country" ++ fra).query[String].quick.unsafeRunSync()
 ```
 
 You can lift an arbitrary string value via `Fragment.const`, which allows you to parameterize on things that aren't valid SQL parameters.
 
 ```scala mdoc
 def count(table: String) = (fr"select count(*) from" ++ Fragment.const(table)).query[Int].unique
-count("city").quick.unsafeRunSync
+count("city").quick.unsafeRunSync()
 ```
 
 > Note that `Fragment.const` performs no escaping of passed strings. Passing user-supplied data is an **injection risk**.
@@ -127,7 +127,7 @@ We first construct three optional filters, the third of which uses the `in` comb
 Let's look at a few possibilities.
 
 ```scala mdoc
-select(None, None, Nil, 10).check.unsafeRunSync // no filters
-select(Some("U%"), None, Nil, 10).check.unsafeRunSync // one filter
-select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync // three filters
+select(None, None, Nil, 10).check.unsafeRunSync() // no filters
+select(Some("U%"), None, Nil, 10).check.unsafeRunSync() // one filter
+select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync() // three filters
 ```

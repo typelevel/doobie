@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -40,7 +40,7 @@ class PostgresDoobieContextSpec extends Specification {
   "executeQuery" should {
     "correctly select a country" in {
       val stmt     = quote { query[Country].filter(_.code == "GBR") }
-      val actual   = run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync()
       val expected = List(Country("GBR", "United Kingdom", 59623400))
       actual should_== expected
     }
@@ -49,7 +49,7 @@ class PostgresDoobieContextSpec extends Specification {
   "executeQuerySingle" should {
     "correctly select a constant" in {
       val stmt     = quote(42)
-      val actual   = run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync()
       val expected = 42
       actual should_== expected
     }
@@ -58,7 +58,7 @@ class PostgresDoobieContextSpec extends Specification {
   "streamQuery" should {
     "correctly stream a bunch of countries" in {
       val stmt     = quote { query[Country] }
-      val actual   = dc.stream(stmt, 16).transact(xa).as(1).compile.foldMonoid.unsafeRunSync
+      val actual   = dc.stream(stmt, 16).transact(xa).as(1).compile.foldMonoid.unsafeRunSync()
       val expected = 239 // this many countries total
       actual should_== expected
     }
@@ -67,7 +67,7 @@ class PostgresDoobieContextSpec extends Specification {
   "executeAction" should {
     "correctly update a bunch of countries" in {
       val stmt     = quote { query[Country].filter(_.name like "U%").update(_.name -> "foo") }
-      val actual   = run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync()
       val expected = 8 // this many countries start with 'U'
       actual should_== expected
     }
@@ -80,7 +80,7 @@ class PostgresDoobieContextSpec extends Specification {
           query[Country].filter(_.name like pat).update(_.name -> "foo")
         }
       }
-      val actual   = run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync()
       val expected = List(8L, 15L)
       actual should_== expected
     }
@@ -100,7 +100,7 @@ class PostgresDoobieContextSpec extends Specification {
   "executeActionReturning" should {
     "correctly retrieve a generated key" in {
       val stmt     = quote { query[QuillTest].insert(lift(QuillTest(0, "Joe"))).returningGenerated(_.id) }
-      val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync
+      val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync()
       val expected = 1
       actual should_== expected
     }
@@ -110,7 +110,7 @@ class PostgresDoobieContextSpec extends Specification {
     "correctly retrieve a list of generated keys" in {
       val values   = List(QuillTest(0, "Foo"), QuillTest(0, "Bar"), QuillTest(0, "Baz"))
       val stmt     = quote { liftQuery(values).foreach { a => query[QuillTest].insert(a).returningGenerated(_.id) } }
-      val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync
+      val actual   = (create *> run(stmt)).transact(xa).unsafeRunSync()
       val expected = List(1, 2, 3)
       actual should_== expected
     }

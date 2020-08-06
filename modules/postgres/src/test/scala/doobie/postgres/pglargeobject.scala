@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -34,7 +34,7 @@ class pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
         PHLOM.createFileFromLO(1024 * 16, oid, out) *> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync()
       filesEqual(in, out)
       out.delete()
     }
@@ -46,7 +46,7 @@ class pglargeobjectspec extends Specification with FileEquality {
       val prog = PHLOM.createLOFromStream(1024 * 16, is) >>= { oid =>
         PHLOM.createStreamFromLO(1024 * 16, oid, os) *> PHLOM.delete(oid)
       }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync
+      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync()
       filesEqual(in, out)
       out.delete()
     }

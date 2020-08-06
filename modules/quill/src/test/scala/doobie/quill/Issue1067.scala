@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -31,7 +31,7 @@ class Issue1067 extends Specification {
   "Issue1067" should {
     "correctly select many countries, with a null in last position" in {
       val stmt     = quote { query[Country] }
-      val actual   = run(stmt).transact(xa).unsafeRunSync
+      val actual   = run(stmt).transact(xa).unsafeRunSync()
       actual.count(_.indepYear.isDefined) should_== 192
       actual.count(_.indepYear.isEmpty) should_== 47
     }

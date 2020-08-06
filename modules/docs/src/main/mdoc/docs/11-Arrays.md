@@ -57,7 +57,7 @@ val create =
 ```
 
 ```scala mdoc
-(drop *> create).unsafeRunSync
+(drop *> create).unsafeRunSync()
 ```
 
 **doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default. No special handling is required, other than importing the vendor-specific array support above.
@@ -75,8 +75,8 @@ def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
 Insert works fine, as does reading the result. No surprises.
 
 ```scala mdoc
-insert("Bob", List("Nixon", "Slappy")).quick.unsafeRunSync
-insert("Alice", Nil).quick.unsafeRunSync
+insert("Bob", List("Nixon", "Slappy")).quick.unsafeRunSync()
+insert("Alice", Nil).quick.unsafeRunSync()
 ```
 
 ### Lamentations of `NULL`
@@ -88,8 +88,8 @@ However there is another axis of variation here: the *array cells* themselves ma
 So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a `NULL` cell would result in a `NullableCellRead` exception.
 
 ```scala mdoc
-sql"select array['foo','bar','baz']".query[List[String]].quick.unsafeRunSync
-sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRunSync
-sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync
-sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync
+sql"select array['foo','bar','baz']".query[List[String]].quick.unsafeRunSync()
+sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRunSync()
+sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync()
+sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync()
 ```

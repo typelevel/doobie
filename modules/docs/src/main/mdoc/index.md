@@ -38,7 +38,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
 And then …
 
 ```scala mdoc
-find("France").transact(xa).unsafeRunSync
+find("France").transact(xa).unsafeRunSync()
 ```
 
 **doobie** is a [**Typelevel**](http://typelevel.org/) project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala [**Code of Conduct**](http://scala-lang.org/conduct.html).
