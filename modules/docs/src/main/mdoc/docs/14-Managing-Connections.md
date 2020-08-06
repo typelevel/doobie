@@ -43,6 +43,10 @@ Starting with version 0.6.0 **doobie** provides an asynchronous API that delegat
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
 - A `cats.effect.Blocker` for **executing JDBC operations**. Because your connection pool limits the number of active connections this should be an **unbounded** pool.
 
+The reason for having separate pools for awaiting connections and executing JDBC operations is liveness - we must avoid the situation where all the threads in the pool are blocked on acquiring a JDBC connection, meaning that no logical threads are able to make progress and release the connection they're currently holding.
+
+Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
+
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 
 ### Using the JDBC DriverManager
