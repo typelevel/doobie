@@ -55,7 +55,7 @@ trait pgconcurrent[F[_]] extends Specification {
       .compile
       .drain
 
-    pollingStream.toIO.unsafeRunSync must_== (())
+    pollingStream.toIO.unsafeRunSync() must_== (())
   }
 
 

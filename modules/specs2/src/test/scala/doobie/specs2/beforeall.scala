@@ -36,7 +36,7 @@ class beforeall extends Specification with IOChecker with BeforeAll {
   def beforeAll() = {
     initQ.run
       .transact(transactor)
-      .unsafeRunSync
+      .unsafeRunSync()
     ()
   }
 }

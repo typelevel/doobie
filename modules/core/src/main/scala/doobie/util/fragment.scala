@@ -9,7 +9,6 @@ import cats.data.Chain
 import cats.implicits._
 
 import doobie._, doobie.implicits._
-import doobie.util.pos.Pos
 import doobie.enum.Nullability._
 import doobie.util.pos.Pos
 import java.sql.{ PreparedStatement, ResultSet }

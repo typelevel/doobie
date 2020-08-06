@@ -33,7 +33,7 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
     implicit analyzable: Analyzable[T]
   ): MatchResult = {
     val args = analyzable.unpack(t)
-    val report = analyzeIO(args, transactor).unsafeRunSync
+    val report = analyzeIO(args, transactor).unsafeRunSync()
 
     MatchResult(
       report.succeeded,

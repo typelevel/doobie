@@ -58,7 +58,7 @@ class bench {
       .compile.toList
       .transact(xa)
       .map(_.length)
-      .unsafeRunSync
+      .unsafeRunSync()
 
   // Reading via .list, which uses a lower-level collector
   def doobieBench(n: Int): Int =
@@ -67,7 +67,7 @@ class bench {
       .to[List]
       .transact(xa)
       .map(_.length)
-      .unsafeRunSync
+      .unsafeRunSync()
 
   // Reading via .vector, which uses a lower-level collector
   def doobieBenchV(n: Int): Int =
@@ -76,7 +76,7 @@ class bench {
       .to[Vector]
       .transact(xa)
       .map(_.length)
-      .unsafeRunSync
+      .unsafeRunSync()
 
 
   @Benchmark

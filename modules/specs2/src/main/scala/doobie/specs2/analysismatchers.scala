@@ -33,7 +33,7 @@ object analysismatchers {
           val report = analyzeIO(
             analyzable.unpack(t.value),
             transactor
-          ).unsafeRunSync
+          ).unsafeRunSync()
           reportToMatchResult(report, t)
         }
       }

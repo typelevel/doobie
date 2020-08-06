@@ -39,17 +39,17 @@ trait pgreaderrorsspec[F[_]] extends Specification {
   implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
 
   "pgEnumStringOpt" in {
-    val r = sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.toIO.unsafeRunSync
+    val r = sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.toIO.unsafeRunSync()
     r must_== Left(InvalidEnum[MyEnum]("invalid"))
   }
 
   "pgEnum" in {
-    val r = sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.toIO.unsafeRunSync
+    val r = sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.toIO.unsafeRunSync()
     r must_== Left(InvalidEnum[MyScalaEnum.Value]("invalid"))
   }
 
   "pgJavaEnum" in {
-    val r = sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.toIO.unsafeRunSync
+    val r = sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.toIO.unsafeRunSync()
     r must_== Left(InvalidEnum[MyJavaEnum]("invalid"))
   }
 

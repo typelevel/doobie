@@ -5,7 +5,6 @@
 package example
 
 import cats.effect._
-import cats.implicits._
 import doobie._
 import doobie.hikari._
 import doobie.implicits._

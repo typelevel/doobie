@@ -25,12 +25,12 @@ class pgcheck extends Specification {
   "pgEnumString" should {
 
     "check ok for read" in {
-      val a = sql"select 'foo' :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync
+      val a = sql"select 'foo' :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync()
       a.columnTypeErrors must_== Nil
     }
 
     "check ok for write" in {
-      val a = sql"select ${MyEnum.Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync
+      val a = sql"select ${MyEnum.Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync()
       a.parameterTypeErrors must_== Nil
     }
 

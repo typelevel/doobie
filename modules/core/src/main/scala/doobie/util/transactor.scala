@@ -220,7 +220,7 @@ object transactor  {
     /*
      * Convert the effect type of this transactor from M to M0
      */
-    def mapK[M0[_]](fk: M ~> M0)(implicit B: Bracket[M, Throwable], D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
+    def mapK[M0[_]](fk: M ~> M0)(implicit D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
       Transactor[M0, A](
         kernel,
         connect.andThen(_.mapK(fk)),

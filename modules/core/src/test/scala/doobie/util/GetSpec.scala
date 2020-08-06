@@ -76,37 +76,37 @@ trait GetDBSpec[F[_]] extends Specification {
   "Get" should {
 
     "not allow map to observe null on the read side (AnyRef)" in {
-      val x = sql"select null".query[Option[Foo]].unique.transact(xa).toIO.unsafeRunSync
+      val x = sql"select null".query[Option[Foo]].unique.transact(xa).toIO.unsafeRunSync()
       x must_== None
     }
 
     "read non-null value (AnyRef)" in {
-      val x = sql"select 'abc'".query[Foo].unique.transact(xa).toIO.unsafeRunSync
+      val x = sql"select 'abc'".query[Foo].unique.transact(xa).toIO.unsafeRunSync()
       x must_== Foo("ABC")
     }
 
     "error when reading a NULL into an unlifted Scala type (AnyRef)" in {
-      def x = sql"select null".query[Foo].unique.transact(xa).attempt.toIO.unsafeRunSync
+      def x = sql"select null".query[Foo].unique.transact(xa).attempt.toIO.unsafeRunSync()
       x must_== Left(doobie.util.invariant.NonNullableColumnRead(1, Char))
     }
 
     "not allow map to observe null on the read side (AnyVal)" in {
-      val x = sql"select null".query[Option[Bar]].unique.transact(xa).toIO.unsafeRunSync
+      val x = sql"select null".query[Option[Bar]].unique.transact(xa).toIO.unsafeRunSync()
       x must_== None
     }
 
     "read non-null value (AnyVal)" in {
-      val x = sql"select 1".query[Bar].unique.transact(xa).toIO.unsafeRunSync
+      val x = sql"select 1".query[Bar].unique.transact(xa).toIO.unsafeRunSync()
       x must_== Bar(1)
     }
 
     "error when reading a NULL into an unlifted Scala type (AnyVal)" in {
-      def x = sql"select null".query[Bar].unique.transact(xa).attempt.toIO.unsafeRunSync
+      def x = sql"select null".query[Bar].unique.transact(xa).attempt.toIO.unsafeRunSync()
       x must_== Left(doobie.util.invariant.NonNullableColumnRead(1, Integer))
     }
 
     "error when reading an incorrect value" in {
-      def x = sql"select 0".query[Bar].unique.transact(xa).attempt.toIO.unsafeRunSync
+      def x = sql"select 0".query[Bar].unique.transact(xa).attempt.toIO.unsafeRunSync()
       x must_== Left(doobie.util.invariant.InvalidValue[Int, Bar](0, "cannot be 0"))
     }
 

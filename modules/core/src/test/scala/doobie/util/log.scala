@@ -29,7 +29,7 @@ class logspec extends Specification {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio     = Query[A, HNil](sql, None, handler).unique(arg)
-    cio.transact(xa).attempt.unsafeRunSync
+    cio.transact(xa).attempt.unsafeRunSync()
     result
   }
 
@@ -39,7 +39,7 @@ class logspec extends Specification {
     val handler = LogHandler(result = _)
     val cio     = sql"create table if not exists foo (bar integer)".update.run *>
                   Update[A](sql, None, handler).run(arg)
-    cio.transact(xa).attempt.unsafeRunSync
+    cio.transact(xa).attempt.unsafeRunSync()
     result
   }
 
@@ -54,7 +54,7 @@ class logspec extends Specification {
       var result  = null : LogEvent
       implicit val handler: LogHandler = LogHandler(result = _)
       val cio = sql"select 1".query[Int].unique
-      cio.transact(xa).attempt.unsafeRunSync
+      cio.transact(xa).attempt.unsafeRunSync()
       result must beLike {
         case Success(_, _, _, _) => ok
       }
@@ -64,7 +64,7 @@ class logspec extends Specification {
       var result  = null : LogEvent
       val handler = LogHandler(result = _)
       val cio = sql"select 1".queryWithLogHandler[Int](handler).unique
-      cio.transact(xa).attempt.unsafeRunSync
+      cio.transact(xa).attempt.unsafeRunSync()
       result must beLike {
         case Success(_, _, _, _) => ok
       }
@@ -121,7 +121,7 @@ class logspec extends Specification {
       var result  = null : LogEvent
       implicit val handler: LogHandler = LogHandler(result = _)
       val cio = sql"drop table if exists barf".update.run
-      cio.transact(xa).attempt.unsafeRunSync
+      cio.transact(xa).attempt.unsafeRunSync()
       result must beLike {
         case Success(_, _, _, _) => ok
       }
@@ -131,7 +131,7 @@ class logspec extends Specification {
       var result  = null : LogEvent
       val handler = LogHandler(result = _)
       val cio = sql"drop table if exists barf".updateWithLogHandler(handler).run
-      cio.transact(xa).attempt.unsafeRunSync
+      cio.transact(xa).attempt.unsafeRunSync()
       result must beLike {
         case Success(_, _, _, _) => ok
       }

@@ -26,7 +26,7 @@ object PostgresPoint extends IOApp {
   }
 
   val q = sql"select '(1, 2)'::point".query[Point]
-  val a = q.to[List].transact(xa).unsafeRunSync
+  val a = q.to[List].transact(xa).unsafeRunSync()
 
   def run(args: List[String]): IO[ExitCode] =
     for {

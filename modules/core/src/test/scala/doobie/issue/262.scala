@@ -44,7 +44,7 @@ class `262` extends Specification {
   "getColumnJdbcMeta" should {
     "handle null metadata" in {
       val prog = HC.prepareStatement("select 1")(HPS.getColumnJdbcMeta)
-      prog.transact(xa).unsafeRunSync must_== Nil
+      prog.transact(xa).unsafeRunSync() must_== Nil
     }
   }
 

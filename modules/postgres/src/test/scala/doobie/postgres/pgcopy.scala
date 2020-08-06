@@ -51,7 +51,7 @@ class pgcopyspec extends Specification {
           _   <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
         } yield new String(out.toByteArray, "UTF-8")
 
-      prog.transact(xa).unsafeRunSync must_== fixture
+      prog.transact(xa).unsafeRunSync() must_== fixture
 
     }
 

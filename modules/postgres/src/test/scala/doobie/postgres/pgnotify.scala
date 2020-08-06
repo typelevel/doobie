@@ -39,7 +39,7 @@ class pgnotifyspec extends Specification {
       val channel = "cha" + System.nanoTime.toString
       val notify  = PHC.pgNotify(channel)
       val test    = listen(channel, notify).map(_.length)
-      test.unsafeRunSync must_== 1
+      test.unsafeRunSync() must_== 1
     }
 
     "allow cross-connection notification with parameter" in  {
@@ -47,7 +47,7 @@ class pgnotifyspec extends Specification {
       val messages = List("foo", "bar", "baz", "qux")
       val notify   = messages.traverse(PHC.pgNotify(channel, _))
       val test     = listen(channel, notify).map(_.map(_.getParameter))
-      test.unsafeRunSync must_== messages
+      test.unsafeRunSync() must_== messages
     }
 
     "collapse identical notifications" in  {
@@ -55,7 +55,7 @@ class pgnotifyspec extends Specification {
       val messages = List("foo", "bar", "bar", "baz", "qux", "foo")
       val notify   = messages.traverse(PHC.pgNotify(channel, _))
       val test     = listen(channel, notify).map(_.map(_.getParameter))
-      test.unsafeRunSync must_== messages.distinct
+      test.unsafeRunSync() must_== messages.distinct
     }
 
   }

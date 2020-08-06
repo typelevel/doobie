@@ -46,7 +46,7 @@ object coproduct extends IOApp {
 
   // An interpreter into IO
   val consoleInterp = λ[ConsoleOp ~> IO] {
-    case ReadLn     => IO(StdIn.readLine)
+    case ReadLn     => IO(StdIn.readLine())
     case PrintLn(s) => IO(Console.println(s))
   }
 

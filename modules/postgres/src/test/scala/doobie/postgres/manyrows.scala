@@ -26,7 +26,7 @@ class manyrows extends Specification {
     // TODO add timeout to test the server-side cursor
     "take consistent memory" in {
       val q = sql"""select a.name, b.name from city a, city b""".query[(String, String)]
-      q.stream.take(5).transact(xa).compile.drain.unsafeRunSync
+      q.stream.take(5).transact(xa).compile.drain.unsafeRunSync()
       true
     }
   }

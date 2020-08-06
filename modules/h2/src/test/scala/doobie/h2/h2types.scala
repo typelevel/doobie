@@ -54,13 +54,13 @@ class h2typesspec extends Specification with ScalaCheck {
   def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" ! forAll { t: A =>
-        inOut(col, t).transact(xa).attempt.unsafeRunSync must_== Right(t)
+        inOut(col, t).transact(xa).attempt.unsafeRunSync() must_== Right(t)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { t: A =>
-        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync must_== Right(Some(t))
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(t))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -72,13 +72,13 @@ class h2typesspec extends Specification with ScalaCheck {
           case x: java.sql.Time => println(s"TIME: ${x.toString}")
           case _ =>
         }
-        inOut(col, t).transact(xa).attempt.unsafeRunSync must_== Right(t)
+        inOut(col, t).transact(xa).attempt.unsafeRunSync() must_== Right(t)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll(gen) { t: A =>
-        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync must_== Right(Some(t))
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(t))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -86,13 +86,13 @@ class h2typesspec extends Specification with ScalaCheck {
   def testInOutWithCustomTransform[A](col: String)(f: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" ! forAll { t: A =>
-        inOut(col, f(t)).transact(xa).attempt.unsafeRunSync must_== Right(f(t))
+        inOut(col, f(t)).transact(xa).attempt.unsafeRunSync() must_== Right(f(t))
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { t: A =>
-        inOutOpt[A](col, Some(f(t))).transact(xa).attempt.unsafeRunSync must_== Right(Some(f(t)))
+        inOutOpt[A](col, Some(f(t))).transact(xa).attempt.unsafeRunSync() must_== Right(Some(f(t)))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -158,26 +158,26 @@ class h2typesspec extends Specification with ScalaCheck {
 
   "Mapping for Boolean" should {
     "pass query analysis for unascribed 'true'" in {
-      val a = sql"select true".query[Boolean].analysis.transact(xa).unsafeRunSync
+      val a = sql"select true".query[Boolean].analysis.transact(xa).unsafeRunSync()
       a.alignmentErrors must_== Nil
     }
     "pass query analysis for ascribed BIT" in {
-      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync
+      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync()
       a.alignmentErrors must_== Nil
     }
     "pass query analysis for ascribed BOOLEAN" in {
-      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync
+      val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync()
       a.alignmentErrors must_== Nil
     }
   }
 
   "Mapping for UUID" should {
     "pass query analysis for unascribed UUID" in {
-      val a = sql"select random_uuid()".query[UUID].analysis.transact(xa).unsafeRunSync
+      val a = sql"select random_uuid()".query[UUID].analysis.transact(xa).unsafeRunSync()
       a.alignmentErrors must_== Nil
     }
     "pass query analysis for ascribed UUID" in {
-      val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafeRunSync
+      val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafeRunSync()
       a.alignmentErrors must_== Nil
     }
   }

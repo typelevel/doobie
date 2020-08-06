@@ -6,7 +6,6 @@ package example
 
 import cats.data.NonEmptyList
 import cats.effect.{ IO, IOApp, ExitCode }
-import cats.implicits._
 import doobie._
 import doobie.enum.JdbcType
 import doobie.implicits._

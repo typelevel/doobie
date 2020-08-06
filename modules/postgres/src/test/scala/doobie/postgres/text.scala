@@ -99,12 +99,12 @@ class textspec extends Specification with ScalaCheck {
 
   "copyIn" should {
     "correctly insert batches of rows" in forAll(genRows) { rs =>
-      val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync
+      val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync()
       rs must_=== rsʹ
     }
 
     "correctly insert batches of rows via Stream" in forAll(genRows) { rs =>
-      val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync
+      val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
       rs must_=== rsʹ
     }
   }

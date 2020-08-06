@@ -11,8 +11,6 @@ import doobie._, doobie.implicits._
 import doobie.postgres._
 import java.io.File
 
-import cats.effect.IO
-
 /**
   * Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the
   * source in doobie.contrib.postgresql for more information.

@@ -52,7 +52,7 @@ object Orm extends IOApp {
             void(ev)
 
             type Key = K
-            val cols = ks.apply.toList.map(_.name)
+            val cols = ks.apply().toList.map(_.name)
 
             def insert(a: A): ConnectionIO[Key] =
               Update[A](s"""

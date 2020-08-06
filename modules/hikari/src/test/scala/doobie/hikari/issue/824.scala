@@ -79,7 +79,7 @@ class `824` extends Specification {
 
   "HikariTransactor" should {
     "close connections logically within `use` block and physically afterward." in {
-      prog.unsafeRunSync must_== ((0, 0))
+      prog.unsafeRunSync() must_== ((0, 0))
     }
   }
 

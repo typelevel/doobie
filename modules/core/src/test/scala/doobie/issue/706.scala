@@ -36,7 +36,7 @@ class `706` extends Specification with ScalaCheck {
 
     "work correctly for valid inputs" ! forAll { (ns: List[Int]) =>
       val prog = setup *> insert(ns)
-      prog.transact(xa).unsafeRunSync must_== ns.length
+      prog.transact(xa).unsafeRunSync() must_== ns.length
     }
 
     // TODO: add a case for invalid inputs if we can find one that doesn't cause an
