@@ -8,7 +8,33 @@ libraryDependencies += "org.tpolecat" %% "doobie-postgres" % "$version$"
 ```
 @@@
 
+
 This library pulls in [PostgreSQL JDBC Driver](https://jdbc.postgresql.org) as a transitive dependency.
+
+
+
+There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:
+
+@@@ vars
+
+```scala
+libraryDependencies += "org.tpolecat" %% "doobie-postgres-circe" % "$version$"
+```
+
+@@@
+
+Then, you will be able to import the implicits for dealing with JSON:
+
+@@@ vars
+
+```scala
+import doobie.postgres.circe.json.implicits
+import doobie.postgres.circe.jsonb.implicits
+
+```
+
+@@@
+
 
 ### Setting Up
 
