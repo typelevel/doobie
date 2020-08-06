@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -50,17 +50,17 @@ class text {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def naive_copyin: Int = naive(10000).transact(xa).unsafeRunSync
+  def naive_copyin: Int = naive(10000).transact(xa).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def jdbc_copyin: Int = optimized(10000).transact(xa).unsafeRunSync
+  def jdbc_copyin: Int = optimized(10000).transact(xa).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def fast_copyin_stream: Long = copyin_stream(10000).transact(xa).unsafeRunSync
+  def fast_copyin_stream: Long = copyin_stream(10000).transact(xa).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def fast_copyin_foldable: Long = copyin_foldable(10000).transact(xa).unsafeRunSync
+  def fast_copyin_foldable: Long = copyin_foldable(10000).transact(xa).unsafeRunSync()
 }

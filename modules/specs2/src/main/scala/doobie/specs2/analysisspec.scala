@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -55,7 +55,7 @@ object analysisspec {
     private def checkImpl(args: AnalysisArgs): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early
       s"${args.header}\n\n${args.cleanedSql.padLeft("  ").toString}\n" >> ok.continueWith {
-        val report = analyzeIO(args, transactor).unsafeRunSync
+        val report = analyzeIO(args, transactor).unsafeRunSync()
         indentBlock(
           report.items.map { item =>
             item.description ! item.error.fold(ok) {

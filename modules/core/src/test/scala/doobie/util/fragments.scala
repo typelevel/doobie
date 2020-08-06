@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -140,13 +140,13 @@ class fragmentsspec extends Specification {
     "values (1)" in {
       val c = Contact(Person("Bob", 42), Some("addr"))
       val f = fr"select" ++ Fragments.values(c)
-      f.query[Contact].unique.transact(xa).unsafeRunSync must_== c
+      f.query[Contact].unique.transact(xa).unsafeRunSync() must_== c
     }
 
     "values (2)" in {
       val c = Contact(Person("Bob", 42), None)
       val f = fr"select" ++ Fragments.values(c)
-      f.query[Contact].unique.transact(xa).unsafeRunSync must_== c
+      f.query[Contact].unique.transact(xa).unsafeRunSync() must_== c
     }
 
   }

@@ -62,7 +62,7 @@ val create =
 We can compose these and run them together, yielding the total number of affected rows.
 
 ```scala mdoc
-(drop, create).mapN(_ + _).transact(xa).unsafeRunSync
+(drop, create).mapN(_ + _).transact(xa).unsafeRunSync()
 ```
 
 
@@ -79,8 +79,8 @@ def insert1(name: String, age: Option[Short]): Update0 =
 Let's insert a few rows.
 
 ```scala mdoc
-insert1("Alice", Some(12)).run.transact(xa).unsafeRunSync
-insert1("Bob", None).quick.unsafeRunSync // switch to YOLO mode
+insert1("Alice", Some(12)).run.transact(xa).unsafeRunSync()
+insert1("Bob", None).quick.unsafeRunSync() // switch to YOLO mode
 ```
 
 And read them back.
@@ -90,7 +90,7 @@ case class Person(id: Long, name: String, age: Option[Short])
 ```
 
 ```scala mdoc
-sql"select id, name, age from person".query[Person].quick.unsafeRunSync
+sql"select id, name, age from person".query[Person].quick.unsafeRunSync()
 ```
 
 
@@ -100,8 +100,8 @@ sql"select id, name, age from person".query[Person].quick.unsafeRunSync
 Updating follows the same pattern. Here we update Alice's age.
 
 ```scala mdoc
-sql"update person set age = 15 where name = 'Alice'".update.quick.unsafeRunSync
-sql"select id, name, age from person".query[Person].quick.unsafeRunSync
+sql"update person set age = 15 where name = 'Alice'".update.quick.unsafeRunSync()
+sql"select id, name, age from person".query[Person].quick.unsafeRunSync()
 ```
 
 ### Retrieving Results
@@ -118,7 +118,7 @@ def insert2(name: String, age: Option[Short]): ConnectionIO[Person] =
 ```
 
 ```scala mdoc
-insert2("Jimmy", Some(42)).quick.unsafeRunSync
+insert2("Jimmy", Some(42)).quick.unsafeRunSync()
 ```
 
 This is irritating but it is supported by all databases (although the "get the last used id" function will vary by vendor).
@@ -138,7 +138,7 @@ def insert2_H2(name: String, age: Option[Short]): ConnectionIO[Person] =
 ```
 
 ```scala mdoc
-insert2_H2("Ramone", Some(42)).quick.unsafeRunSync
+insert2_H2("Ramone", Some(42)).quick.unsafeRunSync()
 ```
 
 Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.
@@ -154,7 +154,7 @@ def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
 The `withUniqueGeneratedKeys` specifies that we expect exactly one row back (otherwise an exception will be raised), and requires a list of columns to return. This isn't the most beautiful API but it's what JDBC gives us. And it does work.
 
 ```scala mdoc
-insert3("Elvis", None).quick.unsafeRunSync
+insert3("Elvis", None).quick.unsafeRunSync()
 ```
 
 This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit `unique` and get a `Stream[ConnectionIO, Person]` back.
@@ -171,8 +171,8 @@ val up = {
 Running this process updates all rows with a non-`NULL` age and returns them.
 
 ```scala mdoc
-up.quick.unsafeRunSync
-up.quick.unsafeRunSync // and again!
+up.quick.unsafeRunSync()
+up.quick.unsafeRunSync() // and again!
 ```
 
 ### Batch Updates
@@ -209,7 +209,7 @@ val data = List[PersonInfo](
 Running this program yields the number of updated rows.
 
 ```scala mdoc
-insertMany(data).quick.unsafeRunSync
+insertMany(data).quick.unsafeRunSync()
 ```
 
 For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
@@ -232,5 +232,5 @@ val data2 = List[PersonInfo](
 Running this program yields the updated instances.
 
 ```scala mdoc
-insertMany2(data2).quick.unsafeRunSync
+insertMany2(data2).quick.unsafeRunSync()
 ```

@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -51,7 +51,7 @@ class pgcopyspec extends Specification {
           _   <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
         } yield new String(out.toByteArray, "UTF-8")
 
-      prog.transact(xa).unsafeRunSync must_== fixture
+      prog.transact(xa).unsafeRunSync() must_== fixture
 
     }
 

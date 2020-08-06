@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -66,17 +66,17 @@ class refinedtypes extends Specification {
 
   "Query" should {
     "return a refined type when conversion is possible" in {
-      sql"select 123".query[PositiveInt].unique.transact(xa).void.unsafeRunSync
+      sql"select 123".query[PositiveInt].unique.transact(xa).void.unsafeRunSync()
       true
     }
 
     "return an Option of a refined type when query returns null-value" in {
-      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafeRunSync
+      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafeRunSync()
       true
     }
 
     "return an Option of a refined type when query returns a value and converion is possible" in {
-      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafeRunSync
+      sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafeRunSync()
       true
     }
 
@@ -97,23 +97,23 @@ class refinedtypes extends Specification {
         _  <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value INT)", None).run
         _  <- sql"INSERT INTO TEST VALUES ($v)".update.run
       } yield ()
-      queryRes.transact(xa).unsafeRunSync
+      queryRes.transact(xa).unsafeRunSync()
     }
 
     "throw an SecondaryValidationFailed if value does not fit the refinement-type " in {
       secondaryValidationFailedCaught_?(
-       sql"select -1".query[PositiveInt].unique.transact(xa).void.unsafeRunSync
+       sql"select -1".query[PositiveInt].unique.transact(xa).void.unsafeRunSync()
       )
     }
 
     "return a refined product-type when conversion is possible" in {
-      sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafeRunSync
+      sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafeRunSync()
       true
     }
 
     "throw an SecondaryValidationFailed if object does not fit the refinement-type " in {
       secondaryValidationFailedCaught_?(
-        sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafeRunSync
+        sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafeRunSync()
       )
     }
   }
