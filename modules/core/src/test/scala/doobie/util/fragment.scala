@@ -45,6 +45,14 @@ class fragmentspec extends Specification {
       fr"foo ${fr0"bar $a baz"}".query[HNil].sql must_== "foo bar ? baz "
     }
 
+    // https://github.com/tpolecat/doobie/issues/1186
+    "interpolate an expression `Option(1).getOrElse(2)` properly" in {
+      sql"${Option(1).getOrElse(2)} ${false} ${"xx"}"
+      fr"${Option(1).getOrElse(2)}"
+      fr0"${Option(1).getOrElse(2)}"
+      true
+    }
+
     "maintain parameter indexing (in-order)" in {
       val s = fr"select" ++ List(fra, frb, frc).intercalate(fr",")
       s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync() must_== ((a, b, c))
