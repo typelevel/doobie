@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, Effect, IO }
+import cats.effect._
 import cats.effect.syntax.effect._
 import cats.instances.int._
 import cats.syntax.applicativeError._
@@ -60,13 +60,14 @@ final case class Bar(n: Int)
 trait GetDBSpec[F[_]] extends Specification {
 
   implicit def E: Effect[F]
-  implicit def contextShift: ContextShift[F]
-
+  def contextShift: ContextShift[F]
+  def concurrent: Concurrent[F]
+  
   lazy val xa = Transactor.fromDriverManager[F](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
-  )
+  )(contextShift, concurrent)
 
   // Both of these will fail at runtime if called with a null value, we check that this is
   // avoided below.
@@ -117,4 +118,5 @@ trait GetDBSpec[F[_]] extends Specification {
 object GetDBSpecIO extends GetDBSpec[IO] {
   implicit val E: Effect[IO] = IO.ioEffect
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  val concurrent: Concurrent[IO] = Concurrent[IO]
 }

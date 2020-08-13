@@ -5,7 +5,7 @@
 package doobie.specs2
 
 import cats.Id
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{ ContextShift, IO, Concurrent }
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
@@ -15,12 +15,13 @@ import scala.concurrent.ExecutionContext
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
   implicit def contextShift: ContextShift[M]
+  def concurrent: Concurrent[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
-  )
+  )(contextShift, concurrent)
 
   check(sql"select 1".query[Int])
 
@@ -32,6 +33,7 @@ trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
-  def contextShift: ContextShift[IO] =
+  implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+  def concurrent = Concurrent[IO]
 }

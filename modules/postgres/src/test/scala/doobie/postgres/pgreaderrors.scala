@@ -14,18 +14,20 @@ import doobie.postgres.enums._
 import doobie.util.invariant._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
+import cats.effect.Concurrent
 
 
 trait pgreaderrorsspec[F[_]] extends Specification {
 
   implicit def E: Effect[F]
   implicit def contextShift: ContextShift[F]
+  def concurrent: Concurrent[F]
 
   lazy val xa = Transactor.fromDriverManager[F](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
-  )
+  )(contextShift, concurrent)
 
   implicit val MyEnumMetaOpt: Meta[MyEnum] = pgEnumStringOpt("myenum", {
     case "foo" => Some(MyEnum.Foo)
@@ -58,4 +60,5 @@ trait pgreaderrorsspec[F[_]] extends Specification {
 class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
   implicit val E: Effect[IO] = IO.ioEffect
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  val concurrent = Concurrent[IO]
 }

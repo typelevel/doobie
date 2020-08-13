@@ -4,7 +4,7 @@
 
 package doobie.issue
 
-import cats.effect.{ Async, Blocker, ContextShift, IO }
+import cats.effect._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
@@ -21,6 +21,7 @@ class `262` extends Specification {
     val asyncM = Async[IO]
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     val contextShiftM = contextShift
+    val concurrent: Concurrent[IO] = Concurrent[IO]
 
     val M = implicitly[Async[IO]]
 

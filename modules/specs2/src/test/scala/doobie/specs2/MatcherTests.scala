@@ -4,7 +4,7 @@
 
 package doobie.specs2
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{ ContextShift, IO, Concurrent }
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
@@ -16,12 +16,13 @@ trait MatcherChecks[M[_]] extends Specification
     with AnalysisMatchers[M] {
 
   implicit def contextShift: ContextShift[M]
+  def concurrent: Concurrent[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
-  )
+  )(contextShift, concurrent)
 
   "valid query should pass" >> {
     sql"select 1".query[Int] must typecheck
@@ -37,6 +38,7 @@ trait MatcherChecks[M[_]] extends Specification
 }
 
 class IOMatcherCheck extends MatcherChecks[IO] with IOChecker {
-  def contextShift: ContextShift[IO] =
+  implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+  def concurrent = Concurrent[IO]
 }

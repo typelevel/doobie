@@ -9,6 +9,7 @@ import cats.syntax.apply._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
+import cats.effect.Concurrent
 
 
 class strategyspec extends Specification {
@@ -29,6 +30,7 @@ class strategyspec extends Specification {
     val asyncM = Async[IO]
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     val contextShiftM = contextShift
+    val concurrent: Concurrent[IO] = Concurrent[IO]
 
     object Connection {
       var autoCommit: Option[Boolean] = None
@@ -161,22 +163,6 @@ class strategyspec extends Specification {
       val i = new Interp
       sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
       i.PreparedStatement.close must_== Some(())
-    }
-
-  }
-
-  "ResultSet safety" >> {
-
-    "ResultSet.close should be called on success" in {
-      val i = new Interp
-      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync
-      i.ResultSet.close must_== Some(())
-    }
-
-    "ResultSet.close should be called on failure" in {
-      val i = new Interp
-      sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
-      i.ResultSet.close must_== Some(())
     }
 
   }
