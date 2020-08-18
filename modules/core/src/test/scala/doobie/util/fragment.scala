@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -45,24 +45,32 @@ class fragmentspec extends Specification {
       fr"foo ${fr0"bar $a baz"}".query[HNil].sql must_== "foo bar ? baz "
     }
 
+    // https://github.com/tpolecat/doobie/issues/1186
+    "interpolate an expression `Option(1).getOrElse(2)` properly" in {
+      sql"${Option(1).getOrElse(2)} ${false} ${"xx"}"
+      fr"${Option(1).getOrElse(2)}"
+      fr0"${Option(1).getOrElse(2)}"
+      true
+    }
+
     "maintain parameter indexing (in-order)" in {
       val s = fr"select" ++ List(fra, frb, frc).intercalate(fr",")
-      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
+      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync() must_== ((a, b, c))
     }
 
     "maintain parameter indexing (out-of-order)" in {
       val s = fr"select" ++ List(frb, frc, fra).intercalate(fr",")
-      s.query[(String, Boolean, Int)].unique.transact(xa).unsafeRunSync must_== ((b, c, a))
+      s.query[(String, Boolean, Int)].unique.transact(xa).unsafeRunSync() must_== ((b, c, a))
     }
 
     "maintain associativity (left)" in {
       val s = fr"select" ++ List(fra, fr",", frb, fr",", frc).foldLeft(Fragment.empty)(_ ++ _)
-      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
+      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync() must_== ((a, b, c))
     }
 
     "maintain associativity (right)" in {
       val s = fr"select" ++ List(fra, fr",", frb, fr",", frc).foldRight(Fragment.empty)(_ ++ _)
-      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync must_== ((a, b, c))
+      s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync() must_== ((a, b, c))
     }
 
     "Add a trailing space when constructed with .const" in {
@@ -101,7 +109,7 @@ class fragmentspec extends Specification {
         fr0"SELECT 1 WHERE 1 IN (" ++
         List.fill(STACK_UNSAFE_SIZE)(1).foldLeft(Fragment.empty)((f, n) => f ++ fr"$n,") ++
         fr0"1)"
-      frag.query[Int].unique.transact(xa).unsafeRunSync must_== 1
+      frag.query[Int].unique.transact(xa).unsafeRunSync() must_== 1
     }
 
     "be stacksafe (right-associve)" in {
@@ -109,7 +117,7 @@ class fragmentspec extends Specification {
         fr0"SELECT 1 WHERE 1 IN (" ++
         List.fill(STACK_UNSAFE_SIZE)(1).foldRight(Fragment.empty)((n, f) => f ++ fr"$n,") ++
         fr0"1)"
-      frag.query[Int].unique.transact(xa).unsafeRunSync must_== 1
+      frag.query[Int].unique.transact(xa).unsafeRunSync() must_== 1
     }
 
   }

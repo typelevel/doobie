@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -221,7 +221,7 @@ object transactor  {
     /*
      * Convert the effect type of this transactor from M to M0
      */
-    def mapK[M0[_]](fk: M ~> M0)(implicit B: Bracket[M, Throwable], D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
+    def mapK[M0[_]](fk: M ~> M0)(implicit D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
       Transactor[M0, A](
         kernel,
         connect.andThen(_.mapK(fk)),

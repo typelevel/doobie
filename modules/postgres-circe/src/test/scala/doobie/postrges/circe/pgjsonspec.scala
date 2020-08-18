@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -33,13 +33,13 @@ class pgjsonspec extends Specification {
   def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" in {
-        inOut(col, a).transact(t).attempt.unsafeRunSync must_== Right(a)
+        inOut(col, a).transact(t).attempt.unsafeRunSync() must_== Right(a)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOut[Option[A]](col, Some(a)).transact(t).attempt.unsafeRunSync must_== Right(Some(a))
+        inOut[Option[A]](col, Some(a)).transact(t).attempt.unsafeRunSync() must_== Right(Some(a))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOut[Option[A]](col, None).transact(t).attempt.unsafeRunSync must_== Right(None)
+        inOut[Option[A]](col, None).transact(t).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -60,12 +60,12 @@ class pgjsonspec extends Specification {
     "check ok for read" in {
       import doobie.postgres.circe.json.implicits._
 
-      val a = sql"select '{}' :: json".query[Json].analysis.transact(xa).unsafeRunSync
+      val a = sql"select '{}' :: json".query[Json].analysis.transact(xa).unsafeRunSync()
       a.columnTypeErrors must_== Nil
     }
     "check ok for write" in {
       import doobie.postgres.circe.json.implicits._
-      val a = sql"select ${Json.obj()} :: json".query[Json].analysis.transact(xa).unsafeRunSync
+      val a = sql"select ${Json.obj()} :: json".query[Json].analysis.transact(xa).unsafeRunSync()
       a.parameterTypeErrors must_== Nil
     }
   }
@@ -73,13 +73,13 @@ class pgjsonspec extends Specification {
   "jsonb" should {
     "check ok for read" in {
       import doobie.postgres.circe.jsonb.implicits._
-      val a = sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync
+      val a = sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync()
       a.columnTypeErrors must_== Nil
     }
 
     "check ok for write" in {
       import doobie.postgres.circe.jsonb.implicits._
-      val a = sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync
+      val a = sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync()
       a.parameterTypeErrors must_== Nil
     }
   }
@@ -96,14 +96,14 @@ class pgjsonspec extends Specification {
 
   "fooGet" should {
     "check ok for read" in {
-      val a = sql"select '{}' :: json".query[Foo].analysis.transact(xa).unsafeRunSync
+      val a = sql"select '{}' :: json".query[Foo].analysis.transact(xa).unsafeRunSync()
       a.columnTypeErrors must_== Nil
     }
   }
 
   "fooPut" should {
     "check ok for write" in {
-      val a = sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa).unsafeRunSync
+      val a = sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa).unsafeRunSync()
       a.parameterTypeErrors must_== Nil
     }
   }

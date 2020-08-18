@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -26,7 +26,7 @@ class transactorspec extends Specification {
   "transactor" should {
 
     "support cats.effect.IO" in {
-      q.transact(xa[IO]).unsafeRunSync must_=== 42
+      q.transact(xa[IO]).unsafeRunSync() must_=== 42
     }
 
   }
@@ -53,14 +53,14 @@ class transactorspec extends Specification {
     "Connection.close should be called on success" in {
       val tracker = new ConnectionTracker
       val transactor = tracker.track(xa[IO])
-      sql"select 1".query[Int].unique.transact(transactor).unsafeRunSync
+      sql"select 1".query[Int].unique.transact(transactor).unsafeRunSync()
       tracker.connections.map(_.isClosed) must_== List(true)
     }
 
     "Connection.close should be called on failure" in {
       val tracker = new ConnectionTracker
       val transactor = tracker.track(xa[IO])
-      sql"abc".query[Int].unique.transact(transactor).attempt.unsafeRunSync.toOption must_== None
+      sql"abc".query[Int].unique.transact(transactor).attempt.unsafeRunSync().toOption must_== None
       tracker.connections.map(_.isClosed) must_== List(true)
     }
 
@@ -71,14 +71,14 @@ class transactorspec extends Specification {
     "Connection.close should be called on success" in {
       val tracker = new ConnectionTracker
       val transactor = tracker.track(xa[IO])
-      sql"select 1".query[Int].stream.compile.toList.transact(transactor).unsafeRunSync
+      sql"select 1".query[Int].stream.compile.toList.transact(transactor).unsafeRunSync()
       tracker.connections.map(_.isClosed) must_== List(true)
     }
 
     "Connection.close should be called on failure" in {
       val tracker = new ConnectionTracker
       val transactor = tracker.track(xa[IO])
-      sql"abc".query[Int].stream.compile.toList.transact(transactor).attempt.unsafeRunSync.toOption must_== None
+      sql"abc".query[Int].stream.compile.toList.transact(transactor).attempt.unsafeRunSync().toOption must_== None
       tracker.connections.map(_.isClosed) must_== List(true)
     }
 

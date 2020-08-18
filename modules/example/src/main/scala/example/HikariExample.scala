@@ -1,11 +1,10 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package example
 
 import cats.effect._
-import cats.implicits._
 import doobie._
 import doobie.hikari._
 import doobie.implicits._

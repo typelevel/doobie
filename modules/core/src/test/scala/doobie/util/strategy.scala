@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -71,31 +71,31 @@ class strategyspec extends Specification {
 
     "Connection.autoCommit should be set to false" in {
       val i = new Interp
-      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
       i.Connection.autoCommit must_== Some(false)
     }
 
     "Connection.commit should be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
       i.Connection.commit must_== Some(())
     }
 
     "Connection.commit should NOT be called on failure" in {
       val i = new Interp
-      sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.Connection.commit must_== None
     }
 
     "Connection.rollback should NOT be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
       i.Connection.rollback must_== None
     }
 
     "Connection.rollback should be called on failure" in {
       val i = new Interp
-      sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.Connection.rollback must_== Some(())
     }
 
@@ -105,31 +105,31 @@ class strategyspec extends Specification {
 
     "Connection.autoCommit should be set to false" in {
       val i = new Interp
-      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
       i.Connection.autoCommit must_== Some(false)
     }
 
     "Connection.commit should be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
       i.Connection.commit must_== Some(())
     }
 
     "Connection.commit should NOT be called on failure" in {
       val i = new Interp
-      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.Connection.commit must_== None
     }
 
     "Connection.rollback should NOT be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
       i.Connection.rollback must_== None
     }
 
     "Connection.rollback should be called on failure" in {
       val i = new Interp
-      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.Connection.rollback must_== Some(())
     }
 
@@ -139,13 +139,13 @@ class strategyspec extends Specification {
 
     "PreparedStatement.close should be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
       i.PreparedStatement.close must_== Some(())
     }
 
     "PreparedStatement.close should be called on failure" in {
       val i = new Interp
-      sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.PreparedStatement.close must_== Some(())
     }
 
@@ -155,13 +155,13 @@ class strategyspec extends Specification {
 
     "PreparedStatement.close should be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
       i.PreparedStatement.close must_== Some(())
     }
 
     "PreparedStatement.close should be called on failure" in {
       val i = new Interp
-      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.PreparedStatement.close must_== Some(())
     }
 
@@ -171,13 +171,13 @@ class strategyspec extends Specification {
 
     "ResultSet.close should be called on success" in {
       val i = new Interp
-      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync
+      sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
       i.ResultSet.close must_== Some(())
     }
 
     "ResultSet.close should be called on failure" in {
       val i = new Interp
-      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync.toOption must_== None
+      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption must_== None
       i.ResultSet.close must_== Some(())
     }
 
