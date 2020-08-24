@@ -140,6 +140,27 @@ trait KleisliInterpreter[M[_]] { outer =>
       case Embedded.ResultSet(j, fa) => Kleisli(_ => fa.foldMap(ResultSetInterpreter).run(j))
     }
 
+  def cancelable[A, ST <: Statement](f: ST => A): Kleisli[M, ST, A] = Kleisli { a =>
+    // primitive JDBC methods throw exceptions and so do we when reading values
+    // so catch any non-fatal exceptions and lift them into the effect
+    concurrent.cancelable[A] { cb =>
+      blocker.blockingContext.execute(
+        new Runnable {
+          override def run(): Unit =
+            try {
+              cb(Right(f(a)))
+            } catch {
+              case e: Throwable =>
+                cb(Left(e))
+            }
+        }
+      )
+      blocker.delay {
+        a.cancel()
+      }(concurrent, contextShiftM)
+    }
+  }
+
   // Interpreters
   trait NClobInterpreter extends NClobOp.Visitor[Kleisli[M, NClob, *]] {
 
@@ -850,25 +871,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): Kleisli[M, Statement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
 
-    // that can be canceled because of statement#cancel method
-    def cancelable[A](f: Statement => A): Kleisli[M, Statement, A] = Kleisli { a =>
-      // primitive JDBC methods throw exceptions and so do we when reading values
-      // so catch any non-fatal exceptions and lift them into the effect
-      concurrent.cancelable[A]{ cb =>
-        blocker.blockingContext.execute(new Runnable {
-          def run(): Unit = 
-            try {
-              cb(Right(f(a)))
-            } catch {
-              case scala.util.control.NonFatal(e) => cb(Left(e))
-            }
-        })
-        concurrent.delay{
-          a.cancel()
-        }
-      }
-    }
-
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch(a: String) = primitive(_.addBatch(a))
     override def cancel = primitive(_.cancel)
@@ -958,29 +960,6 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] =
       Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
-
-    // that can be canceled because of statement#cancel method
-    def cancelable[A](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] = Kleisli { a =>
-      // primitive JDBC methods throw exceptions and so do we when reading values
-      // so catch any non-fatal exceptions and lift them into the effect
-      concurrent.cancelable[A] { cb =>
-        val runnable = new Runnable {
-          override def run(): Unit =
-            try {
-              cb(Right(f(a)))
-            } catch {
-              case e: Throwable =>
-                cb(Left(e))
-            }
-        }
-        blocker.blockingContext.execute(runnable)
-        val cancelToken =
-          concurrent.delay {
-            a.cancel()
-          }
-        cancelToken
-      }
-    }
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch)
@@ -1139,25 +1118,27 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
-    override def execute = primitive(_.execute)
-    override def execute(a: String) = primitive(_.execute(a))
-    override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
-    override def execute(a: String, b: Array[String]) = primitive(_.execute(a, b))
-    override def execute(a: String, b: Int) = primitive(_.execute(a, b))
-    override def executeBatch = primitive(_.executeBatch)
-    override def executeLargeBatch = primitive(_.executeLargeBatch)
-    override def executeLargeUpdate = primitive(_.executeLargeUpdate)
-    override def executeLargeUpdate(a: String) = primitive(_.executeLargeUpdate(a))
-    override def executeLargeUpdate(a: String, b: Array[Int]) = primitive(_.executeLargeUpdate(a, b))
-    override def executeLargeUpdate(a: String, b: Array[String]) = primitive(_.executeLargeUpdate(a, b))
-    override def executeLargeUpdate(a: String, b: Int) = primitive(_.executeLargeUpdate(a, b))
-    override def executeQuery = primitive(_.executeQuery)
-    override def executeQuery(a: String) = primitive(_.executeQuery(a))
-    override def executeUpdate = primitive(_.executeUpdate)
-    override def executeUpdate(a: String) = primitive(_.executeUpdate(a))
-    override def executeUpdate(a: String, b: Array[Int]) = primitive(_.executeUpdate(a, b))
-    override def executeUpdate(a: String, b: Array[String]) = primitive(_.executeUpdate(a, b))
-    override def executeUpdate(a: String, b: Int) = primitive(_.executeUpdate(a, b))
+
+    override def execute = cancelable(_.execute)
+    override def execute(a: String) = cancelable(_.execute(a))
+    override def execute(a: String, b: Array[Int]) = cancelable(_.execute(a, b))
+    override def execute(a: String, b: Array[String]) = cancelable(_.execute(a, b))
+    override def execute(a: String, b: Int) = cancelable(_.execute(a, b))
+    override def executeBatch = cancelable(_.executeBatch)
+    override def executeLargeBatch = cancelable(_.executeLargeBatch)
+    override def executeLargeUpdate = cancelable(_.executeLargeUpdate)
+    override def executeLargeUpdate(a: String) = cancelable(_.executeLargeUpdate(a))
+    override def executeLargeUpdate(a: String, b: Array[Int]) = cancelable(_.executeLargeUpdate(a, b))
+    override def executeLargeUpdate(a: String, b: Array[String]) = cancelable(_.executeLargeUpdate(a, b))
+    override def executeLargeUpdate(a: String, b: Int) = cancelable(_.executeLargeUpdate(a, b))
+    override def executeQuery = cancelable(_.executeQuery)
+    override def executeQuery(a: String) = cancelable(_.executeQuery(a))
+    override def executeUpdate = cancelable(_.executeUpdate)
+    override def executeUpdate(a: String) = cancelable(_.executeUpdate(a))
+    override def executeUpdate(a: String, b: Array[Int]) = cancelable(_.executeUpdate(a, b))
+    override def executeUpdate(a: String, b: Array[String]) = cancelable(_.executeUpdate(a, b))
+    override def executeUpdate(a: String, b: Int) = cancelable(_.executeUpdate(a, b))
+
     override def getArray(a: Int) = primitive(_.getArray(a))
     override def getArray(a: String) = primitive(_.getArray(a))
     override def getBigDecimal(a: Int) = primitive(_.getBigDecimal(a))
