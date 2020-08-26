@@ -75,6 +75,18 @@ import doobie.postgres._
 import doobie.postgres.implicits._
 ```
 
+### Java 8 Time Types (JSR310)
+
+An explicit import is required to bring mappings for `java.time.Instant` / `java.time.LocalDate`
+
+```scala mdoc:silent
+// Provides mappings for java.time.Instant
+import doobie.implicits.legacy.instant._ 
+
+// Provides mappings for java.time.LocalDate
+import doobie.implicits.legacy.localdate._
+```
+
 ### Array Types
 
 **doobie** supports single-dimensional arrays of the following types:
