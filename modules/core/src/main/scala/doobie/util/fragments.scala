@@ -16,7 +16,7 @@ object fragments {
   def in[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
     fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"IN (", fr",", fr")")
 
-  /** Returns `f IN ((fs00: A, fs01: B), (fs10: A, fs11: B), ...)`. */
+  /** Returns `f IN ((fs0-A, fs0-B), (fs1-A, fs1-B), ...)`. */
   def in[F[_]: Reducible, A: util.Put, B: util.Put](f: Fragment, fs: F[(A,B)]): Fragment =
     fs.toList.map { case (a,b) => fr0"($a,$b)" }.foldSmash1(f ++ fr0"IN (", fr",", fr")")
 
