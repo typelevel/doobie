@@ -5,7 +5,7 @@
 package doobie.hikari.issue
 
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.hikari._

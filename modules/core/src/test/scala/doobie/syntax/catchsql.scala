@@ -4,7 +4,7 @@
 
 package doobie.syntax
 
-import cats.implicits._
+import cats.syntax.all._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 

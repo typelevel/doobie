@@ -6,7 +6,7 @@ package doobie.refined
 
 import cats.Show
 import cats.effect.{ ContextShift, IO }
-import cats.implicits._
+import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.refined.implicits._
 import org.specs2.mutable.Specification

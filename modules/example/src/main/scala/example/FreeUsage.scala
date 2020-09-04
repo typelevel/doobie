@@ -8,7 +8,7 @@ import java.io.File
 
 import cats.effect.{ IO, IOApp, ExitCode }
 import cats.effect.syntax.bracket._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits.{ AsyncConnectionIO, AsyncPreparedStatementIO, AsyncResultSetIO }
 

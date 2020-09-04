@@ -6,9 +6,6 @@ package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.{ Effect, IO }
-import cats.instances.int._
-import cats.instances.list._
-import cats.instances.string._
 import cats.syntax.list._
 import cats.syntax.applicativeError._
 import cats.syntax.foldable._
