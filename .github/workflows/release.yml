@@ -9,6 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: olafurpg/setup-scala@v2
+      - name: Cache SBT
+        uses: coursier/cache-action@v3
       - uses: olafurpg/setup-gpg@v2
       - name: Publish
         run: csbt ci-release
