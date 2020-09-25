@@ -27,7 +27,6 @@ object PostgresCopyInCsv extends IOApp {
 
   val createTable: ConnectionIO[Int] = sql"CREATE TEMP TABLE favorite_foods(name TEXT, food TEXT)".update.run
 
-
   val copyIn: ConnectionIO[Long] = PHC.pgGetCopyAPI(PFCM.copyIn("COPY favorite_foods(name, food) FROM STDIN WITH (FORMAT CSV, HEADER, DELIMITER ',')", is))
 
   def run(args: List[String]): IO[ExitCode] = 
