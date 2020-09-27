@@ -16,6 +16,8 @@ import fs2._
 
 object PostgresCopyInCsv extends IOApp {
 
+  def putStrLn(s: String): IO[Unit] = IO(println(s))
+
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql://localhost/postgres", "postgres", "super-secret"
   )
@@ -27,7 +29,8 @@ object PostgresCopyInCsv extends IOApp {
                 |tigger,extract of malt""".stripMargin
 
   // The postgres driver expects and InputStream containing the data to load
-  val is: InputStream = new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8))
+  // We wrap this in IO because a BAIS allocated visible mutable state
+  val is: IO[InputStream] = IO.delay(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8))).widen[InputStream]
 
   // We can also convert a Stream[F, Byte] into an input stream to pass to the pg driver
   val byteStream = Stream.emit(csv).through(text.utf8Encode).covary[IO]
@@ -45,15 +48,22 @@ object PostgresCopyInCsv extends IOApp {
     PHC.pgGetCopyAPI(copyInIO)
   }
 
-  def run(args: List[String]): IO[ExitCode] = {
-    // Construct a copy from the input stream we have lying around
-    val simple = (createTable >> copyIn(is)).transact(xa)
-    // Construct a copy from a Stream[IO, Byte] using fs2.io
-    val fromByteStream = io.toInputStreamResource(byteStream)
-      .use(is => (createTable >> copyIn(is)).transact(xa))
+  val simpleExample = 
+    // Construct a copy from an InputStream
+    is.flatMap(is => (createTable >> copyIn(is)).transact(xa))
+      .map(_.toString)
+      .flatMap(ct => putStrLn(show"loaded $ct from InputStream"))
 
-    (simple |+| fromByteStream)
-      .flatMap(ct => IO(Console.println(show"loaded ${ct}")))
+  val fromByteStreamExample = 
+    // Construct a copy by converting a Stream[IO, Byte] into an InputStream
+    io.toInputStreamResource(byteStream)
+      .use(is => (createTable >> copyIn(is)).transact(xa))
+      .map(_.toString)
+      .flatMap(ct => putStrLn(show"loaded $ct from Stream[IO, Byte]"))
+
+  def run(args: List[String]): IO[ExitCode] = {
+    // Should print 4 twice
+    simpleExample >> fromByteStreamExample
       .as(ExitCode.Success)
   }
     
