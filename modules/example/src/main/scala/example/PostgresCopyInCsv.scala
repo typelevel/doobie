@@ -28,7 +28,7 @@ object PostgresCopyInCsv extends IOApp {
                 |pooh,honey
                 |tigger,extract of malt""".stripMargin
 
-  // The postgres driver expects and InputStream containing the data to load
+  // The postgres driver expects an InputStream containing the data to load
   // We wrap this in IO because a BAIS allocated visible mutable state
   val is: IO[InputStream] = IO.delay(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8))).widen[InputStream]
 
@@ -62,7 +62,7 @@ object PostgresCopyInCsv extends IOApp {
       .flatMap(ct => putStrLn(show"loaded $ct from Stream[IO, Byte]"))
 
   def run(args: List[String]): IO[ExitCode] = {
-    // Should print 4 twice
+    // Should print "loaded 4 from Stream[IO, Byte]" twice
     simpleExample >> fromByteStreamExample
       .as(ExitCode.Success)
   }
