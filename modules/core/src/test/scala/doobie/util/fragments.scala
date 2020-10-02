@@ -4,6 +4,7 @@
 
 package doobie.util
 
+import cats.data.NonEmptyList
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
@@ -30,8 +31,12 @@ class fragmentsspec extends Specification {
     val fs   = List(1,2,3).map(n => fr"$n")
     val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
 
-    "in" in {
+    "in for one column" in {
       in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
+    }
+
+    "in for two columns" in {
+      in(fr"foo", NonEmptyList.of((1, true), (2, false))).query[Unit].sql must_== "foo IN ((?,?), (?,?)) "
     }
 
     "notIn" in {
