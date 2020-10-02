@@ -10,7 +10,7 @@ lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5"
 lazy val kindProjectorVersion = "0.11.0"
 lazy val monixVersion         = "3.2.2"
-lazy val quillVersion         = "3.5.3"
+lazy val quillVersion         = "3.6.0-RC3-SNAPSHOT"
 lazy val postGisVersion       = "2.5.0"
 lazy val postgresVersion      = "42.2.14"
 lazy val refinedVersion       = "0.9.17"
@@ -80,6 +80,9 @@ lazy val commonSettings =
     // For some reason tests started hanginging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
 
+    // We occasionally use snapshots.
+    resolvers +=
+      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   )
 
 lazy val publishSettings = Seq(
