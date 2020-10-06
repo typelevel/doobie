@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -69,7 +69,7 @@ object callablestatement { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => CallableStatementIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, Outcome[CallableStatementIO, Throwable, B]) => CallableStatementIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]): F[A]
 
@@ -330,7 +330,7 @@ object callablestatement { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => CallableStatementIO[Unit]) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: CallableStatementIO[A], use: A => CallableStatementIO[B], release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]) extends CallableStatementOp[B] {
+    final case class BracketCase[A, B](acquire: CallableStatementIO[A], use: A => CallableStatementIO[B], release: (A, Outcome[CallableStatementIO, Throwable, B]) => CallableStatementIO[Unit]) extends CallableStatementOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends CallableStatementOp[Unit] {
@@ -1048,7 +1048,7 @@ object callablestatement { module =>
   def raiseError[A](err: Throwable): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => CallableStatementIO[Unit]): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): CallableStatementIO[B] = FF.liftF[CallableStatementOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, Outcome[CallableStatementIO, Throwable, B]) => CallableStatementIO[Unit]): CallableStatementIO[B] = FF.liftF[CallableStatementOp, B](BracketCase(acquire, use, release))
   val shift: CallableStatementIO[Unit] = FF.liftF[CallableStatementOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]) = FF.liftF[CallableStatementOp, A](EvalOn(ec, fa))
 
@@ -1289,7 +1289,7 @@ object callablestatement { module =>
   implicit val AsyncCallableStatementIO: Async[CallableStatementIO] =
     new Async[CallableStatementIO] {
       val asyncM = FF.catsFreeMonadForFree[CallableStatementOp]
-      def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): CallableStatementIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, Outcome[CallableStatementIO, Throwable, B]) => CallableStatementIO[Unit]): CallableStatementIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): CallableStatementIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): CallableStatementIO[A] = module.raiseError(e)
@@ -1300,11 +1300,5 @@ object callablestatement { module =>
       def suspend[A](thunk: => CallableStatementIO[A]): CallableStatementIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // CallableStatementIO is a ContextShift
-  implicit val ContextShiftCallableStatementIO: ContextShift[CallableStatementIO] =
-    new ContextShift[CallableStatementIO] {
-      def shift: CallableStatementIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

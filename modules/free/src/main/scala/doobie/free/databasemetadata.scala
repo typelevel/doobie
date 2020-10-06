@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -50,7 +50,7 @@ object databasemetadata { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, Outcome[DatabaseMetaDataIO, Throwable, B]) => DatabaseMetaDataIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]): F[A]
 
@@ -258,7 +258,7 @@ object databasemetadata { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: DatabaseMetaDataIO[A], use: A => DatabaseMetaDataIO[B], release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]) extends DatabaseMetaDataOp[B] {
+    final case class BracketCase[A, B](acquire: DatabaseMetaDataIO[A], use: A => DatabaseMetaDataIO[B], release: (A, Outcome[DatabaseMetaDataIO, Throwable, B]) => DatabaseMetaDataIO[Unit]) extends DatabaseMetaDataOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends DatabaseMetaDataOp[Unit] {
@@ -817,7 +817,7 @@ object databasemetadata { module =>
   def raiseError[A](err: Throwable): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = FF.liftF[DatabaseMetaDataOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, Outcome[DatabaseMetaDataIO, Throwable, B]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = FF.liftF[DatabaseMetaDataOp, B](BracketCase(acquire, use, release))
   val shift: DatabaseMetaDataIO[Unit] = FF.liftF[DatabaseMetaDataOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]) = FF.liftF[DatabaseMetaDataOp, A](EvalOn(ec, fa))
 
@@ -1005,7 +1005,7 @@ object databasemetadata { module =>
   implicit val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
     new Async[DatabaseMetaDataIO] {
       val asyncM = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
-      def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, Outcome[DatabaseMetaDataIO, Throwable, B]) => DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): DatabaseMetaDataIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): DatabaseMetaDataIO[A] = module.raiseError(e)
@@ -1016,11 +1016,5 @@ object databasemetadata { module =>
       def suspend[A](thunk: => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // DatabaseMetaDataIO is a ContextShift
-  implicit val ContextShiftDatabaseMetaDataIO: ContextShift[DatabaseMetaDataIO] =
-    new ContextShift[DatabaseMetaDataIO] {
-      def shift: DatabaseMetaDataIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

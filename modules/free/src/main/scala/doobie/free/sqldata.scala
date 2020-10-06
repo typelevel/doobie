@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -48,7 +48,7 @@ object sqldata { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, Outcome[SQLDataIO, Throwable, B]) => SQLDataIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]): F[A]
 
@@ -81,7 +81,7 @@ object sqldata { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: SQLDataIO[A], use: A => SQLDataIO[B], release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]) extends SQLDataOp[B] {
+    final case class BracketCase[A, B](acquire: SQLDataIO[A], use: A => SQLDataIO[B], release: (A, Outcome[SQLDataIO, Throwable, B]) => SQLDataIO[Unit]) extends SQLDataOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends SQLDataOp[Unit] {
@@ -115,7 +115,7 @@ object sqldata { module =>
   def raiseError[A](err: Throwable): SQLDataIO[A] = FF.liftF[SQLDataOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLDataIO[A] = FF.liftF[SQLDataOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): SQLDataIO[A] = FF.liftF[SQLDataOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): SQLDataIO[B] = FF.liftF[SQLDataOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, Outcome[SQLDataIO, Throwable, B]) => SQLDataIO[Unit]): SQLDataIO[B] = FF.liftF[SQLDataOp, B](BracketCase(acquire, use, release))
   val shift: SQLDataIO[Unit] = FF.liftF[SQLDataOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]) = FF.liftF[SQLDataOp, A](EvalOn(ec, fa))
 
@@ -128,7 +128,7 @@ object sqldata { module =>
   implicit val AsyncSQLDataIO: Async[SQLDataIO] =
     new Async[SQLDataIO] {
       val asyncM = FF.catsFreeMonadForFree[SQLDataOp]
-      def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): SQLDataIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, Outcome[SQLDataIO, Throwable, B]) => SQLDataIO[Unit]): SQLDataIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): SQLDataIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): SQLDataIO[A] = module.raiseError(e)
@@ -139,11 +139,5 @@ object sqldata { module =>
       def suspend[A](thunk: => SQLDataIO[A]): SQLDataIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // SQLDataIO is a ContextShift
-  implicit val ContextShiftSQLDataIO: ContextShift[SQLDataIO] =
-    new ContextShift[SQLDataIO] {
-      def shift: SQLDataIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

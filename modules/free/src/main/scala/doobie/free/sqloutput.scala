@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -63,7 +63,7 @@ object sqloutput { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): F[A]
 
@@ -121,7 +121,7 @@ object sqloutput { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: SQLOutputIO[A], use: A => SQLOutputIO[B], release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]) extends SQLOutputOp[B] {
+    final case class BracketCase[A, B](acquire: SQLOutputIO[A], use: A => SQLOutputIO[B], release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]) extends SQLOutputOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends SQLOutputOp[Unit] {
@@ -230,7 +230,7 @@ object sqloutput { module =>
   def raiseError[A](err: Throwable): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): SQLOutputIO[B] = FF.liftF[SQLOutputOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]): SQLOutputIO[B] = FF.liftF[SQLOutputOp, B](BracketCase(acquire, use, release))
   val shift: SQLOutputIO[Unit] = FF.liftF[SQLOutputOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]) = FF.liftF[SQLOutputOp, A](EvalOn(ec, fa))
 
@@ -268,7 +268,7 @@ object sqloutput { module =>
   implicit val AsyncSQLOutputIO: Async[SQLOutputIO] =
     new Async[SQLOutputIO] {
       val asyncM = FF.catsFreeMonadForFree[SQLOutputOp]
-      def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): SQLOutputIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]): SQLOutputIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): SQLOutputIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): SQLOutputIO[A] = module.raiseError(e)
@@ -279,11 +279,5 @@ object sqloutput { module =>
       def suspend[A](thunk: => SQLOutputIO[A]): SQLOutputIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // SQLOutputIO is a ContextShift
-  implicit val ContextShiftSQLOutputIO: ContextShift[SQLOutputIO] =
-    new ContextShift[SQLOutputIO] {
-      def shift: SQLOutputIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]) = module.evalOn(ec)(fa)
-    }
-}
+  }
 

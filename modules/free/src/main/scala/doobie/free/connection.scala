@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 
@@ -61,7 +61,7 @@ object connection { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, Outcome[ConnectionIO, Throwable, B]) => ConnectionIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): F[A]
 
@@ -145,7 +145,7 @@ object connection { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: ConnectionIO[A], use: A => ConnectionIO[B], release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]) extends ConnectionOp[B] {
+    final case class BracketCase[A, B](acquire: ConnectionIO[A], use: A => ConnectionIO[B], release: (A, Outcome[ConnectionIO, Throwable, B]) => ConnectionIO[Unit]) extends ConnectionOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends ConnectionOp[Unit] {
@@ -332,7 +332,7 @@ object connection { module =>
   def raiseError[A](err: Throwable): ConnectionIO[A] = FF.liftF[ConnectionOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ConnectionIO[A] = FF.liftF[ConnectionOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = FF.liftF[ConnectionOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, Outcome[ConnectionIO, Throwable, B]) => ConnectionIO[Unit]): ConnectionIO[B] = FF.liftF[ConnectionOp, B](BracketCase(acquire, use, release))
   val shift: ConnectionIO[Unit] = FF.liftF[ConnectionOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]) = FF.liftF[ConnectionOp, A](EvalOn(ec, fa))
 
@@ -396,7 +396,7 @@ object connection { module =>
   implicit val AsyncConnectionIO: Async[ConnectionIO] =
     new Async[ConnectionIO] {
       val asyncM = FF.catsFreeMonadForFree[ConnectionOp]
-      def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): ConnectionIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, Outcome[ConnectionIO, Throwable, B]) => ConnectionIO[Unit]): ConnectionIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): ConnectionIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ConnectionIO[A] = module.raiseError(e)
@@ -407,11 +407,4 @@ object connection { module =>
       def suspend[A](thunk: => ConnectionIO[A]): ConnectionIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // ConnectionIO is a ContextShift
-  implicit val ContextShiftConnectionIO: ContextShift[ConnectionIO] =
-    new ContextShift[ConnectionIO] {
-      def shift: ConnectionIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]) = module.evalOn(ec)(fa)
-    }
-}
-
+  }

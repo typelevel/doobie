@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -50,7 +50,7 @@ object clob { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): F[A]
 
@@ -93,7 +93,7 @@ object clob { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: ClobIO[A], use: A => ClobIO[B], release: (A, ExitCase[Throwable]) => ClobIO[Unit]) extends ClobOp[B] {
+    final case class BracketCase[A, B](acquire: ClobIO[A], use: A => ClobIO[B], release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]) extends ClobOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends ClobOp[Unit] {
@@ -157,7 +157,7 @@ object clob { module =>
   def raiseError[A](err: Throwable): ClobIO[A] = FF.liftF[ClobOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ClobIO[A] = FF.liftF[ClobOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): ClobIO[A] = FF.liftF[ClobOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): ClobIO[B] = FF.liftF[ClobOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]): ClobIO[B] = FF.liftF[ClobOp, B](BracketCase(acquire, use, release))
   val shift: ClobIO[Unit] = FF.liftF[ClobOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]) = FF.liftF[ClobOp, A](EvalOn(ec, fa))
 
@@ -180,7 +180,7 @@ object clob { module =>
   implicit val AsyncClobIO: Async[ClobIO] =
     new Async[ClobIO] {
       val asyncM = FF.catsFreeMonadForFree[ClobOp]
-      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): ClobIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]): ClobIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): ClobIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ClobIO[A] = module.raiseError(e)
@@ -191,11 +191,5 @@ object clob { module =>
       def suspend[A](thunk: => ClobIO[A]): ClobIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // ClobIO is a ContextShift
-  implicit val ContextShiftClobIO: ContextShift[ClobIO] =
-    new ContextShift[ClobIO] {
-      def shift: ClobIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

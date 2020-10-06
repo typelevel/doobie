@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -47,7 +47,7 @@ object ref { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, Outcome[RefIO, Throwable, B]) => RefIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]): F[A]
 
@@ -81,7 +81,7 @@ object ref { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: RefIO[A], use: A => RefIO[B], release: (A, ExitCase[Throwable]) => RefIO[Unit]) extends RefOp[B] {
+    final case class BracketCase[A, B](acquire: RefIO[A], use: A => RefIO[B], release: (A, Outcome[RefIO, Throwable, B]) => RefIO[Unit]) extends RefOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends RefOp[Unit] {
@@ -118,7 +118,7 @@ object ref { module =>
   def raiseError[A](err: Throwable): RefIO[A] = FF.liftF[RefOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): RefIO[A] = FF.liftF[RefOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): RefIO[A] = FF.liftF[RefOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = FF.liftF[RefOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, Outcome[RefIO, Throwable, B]) => RefIO[Unit]): RefIO[B] = FF.liftF[RefOp, B](BracketCase(acquire, use, release))
   val shift: RefIO[Unit] = FF.liftF[RefOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]) = FF.liftF[RefOp, A](EvalOn(ec, fa))
 
@@ -132,7 +132,7 @@ object ref { module =>
   implicit val AsyncRefIO: Async[RefIO] =
     new Async[RefIO] {
       val asyncM = FF.catsFreeMonadForFree[RefOp]
-      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, Outcome[RefIO, Throwable, B]) => RefIO[Unit]): RefIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): RefIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): RefIO[A] = module.raiseError(e)
@@ -143,11 +143,5 @@ object ref { module =>
       def suspend[A](thunk: => RefIO[A]): RefIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // RefIO is a ContextShift
-  implicit val ContextShiftRefIO: ContextShift[RefIO] =
-    new ContextShift[RefIO] {
-      def shift: RefIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

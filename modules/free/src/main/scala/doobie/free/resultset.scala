@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -67,7 +67,7 @@ object resultset { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, Outcome[ResultSetIO, Throwable, B]) => ResultSetIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): F[A]
 
@@ -292,7 +292,7 @@ object resultset { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: ResultSetIO[A], use: A => ResultSetIO[B], release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]) extends ResultSetOp[B] {
+    final case class BracketCase[A, B](acquire: ResultSetIO[A], use: A => ResultSetIO[B], release: (A, Outcome[ResultSetIO, Throwable, B]) => ResultSetIO[Unit]) extends ResultSetOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends ResultSetOp[Unit] {
@@ -902,7 +902,7 @@ object resultset { module =>
   def raiseError[A](err: Throwable): ResultSetIO[A] = FF.liftF[ResultSetOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): ResultSetIO[A] = FF.liftF[ResultSetOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, Outcome[ResultSetIO, Throwable, B]) => ResultSetIO[Unit]): ResultSetIO[B] = FF.liftF[ResultSetOp, B](BracketCase(acquire, use, release))
   val shift: ResultSetIO[Unit] = FF.liftF[ResultSetOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]) = FF.liftF[ResultSetOp, A](EvalOn(ec, fa))
 
@@ -1107,7 +1107,7 @@ object resultset { module =>
   implicit val AsyncResultSetIO: Async[ResultSetIO] =
     new Async[ResultSetIO] {
       val asyncM = FF.catsFreeMonadForFree[ResultSetOp]
-      def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): ResultSetIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, Outcome[ResultSetIO, Throwable, B]) => ResultSetIO[Unit]): ResultSetIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): ResultSetIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): ResultSetIO[A] = module.raiseError(e)
@@ -1118,11 +1118,5 @@ object resultset { module =>
       def suspend[A](thunk: => ResultSetIO[A]): ResultSetIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // ResultSetIO is a ContextShift
-  implicit val ContextShiftResultSetIO: ContextShift[ResultSetIO] =
-    new ContextShift[ResultSetIO] {
-      def shift: ResultSetIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

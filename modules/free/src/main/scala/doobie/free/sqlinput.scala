@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -61,7 +61,7 @@ object sqlinput { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, Outcome[SQLInputIO, Throwable, B]) => SQLInputIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): F[A]
 
@@ -119,7 +119,7 @@ object sqlinput { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: SQLInputIO[A], use: A => SQLInputIO[B], release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]) extends SQLInputOp[B] {
+    final case class BracketCase[A, B](acquire: SQLInputIO[A], use: A => SQLInputIO[B], release: (A, Outcome[SQLInputIO, Throwable, B]) => SQLInputIO[Unit]) extends SQLInputOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends SQLInputOp[Unit] {
@@ -228,7 +228,7 @@ object sqlinput { module =>
   def raiseError[A](err: Throwable): SQLInputIO[A] = FF.liftF[SQLInputOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLInputIO[A] = FF.liftF[SQLInputOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]): SQLInputIO[A] = FF.liftF[SQLInputOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): SQLInputIO[B] = FF.liftF[SQLInputOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, Outcome[SQLInputIO, Throwable, B]) => SQLInputIO[Unit]): SQLInputIO[B] = FF.liftF[SQLInputOp, B](BracketCase(acquire, use, release))
   val shift: SQLInputIO[Unit] = FF.liftF[SQLInputOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]) = FF.liftF[SQLInputOp, A](EvalOn(ec, fa))
 
@@ -266,7 +266,7 @@ object sqlinput { module =>
   implicit val AsyncSQLInputIO: Async[SQLInputIO] =
     new Async[SQLInputIO] {
       val asyncM = FF.catsFreeMonadForFree[SQLInputOp]
-      def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): SQLInputIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, Outcome[SQLInputIO, Throwable, B]) => SQLInputIO[Unit]): SQLInputIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): SQLInputIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): SQLInputIO[A] = module.raiseError(e)
@@ -277,11 +277,5 @@ object sqlinput { module =>
       def suspend[A](thunk: => SQLInputIO[A]): SQLInputIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // SQLInputIO is a ContextShift
-  implicit val ContextShiftSQLInputIO: ContextShift[SQLInputIO] =
-    new ContextShift[SQLInputIO] {
-      def shift: SQLInputIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 

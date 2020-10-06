@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.{ Async, Outcome }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
 import com.github.ghik.silencer.silent
@@ -50,7 +50,7 @@ object driver { module =>
       def raiseError[A](e: Throwable): F[A]
       def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
       def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): F[B]
+      def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, Outcome[DriverIO, Throwable, B]) => DriverIO[Unit]): F[B]
       def shift: F[Unit]
       def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): F[A]
 
@@ -87,7 +87,7 @@ object driver { module =>
     final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
     }
-    final case class BracketCase[A, B](acquire: DriverIO[A], use: A => DriverIO[B], release: (A, ExitCase[Throwable]) => DriverIO[Unit]) extends DriverOp[B] {
+    final case class BracketCase[A, B](acquire: DriverIO[A], use: A => DriverIO[B], release: (A, Outcome[DriverIO, Throwable, B]) => DriverIO[Unit]) extends DriverOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
     final case object Shift extends DriverOp[Unit] {
@@ -133,7 +133,7 @@ object driver { module =>
   def raiseError[A](err: Throwable): DriverIO[A] = FF.liftF[DriverOp, A](RaiseError(err))
   def async[A](k: (Either[Throwable, A] => Unit) => Unit): DriverIO[A] = FF.liftF[DriverOp, A](Async1(k))
   def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): DriverIO[A] = FF.liftF[DriverOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = FF.liftF[DriverOp, B](BracketCase(acquire, use, release))
+  def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, Outcome[DriverIO, Throwable, B]) => DriverIO[Unit]): DriverIO[B] = FF.liftF[DriverOp, B](BracketCase(acquire, use, release))
   val shift: DriverIO[Unit] = FF.liftF[DriverOp, Unit](Shift)
   def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = FF.liftF[DriverOp, A](EvalOn(ec, fa))
 
@@ -150,7 +150,7 @@ object driver { module =>
   implicit val AsyncDriverIO: Async[DriverIO] =
     new Async[DriverIO] {
       val asyncM = FF.catsFreeMonadForFree[DriverOp]
-      def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = module.bracketCase(acquire)(use)(release)
+      def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, Outcome[DriverIO, Throwable, B]) => DriverIO[Unit]): DriverIO[B] = module.bracketCase(acquire)(use)(release)
       def pure[A](x: A): DriverIO[A] = asyncM.pure(x)
       def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = module.handleErrorWith(fa, f)
       def raiseError[A](e: Throwable): DriverIO[A] = module.raiseError(e)
@@ -161,11 +161,5 @@ object driver { module =>
       def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = asyncM.flatten(module.delay(thunk))
     }
 
-  // DriverIO is a ContextShift
-  implicit val ContextShiftDriverIO: ContextShift[DriverIO] =
-    new ContextShift[DriverIO] {
-      def shift: DriverIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = module.evalOn(ec)(fa)
-    }
 }
 
