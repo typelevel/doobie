@@ -5,9 +5,11 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Outcome }
+import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
+import cats.effect.kernel.{ Deferred, Ref => CERef }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
 import java.lang.Class
@@ -45,14 +47,19 @@ object statement { module =>
       // Common
       def raw[A](f: Statement => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, Outcome[StatementIO, Throwable, B]) => StatementIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): F[A]
+      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]): F[B]
+      def canceled: F[Unit]
+      def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): F[A]
+      def cede: F[Unit]
+      def sleep(time: FiniteDuration): F[Unit]
+      def evalOn[A](fa: StatementIO[A], ec: ExecutionContext): F[A]
+      def executionContext: F[ExecutionContext]
+      def async[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]): F[A]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -117,29 +124,44 @@ object statement { module =>
     final case class Embed[A](e: Embedded[A]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends StatementOp[A] {
+    final case class HandleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
+    }
+    case object Monotonic extends StatementOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
+    }
+    case object Realtime extends StatementOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
+    }
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
+    }
+    case class ForceR[A, B](fa: StatementIO[A], fb: StatementIO[B]) extends StatementOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case object Canceled extends StatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case object Cede extends StatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Sleep(time: FiniteDuration) extends StatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
+    }
+    case class EvalOn[A](fa: StatementIO[A], ec: ExecutionContext) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
+    }
+    case object ExecutionContext1 extends StatementOp[ExecutionContext] {
+      def visit[F[_]](v: Visitor[F]) = v.executionContext
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
-    }
-    final case class BracketCase[A, B](acquire: StatementIO[A], use: A => StatementIO[B], release: (A, Outcome[StatementIO, Throwable, B]) => StatementIO[Unit]) extends StatementOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
-    }
-    final case object Shift extends StatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
-    }
-    final case class EvalOn[A](ec: ExecutionContext, fa: StatementIO[A]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // Statement-specific operations.
@@ -308,14 +330,19 @@ object statement { module =>
   def pure[A](a: A): StatementIO[A] = FF.pure[StatementOp, A](a)
   def raw[A](f: Statement => A): StatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): StatementIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): StatementIO[A] = FF.liftF[StatementOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): StatementIO[A] = FF.liftF[StatementOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): StatementIO[A] = FF.liftF[StatementOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, Outcome[StatementIO, Throwable, B]) => StatementIO[Unit]): StatementIO[B] = FF.liftF[StatementOp, B](BracketCase(acquire, use, release))
-  val shift: StatementIO[Unit] = FF.liftF[StatementOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]) = FF.liftF[StatementOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[StatementOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[StatementOp, FiniteDuration](Realtime)
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[StatementOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]) = FF.liftF[StatementOp, B](ForceR(fa, fb))
+  val canceled = FF.liftF[StatementOp, Unit](Canceled)
+  def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) = FF.liftF[StatementOp, A](OnCancel(fa, fin))
+  val cede = FF.liftF[StatementOp, Unit](Cede)
+  def sleep(time: FiniteDuration) = FF.liftF[StatementOp, Unit](Sleep(time))
+  def evalOn[A](fa: StatementIO[A], ec: ExecutionContext) = FF.liftF[StatementOp, A](EvalOn(fa, ec))
+  val executionContext = FF.liftF[StatementOp, ExecutionContext](ExecutionContext1)
+  def async[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]) = FF.liftF[StatementOp, A](Async1(k))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
@@ -375,15 +402,28 @@ object statement { module =>
   implicit val AsyncStatementIO: Async[StatementIO] =
     new Async[StatementIO] {
       val asyncM = FF.catsFreeMonadForFree[StatementOp]
-      def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, Outcome[StatementIO, Throwable, B]) => StatementIO[Unit]): StatementIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): StatementIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): StatementIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => StatementIO[Unit]): StatementIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => StatementIO[A]): StatementIO[A] = asyncM.flatten(module.delay(thunk))
+      override def pure[A](x: A): StatementIO[A] = asyncM.pure(x)
+      override def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = asyncM.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = asyncM.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: StatementIO[FiniteDuration] = module.monotonic
+      override def realTime: StatementIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): StatementIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]): StatementIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]): StatementIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def canceled: StatementIO[Unit] = module.canceled
+      override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): StatementIO[A] = module.onCancel(fa, fin)
+      override def start[A](fa: StatementIO[A]): StatementIO[Fiber[StatementIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def cede: StatementIO[Unit] = module.cede
+      override def racePair[A, B](fa: StatementIO[A], fb: StatementIO[B]): StatementIO[Either[(Outcome[StatementIO, Throwable, A], Fiber[StatementIO, Throwable, B]), (Fiber[StatementIO, Throwable, A], Outcome[StatementIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): StatementIO[CERef[StatementIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def deferred[A]: StatementIO[Deferred[StatementIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def sleep(time: FiniteDuration): StatementIO[Unit] = module.sleep(time)
+      override def evalOn[A](fa: StatementIO[A], ec: ExecutionContext): StatementIO[A] = module.evalOn(fa, ec)
+      override def executionContext: StatementIO[ExecutionContext] = module.executionContext
+      override def async[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]) = module.async(k)
+      override def cont[A](body: Cont[StatementIO, A]): StatementIO[A] = Async.defaultCont(body)(this)
     }
 
 }

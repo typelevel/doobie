@@ -5,9 +5,11 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Outcome }
+import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
+import cats.effect.kernel.{ Deferred, Ref => CERef }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
 import java.io.InputStream
@@ -58,14 +60,19 @@ object sqloutput { module =>
       // Common
       def raw[A](f: SQLOutput => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): F[A]
+      def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: SQLOutputIO[A])(fb: SQLOutputIO[B]): F[B]
+      def canceled: F[Unit]
+      def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): F[A]
+      def cede: F[Unit]
+      def sleep(time: FiniteDuration): F[Unit]
+      def evalOn[A](fa: SQLOutputIO[A], ec: ExecutionContext): F[A]
+      def executionContext: F[ExecutionContext]
+      def async[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Option[SQLOutputIO[Unit]]]): F[A]
 
       // SQLOutput
       def writeArray(a: SqlArray): F[Unit]
@@ -106,29 +113,44 @@ object sqloutput { module =>
     final case class Embed[A](e: Embedded[A]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends SQLOutputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]) extends SQLOutputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLOutputOp[A] {
+    final case class HandleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
+    }
+    case object Monotonic extends SQLOutputOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
+    }
+    case object Realtime extends SQLOutputOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
+    }
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
+    }
+    case class ForceR[A, B](fa: SQLOutputIO[A], fb: SQLOutputIO[B]) extends SQLOutputOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case object Canceled extends SQLOutputOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case object Cede extends SQLOutputOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Sleep(time: FiniteDuration) extends SQLOutputOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
+    }
+    case class EvalOn[A](fa: SQLOutputIO[A], ec: ExecutionContext) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
+    }
+    case object ExecutionContext1 extends SQLOutputOp[ExecutionContext] {
+      def visit[F[_]](v: Visitor[F]) = v.executionContext
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Option[SQLOutputIO[Unit]]]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]) extends SQLOutputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
-    }
-    final case class BracketCase[A, B](acquire: SQLOutputIO[A], use: A => SQLOutputIO[B], release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]) extends SQLOutputOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
-    }
-    final case object Shift extends SQLOutputOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
-    }
-    final case class EvalOn[A](ec: ExecutionContext, fa: SQLOutputIO[A]) extends SQLOutputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // SQLOutput-specific operations.
@@ -225,14 +247,19 @@ object sqloutput { module =>
   def pure[A](a: A): SQLOutputIO[A] = FF.pure[SQLOutputOp, A](a)
   def raw[A](f: SQLOutput => A): SQLOutputIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLOutputOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): SQLOutputIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]): SQLOutputIO[B] = FF.liftF[SQLOutputOp, B](BracketCase(acquire, use, release))
-  val shift: SQLOutputIO[Unit] = FF.liftF[SQLOutputOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]) = FF.liftF[SQLOutputOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = FF.liftF[SQLOutputOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[SQLOutputOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[SQLOutputOp, FiniteDuration](Realtime)
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[SQLOutputOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: SQLOutputIO[A])(fb: SQLOutputIO[B]) = FF.liftF[SQLOutputOp, B](ForceR(fa, fb))
+  val canceled = FF.liftF[SQLOutputOp, Unit](Canceled)
+  def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]) = FF.liftF[SQLOutputOp, A](OnCancel(fa, fin))
+  val cede = FF.liftF[SQLOutputOp, Unit](Cede)
+  def sleep(time: FiniteDuration) = FF.liftF[SQLOutputOp, Unit](Sleep(time))
+  def evalOn[A](fa: SQLOutputIO[A], ec: ExecutionContext) = FF.liftF[SQLOutputOp, A](EvalOn(fa, ec))
+  val executionContext = FF.liftF[SQLOutputOp, ExecutionContext](ExecutionContext1)
+  def async[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Option[SQLOutputIO[Unit]]]) = FF.liftF[SQLOutputOp, A](Async1(k))
 
   // Smart constructors for SQLOutput-specific operations.
   def writeArray(a: SqlArray): SQLOutputIO[Unit] = FF.liftF(WriteArray(a))
@@ -268,15 +295,28 @@ object sqloutput { module =>
   implicit val AsyncSQLOutputIO: Async[SQLOutputIO] =
     new Async[SQLOutputIO] {
       val asyncM = FF.catsFreeMonadForFree[SQLOutputOp]
-      def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, Outcome[SQLOutputIO, Throwable, B]) => SQLOutputIO[Unit]): SQLOutputIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): SQLOutputIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): SQLOutputIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLOutputIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => SQLOutputIO[Unit]): SQLOutputIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => SQLOutputIO[Either[A, B]]): SQLOutputIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => SQLOutputIO[A]): SQLOutputIO[A] = asyncM.flatten(module.delay(thunk))
+      override def pure[A](x: A): SQLOutputIO[A] = asyncM.pure(x)
+      override def flatMap[A, B](fa: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = asyncM.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => SQLOutputIO[Either[A, B]]): SQLOutputIO[B] = asyncM.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): SQLOutputIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): SQLOutputIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: SQLOutputIO[FiniteDuration] = module.monotonic
+      override def realTime: SQLOutputIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): SQLOutputIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: SQLOutputIO[A])(fb: SQLOutputIO[B]): SQLOutputIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[SQLOutputIO] => SQLOutputIO[A]): SQLOutputIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def canceled: SQLOutputIO[Unit] = module.canceled
+      override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): SQLOutputIO[A] = module.onCancel(fa, fin)
+      override def start[A](fa: SQLOutputIO[A]): SQLOutputIO[Fiber[SQLOutputIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def cede: SQLOutputIO[Unit] = module.cede
+      override def racePair[A, B](fa: SQLOutputIO[A], fb: SQLOutputIO[B]): SQLOutputIO[Either[(Outcome[SQLOutputIO, Throwable, A], Fiber[SQLOutputIO, Throwable, B]), (Fiber[SQLOutputIO, Throwable, A], Outcome[SQLOutputIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): SQLOutputIO[CERef[SQLOutputIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def deferred[A]: SQLOutputIO[Deferred[SQLOutputIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def sleep(time: FiniteDuration): SQLOutputIO[Unit] = module.sleep(time)
+      override def evalOn[A](fa: SQLOutputIO[A], ec: ExecutionContext): SQLOutputIO[A] = module.evalOn(fa, ec)
+      override def executionContext: SQLOutputIO[ExecutionContext] = module.executionContext
+      override def async[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Option[SQLOutputIO[Unit]]]) = module.async(k)
+      override def cont[A](body: Cont[SQLOutputIO, A]): SQLOutputIO[A] = Async.defaultCont(body)(this)
     }
 
   }

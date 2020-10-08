@@ -5,9 +5,11 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Outcome }
+import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
+import cats.effect.kernel.{ Deferred, Ref => CERef }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
 import java.io.InputStream
@@ -45,14 +47,19 @@ object clob { module =>
       // Common
       def raw[A](f: Clob => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): F[A]
+      def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]): F[B]
+      def canceled: F[Unit]
+      def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): F[A]
+      def cede: F[Unit]
+      def sleep(time: FiniteDuration): F[Unit]
+      def evalOn[A](fa: ClobIO[A], ec: ExecutionContext): F[A]
+      def executionContext: F[ExecutionContext]
+      def async[A](k: (Either[Throwable, A] => Unit) => ClobIO[Option[ClobIO[Unit]]]): F[A]
 
       // Clob
       def free: F[Unit]
@@ -78,29 +85,44 @@ object clob { module =>
     final case class Embed[A](e: Embedded[A]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends ClobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]) extends ClobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends ClobOp[A] {
+    final case class HandleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
+    }
+    case object Monotonic extends ClobOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
+    }
+    case object Realtime extends ClobOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
+    }
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
+    }
+    case class ForceR[A, B](fa: ClobIO[A], fb: ClobIO[B]) extends ClobOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case object Canceled extends ClobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case object Cede extends ClobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Sleep(time: FiniteDuration) extends ClobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
+    }
+    case class EvalOn[A](fa: ClobIO[A], ec: ExecutionContext) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
+    }
+    case object ExecutionContext1 extends ClobOp[ExecutionContext] {
+      def visit[F[_]](v: Visitor[F]) = v.executionContext
+    }
+    case class Async1[A](k: (Either[Throwable, A] => Unit) => ClobIO[Option[ClobIO[Unit]]]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]) extends ClobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
-    }
-    final case class BracketCase[A, B](acquire: ClobIO[A], use: A => ClobIO[B], release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]) extends ClobOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
-    }
-    final case object Shift extends ClobOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
-    }
-    final case class EvalOn[A](ec: ExecutionContext, fa: ClobIO[A]) extends ClobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
     }
 
     // Clob-specific operations.
@@ -152,14 +174,19 @@ object clob { module =>
   def pure[A](a: A): ClobIO[A] = FF.pure[ClobOp, A](a)
   def raw[A](f: Clob => A): ClobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[ClobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): ClobIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): ClobIO[A] = FF.liftF[ClobOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): ClobIO[A] = FF.liftF[ClobOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): ClobIO[A] = FF.liftF[ClobOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): ClobIO[A] = FF.liftF[ClobOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]): ClobIO[B] = FF.liftF[ClobOp, B](BracketCase(acquire, use, release))
-  val shift: ClobIO[Unit] = FF.liftF[ClobOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]) = FF.liftF[ClobOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = FF.liftF[ClobOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[ClobOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[ClobOp, FiniteDuration](Realtime)
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ClobOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]) = FF.liftF[ClobOp, B](ForceR(fa, fb))
+  val canceled = FF.liftF[ClobOp, Unit](Canceled)
+  def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) = FF.liftF[ClobOp, A](OnCancel(fa, fin))
+  val cede = FF.liftF[ClobOp, Unit](Cede)
+  def sleep(time: FiniteDuration) = FF.liftF[ClobOp, Unit](Sleep(time))
+  def evalOn[A](fa: ClobIO[A], ec: ExecutionContext) = FF.liftF[ClobOp, A](EvalOn(fa, ec))
+  val executionContext = FF.liftF[ClobOp, ExecutionContext](ExecutionContext1)
+  def async[A](k: (Either[Throwable, A] => Unit) => ClobIO[Option[ClobIO[Unit]]]) = FF.liftF[ClobOp, A](Async1(k))
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)
@@ -180,15 +207,28 @@ object clob { module =>
   implicit val AsyncClobIO: Async[ClobIO] =
     new Async[ClobIO] {
       val asyncM = FF.catsFreeMonadForFree[ClobOp]
-      def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, Outcome[ClobIO, Throwable, B]) => ClobIO[Unit]): ClobIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): ClobIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): ClobIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): ClobIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => ClobIO[Unit]): ClobIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => ClobIO[Either[A, B]]): ClobIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => ClobIO[A]): ClobIO[A] = asyncM.flatten(module.delay(thunk))
+      override def pure[A](x: A): ClobIO[A] = asyncM.pure(x)
+      override def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = asyncM.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => ClobIO[Either[A, B]]): ClobIO[B] = asyncM.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): ClobIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): ClobIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: ClobIO[FiniteDuration] = module.monotonic
+      override def realTime: ClobIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): ClobIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]): ClobIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): ClobIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def canceled: ClobIO[Unit] = module.canceled
+      override def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): ClobIO[A] = module.onCancel(fa, fin)
+      override def start[A](fa: ClobIO[A]): ClobIO[Fiber[ClobIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def cede: ClobIO[Unit] = module.cede
+      override def racePair[A, B](fa: ClobIO[A], fb: ClobIO[B]): ClobIO[Either[(Outcome[ClobIO, Throwable, A], Fiber[ClobIO, Throwable, B]), (Fiber[ClobIO, Throwable, A], Outcome[ClobIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): ClobIO[CERef[ClobIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def deferred[A]: ClobIO[Deferred[ClobIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def sleep(time: FiniteDuration): ClobIO[Unit] = module.sleep(time)
+      override def evalOn[A](fa: ClobIO[A], ec: ExecutionContext): ClobIO[A] = module.evalOn(fa, ec)
+      override def executionContext: ClobIO[ExecutionContext] = module.executionContext
+      override def async[A](k: (Either[Throwable, A] => Unit) => ClobIO[Option[ClobIO[Unit]]]) = module.async(k)
+      override def cont[A](body: Cont[ClobIO, A]): ClobIO[A] = Async.defaultCont(body)(this)
     }
 
 }
