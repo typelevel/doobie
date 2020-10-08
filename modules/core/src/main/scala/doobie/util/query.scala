@@ -8,6 +8,7 @@ import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
 import cats.implicits._
+import cats.effect.syntax.bracket._
 import doobie._
 import doobie.implicits.AsyncPreparedStatementIO
 import doobie.util.analysis.Analysis
@@ -48,13 +49,11 @@ object query {
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
-        // we should close statement on the level where we got statement (connection)
-        // and we do this actually
-        eet <- FPS.executeQuery.flatMap(rs => for {
+        eet <- FPS.executeQuery.flatMap(rs => (for {
           t1 <- now
           et <- FPS.embed(rs, k).attempt
           t2 <- now
-        } yield (t1, et, t2)).attempt
+        } yield (t1, et, t2)).guarantee(FPS.embed(rs, FRS.close))).attempt
         tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
           for {
             t1 <- now
