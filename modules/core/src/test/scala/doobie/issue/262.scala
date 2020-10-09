@@ -4,23 +4,19 @@
 
 package doobie.issue
 
-import cats.effect.{ Async, Blocker, ContextShift, IO }
+import cats.effect.{ Async, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import Predef._
 
 
 class `262` extends Specification {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
     val asyncM = Async[IO]
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    val contextShiftM = contextShift
 
     val M = implicitly[Async[IO]]
 

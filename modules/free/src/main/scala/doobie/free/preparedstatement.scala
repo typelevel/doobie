@@ -69,6 +69,7 @@ object preparedstatement { module =>
       def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): F[B]
       def canceled: F[Unit]

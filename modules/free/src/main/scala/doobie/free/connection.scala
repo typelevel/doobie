@@ -62,6 +62,7 @@ object connection { module =>
       def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]): F[B]
       def canceled: F[Unit]

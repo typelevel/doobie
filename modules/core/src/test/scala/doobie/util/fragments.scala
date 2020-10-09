@@ -8,16 +8,13 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
-import cats.effect.ContextShift
-import scala.concurrent.ExecutionContext
 import cats.effect.IO
 
 
 class fragmentsspec extends Specification {
   import Fragments._
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

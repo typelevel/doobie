@@ -51,6 +51,7 @@ object statement { module =>
       def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]): F[B]
       def canceled: F[Unit]

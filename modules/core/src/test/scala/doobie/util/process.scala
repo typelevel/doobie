@@ -16,6 +16,8 @@ import scala.util.Random
 
 class processspec extends Specification with ScalaCheck {
 
+  import cats.effect.unsafe.implicits.global
+
   "repeatEvalChunks must" >> {
 
     "yield the same result irrespective of chunk size" ! forAll { (n0: Int) =>

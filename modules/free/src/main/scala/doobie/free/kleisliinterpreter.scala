@@ -111,6 +111,7 @@ trait KleisliInterpreter[M[_]] { outer =>
   def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
   def monotonic[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => asyncM.monotonic)
   def realTime[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => asyncM.realTime)
+  def delay[J, A](thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(thunk))
   def suspend[J, A](hint: Sync.Type)(thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.suspend(hint)(thunk))
   def canceled[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.canceled)
   def cede[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.cede)
@@ -743,6 +744,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raiseError[A](e: Throwable): Kleisli[M, Connection, A] = outer.raiseError(e)
     override def monotonic: Kleisli[M, Connection, FiniteDuration] = outer.monotonic
     override def realTime: Kleisli[M, Connection, FiniteDuration] = outer.realTime
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A): Kleisli[M, Connection, A] = outer.suspend(hint)(thunk)
     override def canceled: Kleisli[M, Connection, Unit] = outer.canceled
     override def cede: Kleisli[M, Connection, Unit] = outer.cede
@@ -832,6 +834,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raiseError[A](e: Throwable): Kleisli[M, Statement, A] = outer.raiseError(e)
     override def monotonic: Kleisli[M, Statement, FiniteDuration] = outer.monotonic
     override def realTime: Kleisli[M, Statement, FiniteDuration] = outer.realTime
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A): Kleisli[M, Statement, A] = outer.suspend(hint)(thunk)
     override def canceled: Kleisli[M, Statement, Unit] = outer.canceled
     override def cede: Kleisli[M, Statement, Unit] = outer.cede
@@ -919,6 +922,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raiseError[A](e: Throwable): Kleisli[M, PreparedStatement, A] = outer.raiseError(e)
     override def monotonic: Kleisli[M, PreparedStatement, FiniteDuration] = outer.monotonic
     override def realTime: Kleisli[M, PreparedStatement, FiniteDuration] = outer.realTime
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A): Kleisli[M, PreparedStatement, A] = outer.suspend(hint)(thunk)
     override def canceled: Kleisli[M, PreparedStatement, Unit] = outer.canceled
     override def cede: Kleisli[M, PreparedStatement, Unit] = outer.cede
@@ -1330,6 +1334,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raiseError[A](e: Throwable): Kleisli[M, ResultSet, A] = outer.raiseError(e)
     override def monotonic: Kleisli[M, ResultSet, FiniteDuration] = outer.monotonic
     override def realTime: Kleisli[M, ResultSet, FiniteDuration] = outer.realTime
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A): Kleisli[M, ResultSet, A] = outer.suspend(hint)(thunk)
     override def canceled: Kleisli[M, ResultSet, Unit] = outer.canceled
     override def cede: Kleisli[M, ResultSet, Unit] = outer.cede

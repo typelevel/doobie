@@ -68,6 +68,7 @@ object resultset { module =>
       def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]): F[B]
       def canceled: F[Unit]

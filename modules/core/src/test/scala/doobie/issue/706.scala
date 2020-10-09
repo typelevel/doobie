@@ -6,19 +6,17 @@ package doobie.issue
 
 import cats._
 import cats.implicits._
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{ IO }
 import doobie._, doobie.implicits._
 import org.scalacheck.Prop.forAll
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import scala.Predef._
 
 
 class `706` extends Specification with ScalaCheck {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

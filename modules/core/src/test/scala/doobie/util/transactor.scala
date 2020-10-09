@@ -4,20 +4,17 @@
 
 package doobie.util
 
-import cats.effect.{ Async, ContextShift, IO }
+import cats.effect.{ Async, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
-
 
 class transactorspec extends Specification {
 
   val q = sql"select 42".query[Int].unique
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
-  def xa[A[_]: Async: ContextShift] = Transactor.fromDriverManager[A](
+  def xa[A[_]: Async] = Transactor.fromDriverManager[A](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
@@ -35,7 +32,7 @@ class transactorspec extends Specification {
   class ConnectionTracker {
     var connections = List.empty[java.sql.Connection]
 
-    def track[F[_]: Async: ContextShift](xa: Transactor[F]) = {
+    def track[F[_]: Async](xa: Transactor[F]) = {
       def withA(t: doobie.util.transactor.Transactor[F]): Transactor.Aux[F, t.A] = {
         Transactor.connect.modify(t, f => a => {
           f(a).map { conn =>

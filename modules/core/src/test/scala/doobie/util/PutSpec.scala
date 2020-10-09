@@ -4,10 +4,9 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{ IO }
 import doobie._
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import shapeless.test._
 
 object PutSpec {
@@ -25,9 +24,6 @@ class PutSpec extends Specification {
 
   case class Reg1(x: Int)
   case class Reg2(x: Int)
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
