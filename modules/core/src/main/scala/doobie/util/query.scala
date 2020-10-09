@@ -8,7 +8,7 @@ import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
 import cats.implicits._
-import cats.effect.syntax.bracket._
+import cats.effect.syntax.monadCancel._
 import doobie._
 import doobie.implicits.AsyncPreparedStatementIO
 import doobie.util.analysis.Analysis

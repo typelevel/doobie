@@ -5,7 +5,6 @@
 package doobie.free
 
 import cats.effect.Async
-import cats.effect._
 
 trait Types {
   /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]
@@ -83,48 +82,5 @@ trait Instances {
 
   /** @group Typeclass Instances */  implicit lazy val AsyncStatementIO: Async[StatementIO] =
     statement.AsyncStatementIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftBlobIO: ContextShift[BlobIO] =
-    blob.ContextShiftBlobIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftCallableStatementIO: ContextShift[CallableStatementIO] =
-    callablestatement.ContextShiftCallableStatementIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftClobIO: ContextShift[ClobIO] =
-    clob.ContextShiftClobIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftConnectionIO: ContextShift[ConnectionIO] =
-    connection.ContextShiftConnectionIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftDatabaseMetaDataIO: ContextShift[DatabaseMetaDataIO] =
-    databasemetadata.ContextShiftDatabaseMetaDataIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftDriverIO: ContextShift[DriverIO] =
-    driver.ContextShiftDriverIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftNClobIO: ContextShift[NClobIO] =
-    nclob.ContextShiftNClobIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftPreparedStatementIO: ContextShift[PreparedStatementIO] =
-    preparedstatement.ContextShiftPreparedStatementIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftRefIO: ContextShift[RefIO] =
-    ref.ContextShiftRefIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftResultSetIO: ContextShift[ResultSetIO] =
-    resultset.ContextShiftResultSetIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftSQLDataIO: ContextShift[SQLDataIO] =
-    sqldata.ContextShiftSQLDataIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftSQLInputIO: ContextShift[SQLInputIO] =
-    sqlinput.ContextShiftSQLInputIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftSQLOutputIO: ContextShift[SQLOutputIO] =
-    sqloutput.ContextShiftSQLOutputIO
-
-  /** @group Typeclass Instances */  implicit val ContextShiftStatementIO: ContextShift[StatementIO] =
-    statement.ContextShiftStatementIO
-
 
 }

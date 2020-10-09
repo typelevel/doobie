@@ -25,7 +25,7 @@ object yolo {
 
   import doobie.free.connection.AsyncConnectionIO
 
-  class Yolo[M[_]: Sync](xa: Transactor[M]) {
+  class Yolo[M[_]: Sync: Async](xa: Transactor[M]) {
 
     private def out(s: String, colors: Colors): ConnectionIO[Unit] =
       delay(Console.println(show"${colors.BLUE}  $s${colors.RESET}"))

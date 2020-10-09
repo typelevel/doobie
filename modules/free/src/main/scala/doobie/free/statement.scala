@@ -334,6 +334,7 @@ object statement { module =>
   def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[StatementOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[StatementOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[StatementOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[StatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]) = FF.liftF[StatementOp, B](ForceR(fa, fb))
   val canceled = FF.liftF[StatementOp, Unit](Canceled)

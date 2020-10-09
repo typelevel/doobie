@@ -5,32 +5,32 @@
 package doobie.syntax
 
 import cats.data.{EitherT, Kleisli, OptionT}
-import cats.effect.Bracket
+import cats.effect.MonadCancel
 import cats.syntax.functor._
 import doobie.HC
 import doobie.free.connection.{AsyncConnectionIO, ConnectionIO}
 import doobie.util.transactor.Transactor
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): M[A] = xa.trans.apply(ma)
+  def transact[M[_]](xa: Transactor[M])(implicit ev: MonadCancel[M, Throwable]): M[A] = xa.trans.apply(ma)
 }
 
 class OptionTConnectionIOOps[A](ma: OptionT[ConnectionIO, A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): OptionT[M, A] =
+  def transact[M[_]](xa: Transactor[M])(implicit ev: MonadCancel[M, Throwable]): OptionT[M, A] =
     OptionT(
       xa.trans.apply(ma.orElseF(HC.rollback.as(None)).value)
     )
 }
 
 class EitherTConnectionIOOps[E, A](ma: EitherT[ConnectionIO, E, A]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): EitherT[M, E, A] =
+  def transact[M[_]](xa: Transactor[M])(implicit ev: MonadCancel[M, Throwable]): EitherT[M, E, A] =
     EitherT(
       xa.trans.apply(ma.leftSemiflatMap(HC.rollback.as(_)).value)
     )
 }
 
 class KleisliConnectionIOOps[A, B](ma: Kleisli[ConnectionIO, A, B]) {
-  def transact[M[_]](xa: Transactor[M])(implicit ev: Bracket[M, Throwable]): Kleisli[M, A, B] =
+  def transact[M[_]](xa: Transactor[M])(implicit ev: MonadCancel[M, Throwable]): Kleisli[M, A, B] =
     ma.mapK(xa.trans)
 }
 

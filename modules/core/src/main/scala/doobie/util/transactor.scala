@@ -10,17 +10,16 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.{Async, Blocker, Bracket, ContextShift, ExitCase, Resource, Sync}
-import cats.instances.long._
-import cats.syntax.show._
+import cats.effect.{Async, Resource, Sync}
 
 import fs2.Stream
 import java.sql.{Connection, DriverManager}
 
 import javax.sql.DataSource
-import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.concurrent.ExecutionContext
+import cats.effect.kernel.Resource.ExitCase
+import cats.effect.kernel.MonadCancel
 
 object transactor  {
 
@@ -48,8 +47,8 @@ object transactor  {
       _ <- Resource.make(doobie.FC.unit)(_ => always)
       _ <- Resource.makeCase(before) { case (_, exitCase) =>
         exitCase match {
-          case ExitCase.Completed => after
-          case ExitCase.Error(_) | ExitCase.Canceled => oops
+          case ExitCase.Succeeded => after
+          case ExitCase.Errored(_) | ExitCase.Canceled => oops
         }
       }
     } yield ()
@@ -103,7 +102,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev1: Async[M]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to perform arbitrary configuration on the kernel value (changing the
@@ -121,7 +120,7 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: Bracket[M, Throwable]): Kleisli[M, Connection, *] ~> M =
+    def rawExec(implicit ev: MonadCancel[M, Throwable]): Kleisli[M, Connection, *] ~> M =
       λ[Kleisli[M, Connection, *] ~> M](k => connect(kernel).use(k.run))
 
     /**
@@ -129,7 +128,7 @@ object transactor  {
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M]): Kleisli[M, Connection, *] ~> M =
+    def exec(implicit ev: MonadCancel[M, Throwable], D: Defer[M]): Kleisli[M, Connection, *] ~> M =
       λ[Kleisli[M, Connection, *] ~> M] { ka =>
         connect(kernel).use { conn =>
           strategy.resource.mapK(run(conn)).use { _ =>
@@ -144,7 +143,7 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawTrans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+    def rawTrans(implicit ev: MonadCancel[M, Throwable]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
           f.foldMap(interpret).run(conn)
@@ -157,7 +156,7 @@ object transactor  {
      * program in `M`. This is the most common way to run a doobie program.
      * @group Natural Transformations
      */
-    def trans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
+    def trans(implicit ev: MonadCancel[M, Throwable]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
           strategy.resource.use(_ => f).foldMap(interpret).run(conn)
@@ -271,17 +270,15 @@ object transactor  {
       class FromDataSourceUnapplied[M[_]] {
         def apply[A <: DataSource](
           dataSource: A,
-          connectEC:  ExecutionContext,
-          blocker: Blocker
-        )(implicit ev: Async[M],
-                   cs: ContextShift[M]
+          connectEC:  ExecutionContext
+        )(implicit ev: Async[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
-            val acquire = cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
-            def release(c: Connection) = blocker.blockOn(ev.delay(c.close()))
+            val acquire = ev.evalOn(ev.delay(dataSource.getConnection), connectEC)
+            def release(c: Connection) = ev.suspend(Sync.Type.Blocking)(c.close())
             Resource.make(acquire)(release)
           }
-          val interp  = KleisliInterpreter[M](blocker).ConnectionInterpreter
+          val interp  = KleisliInterpreter[M].ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
         }
       }
@@ -295,12 +292,11 @@ object transactor  {
      * @param blocker for blocking database operations
      * @group Constructors
      */
-    def fromConnection[M[_]: Async: ContextShift](
-      connection: Connection,
-      blocker: Blocker
+    def fromConnection[M[_]: Async](
+      connection: Connection
     ): Transactor.Aux[M, Connection] = {
       val connect = (c: Connection) => Resource.pure[M, Connection](c)
-      val interp  = KleisliInterpreter[M](blocker).ConnectionInterpreter
+      val interp  = KleisliInterpreter[M].ConnectionInterpreter
       Transactor(connection, connect, interp, Strategy.default)
     }
 
@@ -317,64 +313,33 @@ object transactor  {
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     object fromDriverManager {
 
-      // An unbounded cached pool of daemon threads.
-      private lazy val defaultBlocker: Blocker = Blocker.liftExecutionContext {
-        ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
-          new ThreadFactory {
-            def newThread(r: Runnable): Thread = {
-              val th = new Thread(r)
-              th.setName(show"doobie-fromDriverManager-pool-${th.getId}")
-              th.setDaemon(true)
-              th
-            }
-          }
-        ))
-      }
-
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]](
         driver: String,
         conn: () => Connection,
-        strategy: Strategy,
-        blocker: Blocker
-      )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
+        strategy: Strategy
+      )(implicit am: Async[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
           _ => {
-            val acquire = blocker.blockOn(am.delay { Class.forName(driver); conn() })
-            def release(c: Connection) = blocker.blockOn(am.delay { c.close() })
+            val acquire = am.suspend(Sync.Type.Blocking){ Class.forName(driver); conn() }
+            def release(c: Connection) = am.suspend(Sync.Type.Blocking){ c.close() }
             Resource.make(acquire)(release)
           },
-          KleisliInterpreter[M](blocker).ConnectionInterpreter,
+          KleisliInterpreter[M].ConnectionInterpreter,
           strategy
         )
-
-      def apply[M[_]: Async: ContextShift](
-        driver: String,
-        url:    String,
-        blocker: Blocker
-      ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url), Strategy.default, blocker)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
        * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
        * @param url        a connection URL, specific to your driver
        */
-      def apply[M[_]: Async: ContextShift](
+      def apply[M[_]: Async](
         driver: String,
         url:    String
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, defaultBlocker)
-
-      def apply[M[_]: Async: ContextShift](
-        driver: String,
-        url:    String,
-        user:   String,
-        pass:   String,
-        blocker: Blocker
-      ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default, blocker)
+        create(driver, () => DriverManager.getConnection(url), Strategy.default)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -383,13 +348,13 @@ object transactor  {
        * @param user       database username
        * @param pass       database password
        */
-      def apply[M[_]: Async: ContextShift](
+      def apply[M[_]: Async](
         driver: String,
         url:    String,
         user:   String,
         pass:   String
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, user, pass, defaultBlocker)
+        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -397,26 +362,12 @@ object transactor  {
        * @param url        a connection URL, specific to your driver
        * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
        */
-      def apply[M[_]: Async: ContextShift](
-        driver: String,
-        url:    String,
-        info:   java.util.Properties,
-        blocker: Blocker
-      ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, info), Strategy.default, blocker)
-
-      /**
-       * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
-       * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
-       * @param url        a connection URL, specific to your driver
-       * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
-       */
-      def apply[M[_]: Async: ContextShift](
+      def apply[M[_]: Async](
         driver: String,
         url:    String,
         info:   java.util.Properties
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, info, defaultBlocker)
+        create(driver, () => DriverManager.getConnection(url, info), Strategy.default)
 
     }
 

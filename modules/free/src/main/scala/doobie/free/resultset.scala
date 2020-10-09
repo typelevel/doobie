@@ -923,6 +923,7 @@ object resultset { module =>
   def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = FF.liftF[ResultSetOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[ResultSetOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[ResultSetOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[ResultSetOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ResultSetOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]) = FF.liftF[ResultSetOp, B](ForceR(fa, fb))
   val canceled = FF.liftF[ResultSetOp, Unit](Canceled)

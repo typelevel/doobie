@@ -353,6 +353,7 @@ object connection { module =>
   def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = FF.liftF[ConnectionOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[ConnectionOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[ConnectionOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[ConnectionOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ConnectionOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]) = FF.liftF[ConnectionOp, B](ForceR(fa, fb))
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)

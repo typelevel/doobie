@@ -584,6 +584,7 @@ object preparedstatement { module =>
   def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[PreparedStatementOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[PreparedStatementOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = FF.liftF[PreparedStatementOp, B](ForceR(fa, fb))
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)

@@ -5,7 +5,8 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.effect.{ Effect, IO }
+import cats.effect.{ Async, IO }
+import cats.effect.unsafe.UnsafeRun
 import cats.instances.int._
 import cats.instances.list._
 import cats.instances.string._
@@ -28,7 +29,8 @@ package testing {
     */
   trait CheckerBase[M[_]] {
     // Effect type, required instances
-    implicit def M: Effect[M]
+    implicit def M: Async[M]
+    implicit def U: UnsafeRun[M]
     def transactor: Transactor[M]
     def colors: Colors = Colors.Ansi
   }
@@ -136,7 +138,7 @@ package object testing {
         )
       }
 
-  def analyzeIO[F[_]: Effect](
+  def analyzeIO[F[_]: Async: UnsafeRun](
     args: AnalysisArgs,
     xa: Transactor[F]
   ): IO[AnalysisReport] =
@@ -169,10 +171,10 @@ package object testing {
         }
   }
 
-  private def toIO[F[_]: Effect, A](fa: F[A])(implicit F: Effect[F]): IO[A] =
-    IO.async { cb =>
-      F.runAsync(fa)(out => IO(cb(out)))
-        .unsafeRunSync()
+  private def toIO[F[_]: Async, A](fa: F[A])(implicit F: UnsafeRun[F]): IO[A] = 
+    IO.delay(F.unsafeRunFutureCancelable(fa))
+    .flatMap { case (run, cancel) =>
+      IO.fromFuture(IO.pure(run)).onCancel(IO.fromFuture(IO.delay(cancel())))
     }
 
   /**
