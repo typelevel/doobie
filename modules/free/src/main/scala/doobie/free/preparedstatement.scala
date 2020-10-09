@@ -72,6 +72,7 @@ object preparedstatement { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): F[B]
+      def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
       def cede: F[Unit]
@@ -218,6 +219,9 @@ object preparedstatement { module =>
     }
     case class ForceR[A, B](fa: PreparedStatementIO[A], fb: PreparedStatementIO[B]) extends PreparedStatementOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
     }
     case object Canceled extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
@@ -588,6 +592,7 @@ object preparedstatement { module =>
   def delay[A](thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = FF.liftF[PreparedStatementOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Uncancelable(body))
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)
   def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[PreparedStatementOp, Unit](Cede)
@@ -721,7 +726,7 @@ object preparedstatement { module =>
       override def realTime: PreparedStatementIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): PreparedStatementIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): PreparedStatementIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): PreparedStatementIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): PreparedStatementIO[A] = module.uncancelable(body)
       override def canceled: PreparedStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): PreparedStatementIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: PreparedStatementIO[A]): PreparedStatementIO[Fiber[PreparedStatementIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))

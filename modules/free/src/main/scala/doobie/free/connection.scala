@@ -65,6 +65,7 @@ object connection { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]): F[B]
+      def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
       def cede: F[Unit]
@@ -155,6 +156,9 @@ object connection { module =>
     }
     case class ForceR[A, B](fa: ConnectionIO[A], fb: ConnectionIO[B]) extends ConnectionOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
     }
     case object Canceled extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
@@ -357,6 +361,7 @@ object connection { module =>
   def delay[A](thunk: => A) = FF.liftF[ConnectionOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ConnectionOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]) = FF.liftF[ConnectionOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = FF.liftF[ConnectionOp, A](Uncancelable(body))
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[ConnectionOp, Unit](Cede)
@@ -434,7 +439,7 @@ object connection { module =>
       override def realTime: ConnectionIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): ConnectionIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]): ConnectionIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): ConnectionIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): ConnectionIO[A] = module.uncancelable(body)
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: ConnectionIO[A]): ConnectionIO[Fiber[ConnectionIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
