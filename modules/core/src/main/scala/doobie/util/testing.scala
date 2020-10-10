@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.effect.{ Async, IO }
+import cats.effect.Async
 import cats.effect.unsafe.UnsafeRun
 import cats.instances.int._
 import cats.instances.list._
@@ -138,12 +138,6 @@ package object testing {
         )
       }
 
-  def analyzeIO[F[_]: Async: UnsafeRun](
-    args: AnalysisArgs,
-    xa: Transactor[F]
-  ): IO[AnalysisReport] =
-    toIO(analyze(args).transact(xa))
-
   private val packagePrefix = "\\b[a-z]+\\.".r
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
@@ -170,12 +164,6 @@ package object testing {
           AnalysisReport.Item(s, es.toNel.map(alignmentErrorsToBlock))
         }
   }
-
-  private def toIO[F[_]: Async, A](fa: F[A])(implicit F: UnsafeRun[F]): IO[A] = 
-    IO.delay(F.unsafeRunFutureCancelable(fa))
-    .flatMap { case (run, cancel) =>
-      IO.fromFuture(IO.pure(run)).onCancel(IO.fromFuture(IO.delay(cancel())))
-    }
 
   /**
     * Simple formatting for analysis results.

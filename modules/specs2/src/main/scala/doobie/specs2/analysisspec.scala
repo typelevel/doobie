@@ -4,7 +4,8 @@
 
 package doobie.specs2
 
-import cats.effect.{ Effect, IO }
+import cats.effect.IO
+import doobie.syntax.connectionio._
 import doobie.util.query.{ Query, Query0 }
 import doobie.util.testing._
 import org.specs2.mutable.Specification
@@ -55,7 +56,7 @@ object analysisspec {
     private def checkImpl(args: AnalysisArgs): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early
       s"${args.header}\n\n${args.cleanedSql.padLeft("  ").toString}\n" >> ok.continueWith {
-        val report = analyzeIO(args, transactor).unsafeRunSync()
+        val report = U.unsafeRunSync(analyze(args).transact(transactor))
         indentBlock(
           report.items.map { item =>
             item.description ! item.error.fold(ok) {
@@ -77,6 +78,5 @@ object analysisspec {
 
   /** Implementation of Checker[IO] */
   trait IOChecker extends Checker[IO] { this: Specification =>
-    val M: Effect[IO] = implicitly
   }
 }
