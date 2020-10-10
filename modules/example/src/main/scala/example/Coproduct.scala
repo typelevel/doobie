@@ -7,14 +7,13 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.{ Blocker, IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.free.Free
 import cats.implicits._
 import cats.{InjectK, ~>}
 import doobie._
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
 import scala.io.StdIn
 
 object coproduct extends IOApp {
@@ -79,8 +78,7 @@ object coproduct extends IOApp {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, *] = {
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO].ConnectionInterpreter
   }
 
   // Our interpreted program

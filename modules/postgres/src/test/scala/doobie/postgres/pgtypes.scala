@@ -6,12 +6,11 @@ package doobie.postgres
 
 import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
-import java.sql.Timestamp
 import java.time.temporal.ChronoField.NANO_OF_SECOND
-import java.time.{LocalDate, ZoneOffset}
+import java.time.LocalDate
 import java.util.UUID
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import com.github.ghik.silencer.silent
 import doobie._
 import doobie.implicits._
@@ -33,15 +32,12 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
-import scala.concurrent.ExecutionContext
-
 
 // Establish that we can write and read various types.
 
 class pgtypesspec extends Specification with ScalaCheck {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -292,16 +288,16 @@ class pgtypesspec extends Specification with ScalaCheck {
   def testInOutGeom[A <: Geometry : Meta](a: A) =
     testInOut[A]("geometry", a)
 
-  testInOutGeom[Geometry](pts.next)
-  testInOutGeom[ComposedGeom](new MultiLineString(lsas.next))
-  testInOutGeom[GeometryCollection](new GeometryCollection(Array(pts.next, lss.next)))
-  testInOutGeom[MultiLineString](new MultiLineString(lsas.next))
-  testInOutGeom[MultiPolygon](new MultiPolygon(plas.next))
-  testInOutGeom[PointComposedGeom](lss.next)
-  testInOutGeom[LineString](lss.next)
-  testInOutGeom[MultiPoint](new MultiPoint(ptas.next))
-  testInOutGeom[Polygon](pls.next)
-  testInOutGeom[Point](pts.next)
+  testInOutGeom[Geometry](pts.next())
+  testInOutGeom[ComposedGeom](new MultiLineString(lsas.next()))
+  testInOutGeom[GeometryCollection](new GeometryCollection(Array(pts.next(), lss.next())))
+  testInOutGeom[MultiLineString](new MultiLineString(lsas.next()))
+  testInOutGeom[MultiPolygon](new MultiPolygon(plas.next()))
+  testInOutGeom[PointComposedGeom](lss.next())
+  testInOutGeom[LineString](lss.next())
+  testInOutGeom[MultiPoint](new MultiPoint(ptas.next()))
+  testInOutGeom[Polygon](pls.next())
+  testInOutGeom[Point](pts.next())
 
   // hstore
   testInOut[Map[String, String]]("hstore")

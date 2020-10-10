@@ -7,9 +7,10 @@ package example
 import java.sql.Connection
 import scala.util.control.NonFatal
 
+import cats.MonadError
 import cats.data._
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import fs2.Stream
@@ -24,7 +25,7 @@ object StreamingCopy extends IOApp {
   /**
    * Cross-transactor streaming when the `source` and `sink` have the same schema.
    */
-  def fuseMap[F[_]: Effect, A, B](
+  def fuseMap[F[_]: MonadError[*[_], Throwable], A, B](
     source: Stream[ConnectionIO, A],
     sink:   A => ConnectionIO[B]
   )(
@@ -39,7 +40,7 @@ object StreamingCopy extends IOApp {
    * The source output and sink input types can differ. This enables data transformations involving
    * potentially different database schemas.
    */
-  def fuseMapGeneric[F[_]: Effect, A, B, C](
+  def fuseMapGeneric[F[_]: MonadError[*[_], Throwable], A, B, C](
     source:       Stream[ConnectionIO, A],
     sourceToSink: A => B,
     sink:         B => ConnectionIO[C]
@@ -61,7 +62,7 @@ object StreamingCopy extends IOApp {
 
       // Now we can interpret a ConnectionIO into a Stream of F via the sink interpreter.
       def evalS(f: ConnectionIO[_]): Stream[F, Nothing] =
-        Stream.eval_(interpS(f)(c))
+        Stream.eval(interpS(f)(c)).drain
 
       // And can thus lift all the sink operations into Stream of F
       val sinkʹ  = (a: A) => evalS(sink(sourceToSink(a)))

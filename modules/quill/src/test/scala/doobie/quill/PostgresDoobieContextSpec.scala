@@ -11,7 +11,7 @@ import doobie.implicits._
 import doobie.quill.DoobieContext
 import io.getquill._
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
+
 
 class PostgresDoobieContextSpec extends Specification {
 
@@ -19,8 +19,7 @@ class PostgresDoobieContextSpec extends Specification {
   sys.props.put("quill.binds.log", "true")
   sys.props.put("org.slf4j.simpleLogger.defaultLogLevel", "debug")
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   // A transactor that always rolls back.
   lazy val xa =

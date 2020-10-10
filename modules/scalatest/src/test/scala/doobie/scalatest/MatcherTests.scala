@@ -4,18 +4,16 @@
 
 package doobie.scalatest
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{ Async, IO }
+import cats.effect.unsafe.UnsafeRun
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.scalatest._
-import scala.concurrent.ExecutionContext
 
 
 trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite
     with matchers.must.Matchers
     with AnalysisMatchers[M] {
-
-  implicit def contextShift: ContextShift[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
@@ -37,6 +35,6 @@ trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite
 }
 
 class IOMatcherCheck extends MatcherChecks[IO] with IOChecker {
-  def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  implicit val M: Async[IO] = implicitly
+  implicit val U: UnsafeRun[IO] = implicitly
 }

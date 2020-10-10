@@ -4,35 +4,32 @@
 
 package example
 
-import cats.effect.{Blocker, ExitCode, IO, IOApp}
+import cats.effect.{ ExitCode, IO, IOApp }
 import cats.implicits._
 import doobie._
 import doobie.implicits._
-import fs2.{ io, text }
+import fs2.text
+import fs2.io.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.Executors
+
 
 object StreamToFile extends IOApp {
-
-  private val blockerR = Blocker.fromExecutorService(IO(Executors.newFixedThreadPool(2)))
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
   def run(args: List[String]): IO[ExitCode] =
-    blockerR.use { blocker =>
       sql"select name, population from country"
         .query[(String, Int)]
         .stream
         .map { case (n, p) => show"$n, $p" }
         .intersperse("\n")
         .through(text.utf8Encode)
-        .through(io.file.writeAll(Paths.get("/tmp/out.txt"), blocker))
+        .through(Files[ConnectionIO].writeAll(Paths.get("/tmp/out.txt")))
         .compile
         .drain
         .transact(xa)
-        .as(ExitCode.Success)
-    }
+        .as(ExitCode.Success)    
 
 }

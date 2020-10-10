@@ -17,6 +17,7 @@ final case class Person(name: String, age: Int)
 
 class text {
   import shared._
+  import cats.effect.unsafe.implicits.global
 
   def people(n: Int): List[Person] =
     List.fill(n)(Person("Bob", 42))

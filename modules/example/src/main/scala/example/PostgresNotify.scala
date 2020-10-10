@@ -5,7 +5,6 @@
 // relies on streaming, so no cats for now
 package example
 
-import cats.~>
 import cats.effect._
 import cats.implicits._
 import doobie._
@@ -15,6 +14,7 @@ import org.postgresql._
 import fs2.Stream
 import fs2.Stream._
 import scala.concurrent.duration._
+
 
 /**
   * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
@@ -26,10 +26,6 @@ import scala.concurrent.duration._
   * to send a notification. The program will exit after reading five notifications.
   */
 object PostgresNotify extends IOApp {
-
-  /** A nonblocking timer for ConnectionIO. */
-  implicit val ConnectionIOTimer: Timer[ConnectionIO] =
-    Timer[IO].mapK(λ[IO ~> ConnectionIO](_.to[ConnectionIO]))
 
   /** A resource that listens on a channel and unlistens when we're done. */
   def channel(name: String): Resource[ConnectionIO, Unit] =

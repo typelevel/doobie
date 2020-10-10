@@ -7,7 +7,7 @@ package example
 import java.io.File
 
 import cats.effect.{ IO, IOApp, ExitCode }
-import cats.effect.syntax.bracket._
+import cats.effect.syntax.monadCancel._
 import cats.implicits._
 import doobie._
 import doobie.implicits.{ AsyncConnectionIO, AsyncPreparedStatementIO, AsyncResultSetIO }

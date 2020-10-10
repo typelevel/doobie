@@ -6,8 +6,7 @@ package doobie.postgres
 
 import java.util.concurrent.Executors
 
-import cats.effect.syntax.effect._
-import cats.effect.{Blocker, ConcurrentEffect, ContextShift, IO, Timer}
+import cats.effect.{ Async, IO }
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.implicits._
@@ -15,13 +14,13 @@ import org.specs2.mutable.Specification
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import cats.effect.unsafe.UnsafeRun
 
 
 trait pgconcurrent[F[_]] extends Specification {
 
-  implicit def E: ConcurrentEffect[F]
-  implicit def T: Timer[F]
-  implicit def contextShift: ContextShift[F]
+  implicit val A: Async[F]
+  implicit val U: UnsafeRun[F]
 
   def transactor() = {
 
@@ -36,8 +35,7 @@ trait pgconcurrent[F[_]] extends Specification {
 
     Transactor.fromDataSource[F](
       dataSource,
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(32)),
-      Blocker.liftExecutorService(Executors.newCachedThreadPool())
+      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(32))
     )
 
   }
@@ -47,7 +45,7 @@ trait pgconcurrent[F[_]] extends Specification {
     val xa = transactor()
 
     val poll: fs2.Stream[F, Int] =
-      fr"select 1".query[Int].stream.transact(xa) ++ fs2.Stream.eval_(T.sleep(50.millis))
+      fr"select 1".query[Int].stream.transact(xa) ++ fs2.Stream.exec(A.sleep(50.millis))
 
     val pollingStream: F[Unit] = fs2.Stream.emits(List.fill(4)(poll.repeat))
       .parJoinUnbounded
@@ -55,14 +53,13 @@ trait pgconcurrent[F[_]] extends Specification {
       .compile
       .drain
 
-    pollingStream.toIO.unsafeRunSync() must_== (())
+    U.unsafeRunSync(pollingStream) must_== (())
   }
 
 
 }
 
 class pgconcurrentIO extends pgconcurrent[IO] {
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
-  implicit def T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
+  implicit val A: Async[IO] = implicitly
+  implicit val U: UnsafeRun[IO] = implicitly
 }

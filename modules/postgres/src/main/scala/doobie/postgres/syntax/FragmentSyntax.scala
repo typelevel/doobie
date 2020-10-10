@@ -4,18 +4,19 @@
 
 package doobie.postgres.syntax
 
-import cats.{ Foldable, ~> }
+import cats.Foldable
 import cats.implicits._
 import cats.effect._
+import cats.effect.unsafe.UnsafeRun
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
+import doobie.util.effects.runAsync
 import fs2._
 import fs2.io._
 import fs2.text._
 import java.io.StringReader
 import java.io.InputStream
-import cats.effect.unsafe.UnsafeRun
 
 class FragmentOps(f: Fragment) {
 
@@ -48,21 +49,7 @@ class FragmentOps(f: Fragment) {
       stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
 
     val streamResource: Resource[ConnectionIO, InputStream] =
-      toInputStreamResource(byteStream)
-        .mapK(λ[F ~> ConnectionIO]{ fa =>
-          val A = Async[ConnectionIO]
-          A.delay(UnsafeRun[F].unsafeRunFutureCancelable(fa)).flatMap { case (running, cancel) =>
-            A.executionContext.flatMap(implicit ec =>
-              A.async{ k => 
-                running.onComplete(t => k(t.toEither))
-                A.pure(Some(A.async{ k => 
-                  cancel().onComplete(t => k(t.toEither))
-                  A.pure(None)
-                }))
-              }
-            )
-          }
-       })
+      toInputStreamResource(byteStream).mapK(runAsync[F, ConnectionIO])
 
     streamResource.use(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))
 

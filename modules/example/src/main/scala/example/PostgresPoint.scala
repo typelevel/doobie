@@ -12,6 +12,8 @@ import org.postgresql.geometric.PGpoint
 
 object PostgresPoint extends IOApp {
 
+  import cats.effect.unsafe.implicits.global
+
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )

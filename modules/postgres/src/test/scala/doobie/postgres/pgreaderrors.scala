@@ -4,8 +4,8 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, Effect, IO }
-import cats.effect.syntax.effect._
+import cats.effect.{ Async, IO }
+import cats.effect.unsafe.UnsafeRun
 import cats.syntax.applicativeError._
 import doobie._
 import doobie.implicits._
@@ -13,13 +13,11 @@ import doobie.postgres.implicits._
 import doobie.postgres.enums._
 import doobie.util.invariant._
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
-
 
 trait pgreaderrorsspec[F[_]] extends Specification {
 
-  implicit def E: Effect[F]
-  implicit def contextShift: ContextShift[F]
+  implicit def A: Async[F]
+  implicit def U: UnsafeRun[F]
 
   lazy val xa = Transactor.fromDriverManager[F](
     "org.postgresql.Driver",
@@ -39,23 +37,23 @@ trait pgreaderrorsspec[F[_]] extends Specification {
   implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
 
   "pgEnumStringOpt" in {
-    val r = sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.toIO.unsafeRunSync()
+    val r = U.unsafeRunSync(sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt)
     r must_== Left(InvalidEnum[MyEnum]("invalid"))
   }
 
   "pgEnum" in {
-    val r = sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.toIO.unsafeRunSync()
+    val r = U.unsafeRunSync(sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt)
     r must_== Left(InvalidEnum[MyScalaEnum.Value]("invalid"))
   }
 
   "pgJavaEnum" in {
-    val r = sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.toIO.unsafeRunSync()
+    val r = U.unsafeRunSync(sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt)
     r must_== Left(InvalidEnum[MyJavaEnum]("invalid"))
   }
 
 }
 
 class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
-  implicit val E: Effect[IO] = IO.ioEffect
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit def A: Async[IO] = implicitly
+  implicit def U: UnsafeRun[IO] = implicitly
 }
