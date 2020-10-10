@@ -15,6 +15,7 @@ import fs2.io._
 import fs2.text._
 import java.io.StringReader
 import java.io.InputStream
+import cats.effect.unsafe.UnsafeRun
 
 class FragmentOps(f: Fragment) {
 
@@ -38,7 +39,7 @@ class FragmentOps(f: Fragment) {
    * `ConnectionIO` that inserts the values provided by `stream`, returning the number of affected
    * rows. Chunks input `stream` for more efficient sending to `STDIN` with `minChunkSize`.
    */
-  def copyIn[F[_]: ConcurrentEffect, A: Text](
+  def copyIn[F[_]: Async: UnsafeRun, A: Text](
     stream: Stream[F, A],
     minChunkSize: Int
   ): ConnectionIO[Long] = {
@@ -48,7 +49,20 @@ class FragmentOps(f: Fragment) {
 
     val streamResource: Resource[ConnectionIO, InputStream] =
       toInputStreamResource(byteStream)
-        .mapK(λ[F ~> ConnectionIO](Effect[F].toIO(_).to[ConnectionIO]))
+        .mapK(λ[F ~> ConnectionIO]{ fa =>
+          val A = Async[ConnectionIO]
+          A.delay(UnsafeRun[F].unsafeRunFutureCancelable(fa)).flatMap { case (running, cancel) =>
+            A.executionContext.flatMap(implicit ec =>
+              A.async{ k => 
+                running.onComplete(t => k(t.toEither))
+                A.pure(Some(A.async{ k => 
+                  cancel().onComplete(t => k(t.toEither))
+                  A.pure(None)
+                }))
+              }
+            )
+          }
+       })
 
     streamResource.use(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))
 
