@@ -13,12 +13,11 @@ object HikariTransactor {
 
   /** Construct a `HikariTransactor` from an existing `HikariDatasource`. */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply[M[_]: Async: ContextShift](
+  def apply[M[_]: Async](
     hikariDataSource : HikariDataSource,
-    connectEC:         ExecutionContext,
-    blocker:           Blocker
+    connectEC:         ExecutionContext
   ): HikariTransactor[M] =
-    Transactor.fromDataSource[M](hikariDataSource, connectEC, blocker)
+    Transactor.fromDataSource[M](hikariDataSource, connectEC)
 
   private def createDataSourceResource[M[_]: Sync](factory: => HikariDataSource): Resource[M, HikariDataSource] = {
     val alloc = Sync[M].delay(factory)
@@ -27,36 +26,33 @@ object HikariTransactor {
   }
 
   /** Resource yielding an unconfigured `HikariTransactor`. */
-  def initial[M[_]: Async: ContextShift](
-    connectEC: ExecutionContext,
-    blocker: Blocker
+  def initial[M[_]: Async](
+    connectEC: ExecutionContext
   ): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource)
-      .map(Transactor.fromDataSource[M](_, connectEC, blocker))
+      .map(Transactor.fromDataSource[M](_, connectEC))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig. */
-  def fromHikariConfig[M[_]: Async: ContextShift](
+  def fromHikariConfig[M[_]: Async](
     hikariConfig: HikariConfig,
-    connectEC: ExecutionContext,
-    blocker: Blocker
+    connectEC: ExecutionContext
   ): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource(hikariConfig))
-      .map(Transactor.fromDataSource[M](_, connectEC, blocker))
+      .map(Transactor.fromDataSource[M](_, connectEC))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given info. */
-  def newHikariTransactor[M[_]: Async: ContextShift](
+  def newHikariTransactor[M[_]: Async](
     driverClassName: String,
     url:             String,
     user:            String,
     pass:            String,
-    connectEC:       ExecutionContext,
-    blocker:         Blocker
+    connectEC:       ExecutionContext
   ): Resource[M, HikariTransactor[M]] =
     for {
       _ <- Resource.liftF(Async[M].delay(Class.forName(driverClassName)))
-      t <- initial[M](connectEC, blocker)
+      t <- initial[M](connectEC)
       _ <- Resource.liftF {
             t.configure { ds =>
               Async[M].delay {
