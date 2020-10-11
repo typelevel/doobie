@@ -4,10 +4,9 @@
 
 package doobie.issue
 
-import cats.effect.{ Async, IO }
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
-import Predef._
 
 
 class `262` extends Specification {
@@ -16,9 +15,7 @@ class `262` extends Specification {
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
-    val asyncM = Async[IO]
-
-    val M = implicitly[Async[IO]]
+    val asyncM = IO.asyncForIO
 
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {

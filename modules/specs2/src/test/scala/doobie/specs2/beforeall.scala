@@ -4,8 +4,7 @@
 
 package doobie.specs2
 
-import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.IO
 import doobie.syntax.connectionio._
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
@@ -17,8 +16,6 @@ import org.specs2.specification.BeforeAll
 class beforeall extends Specification with IOChecker with BeforeAll {
 
   import cats.effect.unsafe.implicits.global
-  implicit val M: Async[IO] = implicitly
-  implicit val U: UnsafeRun[IO] = implicitly
 
   // Setup
   val initQ = sql"create table some_table (value varchar not null)".update

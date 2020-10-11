@@ -16,7 +16,7 @@ import org.specs2.mutable.Specification
 
 trait pgreaderrorsspec[F[_]] extends Specification {
 
-  implicit def A: Async[F]
+  implicit def M: Async[F]
   implicit def U: UnsafeRun[F]
 
   lazy val xa = Transactor.fromDriverManager[F](
@@ -54,6 +54,9 @@ trait pgreaderrorsspec[F[_]] extends Specification {
 }
 
 class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
-  implicit def A: Async[IO] = implicitly
-  implicit def U: UnsafeRun[IO] = implicitly
+
+  import cats.effect.unsafe.implicits.global
+  override implicit val M: Async[IO] = IO.asyncForIO
+  override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
+
 }

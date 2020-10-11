@@ -60,6 +60,9 @@ trait pgconcurrent[F[_]] extends Specification {
 }
 
 class pgconcurrentIO extends pgconcurrent[IO] {
-  implicit val A: Async[IO] = implicitly
-  implicit val U: UnsafeRun[IO] = implicitly
+
+  import cats.effect.unsafe.implicits.global
+  implicit val A: Async[IO] = IO.asyncForIO
+  implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
+
 }

@@ -4,7 +4,8 @@
 
 package doobie.specs2
 
-import cats.effect.IO
+import cats.effect.{ Async, IO }
+import cats.effect.unsafe.UnsafeRun
 import cats.instances.list._
 import cats.syntax.foldable._
 import doobie.syntax.connectionio._
@@ -68,5 +69,10 @@ object analysismatchers {
   }
 
   trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
+
+    import cats.effect.unsafe.implicits.global
+    override implicit val M: Async[IO] = IO.asyncForIO
+    override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
+
   }
 }

@@ -4,17 +4,13 @@
 
 package example
 
-import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.IO 
 import doobie._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
 
 
 class AnalysisTestSpecs2 extends Specification with IOChecker {
-
-  implicit val M: Async[IO] = implicitly
-  implicit val U: UnsafeRun[IO] = implicitly
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

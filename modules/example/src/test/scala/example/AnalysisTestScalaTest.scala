@@ -4,16 +4,12 @@
 
 package example
 
-import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.IO
 import doobie.scalatest.IOChecker
 import doobie.util.transactor.Transactor
 import org.scalatest._
 
 class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with IOChecker {
-
-  implicit val M: Async[IO] = implicitly
-  implicit val U: UnsafeRun[IO] = implicitly
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

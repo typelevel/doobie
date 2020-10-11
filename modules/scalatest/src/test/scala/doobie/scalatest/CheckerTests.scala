@@ -23,6 +23,9 @@ trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matc
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
-  implicit val M: Async[IO] = implicitly
-  implicit val U: UnsafeRun[IO] = implicitly
+
+  import cats.effect.unsafe.implicits.global
+  override implicit val M: Async[IO] = IO.asyncForIO
+  override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
+
 }
