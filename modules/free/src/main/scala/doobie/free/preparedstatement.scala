@@ -77,6 +77,8 @@ object preparedstatement { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[PreparedStatementIO, A]]
+      def deferred[A]: F[Deferred[PreparedStatementIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -235,6 +237,12 @@ object preparedstatement { module =>
     }
     case object Cede extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends PreparedStatementOp[CERef[PreparedStatementIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends PreparedStatementOp[Deferred[PreparedStatementIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -603,6 +611,8 @@ object preparedstatement { module =>
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)
   def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[PreparedStatementOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[PreparedStatementOp, CERef[PreparedStatementIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[PreparedStatementOp, Deferred[PreparedStatementIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[PreparedStatementOp, Unit](Sleep(time))
   def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext) = FF.liftF[PreparedStatementOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[PreparedStatementOp, ExecutionContext](ExecutionContext1)
@@ -739,8 +749,8 @@ object preparedstatement { module =>
       override def start[A](fa: PreparedStatementIO[A]): PreparedStatementIO[Fiber[PreparedStatementIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: PreparedStatementIO[Unit] = module.cede
       override def racePair[A, B](fa: PreparedStatementIO[A], fb: PreparedStatementIO[B]): PreparedStatementIO[Either[(Outcome[PreparedStatementIO, Throwable, A], Fiber[PreparedStatementIO, Throwable, B]), (Fiber[PreparedStatementIO, Throwable, A], Outcome[PreparedStatementIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): PreparedStatementIO[CERef[PreparedStatementIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: PreparedStatementIO[Deferred[PreparedStatementIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): PreparedStatementIO[CERef[PreparedStatementIO, A]] = module.ref(a)
+      override def deferred[A]: PreparedStatementIO[Deferred[PreparedStatementIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): PreparedStatementIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext): PreparedStatementIO[A] = module.evalOn(fa, ec)
       override def executionContext: PreparedStatementIO[ExecutionContext] = module.executionContext

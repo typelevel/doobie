@@ -53,9 +53,13 @@ object clob { module =>
       def realTime: F[FiniteDuration]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]): F[B]
+      def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): F[A]
+      def poll[A](poll: Any, fa: ClobIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[ClobIO, A]]
+      def deferred[A]: F[Deferred[ClobIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: ClobIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -103,6 +107,12 @@ object clob { module =>
     case class ForceR[A, B](fa: ClobIO[A], fb: ClobIO[B]) extends ClobOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[ClobIO] => ClobIO[A]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: ClobIO[A]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -111,6 +121,12 @@ object clob { module =>
     }
     case object Cede extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends ClobOp[CERef[ClobIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends ClobOp[Deferred[ClobIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -180,9 +196,15 @@ object clob { module =>
   val realtime = FF.liftF[ClobOp, FiniteDuration](Realtime)
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ClobOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]) = FF.liftF[ClobOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]) = FF.liftF[ClobOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[ClobIO] = new Poll[ClobIO] {
+    def apply[A](fa: ClobIO[A]) = FF.liftF[ClobOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[ClobOp, Unit](Canceled)
   def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) = FF.liftF[ClobOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[ClobOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[ClobOp, CERef[ClobIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[ClobOp, Deferred[ClobIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[ClobOp, Unit](Sleep(time))
   def evalOn[A](fa: ClobIO[A], ec: ExecutionContext) = FF.liftF[ClobOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[ClobOp, ExecutionContext](ExecutionContext1)
@@ -216,14 +238,14 @@ object clob { module =>
       override def realTime: ClobIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): ClobIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]): ClobIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): ClobIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): ClobIO[A] = module.uncancelable(body)
       override def canceled: ClobIO[Unit] = module.canceled
       override def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): ClobIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: ClobIO[A]): ClobIO[Fiber[ClobIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: ClobIO[Unit] = module.cede
       override def racePair[A, B](fa: ClobIO[A], fb: ClobIO[B]): ClobIO[Either[(Outcome[ClobIO, Throwable, A], Fiber[ClobIO, Throwable, B]), (Fiber[ClobIO, Throwable, A], Outcome[ClobIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): ClobIO[CERef[ClobIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: ClobIO[Deferred[ClobIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): ClobIO[CERef[ClobIO, A]] = module.ref(a)
+      override def deferred[A]: ClobIO[Deferred[ClobIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): ClobIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: ClobIO[A], ec: ExecutionContext): ClobIO[A] = module.evalOn(fa, ec)
       override def executionContext: ClobIO[ExecutionContext] = module.executionContext

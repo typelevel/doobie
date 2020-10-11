@@ -53,9 +53,13 @@ object driver { module =>
       def realTime: F[FiniteDuration]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]): F[B]
+      def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): F[A]
+      def poll[A](poll: Any, fa: DriverIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[DriverIO, A]]
+      def deferred[A]: F[Deferred[DriverIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: DriverIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -98,6 +102,12 @@ object driver { module =>
     case class ForceR[A, B](fa: DriverIO[A], fb: DriverIO[B]) extends DriverOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[DriverIO] => DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends DriverOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -106,6 +116,12 @@ object driver { module =>
     }
     case object Cede extends DriverOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends DriverOp[CERef[DriverIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends DriverOp[Deferred[DriverIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends DriverOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -157,9 +173,15 @@ object driver { module =>
   val realtime = FF.liftF[DriverOp, FiniteDuration](Realtime)
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[DriverOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]) = FF.liftF[DriverOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]) = FF.liftF[DriverOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[DriverIO] = new Poll[DriverIO] {
+    def apply[A](fa: DriverIO[A]) = FF.liftF[DriverOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[DriverOp, Unit](Canceled)
   def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = FF.liftF[DriverOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[DriverOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[DriverOp, CERef[DriverIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[DriverOp, Deferred[DriverIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[DriverOp, Unit](Sleep(time))
   def evalOn[A](fa: DriverIO[A], ec: ExecutionContext) = FF.liftF[DriverOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[DriverOp, ExecutionContext](ExecutionContext1)
@@ -187,14 +209,14 @@ object driver { module =>
       override def realTime: DriverIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): DriverIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]): DriverIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): DriverIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): DriverIO[A] = module.uncancelable(body)
       override def canceled: DriverIO[Unit] = module.canceled
       override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): DriverIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: DriverIO[A]): DriverIO[Fiber[DriverIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: DriverIO[Unit] = module.cede
       override def racePair[A, B](fa: DriverIO[A], fb: DriverIO[B]): DriverIO[Either[(Outcome[DriverIO, Throwable, A], Fiber[DriverIO, Throwable, B]), (Fiber[DriverIO, Throwable, A], Outcome[DriverIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): DriverIO[CERef[DriverIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: DriverIO[Deferred[DriverIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): DriverIO[CERef[DriverIO, A]] = module.ref(a)
+      override def deferred[A]: DriverIO[Deferred[DriverIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): DriverIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: DriverIO[A], ec: ExecutionContext): DriverIO[A] = module.evalOn(fa, ec)
       override def executionContext: DriverIO[ExecutionContext] = module.executionContext

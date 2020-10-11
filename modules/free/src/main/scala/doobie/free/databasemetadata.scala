@@ -53,9 +53,13 @@ object databasemetadata { module =>
       def realTime: F[FiniteDuration]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]): F[B]
+      def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): F[A]
+      def poll[A](poll: Any, fa: DatabaseMetaDataIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[DatabaseMetaDataIO, A]]
+      def deferred[A]: F[Deferred[DatabaseMetaDataIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -268,6 +272,12 @@ object databasemetadata { module =>
     case class ForceR[A, B](fa: DatabaseMetaDataIO[A], fb: DatabaseMetaDataIO[B]) extends DatabaseMetaDataOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: DatabaseMetaDataIO[A]) extends DatabaseMetaDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends DatabaseMetaDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -276,6 +286,12 @@ object databasemetadata { module =>
     }
     case object Cede extends DatabaseMetaDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends DatabaseMetaDataOp[CERef[DatabaseMetaDataIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends DatabaseMetaDataOp[Deferred[DatabaseMetaDataIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends DatabaseMetaDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -840,9 +856,15 @@ object databasemetadata { module =>
   val realtime = FF.liftF[DatabaseMetaDataOp, FiniteDuration](Realtime)
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[DatabaseMetaDataOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]) = FF.liftF[DatabaseMetaDataOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]) = FF.liftF[DatabaseMetaDataOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[DatabaseMetaDataIO] = new Poll[DatabaseMetaDataIO] {
+    def apply[A](fa: DatabaseMetaDataIO[A]) = FF.liftF[DatabaseMetaDataOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[DatabaseMetaDataOp, Unit](Canceled)
   def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]) = FF.liftF[DatabaseMetaDataOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[DatabaseMetaDataOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[DatabaseMetaDataOp, CERef[DatabaseMetaDataIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[DatabaseMetaDataOp, Deferred[DatabaseMetaDataIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[DatabaseMetaDataOp, Unit](Sleep(time))
   def evalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext) = FF.liftF[DatabaseMetaDataOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[DatabaseMetaDataOp, ExecutionContext](ExecutionContext1)
@@ -1041,14 +1063,14 @@ object databasemetadata { module =>
       override def realTime: DatabaseMetaDataIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): DatabaseMetaDataIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.uncancelable(body)
       override def canceled: DatabaseMetaDataIO[Unit] = module.canceled
       override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Fiber[DatabaseMetaDataIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: DatabaseMetaDataIO[Unit] = module.cede
       override def racePair[A, B](fa: DatabaseMetaDataIO[A], fb: DatabaseMetaDataIO[B]): DatabaseMetaDataIO[Either[(Outcome[DatabaseMetaDataIO, Throwable, A], Fiber[DatabaseMetaDataIO, Throwable, B]), (Fiber[DatabaseMetaDataIO, Throwable, A], Outcome[DatabaseMetaDataIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): DatabaseMetaDataIO[CERef[DatabaseMetaDataIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: DatabaseMetaDataIO[Deferred[DatabaseMetaDataIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): DatabaseMetaDataIO[CERef[DatabaseMetaDataIO, A]] = module.ref(a)
+      override def deferred[A]: DatabaseMetaDataIO[Deferred[DatabaseMetaDataIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): DatabaseMetaDataIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext): DatabaseMetaDataIO[A] = module.evalOn(fa, ec)
       override def executionContext: DatabaseMetaDataIO[ExecutionContext] = module.executionContext

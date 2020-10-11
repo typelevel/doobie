@@ -72,9 +72,13 @@ object callablestatement { module =>
       def realTime: F[FiniteDuration]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]): F[B]
+      def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): F[A]
+      def poll[A](poll: Any, fa: CallableStatementIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[CallableStatementIO, A]]
+      def deferred[A]: F[Deferred[CallableStatementIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: CallableStatementIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -340,6 +344,12 @@ object callablestatement { module =>
     case class ForceR[A, B](fa: CallableStatementIO[A], fb: CallableStatementIO[B]) extends CallableStatementOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: CallableStatementIO[A]) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -349,6 +359,12 @@ object callablestatement { module =>
     case object Cede extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
     }
+    case class Ref1[A](a: A) extends CallableStatementOp[CERef[CallableStatementIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends CallableStatementOp[Deferred[CallableStatementIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
+    }    
     case class Sleep(time: FiniteDuration) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
     }
@@ -1071,9 +1087,15 @@ object callablestatement { module =>
   val realtime = FF.liftF[CallableStatementOp, FiniteDuration](Realtime)
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CallableStatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]) = FF.liftF[CallableStatementOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]) = FF.liftF[CallableStatementOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CallableStatementIO] = new Poll[CallableStatementIO] {
+    def apply[A](fa: CallableStatementIO[A]) = FF.liftF[CallableStatementOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[CallableStatementOp, Unit](Canceled)
   def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]) = FF.liftF[CallableStatementOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[CallableStatementOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[CallableStatementOp, CERef[CallableStatementIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[CallableStatementOp, Deferred[CallableStatementIO, A]](Deferred1())  
   def sleep(time: FiniteDuration) = FF.liftF[CallableStatementOp, Unit](Sleep(time))
   def evalOn[A](fa: CallableStatementIO[A], ec: ExecutionContext) = FF.liftF[CallableStatementOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[CallableStatementOp, ExecutionContext](ExecutionContext1)
@@ -1325,14 +1347,14 @@ object callablestatement { module =>
       override def realTime: CallableStatementIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): CallableStatementIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]): CallableStatementIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): CallableStatementIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): CallableStatementIO[A] = module.uncancelable(body)
       override def canceled: CallableStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): CallableStatementIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: CallableStatementIO[A]): CallableStatementIO[Fiber[CallableStatementIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: CallableStatementIO[Unit] = module.cede
       override def racePair[A, B](fa: CallableStatementIO[A], fb: CallableStatementIO[B]): CallableStatementIO[Either[(Outcome[CallableStatementIO, Throwable, A], Fiber[CallableStatementIO, Throwable, B]), (Fiber[CallableStatementIO, Throwable, A], Outcome[CallableStatementIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): CallableStatementIO[CERef[CallableStatementIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: CallableStatementIO[Deferred[CallableStatementIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): CallableStatementIO[CERef[CallableStatementIO, A]] = module.ref(a)
+      override def deferred[A]: CallableStatementIO[Deferred[CallableStatementIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): CallableStatementIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: CallableStatementIO[A], ec: ExecutionContext): CallableStatementIO[A] = module.evalOn(fa, ec)
       override def executionContext: CallableStatementIO[ExecutionContext] = module.executionContext

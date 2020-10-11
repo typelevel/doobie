@@ -64,9 +64,13 @@ object sqlinput { module =>
       def realTime: F[FiniteDuration]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]): F[B]
+      def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): F[A]
+      def poll[A](poll: Any, fa: SQLInputIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[SQLInputIO, A]]
+      def deferred[A]: F[Deferred[SQLInputIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: SQLInputIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -129,6 +133,12 @@ object sqlinput { module =>
     case class ForceR[A, B](fa: SQLInputIO[A], fb: SQLInputIO[B]) extends SQLInputOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: SQLInputIO[A]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends SQLInputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -137,6 +147,12 @@ object sqlinput { module =>
     }
     case object Cede extends SQLInputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends SQLInputOp[CERef[SQLInputIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends SQLInputOp[Deferred[SQLInputIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends SQLInputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -251,9 +267,15 @@ object sqlinput { module =>
   val realtime = FF.liftF[SQLInputOp, FiniteDuration](Realtime)
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[SQLInputOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]) = FF.liftF[SQLInputOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]) = FF.liftF[SQLInputOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[SQLInputIO] = new Poll[SQLInputIO] {
+    def apply[A](fa: SQLInputIO[A]) = FF.liftF[SQLInputOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[SQLInputOp, Unit](Canceled)
   def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) = FF.liftF[SQLInputOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[SQLInputOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[SQLInputOp, CERef[SQLInputIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[SQLInputOp, Deferred[SQLInputIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[SQLInputOp, Unit](Sleep(time))
   def evalOn[A](fa: SQLInputIO[A], ec: ExecutionContext) = FF.liftF[SQLInputOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[SQLInputOp, ExecutionContext](ExecutionContext1)
@@ -302,14 +324,14 @@ object sqlinput { module =>
       override def realTime: SQLInputIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): SQLInputIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]): SQLInputIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): SQLInputIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): SQLInputIO[A] = module.uncancelable(body)
       override def canceled: SQLInputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): SQLInputIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: SQLInputIO[A]): SQLInputIO[Fiber[SQLInputIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: SQLInputIO[Unit] = module.cede
       override def racePair[A, B](fa: SQLInputIO[A], fb: SQLInputIO[B]): SQLInputIO[Either[(Outcome[SQLInputIO, Throwable, A], Fiber[SQLInputIO, Throwable, B]), (Fiber[SQLInputIO, Throwable, A], Outcome[SQLInputIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): SQLInputIO[CERef[SQLInputIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: SQLInputIO[Deferred[SQLInputIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): SQLInputIO[CERef[SQLInputIO, A]] = module.ref(a)
+      override def deferred[A]: SQLInputIO[Deferred[SQLInputIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): SQLInputIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: SQLInputIO[A], ec: ExecutionContext): SQLInputIO[A] = module.evalOn(fa, ec)
       override def executionContext: SQLInputIO[ExecutionContext] = module.executionContext
