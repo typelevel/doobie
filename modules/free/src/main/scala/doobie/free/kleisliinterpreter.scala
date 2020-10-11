@@ -123,8 +123,14 @@ trait KleisliInterpreter[M[_]] { outer =>
     asyncM.handleErrorWith(fa.foldMap(interpreter).run(j))(f.andThen(_.foldMap(interpreter).run(j)))
   )
   def forceR[G[_], J, A, B](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(fb: Free[G, B]): Kleisli[M, J, B] = Kleisli (j =>
-      asyncM.forceR(fa.foldMap(interpreter).run(j))(fb.foldMap(interpreter).run(j))
-    )
+    asyncM.forceR(fa.foldMap(interpreter).run(j))(fb.foldMap(interpreter).run(j))
+  )
+  def uncancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *], capture: Poll[M] => Poll[Free[G, *]])(body: Poll[Free[G, *]] => Free[G, A]): Kleisli[M, J, A] = Kleisli(j =>  
+    asyncM.uncancelable(body.compose(capture).andThen(_.foldMap(interpreter).run(j)))
+  )
+  def poll[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(mpoll: Any, fa: Free[G, A]): Kleisli[M, J, A] = Kleisli(j => 
+    mpoll.asInstanceOf[Poll[M]].apply(fa.foldMap(interpreter).run(j))
+  )
   def onCancel[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A], fin: Free[G, Unit]): Kleisli[M, J, A] = Kleisli (j =>
     asyncM.onCancel(fa.foldMap(interpreter).run(j), fin.foldMap(interpreter).run(j))
   )
@@ -133,9 +139,6 @@ trait KleisliInterpreter[M[_]] { outer =>
   )
   def async[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(k: (Either[Throwable, A] => Unit) => Free[G, Option[Free[G, Unit]]]): Kleisli[M, J, A] = Kleisli(j =>
     asyncM.async(k.andThen(c => asyncM.map(c.foldMap(interpreter).run(j))(_.map(_.foldMap(interpreter).run(j)))))
-  )
-  def uncancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(body: Poll[Free[G, *]] => Free[G, A]): Kleisli[M, J, A] = Kleisli(j =>
-    asyncM.uncancelable(body.compose((_: Poll[M]) => new Poll[Free[G, *]] { def apply[B](gb: Free[G, B]) = gb }).andThen(_.foldMap(interpreter).run(j)))
   )
 
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
@@ -683,7 +686,8 @@ trait KleisliInterpreter[M[_]] { outer =>
     
     // for operations using ConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
-    override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = outer.uncancelable(this)(body)
+    override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = outer.uncancelable(this, connection.capturePoll)(body)
+    override def poll[A](poll: Any, fa: ConnectionIO[A]) = outer.poll(this)(poll, fa)
     override def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]): Kleisli[M, Connection, B] = outer.forceR(this)(fa)(fb)
     override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): Kleisli[M, Connection, A] = outer.onCancel(this)(fa, fin)
     override def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext): Kleisli[M, Connection, A] = outer.evalOn(this)(fa, ec)
@@ -842,7 +846,8 @@ trait KleisliInterpreter[M[_]] { outer =>
     
     // for operations using PreparedStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
-    override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = outer.uncancelable(this)(body)
+    override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = outer.uncancelable(this, preparedstatement.capturePoll)(body)
+    override def poll[A](poll: Any, fa: PreparedStatementIO[A]) = outer.poll(this)(poll, fa)
     override def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): Kleisli[M, PreparedStatement, B] = outer.forceR(this)(fa)(fb)
     override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): Kleisli[M, PreparedStatement, A] = outer.onCancel(this)(fa, fin)
     override def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext): Kleisli[M, PreparedStatement, A] = outer.evalOn(this)(fa, ec)

@@ -66,6 +66,7 @@ object connection { module =>
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]): F[B]
       def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): F[A]
+      def poll[A](poll: Any, fa: ConnectionIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
       def cede: F[Unit]
@@ -159,6 +160,9 @@ object connection { module =>
     }
     case class Uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: ConnectionIO[A]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
     }
     case object Canceled extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
@@ -362,6 +366,9 @@ object connection { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ConnectionOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]) = FF.liftF[ConnectionOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = FF.liftF[ConnectionOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[ConnectionIO] = new Poll[ConnectionIO] {
+    def apply[A](fa: ConnectionIO[A]) = FF.liftF[ConnectionOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[ConnectionOp, Unit](Cede)

@@ -7,7 +7,7 @@ package doobie.postgres.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.{ Async, Sync }
+import cats.effect.{ Async, Poll, Sync }
 import cats.free.Free
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
@@ -101,8 +101,14 @@ trait KleisliInterpreter[M[_]] { outer =>
     asyncM.handleErrorWith(fa.foldMap(interpreter).run(j))(f.andThen(_.foldMap(interpreter).run(j)))
   )
   def forceR[G[_], J, A, B](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(fb: Free[G, B]): Kleisli[M, J, B] = Kleisli (j =>
-      asyncM.forceR(fa.foldMap(interpreter).run(j))(fb.foldMap(interpreter).run(j))
-    )
+    asyncM.forceR(fa.foldMap(interpreter).run(j))(fb.foldMap(interpreter).run(j))
+  )
+  def uncancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *], capture: Poll[M] => Poll[Free[G, *]])(body: Poll[Free[G, *]] => Free[G, A]): Kleisli[M, J, A] = Kleisli(j =>  
+    asyncM.uncancelable(body.compose(capture).andThen(_.foldMap(interpreter).run(j)))
+  )
+  def poll[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(mpoll: Any, fa: Free[G, A]): Kleisli[M, J, A] = Kleisli(j => 
+    mpoll.asInstanceOf[Poll[M]].apply(fa.foldMap(interpreter).run(j))
+  )
   def onCancel[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A], fin: Free[G, Unit]): Kleisli[M, J, A] = Kleisli (j =>
     asyncM.onCancel(fa.foldMap(interpreter).run(j), fin.foldMap(interpreter).run(j))
   )
@@ -273,6 +279,8 @@ trait KleisliInterpreter[M[_]] { outer =>
     // for operations using LargeObjectIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): Kleisli[M, LargeObject, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]): Kleisli[M, LargeObject, B] = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) = outer.uncancelable(this, largeobject.capturePoll)(body)
+    override def poll[A](poll: Any, fa: LargeObjectIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): Kleisli[M, LargeObject, A] = outer.onCancel(this)(fa, fin)
     override def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext): Kleisli[M, LargeObject, A] = outer.evalOn(this)(fa, ec)
     override def async[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Option[LargeObjectIO[Unit]]]) = outer.async(this)(k)

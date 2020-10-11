@@ -73,6 +73,7 @@ object preparedstatement { module =>
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): F[B]
       def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): F[A]
+      def poll[A](poll: Any, fa: PreparedStatementIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
       def cede: F[Unit]
@@ -222,6 +223,9 @@ object preparedstatement { module =>
     }
     case class Uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
     }
     case object Canceled extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
@@ -593,6 +597,9 @@ object preparedstatement { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = FF.liftF[PreparedStatementOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[PreparedStatementIO] = new Poll[PreparedStatementIO] {
+    def apply[A](fa: PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)
   def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[PreparedStatementOp, Unit](Cede)

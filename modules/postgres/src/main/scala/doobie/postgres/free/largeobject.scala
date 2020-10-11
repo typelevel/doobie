@@ -51,6 +51,8 @@ object largeobject { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]): F[B]
+      def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): F[A]
+      def poll[A](poll: Any, fa: LargeObjectIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
       def cede: F[Unit]
@@ -108,6 +110,12 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
     case class ForceR[A, B](fa: LargeObjectIO[A], fb: LargeObjectIO[B]) extends LargeObjectOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }    
     case object Canceled extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -207,6 +215,10 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
   def delay[A](thunk: => A) = FF.liftF[LargeObjectOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[LargeObjectOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]) = FF.liftF[LargeObjectOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[LargeObjectIO] = new Poll[LargeObjectIO] {
+    def apply[A](fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[LargeObjectOp, Unit](Cede)
@@ -250,7 +262,7 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
       override def realTime: LargeObjectIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): LargeObjectIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]): LargeObjectIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): LargeObjectIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): LargeObjectIO[A] = module.uncancelable(body)
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: LargeObjectIO[A]): LargeObjectIO[Fiber[LargeObjectIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
