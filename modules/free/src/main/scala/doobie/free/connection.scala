@@ -70,6 +70,8 @@ object connection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[ConnectionIO, A]]
+      def deferred[A]: F[Deferred[ConnectionIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -172,6 +174,12 @@ object connection { module =>
     }
     case object Cede extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends ConnectionOp[CERef[ConnectionIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends ConnectionOp[Deferred[ConnectionIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -372,6 +380,8 @@ object connection { module =>
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[ConnectionOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[ConnectionOp, CERef[ConnectionIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[ConnectionOp, Deferred[ConnectionIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[ConnectionOp, Unit](Sleep(time))
   def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext) = FF.liftF[ConnectionOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[ConnectionOp, ExecutionContext](ExecutionContext1)
@@ -452,8 +462,8 @@ object connection { module =>
       override def start[A](fa: ConnectionIO[A]): ConnectionIO[Fiber[ConnectionIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: ConnectionIO[Unit] = module.cede
       override def racePair[A, B](fa: ConnectionIO[A], fb: ConnectionIO[B]): ConnectionIO[Either[(Outcome[ConnectionIO, Throwable, A], Fiber[ConnectionIO, Throwable, B]), (Fiber[ConnectionIO, Throwable, A], Outcome[ConnectionIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): ConnectionIO[CERef[ConnectionIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: ConnectionIO[Deferred[ConnectionIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): ConnectionIO[CERef[ConnectionIO, A]] = module.ref(a)
+      override def deferred[A]: ConnectionIO[Deferred[ConnectionIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): ConnectionIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext): ConnectionIO[A] = module.evalOn(fa, ec)
       override def executionContext: ConnectionIO[ExecutionContext] = module.executionContext

@@ -7,7 +7,8 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect._
+import cats.effect.{ Async, Poll, Sync }
+import cats.effect.kernel.{ Deferred, Ref => CERef }
 import cats.free.Free
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
@@ -116,6 +117,8 @@ trait KleisliInterpreter[M[_]] { outer =>
   def suspend[J, A](hint: Sync.Type)(thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.suspend(hint)(thunk))
   def canceled[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.canceled)
   def cede[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.cede)
+  def ref[G[_]: Sync, J, A](a: A): Kleisli[M, J, CERef[G, A]] = Kleisli(_ => Sync[M].delay(CERef.unsafe[G, A](a)))
+  def deferred[G[_]: Async, J, A]: Kleisli[M, J, Deferred[G, A]] = Kleisli(_ => Sync[M].delay(Deferred.unsafe[G, A]))
   def sleep[J](time: FiniteDuration): Kleisli[M, J, Unit] = Kleisli(_ => asyncM.sleep(time))
   def executionContext[J]: Kleisli[M, J, ExecutionContext] = Kleisli(_ => asyncM.executionContext)
   // for operations using free structures we call the interpreter recursively
@@ -681,6 +684,8 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def suspend[A](hint: Sync.Type)(thunk: => A): Kleisli[M, Connection, A] = outer.suspend(hint)(thunk)
     override def canceled: Kleisli[M, Connection, Unit] = outer.canceled
     override def cede: Kleisli[M, Connection, Unit] = outer.cede
+    override def ref[A](a: A): Kleisli[M, Connection, CERef[ConnectionIO, A]] = outer.ref(a)
+    override def deferred[A]: Kleisli[M, Connection, Deferred[ConnectionIO, A]] = outer.deferred
     override def sleep(time: FiniteDuration): Kleisli[M, Connection, Unit] = outer.sleep(time)
     override def executionContext: Kleisli[M, Connection, ExecutionContext] = outer.executionContext
     
