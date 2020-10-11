@@ -41,18 +41,18 @@ class strategyspec extends Specification {
     }
 
     override lazy val ConnectionInterpreter = new ConnectionInterpreter {
-      override val close = delay(() => Connection.close = Some(())) *> super.close
-      override val rollback = delay(() => Connection.rollback = Some(())) *> super.rollback
-      override val commit = delay(() => Connection.commit = Some(())) *> super.commit
-      override def setAutoCommit(b: Boolean) = delay(() => Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
+      override val close = delay(Connection.close = Some(())) *> super.close
+      override val rollback = delay(Connection.rollback = Some(())) *> super.rollback
+      override val commit = delay(Connection.commit = Some(())) *> super.commit
+      override def setAutoCommit(b: Boolean) = delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
     }
 
     override lazy val PreparedStatementInterpreter = new PreparedStatementInterpreter {
-      override val close = delay(() => PreparedStatement.close = Some(())) *> super.close
+      override val close = delay(PreparedStatement.close = Some(())) *> super.close
     }
 
     override lazy val ResultSetInterpreter = new ResultSetInterpreter {
-      override val close = delay(() => ResultSet.close = Some(())) *> super.close
+      override val close = delay(ResultSet.close = Some(())) *> super.close
     }
 
   }
