@@ -19,15 +19,22 @@ import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.sql.ResultSet
+import java.sql.{ Array => SqlArray }
+import java.util.Map
 import org.postgresql.PGConnection
+import org.postgresql.PGNotification
+import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.fastpath.FastpathArg
 import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 import org.postgresql.jdbc.AutoSave
+import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
+import org.postgresql.replication.PGReplicationConnection
+import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.postgres.free.copyin.{ CopyInIO, CopyInOp }
@@ -138,6 +145,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getHandledRowCount = primitive(_.getHandledRowCount)
     override def isActive = primitive(_.isActive)
     override def writeToCopy(a: Array[Byte], b: Int, c: Int) = primitive(_.writeToCopy(a, b, c))
+    override def writeToCopy(a: ByteStreamWriter) = primitive(_.writeToCopy(a))
 
   }
 
@@ -174,6 +182,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     // domain-specific operations are implemented in terms of `primitive`
     override def copyDual(a: String) = primitive(_.copyDual(a))
     override def copyIn(a: String) = primitive(_.copyIn(a))
+    override def copyIn(a: String, b: ByteStreamWriter) = primitive(_.copyIn(a, b))
     override def copyIn(a: String, b: InputStream) = primitive(_.copyIn(a, b))
     override def copyIn(a: String, b: InputStream, c: Int) = primitive(_.copyIn(a, b, c))
     override def copyIn(a: String, b: Reader) = primitive(_.copyIn(a, b))
@@ -408,6 +417,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     // domain-specific operations are implemented in terms of `primitive`
     override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
     override def addDataType(a: String, b: String) = primitive(_.addDataType(a, b))
+    override def cancelQuery = primitive(_.cancelQuery)
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))
     override def escapeIdentifier(a: String) = primitive(_.escapeIdentifier(a))
     override def escapeLiteral(a: String) = primitive(_.escapeLiteral(a))

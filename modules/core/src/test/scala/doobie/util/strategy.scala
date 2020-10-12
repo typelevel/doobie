@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ Async, Blocker, ContextShift, IO }
+import cats.effect.{ Blocker, ContextShift, IO }
 import cats.syntax.apply._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
@@ -27,10 +27,9 @@ class strategyspec extends Specification {
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class Interp extends KleisliInterpreter[IO] {
 
-    val asyncM = Async[IO]
+    val asyncM = Concurrent[IO]
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     val contextShiftM = contextShift
-    val concurrent: Concurrent[IO] = Concurrent[IO]
 
     object Connection {
       var autoCommit: Option[Boolean] = None

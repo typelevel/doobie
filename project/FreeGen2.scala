@@ -150,9 +150,13 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       if (cargs.isEmpty) s"""|      def $mname: F[$ret] = sys.error("Not implemented: $mname")"""
       else s"""|      def $mname$ctparams(${cargs.mkString(", ")}): F[$ret] = sys.error("Not implemented: $mname$ctparams(${cparams.mkString(", ")})")"""
 
-    def kleisliImpl: String =
-      if (cargs.isEmpty) s"|    override def $mname = primitive(_.$mname)"
-      else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args))"
+    def kleisliImpl(isStatement: Boolean): String =
+      if (mname.startsWith("execute") && isStatement) 
+        if (cargs.isEmpty) s"|    override def $mname = cancelable(_.$mname)"
+        else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = cancelable(_.$mname($args))"
+      else 
+        if (cargs.isEmpty) s"|    override def $mname = primitive(_.$mname)"
+        else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args))"
 
   }
 
@@ -378,6 +382,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      val opname = s"${oname}Op"
      val ioname = s"${oname}IO"
      val mname  = oname.toLowerCase
+     val isStatement = 
+        oname == "Statement" || oname == "PreparedStatement" || oname == "CallableStatement"
      s"""
        |  trait ${oname}Interpreter extends ${oname}Op.Visitor[Kleisli[M, $sname, *]] {
        |
@@ -410,7 +416,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
        |
        |    // domain-specific operations are implemented in terms of `primitive`
-       |${ctors[A].map(_.kleisliImpl).mkString("\n")}
+       |${ctors[A].map(_.kleisliImpl(isStatement)).mkString("\n")}
        |
        |  }
        |""".trim.stripMargin
@@ -424,7 +430,6 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      val mname  = oname.toLowerCase
      s"lazy val ${oname}Interpreter: ${opname} ~> Kleisli[M, $sname, *] = new ${oname}Interpreter { }"
    }
-
 
    // template for a kleisli interpreter
    def kleisliInterpreter: String =
@@ -497,6 +502,99 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |}
       |""".trim.stripMargin
 
+
+   // template for a kleisli interpreter with cancel
+   def kleisliInterpreterCancelable: String = {
+     s"""
+      |package $pkg
+      |
+      |// Library imports
+      |import cats.~>
+      |import cats.data.Kleisli
+      |import cats.effect.{ Async, Concurrent, Blocker, ContextShift, ExitCase }
+      |import scala.concurrent.ExecutionContext
+      |import com.github.ghik.silencer.silent
+      |
+      |// Types referenced in the JDBC API
+      |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
+      |
+      |// Algebras and free monads thereof referenced by our interpreter.
+      |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |
+      |object KleisliInterpreter {
+      |
+      |  def apply[M[_]](b: Blocker)(
+      |    implicit 
+      |             cs: ContextShift[M],
+      |             conc: Concurrent[M]
+      |  ): KleisliInterpreter[M] =
+      |    new KleisliInterpreter[M] {
+      |      val contextShiftM = cs
+      |      val blocker = b
+      |      val asyncM = conc
+      |    }
+      |}
+      |
+      |// Family of interpreters into Kleisli arrows for some monad M.
+      |@silent("deprecated")
+      |trait KleisliInterpreter[M[_]] { outer =>
+      |
+      |  implicit val asyncM: Concurrent[M]
+      |
+      |  // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
+      |  // to support shifting blocking operations to another pool.
+      |  val contextShiftM: ContextShift[M]
+      |  val blocker: Blocker
+      |
+      |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
+      |  ${managed.map(interpreterDef).mkString("\n  ")}
+      |
+      |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
+      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
+      |    // primitive JDBC methods throw exceptions and so do we when reading values
+      |    // so catch any non-fatal exceptions and lift them into the effect
+      |    blocker.blockOn[M, A](try {
+      |      asyncM.delay(f(a))
+      |    } catch {
+      |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
+      |    })(contextShiftM)
+      |  }
+      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
+      |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
+      |  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
+      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
+      |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
+      |    e match {
+      |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}
+      |    }
+      |
+      |  def cancelable[A, ST <: Statement](f: ST => A): Kleisli[M, ST, A] = Kleisli { a =>
+      |    // primitive JDBC methods throw exceptions and so do we when reading values
+      |    // so catch any non-fatal exceptions and lift them into the effect
+      |    asyncM.cancelable[A] { cb =>
+      |      blocker.blockingContext.execute(
+      |        new Runnable {
+      |          override def run(): Unit =
+      |            try {
+      |              cb(Right(f(a)))
+      |            } catch {
+      |              case e: Throwable =>
+      |                cb(Left(e))
+      |            }
+      |        }
+      |      )
+      |      blocker.delay {
+      |        a.cancel()
+      |      }(asyncM, contextShiftM)
+      |    }
+      |  }
+      |  // Interpreters
+      |${managed.map(ClassTag(_)).map(interp(_)).mkString("\n")}
+      |
+      |}
+      |""".trim.stripMargin
+    }
+
   def gen(base: File): Seq[java.io.File] = {
     import java.io._
     log.info("Generating free algebras into " + base)
@@ -521,7 +619,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     val ki = {
       val file = new File(base, s"kleisliinterpreter.scala")
       val pw = new PrintWriter(file)
-      pw.println(kleisliInterpreter)
+      if (base.getPath().contains("postgres")) pw.println(kleisliInterpreter)
+      else pw.println(kleisliInterpreterCancelable)
       pw.close()
       log.info(s"... -> ${file.getName}")
       file

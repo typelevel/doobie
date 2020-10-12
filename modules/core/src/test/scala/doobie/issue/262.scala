@@ -18,10 +18,9 @@ class `262` extends Specification {
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
-    val asyncM = Async[IO]
+    val asyncM = Concurrent[IO]
     val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
     val contextShiftM = contextShift
-    val concurrent: Concurrent[IO] = Concurrent[IO]
 
     val M = implicitly[Async[IO]]
 
