@@ -224,7 +224,7 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[LargeObjectOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]) = FF.liftF[LargeObjectOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[LargeObjectIO] = new Poll[LargeObjectIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[LargeObjectIO] {
     def apply[A](fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)

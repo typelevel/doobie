@@ -169,15 +169,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: NClob => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[NClob]
+    override def realTime = outer.realTime[NClob]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled: Kleisli[M, NClob, Unit] = outer.canceled
-    override def cede: Kleisli[M, NClob, Unit] = outer.cede
+    override def canceled: Kleisli[M, NClob, Unit] = outer.canceled[NClob]
+    override def cede: Kleisli[M, NClob, Unit] = outer.cede[NClob]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[NClob]
     
     // for operations using NClobIO we must call ourself recursively
     override def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -211,15 +212,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Blob => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[Blob]
+    override def realTime = outer.realTime[Blob]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[Blob]
+    override def cede = outer.cede[Blob]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[Blob]
     
     // for operations using BlobIO we must call ourself recursively
     override def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -251,15 +253,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Clob => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[Clob]
+    override def realTime = outer.realTime[Clob]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled: Kleisli[M, Clob, Unit] = outer.canceled
-    override def cede: Kleisli[M, Clob, Unit] = outer.cede
+    override def canceled: Kleisli[M, Clob, Unit] = outer.canceled[Clob]
+    override def cede: Kleisli[M, Clob, Unit] = outer.cede[Clob]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[Clob]
     
     // for operations using ClobIO we must call ourself recursively
     override def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -293,15 +296,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: DatabaseMetaData => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[DatabaseMetaData]
+    override def realTime = outer.realTime[DatabaseMetaData]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[DatabaseMetaData]
+    override def cede = outer.cede[DatabaseMetaData]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[DatabaseMetaData]
     
     // for operations using DatabaseMetaDataIO we must call ourself recursively
     override def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -500,15 +504,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Driver => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[Driver]
+    override def realTime = outer.realTime[Driver]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled: Kleisli[M, Driver, Unit] = outer.canceled
-    override def cede: Kleisli[M, Driver, Unit] = outer.cede
+    override def canceled: Kleisli[M, Driver, Unit] = outer.canceled[Driver]
+    override def cede: Kleisli[M, Driver, Unit] = outer.cede[Driver]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[Driver]
     
     // for operations using DriverIO we must call ourself recursively
     override def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -536,15 +541,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Ref => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[Ref]
+    override def realTime = outer.realTime[Ref]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[Ref]
+    override def cede = outer.cede[Ref]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[Ref]
     
     // for operations using RefIO we must call ourself recursively
     override def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -569,15 +575,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: SQLData => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[SQLData]
+    override def realTime = outer.realTime[SQLData]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled: Kleisli[M, SQLData, Unit] = outer.canceled
-    override def cede = outer.cede
+    override def canceled: Kleisli[M, SQLData, Unit] = outer.canceled[SQLData]
+    override def cede = outer.cede[SQLData]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[SQLData]
     
     // for operations using SQLDataIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -601,15 +608,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: SQLInput => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[SQLInput]
+    override def realTime = outer.realTime[SQLInput]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled: Kleisli[M, SQLInput, Unit] = outer.canceled
-    override def cede: Kleisli[M, SQLInput, Unit] = outer.cede
+    override def canceled: Kleisli[M, SQLInput, Unit] = outer.canceled[SQLInput]
+    override def cede: Kleisli[M, SQLInput, Unit] = outer.cede[SQLInput]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[SQLInput]
     
     // for operations using SQLInputIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -658,15 +666,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: SQLOutput => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[SQLOutput]
+    override def realTime = outer.realTime[SQLOutput]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede: Kleisli[M, SQLOutput, Unit] = outer.cede
+    override def canceled = outer.canceled[SQLOutput]
+    override def cede: Kleisli[M, SQLOutput, Unit] = outer.cede[SQLOutput]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[SQLOutput]
     
     // for operations using SQLOutputIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -799,16 +808,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: Statement => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[Statement]
+    override def realTime = outer.realTime[Statement]
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[Statement]
+    override def cede = outer.cede[Statement]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[Statement]
     
     // for operations using StatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -881,16 +890,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PreparedStatement => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime= outer.realTime
+    override def monotonic = outer.monotonic[PreparedStatement]
+    override def realTime = outer.realTime[PreparedStatement]
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[PreparedStatement]
+    override def cede = outer.cede[PreparedStatement]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[PreparedStatement]
     
     // for operations using PreparedStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -1021,15 +1030,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: CallableStatement => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[CallableStatement]
+    override def realTime = outer.realTime[CallableStatement]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled: Kleisli[M, CallableStatement, Unit] = outer.canceled
-    override def cede: Kleisli[M, CallableStatement, Unit] = outer.cede
+    override def canceled: Kleisli[M, CallableStatement, Unit] = outer.canceled[CallableStatement]
+    override def cede: Kleisli[M, CallableStatement, Unit] = outer.cede[CallableStatement]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration): Kleisli[M, CallableStatement, Unit] = outer.sleep(time)
-    override def executionContext: Kleisli[M, CallableStatement, ExecutionContext] = outer.executionContext
+    override def executionContext: Kleisli[M, CallableStatement, ExecutionContext] = outer.executionContext[CallableStatement]
     
     // for operations using CallableStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -1281,16 +1291,16 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: ResultSet => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[ResultSet]
+    override def realTime = outer.realTime[ResultSet]
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[ResultSet]
+    override def cede = outer.cede[ResultSet]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[ResultSet]
     
     // for operations using ResultSetIO we must call ourself recursively
     override def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]) = outer.handleErrorWith(this)(fa)(f)

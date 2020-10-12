@@ -237,7 +237,7 @@ object pgconnection { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PGConnectionOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]) = FF.liftF[PGConnectionOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]) = FF.liftF[PGConnectionOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[PGConnectionIO] = new Poll[PGConnectionIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[PGConnectionIO] {
     def apply[A](fa: PGConnectionIO[A]) = FF.liftF[PGConnectionOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[PGConnectionOp, Unit](Canceled)

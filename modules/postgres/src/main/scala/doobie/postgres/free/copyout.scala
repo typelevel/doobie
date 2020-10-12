@@ -174,7 +174,7 @@ object copyout { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyOutOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]) = FF.liftF[CopyOutOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) = FF.liftF[CopyOutOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CopyOutIO] = new Poll[CopyOutIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[CopyOutIO] {
     def apply[A](fa: CopyOutIO[A]) = FF.liftF[CopyOutOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[CopyOutOp, Unit](Canceled)

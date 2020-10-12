@@ -944,7 +944,7 @@ object resultset { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ResultSetOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]) = FF.liftF[ResultSetOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]) = FF.liftF[ResultSetOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[ResultSetIO] = new Poll[ResultSetIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[ResultSetIO] {
     def apply[A](fa: ResultSetIO[A]) = FF.liftF[ResultSetOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[ResultSetOp, Unit](Canceled)

@@ -130,15 +130,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGCopyIn => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[PGCopyIn]
+    override def realTime = outer.realTime[PGCopyIn]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[PGCopyIn]
+    override def cede = outer.cede[PGCopyIn]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[PGCopyIn]
     
     // for operations using CopyInIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -169,15 +169,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGCopyManager => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[PGCopyManager]
+    override def realTime = outer.realTime[PGCopyManager]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[PGCopyManager]
+    override def cede = outer.cede[PGCopyManager]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[PGCopyManager]
     
     // for operations using CopyManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -208,15 +208,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGCopyOut => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[PGCopyOut]
+    override def realTime = outer.realTime[PGCopyOut]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[PGCopyOut]
+    override def cede = outer.cede[PGCopyOut]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[PGCopyOut]
     
     // for operations using CopyOutIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -246,15 +246,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGFastpath => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[PGFastpath]
+    override def realTime = outer.realTime[PGFastpath]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[PGFastpath]
+    override def cede = outer.cede[PGFastpath]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[PGFastpath]
     
     // for operations using FastpathIO we must call ourself recursively
     override def handleErrorWith[A](fa: FastpathIO[A])(f: Throwable => FastpathIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -287,15 +287,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: LargeObject => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[LargeObject]
+    override def realTime = outer.realTime[LargeObject]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[LargeObject]
+    override def cede = outer.cede[LargeObject]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[LargeObject]
     
     // for operations using LargeObjectIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -337,15 +337,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: LargeObjectManager => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[LargeObjectManager]
+    override def realTime = outer.realTime[LargeObjectManager]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[LargeObjectManager]
+    override def cede = outer.cede[LargeObjectManager]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[LargeObjectManager]
     
     // for operations using LargeObjectManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectManagerIO[A])(f: Throwable => LargeObjectManagerIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -383,15 +383,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def raw[A](f: PGConnection => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic
-    override def realTime = outer.realTime
+    override def monotonic = outer.monotonic[PGConnection]
+    override def realTime = outer.realTime[PGConnection]
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled
-    override def cede = outer.cede
+    override def canceled = outer.canceled[PGConnection]
+    override def cede = outer.cede[PGConnection]
     override def ref[A](a: A) = outer.ref(a)
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
-    override def executionContext = outer.executionContext
+    override def executionContext = outer.executionContext[PGConnection]
     
     // for operations using PGConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)

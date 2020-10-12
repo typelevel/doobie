@@ -355,7 +355,7 @@ object statement { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[StatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]) = FF.liftF[StatementOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]) = FF.liftF[StatementOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[StatementIO] = new Poll[StatementIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[StatementIO] {
     def apply[A](fa: StatementIO[A]) = FF.liftF[StatementOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[StatementOp, Unit](Canceled)

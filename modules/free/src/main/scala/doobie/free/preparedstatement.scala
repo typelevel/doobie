@@ -605,7 +605,7 @@ object preparedstatement { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = FF.liftF[PreparedStatementOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[PreparedStatementIO] = new Poll[PreparedStatementIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[PreparedStatementIO] {
     def apply[A](fa: PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)

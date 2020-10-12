@@ -70,6 +70,7 @@ object callablestatement { module =>
       def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]): F[B]
       def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): F[A]
@@ -1085,10 +1086,11 @@ object callablestatement { module =>
   def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): CallableStatementIO[A] = FF.liftF[CallableStatementOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[CallableStatementOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[CallableStatementOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[CallableStatementOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CallableStatementOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]) = FF.liftF[CallableStatementOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]) = FF.liftF[CallableStatementOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CallableStatementIO] = new Poll[CallableStatementIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[CallableStatementIO] {
     def apply[A](fa: CallableStatementIO[A]) = FF.liftF[CallableStatementOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[CallableStatementOp, Unit](Canceled)

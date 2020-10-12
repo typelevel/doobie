@@ -48,6 +48,7 @@ object blob { module =>
       def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]): F[B]
       def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]): F[A]
@@ -183,10 +184,11 @@ object blob { module =>
   def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = FF.liftF[BlobOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[BlobOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[BlobOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[BlobOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[BlobOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]) = FF.liftF[BlobOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]) = FF.liftF[BlobOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[BlobIO] = new Poll[BlobIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[BlobIO] {
     def apply[A](fa: BlobIO[A]) = FF.liftF[BlobOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[BlobOp, Unit](Canceled)

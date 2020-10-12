@@ -374,7 +374,7 @@ object connection { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[ConnectionOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]) = FF.liftF[ConnectionOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = FF.liftF[ConnectionOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[ConnectionIO] = new Poll[ConnectionIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[ConnectionIO] {
     def apply[A](fa: ConnectionIO[A]) = FF.liftF[ConnectionOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)

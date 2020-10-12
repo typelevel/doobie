@@ -52,6 +52,7 @@ object nclob { module =>
       def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: NClobIO[A])(fb: NClobIO[B]): F[B]
       def uncancelable[A](body: Poll[NClobIO] => NClobIO[A]): F[A]
@@ -195,10 +196,11 @@ object nclob { module =>
   def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]): NClobIO[A] = FF.liftF[NClobOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[NClobOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[NClobOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[NClobOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[NClobOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: NClobIO[A])(fb: NClobIO[B]) = FF.liftF[NClobOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[NClobIO] => NClobIO[A]) = FF.liftF[NClobOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[NClobIO] = new Poll[NClobIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[NClobIO] {
     def apply[A](fa: NClobIO[A]) = FF.liftF[NClobOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[NClobOp, Unit](Canceled)

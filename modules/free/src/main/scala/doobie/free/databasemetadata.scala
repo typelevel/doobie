@@ -51,6 +51,7 @@ object databasemetadata { module =>
       def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]): F[B]
       def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): F[A]
@@ -854,10 +855,11 @@ object databasemetadata { module =>
   def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = FF.liftF[DatabaseMetaDataOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[DatabaseMetaDataOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[DatabaseMetaDataOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[DatabaseMetaDataOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[DatabaseMetaDataOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]) = FF.liftF[DatabaseMetaDataOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]) = FF.liftF[DatabaseMetaDataOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[DatabaseMetaDataIO] = new Poll[DatabaseMetaDataIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[DatabaseMetaDataIO] {
     def apply[A](fa: DatabaseMetaDataIO[A]) = FF.liftF[DatabaseMetaDataOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[DatabaseMetaDataOp, Unit](Canceled)

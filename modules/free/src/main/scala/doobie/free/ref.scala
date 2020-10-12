@@ -48,6 +48,7 @@ object ref { module =>
       def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]): F[B]
       def uncancelable[A](body: Poll[RefIO] => RefIO[A]): F[A]
@@ -155,9 +156,10 @@ object ref { module =>
   def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[RefOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[RefOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[RefOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[RefOp, A](Suspend(hint, () => thunk))
   def uncancelable[A](body: Poll[RefIO] => RefIO[A]) = FF.liftF[RefOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[RefIO] = new Poll[RefIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[RefIO] {
     def apply[A](fa: RefIO[A]) = FF.liftF[RefOp, A](Poll1(mpoll, fa))
   }
   def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = FF.liftF[RefOp, B](ForceR(fa, fb))

@@ -179,7 +179,7 @@ object copyin { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyInOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]) = FF.liftF[CopyInOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]) = FF.liftF[CopyInOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CopyInIO] = new Poll[CopyInIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[CopyInIO] {
     def apply[A](fa: CopyInIO[A]) = FF.liftF[CopyInOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[CopyInOp, Unit](Canceled)

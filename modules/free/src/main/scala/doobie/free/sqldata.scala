@@ -49,6 +49,7 @@ object sqldata { module =>
       def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: SQLDataIO[A])(fb: SQLDataIO[B]): F[B]
       def uncancelable[A](body: Poll[SQLDataIO] => SQLDataIO[A]): F[A]
@@ -152,10 +153,11 @@ object sqldata { module =>
   def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = FF.liftF[SQLDataOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[SQLDataOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[SQLDataOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[SQLDataOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[SQLDataOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: SQLDataIO[A])(fb: SQLDataIO[B]) = FF.liftF[SQLDataOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[SQLDataIO] => SQLDataIO[A]) = FF.liftF[SQLDataOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[SQLDataIO] = new Poll[SQLDataIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[SQLDataIO] {
     def apply[A](fa: SQLDataIO[A]) = FF.liftF[SQLDataOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[SQLDataOp, Unit](Canceled)

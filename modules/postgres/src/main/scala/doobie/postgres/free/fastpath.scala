@@ -189,7 +189,7 @@ object fastpath { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[FastpathOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: FastpathIO[A])(fb: FastpathIO[B]) = FF.liftF[FastpathOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]) = FF.liftF[FastpathOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[FastpathIO] = new Poll[FastpathIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[FastpathIO] {
     def apply[A](fa: FastpathIO[A]) = FF.liftF[FastpathOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[FastpathOp, Unit](Canceled)

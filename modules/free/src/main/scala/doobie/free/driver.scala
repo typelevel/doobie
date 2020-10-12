@@ -51,6 +51,7 @@ object driver { module =>
       def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): F[A]
       def monotonic: F[FiniteDuration]
       def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]): F[B]
       def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): F[A]
@@ -171,10 +172,11 @@ object driver { module =>
   def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = FF.liftF[DriverOp, A](HandleErrorWith(fa, f))
   val monotonic = FF.liftF[DriverOp, FiniteDuration](Monotonic)
   val realtime = FF.liftF[DriverOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[DriverOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[DriverOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]) = FF.liftF[DriverOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]) = FF.liftF[DriverOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[DriverIO] = new Poll[DriverIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[DriverIO] {
     def apply[A](fa: DriverIO[A]) = FF.liftF[DriverOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[DriverOp, Unit](Canceled)

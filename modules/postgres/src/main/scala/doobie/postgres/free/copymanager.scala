@@ -186,7 +186,7 @@ object copymanager { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyManagerOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]) = FF.liftF[CopyManagerOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CopyManagerIO] = new Poll[CopyManagerIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[CopyManagerIO] {
     def apply[A](fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)

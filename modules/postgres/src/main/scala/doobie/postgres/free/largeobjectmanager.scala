@@ -207,7 +207,7 @@ object largeobjectmanager { module =>
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[LargeObjectManagerOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]) = FF.liftF[LargeObjectManagerOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](Uncancelable(body))
-  def capturePoll[M[_]](mpoll: Poll[M]): Poll[LargeObjectManagerIO] = new Poll[LargeObjectManagerIO] {
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[LargeObjectManagerIO] {
     def apply[A](fa: LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](Poll1(mpoll, fa))
   }
   val canceled = FF.liftF[LargeObjectManagerOp, Unit](Canceled)
