@@ -52,9 +52,13 @@ object fastpath { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: FastpathIO[A])(fb: FastpathIO[B]): F[B]
+      def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]): F[A]
+      def poll[A](poll: Any, fa: FastpathIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[FastpathIO, A]]
+      def deferred[A]: F[Deferred[FastpathIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: FastpathIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -100,6 +104,12 @@ object fastpath { module =>
     case class ForceR[A, B](fa: FastpathIO[A], fb: FastpathIO[B]) extends FastpathOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: FastpathIO[A]) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends FastpathOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -108,6 +118,12 @@ object fastpath { module =>
     }
     case object Cede extends FastpathOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends FastpathOp[CERef[FastpathIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends FastpathOp[Deferred[FastpathIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends FastpathOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -172,9 +188,15 @@ object fastpath { module =>
   def delay[A](thunk: => A) = FF.liftF[FastpathOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[FastpathOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: FastpathIO[A])(fb: FastpathIO[B]) = FF.liftF[FastpathOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]) = FF.liftF[FastpathOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[FastpathIO] = new Poll[FastpathIO] {
+    def apply[A](fa: FastpathIO[A]) = FF.liftF[FastpathOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[FastpathOp, Unit](Canceled)
   def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]) = FF.liftF[FastpathOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[FastpathOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[FastpathOp, CERef[FastpathIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[FastpathOp, Deferred[FastpathIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[FastpathOp, Unit](Sleep(time))
   def evalOn[A](fa: FastpathIO[A], ec: ExecutionContext) = FF.liftF[FastpathOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[FastpathOp, ExecutionContext](ExecutionContext1)
@@ -206,14 +228,14 @@ object fastpath { module =>
       override def realTime: FastpathIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): FastpathIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: FastpathIO[A])(fb: FastpathIO[B]): FastpathIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]): FastpathIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]): FastpathIO[A] = module.uncancelable(body)
       override def canceled: FastpathIO[Unit] = module.canceled
       override def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]): FastpathIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: FastpathIO[A]): FastpathIO[Fiber[FastpathIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: FastpathIO[Unit] = module.cede
       override def racePair[A, B](fa: FastpathIO[A], fb: FastpathIO[B]): FastpathIO[Either[(Outcome[FastpathIO, Throwable, A], Fiber[FastpathIO, Throwable, B]), (Fiber[FastpathIO, Throwable, A], Outcome[FastpathIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): FastpathIO[CERef[FastpathIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: FastpathIO[Deferred[FastpathIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): FastpathIO[CERef[FastpathIO, A]] = module.ref(a)
+      override def deferred[A]: FastpathIO[Deferred[FastpathIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): FastpathIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: FastpathIO[A], ec: ExecutionContext): FastpathIO[A] = module.evalOn(fa, ec)
       override def executionContext: FastpathIO[ExecutionContext] = module.executionContext

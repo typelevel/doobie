@@ -49,9 +49,13 @@ object copyin { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]): F[B]
+      def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): F[A]
+      def poll[A](poll: Any, fa: CopyInIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[CopyInIO, A]]
+      def deferred[A]: F[Deferred[CopyInIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: CopyInIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -96,6 +100,12 @@ object copyin { module =>
     case class ForceR[A, B](fa: CopyInIO[A], fb: CopyInIO[B]) extends CopyInOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: CopyInIO[A]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -104,6 +114,12 @@ object copyin { module =>
     }
     case object Cede extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends CopyInOp[CERef[CopyInIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends CopyInOp[Deferred[CopyInIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -162,9 +178,15 @@ object copyin { module =>
   def delay[A](thunk: => A) = FF.liftF[CopyInOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyInOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]) = FF.liftF[CopyInOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]) = FF.liftF[CopyInOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CopyInIO] = new Poll[CopyInIO] {
+    def apply[A](fa: CopyInIO[A]) = FF.liftF[CopyInOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[CopyInOp, Unit](Canceled)
   def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) = FF.liftF[CopyInOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[CopyInOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[CopyInOp, CERef[CopyInIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[CopyInOp, Deferred[CopyInIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[CopyInOp, Unit](Sleep(time))
   def evalOn[A](fa: CopyInIO[A], ec: ExecutionContext) = FF.liftF[CopyInOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[CopyInOp, ExecutionContext](ExecutionContext1)
@@ -194,14 +216,14 @@ object copyin { module =>
       override def realTime: CopyInIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): CopyInIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]): CopyInIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): CopyInIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): CopyInIO[A] = module.uncancelable(body)
       override def canceled: CopyInIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): CopyInIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: CopyInIO[A]): CopyInIO[Fiber[CopyInIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: CopyInIO[Unit] = module.cede
       override def racePair[A, B](fa: CopyInIO[A], fb: CopyInIO[B]): CopyInIO[Either[(Outcome[CopyInIO, Throwable, A], Fiber[CopyInIO, Throwable, B]), (Fiber[CopyInIO, Throwable, A], Outcome[CopyInIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): CopyInIO[CERef[CopyInIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: CopyInIO[Deferred[CopyInIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): CopyInIO[CERef[CopyInIO, A]] = module.ref(a)
+      override def deferred[A]: CopyInIO[Deferred[CopyInIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): CopyInIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: CopyInIO[A], ec: ExecutionContext): CopyInIO[A] = module.evalOn(fa, ec)
       override def executionContext: CopyInIO[ExecutionContext] = module.executionContext

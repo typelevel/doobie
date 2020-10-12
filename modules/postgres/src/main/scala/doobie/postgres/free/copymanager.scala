@@ -57,14 +57,17 @@ object copymanager { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]): F[B]
+      def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): F[A]
+      def poll[A](poll: Any, fa: CopyManagerIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[CopyManagerIO, A]]
+      def deferred[A]: F[Deferred[CopyManagerIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
       def async[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Option[CopyManagerIO[Unit]]]): F[A]
-
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -104,6 +107,12 @@ object copymanager { module =>
     case class ForceR[A, B](fa: CopyManagerIO[A], fb: CopyManagerIO[B]) extends CopyManagerOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: CopyManagerIO[A]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends CopyManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -112,6 +121,12 @@ object copymanager { module =>
     }
     case object Cede extends CopyManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends CopyManagerOp[CERef[CopyManagerIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends CopyManagerOp[Deferred[CopyManagerIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends CopyManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -170,9 +185,15 @@ object copymanager { module =>
   def delay[A](thunk: => A) = FF.liftF[CopyManagerOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyManagerOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]) = FF.liftF[CopyManagerOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CopyManagerIO] = new Poll[CopyManagerIO] {
+    def apply[A](fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)
   def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = FF.liftF[CopyManagerOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[CopyManagerOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[CopyManagerOp, CERef[CopyManagerIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[CopyManagerOp, Deferred[CopyManagerIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[CopyManagerOp, Unit](Sleep(time))
   def evalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext) = FF.liftF[CopyManagerOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[CopyManagerOp, ExecutionContext](ExecutionContext1)
@@ -202,14 +223,14 @@ object copymanager { module =>
       override def realTime: CopyManagerIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): CopyManagerIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]): CopyManagerIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): CopyManagerIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): CopyManagerIO[A] = module.uncancelable(body)
       override def canceled: CopyManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): CopyManagerIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: CopyManagerIO[A]): CopyManagerIO[Fiber[CopyManagerIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: CopyManagerIO[Unit] = module.cede
       override def racePair[A, B](fa: CopyManagerIO[A], fb: CopyManagerIO[B]): CopyManagerIO[Either[(Outcome[CopyManagerIO, Throwable, A], Fiber[CopyManagerIO, Throwable, B]), (Fiber[CopyManagerIO, Throwable, A], Outcome[CopyManagerIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): CopyManagerIO[CERef[CopyManagerIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: CopyManagerIO[Deferred[CopyManagerIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): CopyManagerIO[CERef[CopyManagerIO, A]] = module.ref(a)
+      override def deferred[A]: CopyManagerIO[Deferred[CopyManagerIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): CopyManagerIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext): CopyManagerIO[A] = module.evalOn(fa, ec)
       override def executionContext: CopyManagerIO[ExecutionContext] = module.executionContext

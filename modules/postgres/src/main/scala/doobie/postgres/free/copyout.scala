@@ -49,9 +49,13 @@ object copyout { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]): F[B]
+      def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): F[A]
+      def poll[A](poll: Any, fa: CopyOutIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[CopyOutIO, A]]
+      def deferred[A]: F[Deferred[CopyOutIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: CopyOutIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -94,6 +98,12 @@ object copyout { module =>
     case class ForceR[A, B](fa: CopyOutIO[A], fb: CopyOutIO[B]) extends CopyOutOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -102,6 +112,12 @@ object copyout { module =>
     }
     case object Cede extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends CopyOutOp[CERef[CopyOutIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends CopyOutOp[Deferred[CopyOutIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -157,9 +173,15 @@ object copyout { module =>
   def delay[A](thunk: => A) = FF.liftF[CopyOutOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyOutOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]) = FF.liftF[CopyOutOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) = FF.liftF[CopyOutOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[CopyOutIO] = new Poll[CopyOutIO] {
+    def apply[A](fa: CopyOutIO[A]) = FF.liftF[CopyOutOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[CopyOutOp, Unit](Canceled)
   def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]) = FF.liftF[CopyOutOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[CopyOutOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[CopyOutOp, CERef[CopyOutIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[CopyOutOp, Deferred[CopyOutIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[CopyOutOp, Unit](Sleep(time))
   def evalOn[A](fa: CopyOutIO[A], ec: ExecutionContext) = FF.liftF[CopyOutOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[CopyOutOp, ExecutionContext](ExecutionContext1)
@@ -188,14 +210,14 @@ object copyout { module =>
       override def realTime: CopyOutIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): CopyOutIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]): CopyOutIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): CopyOutIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): CopyOutIO[A] = module.uncancelable(body)
       override def canceled: CopyOutIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): CopyOutIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: CopyOutIO[A]): CopyOutIO[Fiber[CopyOutIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: CopyOutIO[Unit] = module.cede
       override def racePair[A, B](fa: CopyOutIO[A], fb: CopyOutIO[B]): CopyOutIO[Either[(Outcome[CopyOutIO, Throwable, A], Fiber[CopyOutIO, Throwable, B]), (Fiber[CopyOutIO, Throwable, A], Outcome[CopyOutIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): CopyOutIO[CERef[CopyOutIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: CopyOutIO[Deferred[CopyOutIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): CopyOutIO[CERef[CopyOutIO, A]] = module.ref(a)
+      override def deferred[A]: CopyOutIO[Deferred[CopyOutIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): CopyOutIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: CopyOutIO[A], ec: ExecutionContext): CopyOutIO[A] = module.evalOn(fa, ec)
       override def executionContext: CopyOutIO[ExecutionContext] = module.executionContext

@@ -56,6 +56,8 @@ object largeobject { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[LargeObjectIO, A]]
+      def deferred[A]: F[Deferred[LargeObjectIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -124,6 +126,12 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
     }
     case object Cede extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends LargeObjectOp[CERef[LargeObjectIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends LargeObjectOp[Deferred[LargeObjectIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -222,6 +230,8 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[LargeObjectOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[LargeObjectOp, CERef[LargeObjectIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[LargeObjectOp, Deferred[LargeObjectIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[LargeObjectOp, Unit](Sleep(time))
   def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext) = FF.liftF[LargeObjectOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[LargeObjectOp, ExecutionContext](ExecutionContext1)
@@ -268,8 +278,8 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
       override def start[A](fa: LargeObjectIO[A]): LargeObjectIO[Fiber[LargeObjectIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: LargeObjectIO[Unit] = module.cede
       override def racePair[A, B](fa: LargeObjectIO[A], fb: LargeObjectIO[B]): LargeObjectIO[Either[(Outcome[LargeObjectIO, Throwable, A], Fiber[LargeObjectIO, Throwable, B]), (Fiber[LargeObjectIO, Throwable, A], Outcome[LargeObjectIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): LargeObjectIO[CERef[LargeObjectIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: LargeObjectIO[Deferred[LargeObjectIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): LargeObjectIO[CERef[LargeObjectIO, A]] = module.ref(a)
+      override def deferred[A]: LargeObjectIO[Deferred[LargeObjectIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): LargeObjectIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext): LargeObjectIO[A] = module.evalOn(fa, ec)
       override def executionContext: LargeObjectIO[ExecutionContext] = module.executionContext

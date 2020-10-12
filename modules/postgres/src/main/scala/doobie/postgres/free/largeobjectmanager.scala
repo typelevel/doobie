@@ -50,9 +50,13 @@ object largeobjectmanager { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]): F[B]
+      def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]): F[A]
+      def poll[A](poll: Any, fa: LargeObjectManagerIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[LargeObjectManagerIO, A]]
+      def deferred[A]: F[Deferred[LargeObjectManagerIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: LargeObjectManagerIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -103,6 +107,12 @@ object largeobjectmanager { module =>
     case class ForceR[A, B](fa: LargeObjectManagerIO[A], fb: LargeObjectManagerIO[B]) extends LargeObjectManagerOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: LargeObjectManagerIO[A]) extends LargeObjectManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -111,6 +121,12 @@ object largeobjectmanager { module =>
     }
     case object Cede extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends LargeObjectManagerOp[CERef[LargeObjectManagerIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends LargeObjectManagerOp[Deferred[LargeObjectManagerIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -190,9 +206,15 @@ object largeobjectmanager { module =>
   def delay[A](thunk: => A) = FF.liftF[LargeObjectManagerOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[LargeObjectManagerOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]) = FF.liftF[LargeObjectManagerOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[LargeObjectManagerIO] = new Poll[LargeObjectManagerIO] {
+    def apply[A](fa: LargeObjectManagerIO[A]) = FF.liftF[LargeObjectManagerOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[LargeObjectManagerOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]) = FF.liftF[LargeObjectManagerOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[LargeObjectManagerOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[LargeObjectManagerOp, CERef[LargeObjectManagerIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[LargeObjectManagerOp, Deferred[LargeObjectManagerIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[LargeObjectManagerOp, Unit](Sleep(time))
   def evalOn[A](fa: LargeObjectManagerIO[A], ec: ExecutionContext) = FF.liftF[LargeObjectManagerOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[LargeObjectManagerOp, ExecutionContext](ExecutionContext1)
@@ -229,14 +251,14 @@ object largeobjectmanager { module =>
       override def realTime: LargeObjectManagerIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): LargeObjectManagerIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]): LargeObjectManagerIO[A] = module.uncancelable(body)
       override def canceled: LargeObjectManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = module.onCancel(fa, fin)
       override def start[A](fa: LargeObjectManagerIO[A]): LargeObjectManagerIO[Fiber[LargeObjectManagerIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
       override def cede: LargeObjectManagerIO[Unit] = module.cede
       override def racePair[A, B](fa: LargeObjectManagerIO[A], fb: LargeObjectManagerIO[B]): LargeObjectManagerIO[Either[(Outcome[LargeObjectManagerIO, Throwable, A], Fiber[LargeObjectManagerIO, Throwable, B]), (Fiber[LargeObjectManagerIO, Throwable, A], Outcome[LargeObjectManagerIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): LargeObjectManagerIO[CERef[LargeObjectManagerIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: LargeObjectManagerIO[Deferred[LargeObjectManagerIO, A]] = module.raiseError(new Exception("Unimplemented"))
+      override def ref[A](a: A): LargeObjectManagerIO[CERef[LargeObjectManagerIO, A]] = module.ref(a)
+      override def deferred[A]: LargeObjectManagerIO[Deferred[LargeObjectManagerIO, A]] = module.deferred
       override def sleep(time: FiniteDuration): LargeObjectManagerIO[Unit] = module.sleep(time)
       override def evalOn[A](fa: LargeObjectManagerIO[A], ec: ExecutionContext): LargeObjectManagerIO[A] = module.evalOn(fa, ec)
       override def executionContext: LargeObjectManagerIO[ExecutionContext] = module.executionContext

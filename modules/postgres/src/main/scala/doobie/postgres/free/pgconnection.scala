@@ -60,9 +60,13 @@ object pgconnection { module =>
       def delay[A](thunk: => A): F[A]
       def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
       def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]): F[B]
+      def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]): F[A]
+      def poll[A](poll: Any, fa: PGConnectionIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): F[A]
       def cede: F[Unit]
+      def ref[A](a: A): F[CERef[PGConnectionIO, A]]
+      def deferred[A]: F[Deferred[PGConnectionIO, A]]
       def sleep(time: FiniteDuration): F[Unit]
       def evalOn[A](fa: PGConnectionIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
@@ -118,6 +122,12 @@ object pgconnection { module =>
     case class ForceR[A, B](fa: PGConnectionIO[A], fb: PGConnectionIO[B]) extends PGConnectionOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
     }
+    case class Uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: PGConnectionIO[A]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
     case object Canceled extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }
@@ -126,6 +136,12 @@ object pgconnection { module =>
     }
     case object Cede extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cede
+    }
+    case class Ref1[A](a: A) extends PGConnectionOp[CERef[PGConnectionIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.ref(a)
+    }
+    case class Deferred1[A]() extends PGConnectionOp[Deferred[PGConnectionIO, A]] {
+      def visit[F[_]](v: Visitor[F]) = v.deferred
     }
     case class Sleep(time: FiniteDuration) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.sleep(time)
@@ -220,9 +236,15 @@ object pgconnection { module =>
   def delay[A](thunk: => A) = FF.liftF[PGConnectionOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PGConnectionOp, A](Suspend(hint, () => thunk))
   def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]) = FF.liftF[PGConnectionOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]) = FF.liftF[PGConnectionOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]): Poll[PGConnectionIO] = new Poll[PGConnectionIO] {
+    def apply[A](fa: PGConnectionIO[A]) = FF.liftF[PGConnectionOp, A](Poll1(mpoll, fa))
+  }
   val canceled = FF.liftF[PGConnectionOp, Unit](Canceled)
   def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) = FF.liftF[PGConnectionOp, A](OnCancel(fa, fin))
   val cede = FF.liftF[PGConnectionOp, Unit](Cede)
+  def ref[A](a: A) = FF.liftF[PGConnectionOp, CERef[PGConnectionIO, A]](Ref1(a))
+  def deferred[A] = FF.liftF[PGConnectionOp, Deferred[PGConnectionIO, A]](Deferred1())
   def sleep(time: FiniteDuration) = FF.liftF[PGConnectionOp, Unit](Sleep(time))
   def evalOn[A](fa: PGConnectionIO[A], ec: ExecutionContext) = FF.liftF[PGConnectionOp, A](EvalOn(fa, ec))
   val executionContext = FF.liftF[PGConnectionOp, ExecutionContext](ExecutionContext1)
