@@ -431,6 +431,28 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      s"lazy val ${oname}Interpreter: ${opname} ~> Kleisli[M, $sname, *] = new ${oname}Interpreter { }"
    }
 
+   def jdbcApiImports = managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n")
+   def algebrasImports = managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")
+   def commonMethods = s"""
+      |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
+      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
+      |    // primitive JDBC methods throw exceptions and so do we when reading values
+      |    // so catch any non-fatal exceptions and lift them into the effect
+      |    blocker.blockOn[M, A](try {
+      |      asyncM.delay(f(a))
+      |    } catch {
+      |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
+      |    })(contextShiftM)
+      |  }
+      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
+      |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
+      |  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
+      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
+      |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
+      |    e match {
+      |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}
+      |    }
+   """
    // template for a kleisli interpreter
    def kleisliInterpreter: String =
      s"""
@@ -444,10 +466,10 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import com.github.ghik.silencer.silent
       |
       |// Types referenced in the JDBC API
-      |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
+      |${jdbcApiImports}
       |
       |// Algebras and free monads thereof referenced by our interpreter.
-      |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |${algebrasImports}
       |
       |object KleisliInterpreter {
       |
@@ -476,26 +498,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}
-      |
-      |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
-      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
-      |    // primitive JDBC methods throw exceptions and so do we when reading values
-      |    // so catch any non-fatal exceptions and lift them into the effect
-      |    blocker.blockOn[M, A](try {
-      |      asyncM.delay(f(a))
-      |    } catch {
-      |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
-      |    })(contextShiftM)
-      |  }
-      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
-      |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
-      |  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
-      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
-      |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
-      |    e match {
-      |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}
-      |    }
-      |
+      |  ${commonMethods}
       |  // Interpreters
       |${managed.map(ClassTag(_)).map(interp(_)).mkString("\n")}
       |
@@ -516,10 +519,10 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import com.github.ghik.silencer.silent
       |
       |// Types referenced in the JDBC API
-      |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
+      |${jdbcApiImports}
       |
       |// Algebras and free monads thereof referenced by our interpreter.
-      |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
+      |${algebrasImports}
       |
       |object KleisliInterpreter {
       |
@@ -548,26 +551,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}
-      |
-      |  // Some methods are common to all interpreters and can be overridden to change behavior globally.
-      |  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
-      |    // primitive JDBC methods throw exceptions and so do we when reading values
-      |    // so catch any non-fatal exceptions and lift them into the effect
-      |    blocker.blockOn[M, A](try {
-      |      asyncM.delay(f(a))
-      |    } catch {
-      |      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
-      |    })(contextShiftM)
-      |  }
-      |  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
-      |  def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
-      |  def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
-      |  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
-      |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
-      |    e match {
-      |      ${managed.map(_.getSimpleName).map(n => s"case Embedded.${n}(j, fa) => Kleisli(_ => fa.foldMap(${n}Interpreter).run(j))").mkString("\n      ")}
-      |    }
-      |
+      |  ${commonMethods}
       |  def cancelable[A, ST <: Statement](f: ST => A): Kleisli[M, ST, A] = Kleisli { a =>
       |    // primitive JDBC methods throw exceptions and so do we when reading values
       |    // so catch any non-fatal exceptions and lift them into the effect
