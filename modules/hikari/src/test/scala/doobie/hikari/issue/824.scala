@@ -10,7 +10,6 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.hikari._
 import doobie.implicits._
-import doobie.util.effects.runAsync
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 import scala.util.Random
@@ -50,7 +49,7 @@ class `824` extends Specification {
       val random: IO[Fiber[IO, Throwable, Unit]] =
         for {
           d <- IO(Random.nextInt(200) milliseconds)
-          f <- runAsync[IO, ConnectionIO].apply(IO.sleep(d) *> report(xa.kernel)).transact(xa).start
+          f <- FC.liftIO(IO.sleep(d) *> report(xa.kernel)).transact(xa).start
         } yield f
 
       // Run a bunch of transactions at once, then return the active connection count

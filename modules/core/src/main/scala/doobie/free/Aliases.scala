@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.effect.Async
+import cats.effect.{ Async, LiftIO }
 
 trait Types {
   /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]
@@ -83,4 +83,6 @@ trait Instances {
   /** @group Typeclass Instances */  implicit lazy val AsyncStatementIO: Async[StatementIO] =
     statement.AsyncStatementIO
 
+  /** @group Typeclass Instances */  implicit lazy val LiftIOConnectionIO: LiftIO[ConnectionIO] =
+    connection.LiftIOConnectionIO
 }

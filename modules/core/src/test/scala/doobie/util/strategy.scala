@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ Async, IO }
+import cats.effect.{ Async, IO, LiftIO }
 import cats.syntax.apply._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
@@ -24,6 +24,7 @@ class strategyspec extends Specification {
   class Interp extends KleisliInterpreter[IO] {
 
     val asyncM = Async[IO]
+    val liftIOM = LiftIO.ioLiftIO
 
     object Connection {
       var autoCommit: Option[Boolean] = None

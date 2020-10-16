@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.effect.Async
+import cats.effect._
 import cats.effect.unsafe.UnsafeRun
 import cats.instances.int._
 import cats.instances.list._
@@ -30,6 +30,7 @@ package testing {
   trait CheckerBase[M[_]] {
     // Effect type, required instances
     implicit def M: Async[M]
+    implicit def L: LiftIO[M]
     implicit def U: UnsafeRun[M]
     def transactor: Transactor[M]
     def colors: Colors = Colors.Ansi

@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
+import cats.effect.{ Async, Cont, Fiber, LiftIO, Outcome, Poll, Sync }
 import cats.effect.kernel.{ Deferred, Ref => CERef }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
@@ -29,6 +29,7 @@ import java.sql.{ Array => SqlArray }
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
+import cats.effect.IO
 
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection { module =>
@@ -76,6 +77,7 @@ object connection { module =>
       def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext): F[A]
       def executionContext: F[ExecutionContext]
       def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]): F[A]
+      def liftIO[A](ioa: IO[A]): F[A]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -192,6 +194,9 @@ object connection { module =>
     }
     case class Async1[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
+    }
+    case class LiftIO1[A](ioa: IO[A]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.liftIO(ioa)
     }
 
     // Connection-specific operations.
@@ -387,6 +392,8 @@ object connection { module =>
   val executionContext = FF.liftF[ConnectionOp, ExecutionContext](ExecutionContext1)
   def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) = FF.liftF[ConnectionOp, A](Async1(k))
 
+  def liftIO[A](ioa: IO[A]) = FF.liftF[ConnectionOp, A](LiftIO1(ioa))
+
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
   val clearWarnings: ConnectionIO[Unit] = FF.liftF(ClearWarnings)
@@ -471,4 +478,8 @@ object connection { module =>
       override def cont[A](body: Cont[ConnectionIO, A]): ConnectionIO[A] = Async.defaultCont(body)(this)
     }
 
+    implicit val LiftIOConnectionIO: LiftIO[ConnectionIO] =
+      new LiftIO[ConnectionIO] {
+        def liftIO[A](ioa: IO[A]): ConnectionIO[A] = module.liftIO(ioa)
+      }
   }

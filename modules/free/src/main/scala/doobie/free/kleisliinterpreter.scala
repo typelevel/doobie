@@ -7,7 +7,7 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.{ Async, Poll, Sync }
+import cats.effect.{ Async, IO, LiftIO, Poll, Sync }
 import cats.effect.kernel.{ Deferred, Ref => CERef }
 import cats.free.Free
 import scala.concurrent.ExecutionContext
@@ -69,10 +69,11 @@ object KleisliInterpreter {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply[M[_]](
-    implicit am: Async[M]
+    implicit am: Async[M], lim: LiftIO[M]    
   ): KleisliInterpreter[M] =
     new KleisliInterpreter[M] {
       val asyncM = am
+      val liftIOM = lim
     }
 
 }
@@ -82,6 +83,7 @@ object KleisliInterpreter {
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: Async[M]
+  implicit val liftIOM: LiftIO[M]
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }
@@ -121,6 +123,7 @@ trait KleisliInterpreter[M[_]] { outer =>
   def deferred[G[_]: Async, J, A]: Kleisli[M, J, Deferred[G, A]] = Kleisli(_ => Sync[M].delay(Deferred.unsafe[G, A]))
   def sleep[J](time: FiniteDuration): Kleisli[M, J, Unit] = Kleisli(_ => asyncM.sleep(time))
   def executionContext[J]: Kleisli[M, J, ExecutionContext] = Kleisli(_ => asyncM.executionContext)
+  def liftIO[J, A](ioa: IO[A]): Kleisli[M, J, A] = Kleisli(_ => liftIOM.liftIO(ioa))
   // for operations using free structures we call the interpreter recursively
   def handleErrorWith[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(f: Throwable => Free[G, A]): Kleisli[M, J, A] = Kleisli (j =>
     asyncM.handleErrorWith(fa.foldMap(interpreter).run(j))(f.andThen(_.foldMap(interpreter).run(j)))
@@ -734,6 +737,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def deferred[A] = outer.deferred
     override def sleep(time: FiniteDuration) = outer.sleep(time)
     override def executionContext = outer.executionContext
+    override def liftIO[A](ioa: IO[A]) = outer.liftIO(ioa)
     
     // for operations using ConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
