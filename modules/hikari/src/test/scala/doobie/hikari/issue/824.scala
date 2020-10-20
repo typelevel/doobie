@@ -10,6 +10,7 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.hikari._
 import doobie.implicits._
+import doobie.util.stream.toConnectionIO
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 import scala.util.Random
@@ -39,6 +40,9 @@ class `824` extends Specification {
         println(s"Idle: $getIdleConnections, Active: $getActiveConnections, Total: $getTotalConnections, Waiting: $getThreadsAwaitingConnection")
       }
 
+  def liftIO[A](ioa: IO[A]): ConnectionIO[A] =
+    toConnectionIO[IO].apply(ioa)
+
   // Yield final active connections within the use block, as well as total connections after use
   // block. Both should be zero
   val prog: IO[(Int, Int)] =
@@ -49,7 +53,7 @@ class `824` extends Specification {
       val random: IO[Fiber[IO, Throwable, Unit]] =
         for {
           d <- IO(Random.nextInt(200) milliseconds)
-          f <- FC.liftIO(IO.sleep(d) *> report(xa.kernel)).transact(xa).start
+          f <- liftIO(IO.sleep(d) *> report(xa.kernel)).transact(xa).start
         } yield f
 
       // Run a bunch of transactions at once, then return the active connection count

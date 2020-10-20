@@ -7,7 +7,6 @@ package doobie.issue
 import cats.effect.IO
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
-import cats.effect.LiftIO
 
 
 class `262` extends Specification {
@@ -17,7 +16,6 @@ class `262` extends Specification {
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
     val asyncM = IO.asyncForIO
-    val liftIOM = LiftIO.ioLiftIO
 
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {

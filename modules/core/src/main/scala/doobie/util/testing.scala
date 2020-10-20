@@ -30,7 +30,6 @@ package testing {
   trait CheckerBase[M[_]] {
     // Effect type, required instances
     implicit def M: Async[M]
-    implicit def L: LiftIO[M]
     implicit def U: UnsafeRun[M]
     def transactor: Transactor[M]
     def colors: Colors = Colors.Ansi

@@ -13,7 +13,7 @@ object HikariTransactor {
 
   /** Construct a `HikariTransactor` from an existing `HikariDatasource`. */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply[M[_]: Async: LiftIO](
+  def apply[M[_]: Async](
     hikariDataSource : HikariDataSource,
     connectEC:         ExecutionContext
   ): HikariTransactor[M] =
@@ -26,7 +26,7 @@ object HikariTransactor {
   }
 
   /** Resource yielding an unconfigured `HikariTransactor`. */
-  def initial[M[_]: Async: LiftIO](
+  def initial[M[_]: Async](
     connectEC: ExecutionContext
   ): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource)
@@ -34,7 +34,7 @@ object HikariTransactor {
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig. */
-  def fromHikariConfig[M[_]: Async: LiftIO](
+  def fromHikariConfig[M[_]: Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext
   ): Resource[M, HikariTransactor[M]] = {
@@ -43,7 +43,7 @@ object HikariTransactor {
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given info. */
-  def newHikariTransactor[M[_]: Async: LiftIO](
+  def newHikariTransactor[M[_]: Async](
     driverClassName: String,
     url:             String,
     user:            String,

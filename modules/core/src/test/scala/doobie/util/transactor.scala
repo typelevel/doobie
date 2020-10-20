@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ Async, IO, LiftIO }
+import cats.effect.{ Async, IO }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 
@@ -14,7 +14,7 @@ class transactorspec extends Specification {
 
   import cats.effect.unsafe.implicits.global
 
-  def xa[A[_]: Async: LiftIO] = Transactor.fromDriverManager[A](
+  def xa[A[_]: Async] = Transactor.fromDriverManager[A](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""

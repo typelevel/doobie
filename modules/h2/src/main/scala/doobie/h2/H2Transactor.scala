@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 object H2Transactor {
 
   /** Resource yielding a new H2Transactor. */
-  def newH2Transactor[M[_]: Async: LiftIO](
+  def newH2Transactor[M[_]: Async](
     url:        String,
     user:       String,
     pass:       String,

@@ -7,8 +7,9 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.{ Async, IO, LiftIO, Poll, Sync }
+import cats.effect.{ Async, Poll, Sync }
 import cats.free.Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -67,13 +68,11 @@ object KleisliInterpreter {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply[M[_]](
-    implicit am: Async[M], lim: LiftIO[M]    
+    implicit am: Async[M]
   ): KleisliInterpreter[M] =
     new KleisliInterpreter[M] {
       val asyncM = am
-      val liftIOM = lim
     }
-
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
@@ -81,7 +80,6 @@ object KleisliInterpreter {
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: Async[M]
-  implicit val liftIOM: LiftIO[M]
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }
@@ -116,7 +114,6 @@ trait KleisliInterpreter[M[_]] { outer =>
   def delay[J, A](thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(thunk))
   def suspend[J, A](hint: Sync.Type)(thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.suspend(hint)(thunk))
   def canceled[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.canceled)
-  def liftIO[J, A](ioa: IO[A]): Kleisli[M, J, A] = Kleisli(_ => liftIOM.liftIO(ioa))
 
   // for operations using free structures we call the interpreter recursively
   def handleErrorWith[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(f: Throwable => Free[G, A]): Kleisli[M, J, A] = Kleisli (j =>
@@ -134,8 +131,8 @@ trait KleisliInterpreter[M[_]] { outer =>
   def onCancel[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A], fin: Free[G, Unit]): Kleisli[M, J, A] = Kleisli (j =>
     asyncM.onCancel(fa.foldMap(interpreter).run(j), fin.foldMap(interpreter).run(j))
   )
-  def async[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(k: (Either[Throwable, A] => Unit) => Free[G, Option[Free[G, Unit]]]): Kleisli[M, J, A] = Kleisli(j =>
-    asyncM.async(k.andThen(c => asyncM.map(c.foldMap(interpreter).run(j))(_.map(_.foldMap(interpreter).run(j)))))
+  def fromFuture[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, Future[A]]): Kleisli[M, J, A] = Kleisli(j =>
+    asyncM.fromFuture(fut.foldMap(interpreter).run(j))
   )
 
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
@@ -660,7 +657,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled
-    override def liftIO[A](ioa: IO[A]) = outer.liftIO(ioa)
     
     // for operations using ConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -668,7 +664,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = outer.uncancelable(this, connection.capturePoll)(body)
     override def poll[A](poll: Any, fa: ConnectionIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = outer.onCancel(this)(fa, fin)
-    override def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) = outer.async(this)(k)
+    override def fromFuture[A](fut: ConnectionIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def abort(a: Executor) = primitive(_.abort(a))

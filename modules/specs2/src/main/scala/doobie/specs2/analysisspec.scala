@@ -4,7 +4,7 @@
 
 package doobie.specs2
 
-import cats.effect.{ Async, IO, LiftIO }
+import cats.effect.{ Async, IO }
 import cats.effect.unsafe.UnsafeRun
 import doobie.syntax.connectionio._
 import doobie.util.query.{ Query, Query0 }
@@ -82,7 +82,6 @@ object analysisspec {
 
     import cats.effect.unsafe.implicits.global
     override implicit val M: Async[IO] = IO.asyncForIO
-    override implicit val L: LiftIO[IO] = LiftIO.ioLiftIO
     override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
 
   }

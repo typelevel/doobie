@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ LiftIO, Poll, Sync, MonadCancel }
+import cats.effect.{ Poll, Sync, MonadCancel }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 import java.lang.Class
@@ -27,7 +28,6 @@ import java.sql.{ Array => SqlArray }
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
-import cats.effect.IO
 
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object connection { module =>
@@ -68,8 +68,7 @@ object connection { module =>
       def poll[A](poll: Any, fa: ConnectionIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]): F[A]
-      def liftIO[A](ioa: IO[A]): F[A]
+      def fromFuture[A](fut: ConnectionIO[Future[A]]): F[A]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -166,11 +165,8 @@ object connection { module =>
     case class OnCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) extends ConnectionOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
-    case class LiftIO1[A](ioa: IO[A]) extends ConnectionOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.liftIO(ioa)
+    case class FromFuture[A](fut: ConnectionIO[Future[A]]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // Connection-specific operations.
@@ -358,8 +354,9 @@ object connection { module =>
   }
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
-  def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) = FF.liftF[ConnectionOp, A](Async1(k))
-  def liftIO[A](ioa: IO[A]) = FF.liftF[ConnectionOp, A](LiftIO1(ioa))
+
+  // Smart constructor lifting effects into ConnectionIO
+  def fromFuture[A](fut: ConnectionIO[Future[A]]) = FF.liftF[ConnectionOp, A](FromFuture(fut))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
@@ -433,11 +430,6 @@ object connection { module =>
       override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): ConnectionIO[A] = module.uncancelable(body)
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
-    }
-
-  implicit val LiftIOConnectionIO: LiftIO[ConnectionIO] =
-    new LiftIO[ConnectionIO] {
-      def liftIO[A](ioa: IO[A]): ConnectionIO[A] = module.liftIO(ioa)
     }
 
   }

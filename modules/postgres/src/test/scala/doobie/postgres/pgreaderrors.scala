@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{ Async, IO, LiftIO }
+import cats.effect.{ Async, IO }
 import cats.effect.unsafe.UnsafeRun
 import cats.syntax.applicativeError._
 import doobie._
@@ -17,7 +17,6 @@ import org.specs2.mutable.Specification
 trait pgreaderrorsspec[F[_]] extends Specification {
 
   implicit def M: Async[F]
-  implicit def L: LiftIO[F]
   implicit def U: UnsafeRun[F]
 
   lazy val xa = Transactor.fromDriverManager[F](
@@ -58,7 +57,6 @@ class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
 
   import cats.effect.unsafe.implicits.global
   override implicit val M: Async[IO] = IO.asyncForIO
-  override implicit val L: LiftIO[IO] = LiftIO.ioLiftIO
   override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
 
 }

@@ -6,7 +6,7 @@ package doobie.postgres
 
 import java.util.concurrent.Executors
 
-import cats.effect.{ Async, IO, LiftIO }
+import cats.effect.{ Async, IO }
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.implicits._
@@ -20,7 +20,6 @@ import cats.effect.unsafe.UnsafeRun
 trait pgconcurrent[F[_]] extends Specification {
 
   implicit val A: Async[F]
-  implicit val L: LiftIO[F]
   implicit val U: UnsafeRun[F]
 
   def transactor() = {
@@ -64,7 +63,6 @@ class pgconcurrentIO extends pgconcurrent[IO] {
 
   import cats.effect.unsafe.implicits.global
   implicit val A: Async[IO] = IO.asyncForIO
-  override implicit val L: LiftIO[IO] = LiftIO.ioLiftIO
   implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
 
 }

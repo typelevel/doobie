@@ -10,7 +10,7 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.{Async, LiftIO, Resource, Sync}
+import cats.effect.{Async, Resource, Sync}
 
 import fs2.Stream
 import java.sql.{Connection, DriverManager}
@@ -271,7 +271,7 @@ object transactor  {
         def apply[A <: DataSource](
           dataSource: A,
           connectEC:  ExecutionContext
-        )(implicit ev: Async[M], lio: LiftIO[M]
+        )(implicit ev: Async[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
             val acquire = ev.evalOn(ev.delay(dataSource.getConnection), connectEC)
@@ -292,7 +292,7 @@ object transactor  {
      * @param blocker for blocking database operations
      * @group Constructors
      */
-    def fromConnection[M[_]: Async: LiftIO](
+    def fromConnection[M[_]: Async](
       connection: Connection
     ): Transactor.Aux[M, Connection] = {
       val connect = (c: Connection) => Resource.pure[M, Connection](c)
@@ -314,7 +314,7 @@ object transactor  {
     object fromDriverManager {
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-      private def create[M[_]: LiftIO](
+      private def create[M[_]](
         driver: String,
         conn: () => Connection,
         strategy: Strategy
@@ -335,7 +335,7 @@ object transactor  {
        * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
        * @param url        a connection URL, specific to your driver
        */
-      def apply[M[_]: Async: LiftIO](
+      def apply[M[_]: Async](
         driver: String,
         url:    String
       ): Transactor.Aux[M, Unit] =
@@ -348,7 +348,7 @@ object transactor  {
        * @param user       database username
        * @param pass       database password
        */
-      def apply[M[_]: Async: LiftIO](
+      def apply[M[_]: Async](
         driver: String,
         url:    String,
         user:   String,
@@ -362,7 +362,7 @@ object transactor  {
        * @param url        a connection URL, specific to your driver
        * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
        */
-      def apply[M[_]: Async: LiftIO](
+      def apply[M[_]: Async](
         driver: String,
         url:    String,
         info:   java.util.Properties

@@ -10,6 +10,7 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
+import doobie.util.stream.toConnectionIO
 import org.postgresql._
 import fs2.Stream
 import fs2.Stream._
@@ -41,7 +42,7 @@ object PostgresNotify extends IOApp {
   ): Stream[ConnectionIO, PGNotification] =
     for {
       _  <- resource(channel(channelName))
-      _  <- awakeEvery[IO](pollingInterval).translate(LiftIO.liftK)
+      _  <- awakeEvery[IO](pollingInterval).translate(toConnectionIO)
       ns <- eval(PHC.pgGetNotifications <* HC.commit)
       n  <- emits(ns)
     } yield n

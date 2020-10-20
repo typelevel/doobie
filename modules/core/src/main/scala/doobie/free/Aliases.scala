@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.effect.{ LiftIO, Sync, MonadCancel }
+import cats.effect.{ Sync, MonadCancel }
 
 trait Types {
   /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]
@@ -53,9 +53,6 @@ trait Instances  {
 
   /** @group Typeclass Instances */  implicit lazy val SyncMonadCancelConnectionIO: Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] =
     connection.SyncMonadCancelConnectionIO
-
-  /** @group Typeclass Instances */  implicit lazy val LiftIOConnectionIO: LiftIO[ConnectionIO] =
-    connection.LiftIOConnectionIO    
 
   /** @group Typeclass Instances */  implicit lazy val SyncMonadCancelDatabaseMetaDataIO: Sync[DatabaseMetaDataIO] with MonadCancel[DatabaseMetaDataIO, Throwable] =
     databasemetadata.SyncMonadCancelDatabaseMetaDataIO

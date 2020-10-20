@@ -11,6 +11,7 @@ import cats.effect.unsafe.UnsafeRun
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
+import doobie.util.stream.toConnectionIO
 import fs2._
 import fs2.io._
 import fs2.text._
@@ -39,16 +40,16 @@ class FragmentOps(f: Fragment) {
    * `ConnectionIO` that inserts the values provided by `stream`, returning the number of affected
    * rows. Chunks input `stream` for more efficient sending to `STDIN` with `minChunkSize`.
    */
-  def copyIn[A: Text](
-    stream: Stream[IO, A],
+  def copyIn[F[_]: Async, A: Text](
+    stream: Stream[F, A],
     minChunkSize: Int
-  )(implicit U: UnsafeRun[IO]): ConnectionIO[Long] = {
+  )(implicit U: UnsafeRun[F]): ConnectionIO[Long] = {
 
-    val byteStream: Stream[IO, Byte] =
+    val byteStream: Stream[F, Byte] =
       stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
 
     val streamResource: Resource[ConnectionIO, InputStream] =
-      toInputStreamResource(byteStream).mapK(LiftIO.liftK)
+      toInputStreamResource(byteStream).mapK(toConnectionIO)
 
     streamResource.use(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))
 
