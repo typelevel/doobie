@@ -7,7 +7,7 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.{ Async, Poll, Sync }
+import cats.effect.kernel.{ Async, Poll, Sync }
 import cats.free.Free
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration

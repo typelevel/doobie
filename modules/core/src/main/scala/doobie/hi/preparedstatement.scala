@@ -28,7 +28,7 @@ import scala.Predef.{ intArrayOps, intWrapper }
 import cats.Foldable
 import cats.implicits._
 import cats.data.Ior
-import cats.effect.syntax.monadCancel._
+import cats.effect.kernel.syntax.monadCancel._
 import fs2.Stream
 import fs2.Stream.bracket
 

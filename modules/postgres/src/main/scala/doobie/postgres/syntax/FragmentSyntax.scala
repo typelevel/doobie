@@ -6,7 +6,7 @@ package doobie.postgres.syntax
 
 import cats.Foldable
 import cats.implicits._
-import cats.effect._
+import cats.effect.kernel._
 import cats.effect.unsafe.UnsafeRun
 import doobie._
 import doobie.implicits._

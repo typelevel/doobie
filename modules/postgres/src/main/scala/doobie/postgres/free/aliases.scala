@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.effect.{ MonadCancel, Sync }
+import cats.effect.kernel.{ MonadCancel, Sync }
 
 trait Types {
   type CopyInIO[A]             = copyin.CopyInIO[A]

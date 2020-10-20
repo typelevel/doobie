@@ -5,7 +5,7 @@
 package doobie.syntax
 
 import cats.data.{EitherT, Kleisli, OptionT}
-import cats.effect.MonadCancel
+import cats.effect.kernel.MonadCancel
 import cats.syntax.functor._
 import doobie.HC
 import doobie.free.connection.{ SyncMonadCancelConnectionIO, ConnectionIO }

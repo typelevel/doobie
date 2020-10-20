@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.effect.{ Sync, MonadCancel }
+import cats.effect.kernel.{ Sync, MonadCancel }
 
 trait Types {
   /** @group Type Aliases - Free API */ type BlobIO[A]              = blob.BlobIO[A]

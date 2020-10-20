@@ -10,7 +10,8 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.{Async, Resource, Sync}
+import cats.effect.kernel.{Async, MonadCancel, Resource, Sync }
+import cats.effect.kernel.Resource.ExitCase
 
 import fs2.Stream
 import java.sql.{Connection, DriverManager}
@@ -18,8 +19,6 @@ import java.sql.{Connection, DriverManager}
 import javax.sql.DataSource
 
 import scala.concurrent.ExecutionContext
-import cats.effect.kernel.Resource.ExitCase
-import cats.effect.kernel.MonadCancel
 
 object transactor  {
 

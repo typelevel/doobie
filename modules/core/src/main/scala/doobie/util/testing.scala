@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.effect._
+import cats.effect.kernel.Async
 import cats.effect.unsafe.UnsafeRun
 import cats.instances.int._
 import cats.instances.list._

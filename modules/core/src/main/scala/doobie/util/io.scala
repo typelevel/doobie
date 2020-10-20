@@ -7,8 +7,8 @@ package doobie.util
 import java.io.{ Console => _, _ }
 
 import cats.syntax.all._
-import cats.effect._
-import cats.effect.syntax.monadCancel._
+import cats.effect.kernel.{ Sync, MonadCancel }
+import cats.effect.kernel.syntax.monadCancel._
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {

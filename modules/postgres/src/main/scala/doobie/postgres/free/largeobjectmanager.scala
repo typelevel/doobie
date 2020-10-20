@@ -5,7 +5,7 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent

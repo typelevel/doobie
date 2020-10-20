@@ -4,7 +4,7 @@
 
 package doobie.hi
 
-import cats.effect.syntax.monadCancel._
+import cats.effect.kernel.syntax.monadCancel._
 import doobie.enum.Holdability
 import doobie.enum.FetchDirection
 import doobie.enum.ResultSetConcurrency

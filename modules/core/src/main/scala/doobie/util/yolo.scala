@@ -6,7 +6,7 @@ package doobie.util
 
 import scala.reflect.runtime.universe.TypeTag
 
-import cats.effect._
+import cats.effect.kernel.{ Sync, Async }
 import cats.instances.int._
 import cats.instances.string._
 import cats.syntax.show._

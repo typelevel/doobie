@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Poll, Sync, MonadCancel }
+import cats.effect.kernel.{ Poll, Sync, MonadCancel }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration

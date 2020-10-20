@@ -9,7 +9,7 @@ import doobie.util.transactor.Transactor
 import doobie.free.connection.ConnectionIO
 import cats.Monad
 import cats.data.Kleisli
-import cats.effect.Sync
+import cats.effect.kernel.Sync
 import fs2.Stream
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
