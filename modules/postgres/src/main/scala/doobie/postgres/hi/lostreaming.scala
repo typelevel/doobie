@@ -6,7 +6,7 @@ package doobie.postgres.hi
 
 import cats.syntax.functor._
 import doobie.ConnectionIO
-import doobie.implicits.AsyncConnectionIO
+import doobie.implicits.SyncMonadCancelConnectionIO
 import fs2.Stream
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject

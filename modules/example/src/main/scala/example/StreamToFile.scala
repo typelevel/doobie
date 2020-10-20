@@ -9,7 +9,7 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import fs2.text
-import fs2.io.file.Files
+import fs2.io.file.SyncFiles
 import java.nio.file.Paths
 
 
@@ -26,7 +26,7 @@ object StreamToFile extends IOApp {
         .map { case (n, p) => show"$n, $p" }
         .intersperse("\n")
         .through(text.utf8Encode)
-        .through(Files[ConnectionIO].writeAll(Paths.get("/tmp/out.txt")))
+        .through(SyncFiles[ConnectionIO].writeAll(Paths.get("/tmp/out.txt")))
         .compile
         .drain
         .transact(xa)

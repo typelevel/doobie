@@ -5,10 +5,8 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -55,13 +53,6 @@ object largeobject { module =>
       def poll[A](poll: Any, fa: LargeObjectIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[LargeObjectIO, A]]
-      def deferred[A]: F[Deferred[LargeObjectIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Option[LargeObjectIO[Unit]]]): F[A]
 
       // LargeObject
       def close: F[Unit]
@@ -123,27 +114,6 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
     }
     case class OnCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends LargeObjectOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends LargeObjectOp[CERef[LargeObjectIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends LargeObjectOp[Deferred[LargeObjectIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends LargeObjectOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends LargeObjectOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Option[LargeObjectIO[Unit]]]) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // LargeObject-specific operations.
@@ -229,13 +199,6 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
   }
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[LargeObjectOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[LargeObjectOp, CERef[LargeObjectIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[LargeObjectOp, Deferred[LargeObjectIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[LargeObjectOp, Unit](Sleep(time))
-  def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext) = FF.liftF[LargeObjectOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[LargeObjectOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Option[LargeObjectIO[Unit]]]) = FF.liftF[LargeObjectOp, A](Async1(k))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
@@ -259,13 +222,13 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
   def write(a: Array[Byte]): LargeObjectIO[Unit] = FF.liftF(Write(a))
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] = FF.liftF(Write1(a, b, c))
 
-  // LargeObjectIO is an Async
-  implicit val AsyncLargeObjectIO: Async[LargeObjectIO] =
-    new Async[LargeObjectIO] {
-      val asyncM = FF.catsFreeMonadForFree[LargeObjectOp]
-      override def pure[A](x: A): LargeObjectIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => LargeObjectIO[Either[A, B]]): LargeObjectIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for LargeObjectIO
+  implicit val SyncMonadCancelLargeObjectIO: Sync[LargeObjectIO] with MonadCancel[LargeObjectIO, Throwable] =
+    new Sync[LargeObjectIO] with MonadCancel[LargeObjectIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[LargeObjectOp]
+      override def pure[A](x: A): LargeObjectIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => LargeObjectIO[Either[A, B]]): LargeObjectIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): LargeObjectIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: LargeObjectIO[FiniteDuration] = module.monotonic
@@ -275,16 +238,6 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
       override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): LargeObjectIO[A] = module.uncancelable(body)
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: LargeObjectIO[A]): LargeObjectIO[Fiber[LargeObjectIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: LargeObjectIO[Unit] = module.cede
-      override def racePair[A, B](fa: LargeObjectIO[A], fb: LargeObjectIO[B]): LargeObjectIO[Either[(Outcome[LargeObjectIO, Throwable, A], Fiber[LargeObjectIO, Throwable, B]), (Fiber[LargeObjectIO, Throwable, A], Outcome[LargeObjectIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): LargeObjectIO[CERef[LargeObjectIO, A]] = module.ref(a)
-      override def deferred[A]: LargeObjectIO[Deferred[LargeObjectIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): LargeObjectIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: LargeObjectIO[A], ec: ExecutionContext): LargeObjectIO[A] = module.evalOn(fa, ec)
-      override def executionContext: LargeObjectIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Option[LargeObjectIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[LargeObjectIO, A]): LargeObjectIO[A] = Async.defaultCont(body)(this)
     }
 
 }

@@ -5,10 +5,8 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -64,13 +62,6 @@ object pgconnection { module =>
       def poll[A](poll: Any, fa: PGConnectionIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[PGConnectionIO, A]]
-      def deferred[A]: F[Deferred[PGConnectionIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: PGConnectionIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Option[PGConnectionIO[Unit]]]): F[A]
 
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
@@ -133,27 +124,6 @@ object pgconnection { module =>
     }
     case class OnCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends PGConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends PGConnectionOp[CERef[PGConnectionIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends PGConnectionOp[Deferred[PGConnectionIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends PGConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: PGConnectionIO[A], ec: ExecutionContext) extends PGConnectionOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends PGConnectionOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Option[PGConnectionIO[Unit]]]) extends PGConnectionOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGConnection-specific operations.
@@ -242,13 +212,6 @@ object pgconnection { module =>
   }
   val canceled = FF.liftF[PGConnectionOp, Unit](Canceled)
   def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) = FF.liftF[PGConnectionOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[PGConnectionOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[PGConnectionOp, CERef[PGConnectionIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[PGConnectionOp, Deferred[PGConnectionIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[PGConnectionOp, Unit](Sleep(time))
-  def evalOn[A](fa: PGConnectionIO[A], ec: ExecutionContext) = FF.liftF[PGConnectionOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[PGConnectionOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Option[PGConnectionIO[Unit]]]) = FF.liftF[PGConnectionOp, A](Async1(k))
 
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
@@ -273,33 +236,24 @@ object pgconnection { module =>
   def setDefaultFetchSize(a: Int): PGConnectionIO[Unit] = FF.liftF(SetDefaultFetchSize(a))
   def setPrepareThreshold(a: Int): PGConnectionIO[Unit] = FF.liftF(SetPrepareThreshold(a))
 
-  // PGConnectionIO is an Async
-  implicit val AsyncPGConnectionIO: Async[PGConnectionIO] =
-    new Async[PGConnectionIO] {
-      val asyncM = FF.catsFreeMonadForFree[PGConnectionOp]
-      override def pure[A](x: A): PGConnectionIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for PGConnectionIO
+  implicit val SyncMonadCancelPGConnectionIO: Sync[PGConnectionIO] with MonadCancel[PGConnectionIO, Throwable] =
+    new Sync[PGConnectionIO] with MonadCancel[PGConnectionIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[PGConnectionOp]
+      override def pure[A](x: A): PGConnectionIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): PGConnectionIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]): PGConnectionIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: PGConnectionIO[FiniteDuration] = module.monotonic
       override def realTime: PGConnectionIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): PGConnectionIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]): PGConnectionIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]): PGConnectionIO[A] = module.raiseError(new Exception("Unimplemented"))
+      override def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]): PGConnectionIO[A] = module.uncancelable(body)
       override def canceled: PGConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): PGConnectionIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: PGConnectionIO[A]): PGConnectionIO[Fiber[PGConnectionIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: PGConnectionIO[Unit] = module.cede
-      override def racePair[A, B](fa: PGConnectionIO[A], fb: PGConnectionIO[B]): PGConnectionIO[Either[(Outcome[PGConnectionIO, Throwable, A], Fiber[PGConnectionIO, Throwable, B]), (Fiber[PGConnectionIO, Throwable, A], Outcome[PGConnectionIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): PGConnectionIO[CERef[PGConnectionIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def deferred[A]: PGConnectionIO[Deferred[PGConnectionIO, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def sleep(time: FiniteDuration): PGConnectionIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: PGConnectionIO[A], ec: ExecutionContext): PGConnectionIO[A] = module.evalOn(fa, ec)
-      override def executionContext: PGConnectionIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => PGConnectionIO[Option[PGConnectionIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[PGConnectionIO, A]): PGConnectionIO[A] = Async.defaultCont(body)(this)
     }
 
+    
 }
 

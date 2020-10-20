@@ -6,7 +6,7 @@ package doobie.util
 
 import java.io.{ Console => _, _ }
 
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect._
 import cats.effect.syntax.monadCancel._
 
@@ -19,9 +19,11 @@ object io {
    * used with caution; they are mostly intended for library authors who wish to integrate vendor-
    * specific behavior that relies on JDK IO.
    */
-  class IOActions[M[_]: Async] {
+  class IOActions[M[_]](
+    implicit M: Sync[M] with MonadCancel[M, Throwable]
+  ) {
 
-    private def delay[A](a: => A): M[A] = Predef.implicitly[Sync[M]].delay(a)
+    private def delay[A](a: => A): M[A] = M.delay(a)
 
     /**
      * Print to `Console.out`

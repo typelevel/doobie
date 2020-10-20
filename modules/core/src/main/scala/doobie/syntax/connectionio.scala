@@ -8,7 +8,7 @@ import cats.data.{EitherT, Kleisli, OptionT}
 import cats.effect.MonadCancel
 import cats.syntax.functor._
 import doobie.HC
-import doobie.free.connection.{AsyncConnectionIO, ConnectionIO}
+import doobie.free.connection.{ SyncMonadCancelConnectionIO, ConnectionIO }
 import doobie.util.transactor.Transactor
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {

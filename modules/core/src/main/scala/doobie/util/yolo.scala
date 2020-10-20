@@ -23,7 +23,7 @@ import scala.Predef._
 
 object yolo {
 
-  import doobie.free.connection.AsyncConnectionIO
+  import doobie.free.connection.SyncMonadCancelConnectionIO
 
   class Yolo[M[_]: Sync: Async](xa: Transactor[M]) {
 

@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -58,13 +56,6 @@ object statement { module =>
       def poll[A](poll: Any, fa: StatementIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[StatementIO, A]]
-      def deferred[A]: F[Deferred[StatementIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: StatementIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]): F[A]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -158,27 +149,6 @@ object statement { module =>
     }
     case class OnCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends StatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends StatementOp[CERef[StatementIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends StatementOp[Deferred[StatementIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends StatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: StatementIO[A], ec: ExecutionContext) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends StatementOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // Statement-specific operations.
@@ -360,13 +330,6 @@ object statement { module =>
   }
   val canceled = FF.liftF[StatementOp, Unit](Canceled)
   def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) = FF.liftF[StatementOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[StatementOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[StatementOp, CERef[StatementIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[StatementOp, Deferred[StatementIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[StatementOp, Unit](Sleep(time))
-  def evalOn[A](fa: StatementIO[A], ec: ExecutionContext) = FF.liftF[StatementOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[StatementOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]) = FF.liftF[StatementOp, A](Async1(k))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
@@ -422,13 +385,13 @@ object statement { module =>
   def setQueryTimeout(a: Int): StatementIO[Unit] = FF.liftF(SetQueryTimeout(a))
   def unwrap[T](a: Class[T]): StatementIO[T] = FF.liftF(Unwrap(a))
 
-  // StatementIO is an Async
-  implicit val AsyncStatementIO: Async[StatementIO] =
-    new Async[StatementIO] {
-      val asyncM = FF.catsFreeMonadForFree[StatementOp]
-      override def pure[A](x: A): StatementIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for StatementIO
+  implicit val SyncMonadCancelStatementIO: Sync[StatementIO] with MonadCancel[StatementIO, Throwable] =
+    new Sync[StatementIO] with MonadCancel[StatementIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[StatementOp]
+      override def pure[A](x: A): StatementIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: StatementIO[FiniteDuration] = module.monotonic
@@ -438,17 +401,8 @@ object statement { module =>
       override def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]): StatementIO[A] = module.uncancelable(body)
       override def canceled: StatementIO[Unit] = module.canceled
       override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): StatementIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: StatementIO[A]): StatementIO[Fiber[StatementIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: StatementIO[Unit] = module.cede
-      override def racePair[A, B](fa: StatementIO[A], fb: StatementIO[B]): StatementIO[Either[(Outcome[StatementIO, Throwable, A], Fiber[StatementIO, Throwable, B]), (Fiber[StatementIO, Throwable, A], Outcome[StatementIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): StatementIO[CERef[StatementIO, A]] = module.ref(a)
-      override def deferred[A]: StatementIO[Deferred[StatementIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): StatementIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: StatementIO[A], ec: ExecutionContext): StatementIO[A] = module.evalOn(fa, ec)
-      override def executionContext: StatementIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => StatementIO[Option[StatementIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[StatementIO, A]): StatementIO[A] = Async.defaultCont(body)(this)
     }
+
 
 }
 

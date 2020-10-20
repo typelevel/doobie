@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, LiftIO, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ LiftIO, Poll, Sync, MonadCancel }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 import java.lang.Class
@@ -70,12 +68,6 @@ object connection { module =>
       def poll[A](poll: Any, fa: ConnectionIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[ConnectionIO, A]]
-      def deferred[A]: F[Deferred[ConnectionIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
       def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]): F[A]
       def liftIO[A](ioa: IO[A]): F[A]
 
@@ -173,24 +165,6 @@ object connection { module =>
     }
     case class OnCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends ConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends ConnectionOp[CERef[ConnectionIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends ConnectionOp[Deferred[ConnectionIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends ConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: ConnectionIO[A], ec: ExecutionContext) extends ConnectionOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends ConnectionOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
     }
     case class Async1[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.async(k)
@@ -384,14 +358,7 @@ object connection { module =>
   }
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[ConnectionOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[ConnectionOp, CERef[ConnectionIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[ConnectionOp, Deferred[ConnectionIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[ConnectionOp, Unit](Sleep(time))
-  def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext) = FF.liftF[ConnectionOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[ConnectionOp, ExecutionContext](ExecutionContext1)
   def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) = FF.liftF[ConnectionOp, A](Async1(k))
-
   def liftIO[A](ioa: IO[A]) = FF.liftF[ConnectionOp, A](LiftIO1(ioa))
 
   // Smart constructors for Connection-specific operations.
@@ -450,13 +417,13 @@ object connection { module =>
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
-  // ConnectionIO is an Async
-  implicit val AsyncConnectionIO: Async[ConnectionIO] =
-    new Async[ConnectionIO] {
-      val asyncM = FF.catsFreeMonadForFree[ConnectionOp]
-      override def pure[A](x: A): ConnectionIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for ConnectionIO
+  implicit val SyncMonadCancelConnectionIO: Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] =
+    new Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[ConnectionOp]
+      override def pure[A](x: A): ConnectionIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): ConnectionIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): ConnectionIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: ConnectionIO[FiniteDuration] = module.monotonic
@@ -466,20 +433,11 @@ object connection { module =>
       override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): ConnectionIO[A] = module.uncancelable(body)
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: ConnectionIO[A]): ConnectionIO[Fiber[ConnectionIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: ConnectionIO[Unit] = module.cede
-      override def racePair[A, B](fa: ConnectionIO[A], fb: ConnectionIO[B]): ConnectionIO[Either[(Outcome[ConnectionIO, Throwable, A], Fiber[ConnectionIO, Throwable, B]), (Fiber[ConnectionIO, Throwable, A], Outcome[ConnectionIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): ConnectionIO[CERef[ConnectionIO, A]] = module.ref(a)
-      override def deferred[A]: ConnectionIO[Deferred[ConnectionIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): ConnectionIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: ConnectionIO[A], ec: ExecutionContext): ConnectionIO[A] = module.evalOn(fa, ec)
-      override def executionContext: ConnectionIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Option[ConnectionIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[ConnectionIO, A]): ConnectionIO[A] = Async.defaultCont(body)(this)
     }
 
-    implicit val LiftIOConnectionIO: LiftIO[ConnectionIO] =
-      new LiftIO[ConnectionIO] {
-        def liftIO[A](ioa: IO[A]): ConnectionIO[A] = module.liftIO(ioa)
-      }
+  implicit val LiftIOConnectionIO: LiftIO[ConnectionIO] =
+    new LiftIO[ConnectionIO] {
+      def liftIO[A](ioa: IO[A]): ConnectionIO[A] = module.liftIO(ioa)
+    }
+
   }

@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -76,13 +74,6 @@ object preparedstatement { module =>
       def poll[A](poll: Any, fa: PreparedStatementIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[PreparedStatementIO, A]]
-      def deferred[A]: F[Deferred[PreparedStatementIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Option[PreparedStatementIO[Unit]]]): F[A]
 
       // PreparedStatement
       def addBatch: F[Unit]
@@ -234,27 +225,6 @@ object preparedstatement { module =>
     }
     case class OnCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends PreparedStatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends PreparedStatementOp[CERef[PreparedStatementIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends PreparedStatementOp[Deferred[PreparedStatementIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends PreparedStatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends PreparedStatementOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Option[PreparedStatementIO[Unit]]]) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PreparedStatement-specific operations.
@@ -610,13 +580,6 @@ object preparedstatement { module =>
   }
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)
   def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[PreparedStatementOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[PreparedStatementOp, CERef[PreparedStatementIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[PreparedStatementOp, Deferred[PreparedStatementIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[PreparedStatementOp, Unit](Sleep(time))
-  def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext) = FF.liftF[PreparedStatementOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[PreparedStatementOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Option[PreparedStatementIO[Unit]]]) = FF.liftF[PreparedStatementOp, A](Async1(k))
 
   // Smart constructors for PreparedStatement-specific operations.
   val addBatch: PreparedStatementIO[Unit] = FF.liftF(AddBatch)
@@ -730,13 +693,13 @@ object preparedstatement { module =>
   def setUnicodeStream(a: Int, b: InputStream, c: Int): PreparedStatementIO[Unit] = FF.liftF(SetUnicodeStream(a, b, c))
   def unwrap[T](a: Class[T]): PreparedStatementIO[T] = FF.liftF(Unwrap(a))
 
-  // PreparedStatementIO is an Async
-  implicit val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
-    new Async[PreparedStatementIO] {
-      val asyncM = FF.catsFreeMonadForFree[PreparedStatementOp]
-      override def pure[A](x: A): PreparedStatementIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for PreparedStatementIO
+  implicit val SyncMonadCancelPreparedStatementIO: Sync[PreparedStatementIO] with MonadCancel[PreparedStatementIO, Throwable] =
+    new Sync[PreparedStatementIO] with MonadCancel[PreparedStatementIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[PreparedStatementOp]
+      override def pure[A](x: A): PreparedStatementIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): PreparedStatementIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: PreparedStatementIO[FiniteDuration] = module.monotonic
@@ -746,17 +709,6 @@ object preparedstatement { module =>
       override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): PreparedStatementIO[A] = module.uncancelable(body)
       override def canceled: PreparedStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): PreparedStatementIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: PreparedStatementIO[A]): PreparedStatementIO[Fiber[PreparedStatementIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: PreparedStatementIO[Unit] = module.cede
-      override def racePair[A, B](fa: PreparedStatementIO[A], fb: PreparedStatementIO[B]): PreparedStatementIO[Either[(Outcome[PreparedStatementIO, Throwable, A], Fiber[PreparedStatementIO, Throwable, B]), (Fiber[PreparedStatementIO, Throwable, A], Outcome[PreparedStatementIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): PreparedStatementIO[CERef[PreparedStatementIO, A]] = module.ref(a)
-      override def deferred[A]: PreparedStatementIO[Deferred[PreparedStatementIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): PreparedStatementIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: PreparedStatementIO[A], ec: ExecutionContext): PreparedStatementIO[A] = module.evalOn(fa, ec)
-      override def executionContext: PreparedStatementIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Option[PreparedStatementIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[PreparedStatementIO, A]): PreparedStatementIO[A] = Async.defaultCont(body)(this)
     }
-
 }
 

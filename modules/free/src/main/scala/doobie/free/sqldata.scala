@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -56,13 +54,6 @@ object sqldata { module =>
       def poll[A](poll: Any, fa: SQLDataIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[SQLDataIO, A]]
-      def deferred[A]: F[Deferred[SQLDataIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: SQLDataIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Option[SQLDataIO[Unit]]]): F[A]
 
       // SQLData
       def getSQLTypeName: F[String]
@@ -108,27 +99,6 @@ object sqldata { module =>
     case class OnCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
-    case object Cede extends SQLDataOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends SQLDataOp[CERef[SQLDataIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends SQLDataOp[Deferred[SQLDataIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends SQLDataOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: SQLDataIO[A], ec: ExecutionContext) extends SQLDataOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends SQLDataOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Option[SQLDataIO[Unit]]]) extends SQLDataOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
 
     // SQLData-specific operations.
     final case object GetSQLTypeName extends SQLDataOp[String] {
@@ -162,26 +132,19 @@ object sqldata { module =>
   }
   val canceled = FF.liftF[SQLDataOp, Unit](Canceled)
   def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]) = FF.liftF[SQLDataOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[SQLDataOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[SQLDataOp, CERef[SQLDataIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[SQLDataOp, Deferred[SQLDataIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[SQLDataOp, Unit](Sleep(time))
-  def evalOn[A](fa: SQLDataIO[A], ec: ExecutionContext) = FF.liftF[SQLDataOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[SQLDataOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Option[SQLDataIO[Unit]]]) = FF.liftF[SQLDataOp, A](Async1(k))
 
   // Smart constructors for SQLData-specific operations.
   val getSQLTypeName: SQLDataIO[String] = FF.liftF(GetSQLTypeName)
   def readSQL(a: SQLInput, b: String): SQLDataIO[Unit] = FF.liftF(ReadSQL(a, b))
   def writeSQL(a: SQLOutput): SQLDataIO[Unit] = FF.liftF(WriteSQL(a))
 
-  // SQLDataIO is an Async
-  implicit val AsyncSQLDataIO: Async[SQLDataIO] =
-    new Async[SQLDataIO] {
-      val asyncM = FF.catsFreeMonadForFree[SQLDataOp]
-      override def pure[A](x: A): SQLDataIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for SQLDataIO
+  implicit val SyncMonadCancelSQLDataIO: Sync[SQLDataIO] with MonadCancel[SQLDataIO, Throwable] =
+    new Sync[SQLDataIO] with MonadCancel[SQLDataIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[SQLDataOp]
+      override def pure[A](x: A): SQLDataIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): SQLDataIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): SQLDataIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: SQLDataIO[FiniteDuration] = module.monotonic
@@ -191,17 +154,8 @@ object sqldata { module =>
       override def uncancelable[A](body: Poll[SQLDataIO] => SQLDataIO[A]): SQLDataIO[A] = module.uncancelable(body)
       override def canceled: SQLDataIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): SQLDataIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: SQLDataIO[A]): SQLDataIO[Fiber[SQLDataIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: SQLDataIO[Unit] = module.cede
-      override def racePair[A, B](fa: SQLDataIO[A], fb: SQLDataIO[B]): SQLDataIO[Either[(Outcome[SQLDataIO, Throwable, A], Fiber[SQLDataIO, Throwable, B]), (Fiber[SQLDataIO, Throwable, A], Outcome[SQLDataIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): SQLDataIO[CERef[SQLDataIO, A]] = module.ref(a)
-      override def deferred[A]: SQLDataIO[Deferred[SQLDataIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): SQLDataIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: SQLDataIO[A], ec: ExecutionContext): SQLDataIO[A] = module.evalOn(fa, ec)
-      override def executionContext: SQLDataIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Option[SQLDataIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[SQLDataIO, A]): SQLDataIO[A] = Async.defaultCont(body)(this)
     }
+
 
 }
 

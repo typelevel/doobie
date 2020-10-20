@@ -41,7 +41,7 @@ object PostgresNotify extends IOApp {
   ): Stream[ConnectionIO, PGNotification] =
     for {
       _  <- resource(channel(channelName))
-      _  <- awakeEvery[ConnectionIO](pollingInterval)
+      _  <- awakeEvery[IO](pollingInterval).translate(LiftIO.liftK)
       ns <- eval(PHC.pgGetNotifications <* HC.commit)
       n  <- emits(ns)
     } yield n

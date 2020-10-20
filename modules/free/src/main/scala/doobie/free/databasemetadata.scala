@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -58,13 +56,6 @@ object databasemetadata { module =>
       def poll[A](poll: Any, fa: DatabaseMetaDataIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[DatabaseMetaDataIO, A]]
-      def deferred[A]: F[Deferred[DatabaseMetaDataIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Option[DatabaseMetaDataIO[Unit]]]): F[A]
 
       // DatabaseMetaData
       def allProceduresAreCallable: F[Boolean]
@@ -284,27 +275,6 @@ object databasemetadata { module =>
     }
     case class OnCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]) extends DatabaseMetaDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends DatabaseMetaDataOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends DatabaseMetaDataOp[CERef[DatabaseMetaDataIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends DatabaseMetaDataOp[Deferred[DatabaseMetaDataIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends DatabaseMetaDataOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext) extends DatabaseMetaDataOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends DatabaseMetaDataOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Option[DatabaseMetaDataIO[Unit]]]) extends DatabaseMetaDataOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // DatabaseMetaData-specific operations.
@@ -864,13 +834,6 @@ object databasemetadata { module =>
   }
   val canceled = FF.liftF[DatabaseMetaDataOp, Unit](Canceled)
   def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]) = FF.liftF[DatabaseMetaDataOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[DatabaseMetaDataOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[DatabaseMetaDataOp, CERef[DatabaseMetaDataIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[DatabaseMetaDataOp, Deferred[DatabaseMetaDataIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[DatabaseMetaDataOp, Unit](Sleep(time))
-  def evalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext) = FF.liftF[DatabaseMetaDataOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[DatabaseMetaDataOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Option[DatabaseMetaDataIO[Unit]]]) = FF.liftF[DatabaseMetaDataOp, A](Async1(k))
 
   // Smart constructors for DatabaseMetaData-specific operations.
   val allProceduresAreCallable: DatabaseMetaDataIO[Boolean] = FF.liftF(AllProceduresAreCallable)
@@ -1052,13 +1015,13 @@ object databasemetadata { module =>
   val usesLocalFilePerTable: DatabaseMetaDataIO[Boolean] = FF.liftF(UsesLocalFilePerTable)
   val usesLocalFiles: DatabaseMetaDataIO[Boolean] = FF.liftF(UsesLocalFiles)
 
-  // DatabaseMetaDataIO is an Async
-  implicit val AsyncDatabaseMetaDataIO: Async[DatabaseMetaDataIO] =
-    new Async[DatabaseMetaDataIO] {
-      val asyncM = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
-      override def pure[A](x: A): DatabaseMetaDataIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => DatabaseMetaDataIO[Either[A, B]]): DatabaseMetaDataIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for DatabaseMetaDataIO
+  implicit val SyncMonadCancelDatabaseMetaDataIO: Sync[DatabaseMetaDataIO] with MonadCancel[DatabaseMetaDataIO, Throwable] =
+    new Sync[DatabaseMetaDataIO] with MonadCancel[DatabaseMetaDataIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
+      override def pure[A](x: A): DatabaseMetaDataIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => DatabaseMetaDataIO[Either[A, B]]): DatabaseMetaDataIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): DatabaseMetaDataIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: DatabaseMetaDataIO[FiniteDuration] = module.monotonic
@@ -1068,16 +1031,6 @@ object databasemetadata { module =>
       override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.uncancelable(body)
       override def canceled: DatabaseMetaDataIO[Unit] = module.canceled
       override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[Fiber[DatabaseMetaDataIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: DatabaseMetaDataIO[Unit] = module.cede
-      override def racePair[A, B](fa: DatabaseMetaDataIO[A], fb: DatabaseMetaDataIO[B]): DatabaseMetaDataIO[Either[(Outcome[DatabaseMetaDataIO, Throwable, A], Fiber[DatabaseMetaDataIO, Throwable, B]), (Fiber[DatabaseMetaDataIO, Throwable, A], Outcome[DatabaseMetaDataIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): DatabaseMetaDataIO[CERef[DatabaseMetaDataIO, A]] = module.ref(a)
-      override def deferred[A]: DatabaseMetaDataIO[Deferred[DatabaseMetaDataIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): DatabaseMetaDataIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: DatabaseMetaDataIO[A], ec: ExecutionContext): DatabaseMetaDataIO[A] = module.evalOn(fa, ec)
-      override def executionContext: DatabaseMetaDataIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Option[DatabaseMetaDataIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[DatabaseMetaDataIO, A]): DatabaseMetaDataIO[A] = Async.defaultCont(body)(this)
     }
 
 }

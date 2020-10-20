@@ -5,10 +5,8 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -53,14 +51,6 @@ object copyin { module =>
       def poll[A](poll: Any, fa: CopyInIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[CopyInIO, A]]
-      def deferred[A]: F[Deferred[CopyInIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: CopyInIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Option[CopyInIO[Unit]]]): F[A]
-
 
       // PGCopyIn
       def cancelCopy: F[Unit]
@@ -112,28 +102,7 @@ object copyin { module =>
     case class OnCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
-    case object Cede extends CopyInOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends CopyInOp[CERef[CopyInIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends CopyInOp[Deferred[CopyInIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends CopyInOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: CopyInIO[A], ec: ExecutionContext) extends CopyInOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends CopyInOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Option[CopyInIO[Unit]]]) extends CopyInOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
-
+  
     // PGCopyIn-specific operations.
     final case object CancelCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
@@ -184,13 +153,6 @@ object copyin { module =>
   }
   val canceled = FF.liftF[CopyInOp, Unit](Canceled)
   def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) = FF.liftF[CopyInOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[CopyInOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[CopyInOp, CERef[CopyInIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[CopyInOp, Deferred[CopyInIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[CopyInOp, Unit](Sleep(time))
-  def evalOn[A](fa: CopyInIO[A], ec: ExecutionContext) = FF.liftF[CopyInOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[CopyInOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Option[CopyInIO[Unit]]]) = FF.liftF[CopyInOp, A](Async1(k))
 
   // Smart constructors for CopyIn-specific operations.
   val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)
@@ -203,13 +165,13 @@ object copyin { module =>
   val isActive: CopyInIO[Boolean] = FF.liftF(IsActive)
   def writeToCopy(a: Array[Byte], b: Int, c: Int): CopyInIO[Unit] = FF.liftF(WriteToCopy(a, b, c))
 
-  // CopyInIO is an Async
-  implicit val AsyncCopyInIO: Async[CopyInIO] =
-    new Async[CopyInIO] {
-      val asyncM = FF.catsFreeMonadForFree[CopyInOp]
-      override def pure[A](x: A): CopyInIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => CopyInIO[Either[A, B]]): CopyInIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for CopyInIO
+  implicit val SyncMonadCancelCopyInIO: Sync[CopyInIO] with MonadCancel[CopyInIO, Throwable] =
+    new Sync[CopyInIO] with MonadCancel[CopyInIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[CopyInOp]
+      override def pure[A](x: A): CopyInIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => CopyInIO[Either[A, B]]): CopyInIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): CopyInIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]): CopyInIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: CopyInIO[FiniteDuration] = module.monotonic
@@ -219,16 +181,6 @@ object copyin { module =>
       override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): CopyInIO[A] = module.uncancelable(body)
       override def canceled: CopyInIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): CopyInIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: CopyInIO[A]): CopyInIO[Fiber[CopyInIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: CopyInIO[Unit] = module.cede
-      override def racePair[A, B](fa: CopyInIO[A], fb: CopyInIO[B]): CopyInIO[Either[(Outcome[CopyInIO, Throwable, A], Fiber[CopyInIO, Throwable, B]), (Fiber[CopyInIO, Throwable, A], Outcome[CopyInIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): CopyInIO[CERef[CopyInIO, A]] = module.ref(a)
-      override def deferred[A]: CopyInIO[Deferred[CopyInIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): CopyInIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: CopyInIO[A], ec: ExecutionContext): CopyInIO[A] = module.evalOn(fa, ec)
-      override def executionContext: CopyInIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => CopyInIO[Option[CopyInIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[CopyInIO, A]): CopyInIO[A] = Async.defaultCont(body)(this)
     }
 
 }

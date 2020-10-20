@@ -5,10 +5,8 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -61,13 +59,6 @@ object copymanager { module =>
       def poll[A](poll: Any, fa: CopyManagerIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[CopyManagerIO, A]]
-      def deferred[A]: F[Deferred[CopyManagerIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Option[CopyManagerIO[Unit]]]): F[A]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -118,27 +109,6 @@ object copymanager { module =>
     }
     case class OnCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends CopyManagerOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends CopyManagerOp[CERef[CopyManagerIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends CopyManagerOp[Deferred[CopyManagerIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends CopyManagerOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends CopyManagerOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Option[CopyManagerIO[Unit]]]) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGCopyManager-specific operations.
@@ -191,13 +161,6 @@ object copymanager { module =>
   }
   val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)
   def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = FF.liftF[CopyManagerOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[CopyManagerOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[CopyManagerOp, CERef[CopyManagerIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[CopyManagerOp, Deferred[CopyManagerIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[CopyManagerOp, Unit](Sleep(time))
-  def evalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext) = FF.liftF[CopyManagerOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[CopyManagerOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Option[CopyManagerIO[Unit]]]) = FF.liftF[CopyManagerOp, A](Async1(k))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
@@ -210,13 +173,13 @@ object copymanager { module =>
   def copyOut(a: String, b: OutputStream): CopyManagerIO[Long] = FF.liftF(CopyOut1(a, b))
   def copyOut(a: String, b: Writer): CopyManagerIO[Long] = FF.liftF(CopyOut2(a, b))
 
-  // CopyManagerIO is an Async
-  implicit val AsyncCopyManagerIO: Async[CopyManagerIO] =
-    new Async[CopyManagerIO] {
-      val asyncM = FF.catsFreeMonadForFree[CopyManagerOp]
-      override def pure[A](x: A): CopyManagerIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for CopyManagerIO
+  implicit val SyncMonadCancelCopyManagerIO: Sync[CopyManagerIO] with MonadCancel[CopyManagerIO, Throwable] =
+    new Sync[CopyManagerIO] with MonadCancel[CopyManagerIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[CopyManagerOp]
+      override def pure[A](x: A): CopyManagerIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): CopyManagerIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: CopyManagerIO[FiniteDuration] = module.monotonic
@@ -226,17 +189,6 @@ object copymanager { module =>
       override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): CopyManagerIO[A] = module.uncancelable(body)
       override def canceled: CopyManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): CopyManagerIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: CopyManagerIO[A]): CopyManagerIO[Fiber[CopyManagerIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: CopyManagerIO[Unit] = module.cede
-      override def racePair[A, B](fa: CopyManagerIO[A], fb: CopyManagerIO[B]): CopyManagerIO[Either[(Outcome[CopyManagerIO, Throwable, A], Fiber[CopyManagerIO, Throwable, B]), (Fiber[CopyManagerIO, Throwable, A], Outcome[CopyManagerIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): CopyManagerIO[CERef[CopyManagerIO, A]] = module.ref(a)
-      override def deferred[A]: CopyManagerIO[Deferred[CopyManagerIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): CopyManagerIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: CopyManagerIO[A], ec: ExecutionContext): CopyManagerIO[A] = module.evalOn(fa, ec)
-      override def executionContext: CopyManagerIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Option[CopyManagerIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[CopyManagerIO, A]): CopyManagerIO[A] = Async.defaultCont(body)(this)
     }
-
 }
 

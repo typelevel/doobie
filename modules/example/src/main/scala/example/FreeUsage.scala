@@ -10,7 +10,7 @@ import cats.effect.{ IO, IOApp, ExitCode }
 import cats.effect.syntax.monadCancel._
 import cats.implicits._
 import doobie._
-import doobie.implicits.{ AsyncConnectionIO, AsyncPreparedStatementIO, AsyncResultSetIO }
+import doobie.implicits._
 
 // JDBC program using the low-level API
 object FreeUsage extends IOApp {

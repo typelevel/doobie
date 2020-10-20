@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -55,13 +53,6 @@ object ref { module =>
       def poll[A](poll: Any, fa: RefIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[RefIO, A]]
-      def deferred[A]: F[Deferred[RefIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: RefIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => RefIO[Option[RefIO[Unit]]]): F[A]
 
       // Ref
       def getBaseTypeName: F[String]
@@ -108,27 +99,6 @@ object ref { module =>
     case class OnCancel[A](fa: RefIO[A], fin: RefIO[Unit]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
-    case object Cede extends RefOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends RefOp[CERef[RefIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends RefOp[Deferred[RefIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends RefOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: RefIO[A], ec: ExecutionContext) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends RefOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => RefIO[Option[RefIO[Unit]]]) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
 
     // Ref-specific operations.
     final case object GetBaseTypeName extends RefOp[String] {
@@ -165,13 +135,6 @@ object ref { module =>
   def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = FF.liftF[RefOp, B](ForceR(fa, fb))
   val canceled = FF.liftF[RefOp, Unit](Canceled)
   def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]) = FF.liftF[RefOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[RefOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[RefOp, CERef[RefIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[RefOp, Deferred[RefIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[RefOp, Unit](Sleep(time))
-  def evalOn[A](fa: RefIO[A], ec: ExecutionContext) = FF.liftF[RefOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[RefOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => RefIO[Option[RefIO[Unit]]]) = FF.liftF[RefOp, A](Async1(k))
 
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
@@ -179,13 +142,13 @@ object ref { module =>
   def getObject(a: Map[String, Class[_]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
-  // RefIO is an Async
-  implicit val AsyncRefIO: Async[RefIO] =
-    new Async[RefIO] {
-      val asyncM = FF.catsFreeMonadForFree[RefOp]
-      override def pure[A](x: A): RefIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for RefIO
+  implicit val SyncMonadCancelRefIO: Sync[RefIO] with MonadCancel[RefIO, Throwable] =
+    new Sync[RefIO] with MonadCancel[RefIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[RefOp]
+      override def pure[A](x: A): RefIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): RefIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: RefIO[FiniteDuration] = module.monotonic
@@ -195,17 +158,8 @@ object ref { module =>
       override def uncancelable[A](body: Poll[RefIO] => RefIO[A]): RefIO[A] = module.uncancelable(body)
       override def canceled: RefIO[Unit] = module.canceled
       override def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): RefIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: RefIO[A]): RefIO[Fiber[RefIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: RefIO[Unit] = module.cede
-      override def racePair[A, B](fa: RefIO[A], fb: RefIO[B]): RefIO[Either[(Outcome[RefIO, Throwable, A], Fiber[RefIO, Throwable, B]), (Fiber[RefIO, Throwable, A], Outcome[RefIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): RefIO[CERef[RefIO, A]] = module.ref(a)
-      override def deferred[A]: RefIO[Deferred[RefIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): RefIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: RefIO[A], ec: ExecutionContext): RefIO[A] = module.evalOn(fa, ec)
-      override def executionContext: RefIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => RefIO[Option[RefIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[RefIO, A]): RefIO[A] = Async.defaultCont(body)(this)
     }
+
 
 }
 

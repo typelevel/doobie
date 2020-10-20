@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -69,13 +67,6 @@ object sqlinput { module =>
       def poll[A](poll: Any, fa: SQLInputIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[SQLInputIO, A]]
-      def deferred[A]: F[Deferred[SQLInputIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: SQLInputIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Option[SQLInputIO[Unit]]]): F[A]
 
       // SQLInput
       def readArray: F[SqlArray]
@@ -145,27 +136,6 @@ object sqlinput { module =>
     }
     case class OnCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends SQLInputOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends SQLInputOp[CERef[SQLInputIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends SQLInputOp[Deferred[SQLInputIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends SQLInputOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: SQLInputIO[A], ec: ExecutionContext) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends SQLInputOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Option[SQLInputIO[Unit]]]) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // SQLInput-specific operations.
@@ -275,13 +245,6 @@ object sqlinput { module =>
   }
   val canceled = FF.liftF[SQLInputOp, Unit](Canceled)
   def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) = FF.liftF[SQLInputOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[SQLInputOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[SQLInputOp, CERef[SQLInputIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[SQLInputOp, Deferred[SQLInputIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[SQLInputOp, Unit](Sleep(time))
-  def evalOn[A](fa: SQLInputIO[A], ec: ExecutionContext) = FF.liftF[SQLInputOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[SQLInputOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Option[SQLInputIO[Unit]]]) = FF.liftF[SQLInputOp, A](Async1(k))
 
   // Smart constructors for SQLInput-specific operations.
   val readArray: SQLInputIO[SqlArray] = FF.liftF(ReadArray)
@@ -313,13 +276,13 @@ object sqlinput { module =>
   val readURL: SQLInputIO[URL] = FF.liftF(ReadURL)
   val wasNull: SQLInputIO[Boolean] = FF.liftF(WasNull)
 
-  // SQLInputIO is an Async
-  implicit val AsyncSQLInputIO: Async[SQLInputIO] =
-    new Async[SQLInputIO] {
-      val asyncM = FF.catsFreeMonadForFree[SQLInputOp]
-      override def pure[A](x: A): SQLInputIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for SQLInputIO
+  implicit val SyncMonadCancelSQLInputIO: Sync[SQLInputIO] with MonadCancel[SQLInputIO, Throwable] =
+    new Sync[SQLInputIO] with MonadCancel[SQLInputIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[SQLInputOp]
+      override def pure[A](x: A): SQLInputIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): SQLInputIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: SQLInputIO[FiniteDuration] = module.monotonic
@@ -329,16 +292,6 @@ object sqlinput { module =>
       override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): SQLInputIO[A] = module.uncancelable(body)
       override def canceled: SQLInputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): SQLInputIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: SQLInputIO[A]): SQLInputIO[Fiber[SQLInputIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: SQLInputIO[Unit] = module.cede
-      override def racePair[A, B](fa: SQLInputIO[A], fb: SQLInputIO[B]): SQLInputIO[Either[(Outcome[SQLInputIO, Throwable, A], Fiber[SQLInputIO, Throwable, B]), (Fiber[SQLInputIO, Throwable, A], Outcome[SQLInputIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): SQLInputIO[CERef[SQLInputIO, A]] = module.ref(a)
-      override def deferred[A]: SQLInputIO[Deferred[SQLInputIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): SQLInputIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: SQLInputIO[A], ec: ExecutionContext): SQLInputIO[A] = module.evalOn(fa, ec)
-      override def executionContext: SQLInputIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Option[SQLInputIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[SQLInputIO, A]): SQLInputIO[A] = Async.defaultCont(body)(this)
     }
 
 }

@@ -5,10 +5,8 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -56,13 +54,6 @@ object fastpath { module =>
       def poll[A](poll: Any, fa: FastpathIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[FastpathIO, A]]
-      def deferred[A]: F[Deferred[FastpathIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: FastpathIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Option[FastpathIO[Unit]]]): F[A]
 
       // PGFastpath
       def addFunction(a: String, b: Int): F[Unit]
@@ -115,27 +106,6 @@ object fastpath { module =>
     }
     case class OnCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends FastpathOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends FastpathOp[CERef[FastpathIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends FastpathOp[Deferred[FastpathIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends FastpathOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: FastpathIO[A], ec: ExecutionContext) extends FastpathOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends FastpathOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Option[FastpathIO[Unit]]]) extends FastpathOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // PGFastpath-specific operations.
@@ -194,13 +164,6 @@ object fastpath { module =>
   }
   val canceled = FF.liftF[FastpathOp, Unit](Canceled)
   def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]) = FF.liftF[FastpathOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[FastpathOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[FastpathOp, CERef[FastpathIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[FastpathOp, Deferred[FastpathIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[FastpathOp, Unit](Sleep(time))
-  def evalOn[A](fa: FastpathIO[A], ec: ExecutionContext) = FF.liftF[FastpathOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[FastpathOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Option[FastpathIO[Unit]]]) = FF.liftF[FastpathOp, A](Async1(k))
 
   // Smart constructors for Fastpath-specific operations.
   def addFunction(a: String, b: Int): FastpathIO[Unit] = FF.liftF(AddFunction(a, b))
@@ -215,13 +178,13 @@ object fastpath { module =>
   def getLong(a: String, b: Array[FastpathArg]): FastpathIO[Long] = FF.liftF(GetLong(a, b))
   def getOID(a: String, b: Array[FastpathArg]): FastpathIO[Long] = FF.liftF(GetOID(a, b))
 
-  // FastpathIO is an Async
-  implicit val AsyncFastpathIO: Async[FastpathIO] =
-    new Async[FastpathIO] {
-      val asyncM = FF.catsFreeMonadForFree[FastpathOp]
-      override def pure[A](x: A): FastpathIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => FastpathIO[Either[A, B]]): FastpathIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for FastpathIO
+  implicit val SyncMonadCancelFastpathIO: Sync[FastpathIO] with MonadCancel[FastpathIO, Throwable] =
+    new Sync[FastpathIO] with MonadCancel[FastpathIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[FastpathOp]
+      override def pure[A](x: A): FastpathIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => FastpathIO[Either[A, B]]): FastpathIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): FastpathIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: FastpathIO[A])(f: Throwable => FastpathIO[A]): FastpathIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: FastpathIO[FiniteDuration] = module.monotonic
@@ -231,17 +194,6 @@ object fastpath { module =>
       override def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]): FastpathIO[A] = module.uncancelable(body)
       override def canceled: FastpathIO[Unit] = module.canceled
       override def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]): FastpathIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: FastpathIO[A]): FastpathIO[Fiber[FastpathIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: FastpathIO[Unit] = module.cede
-      override def racePair[A, B](fa: FastpathIO[A], fb: FastpathIO[B]): FastpathIO[Either[(Outcome[FastpathIO, Throwable, A], Fiber[FastpathIO, Throwable, B]), (Fiber[FastpathIO, Throwable, A], Outcome[FastpathIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): FastpathIO[CERef[FastpathIO, A]] = module.ref(a)
-      override def deferred[A]: FastpathIO[Deferred[FastpathIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): FastpathIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: FastpathIO[A], ec: ExecutionContext): FastpathIO[A] = module.evalOn(fa, ec)
-      override def executionContext: FastpathIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => FastpathIO[Option[FastpathIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[FastpathIO, A]): FastpathIO[A] = Async.defaultCont(body)(this)
     }
-
 }
 

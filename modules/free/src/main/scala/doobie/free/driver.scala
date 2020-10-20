@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -58,14 +56,6 @@ object driver { module =>
       def poll[A](poll: Any, fa: DriverIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[DriverIO, A]]
-      def deferred[A]: F[Deferred[DriverIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: DriverIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => DriverIO[Option[DriverIO[Unit]]]): F[A]
-
 
       // Driver
       def acceptsURL(a: String): F[Boolean]
@@ -115,27 +105,6 @@ object driver { module =>
     case class OnCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
-    case object Cede extends DriverOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends DriverOp[CERef[DriverIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends DriverOp[Deferred[DriverIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends DriverOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: DriverIO[A], ec: ExecutionContext) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends DriverOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => DriverIO[Option[DriverIO[Unit]]]) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
-    }
 
     // Driver-specific operations.
     final case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
@@ -181,13 +150,6 @@ object driver { module =>
   }
   val canceled = FF.liftF[DriverOp, Unit](Canceled)
   def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = FF.liftF[DriverOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[DriverOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[DriverOp, CERef[DriverIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[DriverOp, Deferred[DriverIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[DriverOp, Unit](Sleep(time))
-  def evalOn[A](fa: DriverIO[A], ec: ExecutionContext) = FF.liftF[DriverOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[DriverOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => DriverIO[Option[DriverIO[Unit]]]) = FF.liftF[DriverOp, A](Async1(k))
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))
@@ -198,13 +160,13 @@ object driver { module =>
   def getPropertyInfo(a: String, b: Properties): DriverIO[Array[DriverPropertyInfo]] = FF.liftF(GetPropertyInfo(a, b))
   val jdbcCompliant: DriverIO[Boolean] = FF.liftF(JdbcCompliant)
 
-  // DriverIO is an Async
-  implicit val AsyncDriverIO: Async[DriverIO] =
-    new Async[DriverIO] {
-      val asyncM = FF.catsFreeMonadForFree[DriverOp]
-      override def pure[A](x: A): DriverIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for DriverIO
+  implicit val SyncMonadCancelDriverIO: Sync[DriverIO] with MonadCancel[DriverIO, Throwable] =
+    new Sync[DriverIO] with MonadCancel[DriverIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[DriverOp]
+      override def pure[A](x: A): DriverIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): DriverIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: DriverIO[FiniteDuration] = module.monotonic
@@ -214,16 +176,6 @@ object driver { module =>
       override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): DriverIO[A] = module.uncancelable(body)
       override def canceled: DriverIO[Unit] = module.canceled
       override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): DriverIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: DriverIO[A]): DriverIO[Fiber[DriverIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: DriverIO[Unit] = module.cede
-      override def racePair[A, B](fa: DriverIO[A], fb: DriverIO[B]): DriverIO[Either[(Outcome[DriverIO, Throwable, A], Fiber[DriverIO, Throwable, B]), (Fiber[DriverIO, Throwable, A], Outcome[DriverIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): DriverIO[CERef[DriverIO, A]] = module.ref(a)
-      override def deferred[A]: DriverIO[Deferred[DriverIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): DriverIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: DriverIO[A], ec: ExecutionContext): DriverIO[A] = module.evalOn(fa, ec)
-      override def executionContext: DriverIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => DriverIO[Option[DriverIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[DriverIO, A]): DriverIO[A] = Async.defaultCont(body)(this)
     }
 
 }

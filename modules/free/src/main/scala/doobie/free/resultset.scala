@@ -5,10 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, Cont, Fiber, Outcome, Poll, Sync }
-import cats.effect.kernel.{ Deferred, Ref => CERef }
+import cats.effect.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -75,13 +73,6 @@ object resultset { module =>
       def poll[A](poll: Any, fa: ResultSetIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): F[A]
-      def cede: F[Unit]
-      def ref[A](a: A): F[CERef[ResultSetIO, A]]
-      def deferred[A]: F[Deferred[ResultSetIO, A]]
-      def sleep(time: FiniteDuration): F[Unit]
-      def evalOn[A](fa: ResultSetIO[A], ec: ExecutionContext): F[A]
-      def executionContext: F[ExecutionContext]
-      def async[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Option[ResultSetIO[Unit]]]): F[A]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -318,27 +309,6 @@ object resultset { module =>
     }
     case class OnCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
-    }
-    case object Cede extends ResultSetOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.cede
-    }
-    case class Ref1[A](a: A) extends ResultSetOp[CERef[ResultSetIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.ref(a)
-    }
-    case class Deferred1[A]() extends ResultSetOp[Deferred[ResultSetIO, A]] {
-      def visit[F[_]](v: Visitor[F]) = v.deferred
-    }
-    case class Sleep(time: FiniteDuration) extends ResultSetOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.sleep(time)
-    }
-    case class EvalOn[A](fa: ResultSetIO[A], ec: ExecutionContext) extends ResultSetOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(fa, ec)
-    }
-    case object ExecutionContext1 extends ResultSetOp[ExecutionContext] {
-      def visit[F[_]](v: Visitor[F]) = v.executionContext
-    }
-    case class Async1[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Option[ResultSetIO[Unit]]]) extends ResultSetOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
     }
 
     // ResultSet-specific operations.
@@ -949,13 +919,6 @@ object resultset { module =>
   }
   val canceled = FF.liftF[ResultSetOp, Unit](Canceled)
   def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]) = FF.liftF[ResultSetOp, A](OnCancel(fa, fin))
-  val cede = FF.liftF[ResultSetOp, Unit](Cede)
-  def ref[A](a: A) = FF.liftF[ResultSetOp, CERef[ResultSetIO, A]](Ref1(a))
-  def deferred[A] = FF.liftF[ResultSetOp, Deferred[ResultSetIO, A]](Deferred1())
-  def sleep(time: FiniteDuration) = FF.liftF[ResultSetOp, Unit](Sleep(time))
-  def evalOn[A](fa: ResultSetIO[A], ec: ExecutionContext) = FF.liftF[ResultSetOp, A](EvalOn(fa, ec))
-  val executionContext = FF.liftF[ResultSetOp, ExecutionContext](ExecutionContext1)
-  def async[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Option[ResultSetIO[Unit]]]) = FF.liftF[ResultSetOp, A](Async1(k))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))
@@ -1154,32 +1117,22 @@ object resultset { module =>
   def updateTimestamp(a: String, b: Timestamp): ResultSetIO[Unit] = FF.liftF(UpdateTimestamp1(a, b))
   val wasNull: ResultSetIO[Boolean] = FF.liftF(WasNull)
 
-  // ResultSetIO is an Async
-  implicit val AsyncResultSetIO: Async[ResultSetIO] =
-    new Async[ResultSetIO] {
-      val asyncM = FF.catsFreeMonadForFree[ResultSetOp]
-      override def pure[A](x: A): ResultSetIO[A] = asyncM.pure(x)
-      override def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = asyncM.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = asyncM.tailRecM(a)(f)
+  // Typeclass instances for ResultSetIO
+  implicit val SyncMonadCancelResultSetIO: Sync[ResultSetIO] with MonadCancel[ResultSetIO, Throwable] =
+    new Sync[ResultSetIO] with MonadCancel[ResultSetIO, Throwable] {
+      val monad = FF.catsFreeMonadForFree[ResultSetOp]
+      override def pure[A](x: A): ResultSetIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = monad.tailRecM(a)(f)
       override def raiseError[A](e: Throwable): ResultSetIO[A] = module.raiseError(e)
       override def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): ResultSetIO[A] = module.handleErrorWith(fa)(f)
       override def monotonic: ResultSetIO[FiniteDuration] = module.monotonic
       override def realTime: ResultSetIO[FiniteDuration] = module.realtime
       override def suspend[A](hint: Sync.Type)(thunk: => A): ResultSetIO[A] = module.suspend(hint)(thunk)
       override def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]): ResultSetIO[B] = module.forceR(fa)(fb)
-      override def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]): ResultSetIO[A] = module.uncancelable(body)      
+      override def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]): ResultSetIO[A] = module.uncancelable(body)
       override def canceled: ResultSetIO[Unit] = module.canceled
       override def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): ResultSetIO[A] = module.onCancel(fa, fin)
-      override def start[A](fa: ResultSetIO[A]): ResultSetIO[Fiber[ResultSetIO, Throwable, A]] = module.raiseError(new Exception("Unimplemented"))
-      override def cede: ResultSetIO[Unit] = module.cede
-      override def racePair[A, B](fa: ResultSetIO[A], fb: ResultSetIO[B]): ResultSetIO[Either[(Outcome[ResultSetIO, Throwable, A], Fiber[ResultSetIO, Throwable, B]), (Fiber[ResultSetIO, Throwable, A], Outcome[ResultSetIO, Throwable, B])]] = module.raiseError(new Exception("Unimplemented"))
-      override def ref[A](a: A): ResultSetIO[CERef[ResultSetIO, A]] = module.ref(a)
-      override def deferred[A]: ResultSetIO[Deferred[ResultSetIO, A]] = module.deferred
-      override def sleep(time: FiniteDuration): ResultSetIO[Unit] = module.sleep(time)
-      override def evalOn[A](fa: ResultSetIO[A], ec: ExecutionContext): ResultSetIO[A] = module.evalOn(fa, ec)
-      override def executionContext: ResultSetIO[ExecutionContext] = module.executionContext
-      override def async[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Option[ResultSetIO[Unit]]]) = module.async(k)
-      override def cont[A](body: Cont[ResultSetIO, A]): ResultSetIO[A] = Async.defaultCont(body)(this)
     }
 
 }

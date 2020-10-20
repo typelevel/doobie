@@ -23,7 +23,7 @@ import cats.effect.kernel.MonadCancel
 
 object transactor  {
 
-  import doobie.free.connection.AsyncConnectionIO
+  import doobie.free.connection.SyncMonadCancelConnectionIO
 
   /** @group Type Aliases */
   type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Connection, *]
