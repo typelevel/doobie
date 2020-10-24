@@ -8,10 +8,9 @@ import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, set
 import doobie.free.{FC, KleisliInterpreter}
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-import cats.{Applicative, Defer, Monad, ~>}
+import cats.{Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, MonadCancel, Resource, Sync}
-import cats.effect.unsafe.UnsafeRun
 import cats.effect.kernel.Resource.ExitCase
 
 import fs2.{Stream, Pipe}
@@ -128,7 +127,7 @@ object transactor  {
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def exec(implicit ev: MonadCancel[M, Throwable], D: Defer[M]): Kleisli[M, Connection, *] ~> M =
+    def exec(implicit ev: MonadCancel[M, Throwable]): Kleisli[M, Connection, *] ~> M =
       λ[Kleisli[M, Connection, *] ~> M] { ka =>
         connect(kernel).use { conn =>
           strategy.resource.mapK(run(conn)).use { _ =>
@@ -194,19 +193,19 @@ object transactor  {
 
     /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
       * and translate it to back `M` effect. The effect will be evaluated in a JDBC transaction. */
-    def transF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit M: Async[M], U: UnsafeRun[M]): M[I] =
+    def transF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit M: Async[M]): M[I] =
       FC.lift.use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
     
     /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
       * `M ~> ConnectionIO` and translate to a `Stream` with `M` effects. All elements of the`Stream` will be evaluated 
       * in a JDBC transaction. */
-    def transS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit M: Async[M], U: UnsafeRun[M]): Stream[M, I] =
+    def transS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit M: Async[M]): Stream[M, I] =
       Stream.resource(FC.lift).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
 
     /** Embed a `Pipe` with `ConnectionIO` inside a `Pipe` with `M` effects by translating incoming stream to `ConnectionIO`
       * effects and lowering outgoing stream to `M` effects. All elements of incoming `Stream` will be evaluated in a JDBC 
       * transaction. */
-    def embed[I, O](inner: Pipe[ConnectionIO, I, O])(implicit M: Async[M], U: UnsafeRun[M]): Pipe[M, I, O] =
+    def embed[I, O](inner: Pipe[ConnectionIO, I, O])(implicit M: Async[M]): Pipe[M, I, O] =
       (in: Stream[M, I]) => transS(toConnectionIO => in.translate(toConnectionIO).through(inner))
 
 
@@ -237,7 +236,7 @@ object transactor  {
     /*
      * Convert the effect type of this transactor from M to M0
      */
-    def mapK[M0[_]](fk: M ~> M0)(implicit D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
+    def mapK[M0[_]](fk: M ~> M0): Transactor.Aux[M0, A] =
       Transactor[M0, A](
         kernel,
         connect.andThen(_.mapK(fk)),

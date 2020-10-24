@@ -9,7 +9,6 @@ import java.io.InputStream
 import cats.{ ContravariantSemigroupal, Foldable }
 import cats.syntax.foldable._
 import cats.effect.Async
-import cats.effect.unsafe.UnsafeRun
 import fs2.Stream
 import fs2.io._
 import fs2.text._
@@ -224,7 +223,7 @@ trait TextInstances1 { this: Text.type =>
 trait TextUtils {
 
   /** Prepare a Stream of Text elements A for efficient reading */
-  def toInputStream[F[_]: Async: UnsafeRun, A: Text](
+  def toInputStream[F[_]: Async, A: Text](
     stream: Stream[F, A],
     minChunkSize: Int
   ): Stream[F, InputStream] = {

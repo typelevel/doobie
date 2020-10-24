@@ -6,7 +6,7 @@ package doobie.free
 
 import cats.~>
 import cats.effect.kernel.{ Async, Poll, Resource, Sync, MonadCancel }
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.std.Dispatcher
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -419,14 +419,16 @@ object connection { module =>
     * is stateful and requires finalization. Leaking it outside of resource's scope will lead to erorrs
     * at runtime. In practice, `Transactor` needs to be used to tranlate resulting program in `ConnectionIO` 
     * back to `F` effect before returning it. */
-  def lift[F[_]](implicit A: Async[F], U: UnsafeRun[F]): Resource[F, F ~> ConnectionIO] =
-    Resource.pure(
-      λ[F ~> ConnectionIO] { fa =>
-        delay(U.unsafeRunFutureCancelable(fa)).flatMap { case (running, cancel) =>
-          onCancel(fromFuture(pure(running)), fromFuture(delay(cancel())))
-        }
-      }
-    )(A)
+  def lift[F[_]: Async]: Resource[F, F ~> ConnectionIO] =
+    Dispatcher[F].evalMap(dispatcher =>
+      Async[F].pure(
+        λ[F ~> ConnectionIO](fa =>
+          delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { case (running, cancel) =>
+            onCancel(fromFuture(pure(running)), fromFuture(delay(cancel())))
+          }
+        )
+      )
+    )
 
   // Typeclass instances for ConnectionIO
   implicit val SyncMonadCancelConnectionIO: Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] =
