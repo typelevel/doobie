@@ -5,7 +5,6 @@
 package doobie.scalatest
 
 import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
 import doobie.syntax.connectionio._
 import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
@@ -69,6 +68,8 @@ trait IOChecker extends Checker[IO] { self: Assertions =>
 
   import cats.effect.unsafe.implicits.global
   override implicit val M: Async[IO] = IO.asyncForIO
-  override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
+  override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
+    def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
+  }
 
 }

@@ -4,8 +4,7 @@
 
 package doobie.scalatest
 
-import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
+import cats.effect.IO
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.scalatest._
@@ -22,10 +21,4 @@ trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matc
 
 }
 
-class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
-
-  import cats.effect.unsafe.implicits.global
-  override implicit val M: Async[IO] = IO.asyncForIO
-  override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
-
-}
+class IOCheckerCheck extends CheckerChecks[IO] with IOChecker

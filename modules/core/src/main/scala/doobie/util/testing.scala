@@ -6,7 +6,6 @@ package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.kernel.Async
-import cats.effect.unsafe.UnsafeRun
 import cats.instances.int._
 import cats.instances.list._
 import cats.instances.string._
@@ -23,6 +22,10 @@ import scala.Predef.augmentString
 import scala.reflect.runtime.universe.WeakTypeTag
 
 package testing {
+
+  trait UnsafeRun[F[_]] {
+    def unsafeRunSync[A](fa: F[A]): A
+  }
 
   /**
     * Common base trait for various checkers and matchers.

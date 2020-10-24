@@ -5,7 +5,6 @@
 package doobie.specs2
 
 import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
 import cats.instances.list._
 import cats.syntax.foldable._
 import doobie.syntax.connectionio._
@@ -14,7 +13,8 @@ import doobie.util.testing.{
   AnalysisReport,
   Analyzable,
   analyze,
-  CheckerBase
+  CheckerBase,
+  UnsafeRun
 }
 import org.specs2.matcher.{ Expectable, Matcher, MatchResult }
 
@@ -72,7 +72,9 @@ object analysismatchers {
 
     import cats.effect.unsafe.implicits.global
     override implicit val M: Async[IO] = IO.asyncForIO
-    override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
+    override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
+      def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
+    }
 
   }
 }
