@@ -4,10 +4,13 @@
 
 package doobie.bench
 
+import java.io.InputStream
+
 import cats.effect.IO
 import cats.implicits._
 import doobie._
 import doobie.implicits._
+import doobie.postgres.Text
 import doobie.postgres.implicits._
 import fs2._
 import org.openjdk.jmh.annotations._
@@ -43,8 +46,12 @@ class text {
       }
     )
 
-  def copyin_stream(n: Int): ConnectionIO[Long] =
-    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(Stream.emits[IO, Person](people(n)), 10000)
+  def copyin_stream(n: Int): IO[Long] = {
+    val inner: Pipe[ConnectionIO, InputStream, Long] =
+      in => Stream.eval(ddl) *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(in)
+    Text.toInputStream(Stream.emits[IO, Person](people(n)), 10000)
+      .through(inner.transact(xa)).compile.foldMonoid
+  }
 
   def copyin_foldable(n: Int): ConnectionIO[Long] =
     ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(people(n))
@@ -59,7 +66,7 @@ class text {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def fast_copyin_stream: Long = copyin_stream(10000).transact(xa).unsafeRunSync()
+  def fast_copyin_stream: Long = copyin_stream(10000).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)

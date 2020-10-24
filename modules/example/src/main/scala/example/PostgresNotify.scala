@@ -10,9 +10,8 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
-import doobie.util.stream.toConnectionIO
 import org.postgresql._
-import fs2.Stream
+import fs2.{ Stream, Pipe }
 import fs2.Stream._
 import scala.concurrent.duration._
 
@@ -39,13 +38,15 @@ object PostgresNotify extends IOApp {
   def notificationStream(
     channelName:     String,
     pollingInterval: FiniteDuration
-  ): Stream[ConnectionIO, PGNotification] =
-    for {
+  ): Stream[IO, PGNotification] = {
+    val inner: Pipe[ConnectionIO, FiniteDuration, PGNotification] = ticks => for {
       _  <- resource(channel(channelName))
-      _  <- awakeEvery[IO](pollingInterval).translate(toConnectionIO)
+      _  <- ticks
       ns <- eval(PHC.pgGetNotifications <* HC.commit)
       n  <- emits(ns)
     } yield n
+    awakeEvery[IO](pollingInterval).through(inner.transact(xa))
+  }
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa = Transactor.fromDriverManager[IO](
@@ -60,8 +61,7 @@ object PostgresNotify extends IOApp {
     notificationStream("foo", 1.second)
       .map(n => show"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
-      .evalMap(s => HC.delay(Console.println(s))).compile.drain
-      .transact(xa)
+      .evalMap(s => IO.delay(Console.println(s))).compile.drain
       .as(ExitCode.Success)
 
 }

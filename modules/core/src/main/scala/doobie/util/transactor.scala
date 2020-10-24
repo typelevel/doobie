@@ -5,15 +5,16 @@
 package doobie.util
 
 import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
-import doobie.free.KleisliInterpreter
+import doobie.free.{FC, KleisliInterpreter}
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.kernel.{Async, MonadCancel, Resource, Sync }
+import cats.effect.kernel.{Async, MonadCancel, Resource, Sync}
+import cats.effect.unsafe.UnsafeRun
 import cats.effect.kernel.Resource.ExitCase
 
-import fs2.Stream
+import fs2.{Stream, Pipe}
 import java.sql.{Connection, DriverManager}
 
 import javax.sql.DataSource
@@ -190,6 +191,24 @@ object transactor  {
             .translate(runKleisli[I](c))
         }.scope
       }
+
+    /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
+      * and translate it to back `M` effect. The effect will be evaluated in a JDBC transaction. */
+    def transF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit M: Async[M], U: UnsafeRun[M]): M[I] =
+      FC.lift.use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
+    
+    /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
+      * `M ~> ConnectionIO` and translate to a `Stream` with `M` effects. All elements of the`Stream` will be evaluated 
+      * in a JDBC transaction. */
+    def transS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit M: Async[M], U: UnsafeRun[M]): Stream[M, I] =
+      Stream.resource(FC.lift).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
+
+    /** Embed a `Pipe` with `ConnectionIO` inside a `Pipe` with `M` effects by translating incoming stream to `ConnectionIO`
+      * effects and lowering outgoing stream to `M` effects. All elements of incoming `Stream` will be evaluated in a JDBC 
+      * transaction. */
+    def embed[I, O](inner: Pipe[ConnectionIO, I, O])(implicit M: Async[M], U: UnsafeRun[M]): Pipe[M, I, O] =
+      (in: Stream[M, I]) => transS(toConnectionIO => in.translate(toConnectionIO).through(inner))
+
 
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>

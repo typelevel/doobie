@@ -5,7 +5,8 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ Poll, Sync, MonadCancel }
+import cats.effect.kernel.{ Async, Poll, Resource, Sync, MonadCancel }
+import cats.effect.unsafe.UnsafeRun
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -413,6 +414,19 @@ object connection { module =>
   def setTransactionIsolation(a: Int): ConnectionIO[Unit] = FF.liftF(SetTransactionIsolation(a))
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
+
+  /** Lift a `Async` effect `F` into `ConnectionIO`. `cats.effect.std.Dispatcher` based natural transformation
+    * is stateful and requires finalization. Leaking it outside of resource's scope will lead to erorrs
+    * at runtime. In practice, `Transactor` needs to be used to tranlate resulting program in `ConnectionIO` 
+    * back to `F` effect before returning it. */
+  def lift[F[_]](implicit A: Async[F], U: UnsafeRun[F]): Resource[F, F ~> ConnectionIO] =
+    Resource.pure(
+      λ[F ~> ConnectionIO] { fa =>
+        delay(U.unsafeRunFutureCancelable(fa)).flatMap { case (running, cancel) =>
+          onCancel(fromFuture(pure(running)), fromFuture(delay(cancel())))
+        }
+      }
+    )(A)
 
   // Typeclass instances for ConnectionIO
   implicit val SyncMonadCancelConnectionIO: Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] =
