@@ -4,9 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{ Async, IO }
-import cats.effect.unsafe.UnsafeRun
-import cats.syntax.applicativeError._
+import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -16,10 +14,9 @@ import org.specs2.mutable.Specification
 
 trait pgreaderrorsspec[F[_]] extends Specification {
 
-  implicit def M: Async[F]
-  implicit def U: UnsafeRun[F]
+  import cats.effect.unsafe.implicits.global
 
-  lazy val xa = Transactor.fromDriverManager[F](
+  lazy val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
     "postgres", ""
@@ -37,26 +34,18 @@ trait pgreaderrorsspec[F[_]] extends Specification {
   implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
 
   "pgEnumStringOpt" in {
-    val r = U.unsafeRunSync(sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt)
+    val r = sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.unsafeRunSync()
     r must_== Left(InvalidEnum[MyEnum]("invalid"))
   }
 
   "pgEnum" in {
-    val r = U.unsafeRunSync(sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt)
+    val r = sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.unsafeRunSync()
     r must_== Left(InvalidEnum[MyScalaEnum.Value]("invalid"))
   }
 
   "pgJavaEnum" in {
-    val r = U.unsafeRunSync(sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt)
+    val r = sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.unsafeRunSync()
     r must_== Left(InvalidEnum[MyJavaEnum]("invalid"))
   }
-
-}
-
-class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
-
-  import cats.effect.unsafe.implicits.global
-  override implicit val M: Async[IO] = IO.asyncForIO
-  override implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
 
 }

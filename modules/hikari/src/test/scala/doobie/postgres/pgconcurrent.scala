@@ -6,7 +6,7 @@ package doobie.postgres
 
 import java.util.concurrent.Executors
 
-import cats.effect.{ Async, IO }
+import cats.effect.IO
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.implicits._
@@ -14,13 +14,11 @@ import org.specs2.mutable.Specification
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import cats.effect.unsafe.UnsafeRun
 
 
-trait pgconcurrent[F[_]] extends Specification {
+class pgconcurrent extends Specification {
 
-  implicit val A: Async[F]
-  implicit val U: UnsafeRun[F]
+  import cats.effect.unsafe.implicits.global
 
   def transactor() = {
 
@@ -33,7 +31,7 @@ trait pgconcurrent[F[_]] extends Specification {
     dataSource setMaximumPoolSize 10
     dataSource setConnectionTimeout 2000
 
-    Transactor.fromDataSource[F](
+    Transactor.fromDataSource[IO](
       dataSource,
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(32))
     )
@@ -44,25 +42,17 @@ trait pgconcurrent[F[_]] extends Specification {
 
     val xa = transactor()
 
-    val poll: fs2.Stream[F, Int] =
-      fr"select 1".query[Int].stream.transact(xa) ++ fs2.Stream.exec(A.sleep(50.millis))
+    val poll: fs2.Stream[IO, Int] =
+      fr"select 1".query[Int].stream.transact(xa) ++ fs2.Stream.exec(IO.sleep(50.millis))
 
-    val pollingStream: F[Unit] = fs2.Stream.emits(List.fill(4)(poll.repeat))
+    val pollingStream: IO[Unit] = fs2.Stream.emits(List.fill(4)(poll.repeat))
       .parJoinUnbounded
       .take(20)
       .compile
       .drain
 
-    U.unsafeRunSync(pollingStream) must_== (())
+    pollingStream.unsafeRunSync() must_== (())
   }
 
-
-}
-
-class pgconcurrentIO extends pgconcurrent[IO] {
-
-  import cats.effect.unsafe.implicits.global
-  implicit val A: Async[IO] = IO.asyncForIO
-  implicit val U: UnsafeRun[IO] = IO.unsafeRunForIO
 
 }
