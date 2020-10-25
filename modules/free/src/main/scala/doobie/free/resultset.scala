@@ -1134,6 +1134,5 @@ object resultset { module =>
       override def canceled: ResultSetIO[Unit] = module.canceled
       override def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): ResultSetIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

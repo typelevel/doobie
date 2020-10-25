@@ -182,6 +182,5 @@ object copyin { module =>
       override def canceled: CopyInIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): CopyInIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

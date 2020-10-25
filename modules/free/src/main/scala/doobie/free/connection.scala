@@ -448,5 +448,5 @@ object connection { module =>
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
     }
-
   }
+

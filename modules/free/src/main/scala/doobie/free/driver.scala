@@ -177,6 +177,5 @@ object driver { module =>
       override def canceled: DriverIO[Unit] = module.canceled
       override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): DriverIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

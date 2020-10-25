@@ -218,7 +218,5 @@ object largeobjectmanager { module =>
       override def canceled: LargeObjectManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = module.onCancel(fa, fin)
     }
-  
-
 }
 

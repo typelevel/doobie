@@ -1032,6 +1032,5 @@ object databasemetadata { module =>
       override def canceled: DatabaseMetaDataIO[Unit] = module.canceled
       override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

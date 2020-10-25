@@ -295,6 +295,5 @@ object sqloutput { module =>
       override def canceled: SQLOutputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): SQLOutputIO[A] = module.onCancel(fa, fin)
     }
-
-  }
+}
 

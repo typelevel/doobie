@@ -207,6 +207,5 @@ object clob { module =>
       override def canceled: ClobIO[Unit] = module.canceled
       override def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): ClobIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

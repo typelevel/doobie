@@ -1316,6 +1316,5 @@ object callablestatement { module =>
       override def canceled: CallableStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): CallableStatementIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

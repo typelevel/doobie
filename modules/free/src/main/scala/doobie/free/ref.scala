@@ -159,7 +159,5 @@ object ref { module =>
       override def canceled: RefIO[Unit] = module.canceled
       override def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): RefIO[A] = module.onCancel(fa, fin)
     }
-
-
 }
 

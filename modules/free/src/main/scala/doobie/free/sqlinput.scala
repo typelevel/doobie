@@ -293,6 +293,5 @@ object sqlinput { module =>
       override def canceled: SQLInputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): SQLInputIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

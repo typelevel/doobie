@@ -253,7 +253,5 @@ object pgconnection { module =>
       override def canceled: PGConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): PGConnectionIO[A] = module.onCancel(fa, fin)
     }
-
-    
 }
 

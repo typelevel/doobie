@@ -208,6 +208,5 @@ object nclob { module =>
       override def canceled: NClobIO[Unit] = module.canceled
       override def onCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]): NClobIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

@@ -194,6 +194,5 @@ object blob { module =>
       override def canceled: BlobIO[Unit] = module.canceled
       override def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]): BlobIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

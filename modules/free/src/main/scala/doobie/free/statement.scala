@@ -402,7 +402,5 @@ object statement { module =>
       override def canceled: StatementIO[Unit] = module.canceled
       override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): StatementIO[A] = module.onCancel(fa, fin)
     }
-
-
 }
 

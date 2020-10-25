@@ -239,6 +239,5 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
     }
-
 }
 

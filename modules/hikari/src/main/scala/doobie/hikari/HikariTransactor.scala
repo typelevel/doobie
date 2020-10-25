@@ -5,7 +5,7 @@
 package doobie
 package hikari
 
-import cats.effect.kernel._
+import cats.effect.kernel.{ Async, Resource, Sync }
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import scala.concurrent.ExecutionContext
 

@@ -15,7 +15,6 @@ import fs2.{ Stream, Pipe }
 import fs2.Stream._
 import scala.concurrent.duration._
 
-
 /**
   * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
   * likely be provided as a standard service in doobie-postgres in a future version.
