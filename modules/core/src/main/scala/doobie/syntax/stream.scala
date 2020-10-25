@@ -19,7 +19,7 @@ class KleisliStreamOps[A, B](fa: Stream[Kleisli[ConnectionIO, A, *], B]) {
   def transact[M[_]: Monad](xa: Transactor[M]): Stream[Kleisli[M, A, *], B] = xa.transPK[A].apply(fa)
 }
 class PipeOps[F[_], A, B](inner: Pipe[F, A, B]) {
-  def transact[M[_]: Async](xa: Transactor[M])(implicit ev: Pipe[F, A, B] =:= Pipe[ConnectionIO, A, B]): Pipe[M, A, B] = xa.embed(inner)
+  def transact[M[_]: Async](xa: Transactor[M])(implicit ev: Pipe[F, A, B] =:= Pipe[ConnectionIO, A, B]): Pipe[M, A, B] = xa.liftP(inner)
 }
 
 trait ToStreamOps {

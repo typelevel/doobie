@@ -12,7 +12,6 @@ import doobie.quill.DoobieContext
 import io.getquill._
 import org.specs2.mutable.Specification
 
-
 class PostgresDoobieContextSpec extends Specification {
 
   // Logging should appear in test output

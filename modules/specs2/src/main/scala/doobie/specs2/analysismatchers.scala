@@ -32,7 +32,11 @@ object analysismatchers {
     def typecheck[T](implicit analyzable: Analyzable[T]): Matcher[T] =
       new Matcher[T] {
         def apply[S <: T](t: Expectable[S]): MatchResult[S] = {
-          val report = U.unsafeRunSync(analyze(analyzable.unpack(t.value)).transact(transactor))
+          val report = U.unsafeRunSync(
+            analyze(
+              analyzable.unpack(t.value)
+            ).transact(transactor)
+          )
           reportToMatchResult(report, t)
         }
       }
@@ -69,12 +73,10 @@ object analysismatchers {
   }
 
   trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
-
     import cats.effect.unsafe.implicits.global
     override implicit val M: Async[IO] = IO.asyncForIO
     override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
       def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
     }
-
   }
 }

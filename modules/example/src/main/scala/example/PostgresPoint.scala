@@ -12,8 +12,6 @@ import org.postgresql.geometric.PGpoint
 
 object PostgresPoint extends IOApp {
 
-  import cats.effect.unsafe.implicits.global
-
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
@@ -28,10 +26,10 @@ object PostgresPoint extends IOApp {
   }
 
   val q = sql"select '(1, 2)'::point".query[Point]
-  val a = q.to[List].transact(xa).unsafeRunSync()
 
   def run(args: List[String]): IO[ExitCode] =
     for {
+      a <- q.to[List].transact(xa)
 
       // Point is now a perfectly cromulent input/output type
       _ <- IO(println(a)) // List(Point(1.0,2.0))

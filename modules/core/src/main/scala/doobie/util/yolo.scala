@@ -6,7 +6,7 @@ package doobie.util
 
 import scala.reflect.runtime.universe.TypeTag
 
-import cats.effect.kernel.{ Sync, Async }
+import cats.effect.kernel.MonadCancel
 import cats.instances.int._
 import cats.instances.string._
 import cats.syntax.show._
@@ -25,7 +25,7 @@ object yolo {
 
   import doobie.free.connection.SyncMonadCancelConnectionIO
 
-  class Yolo[M[_]: Sync: Async](xa: Transactor[M]) {
+  class Yolo[M[_]](xa: Transactor[M])(implicit ev: MonadCancel[M, Throwable]) {
 
     private def out(s: String, colors: Colors): ConnectionIO[Unit] =
       delay(Console.println(show"${colors.BLUE}  $s${colors.RESET}"))

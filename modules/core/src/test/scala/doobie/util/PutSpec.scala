@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ IO }
+import cats.effect.IO
 import doobie._
 import org.specs2.mutable.Specification
 import shapeless.test._

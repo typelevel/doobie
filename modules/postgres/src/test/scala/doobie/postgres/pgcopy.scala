@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{Sync, IO}
+import cats.effect.{ IO, Sync}
 import doobie._, doobie.implicits._
 import java.io.ByteArrayOutputStream
 import org.specs2.mutable.Specification

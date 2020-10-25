@@ -49,7 +49,7 @@ class `824` extends Specification {
       val random: IO[Fiber[IO, Throwable, Unit]] =
         for {
           d <- IO(Random.nextInt(200) milliseconds)
-          f <- IO.sleep(d) *> xa.transF(_(report(xa.kernel))).start
+          f <- IO.sleep(d) *> xa.liftF(_(report(xa.kernel))).start
         } yield f
 
       // Run a bunch of transactions at once, then return the active connection count

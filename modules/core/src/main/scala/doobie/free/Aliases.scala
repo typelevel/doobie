@@ -40,7 +40,7 @@ trait Modules {
   /** @group Module Aliases - Free API */ lazy val FS   = statement
 }
 
-trait Instances  {
+trait Instances {
 
   /** @group Typeclass Instances */  implicit lazy val SyncMonadCancelBlobIO: Sync[BlobIO] with MonadCancel[BlobIO, Throwable] =
     blob.SyncMonadCancelBlobIO

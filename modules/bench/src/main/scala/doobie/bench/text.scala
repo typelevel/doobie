@@ -48,7 +48,7 @@ class text {
 
   def copyin_stream(n: Int): IO[Long] = {
     val inner: Pipe[ConnectionIO, InputStream, Long] =
-      in => Stream.eval(ddl) *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(in)
+      is => Stream.eval(ddl) *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(is)
     Text.toInputStream(Stream.emits[IO, Person](people(n)), 10000)
       .through(inner.transact(xa)).compile.foldMonoid
   }

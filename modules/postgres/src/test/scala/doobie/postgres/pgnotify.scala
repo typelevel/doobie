@@ -13,8 +13,9 @@ import org.specs2.mutable.Specification
 
 class pgnotifyspec extends Specification {
 
-  import cats.effect.unsafe.implicits.global
   import FC.{commit, delay}
+
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

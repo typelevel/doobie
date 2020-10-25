@@ -6,7 +6,7 @@ package doobie.issue
 
 import cats._
 import cats.implicits._
-import cats.effect.{ IO }
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import org.scalacheck.Prop.forAll
 import org.specs2.ScalaCheck

@@ -415,11 +415,12 @@ object connection { module =>
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
-  /** Lift a `Async` effect `F` into `ConnectionIO`. `cats.effect.std.Dispatcher` based natural transformation
-    * is stateful and requires finalization. Leaking it outside of resource's scope will lead to erorrs
-    * at runtime. In practice, `Transactor` needs to be used to tranlate resulting program in `ConnectionIO` 
-    * back to `F` effect before returning it. */
-  def lift[F[_]: Async]: Resource[F, F ~> ConnectionIO] =
+  /** Create a natural transformation for lifting an `Async` effect `F` into `ConnectionIO`. 
+    * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization. 
+    * Leaking it from it's resource scope will lead to erorrs at runtime.  In practice, `Transactor` 
+    * needs to be used to tranlate the `ConnectionIO` program back to `F` effect before leaving the 
+    * scope where it was created. */
+  def liftK[F[_]: Async]: Resource[F, F ~> ConnectionIO] =
     Dispatcher[F].evalMap(dispatcher =>
       Async[F].pure(
         λ[F ~> ConnectionIO](fa =>

@@ -4,8 +4,8 @@
 
 package doobie.util
 
-import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
-import doobie.free.{FC, KleisliInterpreter}
+import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, liftK, rollback, setAutoCommit, unit}
+import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Monad, ~>}
@@ -101,7 +101,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev1: Async[M]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev: MonadCancel[M, Throwable]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to perform arbitrary configuration on the kernel value (changing the
@@ -192,22 +192,19 @@ object transactor  {
       }
 
     /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
-      * and translate it to back `M` effect. The effect will be evaluated in a JDBC transaction. */
-    def transF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit M: Async[M]): M[I] =
-      FC.lift.use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
+      * and translate it to back `M` effect. */
+    def liftF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit ev: Async[M]): M[I] =
+      liftK[M].use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
     
     /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
-      * `M ~> ConnectionIO` and translate to a `Stream` with `M` effects. All elements of the`Stream` will be evaluated 
-      * in a JDBC transaction. */
-    def transS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit M: Async[M]): Stream[M, I] =
-      Stream.resource(FC.lift).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
+      * `M ~> ConnectionIO` and translate it back to a `Stream` with `M` effects. */
+    def liftS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit ev: Async[M]): Stream[M, I] =
+      Stream.resource(liftK[M]).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
 
-    /** Embed a `Pipe` with `ConnectionIO` inside a `Pipe` with `M` effects by translating incoming stream to `ConnectionIO`
-      * effects and lowering outgoing stream to `M` effects. All elements of incoming `Stream` will be evaluated in a JDBC 
-      * transaction. */
-    def embed[I, O](inner: Pipe[ConnectionIO, I, O])(implicit M: Async[M]): Pipe[M, I, O] =
-      (in: Stream[M, I]) => transS(toConnectionIO => in.translate(toConnectionIO).through(inner))
-
+    /** Embed a `Pipe` with `ConnectionIO` effects inside a `Pipe` with `M` effects by lifting incoming stream to 
+      * `ConnectionIO` effects and lowering outgoing stream to `M` effects. */
+    def liftP[I, O](inner: Pipe[ConnectionIO, I, O])(implicit ev: Async[M]): Pipe[M, I, O] =
+      (in: Stream[M, I]) => liftS(toConnectionIO => in.translate(toConnectionIO).through(inner))
 
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
@@ -291,8 +288,8 @@ object transactor  {
         )(implicit ev: Async[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
-            val acquire = ev.evalOn(ev.delay(dataSource.getConnection), connectEC)
-            def release(c: Connection) = ev.suspend(Sync.Type.Blocking)(c.close())
+            val acquire = ev.evalOn(ev.blocking(dataSource.getConnection()), connectEC)
+            def release(c: Connection) = ev.blocking(c.close())
             Resource.make(acquire)(release)
           }
           val interp  = KleisliInterpreter[M].ConnectionInterpreter
