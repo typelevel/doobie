@@ -10,7 +10,7 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.kernel.{Async, MonadCancel, Resource, Sync}
+import cats.effect.kernel.{Async, MonadCancel, Resource}
 import cats.effect.kernel.Resource.ExitCase
 
 import fs2.{Stream, Pipe}
@@ -288,7 +288,7 @@ object transactor  {
         )(implicit ev: Async[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
-            val acquire = ev.evalOn(ev.blocking(dataSource.getConnection()), connectEC)
+            val acquire = ev.evalOn(ev.delay(dataSource.getConnection()), connectEC)
             def release(c: Connection) = ev.blocking(c.close())
             Resource.make(acquire)(release)
           }
@@ -336,8 +336,8 @@ object transactor  {
         Transactor(
           (),
           _ => {
-            val acquire = am.suspend(Sync.Type.Blocking){ Class.forName(driver); conn() }
-            def release(c: Connection) = am.suspend(Sync.Type.Blocking){ c.close() }
+            val acquire = am.blocking{ Class.forName(driver); conn() }
+            def release(c: Connection) = am.blocking{ c.close() }
             Resource.make(acquire)(release)
           },
           KleisliInterpreter[M].ConnectionInterpreter,
