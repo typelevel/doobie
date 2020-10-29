@@ -202,3 +202,24 @@ implicit val nesMeta: Meta[NonEmptyString] = {
   distinct.string("nes").imap(NonEmptyString.apply)(_.value)
 }
 ```
+
+## How to I use `java.time` types with Doobie?
+
+Because some JDBC drivers do not support `java.time.Instant`/`LocalDate` out of the box, Doobie can convert them into 
+`java.sql.*` types before passing them to the underlying JDBC driver.
+
+Below are the imports you need for popular database drivers:
+
+| Database driver                  | java.time.Instant                   | java.time.LocalDate                   |
+| ---                              | ---                                 | ---                                   |
+| Postgres (org.postgresql.Driver) | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` |
+| MySQL (com.mysql.jdbc.Driver)    | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` |
+
+If your database driver supports `Instant`/`LocalDate` natively, you can `import doobie.implicits.javatime._`.
+
+Similarly, for other `java.time` types like `OffsetDateTime`, `LocalDateTime` where there are native driver support, 
+you can use the instances that live in `doobie.implicits.javatime` e.g. `import doobie.implicits.javatime.JavaTimeLocalDateTimeMeta`.
+
+References:
+
+- [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/head/8-date-time.html)
