@@ -55,6 +55,7 @@ object pretty {
     val empty = Block(Nil)
     def fromString(s: String) = Block(List(s))
     def fromLines(s: String) = Block(s.linesIterator.toList)
+    def fromErrorMsgLines(e: Throwable) = Block(Option(e.getMessage).toList.flatMap(_.linesIterator.toList))
 
     implicit val BlockMonoid: Monoid[Block] = new Monoid[Block] {
       def empty = Block.empty
