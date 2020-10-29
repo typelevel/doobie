@@ -203,7 +203,7 @@ implicit val nesMeta: Meta[NonEmptyString] = {
 }
 ```
 
-## How to I use `java.time` types with Doobie?
+## How do I use `java.time` types with Doobie?
 
 Because some JDBC drivers do not support `java.time.Instant`/`LocalDate` out of the box, Doobie can convert them into 
 `java.sql.*` types before passing them to the underlying JDBC driver.
