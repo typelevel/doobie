@@ -70,6 +70,6 @@ object analysismatchers {
   }
 
   trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
-    implicit val M: Effect[IO] = implicitly
+    implicit val M: Effect[IO] = IO.ioEffect
   }
 }
