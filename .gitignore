@@ -40,4 +40,7 @@ bin/
 
 # Metals
 .metals/
-project/metals.sbt
+metals.sbt
+
+# VS-Code
+.vscode/

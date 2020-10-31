@@ -11,19 +11,11 @@ jobs:
         uses: olafurpg/setup-scala@v2
         with:
           java-version: 13
+      - name: Cache SBT
+        uses: coursier/cache-action@v3
       - name: Start up Postgres
         run: docker-compose up -d
       - name: Run tests
         run: csbt headerCheck compile test:compile test
       - name: Shut down Postgres
         run: docker-compose down
-      - name: Cache Coursier
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/coursier
-          key: sbt-coursier-cache
-      - name: Cache SBT
-        uses: actions/cache@v1
-        with:
-          path: ~/.sbt
-          key: sbt-${{ hashFiles('**/build.sbt') }}
