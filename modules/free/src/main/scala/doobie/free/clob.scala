@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -56,6 +57,7 @@ object clob { module =>
       def poll[A](poll: Any, fa: ClobIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): F[A]
+      def fromFuture[A](fut: ClobIO[Future[A]]): F[A]
 
       // Clob
       def free: F[Unit]
@@ -110,6 +112,9 @@ object clob { module =>
     }
     case class OnCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: ClobIO[Future[A]]) extends ClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // Clob-specific operations.
@@ -174,6 +179,7 @@ object clob { module =>
   }
   val canceled = FF.liftF[ClobOp, Unit](Canceled)
   def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) = FF.liftF[ClobOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: ClobIO[Future[A]]) = FF.liftF[ClobOp, A](FromFuture(fut))
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)

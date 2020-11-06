@@ -4,7 +4,8 @@
 
 package doobie.util
 
-import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, liftK, rollback, setAutoCommit, unit}
+import doobie.HC
+import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
 import doobie.free.KleisliInterpreter
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
@@ -194,12 +195,12 @@ object transactor  {
     /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
       * and translate it to back `M` effect. */
     def liftF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit ev: Async[M]): M[I] =
-      liftK[M].use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
+      HC.liftK[M].use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
     
     /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
       * `M ~> ConnectionIO` and translate it back to a `Stream` with `M` effects. */
     def liftS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit ev: Async[M]): Stream[M, I] =
-      Stream.resource(liftK[M]).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
+      Stream.resource(HC.liftK[M]).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
 
     /** Embed a `Pipe` with `ConnectionIO` effects inside a `Pipe` with `M` effects by lifting incoming stream to 
       * `ConnectionIO` effects and lowering outgoing stream to `M` effects. */

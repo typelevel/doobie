@@ -29,6 +29,7 @@ import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
+import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.postgres.free.copyin.{ CopyInIO, CopyInOp }
@@ -78,21 +79,11 @@ trait KleisliInterpreter[M[_]] { outer =>
       case scala.util.control.NonFatal(e) => syncM.raiseError(e)
     }
   }
-  def delay[J, A](thunk: => A): Kleisli[M, J, A] = Kleisli(_ => syncM.delay(thunk))
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
-  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
-    e match {
-      case Embedded.CopyIn(j, fa) => Kleisli(_ => fa.foldMap(CopyInInterpreter).run(j))
-      case Embedded.CopyManager(j, fa) => Kleisli(_ => fa.foldMap(CopyManagerInterpreter).run(j))
-      case Embedded.CopyOut(j, fa) => Kleisli(_ => fa.foldMap(CopyOutInterpreter).run(j))
-      case Embedded.Fastpath(j, fa) => Kleisli(_ => fa.foldMap(FastpathInterpreter).run(j))
-      case Embedded.LargeObject(j, fa) => Kleisli(_ => fa.foldMap(LargeObjectInterpreter).run(j))
-      case Embedded.LargeObjectManager(j, fa) => Kleisli(_ => fa.foldMap(LargeObjectManagerInterpreter).run(j))
-      case Embedded.PGConnection(j, fa) => Kleisli(_ => fa.foldMap(PGConnectionInterpreter).run(j))
-    }
   def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => syncM.raiseError(e))
   def monotonic[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => syncM.monotonic)
   def realTime[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => syncM.realTime)
+  def delay[J, A](thunk: => A): Kleisli[M, J, A] = Kleisli(_ => syncM.delay(thunk))
   def suspend[J, A](hint: Sync.Type)(thunk: => A): Kleisli[M, J, A] = Kleisli(_ => syncM.suspend(hint)(thunk))
   def canceled[J]: Kleisli[M, J, Unit] = Kleisli(_ => monadCancelM.canceled)
 
@@ -112,24 +103,34 @@ trait KleisliInterpreter[M[_]] { outer =>
   def onCancel[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A], fin: Free[G, Unit]): Kleisli[M, J, A] = Kleisli (j =>
     monadCancelM.onCancel(fa.foldMap(interpreter).run(j), fin.foldMap(interpreter).run(j))
   )
+  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
+    e match {
+      case Embedded.CopyIn(j, fa) => Kleisli(_ => fa.foldMap(CopyInInterpreter).run(j))
+      case Embedded.CopyManager(j, fa) => Kleisli(_ => fa.foldMap(CopyManagerInterpreter).run(j))
+      case Embedded.CopyOut(j, fa) => Kleisli(_ => fa.foldMap(CopyOutInterpreter).run(j))
+      case Embedded.Fastpath(j, fa) => Kleisli(_ => fa.foldMap(FastpathInterpreter).run(j))
+      case Embedded.LargeObject(j, fa) => Kleisli(_ => fa.foldMap(LargeObjectInterpreter).run(j))
+      case Embedded.LargeObjectManager(j, fa) => Kleisli(_ => fa.foldMap(LargeObjectManagerInterpreter).run(j))
+      case Embedded.PGConnection(j, fa) => Kleisli(_ => fa.foldMap(PGConnectionInterpreter).run(j))
+    }
 
   // Interpreters
   trait CopyInInterpreter extends CopyInOp.Visitor[Kleisli[M, PGCopyIn, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: PGCopyIn => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[PGCopyIn]
     override def realTime = outer.realTime[PGCopyIn]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGCopyIn]
     
     // for operations using CopyInIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]) = outer.uncancelable(this, copyin.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]) = outer.uncancelable(this, doobie.postgres.free.copyin.capturePoll)(body)
     override def poll[A](poll: Any, fa: CopyInIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) = outer.onCancel(this)(fa, fin)
 
@@ -143,31 +144,33 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getHandledRowCount = primitive(_.getHandledRowCount)
     override def isActive = primitive(_.isActive)
     override def writeToCopy(a: Array[Byte], b: Int, c: Int) = primitive(_.writeToCopy(a, b, c))
+    override def writeToCopy(a: ByteStreamWriter) = primitive(_.writeToCopy(a))
 
   }
 
   trait CopyManagerInterpreter extends CopyManagerOp.Visitor[Kleisli[M, PGCopyManager, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: PGCopyManager => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[PGCopyManager]
     override def realTime = outer.realTime[PGCopyManager]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGCopyManager]
     
     // for operations using CopyManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) = outer.uncancelable(this, copymanager.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) = outer.uncancelable(this, doobie.postgres.free.copymanager.capturePoll)(body)
     override def poll[A](poll: Any, fa: CopyManagerIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = outer.onCancel(this)(fa, fin)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def copyDual(a: String) = primitive(_.copyDual(a))
     override def copyIn(a: String) = primitive(_.copyIn(a))
+    override def copyIn(a: String, b: ByteStreamWriter) = primitive(_.copyIn(a, b))
     override def copyIn(a: String, b: InputStream) = primitive(_.copyIn(a, b))
     override def copyIn(a: String, b: InputStream, c: Int) = primitive(_.copyIn(a, b, c))
     override def copyIn(a: String, b: Reader) = primitive(_.copyIn(a, b))
@@ -181,19 +184,19 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait CopyOutInterpreter extends CopyOutOp.Visitor[Kleisli[M, PGCopyOut, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: PGCopyOut => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[PGCopyOut]
     override def realTime = outer.realTime[PGCopyOut]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGCopyOut]
     
     // for operations using CopyOutIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) = outer.uncancelable(this, copyout.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) = outer.uncancelable(this, doobie.postgres.free.copyout.capturePoll)(body)
     override def poll[A](poll: Any, fa: CopyOutIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]) = outer.onCancel(this)(fa, fin)
 
@@ -212,12 +215,12 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait FastpathInterpreter extends FastpathOp.Visitor[Kleisli[M, PGFastpath, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: PGFastpath => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[PGFastpath]
     override def realTime = outer.realTime[PGFastpath]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGFastpath]
     
@@ -246,19 +249,19 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait LargeObjectInterpreter extends LargeObjectOp.Visitor[Kleisli[M, LargeObject, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: LargeObject => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[LargeObject]
     override def realTime = outer.realTime[LargeObject]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[LargeObject]
     
     // for operations using LargeObjectIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) = outer.uncancelable(this, largeobject.capturePoll)(body)
+    override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) = outer.uncancelable(this, doobie.postgres.free.largeobject.capturePoll)(body)
     override def poll[A](poll: Any, fa: LargeObjectIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = outer.onCancel(this)(fa, fin)
 
@@ -289,19 +292,19 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait LargeObjectManagerInterpreter extends LargeObjectManagerOp.Visitor[Kleisli[M, LargeObjectManager, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: LargeObjectManager => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[LargeObjectManager]
     override def realTime = outer.realTime[LargeObjectManager]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[LargeObjectManager]
     
     // for operations using LargeObjectManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectManagerIO[A])(f: Throwable => LargeObjectManagerIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]) = outer.uncancelable(this, largeobjectmanager.capturePoll)(body)
+    override def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]) = outer.uncancelable(this, doobie.postgres.free.largeobjectmanager.capturePoll)(body)
     override def poll[A](poll: Any, fa: LargeObjectManagerIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]) = outer.onCancel(this)(fa, fin)
 
@@ -328,25 +331,26 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait PGConnectionInterpreter extends PGConnectionOp.Visitor[Kleisli[M, PGConnection, *]] {
 
     // common operations delegate to outer interpreter
-    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def raw[A](f: PGConnection => A) = outer.raw(f)
     override def embed[A](e: Embedded[A]) = outer.embed(e)
     override def raiseError[A](e: Throwable) = outer.raiseError(e)
     override def monotonic = outer.monotonic[PGConnection]
     override def realTime = outer.realTime[PGConnection]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGConnection]
     
     // for operations using PGConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]) = outer.uncancelable(this, pgconnection.capturePoll)(body)
+    override def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]) = outer.uncancelable(this, doobie.postgres.free.pgconnection.capturePoll)(body)
     override def poll[A](poll: Any, fa: PGConnectionIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) = outer.onCancel(this)(fa, fin)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
     override def addDataType(a: String, b: String) = primitive(_.addDataType(a, b))
+    override def cancelQuery = primitive(_.cancelQuery)
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))
     override def escapeIdentifier(a: String) = primitive(_.escapeIdentifier(a))
     override def escapeLiteral(a: String) = primitive(_.escapeLiteral(a))
@@ -368,6 +372,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setPrepareThreshold(a: Int) = primitive(_.setPrepareThreshold(a))
 
   }
+
 
 }
 

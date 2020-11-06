@@ -18,8 +18,10 @@ import java.sql.{ Savepoint, PreparedStatement, ResultSet }
 
 import scala.collection.immutable.Map
 
-import cats.Foldable
+import cats.{ ~>, Foldable }
 import cats.implicits._
+import cats.effect.kernel.{ Async, Resource }
+import cats.effect.std.Dispatcher
 import cats.effect.kernel.syntax.monadCancel._
 import fs2.Stream
 import fs2.Stream.{ eval, bracket }
@@ -35,6 +37,23 @@ object connection {
   /** @group Lifting */
   def delay[A](a: => A): ConnectionIO[A] =
     FC.delay(a)
+
+  /** Create a natural transformation for lifting an `Async` effect `F` into `ConnectionIO`.
+    * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization.
+    * Leaking it from it's resource scope will lead to erorrs at runtime.  In practice, `Transactor`
+    * needs to be used to tranlate the `ConnectionIO` program back to `F` effect before leaving the
+    * scope where it was created.
+    * @group Lifting */
+  def liftK[F[_]: Async]: Resource[F, F ~> ConnectionIO] =
+    Dispatcher[F].evalMap(dispatcher =>
+      Async[F].pure(
+        λ[F ~> ConnectionIO](fa =>
+          delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { case (running, cancel) =>
+            FC.onCancel(FC.fromFuture(FC.pure(running)), FC.fromFuture(FC.delay(cancel())))
+          }
+        )
+      )
+    )
 
   private def liftStream[A: Read](
     chunkSize: Int,

@@ -5,11 +5,11 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ Async, Poll, Resource, Sync, MonadCancel }
-import cats.effect.std.Dispatcher
+import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import com.github.ghik.silencer.silent
 
 import java.lang.Class
 import java.lang.String
@@ -30,7 +30,7 @@ import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@silent("deprecated")
 object connection { module =>
 
   // Algebra of operations for Connection. Each accepts a visitor as an alternative to pattern-matching.
@@ -355,8 +355,6 @@ object connection { module =>
   }
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
-
-  // Smart constructor lifting effects into ConnectionIO
   def fromFuture[A](fut: ConnectionIO[Future[A]]) = FF.liftF[ConnectionOp, A](FromFuture(fut))
 
   // Smart constructors for Connection-specific operations.
@@ -415,22 +413,6 @@ object connection { module =>
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
-  /** Create a natural transformation for lifting an `Async` effect `F` into `ConnectionIO`. 
-    * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization. 
-    * Leaking it from it's resource scope will lead to erorrs at runtime.  In practice, `Transactor` 
-    * needs to be used to tranlate the `ConnectionIO` program back to `F` effect before leaving the 
-    * scope where it was created. */
-  def liftK[F[_]: Async]: Resource[F, F ~> ConnectionIO] =
-    Dispatcher[F].evalMap(dispatcher =>
-      Async[F].pure(
-        λ[F ~> ConnectionIO](fa =>
-          delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { case (running, cancel) =>
-            onCancel(fromFuture(pure(running)), fromFuture(delay(cancel())))
-          }
-        )
-      )
-    )
-
   // Typeclass instances for ConnectionIO
   implicit val SyncMonadCancelConnectionIO: Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] =
     new Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] {
@@ -448,5 +430,5 @@ object connection { module =>
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
     }
-  }
+}
 

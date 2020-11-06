@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -67,6 +68,7 @@ object sqlinput { module =>
       def poll[A](poll: Any, fa: SQLInputIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): F[A]
+      def fromFuture[A](fut: SQLInputIO[Future[A]]): F[A]
 
       // SQLInput
       def readArray: F[SqlArray]
@@ -136,6 +138,9 @@ object sqlinput { module =>
     }
     case class OnCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: SQLInputIO[Future[A]]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // SQLInput-specific operations.
@@ -245,6 +250,7 @@ object sqlinput { module =>
   }
   val canceled = FF.liftF[SQLInputOp, Unit](Canceled)
   def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) = FF.liftF[SQLInputOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: SQLInputIO[Future[A]]) = FF.liftF[SQLInputOp, A](FromFuture(fut))
 
   // Smart constructors for SQLInput-specific operations.
   val readArray: SQLInputIO[SqlArray] = FF.liftF(ReadArray)

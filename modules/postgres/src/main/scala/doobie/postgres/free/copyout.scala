@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.{ ~>, MonadError }
+import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.duration.FiniteDuration
@@ -159,16 +159,6 @@ object copyout { module =>
   val isActive: CopyOutIO[Boolean] = FF.liftF(IsActive)
   val readFromCopy: CopyOutIO[Array[Byte]] = FF.liftF(ReadFromCopy)
   def readFromCopy(a: Boolean): CopyOutIO[Array[Byte]] = FF.liftF(ReadFromCopy1(a))
-
-  // Typeclass instances for CopyOutIO
-  trait MonadErrorCopyOutIO extends MonadError[CopyOutIO, Throwable] {
-    val monad = FF.catsFreeMonadForFree[CopyOutOp]
-    override def pure[A](x: A): CopyOutIO[A] = monad.pure(x)
-    override def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = monad.flatMap(fa)(f)
-    override def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = monad.tailRecM(a)(f)
-    override def raiseError[A](e: Throwable): CopyOutIO[A] = module.raiseError(e)
-    override def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = module.handleErrorWith(fa)(f)
-  }
 
   // Typeclass instances for CopyOutIO
   implicit val SyncMonadCancelCopyOutIO: Sync[CopyOutIO] with MonadCancel[CopyOutIO, Throwable] =

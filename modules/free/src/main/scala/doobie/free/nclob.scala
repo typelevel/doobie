@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -57,6 +58,7 @@ object nclob { module =>
       def poll[A](poll: Any, fa: NClobIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]): F[A]
+      def fromFuture[A](fut: NClobIO[Future[A]]): F[A]
 
       // NClob
       def free: F[Unit]
@@ -111,6 +113,9 @@ object nclob { module =>
     }
     case class OnCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]) extends NClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: NClobIO[Future[A]]) extends NClobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // NClob-specific operations.
@@ -175,6 +180,7 @@ object nclob { module =>
   }
   val canceled = FF.liftF[NClobOp, Unit](Canceled)
   def onCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]) = FF.liftF[NClobOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: NClobIO[Future[A]]) = FF.liftF[NClobOp, A](FromFuture(fut))
 
   // Smart constructors for NClob-specific operations.
   val free: NClobIO[Unit] = FF.liftF(Free)

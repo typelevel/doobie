@@ -11,6 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
+import org.postgresql.util.ByteStreamWriter
 
 @silent("deprecated")
 object copyin { module =>
@@ -62,6 +63,7 @@ object copyin { module =>
       def getHandledRowCount: F[Long]
       def isActive: F[Boolean]
       def writeToCopy(a: Array[Byte], b: Int, c: Int): F[Unit]
+      def writeToCopy(a: ByteStreamWriter): F[Unit]
 
     }
 
@@ -102,7 +104,7 @@ object copyin { module =>
     case class OnCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
-  
+
     // PGCopyIn-specific operations.
     final case object CancelCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
@@ -130,6 +132,9 @@ object copyin { module =>
     }
     final case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a, b, c)
+    }
+    final case class  WriteToCopy1(a: ByteStreamWriter) extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a)
     }
 
   }
@@ -164,6 +169,7 @@ object copyin { module =>
   val getHandledRowCount: CopyInIO[Long] = FF.liftF(GetHandledRowCount)
   val isActive: CopyInIO[Boolean] = FF.liftF(IsActive)
   def writeToCopy(a: Array[Byte], b: Int, c: Int): CopyInIO[Unit] = FF.liftF(WriteToCopy(a, b, c))
+  def writeToCopy(a: ByteStreamWriter): CopyInIO[Unit] = FF.liftF(WriteToCopy1(a))
 
   // Typeclass instances for CopyInIO
   implicit val SyncMonadCancelCopyInIO: Sync[CopyInIO] with MonadCancel[CopyInIO, Throwable] =

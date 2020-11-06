@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -56,6 +57,7 @@ object driver { module =>
       def poll[A](poll: Any, fa: DriverIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): F[A]
+      def fromFuture[A](fut: DriverIO[Future[A]]): F[A]
 
       // Driver
       def acceptsURL(a: String): F[Boolean]
@@ -105,6 +107,9 @@ object driver { module =>
     case class OnCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
+    case class FromFuture[A](fut: DriverIO[Future[A]]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
 
     // Driver-specific operations.
     final case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
@@ -150,6 +155,7 @@ object driver { module =>
   }
   val canceled = FF.liftF[DriverOp, Unit](Canceled)
   def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = FF.liftF[DriverOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: DriverIO[Future[A]]) = FF.liftF[DriverOp, A](FromFuture(fut))
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))

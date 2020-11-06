@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -73,6 +74,7 @@ object resultset { module =>
       def poll[A](poll: Any, fa: ResultSetIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): F[A]
+      def fromFuture[A](fut: ResultSetIO[Future[A]]): F[A]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -309,6 +311,9 @@ object resultset { module =>
     }
     case class OnCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: ResultSetIO[Future[A]]) extends ResultSetOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // ResultSet-specific operations.
@@ -919,6 +924,7 @@ object resultset { module =>
   }
   val canceled = FF.liftF[ResultSetOp, Unit](Canceled)
   def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]) = FF.liftF[ResultSetOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: ResultSetIO[Future[A]]) = FF.liftF[ResultSetOp, A](FromFuture(fut))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))

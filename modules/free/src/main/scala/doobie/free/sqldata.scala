@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -54,6 +55,7 @@ object sqldata { module =>
       def poll[A](poll: Any, fa: SQLDataIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): F[A]
+      def fromFuture[A](fut: SQLDataIO[Future[A]]): F[A]
 
       // SQLData
       def getSQLTypeName: F[String]
@@ -99,6 +101,9 @@ object sqldata { module =>
     case class OnCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
+    case class FromFuture[A](fut: SQLDataIO[Future[A]]) extends SQLDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
 
     // SQLData-specific operations.
     final case object GetSQLTypeName extends SQLDataOp[String] {
@@ -132,6 +137,7 @@ object sqldata { module =>
   }
   val canceled = FF.liftF[SQLDataOp, Unit](Canceled)
   def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]) = FF.liftF[SQLDataOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: SQLDataIO[Future[A]]) = FF.liftF[SQLDataOp, A](FromFuture(fut))
 
   // Smart constructors for SQLData-specific operations.
   val getSQLTypeName: SQLDataIO[String] = FF.liftF(GetSQLTypeName)

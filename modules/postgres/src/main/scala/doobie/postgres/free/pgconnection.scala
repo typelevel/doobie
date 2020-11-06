@@ -66,6 +66,7 @@ object pgconnection { module =>
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
       def addDataType(a: String, b: String): F[Unit]
+      def cancelQuery: F[Unit]
       def createArrayOf(a: String, b: AnyRef): F[SqlArray]
       def escapeIdentifier(a: String): F[String]
       def escapeLiteral(a: String): F[String]
@@ -132,6 +133,9 @@ object pgconnection { module =>
     }
     final case class  AddDataType1(a: String, b: String) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
+    }
+    final case object CancelQuery extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.cancelQuery
     }
     final case class  CreateArrayOf(a: String, b: AnyRef) extends PGConnectionOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.createArrayOf(a, b)
@@ -216,6 +220,7 @@ object pgconnection { module =>
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
   def addDataType(a: String, b: String): PGConnectionIO[Unit] = FF.liftF(AddDataType1(a, b))
+  val cancelQuery: PGConnectionIO[Unit] = FF.liftF(CancelQuery)
   def createArrayOf(a: String, b: AnyRef): PGConnectionIO[SqlArray] = FF.liftF(CreateArrayOf(a, b))
   def escapeIdentifier(a: String): PGConnectionIO[String] = FF.liftF(EscapeIdentifier(a))
   def escapeLiteral(a: String): PGConnectionIO[String] = FF.liftF(EscapeLiteral(a))

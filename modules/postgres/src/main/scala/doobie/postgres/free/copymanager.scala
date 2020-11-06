@@ -19,6 +19,7 @@ import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.util.ByteStreamWriter
 
 @silent("deprecated")
 object copymanager { module =>
@@ -63,6 +64,7 @@ object copymanager { module =>
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
       def copyIn(a: String): F[PGCopyIn]
+      def copyIn(a: String, b: ByteStreamWriter): F[Long]
       def copyIn(a: String, b: InputStream): F[Long]
       def copyIn(a: String, b: InputStream, c: Int): F[Long]
       def copyIn(a: String, b: Reader): F[Long]
@@ -118,16 +120,19 @@ object copymanager { module =>
     final case class  CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a)
     }
-    final case class  CopyIn1(a: String, b: InputStream) extends CopyManagerOp[Long] {
+    final case class  CopyIn1(a: String, b: ByteStreamWriter) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn2(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
+    final case class  CopyIn2(a: String, b: InputStream) extends CopyManagerOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
+    }
+    final case class  CopyIn3(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
-    final case class  CopyIn3(a: String, b: Reader) extends CopyManagerOp[Long] {
+    final case class  CopyIn4(a: String, b: Reader) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn4(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
+    final case class  CopyIn5(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
     final case class  CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
@@ -165,10 +170,11 @@ object copymanager { module =>
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
   def copyIn(a: String): CopyManagerIO[PGCopyIn] = FF.liftF(CopyIn(a))
-  def copyIn(a: String, b: InputStream): CopyManagerIO[Long] = FF.liftF(CopyIn1(a, b))
-  def copyIn(a: String, b: InputStream, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn2(a, b, c))
-  def copyIn(a: String, b: Reader): CopyManagerIO[Long] = FF.liftF(CopyIn3(a, b))
-  def copyIn(a: String, b: Reader, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn4(a, b, c))
+  def copyIn(a: String, b: ByteStreamWriter): CopyManagerIO[Long] = FF.liftF(CopyIn1(a, b))
+  def copyIn(a: String, b: InputStream): CopyManagerIO[Long] = FF.liftF(CopyIn2(a, b))
+  def copyIn(a: String, b: InputStream, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn3(a, b, c))
+  def copyIn(a: String, b: Reader): CopyManagerIO[Long] = FF.liftF(CopyIn4(a, b))
+  def copyIn(a: String, b: Reader, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn5(a, b, c))
   def copyOut(a: String): CopyManagerIO[PGCopyOut] = FF.liftF(CopyOut(a))
   def copyOut(a: String, b: OutputStream): CopyManagerIO[Long] = FF.liftF(CopyOut1(a, b))
   def copyOut(a: String, b: Writer): CopyManagerIO[Long] = FF.liftF(CopyOut2(a, b))

@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -75,6 +76,7 @@ object callablestatement { module =>
       def poll[A](poll: Any, fa: CallableStatementIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): F[A]
+      def fromFuture[A](fut: CallableStatementIO[Future[A]]): F[A]
 
       // CallableStatement
       def addBatch: F[Unit]
@@ -347,6 +349,9 @@ object callablestatement { module =>
     }
     case class OnCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: CallableStatementIO[Future[A]]) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // CallableStatement-specific operations.
@@ -1065,6 +1070,7 @@ object callablestatement { module =>
   }
   val canceled = FF.liftF[CallableStatementOp, Unit](Canceled)
   def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]) = FF.liftF[CallableStatementOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: CallableStatementIO[Future[A]]) = FF.liftF[CallableStatementOp, A](FromFuture(fut))
 
   // Smart constructors for CallableStatement-specific operations.
   val addBatch: CallableStatementIO[Unit] = FF.liftF(AddBatch)

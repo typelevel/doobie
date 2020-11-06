@@ -79,7 +79,7 @@ object largeobject { module =>
     }
 
     // Common operations for all algebras.
-final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
+    final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raw(f)
     }
     final case class Embed[A](e: Embedded[A]) extends LargeObjectOp[A] {
@@ -108,7 +108,7 @@ final case class Raw[A](f: LargeObject => A) extends LargeObjectOp[A] {
     }
     case class Poll1[A](poll: Any, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
-    }    
+    }
     case object Canceled extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.canceled
     }

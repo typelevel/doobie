@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ MonadCancel, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -53,6 +54,7 @@ object ref { module =>
       def poll[A](poll: Any, fa: RefIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): F[A]
+      def fromFuture[A](fut: RefIO[Future[A]]): F[A]
 
       // Ref
       def getBaseTypeName: F[String]
@@ -99,6 +101,9 @@ object ref { module =>
     case class OnCancel[A](fa: RefIO[A], fin: RefIO[Unit]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
     }
+    case class FromFuture[A](fut: RefIO[Future[A]]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
 
     // Ref-specific operations.
     final case object GetBaseTypeName extends RefOp[String] {
@@ -128,13 +133,14 @@ object ref { module =>
   val realtime = FF.liftF[RefOp, FiniteDuration](Realtime)
   def delay[A](thunk: => A) = FF.liftF[RefOp, A](Suspend(Sync.Type.Delay, () => thunk))
   def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[RefOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = FF.liftF[RefOp, B](ForceR(fa, fb))
   def uncancelable[A](body: Poll[RefIO] => RefIO[A]) = FF.liftF[RefOp, A](Uncancelable(body))
   def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[RefIO] {
     def apply[A](fa: RefIO[A]) = FF.liftF[RefOp, A](Poll1(mpoll, fa))
   }
-  def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = FF.liftF[RefOp, B](ForceR(fa, fb))
   val canceled = FF.liftF[RefOp, Unit](Canceled)
   def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]) = FF.liftF[RefOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: RefIO[Future[A]]) = FF.liftF[RefOp, A](FromFuture(fut))
 
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
