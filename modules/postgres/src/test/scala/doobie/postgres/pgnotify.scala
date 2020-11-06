@@ -4,16 +4,14 @@
 
 package doobie.postgres
 
-import cats.effect.{ IO, Sync }
+import cats.effect.IO
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification
-
+import scala.concurrent.duration._
 
 class pgnotifyspec extends Specification {
-
-  import FC.{commit, delay}
 
   import cats.effect.unsafe.implicits.global
 
@@ -25,11 +23,14 @@ class pgnotifyspec extends Specification {
 
   // Listen on the given channel, notify on another connection
   def listen[A](channel: String, notify: ConnectionIO[A]): IO[List[PGNotification]] =
-    (PHC.pgListen(channel) *> commit *>
-     delay { Thread.sleep(50) } *>
-     Sync[ConnectionIO].delay(notify.transact(xa).unsafeRunSync()) *>
-     delay { Thread.sleep(50) } *>
-     PHC.pgGetNotifications).transact(xa)
+    xa.liftF(lift =>
+      PHC.pgListen(channel) *> 
+      FC.commit *>
+      lift(IO.sleep(50.milli)) *>
+      lift(notify.transact(xa)) *>
+      lift(IO.sleep(50.milli)) *>
+      PHC.pgGetNotifications
+    )
 
   "LISTEN/NOTIFY" should {
 
