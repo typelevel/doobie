@@ -14,7 +14,6 @@ import fs2._
 import fs2.text._
 
 import java.io.StringReader
-import org.postgresql.copy.{ CopyIn => PGCopyIn }
 
 class FragmentOps(f: Fragment) {
 
@@ -46,20 +45,17 @@ class FragmentOps(f: Fragment) {
     val byteStream: Stream[ConnectionIO, Byte] =
       stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
 
-    def embed[B](copyIn: PGCopyIn, op: CopyInIO[B]): ConnectionIO[B] =
-      PHC.pgGetConnection(PFPC.embed(copyIn, op))
-
     Stream.bracketCase(
       PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))
     ){
       case (copyIn, Resource.ExitCase.Succeeded) => 
-        embed(copyIn, PFCI.isActive.ifM(PFCI.endCopy.void, PFCI.unit))
+        PHC.embed(copyIn, PFCI.isActive.ifM(PFCI.endCopy.void, PFCI.unit))
       case (copyIn, _) => 
-        embed(copyIn, PFCI.cancelCopy)
+        PHC.embed(copyIn, PFCI.cancelCopy)
     }.flatMap(copyIn =>
       byteStream.chunks.evalMap(bytes => 
-        embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
-      ) *> Stream.eval(embed(copyIn, PFCI.endCopy))
+        PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
+      ) *> Stream.eval(PHC.embed(copyIn, PFCI.endCopy))
     ).compile.foldMonoid
   }
 

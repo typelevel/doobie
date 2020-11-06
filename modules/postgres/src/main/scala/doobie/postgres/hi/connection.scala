@@ -6,9 +6,10 @@ package doobie.postgres.hi
 
 import cats.~>
 import cats.data.Kleisli
+import cats.free.Free
 import org.postgresql.{ PGConnection, PGNotification }
 import doobie._, doobie.implicits._
-import doobie.postgres.free.KleisliInterpreter
+import doobie.postgres.free.{ Embeddable, KleisliInterpreter }
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {
@@ -22,6 +23,9 @@ object connection {
 
   def pgGetConnection[A](k: PGConnectionIO[A]): ConnectionIO[A] =
     FC.unwrap(classOf[PGConnection]).flatMap(k.foldMap(defaultInterpreter).run)
+
+  def embed[F[_], J, B](j: J, op: Free[F, B])(implicit ev: Embeddable[F, J]): ConnectionIO[B] =
+    pgGetConnection(PFPC.embed(j, op))
 
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getCopyAPI(k))
