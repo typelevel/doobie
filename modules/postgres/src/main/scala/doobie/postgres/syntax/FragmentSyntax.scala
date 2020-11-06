@@ -55,8 +55,10 @@ class FragmentOps(f: Fragment) {
     }.flatMap(copyIn =>
       byteStream.chunks.evalMap(bytes => 
         PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
-      ) *> Stream.eval(PHC.embed(copyIn, PFCI.endCopy))
+      ) *>
+      Stream.eval(PHC.embed(copyIn, PFCI.endCopy))
     ).compile.foldMonoid
+
   }
 
   /** Folds given `F` to string, encoding each `A` with `Text` instance and joining resulting strings with `\n` */
