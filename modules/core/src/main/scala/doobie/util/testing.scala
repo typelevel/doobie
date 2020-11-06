@@ -158,7 +158,7 @@ package object testing {
     case Left(e) =>
       List(AnalysisReport.Item(
         "SQL Compiles and TypeChecks",
-        Some(Block.fromLines(e.getMessage))
+        Some(Block.fromErrorMsgLines(e))
       ))
     case Right(a) =>
       AnalysisReport.Item("SQL Compiles and TypeChecks", None) ::
