@@ -105,6 +105,12 @@ class textspec extends Specification with ScalaCheck {
       val rsʹ = (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
       rs must_=== rsʹ
     }
+
+    "correctly insert batches of rows via Stream in IO" in forAll(genRows) { rs =>
+      val inner = (rows: Stream[ConnectionIO, Row]) => Stream.eval(create *> insert.copyIn(rows, 100) *> selectAll)
+      val rsʹ = Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.unsafeRunSync()
+      rs must_=== rsʹ
+    }
   }
 
 }
