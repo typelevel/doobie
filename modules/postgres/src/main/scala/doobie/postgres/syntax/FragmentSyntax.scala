@@ -5,14 +5,15 @@
 package doobie.postgres.syntax
 
 import cats.Foldable
+import cats.effect.kernel.Resource
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
 import fs2._
+import fs2.text._
 
 import java.io.StringReader
-import java.io.InputStream
 
 class FragmentOps(f: Fragment) {
 
@@ -26,17 +27,43 @@ class FragmentOps(f: Fragment) {
     // rows is an error so we shortcut on empty input.
     // TODO: stream this rather than constructing the string in memory.
     if (fa.isEmpty) 0L.pure[ConnectionIO] else {
-      val data = Text.foldToString(fa)
+      val data = foldToString(fa)
       PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, new StringReader(data)))
     }
   }
 
   /**
    * Given a fragment of the form `COPY table (col, ...) FROM STDIN` construct a
-   * Pipe that will transform an `InputStream` into the number of affected rows.
+   * `ConnectionIO` that inserts the values provided by `stream`, returning the number of affected
+   * rows. Chunks input `stream` for more efficient sending to `STDIN` with `minChunkSize`.
    */
-  def copyIn(stream: Stream[ConnectionIO, InputStream]): Stream[ConnectionIO, Long] =  
-      stream.evalMap(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))  
+  def copyIn[A: Text](
+    stream: Stream[ConnectionIO, A],
+    minChunkSize: Int
+  ): ConnectionIO[Long] = {
+
+    val byteStream: Stream[ConnectionIO, Byte] =
+      stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
+
+    Stream.bracketCase(
+      PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))
+    ){
+      case (copyIn, Resource.ExitCase.Succeeded) => FC.blocking(copyIn.isActive()).ifM(FC.blocking(copyIn.endCopy()).void, FC.unit)
+      case (copyIn, _) => FC.blocking(copyIn.cancelCopy())
+    }.flatMap(copyIn =>
+      byteStream.chunks.evalMap(bytes =>
+        FC.blocking(copyIn.writeToCopy(bytes.toArray, 0, bytes.size))
+      ) *>
+      Stream.eval(FC.blocking(copyIn.endCopy()))
+    ).compile.foldMonoid
+  }
+
+  /** Folds given `F` to string, encoding each `A` with `Text` instance and joining resulting strings with `\n` */
+  private def foldToString[F[_]: Foldable, A](fa: F[A])(implicit ev: Text[A]): String =
+    fa.foldLeft(new StringBuilder) { (b, a) =>
+      ev.unsafeEncode(a, b)
+      b.append("\n")
+    }.toString
 
 }
 

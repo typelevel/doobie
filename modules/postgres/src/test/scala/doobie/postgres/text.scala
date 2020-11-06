@@ -4,8 +4,6 @@
 
 package doobie.postgres
 
-import java.io.InputStream
-
 import cats.effect.IO
 import cats.implicits._
 import doobie._, doobie.implicits._
@@ -104,10 +102,7 @@ class textspec extends Specification with ScalaCheck {
     }
 
     "correctly insert batches of rows via Stream" in forAll(genRows) { rs =>
-      val bytes = Text.toInputStream(Stream.emits[IO, Row](rs), 100)
-      val inner: Pipe[ConnectionIO, InputStream, Row] =
-        in => Stream.eval(create) *> insert.copyIn(in) *> Stream.evalSeq(selectAll)
-      val rsʹ = bytes.through(inner.transact(xa)).compile.toList.unsafeRunSync()
+      val rsʹ = (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
       rs must_=== rsʹ
     }
   }

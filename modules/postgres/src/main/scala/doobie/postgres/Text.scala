@@ -4,14 +4,9 @@
 
 package doobie.postgres
 
-import java.io.InputStream
-
 import cats.{ ContravariantSemigroupal, Foldable }
 import cats.syntax.foldable._
-import cats.effect.Async
-import fs2.Stream
-import fs2.io._
-import fs2.text._
+
 import shapeless.{ HList, HNil, ::, <:!<, Generic, Lazy }
 import com.github.ghik.silencer.silent
 
@@ -60,7 +55,7 @@ trait Text[A] { outer =>
     }
 
 }
-object Text extends TextInstances with TextUtils {
+object Text extends TextInstances {
   def apply[A](implicit ev: Text[A]): ev.type = ev
 
   val DELIMETER: Char = '\t'
@@ -218,24 +213,4 @@ trait TextInstances1 { this: Text.type =>
   ): Text[F[A]] =
     iterableInstance[List, A].contramap(_.toList)
 
-}
-
-trait TextUtils {
-
-  /** Prepare a Stream of Text elements A for efficient reading */
-  def toInputStream[F[_]: Async, A: Text](
-    stream: Stream[F, A],
-    minChunkSize: Int
-  ): Stream[F, InputStream] = {
-    val byteStream = stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
-    Stream.resource(toInputStreamResource(byteStream))
-  }
-
-  /** Folds given `F` to string, encoding each `A` with `Text` instance and joining resulting strings with `\n` */
-  def foldToString[F[_]: Foldable, A](fa: F[A])(implicit ev: Text[A]): String =
-    fa.foldLeft(new StringBuilder) { (b, a) =>
-      ev.unsafeEncode(a, b)
-      b.append("\n")
-    }.toString
-    
 }
