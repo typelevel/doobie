@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -283,8 +284,8 @@ object sqlinput { module =>
   val wasNull: SQLInputIO[Boolean] = FF.liftF(WasNull)
 
   // Typeclass instances for SQLInputIO
-  implicit val SyncMonadCancelSQLInputIO: Sync[SQLInputIO] with MonadCancel[SQLInputIO, Throwable] =
-    new Sync[SQLInputIO] with MonadCancel[SQLInputIO, Throwable] {
+  implicit val WeakAsyncSQLInputIO: WeakAsync[SQLInputIO] =
+    new WeakAsync[SQLInputIO] {
       val monad = FF.catsFreeMonadForFree[SQLInputOp]
       override def pure[A](x: A): SQLInputIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = monad.flatMap(fa)(f)
@@ -298,6 +299,7 @@ object sqlinput { module =>
       override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): SQLInputIO[A] = module.uncancelable(body)
       override def canceled: SQLInputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): SQLInputIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: SQLInputIO[Future[A]]): SQLInputIO[A] = module.fromFuture(fut)
     }
 }
 

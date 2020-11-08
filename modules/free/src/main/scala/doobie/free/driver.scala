@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -167,8 +168,8 @@ object driver { module =>
   val jdbcCompliant: DriverIO[Boolean] = FF.liftF(JdbcCompliant)
 
   // Typeclass instances for DriverIO
-  implicit val SyncMonadCancelDriverIO: Sync[DriverIO] with MonadCancel[DriverIO, Throwable] =
-    new Sync[DriverIO] with MonadCancel[DriverIO, Throwable] {
+  implicit val WeakAsyncDriverIO: WeakAsync[DriverIO] =
+    new WeakAsync[DriverIO] {
       val monad = FF.catsFreeMonadForFree[DriverOp]
       override def pure[A](x: A): DriverIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = monad.flatMap(fa)(f)
@@ -182,6 +183,7 @@ object driver { module =>
       override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): DriverIO[A] = module.uncancelable(body)
       override def canceled: DriverIO[Unit] = module.canceled
       override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): DriverIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: DriverIO[Future[A]]): DriverIO[A] = module.fromFuture(fut)
     }
 }
 

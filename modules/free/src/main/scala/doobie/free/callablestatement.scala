@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -1306,8 +1307,8 @@ object callablestatement { module =>
   val wasNull: CallableStatementIO[Boolean] = FF.liftF(WasNull)
 
   // Typeclass instances for CallableStatementIO
-  implicit val SyncMonadCancelCallableStatementIO: Sync[CallableStatementIO] with MonadCancel[CallableStatementIO, Throwable] =
-    new Sync[CallableStatementIO] with MonadCancel[CallableStatementIO, Throwable] {
+  implicit val WeakAsyncCallableStatementIO: WeakAsync[CallableStatementIO] =
+    new WeakAsync[CallableStatementIO] {
       val monad = FF.catsFreeMonadForFree[CallableStatementOp]
       override def pure[A](x: A): CallableStatementIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = monad.flatMap(fa)(f)
@@ -1321,6 +1322,7 @@ object callablestatement { module =>
       override def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): CallableStatementIO[A] = module.uncancelable(body)
       override def canceled: CallableStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): CallableStatementIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: CallableStatementIO[Future[A]]): CallableStatementIO[A] = module.fromFuture(fut)
     }
 }
 

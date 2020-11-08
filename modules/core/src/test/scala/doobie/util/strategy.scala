@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ Async, IO }
+import cats.effect.IO
 import cats.syntax.apply._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
@@ -23,7 +23,7 @@ class strategyspec extends Specification {
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class Interp extends KleisliInterpreter[IO] {
 
-    val asyncM = Async[IO]
+    val asyncM = WeakAsync[IO]
 
     object Connection {
       var autoCommit: Option[Boolean] = None

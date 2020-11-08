@@ -208,8 +208,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |package $pkg
     |
     |import cats.~>
-    |import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+    |import cats.effect.kernel.{ Poll, Sync }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+    |import doobie.WeakAsync
     |import scala.concurrent.Future
     |import scala.concurrent.duration.FiniteDuration
     |import com.github.ghik.silencer.silent
@@ -333,8 +334,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
     |
     |  // Typeclass instances for ${ioname}
-    |  implicit val SyncMonadCancel${ioname}: Sync[${ioname}] with MonadCancel[${ioname}, Throwable] =
-    |    new Sync[${ioname}] with MonadCancel[${ioname}, Throwable] {
+    |  implicit val WeakAsync${ioname}: WeakAsync[${ioname}] =
+    |    new WeakAsync[${ioname}] {
     |      val monad = FF.catsFreeMonadForFree[${opname}]
     |      override def pure[A](x: A): ${ioname}[A] = monad.pure(x)
     |      override def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = monad.flatMap(fa)(f)
@@ -348,6 +349,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      override def uncancelable[A](body: Poll[${ioname}] => ${ioname}[A]): ${ioname}[A] = module.uncancelable(body)
     |      override def canceled: ${ioname}[Unit] = module.canceled
     |      override def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]): ${ioname}[A] = module.onCancel(fa, fin)
+    |      override def fromFuture[A](fut: ${ioname}[Future[A]]): ${ioname}[A] = module.fromFuture(fut)
     |    }
     |}
     |""".trim.stripMargin
@@ -440,8 +442,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |// Library imports
       |import cats.~>
       |import cats.data.Kleisli
-      |import cats.effect.kernel.{ Async, Poll, Sync }
+      |import cats.effect.kernel.{ Poll, Sync }
       |import cats.free.Free
+      |import doobie.WeakAsync
       |import scala.concurrent.Future
       |import scala.concurrent.duration.FiniteDuration
       |import com.github.ghik.silencer.silent
@@ -455,7 +458,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |object KleisliInterpreter {
       |
       |  def apply[M[_]](
-      |    implicit am: Async[M]
+      |    implicit am: WeakAsync[M]
       |  ): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M] {
       |      val asyncM = am
@@ -466,7 +469,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |@silent("deprecated")
       |trait KleisliInterpreter[M[_]] { outer =>
       |
-      |  implicit val asyncM: Async[M]
+      |  implicit val asyncM: WeakAsync[M]
+      |  import WeakAsync._
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
       |  ${managed.map(interpreterDef).mkString("\n  ")}

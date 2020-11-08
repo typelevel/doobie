@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -198,8 +199,8 @@ object nclob { module =>
   def truncate(a: Long): NClobIO[Unit] = FF.liftF(Truncate(a))
 
   // Typeclass instances for NClobIO
-  implicit val SyncMonadCancelNClobIO: Sync[NClobIO] with MonadCancel[NClobIO, Throwable] =
-    new Sync[NClobIO] with MonadCancel[NClobIO, Throwable] {
+  implicit val WeakAsyncNClobIO: WeakAsync[NClobIO] =
+    new WeakAsync[NClobIO] {
       val monad = FF.catsFreeMonadForFree[NClobOp]
       override def pure[A](x: A): NClobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = monad.flatMap(fa)(f)
@@ -213,6 +214,7 @@ object nclob { module =>
       override def uncancelable[A](body: Poll[NClobIO] => NClobIO[A]): NClobIO[A] = module.uncancelable(body)
       override def canceled: NClobIO[Unit] = module.canceled
       override def onCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]): NClobIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: NClobIO[Future[A]]): NClobIO[A] = module.fromFuture(fut)
     }
 }
 

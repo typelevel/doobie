@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -1124,8 +1125,8 @@ object resultset { module =>
   val wasNull: ResultSetIO[Boolean] = FF.liftF(WasNull)
 
   // Typeclass instances for ResultSetIO
-  implicit val SyncMonadCancelResultSetIO: Sync[ResultSetIO] with MonadCancel[ResultSetIO, Throwable] =
-    new Sync[ResultSetIO] with MonadCancel[ResultSetIO, Throwable] {
+  implicit val WeakAsyncResultSetIO: WeakAsync[ResultSetIO] =
+    new WeakAsync[ResultSetIO] {
       val monad = FF.catsFreeMonadForFree[ResultSetOp]
       override def pure[A](x: A): ResultSetIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = monad.flatMap(fa)(f)
@@ -1139,6 +1140,7 @@ object resultset { module =>
       override def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]): ResultSetIO[A] = module.uncancelable(body)
       override def canceled: ResultSetIO[Unit] = module.canceled
       override def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): ResultSetIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: ResultSetIO[Future[A]]): ResultSetIO[A] = module.fromFuture(fut)
     }
 }
 

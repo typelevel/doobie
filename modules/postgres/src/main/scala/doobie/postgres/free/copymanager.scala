@@ -5,8 +5,10 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -60,6 +62,7 @@ object copymanager { module =>
       def poll[A](poll: Any, fa: CopyManagerIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): F[A]
+      def fromFuture[A](fut: CopyManagerIO[Future[A]]): F[A]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -111,6 +114,9 @@ object copymanager { module =>
     }
     case class OnCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: CopyManagerIO[Future[A]]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // PGCopyManager-specific operations.
@@ -166,6 +172,7 @@ object copymanager { module =>
   }
   val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)
   def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = FF.liftF[CopyManagerOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: CopyManagerIO[Future[A]]) = FF.liftF[CopyManagerOp, A](FromFuture(fut))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
@@ -180,8 +187,8 @@ object copymanager { module =>
   def copyOut(a: String, b: Writer): CopyManagerIO[Long] = FF.liftF(CopyOut2(a, b))
 
   // Typeclass instances for CopyManagerIO
-  implicit val SyncMonadCancelCopyManagerIO: Sync[CopyManagerIO] with MonadCancel[CopyManagerIO, Throwable] =
-    new Sync[CopyManagerIO] with MonadCancel[CopyManagerIO, Throwable] {
+  implicit val WeakAsyncCopyManagerIO: WeakAsync[CopyManagerIO] =
+    new WeakAsync[CopyManagerIO] {
       val monad = FF.catsFreeMonadForFree[CopyManagerOp]
       override def pure[A](x: A): CopyManagerIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = monad.flatMap(fa)(f)
@@ -195,6 +202,7 @@ object copymanager { module =>
       override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): CopyManagerIO[A] = module.uncancelable(body)
       override def canceled: CopyManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): CopyManagerIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: CopyManagerIO[Future[A]]): CopyManagerIO[A] = module.fromFuture(fut)
     }
 }
 

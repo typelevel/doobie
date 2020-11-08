@@ -7,8 +7,9 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.kernel.{ Async, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -67,7 +68,7 @@ import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 object KleisliInterpreter {
 
   def apply[M[_]](
-    implicit am: Async[M]
+    implicit am: WeakAsync[M]
   ): KleisliInterpreter[M] =
     new KleisliInterpreter[M] {
       val asyncM = am
@@ -78,7 +79,8 @@ object KleisliInterpreter {
 @silent("deprecated")
 trait KleisliInterpreter[M[_]] { outer =>
 
-  implicit val asyncM: Async[M]
+  implicit val asyncM: WeakAsync[M]
+  import WeakAsync._
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }

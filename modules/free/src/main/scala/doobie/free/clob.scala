@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -197,8 +198,8 @@ object clob { module =>
   def truncate(a: Long): ClobIO[Unit] = FF.liftF(Truncate(a))
 
   // Typeclass instances for ClobIO
-  implicit val SyncMonadCancelClobIO: Sync[ClobIO] with MonadCancel[ClobIO, Throwable] =
-    new Sync[ClobIO] with MonadCancel[ClobIO, Throwable] {
+  implicit val WeakAsyncClobIO: WeakAsync[ClobIO] =
+    new WeakAsync[ClobIO] {
       val monad = FF.catsFreeMonadForFree[ClobOp]
       override def pure[A](x: A): ClobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = monad.flatMap(fa)(f)
@@ -212,6 +213,7 @@ object clob { module =>
       override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): ClobIO[A] = module.uncancelable(body)
       override def canceled: ClobIO[Unit] = module.canceled
       override def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): ClobIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: ClobIO[Future[A]]): ClobIO[A] = module.fromFuture(fut)
     }
 }
 

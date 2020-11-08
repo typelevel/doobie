@@ -4,9 +4,10 @@
 
 package doobie.util
 
-import doobie.HC
+import doobie.WeakAsync
 import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
 import doobie.free.KleisliInterpreter
+import doobie.implicits._
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Monad, ~>}
@@ -22,8 +23,6 @@ import javax.sql.DataSource
 import scala.concurrent.ExecutionContext
 
 object transactor  {
-
-  import doobie.free.connection.SyncMonadCancelConnectionIO
 
   /** @group Type Aliases */
   type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Connection, *]
@@ -102,7 +101,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev: MonadCancel[M, Throwable]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev: Async[M]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to perform arbitrary configuration on the kernel value (changing the
@@ -195,12 +194,12 @@ object transactor  {
     /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
       * and translate it to back `M` effect. */
     def liftF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit ev: Async[M]): M[I] =
-      HC.liftK[M].use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
+      WeakAsync.liftK[M, ConnectionIO].use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
     
     /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
       * `M ~> ConnectionIO` and translate it back to a `Stream` with `M` effects. */
     def liftS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit ev: Async[M]): Stream[M, I] =
-      Stream.resource(HC.liftK[M]).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
+      Stream.resource(WeakAsync.liftK[M, ConnectionIO]).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
 
     /** Embed a `Pipe` with `ConnectionIO` effects inside a `Pipe` with `M` effects by lifting incoming stream to 
       * `ConnectionIO` effects and lowering outgoing stream to `M` effects. */

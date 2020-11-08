@@ -5,8 +5,10 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -53,6 +55,7 @@ object largeobject { module =>
       def poll[A](poll: Any, fa: LargeObjectIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
+      def fromFuture[A](fut: LargeObjectIO[Future[A]]): F[A]
 
       // LargeObject
       def close: F[Unit]
@@ -114,6 +117,9 @@ object largeobject { module =>
     }
     case class OnCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: LargeObjectIO[Future[A]]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // LargeObject-specific operations.
@@ -199,6 +205,7 @@ object largeobject { module =>
   }
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: LargeObjectIO[Future[A]]) = FF.liftF[LargeObjectOp, A](FromFuture(fut))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
@@ -223,8 +230,8 @@ object largeobject { module =>
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] = FF.liftF(Write1(a, b, c))
 
   // Typeclass instances for LargeObjectIO
-  implicit val SyncMonadCancelLargeObjectIO: Sync[LargeObjectIO] with MonadCancel[LargeObjectIO, Throwable] =
-    new Sync[LargeObjectIO] with MonadCancel[LargeObjectIO, Throwable] {
+  implicit val WeakAsyncLargeObjectIO: WeakAsync[LargeObjectIO] =
+    new WeakAsync[LargeObjectIO] {
       val monad = FF.catsFreeMonadForFree[LargeObjectOp]
       override def pure[A](x: A): LargeObjectIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = monad.flatMap(fa)(f)
@@ -238,6 +245,7 @@ object largeobject { module =>
       override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): LargeObjectIO[A] = module.uncancelable(body)
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: LargeObjectIO[Future[A]]): LargeObjectIO[A] = module.fromFuture(fut)
     }
 }
 

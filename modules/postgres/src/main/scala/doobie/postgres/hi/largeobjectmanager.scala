@@ -8,7 +8,6 @@ import cats.implicits._
 import java.io.{ File, OutputStream, InputStream }
 
 object largeobjectmanager {
-  import implicits._
 
   val createLO: LargeObjectManagerIO[Long] =
     PFLOM.createLO

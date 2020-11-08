@@ -7,8 +7,9 @@ package doobie.util
 import java.io.{ Console => _, _ }
 
 import cats.syntax.all._
-import cats.effect.kernel.{ Sync, MonadCancel }
 import cats.effect.kernel.syntax.monadCancel._
+import doobie.WeakAsync
+import doobie.implicits._
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {
@@ -20,7 +21,7 @@ object io {
    * specific behavior that relies on JDK IO.
    */
   class IOActions[M[_]](
-    implicit M: Sync[M] with MonadCancel[M, Throwable]
+    implicit M: WeakAsync[M]
   ) {
 
     private def delay[A](a: => A): M[A] = M.delay(a)

@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -1022,8 +1023,8 @@ object databasemetadata { module =>
   val usesLocalFiles: DatabaseMetaDataIO[Boolean] = FF.liftF(UsesLocalFiles)
 
   // Typeclass instances for DatabaseMetaDataIO
-  implicit val SyncMonadCancelDatabaseMetaDataIO: Sync[DatabaseMetaDataIO] with MonadCancel[DatabaseMetaDataIO, Throwable] =
-    new Sync[DatabaseMetaDataIO] with MonadCancel[DatabaseMetaDataIO, Throwable] {
+  implicit val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
+    new WeakAsync[DatabaseMetaDataIO] {
       val monad = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
       override def pure[A](x: A): DatabaseMetaDataIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = monad.flatMap(fa)(f)
@@ -1037,6 +1038,7 @@ object databasemetadata { module =>
       override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] = module.uncancelable(body)
       override def canceled: DatabaseMetaDataIO[Unit] = module.canceled
       override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): DatabaseMetaDataIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: DatabaseMetaDataIO[Future[A]]): DatabaseMetaDataIO[A] = module.fromFuture(fut)
     }
 }
 

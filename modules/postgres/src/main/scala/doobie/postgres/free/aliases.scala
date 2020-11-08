@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.effect.kernel.{ MonadCancel, Sync }
+import doobie.WeakAsync
 
 trait Types {
   type CopyInIO[A]             = copyin.CopyInIO[A]
@@ -28,25 +28,25 @@ trait Modules {
 
 trait Instances {
 
-  implicit lazy val SyncMonadCancelCopyInIO: Sync[copyin.CopyInIO] with MonadCancel[copyin.CopyInIO, Throwable] =
-    copyin.SyncMonadCancelCopyInIO
+  implicit lazy val WeakAsyncCopyInIO: WeakAsync[copyin.CopyInIO] =
+    copyin.WeakAsyncCopyInIO
 
-  implicit lazy val SyncMonadCancelCopyManagerIO: Sync[copymanager.CopyManagerIO] with MonadCancel[copymanager.CopyManagerIO, Throwable] =
-    copymanager.SyncMonadCancelCopyManagerIO
+  implicit lazy val WeakAsyncCopyManagerIO: WeakAsync[copymanager.CopyManagerIO] =
+    copymanager.WeakAsyncCopyManagerIO
 
-  implicit lazy val SyncMonadCancelCopyOutIO: Sync[copyout.CopyOutIO] with MonadCancel[copyout.CopyOutIO, Throwable] =
-    copyout.SyncMonadCancelCopyOutIO
+  implicit lazy val WeakAsyncCopyOutIO: WeakAsync[copyout.CopyOutIO] =
+    copyout.WeakAsyncCopyOutIO
 
-  implicit lazy val SyncMonadCancelFastpathIO: Sync[fastpath.FastpathIO] with MonadCancel[fastpath.FastpathIO, Throwable] =
-    fastpath.SyncMonadCancelFastpathIO
+  implicit lazy val WeakAsyncFastpathIO: WeakAsync[fastpath.FastpathIO] =
+    fastpath.WeakAsyncFastpathIO
 
-  implicit lazy val SyncMonadCancelLargeObjectIO: Sync[largeobject.LargeObjectIO] with MonadCancel[largeobject.LargeObjectIO, Throwable] =
-    largeobject.SyncMonadCancelLargeObjectIO
+  implicit lazy val WeakAsyncLargeObjectIO: WeakAsync[largeobject.LargeObjectIO] =
+    largeobject.WeakAsyncLargeObjectIO
 
-  implicit lazy val SyncMonadCancelLargeObjectManagerIO: Sync[largeobjectmanager.LargeObjectManagerIO] with MonadCancel[largeobjectmanager.LargeObjectManagerIO, Throwable] =
-    largeobjectmanager.SyncMonadCancelLargeObjectManagerIO
+  implicit lazy val WeakAsyncLargeObjectManagerIO: WeakAsync[largeobjectmanager.LargeObjectManagerIO] =
+    largeobjectmanager.WeakAsyncLargeObjectManagerIO
 
-  implicit lazy val SyncMonadCancelPGConnectionIO: Sync[pgconnection.PGConnectionIO] with MonadCancel[pgconnection.PGConnectionIO, Throwable] =
-    pgconnection.SyncMonadCancelPGConnectionIO
+  implicit lazy val WeakAsyncPGConnectionIO: WeakAsync[pgconnection.PGConnectionIO] =
+    pgconnection.WeakAsyncPGConnectionIO
 
 }

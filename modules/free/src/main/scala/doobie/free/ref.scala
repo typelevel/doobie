@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -149,8 +150,8 @@ object ref { module =>
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
   // Typeclass instances for RefIO
-  implicit val SyncMonadCancelRefIO: Sync[RefIO] with MonadCancel[RefIO, Throwable] =
-    new Sync[RefIO] with MonadCancel[RefIO, Throwable] {
+  implicit val WeakAsyncRefIO: WeakAsync[RefIO] =
+    new WeakAsync[RefIO] {
       val monad = FF.catsFreeMonadForFree[RefOp]
       override def pure[A](x: A): RefIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = monad.flatMap(fa)(f)
@@ -164,6 +165,7 @@ object ref { module =>
       override def uncancelable[A](body: Poll[RefIO] => RefIO[A]): RefIO[A] = module.uncancelable(body)
       override def canceled: RefIO[Unit] = module.canceled
       override def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): RefIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: RefIO[Future[A]]): RefIO[A] = module.fromFuture(fut)
     }
 }
 

@@ -5,8 +5,9 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
@@ -414,8 +415,8 @@ object connection { module =>
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
   // Typeclass instances for ConnectionIO
-  implicit val SyncMonadCancelConnectionIO: Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] =
-    new Sync[ConnectionIO] with MonadCancel[ConnectionIO, Throwable] {
+  implicit val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
+    new WeakAsync[ConnectionIO] {
       val monad = FF.catsFreeMonadForFree[ConnectionOp]
       override def pure[A](x: A): ConnectionIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = monad.flatMap(fa)(f)
@@ -429,6 +430,7 @@ object connection { module =>
       override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): ConnectionIO[A] = module.uncancelable(body)
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: ConnectionIO[Future[A]]): ConnectionIO[A] = module.fromFuture(fut)
     }
 }
 

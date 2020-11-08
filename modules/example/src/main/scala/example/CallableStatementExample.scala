@@ -10,7 +10,7 @@ import cats.implicits._
 import doobie._
 import doobie.enum.JdbcType.Other
 import doobie.free.connection.ConnectionIO
-import doobie.syntax.connectionio._
+import doobie.implicits._
 import doobie.util.transactor.Transactor
 
 object CallableStatementExample extends IOApp {

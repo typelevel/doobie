@@ -15,7 +15,7 @@ class `262` extends Specification {
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO] {
-    val asyncM = IO.asyncForIO
+    val asyncM = WeakAsync[IO]
 
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {

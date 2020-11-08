@@ -5,8 +5,10 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -52,6 +54,7 @@ object copyin { module =>
       def poll[A](poll: Any, fa: CopyInIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): F[A]
+      def fromFuture[A](fut: CopyInIO[Future[A]]): F[A]
 
       // PGCopyIn
       def cancelCopy: F[Unit]
@@ -103,6 +106,9 @@ object copyin { module =>
     }
     case class OnCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: CopyInIO[Future[A]]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // PGCopyIn-specific operations.
@@ -158,6 +164,7 @@ object copyin { module =>
   }
   val canceled = FF.liftF[CopyInOp, Unit](Canceled)
   def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) = FF.liftF[CopyInOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: CopyInIO[Future[A]]) = FF.liftF[CopyInOp, A](FromFuture(fut))
 
   // Smart constructors for CopyIn-specific operations.
   val cancelCopy: CopyInIO[Unit] = FF.liftF(CancelCopy)
@@ -172,8 +179,8 @@ object copyin { module =>
   def writeToCopy(a: ByteStreamWriter): CopyInIO[Unit] = FF.liftF(WriteToCopy1(a))
 
   // Typeclass instances for CopyInIO
-  implicit val SyncMonadCancelCopyInIO: Sync[CopyInIO] with MonadCancel[CopyInIO, Throwable] =
-    new Sync[CopyInIO] with MonadCancel[CopyInIO, Throwable] {
+  implicit val WeakAsyncCopyInIO: WeakAsync[CopyInIO] =
+    new WeakAsync[CopyInIO] {
       val monad = FF.catsFreeMonadForFree[CopyInOp]
       override def pure[A](x: A): CopyInIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = monad.flatMap(fa)(f)
@@ -187,6 +194,7 @@ object copyin { module =>
       override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): CopyInIO[A] = module.uncancelable(body)
       override def canceled: CopyInIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): CopyInIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: CopyInIO[Future[A]]): CopyInIO[A] = module.fromFuture(fut)
     }
 }
 

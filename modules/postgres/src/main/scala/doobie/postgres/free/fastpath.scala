@@ -5,8 +5,10 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.kernel.{ MonadCancel, Poll, Sync }
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.WeakAsync
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import com.github.ghik.silencer.silent
 
@@ -54,6 +56,7 @@ object fastpath { module =>
       def poll[A](poll: Any, fa: FastpathIO[A]): F[A]
       def canceled: F[Unit]
       def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]): F[A]
+      def fromFuture[A](fut: FastpathIO[Future[A]]): F[A]
 
       // PGFastpath
       def addFunction(a: String, b: Int): F[Unit]
@@ -106,6 +109,9 @@ object fastpath { module =>
     }
     case class OnCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]) extends FastpathOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: FastpathIO[Future[A]]) extends FastpathOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // PGFastpath-specific operations.
@@ -164,6 +170,7 @@ object fastpath { module =>
   }
   val canceled = FF.liftF[FastpathOp, Unit](Canceled)
   def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]) = FF.liftF[FastpathOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: FastpathIO[Future[A]]) = FF.liftF[FastpathOp, A](FromFuture(fut))
 
   // Smart constructors for Fastpath-specific operations.
   def addFunction(a: String, b: Int): FastpathIO[Unit] = FF.liftF(AddFunction(a, b))
@@ -179,8 +186,8 @@ object fastpath { module =>
   def getOID(a: String, b: Array[FastpathArg]): FastpathIO[Long] = FF.liftF(GetOID(a, b))
 
   // Typeclass instances for FastpathIO
-  implicit val SyncMonadCancelFastpathIO: Sync[FastpathIO] with MonadCancel[FastpathIO, Throwable] =
-    new Sync[FastpathIO] with MonadCancel[FastpathIO, Throwable] {
+  implicit val WeakAsyncFastpathIO: WeakAsync[FastpathIO] =
+    new WeakAsync[FastpathIO] {
       val monad = FF.catsFreeMonadForFree[FastpathOp]
       override def pure[A](x: A): FastpathIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: FastpathIO[A])(f: A => FastpathIO[B]): FastpathIO[B] = monad.flatMap(fa)(f)
@@ -194,6 +201,7 @@ object fastpath { module =>
       override def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]): FastpathIO[A] = module.uncancelable(body)
       override def canceled: FastpathIO[Unit] = module.canceled
       override def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]): FastpathIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: FastpathIO[Future[A]]): FastpathIO[A] = module.fromFuture(fut)
     }
 }
 
