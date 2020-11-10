@@ -42,59 +42,104 @@ trait Modules {
 }
 
 trait LowPriorityInstances {
+  import WeakAsync._
 
-  implicit def doobieSyncForWeakAsync[F[_]](implicit F: WeakAsync[F]): Sync[F] =
-    WeakAsync.doobieSyncForWeakAsync[F]
+  implicit def syncForWeakAsync[F[_]](implicit F: WeakAsync[F]): Sync[F] =
+    doobieSyncForWeakAsync[F]
+
+  /** @group Typeclass Instances */  implicit lazy val SyncBlobIO: Sync[BlobIO] =
+    doobieSyncForWeakAsync(blob.WeakAsyncBlobIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncCallableStatementIO: Sync[CallableStatementIO] =
+    doobieSyncForWeakAsync(callablestatement.WeakAsyncCallableStatementIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncClobIO: Sync[ClobIO] =
+    doobieSyncForWeakAsync(clob.WeakAsyncClobIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncConnectionIO: Sync[ConnectionIO] =
+    doobieSyncForWeakAsync(connection.WeakAsyncConnectionIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncDatabaseMetaDataIO: Sync[DatabaseMetaDataIO] =
+    doobieSyncForWeakAsync(databasemetadata.WeakAsyncDatabaseMetaDataIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncDriverIO: Sync[DriverIO] =
+    doobieSyncForWeakAsync(driver.WeakAsyncDriverIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncNClobIO: Sync[NClobIO] =
+    doobieSyncForWeakAsync(nclob.WeakAsyncNClobIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncPreparedStatementIO: Sync[PreparedStatementIO] =
+    doobieSyncForWeakAsync(preparedstatement.WeakAsyncPreparedStatementIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncRefIO: Sync[RefIO] =
+    doobieSyncForWeakAsync(ref.WeakAsyncRefIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncResultSetIO: Sync[ResultSetIO] =
+    doobieSyncForWeakAsync(resultset.WeakAsyncResultSetIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncSQLDataIO: Sync[SQLDataIO] =
+    doobieSyncForWeakAsync(sqldata.WeakAsyncSQLDataIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncSQLInputIO: Sync[SQLInputIO] =
+    doobieSyncForWeakAsync(sqlinput.WeakAsyncSQLInputIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncSQLOutputIO: Sync[SQLOutputIO] =
+    doobieSyncForWeakAsync(sqloutput.WeakAsyncSQLOutputIO)
+
+  /** @group Typeclass Instances */  implicit lazy val SyncStatementIO: Sync[StatementIO] =
+    doobieSyncForWeakAsync(statement.WeakAsyncStatementIO)
+
 }
 
 trait Instances extends LowPriorityInstances {
+  import WeakAsync._
 
-  implicit def doobieMonadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancel[F, Throwable] =
-    WeakAsync.doobieMonadCancelForWeakAsync[F]
+  implicit def monadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancel[F, Throwable] =
+    doobieMonadCancelForWeakAsync[F]
 
-  implicit def doobieWeakAsyncForAsync[F[_]](implicit F: Async[F]): WeakAsync[F] =
-    WeakAsync.doobieWeakAsyncForAsync[F]
+  implicit def weakAsyncForAsync[F[_]](implicit F: Async[F]): WeakAsync[F] =
+    doobieWeakAsyncForAsync[F]
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncBlobIO: WeakAsync[BlobIO] =
-    blob.WeakAsyncBlobIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelBlobIO: MonadCancel[BlobIO, Throwable] =
+    doobieMonadCancelForWeakAsync(blob.WeakAsyncBlobIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncCallableStatementIO: WeakAsync[CallableStatementIO] =
-    callablestatement.WeakAsyncCallableStatementIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelCallableStatementIO: MonadCancel[CallableStatementIO, Throwable] =
+    doobieMonadCancelForWeakAsync(callablestatement.WeakAsyncCallableStatementIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncClobIO: WeakAsync[ClobIO] =
-    clob.WeakAsyncClobIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelClobIO: MonadCancel[ClobIO, Throwable] =
+    doobieMonadCancelForWeakAsync(clob.WeakAsyncClobIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
-    connection.WeakAsyncConnectionIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelConnectionIO: MonadCancel[ConnectionIO, Throwable] =
+    doobieMonadCancelForWeakAsync(connection.WeakAsyncConnectionIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
-    databasemetadata.WeakAsyncDatabaseMetaDataIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelDatabaseMetaDataIO: MonadCancel[DatabaseMetaDataIO, Throwable] =
+    doobieMonadCancelForWeakAsync(databasemetadata.WeakAsyncDatabaseMetaDataIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncDriverIO: WeakAsync[DriverIO] =
-    driver.WeakAsyncDriverIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelDriverIO: MonadCancel[DriverIO, Throwable] =
+    doobieMonadCancelForWeakAsync(driver.WeakAsyncDriverIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncNClobIO: WeakAsync[NClobIO] =
-    nclob.WeakAsyncNClobIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelNClobIO: MonadCancel[NClobIO, Throwable] =
+    doobieMonadCancelForWeakAsync(nclob.WeakAsyncNClobIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncPreparedStatementIO: WeakAsync[PreparedStatementIO] =
-    preparedstatement.WeakAsyncPreparedStatementIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelPreparedStatementIO: MonadCancel[PreparedStatementIO, Throwable] =
+    doobieMonadCancelForWeakAsync(preparedstatement.WeakAsyncPreparedStatementIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncRefIO: WeakAsync[RefIO] =
-    ref.WeakAsyncRefIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelRefIO: MonadCancel[RefIO, Throwable] =
+    doobieMonadCancelForWeakAsync(ref.WeakAsyncRefIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncResultSetIO: WeakAsync[ResultSetIO] =
-    resultset.WeakAsyncResultSetIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelResultSetIO: MonadCancel[ResultSetIO, Throwable] =
+    doobieMonadCancelForWeakAsync(resultset.WeakAsyncResultSetIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncSQLDataIO: WeakAsync[SQLDataIO] =
-    sqldata.WeakAsyncSQLDataIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelSQLDataIO: MonadCancel[SQLDataIO, Throwable] =
+    doobieMonadCancelForWeakAsync(sqldata.WeakAsyncSQLDataIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncSQLInputIO: WeakAsync[SQLInputIO] =
-    sqlinput.WeakAsyncSQLInputIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelSQLInputIO: MonadCancel[SQLInputIO, Throwable] =
+    doobieMonadCancelForWeakAsync(sqlinput.WeakAsyncSQLInputIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncSQLOutputIO: WeakAsync[SQLOutputIO] =
-    sqloutput.WeakAsyncSQLOutputIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelSQLOutputIO: MonadCancel[SQLOutputIO, Throwable] =
+    doobieMonadCancelForWeakAsync(sqloutput.WeakAsyncSQLOutputIO)
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncStatementIO: WeakAsync[StatementIO] =
-    statement.WeakAsyncStatementIO
+  /** @group Typeclass Instances */  implicit lazy val MonadCancelStatementIO: MonadCancel[StatementIO, Throwable] =
+    doobieMonadCancelForWeakAsync(statement.WeakAsyncStatementIO)
 
 }

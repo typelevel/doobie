@@ -6,10 +6,10 @@ package doobie.util
 
 import scala.reflect.runtime.universe.TypeTag
 
+import cats.effect.kernel.Async
 import cats.instances.int._
 import cats.instances.string._
 import cats.syntax.show._
-import doobie.WeakAsync
 import doobie.free.connection.{ ConnectionIO, delay }
 import doobie.implicits._
 import doobie.util.query._
@@ -23,7 +23,7 @@ import scala.Predef._
 
 object yolo {
 
-  class Yolo[M[_]](xa: Transactor[M])(implicit ev: WeakAsync[M]) {
+  class Yolo[M[_]](xa: Transactor[M])(implicit ev: Async[M]) {
 
 
     private def out(s: String, colors: Colors): ConnectionIO[Unit] =
