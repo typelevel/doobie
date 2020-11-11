@@ -65,10 +65,10 @@ Let's break this down a bit.
 
 - `sql"select name from country".query[String]` defines a `Query0[String]`, which is a one-column query that maps each returned row to a `String`. We will get to more interesting row types soon.
 - `.to[List]` is a convenience method that accumulates rows into a `List`, in this case yielding a `ConnectionIO[List[String]]`. It works with any collection type that has a `CanBuildFrom`. Similar methods are:
-  - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
-  - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
-  - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
-  - See the Scaladoc for `Query0` for more information on these and other methods.
+    - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
+    - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
+    - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
+    - See the Scaladoc for `Query0` for more information on these and other methods.
 - The rest is familar; `transact(xa)` yields a `IO[List[String]]` which we run, giving us a normal Scala `List[String]` that we print out.
 
 ### Internal Streaming
