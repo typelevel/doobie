@@ -20,7 +20,7 @@ import fs2.Stream
  * on either side (by putting a typo in the `read` or `write` statements) both transactions will
  * roll back.
  */
-object StreamingCopy extends IOApp {
+object StreamingCopy extends IOApp.Simple {
 
   /**
    * Cross-transactor streaming when the `source` and `sink` have the same schema.
@@ -150,11 +150,11 @@ object StreamingCopy extends IOApp {
   }
 
   // Our main program
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     for {
       _ <- fuseMap(read, write)(pg, h2).compile.drain // do the copy with fuseMap
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IO(Console.println(show"Copied $n cities!"))
-    } yield ExitCode.Success
+    } yield ()
 
 }

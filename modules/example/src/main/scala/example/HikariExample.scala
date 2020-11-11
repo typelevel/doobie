@@ -9,7 +9,7 @@ import doobie._
 import doobie.hikari._
 import doobie.implicits._
 
-object HikariExample extends IOApp {
+object HikariExample extends IOApp.Simple {
 
   // Typically you construct a transactor this way, using lifetime-managed thread pools.
   val transactor: Resource[IO, HikariTransactor[IO]] =
@@ -23,9 +23,9 @@ object HikariExample extends IOApp {
             )
     } yield xa
 
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     transactor.use { xa =>
-      FirstExample.examples.transact(xa).as(ExitCode.Success)
+      FirstExample.examples.transact(xa).void
     }
 
 }

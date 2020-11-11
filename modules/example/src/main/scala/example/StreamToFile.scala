@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.{ ExitCode, IO, IOApp }
+import cats.effect.{ IO, IOApp }
 import cats.implicits._
 import doobie._
 import doobie.implicits._
@@ -13,13 +13,13 @@ import fs2.io.file.Files
 import java.nio.file.Paths
 
 
-object StreamToFile extends IOApp {
+object StreamToFile extends IOApp.Simple {
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
       sql"select name, population from country"
         .query[(String, Int)]
         .stream
@@ -30,6 +30,5 @@ object StreamToFile extends IOApp {
         .through(Files[IO].writeAll(Paths.get("/tmp/out.txt")))
         .compile
         .drain
-        .as(ExitCode.Success)    
 
 }

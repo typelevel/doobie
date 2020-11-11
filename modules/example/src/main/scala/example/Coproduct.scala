@@ -7,7 +7,7 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp }
 import cats.free.Free
 import cats.implicits._
 import cats.{InjectK, ~>}
@@ -16,7 +16,7 @@ import doobie.free.connection.ConnectionOp
 import doobie.implicits._
 import scala.io.StdIn
 
-object coproduct extends IOApp {
+object coproduct extends IOApp.Simple {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
@@ -91,8 +91,8 @@ object coproduct extends IOApp {
   )
 
   // Exec it!
-  def run(args: List[String]): IO[ExitCode] =
-    xa.exec.apply(iprog).as(ExitCode.Success)
+  def run: IO[Unit] =
+    xa.exec.apply(iprog)
 
   // Enter a pattern:
   // U%

@@ -5,7 +5,7 @@
 package example
 
 import cats.Show
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp }
 import cats.implicits._
 import doobie._, doobie.implicits._
 import fs2.Stream
@@ -17,7 +17,7 @@ import shapeless.ops.hlist._
  * A super-simple ORM for super-simple data types. We assume auto-generated keys, represented
  * externally, and columns map 1:1 with fields and have the same names.
  */
-object Orm extends IOApp {
+object Orm extends IOApp.Simple {
 
   // to silence unused warnings
   def void[A](a: A): Unit = (a, ())._2
@@ -128,10 +128,10 @@ object Orm extends IOApp {
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
 
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     for {
       a <- prog.transact(xa)
       _ <- IO(println(a))
-    } yield ExitCode.Success
+    } yield ()
 
 }

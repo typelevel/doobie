@@ -24,7 +24,7 @@ import scala.concurrent.duration._
   *
   * to send a notification. The program will exit after reading five notifications.
   */
-object PostgresNotify extends IOApp {
+object PostgresNotify extends IOApp.Simple {
 
   /** A resource that listens on a channel and unlistens when we're done. */
   def channel(name: String): Resource[ConnectionIO, Unit] =
@@ -56,11 +56,10 @@ object PostgresNotify extends IOApp {
     * Construct a stream of PGNotifications that prints to the console. Transform it to a
     * runnable process using the transcactor above, and run it.
     */
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     notificationStream("foo", 1.second)
       .map(n => show"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
       .evalMap(s => IO.delay(Console.println(s))).compile.drain
-      .as(ExitCode.Success)
 
 }
