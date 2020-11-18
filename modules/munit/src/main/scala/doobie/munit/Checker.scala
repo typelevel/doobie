@@ -9,6 +9,7 @@ import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
 import munit.Assertions
 import scala.reflect.runtime.universe.TypeTag
+import munit.Location
 
 /**
   * Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -35,21 +36,21 @@ import scala.reflect.runtime.universe.TypeTag
   */
 trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 
-  def check[A: Analyzable](a: A) = checkImpl(Analyzable.unpack(a))
+  def check[A: Analyzable](a: A)(implicit loc: Location) = checkImpl(Analyzable.unpack(a))
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def checkOutput[A: TypeTag](q: Query0[A]) =
+  def checkOutput[A: TypeTag](q: Query0[A])(implicit loc: Location) =
     checkImpl(AnalysisArgs(
       s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
     ))
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+  def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B])(implicit loc: Location) =
     checkImpl(AnalysisArgs(
       s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
     ))
 
-  private def checkImpl(args: AnalysisArgs) = {
+  private def checkImpl(args: AnalysisArgs)(implicit loc: Location) = {
     val report = analyzeIO(args, transactor).unsafeRunSync()
     if (!report.succeeded) {
       fail(
