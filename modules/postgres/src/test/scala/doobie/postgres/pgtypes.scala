@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -65,13 +65,13 @@ class pgtypesspec extends Specification with ScalaCheck {
   def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
-        inOut(col, x).transact(xa).attempt.unsafeRunSync must_== Right(x)
+        inOut(col, x).transact(xa).attempt.unsafeRunSync() must_== Right(x)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
-        inOutOpt[A](col, Some(x)).transact(xa).attempt.unsafeRunSync must_== Right(Some(x))
+        inOutOpt[A](col, Some(x)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(x))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -79,13 +79,13 @@ class pgtypesspec extends Specification with ScalaCheck {
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" in {
-        inOut(col, a).transact(xa).attempt.unsafeRunSync must_== Right(a)
+        inOut(col, a).transact(xa).attempt.unsafeRunSync() must_== Right(a)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync must_== Right(Some(a))
+        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(a))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -93,13 +93,13 @@ class pgtypesspec extends Specification with ScalaCheck {
   def testInOutWithCustomTransform[A](col: String)(t: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
-        inOut(col, t(x)).transact(xa).attempt.unsafeRunSync must_== Right(t(x))
+        inOut(col, t(x)).transact(xa).attempt.unsafeRunSync() must_== Right(t(x))
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
-        inOutOpt[A](col, Some(t(x))).transact(xa).attempt.unsafeRunSync must_== Right(Some(t(x)))
+        inOutOpt[A](col, Some(t(x))).transact(xa).attempt.unsafeRunSync() must_== Right(Some(t(x)))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -107,13 +107,13 @@ class pgtypesspec extends Specification with ScalaCheck {
   def testInOutWithCustomTransformAndMatch[A, B](col: String)(tr: A => A)(mtch: A => B)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
     s"Mapping for $col as ${m.typeStack}" >> {
       s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
-        inOut(col, tr(x)).transact(xa).attempt.unsafeRunSync.map(mtch) must_== Right(tr(x)).map(mtch)
+        inOut(col, tr(x)).transact(xa).attempt.unsafeRunSync().map(mtch) must_== Right(tr(x)).map(mtch)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
-        inOutOpt[A](col, Some(tr(x))).transact(xa).attempt.unsafeRunSync.map(_.map(mtch)) must_== Right(Some(tr(x))).map(_.map(mtch))
+        inOutOpt[A](col, Some(tr(x))).transact(xa).attempt.unsafeRunSync().map(_.map(mtch)) must_== Right(Some(tr(x))).map(_.map(mtch))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 
@@ -125,13 +125,13 @@ class pgtypesspec extends Specification with ScalaCheck {
           case x: java.sql.Time => println(s"TIME: ${x.toString}")
           case _ =>
         }
-        inOut(col, t).transact(xa).attempt.unsafeRunSync must_== Right(t)
+        inOut(col, t).transact(xa).attempt.unsafeRunSync() must_== Right(t)
       }
       s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll(gen) { t: A =>
-        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync must_== Right(Some(t))
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(t))
       }
       s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync must_== Right(None)
+        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
       }
     }
 

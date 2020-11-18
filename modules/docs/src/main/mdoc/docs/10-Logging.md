@@ -64,7 +64,7 @@ def byName(pat: String) = {
 When we run our program we get our result as expected.
 
 ```scala mdoc
-byName("U%").unsafeRunSync
+byName("U%").unsafeRunSync()
 ```
 
 But now on standard out we see:
@@ -126,7 +126,7 @@ But that's not interesting. Let's at least print the event out.
 
 ```scala mdoc
 val trivial = LogHandler(e => Console.println("*** " + e))
-sql"select 42".queryWithLogHandler[Int](trivial).unique.transact(xa).unsafeRunSync
+sql"select 42".queryWithLogHandler[Int](trivial).unique.transact(xa).unsafeRunSync()
 ```
 
 The `jdkLogHandler` implementation is straightforward. You might use it as a template to write a logger to suit your particular logging back-end.

@@ -25,8 +25,8 @@ A `Transactor[M]` consists of the following bits of information:
 Given this information a `Transactor[M]` can provide the following transformations:
 
 - `trans: ConnectionIO ~> M` A natural transformation of a program in `ConnectionIO` to the target monad `M` that uses the given `Strategy` to wrap the given program with additional setup, error-handling and cleanup operations. This yields an independent program in `M`. This is the most common way to run a doobie program.
-  - e.g., `xa.trans.apply(program1)`
-  - you can also use the syntax `program1.transact(xa)`, which runs `xa.trans` under the hood
+    - e.g., `xa.trans.apply(program1)`
+    - you can also use the syntax `program1.transact(xa)`, which runs `xa.trans` under the hood
 - `rawTrans` natural transformation equivalent to `trans` but one that does not use the provided `Strategy` to wrap the given program with additional operations. This can be useful in cases where transactional handling is unsupported or undesired.
 - `rawTransP: Stream[ConnectionIO, ?] ~> Stream[M, ?]` equivalent to `rawTrans` but expressed using `Stream`.
 - `transP: Stream[ConnectionIO, ?] ~> Stream[M, ?]` equivalent to `trans` but expressed using `Stream`.
@@ -42,6 +42,10 @@ Starting with version 0.6.0 **doobie** provides an asynchronous API that delegat
 - `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
 - A `cats.effect.Blocker` for **executing JDBC operations**. Because your connection pool limits the number of active connections this should be an **unbounded** pool.
+
+The reason for having separate pools for awaiting connections and executing JDBC operations is liveness - we must avoid the situation where all the threads in the pool are blocked on acquiring a JDBC connection, meaning that no logical threads are able to make progress and release the connection they're currently holding.
+
+Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
 
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 

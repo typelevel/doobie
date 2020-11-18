@@ -56,7 +56,7 @@ sql"select name from country"
   .query[String]    // Query0[String]
   .to[List]         // ConnectionIO[List[String]]
   .transact(xa)     // IO[List[String]]
-  .unsafeRunSync    // List[String]
+  .unsafeRunSync()    // List[String]
   .take(5)          // List[String]
   .foreach(println) // Unit
 ```
@@ -65,10 +65,10 @@ Let's break this down a bit.
 
 - `sql"select name from country".query[String]` defines a `Query0[String]`, which is a one-column query that maps each returned row to a `String`. We will get to more interesting row types soon.
 - `.to[List]` is a convenience method that accumulates rows into a `List`, in this case yielding a `ConnectionIO[List[String]]`. It works with any collection type that has a `CanBuildFrom`. Similar methods are:
-  - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
-  - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
-  - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
-  - See the Scaladoc for `Query0` for more information on these and other methods.
+    - `.unique` which returns a single value, raising an exception if there is not exactly one row returned.
+    - `.option` which returns an `Option`, raising an exception if there is more than one row returned.
+    - `.nel` which returns an `NonEmptyList`, raising an exception if there are no rows returned.
+    - See the Scaladoc for `Query0` for more information on these and other methods.
 - The rest is familar; `transact(xa)` yields a `IO[List[String]]` which we run, giving us a normal Scala `List[String]` that we print out.
 
 ### Internal Streaming
@@ -82,7 +82,7 @@ sql"select name from country"
   .take(5)          // Stream[ConnectionIO, String]
   .compile.toList   // ConnectionIO[List[String]]
   .transact(xa)     // IO[List[String]]
-  .unsafeRunSync    // List[String]
+  .unsafeRunSync()    // List[String]
   .foreach(println) // Unit
 ```
 
@@ -109,7 +109,7 @@ sql"select name from country"
   .stream        // Stream[ConnectionIO, String]
   .take(5)       // Stream[ConnectionIO, String]
   .quick         // IO[Unit]
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 
 This syntax allows you to quickly run a `Query0[A]` or `Stream[ConnectionIO, A]` and see the results printed to the console. This isn't a huge deal but it can save you some keystrokes when you're just messing around.
@@ -127,7 +127,7 @@ sql"select code, name, population, gnp from country"
   .stream
   .take(5)
   .quick
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 **doobie** supports row mappings for atomic column types, as well as options, tuples, `HList`s, shapeless records, and case classes thereof. So let's try the same query with an `HList`:
 
@@ -139,7 +139,7 @@ sql"select code, name, population, gnp from country"
   .stream
   .take(5)
   .quick
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 
 And with a shapeless record:
@@ -154,7 +154,7 @@ sql"select code, name, population, gnp from country"
   .stream
   .take(5)
   .quick
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 
 And again, mapping rows to a case class.
@@ -169,7 +169,7 @@ sql"select code, name, population, gnp from country"
   .stream
   .take(5)
   .quick
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 
 You can also nest case classes, `HList`s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
@@ -185,7 +185,7 @@ sql"select code, name, population, gnp from country"
   .stream
   .take(5)
   .quick
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 
 And just for fun, since the `Code` values are constructed from the primary key, let's turn the results into a `Map`. Trivial but useful.
@@ -197,7 +197,7 @@ sql"select code, name, population, gnp from country"
   .compile.toList
   .map(_.toMap)
   .quick
-  .unsafeRunSync
+  .unsafeRunSync()
 ```
 
 ### Final Streaming
@@ -214,7 +214,7 @@ val p: Stream[IO, Country2] = {
     .transact(xa)    // Stream[IO, Country2]
 }
 
-p.take(5).compile.toVector.unsafeRunSync.foreach(println)
+p.take(5).compile.toVector.unsafeRunSync().foreach(println)
 ```
 
 ### Diving Deeper
@@ -233,7 +233,7 @@ proc.take(5)        // Stream[ConnectionIO, (Code, Country2)]
     .compile.toList // ConnectionIO[List[(Code, Country2)]]
     .map(_.toMap)   // ConnectionIO[Map[Code, Country2]]
     .quick
-    .unsafeRunSync
+    .unsafeRunSync()
 ```
 
 The `stream` combinator is parameterized on the element type and consumes a statement and a program in `PreparedStatementIO` that sets input parameters and any other pre-execution configuration. In this case the "prepare" program is a no-op.

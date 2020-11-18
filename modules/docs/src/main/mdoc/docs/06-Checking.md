@@ -72,7 +72,7 @@ def biggerThan(minPop: Short) =
 Now let's try the `check` method provided by YOLO and see what happens.
 
 ```scala mdoc
-biggerThan(0).check.unsafeRunSync
+biggerThan(0).check.unsafeRunSync()
 ```
 
 Yikes, there are quite a few problems, in several categories. In this case **doobie** found
@@ -96,7 +96,7 @@ def biggerThan2(minPop: Int) =
 ```
 
 ```scala mdoc
-biggerThan2(0).check.unsafeRunSync
+biggerThan2(0).check.unsafeRunSync()
 ```
 
 **doobie** supports `check` for queries and updates in four ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2`, `doobie-scalatest` and `doobie-munit` packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.
@@ -108,7 +108,7 @@ Some drivers do not implement the JDBC metadata specification very well, which l
 However a common case is that *parameter* metadata is unavailable but *output column* metadata is. And in these cases there is a workaround: use `checkOutput` rather than `check`. This instructs **doobie** to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.
 
 ```scala mdoc
-biggerThan(0).checkOutput.unsafeRunSync
+biggerThan(0).checkOutput.unsafeRunSync()
 ```
 
 ### Diving Deeper

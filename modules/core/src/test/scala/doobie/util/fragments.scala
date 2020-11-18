@@ -1,9 +1,10 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
 
+import cats.data.NonEmptyList
 import cats.implicits._
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
@@ -30,8 +31,12 @@ class fragmentsspec extends Specification {
     val fs   = List(1,2,3).map(n => fr"$n")
     val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
 
-    "in" in {
+    "in for one column" in {
       in(fr"foo", nel).query[Unit].sql must_== "foo IN (?, ?, ?) "
+    }
+
+    "in for two columns" in {
+      in(fr"foo", NonEmptyList.of((1, true), (2, false))).query[Unit].sql must_== "foo IN ((?,?), (?,?)) "
     }
 
     "notIn" in {
@@ -140,13 +145,13 @@ class fragmentsspec extends Specification {
     "values (1)" in {
       val c = Contact(Person("Bob", 42), Some("addr"))
       val f = fr"select" ++ Fragments.values(c)
-      f.query[Contact].unique.transact(xa).unsafeRunSync must_== c
+      f.query[Contact].unique.transact(xa).unsafeRunSync() must_== c
     }
 
     "values (2)" in {
       val c = Contact(Person("Bob", 42), None)
       val f = fr"select" ++ Fragments.values(c)
-      f.query[Contact].unique.transact(xa).unsafeRunSync must_== c
+      f.query[Contact].unique.transact(xa).unsafeRunSync() must_== c
     }
 
   }
