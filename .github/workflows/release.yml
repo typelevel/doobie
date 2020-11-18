@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: olafurpg/setup-scala@v2
+      - uses: olafurpg/setup-scala@v10
       - name: Cache SBT
         uses: coursier/cache-action@v3
       - uses: olafurpg/setup-gpg@v2
