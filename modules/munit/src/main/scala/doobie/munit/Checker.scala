@@ -50,7 +50,7 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
     ))
 
   private def checkImpl(args: AnalysisArgs) = {
-    val report = analyzeIO(args, transactor).unsafeRunSync
+    val report = analyzeIO(args, transactor).unsafeRunSync()
     if (!report.succeeded) {
       fail(
         formatReport(args, report, colors)
