@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 13
-        uses: olafurpg/setup-scala@v2
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: 13
       - name: Cache SBT
