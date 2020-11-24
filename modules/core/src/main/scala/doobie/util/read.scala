@@ -51,7 +51,7 @@ final class Read[A](
       new Read(gets, (rs, n) => f(unsafeGet(rs, n)))
 
   def ap[B](ff: Read[A => B]): Read[B] =
-    new Read(gets ++ ff.gets, (rs, n) => ff.unsafeGet(rs, n + length)(unsafeGet(rs, n)))
+    new Read(gets ++ ff.gets, (rs, n) => ff.unsafeGet(rs, n)(unsafeGet(rs, n + ff.length)))
 
   def get(n: Int): ResultSetIO[A] =
     FRS.raw(unsafeGet(_, n))
