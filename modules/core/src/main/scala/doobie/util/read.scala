@@ -62,10 +62,11 @@ object Read extends LowerPriorityRead {
 
   def apply[A](implicit ev: Read[A]): ev.type = ev
 
-  implicit val ReadApply: Apply[Read] =
-    new Apply[Read] {
+  implicit val ReadApply: Applicative[Read] =
+    new Applicative[Read] {
       def ap[A, B](ff: Read[A => B])(fa: Read[A]): Read[B] = fa.ap(ff)
-      def map[A, B](fa: Read[A])(f: A => B): Read[B] = fa.map(f)
+      def pure[A](x: A): Read[A] = new Read(Nil, (_, _) => x)
+      override def map[A, B](fa: Read[A])(f: A => B): Read[B] = fa.map(f)
     }
 
   implicit val unit: Read[Unit] =
