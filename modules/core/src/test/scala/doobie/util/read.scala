@@ -5,8 +5,12 @@
 package doobie
 package util
 
-import shapeless._, shapeless.record._
+import shapeless._
+import shapeless.record._
+import cats.effect.{ContextShift, IO}
 import org.specs2.mutable.Specification
+
+import scala.concurrent.ExecutionContext
 
 
 class readspec extends Specification {
@@ -20,6 +24,16 @@ class readspec extends Specification {
     implicit val LenStrMeta: Meta[LenStr2] =
       Meta[String].timap(s => LenStr2(s.length, s))(_.s)
   }
+
+  implicit def contextShift: ContextShift[IO] =
+    IO.contextShift(ExecutionContext.global)
+
+  val xa = Transactor.fromDriverManager[IO](
+    "org.h2.Driver",
+    "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",
+    "sa", ""
+  )
+
 
   "Read" should {
 
@@ -92,6 +106,21 @@ class readspec extends Specification {
 
     "select 1-column instance when available" in {
       util.Read[LenStr2].length must_== 1
+    }
+
+    "select correct columns when combined with `ap`" in {
+      import cats.implicits._
+      import doobie.implicits._
+
+      val r = util.Read[Int]
+
+      val c = (r, r, r, r, r).tupled
+
+      val q = sql"SELECT 1, 2, 3, 4, 5".query(c).to[List]
+
+      val o = q.transact(xa).unsafeRunSync()
+
+      o must_== List((1, 2, 3, 4, 5))
     }
 
     // "work for products of ludicrous size (128)" in {
