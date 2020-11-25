@@ -4,21 +4,28 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{ ContextShift, IO, Timer }
 import doobie._, doobie.implicits._
 import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import scala.Predef._
+import scala.concurrent.duration._
+import cats.syntax.all._
+import cats.effect._
+import cats.effect.concurrent.MVar
 
 
 class queryspec extends Specification {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
+  
+  implicit def timer: Timer[IO] = 
+    IO.timer(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1;LOCK_MODE=3",
     "sa", ""
   )
 
@@ -153,4 +160,45 @@ class queryspec extends Specification {
     }
   }
 
+  val switchToSerialized = 
+    sql"""SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE"""
+
+  val createQuery = sql"""create table foo (bar varchar primary key)"""
+  val insertQuery = sql"""insert into foo values ('baz')"""
+
+  "Locked query" >> {
+    "cancel" in {
+      val prg = (
+        for {
+          _               <- createQuery.update.run.transact(xa)
+          isWaitedInLock  <- MVar.empty[IO, Boolean]
+
+          insFib1 <- (
+                (
+                  switchToSerialized.update.run *>
+                  insertQuery.update.run <* 
+                  Async[ConnectionIO].liftIO(IO.sleep(4.second)) <*
+                  Async[ConnectionIO].liftIO(isWaitedInLock.tryPut(true))
+                ).transact(xa)
+              ).start
+
+          insFib2  <- (
+                IO.sleep(1.second) *>
+                IO.race(
+                  (
+                    switchToSerialized.update.run *>
+                    insertQuery.update.run
+                  ).transact(xa),
+                  IO.sleep(2.seconds)
+                ) *> isWaitedInLock.tryPut(false)
+              ).start
+
+          _   <- insFib1.join
+          _   <- insFib2.join
+          res <- isWaitedInLock.read
+        } yield res)
+
+      prg.unsafeRunSync() must_=== false
+    }
+  }
 }
