@@ -11,7 +11,6 @@ import doobie.util.yolo.Yolo
 import cats.{Applicative, Defer, Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.{Async, Blocker, Bracket, ContextShift, ExitCase, Resource, Sync}
-import cats.instances.long._
 import cats.syntax.show._
 
 import fs2.Stream

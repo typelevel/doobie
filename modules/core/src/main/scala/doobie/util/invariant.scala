@@ -7,8 +7,6 @@ package doobie.util
 import scala.reflect.runtime.universe.{TypeApi, TypeTag}
 
 import cats.Show
-import cats.instances.int._
-import cats.instances.string._
 import cats.syntax.show._
 import doobie.enum.JdbcType
 

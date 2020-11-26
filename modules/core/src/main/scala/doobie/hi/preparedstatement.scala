@@ -26,7 +26,7 @@ import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 import scala.Predef.{ intArrayOps, intWrapper }
 
 import cats.Foldable
-import cats.implicits._
+import cats.syntax.all._
 import cats.data.Ior
 import cats.effect.syntax.bracket._
 import fs2.Stream

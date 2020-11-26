@@ -6,7 +6,7 @@ package doobie.hi
 
 import cats.{ Alternative, Monad }
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 
 import doobie.enum.Holdability
 import doobie.enum.FetchDirection

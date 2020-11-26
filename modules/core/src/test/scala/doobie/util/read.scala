@@ -109,7 +109,7 @@ class readspec extends Specification {
     }
 
     "select correct columns when combined with `ap`" in {
-      import cats.implicits._
+      import cats.syntax.all._
       import doobie.implicits._
 
       val r = util.Read[Int]
