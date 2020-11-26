@@ -8,7 +8,7 @@ import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
 import org.specs2.mutable.Specification
 
-import cats.implicits._
+import cats.syntax.all._
 
 
 class unapplyspec extends Specification {

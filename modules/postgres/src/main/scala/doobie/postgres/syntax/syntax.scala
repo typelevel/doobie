@@ -5,7 +5,7 @@
 package doobie.postgres.syntax
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import doobie.implicits._
 import doobie.postgres.sqlstate._
 import doobie._

@@ -5,7 +5,7 @@
 package doobie.postgres.syntax
 
 import cats.{ Foldable, ~> }
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect._
 import doobie._
 import doobie.implicits._

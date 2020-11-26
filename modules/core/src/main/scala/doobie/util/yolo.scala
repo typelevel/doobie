@@ -7,8 +7,6 @@ package doobie.util
 import scala.reflect.runtime.universe.TypeTag
 
 import cats.effect._
-import cats.instances.int._
-import cats.instances.string._
 import cats.syntax.show._
 import doobie.free.connection.{ ConnectionIO, delay }
 import doobie.syntax.connectionio._

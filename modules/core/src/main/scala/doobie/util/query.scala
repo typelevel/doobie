@@ -7,7 +7,7 @@ package doobie.util
 import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.syntax.bracket._
 import doobie._
 import doobie.implicits.AsyncPreparedStatementIO

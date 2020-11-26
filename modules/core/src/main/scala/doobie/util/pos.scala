@@ -3,9 +3,6 @@
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
-
-import cats.instances.int._
-import cats.instances.string._
 import cats.syntax.show._
 
 /** Module for source positions. */

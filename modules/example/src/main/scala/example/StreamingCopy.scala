@@ -9,7 +9,7 @@ import scala.util.control.NonFatal
 
 import cats.data._
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import fs2.Stream

@@ -1,25 +1,25 @@
 import FreeGen2._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.1.1"
-lazy val catsEffectVersion    = "2.2.0"
+lazy val catsVersion          = "2.3.0"
+lazy val catsEffectVersion    = "2.1.4"
 lazy val circeVersion         = "0.13.0"
-lazy val collCompatVersion    = "2.1.6"
-lazy val fs2Version           = "2.4.2"
+lazy val collCompatVersion    = "2.3.1"
+lazy val fs2Version           = "2.4.4"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5"
-lazy val kindProjectorVersion = "0.11.0"
-lazy val monixVersion         = "3.2.2"
-lazy val quillVersion         = "3.5.2"
+lazy val kindProjectorVersion = "0.11.1"
+lazy val monixVersion         = "3.3.0"
+lazy val quillVersion         = "3.6.0-RC3"
 lazy val postGisVersion       = "2.5.0"
-lazy val postgresVersion      = "42.2.14"
-lazy val refinedVersion       = "0.9.15"
-lazy val scalaCheckVersion    = "1.14.3"
-lazy val scalatestVersion     = "3.2.1"
+lazy val postgresVersion      = "42.2.18"
+lazy val refinedVersion       = "0.9.18"
+lazy val scalaCheckVersion    = "1.15.1"
+lazy val scalatestVersion     = "3.2.3"
 lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.7.1"
 lazy val sourcecodeVersion    = "0.2.1"
-lazy val specs2Version        = "4.10.2"
+lazy val specs2Version        = "4.10.5"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.3"
 lazy val slf4jVersion         = "1.7.30"
@@ -80,6 +80,9 @@ lazy val commonSettings =
     // For some reason tests started hanginging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
 
+    // We occasionally use snapshots.
+    resolvers +=
+      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   )
 
 lazy val publishSettings = Seq(

@@ -5,7 +5,7 @@
 package example
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 
