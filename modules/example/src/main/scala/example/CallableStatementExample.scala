@@ -6,7 +6,7 @@ package example
 
 import cats.effect.{ IO, IOApp, ExitCode }
 import cats.effect.syntax.bracket._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.enum.JdbcType.Other
 import doobie.free.connection.ConnectionIO

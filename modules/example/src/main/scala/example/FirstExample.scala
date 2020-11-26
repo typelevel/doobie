@@ -6,7 +6,7 @@
 package example
 
 import cats.Show
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.{ IO, IOApp, ExitCode }
 import fs2.Stream
 import doobie._, doobie.implicits._

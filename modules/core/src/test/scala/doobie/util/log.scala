@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }

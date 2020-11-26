@@ -6,7 +6,7 @@ package doobie.util
 
 import java.io.{ Console => _, _ }
 
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.Sync
 import cats.effect.syntax.bracket._
 
