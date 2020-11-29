@@ -8,7 +8,7 @@ import java.io.File
 
 import cats.effect.{ IO, IOApp }
 import cats.effect.syntax.monadCancel._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 

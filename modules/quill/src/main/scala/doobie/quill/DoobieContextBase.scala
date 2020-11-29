@@ -5,7 +5,7 @@
 package doobie.quill
 
 import cats.data.Nested
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.util.query.DefaultChunkSize
 import fs2.Stream

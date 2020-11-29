@@ -5,7 +5,7 @@
 package doobie.postgres
 
 import cats.effect.IO
-import cats.implicits._
+import cats.syntax.all._
 import doobie._, doobie.implicits._
 import org.postgresql.PGNotification
 import org.specs2.mutable.Specification

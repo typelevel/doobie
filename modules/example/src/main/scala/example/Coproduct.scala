@@ -9,7 +9,7 @@ import java.sql.Connection
 import cats.data.{EitherK, Kleisli}
 import cats.effect.{ IO, IOApp }
 import cats.free.Free
-import cats.implicits._
+import cats.syntax.all._
 import cats.{InjectK, ~>}
 import doobie._
 import doobie.free.connection.ConnectionOp
