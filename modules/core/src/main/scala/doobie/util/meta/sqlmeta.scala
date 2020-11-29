@@ -4,7 +4,7 @@
 
 package doobie.util.meta
 
-import doobie.enum.JdbcType._
+import doobie.enumerated.JdbcType._
 
 trait SqlMeta {
 

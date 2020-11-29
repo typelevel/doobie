@@ -9,7 +9,7 @@ import cats.syntax.applicativeError._
 import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.functor._
-import doobie.enum.SqlState
+import doobie.enumerated.SqlState
 import java.sql.SQLException
 
 /**
@@ -24,7 +24,9 @@ object catchsql {
     }
 
   /** Like `attemptSql` but yields only the exception's `SqlState`. */
-  def attemptSqlState[M[_]: ApplicativeError[*[_], Throwable], A](ma: M[A]): M[Either[SqlState, A]] =
+  def attemptSqlState[M[_], A](ma: M[A])(
+    implicit ev: ApplicativeError[M, Throwable]
+  ): M[Either[SqlState, A]] =
     attemptSql(ma).map(_.leftMap(e => SqlState(e.getSQLState)))
 
   def attemptSomeSqlState[M[_], A, B](ma: M[A])(f: PartialFunction[SqlState, B])(implicit AE: ApplicativeError[M, Throwable]): M[Either[B, A]] =
@@ -39,7 +41,9 @@ object catchsql {
     }
 
   /** Executes the handler, for exceptions propagating from `ma`. */
-  def exceptSqlState[M[_]: ApplicativeError[*[_], Throwable], A](ma: M[A])(handler: SqlState => M[A]): M[A] =
+  def exceptSqlState[M[_], A](ma: M[A])(handler: SqlState => M[A])(
+    implicit ev: ApplicativeError[M, Throwable]
+  ): M[A] =
     exceptSql(ma)(e => handler(SqlState(e.getSQLState)))
 
   /** Executes the handler where defined, for exceptions propagating from `ma`. */

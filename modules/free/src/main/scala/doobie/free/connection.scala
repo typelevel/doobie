@@ -90,7 +90,7 @@ object connection { module =>
       def getNetworkTimeout: F[Int]
       def getSchema: F[String]
       def getTransactionIsolation: F[Int]
-      def getTypeMap: F[Map[String, Class[_]]]
+      def getTypeMap: F[Map[String, Class[_ <: Object]]]
       def getWarnings: F[SQLWarning]
       def isClosed: F[Boolean]
       def isReadOnly: F[Boolean]
@@ -234,7 +234,7 @@ object connection { module =>
     case object GetTransactionIsolation extends ConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getTransactionIsolation
     }
-    case object GetTypeMap extends ConnectionOp[Map[String, Class[_]]] {
+    case object GetTypeMap extends ConnectionOp[Map[String, Class[_ <: Object]]] {
       def visit[F[_]](v: Visitor[F]) = v.getTypeMap
     }
     case object GetWarnings extends ConnectionOp[SQLWarning] {
@@ -385,7 +385,7 @@ object connection { module =>
   val getNetworkTimeout: ConnectionIO[Int] = FF.liftF(GetNetworkTimeout)
   val getSchema: ConnectionIO[String] = FF.liftF(GetSchema)
   val getTransactionIsolation: ConnectionIO[Int] = FF.liftF(GetTransactionIsolation)
-  val getTypeMap: ConnectionIO[Map[String, Class[_]]] = FF.liftF(GetTypeMap)
+  val getTypeMap: ConnectionIO[Map[String, Class[_ <: Object]]] = FF.liftF(GetTypeMap)
   val getWarnings: ConnectionIO[SQLWarning] = FF.liftF(GetWarnings)
   val isClosed: ConnectionIO[Boolean] = FF.liftF(IsClosed)
   val isReadOnly: ConnectionIO[Boolean] = FF.liftF(IsReadOnly)

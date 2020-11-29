@@ -7,23 +7,20 @@ package doobie.util
 import cats.{ Functor, Show }
 import cats.data.NonEmptyList
 import cats.free.Coyoneda
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 import doobie.util.invariant.{ InvalidObjectMapping, InvalidValue, NonNullableColumnRead }
 import java.sql.ResultSet
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{ Type, TypeTag }
-import shapeless._
-import shapeless.ops.hlist.IsHCons
-
+import org.tpolecat.typename._
 import doobie.util.meta.Meta
 
 sealed abstract class Get[A](
-  val typeStack: NonEmptyList[Option[Type]],
+  val typeStack: NonEmptyList[Option[String]],
   val jdbcSources: NonEmptyList[JdbcType],
   val get: Coyoneda[(ResultSet, Int) => *, A]
 ) {
 
-  protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B]
+  protected def mapImpl[B](f: A => B, typ: Option[String]): Get[B]
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   final def unsafeGetNonNullable(rs: ResultSet, n: Int): A = {
@@ -48,16 +45,16 @@ sealed abstract class Get[A](
 
   /**
    * Equivalent to `map`, but accumulates the destination type in the type stack for improved
-   * diagnostics. Prefer this method when you have concrete types or an available TypeTag.
+   * diagnostics. Prefer this method when you have concrete types or an available TypeName.
    */
-  final def tmap[B](f: A => B)(implicit ev: TypeTag[B]): Get[B] =
-    mapImpl(f, Some(ev.tpe))
+  final def tmap[B](f: A => B)(implicit ev: TypeName[B]): Get[B] =
+    mapImpl(f, Some(ev.value))
 
   /**
     * Equivalent to `tmap`, but allows the conversion to fail with an error message.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  final def temap[B](f: A => Either[String, B])(implicit sA: Show[A], evA: TypeTag[A], evB: TypeTag[B]): Get[B] =
+  final def temap[B](f: A => Either[String, B])(implicit sA: Show[A], evA: TypeName[A], evB: TypeName[B]): Get[B] =
     tmap { a =>
       f(a) match {
         case Left(reason) => throw InvalidValue[A, B](a, reason)
@@ -76,13 +73,13 @@ object Get extends GetInstances {
 
   /** Get instance for a basic JDBC type. */
   final case class Basic[A](
-    override val typeStack: NonEmptyList[Option[Type]],
+    override val typeStack: NonEmptyList[Option[String]],
     override val jdbcSources: NonEmptyList[JdbcType],
              val jdbcSourceSecondary: List[JdbcType],
     override val get: Coyoneda[(ResultSet, Int) => *, A]
   ) extends Get[A](typeStack, jdbcSources, get) {
 
-    protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B] =
+    protected def mapImpl[B](f: A => B, typ: Option[String]): Get[B] =
       copy(get = get.map(f), typeStack = typ :: typeStack)
 
     def fold[B](f: Get.Basic[A] => B, g: Get.Advanced[A] => B): B =
@@ -95,10 +92,10 @@ object Get extends GetInstances {
       jdbcSources: NonEmptyList[JdbcType],
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A
-    )(implicit ev: TypeTag[A]): Basic[A] =
-      Basic(NonEmptyList.of(Some(ev.tpe)), jdbcSources, jdbcSourceSecondary, Coyoneda.lift(get))
+    )(implicit ev: TypeName[A]): Basic[A] =
+      Basic(NonEmptyList.of(Some(ev.value)), jdbcSources, jdbcSourceSecondary, Coyoneda.lift(get))
 
-    def one[A: TypeTag](
+    def one[A: TypeName](
       jdbcSources: JdbcType,
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A
@@ -109,13 +106,13 @@ object Get extends GetInstances {
 
   /** Get instance for an advanced JDBC type. */
   final case class Advanced[A](
-    override val typeStack: NonEmptyList[Option[Type]],
+    override val typeStack: NonEmptyList[Option[String]],
     override val jdbcSources: NonEmptyList[JdbcType],
              val schemaTypes: NonEmptyList[String],
     override val get: Coyoneda[(ResultSet, Int) => *, A]
   ) extends Get[A](typeStack, jdbcSources, get) {
 
-    protected def mapImpl[B](f: A => B, typ: Option[Type]): Get[B] =
+    protected def mapImpl[B](f: A => B, typ: Option[String]): Get[B] =
       copy(get = get.map(f), typeStack = typ :: typeStack)
 
     def fold[B](f: Get.Basic[A] => B, g: Get.Advanced[A] => B): B =
@@ -128,18 +125,18 @@ object Get extends GetInstances {
       jdbcSources: NonEmptyList[JdbcType],
       schemaTypes: NonEmptyList[String],
       get: (ResultSet, Int) => A
-    )(implicit ev: TypeTag[A]): Advanced[A] =
-      Advanced(NonEmptyList.of(Some(ev.tpe)), jdbcSources, schemaTypes, Coyoneda.lift(get))
+    )(implicit ev: TypeName[A]): Advanced[A] =
+      Advanced(NonEmptyList.of(Some(ev.value)), jdbcSources, schemaTypes, Coyoneda.lift(get))
 
     def one[A](
       jdbcSource: JdbcType,
       schemaTypes: NonEmptyList[String],
       get: (ResultSet, Int) => A
-    )(implicit ev: TypeTag[A]): Advanced[A] =
-      Advanced(NonEmptyList.of(Some(ev.tpe)), NonEmptyList.of(jdbcSource), schemaTypes, Coyoneda.lift(get))
+    )(implicit ev: TypeName[A]): Advanced[A] =
+      Advanced(NonEmptyList.of(Some(ev.value)), NonEmptyList.of(jdbcSource), schemaTypes, Coyoneda.lift(get))
 
     @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
-    def array[A >: Null <: AnyRef: TypeTag](schemaTypes: NonEmptyList[String]): Advanced[Array[A]] =
+    def array[A >: Null <: AnyRef: TypeName](schemaTypes: NonEmptyList[String]): Advanced[Array[A]] =
       one(JdbcType.Array, schemaTypes, (r, n) => {
           val a = r.getArray(n)
           (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
@@ -147,7 +144,7 @@ object Get extends GetInstances {
       )
 
     @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
-    def other[A >: Null <: AnyRef: TypeTag](schemaTypes: NonEmptyList[String])(
+    def other[A >: Null <: AnyRef: TypeName](schemaTypes: NonEmptyList[String])(
       implicit A: ClassTag[A]
     ): Advanced[A] =
       many(
@@ -176,7 +173,7 @@ object Get extends GetInstances {
 
 }
 
-trait GetInstances {
+trait GetInstances extends GetPlatform {
   import Predef._ // for array ops
 
   /** @group Instances */
@@ -187,22 +184,11 @@ trait GetInstances {
     }
 
   /** @group Instances */
-  implicit def ArrayTypeAsListGet[A: ClassTag: TypeTag](implicit ev: Get[Array[A]]): Get[List[A]] =
+  implicit def ArrayTypeAsListGet[A: ClassTag: TypeName](implicit ev: Get[Array[A]]): Get[List[A]] =
     ev.tmap(_.toList)
 
   /** @group Instances */
-  implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeTag](implicit ev: Get[Array[A]]): Get[Vector[A]] =
+  implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeName](implicit ev: Get[Array[A]]): Get[Vector[A]] =
     ev.tmap(_.toVector)
-
-  /** @group Instances */
-  implicit def unaryProductGet[A: TypeTag, L <: HList, H, T <: HList](
-     implicit G: Generic.Aux[A, L],
-              C: IsHCons.Aux[L, H, T],
-              H: Lazy[Get[H]],
-              E: (H :: HNil) =:= L
-  ): Get[A] = {
-    void(C) // C drives inference but is not used directly
-    H.value.tmap[A](h => G.from(h :: HNil))
-  }
 
 }

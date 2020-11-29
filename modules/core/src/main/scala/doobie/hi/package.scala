@@ -9,7 +9,7 @@ package doobie
  * in terms of those in `doobie.free.connection` but differ in the following ways:
  *
  *  - Enumerated values represented by `Int` values in JDBC are mapped to one of the proper types
- *    defined in `doobie.enum`.
+ *    defined in `doobie.enumerated`.
  *  - Nullable values are represented in terms of `Option`.
  *  - Java collection types are translated to immutable Scala equivalents.
  *  - Actions that compute lifetime-managed resources do not return the resource directly, but rather

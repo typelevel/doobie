@@ -18,7 +18,6 @@ lazy val scalaCheckVersion    = "1.15.1"
 lazy val scalatestVersion     = "3.2.3"
 lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.7.1"
-lazy val sourcecodeVersion    = "0.2.1"
 lazy val specs2Version        = "4.10.5"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.4"
@@ -36,6 +35,9 @@ lazy val compilerFlags = Seq(
     "-Ydelambdafy:inline",    // http://fs2.io/faq.html
   ),
   scalacOptions in (Compile, doc) --= Seq(
+    "-Xfatal-warnings"
+  ),
+  scalacOptions in Test --= Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
@@ -68,11 +70,11 @@ lazy val commonSettings =
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
-    // libraryDependencies ++= Seq(
-    //   "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
-    //   "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
-    //   "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
-    // ),
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
+      "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
+      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
+    ).filterNot(_ => isDotty.value),
     libraryDependencies ++= Seq(
       compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
     ).filterNot(_ => isDotty.value),
@@ -83,6 +85,36 @@ lazy val commonSettings =
     // We occasionally use snapshots.
     resolvers +=
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+
+    // Add some more source directories
+    unmanagedSourceDirectories in Compile ++= {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _))  => Seq(sourceDir / "scala-3")
+        case Some((2, _))  => Seq(sourceDir / "scala-2")
+        case _             => Seq()
+      }
+    },
+
+    // Also for test
+    unmanagedSourceDirectories in Test ++= {
+      val sourceDir = (sourceDirectory in Test).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _))  => Seq(sourceDir / "scala-3")
+        case Some((2, _))  => Seq(sourceDir / "scala-2")
+        case _             => Seq()
+      }
+    },
+
+    // dottydoc really doesn't work at all right now
+    Compile / doc / sources := {
+      val old = (Compile / doc / sources).value
+      if (isDotty.value)
+        Seq()
+      else
+        old
+    },
+
   )
 
 lazy val publishSettings = Seq(
@@ -106,7 +138,7 @@ lazy val doobie = project.in(file("."))
   .settings(noPublishSettings)
   .aggregate(
     // bench,
-    // core,
+    core,
     // docs,
     // example,
     free,
@@ -136,7 +168,9 @@ lazy val free = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-    ),
+    ) ++Seq(
+      scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for macros
+    ).filterNot(_ => isDotty.value),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
@@ -161,50 +195,49 @@ lazy val free = project
   )
 
 
-// lazy val core = project
-//   .in(file("modules/core"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(free)
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name := "doobie-core",
-//     description := "Pure functional JDBC layer for Scala.",
-//     libraryDependencies ++= Seq(
-//       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
-//       "com.chuusai"           %% "shapeless"     % shapelessVersion,
-//       "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
-//       "com.h2database"        %  "h2"            % h2Version % "test",
-//     ),
-
-//     scalacOptions += "-Yno-predef",
-//     unmanagedSourceDirectories in Compile += {
-//       val sourceDir = (sourceDirectory in Compile).value
-//       CrossVersion.partialVersion(scalaVersion.value) match {
-//         case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
-//         case _                       => sourceDir / "scala-2.13+"
-//       }
-//     },
-//     sourceGenerators in Compile += Def.task {
-//       val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
-//       val outFile = new File(outDir, "buildinfo.scala")
-//       outDir.mkdirs
-//       val v = version.value
-//       val t = System.currentTimeMillis
-//       IO.write(outFile,
-//         s"""|package doobie
-//             |
-//             |/** Auto-generated build information. */
-//             |object buildinfo {
-//             |  /** Current version of doobie ($v). */
-//             |  val version = "$v"
-//             |  /** Build date (${new java.util.Date(t)}). */
-//             |  val date    = new java.util.Date(${t}L)
-//             |}
-//             |""".stripMargin)
-//       Seq(outFile)
-//     }.taskValue
-//   )
+lazy val core = project
+  .in(file("modules/core"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(free)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-core",
+    description := "Pure functional JDBC layer for Scala.",
+    libraryDependencies ++= Seq(
+      "com.chuusai"    %% "shapeless" % shapelessVersion,
+    ).filterNot(_ => isDotty.value) ++ Seq(
+      "org.tpolecat"   %% "typename"  % "0.1.1",
+      "com.h2database" %  "h2"        % h2Version % "test",
+    ),
+    scalacOptions += "-Yno-predef",
+    unmanagedSourceDirectories in Compile += {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
+        case _                       => sourceDir / "scala-2.13+"
+      }
+    },
+    sourceGenerators in Compile += Def.task {
+      val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
+      val outFile = new File(outDir, "buildinfo.scala")
+      outDir.mkdirs
+      val v = version.value
+      val t = System.currentTimeMillis
+      IO.write(outFile,
+        s"""|package doobie
+            |
+            |/** Auto-generated build information. */
+            |object buildinfo {
+            |  /** Current version of doobie ($v). */
+            |  val version = "$v"
+            |  /** Build date (${new java.util.Date(t)}). */
+            |  val date    = new java.util.Date(${t}L)
+            |}
+            |""".stripMargin)
+      Seq(outFile)
+    }.taskValue
+  )
 
 // lazy val example = project
 //   .in(file("modules/example"))
