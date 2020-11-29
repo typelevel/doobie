@@ -8,7 +8,6 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.Reader
@@ -36,7 +35,6 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
-@silent("deprecated")
 object callablestatement { module =>
 
   // Algebra of operations for CallableStatement. Each accepts a visitor as an alternative to pattern-matching.
@@ -82,6 +80,9 @@ object callablestatement { module =>
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def closeOnCompletion: F[Unit]
+      def enquoteIdentifier(a: String, b: Boolean): F[String]
+      def enquoteLiteral(a: String): F[String]
+      def enquoteNCharLiteral(a: String): F[String]
       def execute: F[Boolean]
       def execute(a: String): F[Boolean]
       def execute(a: String, b: Array[Int]): F[Boolean]
@@ -104,7 +105,6 @@ object callablestatement { module =>
       def getArray(a: Int): F[SqlArray]
       def getArray(a: String): F[SqlArray]
       def getBigDecimal(a: Int): F[BigDecimal]
-      def getBigDecimal(a: Int, b: Int): F[BigDecimal]
       def getBigDecimal(a: String): F[BigDecimal]
       def getBlob(a: Int): F[Blob]
       def getBlob(a: String): F[Blob]
@@ -184,6 +184,7 @@ object callablestatement { module =>
       def isCloseOnCompletion: F[Boolean]
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
+      def isSimpleIdentifier(a: String): F[Boolean]
       def isWrapperFor(a: Class[_]): F[Boolean]
       def registerOutParameter(a: Int, b: Int): F[Unit]
       def registerOutParameter(a: Int, b: Int, c: Int): F[Unit]
@@ -302,7 +303,6 @@ object callablestatement { module =>
       def setTimestamp(a: String, b: Timestamp, c: Calendar): F[Unit]
       def setURL(a: Int, b: URL): F[Unit]
       def setURL(a: String, b: URL): F[Unit]
-      def setUnicodeStream(a: Int, b: InputStream, c: Int): F[Unit]
       def unwrap[T](a: Class[T]): F[T]
       def wasNull: F[Boolean]
 
@@ -333,7 +333,7 @@ object callablestatement { module =>
     final case class BracketCase[A, B](acquire: CallableStatementIO[A], use: A => CallableStatementIO[B], release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]) extends CallableStatementOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends CallableStatementOp[Unit] {
+    case object Shift extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CallableStatementIO[A]) extends CallableStatementOp[A] {
@@ -341,697 +341,703 @@ object callablestatement { module =>
     }
 
     // CallableStatement-specific operations.
-    final case object AddBatch extends CallableStatementOp[Unit] {
+    case object AddBatch extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addBatch
     }
-    final case class  AddBatch1(a: String) extends CallableStatementOp[Unit] {
+    final case class AddBatch1(a: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addBatch(a)
     }
-    final case object Cancel extends CallableStatementOp[Unit] {
+    case object Cancel extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancel
     }
-    final case object ClearBatch extends CallableStatementOp[Unit] {
+    case object ClearBatch extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearBatch
     }
-    final case object ClearParameters extends CallableStatementOp[Unit] {
+    case object ClearParameters extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearParameters
     }
-    final case object ClearWarnings extends CallableStatementOp[Unit] {
+    case object ClearWarnings extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
     }
-    final case object Close extends CallableStatementOp[Unit] {
+    case object Close extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    final case object CloseOnCompletion extends CallableStatementOp[Unit] {
+    case object CloseOnCompletion extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
     }
-    final case object Execute extends CallableStatementOp[Boolean] {
+    final case class EnquoteIdentifier(a: String, b: Boolean) extends CallableStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteIdentifier(a, b)
+    }
+    final case class EnquoteLiteral(a: String) extends CallableStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteLiteral(a)
+    }
+    final case class EnquoteNCharLiteral(a: String) extends CallableStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteNCharLiteral(a)
+    }
+    case object Execute extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute
     }
-    final case class  Execute1(a: String) extends CallableStatementOp[Boolean] {
+    final case class Execute1(a: String) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a)
     }
-    final case class  Execute2(a: String, b: Array[Int]) extends CallableStatementOp[Boolean] {
+    final case class Execute2(a: String, b: Array[Int]) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    final case class  Execute3(a: String, b: Array[String]) extends CallableStatementOp[Boolean] {
+    final case class Execute3(a: String, b: Array[String]) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    final case class  Execute4(a: String, b: Int) extends CallableStatementOp[Boolean] {
+    final case class Execute4(a: String, b: Int) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    final case object ExecuteBatch extends CallableStatementOp[Array[Int]] {
+    case object ExecuteBatch extends CallableStatementOp[Array[Int]] {
       def visit[F[_]](v: Visitor[F]) = v.executeBatch
     }
-    final case object ExecuteLargeBatch extends CallableStatementOp[Array[Long]] {
+    case object ExecuteLargeBatch extends CallableStatementOp[Array[Long]] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeBatch
     }
-    final case object ExecuteLargeUpdate extends CallableStatementOp[Long] {
+    case object ExecuteLargeUpdate extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate
     }
-    final case class  ExecuteLargeUpdate1(a: String) extends CallableStatementOp[Long] {
+    final case class ExecuteLargeUpdate1(a: String) extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a)
     }
-    final case class  ExecuteLargeUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Long] {
+    final case class ExecuteLargeUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    final case class  ExecuteLargeUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Long] {
+    final case class ExecuteLargeUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    final case class  ExecuteLargeUpdate4(a: String, b: Int) extends CallableStatementOp[Long] {
+    final case class ExecuteLargeUpdate4(a: String, b: Int) extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    final case object ExecuteQuery extends CallableStatementOp[ResultSet] {
+    case object ExecuteQuery extends CallableStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.executeQuery
     }
-    final case class  ExecuteQuery1(a: String) extends CallableStatementOp[ResultSet] {
+    final case class ExecuteQuery1(a: String) extends CallableStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.executeQuery(a)
     }
-    final case object ExecuteUpdate extends CallableStatementOp[Int] {
+    case object ExecuteUpdate extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate
     }
-    final case class  ExecuteUpdate1(a: String) extends CallableStatementOp[Int] {
+    final case class ExecuteUpdate1(a: String) extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a)
     }
-    final case class  ExecuteUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Int] {
+    final case class ExecuteUpdate2(a: String, b: Array[Int]) extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    final case class  ExecuteUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Int] {
+    final case class ExecuteUpdate3(a: String, b: Array[String]) extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    final case class  ExecuteUpdate4(a: String, b: Int) extends CallableStatementOp[Int] {
+    final case class ExecuteUpdate4(a: String, b: Int) extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    final case class  GetArray(a: Int) extends CallableStatementOp[SqlArray] {
+    final case class GetArray(a: Int) extends CallableStatementOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.getArray(a)
     }
-    final case class  GetArray1(a: String) extends CallableStatementOp[SqlArray] {
+    final case class GetArray1(a: String) extends CallableStatementOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.getArray(a)
     }
-    final case class  GetBigDecimal(a: Int) extends CallableStatementOp[BigDecimal] {
+    final case class GetBigDecimal(a: Int) extends CallableStatementOp[BigDecimal] {
       def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a)
     }
-    final case class  GetBigDecimal1(a: Int, b: Int) extends CallableStatementOp[BigDecimal] {
-      def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a, b)
-    }
-    final case class  GetBigDecimal2(a: String) extends CallableStatementOp[BigDecimal] {
+    final case class GetBigDecimal1(a: String) extends CallableStatementOp[BigDecimal] {
       def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a)
     }
-    final case class  GetBlob(a: Int) extends CallableStatementOp[Blob] {
+    final case class GetBlob(a: Int) extends CallableStatementOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.getBlob(a)
     }
-    final case class  GetBlob1(a: String) extends CallableStatementOp[Blob] {
+    final case class GetBlob1(a: String) extends CallableStatementOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.getBlob(a)
     }
-    final case class  GetBoolean(a: Int) extends CallableStatementOp[Boolean] {
+    final case class GetBoolean(a: Int) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getBoolean(a)
     }
-    final case class  GetBoolean1(a: String) extends CallableStatementOp[Boolean] {
+    final case class GetBoolean1(a: String) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getBoolean(a)
     }
-    final case class  GetByte(a: Int) extends CallableStatementOp[Byte] {
+    final case class GetByte(a: Int) extends CallableStatementOp[Byte] {
       def visit[F[_]](v: Visitor[F]) = v.getByte(a)
     }
-    final case class  GetByte1(a: String) extends CallableStatementOp[Byte] {
+    final case class GetByte1(a: String) extends CallableStatementOp[Byte] {
       def visit[F[_]](v: Visitor[F]) = v.getByte(a)
     }
-    final case class  GetBytes(a: Int) extends CallableStatementOp[Array[Byte]] {
+    final case class GetBytes(a: Int) extends CallableStatementOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getBytes(a)
     }
-    final case class  GetBytes1(a: String) extends CallableStatementOp[Array[Byte]] {
+    final case class GetBytes1(a: String) extends CallableStatementOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getBytes(a)
     }
-    final case class  GetCharacterStream(a: Int) extends CallableStatementOp[Reader] {
+    final case class GetCharacterStream(a: Int) extends CallableStatementOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a)
     }
-    final case class  GetCharacterStream1(a: String) extends CallableStatementOp[Reader] {
+    final case class GetCharacterStream1(a: String) extends CallableStatementOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a)
     }
-    final case class  GetClob(a: Int) extends CallableStatementOp[Clob] {
+    final case class GetClob(a: Int) extends CallableStatementOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.getClob(a)
     }
-    final case class  GetClob1(a: String) extends CallableStatementOp[Clob] {
+    final case class GetClob1(a: String) extends CallableStatementOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.getClob(a)
     }
-    final case object GetConnection extends CallableStatementOp[Connection] {
+    case object GetConnection extends CallableStatementOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.getConnection
     }
-    final case class  GetDate(a: Int) extends CallableStatementOp[Date] {
+    final case class GetDate(a: Int) extends CallableStatementOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a)
     }
-    final case class  GetDate1(a: Int, b: Calendar) extends CallableStatementOp[Date] {
+    final case class GetDate1(a: Int, b: Calendar) extends CallableStatementOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a, b)
     }
-    final case class  GetDate2(a: String) extends CallableStatementOp[Date] {
+    final case class GetDate2(a: String) extends CallableStatementOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a)
     }
-    final case class  GetDate3(a: String, b: Calendar) extends CallableStatementOp[Date] {
+    final case class GetDate3(a: String, b: Calendar) extends CallableStatementOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a, b)
     }
-    final case class  GetDouble(a: Int) extends CallableStatementOp[Double] {
+    final case class GetDouble(a: Int) extends CallableStatementOp[Double] {
       def visit[F[_]](v: Visitor[F]) = v.getDouble(a)
     }
-    final case class  GetDouble1(a: String) extends CallableStatementOp[Double] {
+    final case class GetDouble1(a: String) extends CallableStatementOp[Double] {
       def visit[F[_]](v: Visitor[F]) = v.getDouble(a)
     }
-    final case object GetFetchDirection extends CallableStatementOp[Int] {
+    case object GetFetchDirection extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchDirection
     }
-    final case object GetFetchSize extends CallableStatementOp[Int] {
+    case object GetFetchSize extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchSize
     }
-    final case class  GetFloat(a: Int) extends CallableStatementOp[Float] {
+    final case class GetFloat(a: Int) extends CallableStatementOp[Float] {
       def visit[F[_]](v: Visitor[F]) = v.getFloat(a)
     }
-    final case class  GetFloat1(a: String) extends CallableStatementOp[Float] {
+    final case class GetFloat1(a: String) extends CallableStatementOp[Float] {
       def visit[F[_]](v: Visitor[F]) = v.getFloat(a)
     }
-    final case object GetGeneratedKeys extends CallableStatementOp[ResultSet] {
+    case object GetGeneratedKeys extends CallableStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getGeneratedKeys
     }
-    final case class  GetInt(a: Int) extends CallableStatementOp[Int] {
+    final case class GetInt(a: Int) extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getInt(a)
     }
-    final case class  GetInt1(a: String) extends CallableStatementOp[Int] {
+    final case class GetInt1(a: String) extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getInt(a)
     }
-    final case object GetLargeMaxRows extends CallableStatementOp[Long] {
+    case object GetLargeMaxRows extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeMaxRows
     }
-    final case object GetLargeUpdateCount extends CallableStatementOp[Long] {
+    case object GetLargeUpdateCount extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeUpdateCount
     }
-    final case class  GetLong(a: Int) extends CallableStatementOp[Long] {
+    final case class GetLong(a: Int) extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLong(a)
     }
-    final case class  GetLong1(a: String) extends CallableStatementOp[Long] {
+    final case class GetLong1(a: String) extends CallableStatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLong(a)
     }
-    final case object GetMaxFieldSize extends CallableStatementOp[Int] {
+    case object GetMaxFieldSize extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxFieldSize
     }
-    final case object GetMaxRows extends CallableStatementOp[Int] {
+    case object GetMaxRows extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxRows
     }
-    final case object GetMetaData extends CallableStatementOp[ResultSetMetaData] {
+    case object GetMetaData extends CallableStatementOp[ResultSetMetaData] {
       def visit[F[_]](v: Visitor[F]) = v.getMetaData
     }
-    final case object GetMoreResults extends CallableStatementOp[Boolean] {
+    case object GetMoreResults extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getMoreResults
     }
-    final case class  GetMoreResults1(a: Int) extends CallableStatementOp[Boolean] {
+    final case class GetMoreResults1(a: Int) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getMoreResults(a)
     }
-    final case class  GetNCharacterStream(a: Int) extends CallableStatementOp[Reader] {
+    final case class GetNCharacterStream(a: Int) extends CallableStatementOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getNCharacterStream(a)
     }
-    final case class  GetNCharacterStream1(a: String) extends CallableStatementOp[Reader] {
+    final case class GetNCharacterStream1(a: String) extends CallableStatementOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getNCharacterStream(a)
     }
-    final case class  GetNClob(a: Int) extends CallableStatementOp[NClob] {
+    final case class GetNClob(a: Int) extends CallableStatementOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.getNClob(a)
     }
-    final case class  GetNClob1(a: String) extends CallableStatementOp[NClob] {
+    final case class GetNClob1(a: String) extends CallableStatementOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.getNClob(a)
     }
-    final case class  GetNString(a: Int) extends CallableStatementOp[String] {
+    final case class GetNString(a: Int) extends CallableStatementOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getNString(a)
     }
-    final case class  GetNString1(a: String) extends CallableStatementOp[String] {
+    final case class GetNString1(a: String) extends CallableStatementOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getNString(a)
     }
-    final case class  GetObject(a: Int) extends CallableStatementOp[AnyRef] {
+    final case class GetObject(a: Int) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    final case class  GetObject1[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
+    final case class GetObject1[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetObject3(a: String) extends CallableStatementOp[AnyRef] {
+    final case class GetObject3(a: String) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    final case class  GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
+    final case class GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
+    case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
       def visit[F[_]](v: Visitor[F]) = v.getParameterMetaData
     }
-    final case object GetQueryTimeout extends CallableStatementOp[Int] {
+    case object GetQueryTimeout extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getQueryTimeout
     }
-    final case class  GetRef(a: Int) extends CallableStatementOp[Ref] {
+    final case class GetRef(a: Int) extends CallableStatementOp[Ref] {
       def visit[F[_]](v: Visitor[F]) = v.getRef(a)
     }
-    final case class  GetRef1(a: String) extends CallableStatementOp[Ref] {
+    final case class GetRef1(a: String) extends CallableStatementOp[Ref] {
       def visit[F[_]](v: Visitor[F]) = v.getRef(a)
     }
-    final case object GetResultSet extends CallableStatementOp[ResultSet] {
+    case object GetResultSet extends CallableStatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSet
     }
-    final case object GetResultSetConcurrency extends CallableStatementOp[Int] {
+    case object GetResultSetConcurrency extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetConcurrency
     }
-    final case object GetResultSetHoldability extends CallableStatementOp[Int] {
+    case object GetResultSetHoldability extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetHoldability
     }
-    final case object GetResultSetType extends CallableStatementOp[Int] {
+    case object GetResultSetType extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetType
     }
-    final case class  GetRowId(a: Int) extends CallableStatementOp[RowId] {
+    final case class GetRowId(a: Int) extends CallableStatementOp[RowId] {
       def visit[F[_]](v: Visitor[F]) = v.getRowId(a)
     }
-    final case class  GetRowId1(a: String) extends CallableStatementOp[RowId] {
+    final case class GetRowId1(a: String) extends CallableStatementOp[RowId] {
       def visit[F[_]](v: Visitor[F]) = v.getRowId(a)
     }
-    final case class  GetSQLXML(a: Int) extends CallableStatementOp[SQLXML] {
+    final case class GetSQLXML(a: Int) extends CallableStatementOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLXML(a)
     }
-    final case class  GetSQLXML1(a: String) extends CallableStatementOp[SQLXML] {
+    final case class GetSQLXML1(a: String) extends CallableStatementOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLXML(a)
     }
-    final case class  GetShort(a: Int) extends CallableStatementOp[Short] {
+    final case class GetShort(a: Int) extends CallableStatementOp[Short] {
       def visit[F[_]](v: Visitor[F]) = v.getShort(a)
     }
-    final case class  GetShort1(a: String) extends CallableStatementOp[Short] {
+    final case class GetShort1(a: String) extends CallableStatementOp[Short] {
       def visit[F[_]](v: Visitor[F]) = v.getShort(a)
     }
-    final case class  GetString(a: Int) extends CallableStatementOp[String] {
+    final case class GetString(a: Int) extends CallableStatementOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getString(a)
     }
-    final case class  GetString1(a: String) extends CallableStatementOp[String] {
+    final case class GetString1(a: String) extends CallableStatementOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getString(a)
     }
-    final case class  GetTime(a: Int) extends CallableStatementOp[Time] {
+    final case class GetTime(a: Int) extends CallableStatementOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a)
     }
-    final case class  GetTime1(a: Int, b: Calendar) extends CallableStatementOp[Time] {
+    final case class GetTime1(a: Int, b: Calendar) extends CallableStatementOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a, b)
     }
-    final case class  GetTime2(a: String) extends CallableStatementOp[Time] {
+    final case class GetTime2(a: String) extends CallableStatementOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a)
     }
-    final case class  GetTime3(a: String, b: Calendar) extends CallableStatementOp[Time] {
+    final case class GetTime3(a: String, b: Calendar) extends CallableStatementOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a, b)
     }
-    final case class  GetTimestamp(a: Int) extends CallableStatementOp[Timestamp] {
+    final case class GetTimestamp(a: Int) extends CallableStatementOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a)
     }
-    final case class  GetTimestamp1(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
+    final case class GetTimestamp1(a: Int, b: Calendar) extends CallableStatementOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a, b)
     }
-    final case class  GetTimestamp2(a: String) extends CallableStatementOp[Timestamp] {
+    final case class GetTimestamp2(a: String) extends CallableStatementOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a)
     }
-    final case class  GetTimestamp3(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
+    final case class GetTimestamp3(a: String, b: Calendar) extends CallableStatementOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a, b)
     }
-    final case class  GetURL(a: Int) extends CallableStatementOp[URL] {
+    final case class GetURL(a: Int) extends CallableStatementOp[URL] {
       def visit[F[_]](v: Visitor[F]) = v.getURL(a)
     }
-    final case class  GetURL1(a: String) extends CallableStatementOp[URL] {
+    final case class GetURL1(a: String) extends CallableStatementOp[URL] {
       def visit[F[_]](v: Visitor[F]) = v.getURL(a)
     }
-    final case object GetUpdateCount extends CallableStatementOp[Int] {
+    case object GetUpdateCount extends CallableStatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getUpdateCount
     }
-    final case object GetWarnings extends CallableStatementOp[SQLWarning] {
+    case object GetWarnings extends CallableStatementOp[SQLWarning] {
       def visit[F[_]](v: Visitor[F]) = v.getWarnings
     }
-    final case object IsCloseOnCompletion extends CallableStatementOp[Boolean] {
+    case object IsCloseOnCompletion extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isCloseOnCompletion
     }
-    final case object IsClosed extends CallableStatementOp[Boolean] {
+    case object IsClosed extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isClosed
     }
-    final case object IsPoolable extends CallableStatementOp[Boolean] {
+    case object IsPoolable extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
     }
-    final case class  IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
+    final case class IsSimpleIdentifier(a: String) extends CallableStatementOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
+    }
+    final case class IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
-    final case class  RegisterOutParameter(a: Int, b: Int) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter(a: Int, b: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b)
     }
-    final case class  RegisterOutParameter1(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter1(a: Int, b: Int, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter2(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter2(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter3(a: Int, b: SQLType) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter3(a: Int, b: SQLType) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b)
     }
-    final case class  RegisterOutParameter4(a: Int, b: SQLType, c: Int) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter4(a: Int, b: SQLType, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter5(a: Int, b: SQLType, c: String) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter5(a: Int, b: SQLType, c: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter6(a: String, b: Int) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter6(a: String, b: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b)
     }
-    final case class  RegisterOutParameter7(a: String, b: Int, c: Int) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter7(a: String, b: Int, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter8(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter8(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter9(a: String, b: SQLType) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter9(a: String, b: SQLType) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b)
     }
-    final case class  RegisterOutParameter10(a: String, b: SQLType, c: Int) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter10(a: String, b: SQLType, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  RegisterOutParameter11(a: String, b: SQLType, c: String) extends CallableStatementOp[Unit] {
+    final case class RegisterOutParameter11(a: String, b: SQLType, c: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.registerOutParameter(a, b, c)
     }
-    final case class  SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit] {
+    final case class SetArray(a: Int, b: SqlArray) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setArray(a, b)
     }
-    final case class  SetAsciiStream(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+    final case class SetAsciiStream(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b)
     }
-    final case class  SetAsciiStream1(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetAsciiStream1(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b, c)
     }
-    final case class  SetAsciiStream2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetAsciiStream2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b, c)
     }
-    final case class  SetAsciiStream3(a: String, b: InputStream) extends CallableStatementOp[Unit] {
+    final case class SetAsciiStream3(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b)
     }
-    final case class  SetAsciiStream4(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetAsciiStream4(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b, c)
     }
-    final case class  SetAsciiStream5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetAsciiStream5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a, b, c)
     }
-    final case class  SetBigDecimal(a: Int, b: BigDecimal) extends CallableStatementOp[Unit] {
+    final case class SetBigDecimal(a: Int, b: BigDecimal) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBigDecimal(a, b)
     }
-    final case class  SetBigDecimal1(a: String, b: BigDecimal) extends CallableStatementOp[Unit] {
+    final case class SetBigDecimal1(a: String, b: BigDecimal) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBigDecimal(a, b)
     }
-    final case class  SetBinaryStream(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+    final case class SetBinaryStream(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b)
     }
-    final case class  SetBinaryStream1(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetBinaryStream1(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b, c)
     }
-    final case class  SetBinaryStream2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetBinaryStream2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b, c)
     }
-    final case class  SetBinaryStream3(a: String, b: InputStream) extends CallableStatementOp[Unit] {
+    final case class SetBinaryStream3(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b)
     }
-    final case class  SetBinaryStream4(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetBinaryStream4(a: String, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b, c)
     }
-    final case class  SetBinaryStream5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetBinaryStream5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a, b, c)
     }
-    final case class  SetBlob(a: Int, b: Blob) extends CallableStatementOp[Unit] {
+    final case class SetBlob(a: Int, b: Blob) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b)
     }
-    final case class  SetBlob1(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
+    final case class SetBlob1(a: Int, b: InputStream) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b)
     }
-    final case class  SetBlob2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetBlob2(a: Int, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b, c)
     }
-    final case class  SetBlob3(a: String, b: Blob) extends CallableStatementOp[Unit] {
+    final case class SetBlob3(a: String, b: Blob) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b)
     }
-    final case class  SetBlob4(a: String, b: InputStream) extends CallableStatementOp[Unit] {
+    final case class SetBlob4(a: String, b: InputStream) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b)
     }
-    final case class  SetBlob5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetBlob5(a: String, b: InputStream, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBlob(a, b, c)
     }
-    final case class  SetBoolean(a: Int, b: Boolean) extends CallableStatementOp[Unit] {
+    final case class SetBoolean(a: Int, b: Boolean) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBoolean(a, b)
     }
-    final case class  SetBoolean1(a: String, b: Boolean) extends CallableStatementOp[Unit] {
+    final case class SetBoolean1(a: String, b: Boolean) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBoolean(a, b)
     }
-    final case class  SetByte(a: Int, b: Byte) extends CallableStatementOp[Unit] {
+    final case class SetByte(a: Int, b: Byte) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setByte(a, b)
     }
-    final case class  SetByte1(a: String, b: Byte) extends CallableStatementOp[Unit] {
+    final case class SetByte1(a: String, b: Byte) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setByte(a, b)
     }
-    final case class  SetBytes(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit] {
+    final case class SetBytes(a: Int, b: Array[Byte]) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b)
     }
-    final case class  SetBytes1(a: String, b: Array[Byte]) extends CallableStatementOp[Unit] {
+    final case class SetBytes1(a: String, b: Array[Byte]) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b)
     }
-    final case class  SetCharacterStream(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetCharacterStream(a: Int, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b)
     }
-    final case class  SetCharacterStream1(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetCharacterStream1(a: Int, b: Reader, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b, c)
     }
-    final case class  SetCharacterStream2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetCharacterStream2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b, c)
     }
-    final case class  SetCharacterStream3(a: String, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetCharacterStream3(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b)
     }
-    final case class  SetCharacterStream4(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetCharacterStream4(a: String, b: Reader, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b, c)
     }
-    final case class  SetCharacterStream5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetCharacterStream5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a, b, c)
     }
-    final case class  SetClob(a: Int, b: Clob) extends CallableStatementOp[Unit] {
+    final case class SetClob(a: Int, b: Clob) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b)
     }
-    final case class  SetClob1(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetClob1(a: Int, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b)
     }
-    final case class  SetClob2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetClob2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b, c)
     }
-    final case class  SetClob3(a: String, b: Clob) extends CallableStatementOp[Unit] {
+    final case class SetClob3(a: String, b: Clob) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b)
     }
-    final case class  SetClob4(a: String, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetClob4(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b)
     }
-    final case class  SetClob5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetClob5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setClob(a, b, c)
     }
-    final case class  SetCursorName(a: String) extends CallableStatementOp[Unit] {
+    final case class SetCursorName(a: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCursorName(a)
     }
-    final case class  SetDate(a: Int, b: Date) extends CallableStatementOp[Unit] {
+    final case class SetDate(a: Int, b: Date) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDate(a, b)
     }
-    final case class  SetDate1(a: Int, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
+    final case class SetDate1(a: Int, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDate(a, b, c)
     }
-    final case class  SetDate2(a: String, b: Date) extends CallableStatementOp[Unit] {
+    final case class SetDate2(a: String, b: Date) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDate(a, b)
     }
-    final case class  SetDate3(a: String, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
+    final case class SetDate3(a: String, b: Date, c: Calendar) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDate(a, b, c)
     }
-    final case class  SetDouble(a: Int, b: Double) extends CallableStatementOp[Unit] {
+    final case class SetDouble(a: Int, b: Double) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDouble(a, b)
     }
-    final case class  SetDouble1(a: String, b: Double) extends CallableStatementOp[Unit] {
+    final case class SetDouble1(a: String, b: Double) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDouble(a, b)
     }
-    final case class  SetEscapeProcessing(a: Boolean) extends CallableStatementOp[Unit] {
+    final case class SetEscapeProcessing(a: Boolean) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setEscapeProcessing(a)
     }
-    final case class  SetFetchDirection(a: Int) extends CallableStatementOp[Unit] {
+    final case class SetFetchDirection(a: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchDirection(a)
     }
-    final case class  SetFetchSize(a: Int) extends CallableStatementOp[Unit] {
+    final case class SetFetchSize(a: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchSize(a)
     }
-    final case class  SetFloat(a: Int, b: Float) extends CallableStatementOp[Unit] {
+    final case class SetFloat(a: Int, b: Float) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFloat(a, b)
     }
-    final case class  SetFloat1(a: String, b: Float) extends CallableStatementOp[Unit] {
+    final case class SetFloat1(a: String, b: Float) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFloat(a, b)
     }
-    final case class  SetInt(a: Int, b: Int) extends CallableStatementOp[Unit] {
+    final case class SetInt(a: Int, b: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setInt(a, b)
     }
-    final case class  SetInt1(a: String, b: Int) extends CallableStatementOp[Unit] {
+    final case class SetInt1(a: String, b: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setInt(a, b)
     }
-    final case class  SetLargeMaxRows(a: Long) extends CallableStatementOp[Unit] {
+    final case class SetLargeMaxRows(a: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setLargeMaxRows(a)
     }
-    final case class  SetLong(a: Int, b: Long) extends CallableStatementOp[Unit] {
+    final case class SetLong(a: Int, b: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setLong(a, b)
     }
-    final case class  SetLong1(a: String, b: Long) extends CallableStatementOp[Unit] {
+    final case class SetLong1(a: String, b: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setLong(a, b)
     }
-    final case class  SetMaxFieldSize(a: Int) extends CallableStatementOp[Unit] {
+    final case class SetMaxFieldSize(a: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setMaxFieldSize(a)
     }
-    final case class  SetMaxRows(a: Int) extends CallableStatementOp[Unit] {
+    final case class SetMaxRows(a: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setMaxRows(a)
     }
-    final case class  SetNCharacterStream(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetNCharacterStream(a: Int, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNCharacterStream(a, b)
     }
-    final case class  SetNCharacterStream1(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetNCharacterStream1(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNCharacterStream(a, b, c)
     }
-    final case class  SetNCharacterStream2(a: String, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetNCharacterStream2(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNCharacterStream(a, b)
     }
-    final case class  SetNCharacterStream3(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetNCharacterStream3(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNCharacterStream(a, b, c)
     }
-    final case class  SetNClob(a: Int, b: NClob) extends CallableStatementOp[Unit] {
+    final case class SetNClob(a: Int, b: NClob) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b)
     }
-    final case class  SetNClob1(a: Int, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetNClob1(a: Int, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b)
     }
-    final case class  SetNClob2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetNClob2(a: Int, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b, c)
     }
-    final case class  SetNClob3(a: String, b: NClob) extends CallableStatementOp[Unit] {
+    final case class SetNClob3(a: String, b: NClob) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b)
     }
-    final case class  SetNClob4(a: String, b: Reader) extends CallableStatementOp[Unit] {
+    final case class SetNClob4(a: String, b: Reader) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b)
     }
-    final case class  SetNClob5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
+    final case class SetNClob5(a: String, b: Reader, c: Long) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNClob(a, b, c)
     }
-    final case class  SetNString(a: Int, b: String) extends CallableStatementOp[Unit] {
+    final case class SetNString(a: Int, b: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNString(a, b)
     }
-    final case class  SetNString1(a: String, b: String) extends CallableStatementOp[Unit] {
+    final case class SetNString1(a: String, b: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNString(a, b)
     }
-    final case class  SetNull(a: Int, b: Int) extends CallableStatementOp[Unit] {
+    final case class SetNull(a: Int, b: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNull(a, b)
     }
-    final case class  SetNull1(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
+    final case class SetNull1(a: Int, b: Int, c: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNull(a, b, c)
     }
-    final case class  SetNull2(a: String, b: Int) extends CallableStatementOp[Unit] {
+    final case class SetNull2(a: String, b: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNull(a, b)
     }
-    final case class  SetNull3(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
+    final case class SetNull3(a: String, b: Int, c: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setNull(a, b, c)
     }
-    final case class  SetObject(a: Int, b: AnyRef) extends CallableStatementOp[Unit] {
+    final case class SetObject(a: Int, b: AnyRef) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b)
     }
-    final case class  SetObject1(a: Int, b: AnyRef, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetObject1(a: Int, b: AnyRef, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c)
     }
-    final case class  SetObject2(a: Int, b: AnyRef, c: Int, d: Int) extends CallableStatementOp[Unit] {
+    final case class SetObject2(a: Int, b: AnyRef, c: Int, d: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c, d)
     }
-    final case class  SetObject3(a: Int, b: AnyRef, c: SQLType) extends CallableStatementOp[Unit] {
+    final case class SetObject3(a: Int, b: AnyRef, c: SQLType) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c)
     }
-    final case class  SetObject4(a: Int, b: AnyRef, c: SQLType, d: Int) extends CallableStatementOp[Unit] {
+    final case class SetObject4(a: Int, b: AnyRef, c: SQLType, d: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c, d)
     }
-    final case class  SetObject5(a: String, b: AnyRef) extends CallableStatementOp[Unit] {
+    final case class SetObject5(a: String, b: AnyRef) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b)
     }
-    final case class  SetObject6(a: String, b: AnyRef, c: Int) extends CallableStatementOp[Unit] {
+    final case class SetObject6(a: String, b: AnyRef, c: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c)
     }
-    final case class  SetObject7(a: String, b: AnyRef, c: Int, d: Int) extends CallableStatementOp[Unit] {
+    final case class SetObject7(a: String, b: AnyRef, c: Int, d: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c, d)
     }
-    final case class  SetObject8(a: String, b: AnyRef, c: SQLType) extends CallableStatementOp[Unit] {
+    final case class SetObject8(a: String, b: AnyRef, c: SQLType) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c)
     }
-    final case class  SetObject9(a: String, b: AnyRef, c: SQLType, d: Int) extends CallableStatementOp[Unit] {
+    final case class SetObject9(a: String, b: AnyRef, c: SQLType, d: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a, b, c, d)
     }
-    final case class  SetPoolable(a: Boolean) extends CallableStatementOp[Unit] {
+    final case class SetPoolable(a: Boolean) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setPoolable(a)
     }
-    final case class  SetQueryTimeout(a: Int) extends CallableStatementOp[Unit] {
+    final case class SetQueryTimeout(a: Int) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setQueryTimeout(a)
     }
-    final case class  SetRef(a: Int, b: Ref) extends CallableStatementOp[Unit] {
+    final case class SetRef(a: Int, b: Ref) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setRef(a, b)
     }
-    final case class  SetRowId(a: Int, b: RowId) extends CallableStatementOp[Unit] {
+    final case class SetRowId(a: Int, b: RowId) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setRowId(a, b)
     }
-    final case class  SetRowId1(a: String, b: RowId) extends CallableStatementOp[Unit] {
+    final case class SetRowId1(a: String, b: RowId) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setRowId(a, b)
     }
-    final case class  SetSQLXML(a: Int, b: SQLXML) extends CallableStatementOp[Unit] {
+    final case class SetSQLXML(a: Int, b: SQLXML) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setSQLXML(a, b)
     }
-    final case class  SetSQLXML1(a: String, b: SQLXML) extends CallableStatementOp[Unit] {
+    final case class SetSQLXML1(a: String, b: SQLXML) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setSQLXML(a, b)
     }
-    final case class  SetShort(a: Int, b: Short) extends CallableStatementOp[Unit] {
+    final case class SetShort(a: Int, b: Short) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setShort(a, b)
     }
-    final case class  SetShort1(a: String, b: Short) extends CallableStatementOp[Unit] {
+    final case class SetShort1(a: String, b: Short) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setShort(a, b)
     }
-    final case class  SetString(a: Int, b: String) extends CallableStatementOp[Unit] {
+    final case class SetString(a: Int, b: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    final case class  SetString1(a: String, b: String) extends CallableStatementOp[Unit] {
+    final case class SetString1(a: String, b: String) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    final case class  SetTime(a: Int, b: Time) extends CallableStatementOp[Unit] {
+    final case class SetTime(a: Int, b: Time) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTime(a, b)
     }
-    final case class  SetTime1(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
+    final case class SetTime1(a: Int, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTime(a, b, c)
     }
-    final case class  SetTime2(a: String, b: Time) extends CallableStatementOp[Unit] {
+    final case class SetTime2(a: String, b: Time) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTime(a, b)
     }
-    final case class  SetTime3(a: String, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
+    final case class SetTime3(a: String, b: Time, c: Calendar) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTime(a, b, c)
     }
-    final case class  SetTimestamp(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
+    final case class SetTimestamp(a: Int, b: Timestamp) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTimestamp(a, b)
     }
-    final case class  SetTimestamp1(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
+    final case class SetTimestamp1(a: Int, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTimestamp(a, b, c)
     }
-    final case class  SetTimestamp2(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
+    final case class SetTimestamp2(a: String, b: Timestamp) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTimestamp(a, b)
     }
-    final case class  SetTimestamp3(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
+    final case class SetTimestamp3(a: String, b: Timestamp, c: Calendar) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTimestamp(a, b, c)
     }
-    final case class  SetURL(a: Int, b: URL) extends CallableStatementOp[Unit] {
+    final case class SetURL(a: Int, b: URL) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setURL(a, b)
     }
-    final case class  SetURL1(a: String, b: URL) extends CallableStatementOp[Unit] {
+    final case class SetURL1(a: String, b: URL) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setURL(a, b)
     }
-    final case class  SetUnicodeStream(a: Int, b: InputStream, c: Int) extends CallableStatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.setUnicodeStream(a, b, c)
-    }
-    final case class  Unwrap[T](a: Class[T]) extends CallableStatementOp[T] {
+    final case class Unwrap[T](a: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.unwrap(a)
     }
-    final case object WasNull extends CallableStatementOp[Boolean] {
+    case object WasNull extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.wasNull
     }
 
@@ -1061,6 +1067,9 @@ object callablestatement { module =>
   val clearWarnings: CallableStatementIO[Unit] = FF.liftF(ClearWarnings)
   val close: CallableStatementIO[Unit] = FF.liftF(Close)
   val closeOnCompletion: CallableStatementIO[Unit] = FF.liftF(CloseOnCompletion)
+  def enquoteIdentifier(a: String, b: Boolean): CallableStatementIO[String] = FF.liftF(EnquoteIdentifier(a, b))
+  def enquoteLiteral(a: String): CallableStatementIO[String] = FF.liftF(EnquoteLiteral(a))
+  def enquoteNCharLiteral(a: String): CallableStatementIO[String] = FF.liftF(EnquoteNCharLiteral(a))
   val execute: CallableStatementIO[Boolean] = FF.liftF(Execute)
   def execute(a: String): CallableStatementIO[Boolean] = FF.liftF(Execute1(a))
   def execute(a: String, b: Array[Int]): CallableStatementIO[Boolean] = FF.liftF(Execute2(a, b))
@@ -1083,8 +1092,7 @@ object callablestatement { module =>
   def getArray(a: Int): CallableStatementIO[SqlArray] = FF.liftF(GetArray(a))
   def getArray(a: String): CallableStatementIO[SqlArray] = FF.liftF(GetArray1(a))
   def getBigDecimal(a: Int): CallableStatementIO[BigDecimal] = FF.liftF(GetBigDecimal(a))
-  def getBigDecimal(a: Int, b: Int): CallableStatementIO[BigDecimal] = FF.liftF(GetBigDecimal1(a, b))
-  def getBigDecimal(a: String): CallableStatementIO[BigDecimal] = FF.liftF(GetBigDecimal2(a))
+  def getBigDecimal(a: String): CallableStatementIO[BigDecimal] = FF.liftF(GetBigDecimal1(a))
   def getBlob(a: Int): CallableStatementIO[Blob] = FF.liftF(GetBlob(a))
   def getBlob(a: String): CallableStatementIO[Blob] = FF.liftF(GetBlob1(a))
   def getBoolean(a: Int): CallableStatementIO[Boolean] = FF.liftF(GetBoolean(a))
@@ -1163,6 +1171,7 @@ object callablestatement { module =>
   val isCloseOnCompletion: CallableStatementIO[Boolean] = FF.liftF(IsCloseOnCompletion)
   val isClosed: CallableStatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: CallableStatementIO[Boolean] = FF.liftF(IsPoolable)
+  def isSimpleIdentifier(a: String): CallableStatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
   def isWrapperFor(a: Class[_]): CallableStatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def registerOutParameter(a: Int, b: Int): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter(a, b))
   def registerOutParameter(a: Int, b: Int, c: Int): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter1(a, b, c))
@@ -1281,7 +1290,6 @@ object callablestatement { module =>
   def setTimestamp(a: String, b: Timestamp, c: Calendar): CallableStatementIO[Unit] = FF.liftF(SetTimestamp3(a, b, c))
   def setURL(a: Int, b: URL): CallableStatementIO[Unit] = FF.liftF(SetURL(a, b))
   def setURL(a: String, b: URL): CallableStatementIO[Unit] = FF.liftF(SetURL1(a, b))
-  def setUnicodeStream(a: Int, b: InputStream, c: Int): CallableStatementIO[Unit] = FF.liftF(SetUnicodeStream(a, b, c))
   def unwrap[T](a: Class[T]): CallableStatementIO[T] = FF.liftF(Unwrap(a))
   val wasNull: CallableStatementIO[Boolean] = FF.liftF(WasNull)
 

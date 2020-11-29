@@ -8,7 +8,6 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -18,7 +17,6 @@ import java.lang.String
 import java.sql.Clob
 import java.sql.NClob
 
-@silent("deprecated")
 object nclob { module =>
 
   // Algebra of operations for NClob. Each accepts a visitor as an alternative to pattern-matching.
@@ -97,7 +95,7 @@ object nclob { module =>
     final case class BracketCase[A, B](acquire: NClobIO[A], use: A => NClobIO[B], release: (A, ExitCase[Throwable]) => NClobIO[Unit]) extends NClobOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends NClobOp[Unit] {
+    case object Shift extends NClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: NClobIO[A]) extends NClobOp[A] {
@@ -105,43 +103,43 @@ object nclob { module =>
     }
 
     // NClob-specific operations.
-    final case object Free extends NClobOp[Unit] {
+    case object Free extends NClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.free
     }
-    final case object GetAsciiStream extends NClobOp[InputStream] {
+    case object GetAsciiStream extends NClobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getAsciiStream
     }
-    final case object GetCharacterStream extends NClobOp[Reader] {
+    case object GetCharacterStream extends NClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream
     }
-    final case class  GetCharacterStream1(a: Long, b: Long) extends NClobOp[Reader] {
+    final case class GetCharacterStream1(a: Long, b: Long) extends NClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a, b)
     }
-    final case class  GetSubString(a: Long, b: Int) extends NClobOp[String] {
+    final case class GetSubString(a: Long, b: Int) extends NClobOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSubString(a, b)
     }
-    final case object Length extends NClobOp[Long] {
+    case object Length extends NClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.length
     }
-    final case class  Position(a: Clob, b: Long) extends NClobOp[Long] {
+    final case class Position(a: Clob, b: Long) extends NClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  Position1(a: String, b: Long) extends NClobOp[Long] {
+    final case class Position1(a: String, b: Long) extends NClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
+    final case class SetAsciiStream(a: Long) extends NClobOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a)
     }
-    final case class  SetCharacterStream(a: Long) extends NClobOp[Writer] {
+    final case class SetCharacterStream(a: Long) extends NClobOp[Writer] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a)
     }
-    final case class  SetString(a: Long, b: String) extends NClobOp[Int] {
+    final case class SetString(a: Long, b: String) extends NClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    final case class  SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
+    final case class SetString1(a: Long, b: String, c: Int, d: Int) extends NClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b, c, d)
     }
-    final case class  Truncate(a: Long) extends NClobOp[Unit] {
+    final case class Truncate(a: Long) extends NClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
 
