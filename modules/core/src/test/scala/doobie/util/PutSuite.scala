@@ -7,15 +7,8 @@ package doobie.util
 import cats.effect.{ ContextShift, IO }
 import doobie._
 import scala.concurrent.ExecutionContext
-import shapeless.test._
 
-object PutSuite {
-  final case class Y(x: String) extends AnyVal
-  final case class P(x: Int) extends AnyVal
-}
-
-class PutSuite extends munit.FunSuite {
-  import PutSuite._
+class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class X(x: Int)
   case class Q(x: String)
 
@@ -44,15 +37,13 @@ class PutSuite extends munit.FunSuite {
 
   test("Put should be derived for unary products") {
     Put[X]
-    Put[Y]
-    Put[P]
     Put[Q]
   }
 
   test("Put should not be derived for non-unary products") {
-    illTyped("Put[Z]")
-    illTyped("Put[(Int, Int)]")
-    illTyped("Put[S.type]")
+    compileErrors("Put[Z]")
+    compileErrors("Put[(Int, Int)]")
+    compileErrors("Put[S.type]")
   }
 
 }

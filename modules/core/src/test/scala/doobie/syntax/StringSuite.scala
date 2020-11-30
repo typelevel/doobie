@@ -5,7 +5,6 @@
 package doobie.syntax
 
 import doobie._, doobie.implicits._
-import shapeless.test.illTyped
 
 class StringSuite extends munit.FunSuite {
 
@@ -35,7 +34,9 @@ class StringSuite extends munit.FunSuite {
 
   test("sql interpolator should not support product params") {
     Write[(Int, String)]
-    illTyped(""" val a = (1, "two"); sql"foo $a bar baz".query[Int] """)
+    compileErrors {
+      """ val a = (1, "two"); sql"foo $a bar baz".query[Int] """
+    }
   }
 
 }

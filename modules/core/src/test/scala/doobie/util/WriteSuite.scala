@@ -5,11 +5,7 @@
 package doobie
 package util
 
-import shapeless._, shapeless.record._
-
-class WriteSuite extends munit.FunSuite {
-
-  case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
+class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
   case class LenStr1(n: Int, s: String)
 
@@ -24,26 +20,11 @@ class WriteSuite extends munit.FunSuite {
     util.Write[(Int, Int)]
     util.Write[(Int, Int, String)]
     util.Write[(Int, (Int, String))]
-    util.Write[Woozle]
-
-    // https://github.com/tpolecat/doobie/pull/126 was reverted because these
-    // derivations were failing with SOE
-    util.Write[(Woozle, String)]
-    util.Write[(Int, Woozle :: Woozle :: String :: HNil)]
   }
 
   test("Write should exist for Unit") {
     util.Write[Unit]
     assertEquals(util.Write[(Int, Unit)].length, 1)
-  }
-
-  test("Write should exist for shapeless record types") {
-
-    type DL = (Double, Long)
-    type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
-
-    util.Write[A]
-    util.Write[(A, A)]
   }
 
   test("Write should exist for option of some fancy types") {
@@ -52,9 +33,6 @@ class WriteSuite extends munit.FunSuite {
     util.Write[Option[(Int, Int, String)]]
     util.Write[Option[(Int, (Int, String))]]
     util.Write[Option[(Int, Option[(Int, String)])]]
-    util.Write[Option[Woozle]]
-    util.Write[Option[(Woozle, String)]]
-    util.Write[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
   }
 
   test("Write should exist for option of Unit") {

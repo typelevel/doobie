@@ -9,8 +9,6 @@ import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
 import scala.concurrent.ExecutionContext
-import shapeless._
-
 
 class LogSuite extends munit.FunSuite {
 
@@ -24,16 +22,16 @@ class LogSuite extends munit.FunSuite {
   )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def eventForUniqueQuery[A: Write](sql: String, arg: A = HNil : HNil): LogEvent = {
+  def eventForUniqueQuery[A: Write](sql: String, arg: A = ()): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
-    val cio     = Query[A, HNil](sql, None, handler).unique(arg)
+    val cio     = Query[A, Unit](sql, None, handler).unique(arg)
     cio.transact(xa).attempt.unsafeRunSync()
     result
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def eventForUniqueUpdate[A: Write](sql: String, arg: A = HNil : HNil): LogEvent = {
+  def eventForUniqueUpdate[A: Write](sql: String, arg: A = ()): LogEvent = {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio     = sql"create table if not exists foo (bar integer)".update.run *>
@@ -76,15 +74,6 @@ class LogSuite extends munit.FunSuite {
     }
   }
 
-  test("[Query] n-arg success") {
-    val Sql = "select 1 where ? = ?"
-    val Arg = 1 :: 1 :: HNil
-    eventForUniqueQuery(Sql, Arg) match {
-      case Success(Sql, List(1, 1), _, _) => ()
-      case a => fail(s"no match: $a")
-    }
-  }
-
   test("[Query] zero-arg execution failure".ignore) {
     ()
   }
@@ -97,15 +86,6 @@ class LogSuite extends munit.FunSuite {
     val Sql = "select 1 where 1 = 2"
     eventForUniqueQuery(Sql) match {
       case ProcessingFailure(Sql, Nil, _, _, _) => ()
-      case a => fail(s"no match: $a")
-    }
-  }
-
-  test("[Query] n-arg processing failure") {
-    val Sql = "select 1 where ? = ?"
-    val Arg = 1 :: 2 :: HNil
-    eventForUniqueQuery(Sql, Arg) match {
-      case ProcessingFailure(Sql, List(1, 2), _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -140,15 +120,6 @@ class LogSuite extends munit.FunSuite {
     val Sql = "update foo set bar = 42"
     eventForUniqueUpdate(Sql) match {
       case Success(Sql, Nil, _, _) => ()
-      case a => fail(s"no match: $a")
-    }
-  }
-
-  test("[Update] n-arg success") {
-    val Sql = "update foo set bar = ?"
-    val Arg = 42 :: HNil
-    eventForUniqueUpdate(Sql, Arg) match {
-      case Success(Sql, List(42), _, _) => ()
       case a => fail(s"no match: $a")
     }
   }

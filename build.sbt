@@ -53,7 +53,7 @@ lazy val buildSettings = Seq(
 lazy val commonSettings =
   compilerFlags ++
   Seq(
-    scalaVersion := scala213Version,
+    scalaVersion := scala30Version,
     crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason

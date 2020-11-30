@@ -5,15 +5,10 @@
 package doobie
 package util
 
-import shapeless._
-import shapeless.record._
 import cats.effect.{ContextShift, IO}
 import scala.concurrent.ExecutionContext
 
-
-class ReadSuite extends munit.FunSuite {
-
-  case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
+class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
   case class LenStr1(n: Int, s: String)
 
@@ -37,28 +32,11 @@ class ReadSuite extends munit.FunSuite {
     util.Read[(Int, Int)]
     util.Read[(Int, Int, String)]
     util.Read[(Int, (Int, String))]
-    util.Read[Woozle]
-
-    // https://github.com/tpolecat/doobie/pull/126 was reverted because these
-    // derivations were failing with SOE
-    util.Read[(Woozle, String)]
-    util.Read[(Int, Woozle :: Woozle :: String :: HNil)]
   }
 
   test("Read should exist for Unit") {
     util.Read[Unit]
     assertEquals(util.Read[(Int, Unit)].length, 1)
-  }
-
-  test("Read should exist for shapeless record types") {
-
-    type DL = (Double, Long) // used below
-    type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
-
-    util.Read[A]
-    util.Read[(A, A)]
-
-    (null : DL, ())._2 // suppress unused warning for `DL` above
   }
 
   test("Read should exist for option of some fancy types") {
@@ -67,9 +45,6 @@ class ReadSuite extends munit.FunSuite {
     util.Read[Option[(Int, Int, String)]]
     util.Read[Option[(Int, (Int, String))]]
     util.Read[Option[(Int, Option[(Int, String)])]]
-    util.Read[Option[Woozle]]
-    util.Read[Option[(Woozle, String)]]
-    util.Read[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
   }
 
   test("Read should exist for option of Unit") {

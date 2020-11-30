@@ -6,7 +6,7 @@ package doobie.util
 
 class invariantspec extends munit.FunSuite {
   test("NonNullableColumnRead should include a one-based indexing disclaimer") {
-    val ex = invariant.NonNullableColumnRead(1, doobie.enum.JdbcType.Array)
+    val ex = invariant.NonNullableColumnRead(1, doobie.enumerated.JdbcType.Array)
     assert(ex.getMessage.contains("is 1-based"))
   }
 }

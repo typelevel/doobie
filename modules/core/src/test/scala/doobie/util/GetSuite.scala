@@ -8,17 +8,10 @@ import cats.effect.{ ContextShift, Effect, IO }
 import cats.effect.syntax.effect._
 import cats.syntax.applicativeError._
 import doobie._, doobie.implicits._
-import doobie.enum.JdbcType.{ Array => _, _ }
+import doobie.enumerated.JdbcType.{ Array => _, _ }
 import scala.concurrent.ExecutionContext
-import shapeless.test._
 
-object GetSuite {
-  final case class Y(x: String) extends AnyVal
-  final case class P(x: Int) extends AnyVal
-}
-
-class GetSuite extends munit.FunSuite {
-  import GetSuite._
+class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
   case class X(x: Int)
   case class Q(x: String)
@@ -29,22 +22,17 @@ class GetSuite extends munit.FunSuite {
   test("Get should exist for primitive types") {
     Get[Int]
     Get[String]
-    true
   }
 
   test("Get should be derived for unary products") {
     Get[X]
-    Get[Y]
-    Get[P]
     Get[Q]
-    true
   }
 
   test("Get should not be derived for non-unary products") {
-    illTyped("Get[Z]")
-    illTyped("Get[(Int, Int)]")
-    illTyped("Get[S.type]")
-    true
+    compileErrors("Get[Z]")
+    compileErrors("Get[(Int, Int)]")
+    compileErrors("Get[S.type]")
   }
 
 }

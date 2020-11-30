@@ -8,7 +8,6 @@ import cats.syntax.all._
 import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import scala.concurrent.ExecutionContext
-import shapeless._
 
 class FragmentSuite extends munit.FunSuite {
 
@@ -30,15 +29,15 @@ class FragmentSuite extends munit.FunSuite {
   val frc = fr"$c"
 
   test("Fragment must substitute placeholders properly") {
-    assertEquals(fr"foo $a $b bar".query[HNil].sql, "foo ? ? bar ")
+    assertEquals(fr"foo $a $b bar".query[Unit].sql, "foo ? ? bar ")
   }
 
   test("Fragment must concatenate properly") {
-    assertEquals((fr"foo" ++ fr"bar $a baz").query[HNil].sql, "foo bar ? baz ")
+    assertEquals((fr"foo" ++ fr"bar $a baz").query[Unit].sql, "foo bar ? baz ")
   }
 
   test("Fragment must interpolate fragments properly") {
-    assertEquals(fr"foo ${fr0"bar $a baz"}".query[HNil].sql, "foo bar ? baz ")
+    assertEquals(fr"foo ${fr0"bar $a baz"}".query[Unit].sql, "foo bar ? baz ")
   }
 
   // https://github.com/tpolecat/doobie/issues/1186

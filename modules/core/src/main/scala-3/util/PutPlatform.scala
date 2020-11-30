@@ -4,4 +4,14 @@
 
 package doobie.util
 
-trait PutPlatform
+import scala.deriving.Mirror
+
+trait PutPlatform:
+
+  // Put is available for single-element products.
+  given [P <: Product, A](
+    using m: Mirror.ProductOf[P],
+          i: m.MirroredElemTypes =:= (A *: EmptyTuple),
+          p: Put[A]
+  ) as Put[P] =
+    p.contramap(p => i(Tuple.fromProductTyped(p)).head)
