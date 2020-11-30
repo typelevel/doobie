@@ -8,17 +8,13 @@ package util
 import cats.effect.IO
 import doobie.util.stream.repeatEvalChunks
 import org.scalacheck.Prop.forAll
-import org.specs2.ScalaCheck
-import org.specs2.mutable.Specification
 import scala.Predef._
 import scala.util.Random
 
+class ProcessSuite extends munit.ScalaCheckSuite {
 
-class processspec extends Specification with ScalaCheck {
-
-  "repeatEvalChunks must" >> {
-
-    "yield the same result irrespective of chunk size" ! forAll { (n0: Int) =>
+  test("repeatEvalChunks must yield the same result irrespective of chunk size") {
+    forAll { (n0: Int) =>
       val dataSize  = 1000
       val chunkSize = (n0 % dataSize).abs max 1
       val data      = Seq.fill(dataSize)(Random.nextInt())
@@ -31,9 +27,8 @@ class processspec extends Specification with ScalaCheck {
         }
       }
       val result = repeatEvalChunks(fa).compile.toVector.unsafeRunSync()
-      result must_== data
+      assertEquals(result, data.toVector)
     }
-
   }
 
 }

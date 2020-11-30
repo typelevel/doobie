@@ -6,11 +6,9 @@ package doobie.util
 
 import doobie.util.lens._
 
-import org.specs2.mutable.Specification
-
 import cats.data.State
 
-class lensspec extends Specification {
+class LensSuite extends munit.FunSuite {
 
   case class Name(first: String, last: String)
   object Name {
@@ -33,28 +31,24 @@ class lensspec extends Specification {
 
   import Address._
 
-  "lens" should {
-
-    "modify ok" in {
-      val prog: State[Address, Unit] =
-        for {
-          _ <- first  %= (_.toUpperCase)
-          _ <- last   %= (_.toLowerCase)
-          _ <- street %= (_.replace('o', '*'))
-        } yield ()
-      exec(prog, bob) must_== Address(Name("BOB", "dole"), "123 F** St.")
-    }
-
-    "set ok" in {
-      val prog: State[Address, Unit] =
-        for {
-        _ <- first  := "Jimmy"
-        _ <- last   := "Carter"
-        _ <- street := "12 Peanut Dr."
+  test("Lens should modify ok") {
+    val prog: State[Address, Unit] =
+      for {
+        _ <- first  %= (_.toUpperCase)
+        _ <- last   %= (_.toLowerCase)
+        _ <- street %= (_.replace('o', '*'))
       } yield ()
-      exec(prog, bob) must_== Address(Name("Jimmy", "Carter"), "12 Peanut Dr.")
-    }
+    assertEquals(exec(prog, bob), Address(Name("BOB", "dole"), "123 F** St."))
+  }
 
+  test("Lens should set ok") {
+    val prog: State[Address, Unit] =
+      for {
+      _ <- first  := "Jimmy"
+      _ <- last   := "Carter"
+      _ <- street := "12 Peanut Dr."
+    } yield ()
+    assertEquals(exec(prog, bob), Address(Name("Jimmy", "Carter"), "12 Peanut Dr."))
   }
 
 }

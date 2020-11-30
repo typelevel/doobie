@@ -6,17 +6,16 @@ package doobie.util
 
 import cats.effect.{ ContextShift, IO }
 import doobie._
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import shapeless.test._
 
-object PutSpec {
+object PutSuite {
   final case class Y(x: String) extends AnyVal
   final case class P(x: Int) extends AnyVal
 }
 
-class PutSpec extends Specification {
-  import PutSpec._
+class PutSuite extends munit.FunSuite {
+  import PutSuite._
   case class X(x: Int)
   case class Q(x: String)
 
@@ -38,32 +37,22 @@ class PutSpec extends Specification {
   case class Foo(s: String)
   case class Bar(n: Int)
 
-  "Put" should {
-
-    "exist for primitive types" in {
-      Put[Int]
-      Put[String]
-      true
-    }
-
-    "be derived for unary products" in {
-      Put[X]
-      Put[Y]
-      Put[P]
-      Put[Q]
-      true
-    }
-
-    "not be derived for non-unary products" in {
-      illTyped("Put[Z]")
-      illTyped("Put[(Int, Int)]")
-      illTyped("Put[S.type]")
-      true
-    }
-
-    // TODO: check null-handing when writig
-
+  test("Put should exist for primitive types") {
+    Put[Int]
+    Put[String]
   }
 
+  test("Put should be derived for unary products") {
+    Put[X]
+    Put[Y]
+    Put[P]
+    Put[Q]
+  }
+
+  test("Put should not be derived for non-unary products") {
+    illTyped("Put[Z]")
+    illTyped("Put[(Int, Int)]")
+    illTyped("Put[S.type]")
+  }
 
 }

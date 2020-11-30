@@ -65,19 +65,24 @@ lazy val commonSettings =
          |""".stripMargin
     )),
 
+    // Scaladoc options
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
-    libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
-      "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
-      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
-    ).filterNot(_ => isDotty.value),
+
+    // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
       compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
     ).filterNot(_ => isDotty.value),
+
+    // MUnit
+    libraryDependencies ++= Seq(
+      "org.typelevel"     %% "scalacheck-effect-munit" % "0.6.0"  % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "0.11.0" % Test,
+    ),
+    testFrameworks += new TestFramework("munit.Framework"),
 
     // For some reason tests started hanginging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
