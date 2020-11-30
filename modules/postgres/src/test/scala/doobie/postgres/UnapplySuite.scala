@@ -6,21 +6,13 @@ package doobie.postgres
 
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
-import org.specs2.mutable.Specification
-
 import cats.syntax.all._
 
+class UnapplySuite extends munit.FunSuite {
 
-class unapplyspec extends Specification {
-
-  "Partial Unification" should {
-
-    "allow use of sqlstate syntax" in {
-      1.pure[ConnectionIO].map(_ + 1).void
-      1.pure[ConnectionIO].map(_ + 1).onPrivilegeNotRevoked(2.pure[ConnectionIO])
-      true
-    }
-
+  test("Partial should allow use of sqlstate syntax") {
+    1.pure[ConnectionIO].map(_ + 1).void
+    1.pure[ConnectionIO].map(_ + 1).onPrivilegeNotRevoked(2.pure[ConnectionIO])
   }
 
 }

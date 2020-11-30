@@ -9,15 +9,13 @@ import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
-import org.specs2.mutable.Specification
-import org.specs2.ScalaCheck
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
 import scala.concurrent.ExecutionContext
 
 
-class textspec extends Specification with ScalaCheck {
+class TextSuite extends munit.ScalaCheckSuite {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -97,15 +95,17 @@ class textspec extends Specification with ScalaCheck {
   val genRows: Gen[List[Row]] =
     Gen.choose(0,50).flatMap(Gen.listOfN(_, genRow))
 
-  "copyIn" should {
-    "correctly insert batches of rows" in forAll(genRows) { rs =>
+  test("copyIn should correctly insert batches of rows") {
+    forAll(genRows) { rs =>
       val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync()
-      rs must_=== rsʹ
+      assertEquals(rs, rsʹ)
     }
+  }
 
-    "correctly insert batches of rows via Stream" in forAll(genRows) { rs =>
+  test("copyIn should correctly insert batches of rows via Stream") {
+    forAll(genRows) { rs =>
       val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
-      rs must_=== rsʹ
+      assertEquals(rs, rsʹ)
     }
   }
 

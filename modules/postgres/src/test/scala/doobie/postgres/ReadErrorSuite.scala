@@ -12,11 +12,14 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.postgres.enums._
 import doobie.util.invariant._
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
+class ReadErrorSuiteIO extends ReadErrorSuite[IO] {
+  implicit val E: Effect[IO] = IO.ioEffect
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+}
 
-trait pgreaderrorsspec[F[_]] extends Specification {
+trait ReadErrorSuite[F[_]] extends munit.FunSuite {
 
   implicit def E: Effect[F]
   implicit def contextShift: ContextShift[F]
@@ -38,24 +41,20 @@ trait pgreaderrorsspec[F[_]] extends Specification {
   implicit val MyScalaEnumMeta: Meta[MyScalaEnum.Value] = pgEnum(MyScalaEnum, "myenum")
   implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
 
-  "pgEnumStringOpt" in {
+  test("pgEnumStringOpt") {
     val r = sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.toIO.unsafeRunSync()
-    r must_== Left(InvalidEnum[MyEnum]("invalid"))
+    assertEquals(r, Left(InvalidEnum[MyEnum]("invalid")))
   }
 
-  "pgEnum" in {
+  test("pgEnum") {
     val r = sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.toIO.unsafeRunSync()
-    r must_== Left(InvalidEnum[MyScalaEnum.Value]("invalid"))
+    assertEquals(r, Left(InvalidEnum[MyScalaEnum.Value]("invalid")))
   }
 
-  "pgJavaEnum" in {
+  test("pgJavaEnum") {
     val r = sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.toIO.unsafeRunSync()
-    r must_== Left(InvalidEnum[MyJavaEnum]("invalid"))
+    assertEquals(r, Left(InvalidEnum[MyJavaEnum]("invalid")))
   }
 
 }
 
-class pgreaderrorsspecIO extends pgreaderrorsspec[IO] {
-  implicit val E: Effect[IO] = IO.ioEffect
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-}

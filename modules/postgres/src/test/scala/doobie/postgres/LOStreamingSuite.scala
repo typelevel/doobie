@@ -10,12 +10,10 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
 import doobie._, doobie.implicits._
-import org.specs2.mutable.Specification
-import org.specs2.ScalaCheck
 import scala.concurrent.ExecutionContext.global
 
 
-class lostreamingspec extends Specification with ScalaCheck {
+class LOStreamingSuite extends munit.ScalaCheckSuite {
 
   implicit val ioContextShift: ContextShift[IO] =
     IO.contextShift(global)
@@ -35,17 +33,18 @@ class lostreamingspec extends Specification with ScalaCheck {
       }.foldLeft(Stream.empty.covaryAll[F, A])(_ ++ _)
     }
 
-  "large object streaming" should {
-    "round-trip" in forAll(genFiniteStream[Pure, Byte]) { data =>
+  test("large object streaming should round-trip") {
+    forAll(genFiniteStream[Pure, Byte]) { data =>
       val data0 = data.covary[ConnectionIO]
 
       val result = Stream.bracket(PHLOS.createLOFromStream(data0, blocker))(
         oid => PHC.pgGetLargeObjectAPI(PFLOM.unlink(oid))
       ).flatMap(oid => PHLOS.createStreamFromLO(oid, chunkSize = 1024 * 10, blocker))
-       .compile.toVector.transact(xa).unsafeRunSync()
+        .compile.toVector.transact(xa).unsafeRunSync()
 
-      result must_=== data.toVector
+      assertEquals(result, data.toVector)
     }
   }
+
 
 }

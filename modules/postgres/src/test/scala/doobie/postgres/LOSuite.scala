@@ -9,11 +9,10 @@ import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-class pglargeobjectspec extends Specification with FileEquality {
+class LOSuite extends munit.FunSuite with FileEquality {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -27,30 +26,26 @@ class pglargeobjectspec extends Specification with FileEquality {
   // A big file. Contents are irrelevant.
   val in = new File("init/test-db.sql")
 
-  "large object support" should {
-
-    "allow round-trip from file to large object and back" in  {
-      val out  = File.createTempFile("doobie", "tst")
-      val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
-        PHLOM.createFileFromLO(1024 * 16, oid, out) *> PHLOM.delete(oid)
-      }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync()
-      filesEqual(in, out)
-      out.delete()
+  test("large object support should allow round-trip from file to large object and back") {
+    val out  = File.createTempFile("doobie", "tst")
+    val prog = PHLOM.createLOFromFile(1024 * 16, in) >>= { oid =>
+      PHLOM.createFileFromLO(1024 * 16, oid, out) *> PHLOM.delete(oid)
     }
+    PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync()
+    assert(filesEqual(in, out))
+    out.delete()
+  }
 
-    "allow round-trip from stream to large object and back" in  {
-      val out  = File.createTempFile("doobie", "tst")
-      val is = new FileInputStream(in)
-      val os = new FileOutputStream(out)
-      val prog = PHLOM.createLOFromStream(1024 * 16, is) >>= { oid =>
-        PHLOM.createStreamFromLO(1024 * 16, oid, os) *> PHLOM.delete(oid)
-      }
-      PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync()
-      filesEqual(in, out)
-      out.delete()
+  test("large object support should allow round-trip from stream to large object and back") {
+    val out  = File.createTempFile("doobie", "tst")
+    val is = new FileInputStream(in)
+    val os = new FileOutputStream(out)
+    val prog = PHLOM.createLOFromStream(1024 * 16, is) >>= { oid =>
+      PHLOM.createStreamFromLO(1024 * 16, oid, os) *> PHLOM.delete(oid)
     }
-
+    PHC.pgGetLargeObjectAPI(prog).transact(xa).unsafeRunSync()
+    assert(filesEqual(in, out))
+    out.delete()
   }
 
 }

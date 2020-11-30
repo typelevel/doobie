@@ -5,12 +5,10 @@
 package doobie.postgres.free
 
 import cats.free.Free
-import com.github.ghik.silencer.silent
 
 import copyin.CopyInIO
 import copymanager.CopyManagerIO
 import copyout.CopyOutIO
-import fastpath.FastpathIO
 import largeobject.LargeObjectIO
 import largeobjectmanager.LargeObjectManagerIO
 import pgconnection.PGConnectionIO
@@ -18,12 +16,10 @@ import pgconnection.PGConnectionIO
 // A pair (J, Free[F, A]) with constructors that tie down J and F.
 sealed trait Embedded[A]
 
-@silent("deprecated")
 object Embedded {
   final case class CopyIn[A](j: org.postgresql.copy.CopyIn, fa: CopyInIO[A]) extends Embedded[A]
   final case class CopyManager[A](j: org.postgresql.copy.CopyManager, fa: CopyManagerIO[A]) extends Embedded[A]
   final case class CopyOut[A](j: org.postgresql.copy.CopyOut, fa: CopyOutIO[A]) extends Embedded[A]
-  final case class Fastpath[A](j: org.postgresql.fastpath.Fastpath, fa: FastpathIO[A]) extends Embedded[A]
   final case class LargeObject[A](j: org.postgresql.largeobject.LargeObject, fa: LargeObjectIO[A]) extends Embedded[A]
   final case class LargeObjectManager[A](j: org.postgresql.largeobject.LargeObjectManager, fa: LargeObjectManagerIO[A]) extends Embedded[A]
   final case class PGConnection[A](j: org.postgresql.PGConnection, fa: PGConnectionIO[A]) extends Embedded[A]

@@ -7,11 +7,10 @@ package doobie.postgres
 import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import doobie.postgres.enums._
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 
-class pgcheck extends Specification {
+class CheckSuite extends munit.FunSuite {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -22,18 +21,14 @@ class pgcheck extends Specification {
     "postgres", ""
   )
 
-  "pgEnumString" should {
+  test("pgEnumString check ok for read") {
+    val a = sql"select 'foo' :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync()
+    assertEquals(a.columnTypeErrors, Nil)
+  }
 
-    "check ok for read" in {
-      val a = sql"select 'foo' :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync()
-      a.columnTypeErrors must_== Nil
-    }
-
-    "check ok for write" in {
-      val a = sql"select ${MyEnum.Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync()
-      a.parameterTypeErrors must_== Nil
-    }
-
+  test("pgEnumString check ok for write") {
+    val a = sql"select ${MyEnum.Foo : MyEnum} :: myenum".query[MyEnum].analysis.transact(xa).unsafeRunSync()
+    assertEquals(a.parameterTypeErrors, Nil)
   }
 
 }

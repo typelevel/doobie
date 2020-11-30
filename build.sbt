@@ -53,7 +53,7 @@ lazy val buildSettings = Seq(
 lazy val commonSettings =
   compilerFlags ++
   Seq(
-    scalaVersion := scala30Version,
+    scalaVersion := scala213Version,
     crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
@@ -149,7 +149,7 @@ lazy val doobie = project.in(file("."))
     free,
     // h2,
     // hikari,
-    // postgres,
+    postgres,
     // `postgres-circe`,
     // quill,
     // refined,
@@ -255,57 +255,56 @@ lazy val core = project
 //     )
 //   )
 
-// lazy val postgres = project
-//   .in(file("modules/postgres"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core % "compile->compile;test->test")
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(freeGen2Settings)
-//   .settings(
-//     name  := "doobie-postgres",
-//     description := "Postgres support for doobie.",
-//     libraryDependencies ++= Seq(
-//       "co.fs2" %% "fs2-io"     % fs2Version,
-//       "org.postgresql" % "postgresql" % postgresVersion,
-//       postgisDep % "provided"
-//     ),
-//     scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
-//     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "postgres" / "free",
-//     freeGen2Package := "doobie.postgres.free",
-//     freeGen2Classes := {
-//       import java.sql._
-//       List[Class[_]](
-//         classOf[org.postgresql.copy.CopyIn],
-//         classOf[org.postgresql.copy.CopyManager],
-//         classOf[org.postgresql.copy.CopyOut],
-//         classOf[org.postgresql.fastpath.Fastpath],
-//         classOf[org.postgresql.largeobject.LargeObject],
-//         classOf[org.postgresql.largeobject.LargeObjectManager],
-//         classOf[org.postgresql.PGConnection]
-//       )
-//     },
-//     freeGen2Renames ++= Map(
-//       classOf[org.postgresql.copy.CopyDual]     -> "PGCopyDual",
-//       classOf[org.postgresql.copy.CopyIn]       -> "PGCopyIn",
-//       classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
-//       classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
-//       classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
-//     ),
-//     initialCommands := """
-//       import cats._, cats.data._, cats.implicits._, cats.effect._
-//       import doobie._, doobie.implicits._
-//       import doobie.postgres._, doobie.postgres.implicits._
-//       implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
-//       val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
-//       val yolo = xa.yolo
-//       import yolo._
-//       import org.postgis._
-//       import org.postgresql.util._
-//       import org.postgresql.geometric._
-//       """,
-//     initialCommands in consoleQuick := ""
-//   )
+lazy val postgres = project
+  .in(file("modules/postgres"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(freeGen2Settings)
+  .settings(
+    name  := "doobie-postgres",
+    description := "Postgres support for doobie.",
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-io"     % fs2Version,
+      "org.postgresql" % "postgresql" % postgresVersion,
+      postgisDep % "provided"
+    ),
+    scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
+    freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "postgres" / "free",
+    freeGen2Package := "doobie.postgres.free",
+    freeGen2Classes := {
+      import java.sql._
+      List[Class[_]](
+        classOf[org.postgresql.copy.CopyIn],
+        classOf[org.postgresql.copy.CopyManager],
+        classOf[org.postgresql.copy.CopyOut],
+        classOf[org.postgresql.largeobject.LargeObject],
+        classOf[org.postgresql.largeobject.LargeObjectManager],
+        classOf[org.postgresql.PGConnection]
+      )
+    },
+    freeGen2Renames ++= Map(
+      classOf[org.postgresql.copy.CopyDual]     -> "PGCopyDual",
+      classOf[org.postgresql.copy.CopyIn]       -> "PGCopyIn",
+      classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
+      classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
+      classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
+    ),
+    initialCommands := """
+      import cats._, cats.data._, cats.implicits._, cats.effect._
+      import doobie._, doobie.implicits._
+      import doobie.postgres._, doobie.postgres.implicits._
+      implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+      val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+      val yolo = xa.yolo
+      import yolo._
+      import org.postgis._
+      import org.postgresql.util._
+      import org.postgresql.geometric._
+      """,
+    initialCommands in consoleQuick := ""
+  )
 
 // lazy val `postgres-circe` = project
 //   .in(file("modules/postgres-circe"))

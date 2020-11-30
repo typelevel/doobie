@@ -6,21 +6,23 @@ package doobie.postgres
 
 import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
-import java.sql.Timestamp
+import java.time.LocalDate
 import java.time.temporal.ChronoField.NANO_OF_SECOND
-import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
 
-import cats.effect.{ContextShift, IO}
-import com.github.ghik.silencer.silent
+import scala.concurrent.ExecutionContext
+
+import cats.effect.ContextShift
+import cats.effect.IO
 import doobie._
 import doobie.implicits._
-import doobie.postgres.enums._
-import doobie.postgres.implicits._
 import doobie.implicits.javasql._
-import doobie.implicits.javatime.{JavaTimeInstantMeta => _, JavaTimeLocalDateMeta => NewJavaTimeLocalDateMeta,_}
+import doobie.implicits.javatime.{JavaTimeInstantMeta => _, _}
+import doobie.implicits.javatime.{JavaTimeLocalDateMeta => NewJavaTimeLocalDateMeta}
 import doobie.implicits.legacy.instant._
 import doobie.implicits.legacy.localdate.{JavaTimeLocalDateMeta => LegacyLocalDateMeta}
+import doobie.postgres.enums._
+import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
 import doobie.util.arbitraries.SQLArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
@@ -28,17 +30,14 @@ import doobie.util.arbitraries.TimeArbitraries._
 import org.postgis._
 import org.postgresql.geometric._
 import org.postgresql.util._
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
-import org.scalacheck.{Arbitrary, Gen}
-import org.specs2.ScalaCheck
-import org.specs2.mutable.Specification
-
-import scala.concurrent.ExecutionContext
 
 
 // Establish that we can write and read various types.
 
-class pgtypesspec extends Specification with ScalaCheck {
+class TypesSuite extends munit.ScalaCheckSuite {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -61,85 +60,74 @@ class pgtypesspec extends Specification with ScalaCheck {
       a0 <- Update[Option[A]](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[Option[A]]("value")(a)
     } yield a0
 
-  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
-    s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
-        inOut(col, x).transact(xa).attempt.unsafeRunSync() must_== Right(x)
-      }
-      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
-        inOutOpt[A](col, Some(x)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(x))
-      }
-      s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
-      }
+  def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
+      forAll { (x: A) => assertEquals(inOut(col, x).transact(xa).attempt.unsafeRunSync(), Right(x)) }
     }
-
-  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) =
-    s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" in {
-        inOut(col, a).transact(xa).attempt.unsafeRunSync() must_== Right(a)
-      }
-      s"write+read $col as Option[${m.typeStack}] (Some)" in {
-        inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(a))
-      }
-      s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
-      }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
+      forAll { (x: A) => assertEquals(inOutOpt[A](col, Some(x)).transact(xa).attempt.unsafeRunSync(), Right(Some(x))) }
     }
-
-  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOutWithCustomTransform[A](col: String)(t: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
-    s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
-        inOut(col, t(x)).transact(xa).attempt.unsafeRunSync() must_== Right(t(x))
-      }
-      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
-        inOutOpt[A](col, Some(t(x))).transact(xa).attempt.unsafeRunSync() must_== Right(Some(t(x)))
-      }
-      s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
-      }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
+      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
     }
+  }
 
-  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOutWithCustomTransformAndMatch[A, B](col: String)(tr: A => A)(mtch: A => B)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) =
-    s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" ! forAll { x: A =>
-        inOut(col, tr(x)).transact(xa).attempt.unsafeRunSync().map(mtch) must_== Right(tr(x)).map(mtch)
-      }
-      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll { x: A =>
-        inOutOpt[A](col, Some(tr(x))).transact(xa).attempt.unsafeRunSync().map(_.map(mtch)) must_== Right(Some(tr(x))).map(_.map(mtch))
-      }
-      s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
-      }
+  def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) = {
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
+      assertEquals(inOut(col, a).transact(xa).attempt.unsafeRunSync(), Right(a))
     }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
+      assertEquals(inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync(), Right(Some(a)))
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
+      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+    }
+  }
 
-  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-  def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) =
-    s"Mapping for $col as ${m.typeStack}" >> {
-      s"write+read $col as ${m.typeStack}" ! forAll(gen) { t: A =>
+  def testInOutWithCustomTransform[A](col: String)(t: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
+      forAll { (x: A) => assertEquals(inOut(col, t(x)).transact(xa).attempt.unsafeRunSync(), Right(t(x))) }
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
+      forAll { (x: A) => assertEquals(inOutOpt[A](col, Some(t(x))).transact(xa).attempt.unsafeRunSync(), Right(Some(t(x)))) }
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
+      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+    }
+  }
+
+  def testInOutWithCustomTransformAndMatch[A, B](col: String)(tr: A => A)(mtch: A => B)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
+      forAll { (x: A) => assertEquals(inOut(col, tr(x)).transact(xa).attempt.unsafeRunSync().map(mtch), Right(tr(x)).map(mtch)) }
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
+      forAll { (x: A) => assertEquals(inOutOpt[A](col, Some(tr(x))).transact(xa).attempt.unsafeRunSync().map(_.map(mtch)), Right(Some(tr(x))).map(_.map(mtch))) }
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
+      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+    }
+  }
+
+  def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) = {
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
+      forAll(gen) { (t: A) =>
         t match {
           case x: java.sql.Time => println(s"TIME: ${x.toString}")
           case _ =>
         }
-        inOut(col, t).transact(xa).attempt.unsafeRunSync() must_== Right(t)
-      }
-      s"write+read $col as Option[${m.typeStack}] (Some)" ! forAll(gen) { t: A =>
-        inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync() must_== Right(Some(t))
-      }
-      s"write+read $col as Option[${m.typeStack}] (None)" in {
-        inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync() must_== Right(None)
+        assertEquals(inOut(col, t).transact(xa).attempt.unsafeRunSync(), Right(t))
       }
     }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
+      forAll(gen) { (t: A) => assertEquals(inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(t))) }
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
+      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+    }
+  }
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def skip(col: String, msg: String = "not yet implemented") =
-    s"Mapping for $col" >> {
-      "PENDING:" in pending(msg)
-    }
+    test(s"Mapping for $col ($msg)".ignore) {}
 
   // 8.1 Numeric Types
   testInOut[Short]("smallint")
@@ -273,20 +261,20 @@ class pgtypesspec extends Specification with ScalaCheck {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble).iterator: @silent("deprecated")
-  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next, rnd.next)).iterator: @silent("deprecated")
-  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator: @silent("deprecated")
+  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble).iterator
+  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next, rnd.next)).iterator
+  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator
   lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
     lazy val p = pts.next;
     Array(p, pts.next, pts.next, pts.next, p)
-  })).iterator: @silent("deprecated")
-  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next)).iterator: @silent("deprecated")
+  })).iterator
+  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next)).iterator
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator: @silent("deprecated")
-  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator: @silent("deprecated")
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator: @silent("deprecated")
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator: @silent("deprecated")
+  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator
+  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator
+  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator
+  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator
 
   // All these types map to `geometry`
   def testInOutGeom[A <: Geometry : Meta](a: A) =
