@@ -8,7 +8,7 @@ import cats.effect.{ IO, IOApp, ExitCode }
 import cats.effect.syntax.bracket._
 import cats.syntax.all._
 import doobie._
-import doobie.enum.JdbcType.Other
+import doobie.enumerated.JdbcType.Other
 import doobie.free.connection.ConnectionIO
 import doobie.syntax.connectionio._
 import doobie.util.transactor.Transactor

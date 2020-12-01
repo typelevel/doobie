@@ -153,7 +153,7 @@ lazy val doobie = project.in(file("."))
     bench,
     core,
     docs,
-    // example,
+    example,
     free,
     h2,
     hikari,
@@ -252,16 +252,16 @@ lazy val core = project
     }.taskValue
   )
 
-// lazy val example = project
-//   .in(file("modules/example"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .settings(doobieSettings ++ noPublishSettings)
-//   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
-//   .settings(
-//     libraryDependencies ++= Seq(
-//       "co.fs2" %% "fs2-io"     % fs2Version
-//     )
-//   )
+lazy val example = project
+  .in(file("modules/example"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(doobieSettings ++ noPublishSettings)
+  .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
+  .settings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-io"     % fs2Version
+    )
+  )
 
 lazy val postgres = project
   .in(file("modules/postgres"))
