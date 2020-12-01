@@ -152,7 +152,7 @@ lazy val doobie = project.in(file("."))
   .aggregate(
     bench,
     core,
-    // docs,
+    docs,
     // example,
     free,
     h2,
@@ -397,98 +397,55 @@ lazy val bench = project
   .settings(doobieSettings)
   .settings(noPublishSettings)
 
-// lazy val docs = project
-//   .in(file("modules/docs"))
-//   .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
-//   .enablePlugins(ParadoxPlugin)
-//   .enablePlugins(ParadoxSitePlugin)
-//   .enablePlugins(GhpagesPlugin)
-//   .enablePlugins(MdocPlugin)
-//   .settings(doobieSettings)
-//   .settings(noPublishSettings)
-//   .settings(
-//     scalacOptions := Nil,
+lazy val docs = project
+  .in(file("modules/docs"))
+  .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
+  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(ParadoxSitePlugin)
+  .enablePlugins(GhpagesPlugin)
+  .enablePlugins(MdocPlugin)
+  .settings(doobieSettings)
+  .settings(noPublishSettings)
+  .settings(
+    scalacOptions := Nil,
 
-//     libraryDependencies ++= Seq(
-//       "io.circe"    %% "circe-core"    % circeVersion,
-//       "io.circe"    %% "circe-generic" % circeVersion,
-//       "io.circe"    %% "circe-parser"  % circeVersion,
-//       "io.monix"    %% "monix-eval"    % monixVersion,
-//     ),
-//     fork in Test := true,
+    libraryDependencies ++= Seq(
+      "io.circe"    %% "circe-core"    % circeVersion,
+      "io.circe"    %% "circe-generic" % circeVersion,
+      "io.circe"    %% "circe-parser"  % circeVersion,
+      "io.monix"    %% "monix-eval"    % monixVersion,
+    ),
+    fork in Test := true,
 
-//     // postgis is `provided` dependency for users, and section from book of doobie needs it
-//     libraryDependencies += postgisDep,
+    // postgis is `provided` dependency for users, and section from book of doobie needs it
+    libraryDependencies += postgisDep,
 
+    git.remoteRepo     := "git@github.com:tpolecat/doobie.git",
+    ghpagesNoJekyll    := true,
+    publish / skip     := true,
+    paradoxTheme       := Some(builtinParadoxTheme("generic")),
+    version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
+    paradoxProperties ++= Map(
+      "scala-versions"           -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
+      "org"                      -> organization.value,
+      "scala.binary.version"     -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "core-dep"                 -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "version"                  -> version.value,
+      "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
+      "catsVersion"              -> catsVersion,
+      "fs2Version"               -> fs2Version,
+      "shapelessVersion"         -> shapelessVersion,
+      "h2Version"                -> h2Version,
+      "postgresVersion"          -> postgresVersion,
+      "quillVersion"             -> quillVersion,
+      "scalaVersion"             -> scalaVersion.value,
+    ),
 
-//     // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
-//     // version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
-//     // micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
-//     // micrositeName             := "doobie",
-//     // micrositeDescription      := "A functional JDBC layer for Scala.",
-//     // micrositeAuthor           := "Rob Norris",
-//     // micrositeGithubOwner      := "tpolecat",
-//     // micrositeGithubRepo       := "doobie",
-//     // micrositeGitterChannel    := false, // no me gusta
-//     // micrositeBaseUrl          := "/doobie",
-//     // micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12",
-//     // micrositeHighlightTheme   := "color-brewer",
-//     // micrositePalette := Map(
-//     //   "brand-primary"     -> "#E35D31",
-//     //   "brand-secondary"   -> "#B24916",
-//     //   "brand-tertiary"    -> "#B24916",
-//     //   "gray-dark"         -> "#453E46",
-//     //   "gray"              -> "#837F84",
-//     //   "gray-light"        -> "#E3E2E3",
-//     //   "gray-lighter"      -> "#F4F3F4",
-//     //   "white-color"       -> "#FFFFFF"
-//     // ),
-//     // micrositeConfigYaml := ConfigYml(
-//     //   yamlCustomProperties = Map(
-//     //     "doobieVersion"    -> version.value,
-//     //     "catsVersion"      -> catsVersion,
-//     //     "fs2Version"       -> fs2Version,
-//     //     "shapelessVersion" -> shapelessVersion,
-//     //     "h2Version"        -> h2Version,
-//     //     "postgresVersion"  -> postgresVersion,
-//     //     "scalaVersion"     -> scalaVersion.value,
-//     //     "scalaVersions"    -> (crossScalaVersions in core).value.flatMap(CrossVersion.partialVersion).map(_._2).mkString("2.", "/", ""), // 2.12/13
-//     //     "quillVersion"     -> quillVersion
-//     //   )
-//     // ),
-//     // micrositeExtraMdFiles := Map(
-//     //   file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "4")),
-//     //   file("LICENSE")      -> ExtraMdFileConfig("license.md",   "page", Map("title" -> "license",   "section" -> "license",   "position" -> "5"))
-//     // ),
-//     // micrositeCompilingDocsTool := WithMdoc,
-//     // mdocIn                     := sourceDirectory.value / "main" / "tut"
+    mdocIn := (baseDirectory.value) / "src" / "main" / "mdoc",
+    Compile / paradox / sourceDirectory := mdocOut.value,
+    makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
 
-//     git.remoteRepo     := "git@github.com:tpolecat/doobie.git",
-//     ghpagesNoJekyll    := true,
-//     publish / skip     := true,
-//     paradoxTheme       := Some(builtinParadoxTheme("generic")),
-//     version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
-//     paradoxProperties ++= Map(
-//       "scala-versions"           -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
-//       "org"                      -> organization.value,
-//       "scala.binary.version"     -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-//       "core-dep"                 -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-//       "version"                  -> version.value,
-//       "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
-//       "catsVersion"              -> catsVersion,
-//       "fs2Version"               -> fs2Version,
-//       "shapelessVersion"         -> shapelessVersion,
-//       "h2Version"                -> h2Version,
-//       "postgresVersion"          -> postgresVersion,
-//       "quillVersion"             -> quillVersion,
-//       "scalaVersion"             -> scalaVersion.value,
-//     ),
-
-//     mdocIn := (baseDirectory.value) / "src" / "main" / "mdoc",
-//     Compile / paradox / sourceDirectory := mdocOut.value,
-//     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
-
-//   )
+  )
 
 // lazy val refined = project
 //   .in(file("modules/refined"))
