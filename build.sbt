@@ -162,7 +162,7 @@ lazy val doobie = project.in(file("."))
     // quill,
     // refined,
     scalatest,
-    // specs2,
+    specs2,
   )
 
 lazy val free = project
@@ -359,18 +359,19 @@ lazy val hikari = project
     )
   )
 
-// lazy val specs2 = project
-//   .in(file("modules/specs2"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core)
-//   .dependsOn(h2 % "test")
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name := "doobie-specs2",
-//     description := "Specs2 support for doobie.",
-//     libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
-//   )
+lazy val specs2 = project
+  .in(file("modules/specs2"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .dependsOn(h2 % "test")
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-specs2",
+    description := "Specs2 support for doobie.",
+    libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
+  )
+  .settings(noDottySettings)
 
 lazy val scalatest = project
   .in(file("modules/scalatest"))
