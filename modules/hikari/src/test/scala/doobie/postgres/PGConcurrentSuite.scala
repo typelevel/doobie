@@ -11,13 +11,18 @@ import cats.effect.{Blocker, ConcurrentEffect, ContextShift, IO, Timer}
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.implicits._
-import org.specs2.mutable.Specification
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
+class PGConcurrentSuiteIO extends PGConcurrentSuite[IO] {
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
+  implicit def T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
+}
 
-trait pgconcurrent[F[_]] extends Specification {
+
+trait PGConcurrentSuite[F[_]] extends munit.FunSuite {
 
   implicit def E: ConcurrentEffect[F]
   implicit def T: Timer[F]
@@ -42,7 +47,7 @@ trait pgconcurrent[F[_]] extends Specification {
 
   }
 
-  "Not leak connections with recursive query streams" in {
+  test("Not leak connections with recursive query streams") {
 
     val xa = transactor()
 
@@ -55,14 +60,8 @@ trait pgconcurrent[F[_]] extends Specification {
       .compile
       .drain
 
-    pollingStream.toIO.unsafeRunSync() must_== (())
+    assertEquals(pollingStream.toIO.unsafeRunSync(), ())
   }
 
 
-}
-
-class pgconcurrentIO extends pgconcurrent[IO] {
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
-  implicit def T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
 }

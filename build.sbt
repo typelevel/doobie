@@ -148,7 +148,7 @@ lazy val doobie = project.in(file("."))
     // example,
     free,
     // h2,
-    // hikari,
+    hikari,
     postgres,
     // `postgres-circe`,
     // quill,
@@ -334,22 +334,22 @@ lazy val postgres = project
 //     scalacOptions -= "-Xfatal-warnings" // we need to do deprecated things
 //   )
 
-// lazy val hikari = project
-//   .in(file("modules/hikari"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core)
-//   .dependsOn(postgres % "test")
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name := "doobie-hikari",
-//     description := "Hikari support for doobie.",
-//     libraryDependencies ++= Seq(
-//       "com.zaxxer"     % "HikariCP"   % hikariVersion,
-//       "com.h2database" % "h2"         % h2Version      % "test",
-//       "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
-//     )
-//   )
+lazy val hikari = project
+  .in(file("modules/hikari"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .dependsOn(postgres % "test")
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-hikari",
+    description := "Hikari support for doobie.",
+    libraryDependencies ++= Seq(
+      "com.zaxxer"     % "HikariCP"   % hikariVersion,
+      "com.h2database" % "h2"         % h2Version      % "test",
+      "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
+    )
+  )
 
 // lazy val specs2 = project
 //   .in(file("modules/specs2"))
