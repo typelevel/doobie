@@ -155,7 +155,7 @@ lazy val doobie = project.in(file("."))
     // docs,
     // example,
     free,
-    // h2,
+    h2,
     hikari,
     postgres,
     // `postgres-circe`,
@@ -329,18 +329,18 @@ lazy val postgres = project
 //     )
 //   )
 
-// lazy val h2 = project
-//   .in(file("modules/h2"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .dependsOn(core % "compile->compile;test->test")
-//   .settings(
-//     name  := "doobie-h2",
-//     description := "H2 support for doobie.",
-//     libraryDependencies += "com.h2database" % "h2"  % h2Version,
-//     scalacOptions -= "-Xfatal-warnings" // we need to do deprecated things
-//   )
+lazy val h2 = project
+  .in(file("modules/h2"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(
+    name  := "doobie-h2",
+    description := "H2 support for doobie.",
+    libraryDependencies += "com.h2database" % "h2"  % h2Version,
+    scalacOptions -= "-Xfatal-warnings" // we need to do deprecated things
+  )
 
 lazy val hikari = project
   .in(file("modules/hikari"))
