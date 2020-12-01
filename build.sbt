@@ -1,4 +1,5 @@
 import FreeGen2._
+import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.3.0"
@@ -136,6 +137,13 @@ lazy val noPublishSettings = Seq(
   mimaPreviousArtifacts := Set()
 )
 
+lazy val noDottySettings = Seq(
+  (publish / skip)    := isDotty.value,
+  (Compile / sources) := { if (isDotty.value) Seq() else (Compile / sources).value },
+  (Test    / sources) := { if (isDotty.value) Seq() else (Test    / sources).value },
+  libraryDependencies := libraryDependencies.value.filterNot(_ => isDotty.value),
+)
+
 lazy val doobieSettings = buildSettings ++ commonSettings
 
 lazy val doobie = project.in(file("."))
@@ -153,7 +161,7 @@ lazy val doobie = project.in(file("."))
     // `postgres-circe`,
     // quill,
     // refined,
-    // scalatest,
+    scalatest,
     // specs2,
   )
 
@@ -364,20 +372,21 @@ lazy val hikari = project
 //     libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
 //   )
 
-// lazy val scalatest = project
-//   .in(file("modules/scalatest"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core)
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name := s"doobie-scalatest",
-//     description := "Scalatest support for doobie.",
-//     libraryDependencies ++= Seq(
-//       "org.scalatest" %% "scalatest" % scalatestVersion,
-//       "com.h2database"  %  "h2"       % h2Version % "test"
-//     )
-//   )
+lazy val scalatest = project
+  .in(file("modules/scalatest"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := s"doobie-scalatest",
+    description := "Scalatest support for doobie.",
+    libraryDependencies ++= Seq(
+      "org.scalatest"  %% "scalatest" % scalatestVersion,
+      "com.h2database" %  "h2"        % h2Version % "test"
+    )
+  )
+  .settings(noDottySettings)
 
 lazy val bench = project
   .in(file("modules/bench"))
