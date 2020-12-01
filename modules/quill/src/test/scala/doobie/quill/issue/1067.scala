@@ -3,16 +3,16 @@
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.quill
+package issue
 
 import cats.effect._
 import doobie._
 import doobie.implicits._
 import io.getquill._
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 
 // https://github.com/tpolecat/doobie/issues/1067
-class Issue1067 extends Specification {
+class `1067` extends munit.FunSuite {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -28,13 +28,11 @@ class Issue1067 extends Specification {
 
   case class Country(name: String, indepYear: Option[Short])
 
-  "Issue1067" should {
-    "correctly select many countries, with a null in last position" in {
-      val stmt     = quote { query[Country] }
-      val actual   = run(stmt).transact(xa).unsafeRunSync()
-      actual.count(_.indepYear.isDefined) should_== 192
-      actual.count(_.indepYear.isEmpty) should_== 47
-    }
+  test("Issue1067 - correctly select many countries, with a null in last position") {
+    val stmt     = quote { query[Country] }
+    val actual   = run(stmt).transact(xa).unsafeRunSync()
+    assertEquals(actual.count(_.indepYear.isDefined), 192)
+    assertEquals(actual.count(_.indepYear.isEmpty), 47)
   }
 
 }

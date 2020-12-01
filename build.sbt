@@ -159,7 +159,7 @@ lazy val doobie = project.in(file("."))
     hikari,
     postgres,
     // `postgres-circe`,
-    // quill,
+    quill,
     // refined,
     scalatest,
     specs2,
@@ -505,18 +505,19 @@ lazy val bench = project
 //     )
 //   )
 
-// lazy val quill = project
-//   .in(file("modules/quill"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core)
-//   .dependsOn(postgres % "test")
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name := "doobie-quill",
-//     description := "Quill support for doobie.",
-//     libraryDependencies ++= Seq(
-//       "io.getquill" %% "quill-jdbc"   % quillVersion,
-//       "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
-//     ),
-//   )
+lazy val quill = project
+  .in(file("modules/quill"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .dependsOn(postgres % "test")
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-quill",
+    description := "Quill support for doobie.",
+    libraryDependencies ++= Seq(
+      "io.getquill" %% "quill-jdbc"   % quillVersion,
+      "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
+    ),
+  )
+  .settings(noDottySettings)
