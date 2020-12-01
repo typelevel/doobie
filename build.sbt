@@ -158,7 +158,7 @@ lazy val doobie = project.in(file("."))
     h2,
     hikari,
     postgres,
-    // `postgres-circe`,
+    `postgres-circe`,
     quill,
     // refined,
     scalatest,
@@ -314,20 +314,21 @@ lazy val postgres = project
     initialCommands in consoleQuick := ""
   )
 
-// lazy val `postgres-circe` = project
-//   .in(file("modules/postgres-circe"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core, postgres)
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name  := "doobie-postgres-circe",
-//     description := "Postgres circe support for doobie.",
-//     libraryDependencies ++= Seq(
-//       "io.circe"    %% "circe-core"    % circeVersion,
-//       "io.circe"    %% "circe-parser"  % circeVersion
-//     )
-//   )
+lazy val `postgres-circe` = project
+  .in(file("modules/postgres-circe"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core, postgres)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name  := "doobie-postgres-circe",
+    description := "Postgres circe support for doobie.",
+    libraryDependencies ++= Seq(
+      "io.circe"    %% "circe-core"    % circeVersion,
+      "io.circe"    %% "circe-parser"  % circeVersion
+    )
+  )
+  .settings(noDottySettings)
 
 lazy val h2 = project
   .in(file("modules/h2"))
