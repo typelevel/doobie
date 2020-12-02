@@ -14,7 +14,7 @@ lazy val monixVersion         = "3.3.0"
 lazy val quillVersion         = "3.6.0-RC3"
 lazy val postGisVersion       = "2.5.0"
 lazy val postgresVersion      = "42.2.18"
-lazy val refinedVersion       = "0.9.18"
+lazy val refinedVersion       = "0.9.19"
 lazy val scalaCheckVersion    = "1.15.1"
 lazy val scalatestVersion     = "3.2.3"
 lazy val shapelessVersion     = "2.3.3"
@@ -160,7 +160,7 @@ lazy val doobie = project.in(file("."))
     postgres,
     `postgres-circe`,
     quill,
-    // refined,
+    refined,
     scalatest,
     specs2,
   )
@@ -448,20 +448,20 @@ lazy val docs = project
 
   )
 
-// lazy val refined = project
-//   .in(file("modules/refined"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .dependsOn(core)
-//   .settings(doobieSettings)
-//   .settings(publishSettings)
-//   .settings(
-//     name := "doobie-refined",
-//     description := "Refined support for doobie.",
-//     libraryDependencies ++= Seq(
-//       "eu.timepit"     %% "refined" % refinedVersion,
-//       "com.h2database" %  "h2"      % h2Version       % "test"
-//     )
-//   )
+lazy val refined = project
+  .in(file("modules/refined"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-refined",
+    description := "Refined support for doobie.",
+    libraryDependencies ++= Seq(
+      "eu.timepit"     %% "refined" % refinedVersion,
+      "com.h2database" %  "h2"      % h2Version       % "test"
+    )
+  )
 
 lazy val quill = project
   .in(file("modules/quill"))
