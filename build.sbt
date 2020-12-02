@@ -447,6 +447,8 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
 
   )
+  .settings(noDottySettings)
+
 
 lazy val refined = project
   .in(file("modules/refined"))
