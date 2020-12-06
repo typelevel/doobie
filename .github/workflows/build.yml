@@ -10,7 +10,7 @@ jobs:
       - name: Set up JDK 13
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: 13
+          java-version: 8
       - name: Cache SBT
         uses: coursier/cache-action@v3
       - name: Start up Postgres
