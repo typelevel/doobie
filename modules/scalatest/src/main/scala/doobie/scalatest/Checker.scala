@@ -8,7 +8,7 @@ import cats.effect.{ Effect, IO }
 import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
 import org.scalatest.Assertions
-import scala.reflect.runtime.universe.TypeTag
+import org.tpolecat.typename._
 
 /**
   * Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -39,13 +39,13 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
   def check[A: Analyzable](a: A) = checkImpl(Analyzable.unpack(a))
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def checkOutput[A: TypeTag](q: Query0[A]) =
+  def checkOutput[A: TypeName](q: Query0[A]) =
     checkImpl(AnalysisArgs(
       s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
     ))
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+  def checkOutput[A: TypeName, B: TypeName](q: Query[A, B]) =
     checkImpl(AnalysisArgs(
       s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
     ))

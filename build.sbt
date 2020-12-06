@@ -1,11 +1,12 @@
 import FreeGen2._
+import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.3.0"
-lazy val catsEffectVersion    = "2.1.4"
+lazy val catsEffectVersion    = "2.3.0"
 lazy val circeVersion         = "0.13.0"
 lazy val collCompatVersion    = "2.3.1"
-lazy val fs2Version           = "2.4.4"
+lazy val fs2Version           = "2.5.0-M2"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5"
 lazy val kindProjectorVersion = "0.11.2"
@@ -18,10 +19,10 @@ lazy val scalaCheckVersion    = "1.15.1"
 lazy val scalatestVersion     = "3.2.3"
 lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.7.1"
-lazy val sourcecodeVersion    = "0.2.1"
 lazy val specs2Version        = "4.10.5"
 lazy val scala212Version      = "2.12.12"
-lazy val scala213Version      = "2.13.3"
+lazy val scala213Version      = "2.13.4"
+lazy val scala30Version       = "3.0.0-M2"
 lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
@@ -33,14 +34,14 @@ lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 lazy val compilerFlags = Seq(
   scalacOptions in (Compile, console) ++= Seq(
     "-Ydelambdafy:inline",    // http://fs2.io/faq.html
-    "-P:silencer:checkUnused" // https://github.com/ghik/silencer#detecting-unused-annotations
   ),
   scalacOptions in (Compile, doc) --= Seq(
     "-Xfatal-warnings"
   ),
+  scalacOptions in Test --= Seq(
+    "-Xfatal-warnings"
+  ),
   libraryDependencies ++= Seq(
-    compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
     "org.scala-lang.modules" %% "scala-collection-compat" % collCompatVersion
   )
 )
@@ -54,7 +55,7 @@ lazy val commonSettings =
   compilerFlags ++
   Seq(
     scalaVersion := scala213Version,
-    crossScalaVersions := Seq(scala212Version, scala213Version),
+    crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -65,17 +66,24 @@ lazy val commonSettings =
          |""".stripMargin
     )),
 
+    // Scaladoc options
     scalacOptions in (Compile, doc) ++= Seq(
       "-groups",
       "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
+
+    // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck"        % scalaCheckVersion % "test",
-      "org.specs2"     %% "specs2-core"       % specs2Version     % "test",
-      "org.specs2"     %% "specs2-scalacheck" % specs2Version     % "test"
+      compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
+    ).filterNot(_ => isDotty.value),
+
+    // MUnit
+    libraryDependencies ++= Seq(
+      "org.typelevel"     %% "scalacheck-effect-munit" % "0.6.0"  % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "0.11.0" % Test,
     ),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion cross CrossVersion.full),
+    testFrameworks += new TestFramework("munit.Framework"),
 
     // For some reason tests started hanginging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
@@ -83,6 +91,36 @@ lazy val commonSettings =
     // We occasionally use snapshots.
     resolvers +=
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+
+    // Add some more source directories
+    unmanagedSourceDirectories in Compile ++= {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _))  => Seq(sourceDir / "scala-3")
+        case Some((2, _))  => Seq(sourceDir / "scala-2")
+        case _             => Seq()
+      }
+    },
+
+    // Also for test
+    unmanagedSourceDirectories in Test ++= {
+      val sourceDir = (sourceDirectory in Test).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _))  => Seq(sourceDir / "scala-3")
+        case Some((2, _))  => Seq(sourceDir / "scala-2")
+        case _             => Seq()
+      }
+    },
+
+    // dottydoc really doesn't work at all right now
+    Compile / doc / sources := {
+      val old = (Compile / doc / sources).value
+      if (isDotty.value)
+        Seq()
+      else
+        old
+    },
+
   )
 
 lazy val publishSettings = Seq(
@@ -97,6 +135,13 @@ lazy val publishSettings = Seq(
 lazy val noPublishSettings = Seq(
   skip in publish := true,
   mimaPreviousArtifacts := Set()
+)
+
+lazy val noDottySettings = Seq(
+  (publish / skip)    := isDotty.value,
+  (Compile / sources) := { if (isDotty.value) Seq() else (Compile / sources).value },
+  (Test    / sources) := { if (isDotty.value) Seq() else (Test    / sources).value },
+  libraryDependencies := libraryDependencies.value.filterNot(_ => isDotty.value),
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -136,7 +181,9 @@ lazy val free = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-    ),
+    ) ++Seq(
+      scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for macros
+    ).filterNot(_ => isDotty.value),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
@@ -171,12 +218,11 @@ lazy val core = project
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for shapeless macros
-      "com.chuusai"           %% "shapeless"     % shapelessVersion,
-      "com.lihaoyi"           %% "sourcecode"    % sourcecodeVersion,
-      "com.h2database"        %  "h2"            % h2Version % "test",
+      "com.chuusai"    %% "shapeless" % shapelessVersion,
+    ).filterNot(_ => isDotty.value) ++ Seq(
+      "org.tpolecat"   %% "typename"  % "0.1.1",
+      "com.h2database" %  "h2"        % h2Version % "test",
     ),
-
     scalacOptions += "-Yno-predef",
     unmanagedSourceDirectories in Compile += {
       val sourceDir = (sourceDirectory in Compile).value
@@ -241,7 +287,6 @@ lazy val postgres = project
         classOf[org.postgresql.copy.CopyIn],
         classOf[org.postgresql.copy.CopyManager],
         classOf[org.postgresql.copy.CopyOut],
-        classOf[org.postgresql.fastpath.Fastpath],
         classOf[org.postgresql.largeobject.LargeObject],
         classOf[org.postgresql.largeobject.LargeObjectManager],
         classOf[org.postgresql.PGConnection]
@@ -283,6 +328,7 @@ lazy val `postgres-circe` = project
       "io.circe"    %% "circe-parser"  % circeVersion
     )
   )
+  .settings(noDottySettings)
 
 lazy val h2 = project
   .in(file("modules/h2"))
@@ -326,6 +372,7 @@ lazy val specs2 = project
     description := "Specs2 support for doobie.",
     libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
   )
+  .settings(noDottySettings)
 
 lazy val scalatest = project
   .in(file("modules/scalatest"))
@@ -337,10 +384,11 @@ lazy val scalatest = project
     name := s"doobie-scalatest",
     description := "Scalatest support for doobie.",
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.h2database"  %  "h2"       % h2Version % "test"
+      "org.scalatest"  %% "scalatest" % scalatestVersion,
+      "com.h2database" %  "h2"        % h2Version % "test"
     )
   )
+  .settings(noDottySettings)
 
 lazy val bench = project
   .in(file("modules/bench"))
@@ -373,49 +421,6 @@ lazy val docs = project
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
 
-
-    // Settings for sbt-microsites https://47deg.github.io/sbt-microsites/
-    // version                   := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
-    // micrositeImgDirectory     := baseDirectory.value / "src/main/resources/microsite/img",
-    // micrositeName             := "doobie",
-    // micrositeDescription      := "A functional JDBC layer for Scala.",
-    // micrositeAuthor           := "Rob Norris",
-    // micrositeGithubOwner      := "tpolecat",
-    // micrositeGithubRepo       := "doobie",
-    // micrositeGitterChannel    := false, // no me gusta
-    // micrositeBaseUrl          := "/doobie",
-    // micrositeDocumentationUrl := "https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12",
-    // micrositeHighlightTheme   := "color-brewer",
-    // micrositePalette := Map(
-    //   "brand-primary"     -> "#E35D31",
-    //   "brand-secondary"   -> "#B24916",
-    //   "brand-tertiary"    -> "#B24916",
-    //   "gray-dark"         -> "#453E46",
-    //   "gray"              -> "#837F84",
-    //   "gray-light"        -> "#E3E2E3",
-    //   "gray-lighter"      -> "#F4F3F4",
-    //   "white-color"       -> "#FFFFFF"
-    // ),
-    // micrositeConfigYaml := ConfigYml(
-    //   yamlCustomProperties = Map(
-    //     "doobieVersion"    -> version.value,
-    //     "catsVersion"      -> catsVersion,
-    //     "fs2Version"       -> fs2Version,
-    //     "shapelessVersion" -> shapelessVersion,
-    //     "h2Version"        -> h2Version,
-    //     "postgresVersion"  -> postgresVersion,
-    //     "scalaVersion"     -> scalaVersion.value,
-    //     "scalaVersions"    -> (crossScalaVersions in core).value.flatMap(CrossVersion.partialVersion).map(_._2).mkString("2.", "/", ""), // 2.12/13
-    //     "quillVersion"     -> quillVersion
-    //   )
-    // ),
-    // micrositeExtraMdFiles := Map(
-    //   file("CHANGELOG.md") -> ExtraMdFileConfig("changelog.md", "page", Map("title" -> "changelog", "section" -> "changelog", "position" -> "4")),
-    //   file("LICENSE")      -> ExtraMdFileConfig("license.md",   "page", Map("title" -> "license",   "section" -> "license",   "position" -> "5"))
-    // ),
-    // micrositeCompilingDocsTool := WithMdoc,
-    // mdocIn                     := sourceDirectory.value / "main" / "tut"
-
     git.remoteRepo     := "git@github.com:tpolecat/doobie.git",
     ghpagesNoJekyll    := true,
     publish / skip     := true,
@@ -442,6 +447,8 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
 
   )
+  .settings(noDottySettings)
+
 
 lazy val refined = project
   .in(file("modules/refined"))
@@ -473,3 +480,4 @@ lazy val quill = project
       "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
     ),
   )
+  .settings(noDottySettings)

@@ -8,8 +8,8 @@ import cats.{ Alternative, Monad }
 import cats.data.NonEmptyList
 import cats.syntax.all._
 
-import doobie.enum.Holdability
-import doobie.enum.FetchDirection
+import doobie.enumerated.Holdability
+import doobie.enumerated.FetchDirection
 import doobie.util.{ Read, Write }
 import doobie.util.compat.FactoryCompat
 import doobie.util.invariant._

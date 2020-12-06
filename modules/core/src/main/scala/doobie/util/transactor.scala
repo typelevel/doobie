@@ -121,7 +121,9 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawExec(implicit ev: Bracket[M, Throwable]): Kleisli[M, Connection, *] ~> M =
-      λ[Kleisli[M, Connection, *] ~> M](k => connect(kernel).use(k.run))
+      new (Kleisli[M, Connection, *] ~> M) {
+        def apply[T](k: Kleisli[M, Connection, T]): M[T] = connect(kernel).use(k.run)
+      }
 
     /**
       * Natural transformation that provides a connection and binds through a `Kleisli` program
@@ -129,12 +131,13 @@ object transactor  {
       * @group Natural Transformations
       */
     def exec(implicit ev: Bracket[M, Throwable], D: Defer[M]): Kleisli[M, Connection, *] ~> M =
-      λ[Kleisli[M, Connection, *] ~> M] { ka =>
-        connect(kernel).use { conn =>
-          strategy.resource.mapK(run(conn)).use { _ =>
-            ka.run(conn)
+      new (Kleisli[M, Connection, *] ~> M) {
+        def apply[T](ka: Kleisli[M, Connection, T]): M[T] =
+          connect(kernel).use { conn =>
+            strategy.resource.mapK(run(conn)).use { _ =>
+              ka.run(conn)
+            }
           }
-        }
       }
 
     /**
@@ -144,10 +147,11 @@ object transactor  {
      * @group Natural Transformations
      */
     def rawTrans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M] { f =>
-        connect(kernel).use { conn =>
-          f.foldMap(interpret).run(conn)
-        }
+      new (ConnectionIO ~> M) {
+        def apply[T](f: ConnectionIO[T]): M[T] =
+          connect(kernel).use { conn =>
+            f.foldMap(interpret).run(conn)
+          }
       }
 
     /**
@@ -157,49 +161,56 @@ object transactor  {
      * @group Natural Transformations
      */
     def trans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M] { f =>
-        connect(kernel).use { conn =>
-          strategy.resource.use(_ => f).foldMap(interpret).run(conn)
-        }
+      new (ConnectionIO ~> M) {
+        def apply[T](f: ConnectionIO[T]): M[T] =
+          connect(kernel).use { conn =>
+            strategy.resource.use(_ => f).foldMap(interpret).run(conn)
+          }
       }
 
-    def rawTransP[T](implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
-      λ[Stream[ConnectionIO, *] ~> Stream[M, *]] { s =>
-        Stream.resource(connect(kernel)).flatMap { conn =>
-          s.translate(run(conn))
-        }.scope
+    def rawTransP(implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
+      new (Stream[ConnectionIO, *] ~> Stream[M, *]) {
+        def apply[T](s: Stream[ConnectionIO, T]) =
+          Stream.resource(connect(kernel)).flatMap { conn =>
+            s.translate(run(conn))
+          }.scope
       }
 
     def transP(implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
-      λ[Stream[ConnectionIO, *] ~> Stream[M, *]] { s =>
-        Stream.resource(connect(kernel)).flatMap { c =>
-          Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
-        }.scope
+      new (Stream[ConnectionIO, *] ~> Stream[M, *]) {
+        def apply[T](s: Stream[ConnectionIO, T]) =
+          Stream.resource(connect(kernel)).flatMap { c =>
+            Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
+          }.scope
       }
 
     def rawTransPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
-      λ[Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]] { s =>
-        Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
-          s.translate(runKleisli[I](c))
-        }.scope
+      new (Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]) {
+        def apply[T](s: Stream[Kleisli[ConnectionIO, I, *], T]) =
+          Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
+            s.translate(runKleisli[I](c))
+          }.scope
       }
 
     def transPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
-      λ[Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]] { s =>
-        Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
-          Stream.resource(strategy.resource.mapK(Kleisli.liftK[ConnectionIO, I])).flatMap(_ => s)
-            .translate(runKleisli[I](c))
-        }.scope
+      new (Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]) {
+        def apply[T](s: Stream[Kleisli[ConnectionIO, I, *], T]) =
+          Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
+            Stream.resource(strategy.resource.mapK(Kleisli.liftK[ConnectionIO, I])).flatMap(_ => s)
+              .translate(runKleisli[I](c))
+          }.scope
       }
 
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M] { f =>
-        f.foldMap(interpret).run(c)
+      new (ConnectionIO ~> M) {
+        def apply[T](f: ConnectionIO[T]) =
+          f.foldMap(interpret).run(c)
       }
 
     private def runKleisli[B](c: Connection)(implicit ev: Monad[M]): Kleisli[ConnectionIO, B, *] ~> Kleisli[M, B, *] =
-      λ[Kleisli[ConnectionIO, B, *] ~> Kleisli[M, B, *]] { f =>
-        Kleisli(f.run(_).foldMap(interpret).run(c))
+      new (Kleisli[ConnectionIO, B, *] ~> Kleisli[M, B, *]) {
+        def apply[T](f: Kleisli[ConnectionIO, B, T]) =
+          Kleisli(f.run(_).foldMap(interpret).run(c))
       }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -223,7 +234,11 @@ object transactor  {
       Transactor[M0, A](
         kernel,
         connect.andThen(_.mapK(fk)),
-        interpret.andThen(λ[Kleisli[M, Connection, *] ~> Kleisli[M0, Connection, *]](_.mapK(fk))),
+        interpret.andThen(
+          new (Kleisli[M, Connection, *] ~> Kleisli[M0, Connection, *]) {
+            def apply[T](f: Kleisli[M, Connection, T]) = f.mapK(fk)
+          }
+        ),
         strategy
       )
   }
@@ -261,7 +276,7 @@ object transactor  {
      * @group Constructors
      */
      object fromDataSource {
-       def apply[M[_]] = new FromDataSourceUnapplied[M]
+      def apply[M[_]] = new FromDataSourceUnapplied[M]
 
       /**
        * Constructor of `Transactor[M, D]` fixed for `M`; see the `apply` method for details.

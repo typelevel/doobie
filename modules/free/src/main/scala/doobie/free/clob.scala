@@ -8,7 +8,6 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -17,7 +16,6 @@ import java.io.Writer
 import java.lang.String
 import java.sql.Clob
 
-@silent("deprecated")
 object clob { module =>
 
   // Algebra of operations for Clob. Each accepts a visitor as an alternative to pattern-matching.
@@ -96,7 +94,7 @@ object clob { module =>
     final case class BracketCase[A, B](acquire: ClobIO[A], use: A => ClobIO[B], release: (A, ExitCase[Throwable]) => ClobIO[Unit]) extends ClobOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends ClobOp[Unit] {
+    case object Shift extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: ClobIO[A]) extends ClobOp[A] {
@@ -104,43 +102,43 @@ object clob { module =>
     }
 
     // Clob-specific operations.
-    final case object Free extends ClobOp[Unit] {
+    case object Free extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.free
     }
-    final case object GetAsciiStream extends ClobOp[InputStream] {
+    case object GetAsciiStream extends ClobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getAsciiStream
     }
-    final case object GetCharacterStream extends ClobOp[Reader] {
+    case object GetCharacterStream extends ClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream
     }
-    final case class  GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
+    final case class GetCharacterStream1(a: Long, b: Long) extends ClobOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a, b)
     }
-    final case class  GetSubString(a: Long, b: Int) extends ClobOp[String] {
+    final case class GetSubString(a: Long, b: Int) extends ClobOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSubString(a, b)
     }
-    final case object Length extends ClobOp[Long] {
+    case object Length extends ClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.length
     }
-    final case class  Position(a: Clob, b: Long) extends ClobOp[Long] {
+    final case class Position(a: Clob, b: Long) extends ClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  Position1(a: String, b: Long) extends ClobOp[Long] {
+    final case class Position1(a: String, b: Long) extends ClobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
+    final case class SetAsciiStream(a: Long) extends ClobOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.setAsciiStream(a)
     }
-    final case class  SetCharacterStream(a: Long) extends ClobOp[Writer] {
+    final case class SetCharacterStream(a: Long) extends ClobOp[Writer] {
       def visit[F[_]](v: Visitor[F]) = v.setCharacterStream(a)
     }
-    final case class  SetString(a: Long, b: String) extends ClobOp[Int] {
+    final case class SetString(a: Long, b: String) extends ClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b)
     }
-    final case class  SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
+    final case class SetString1(a: Long, b: String, c: Int, d: Int) extends ClobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setString(a, b, c, d)
     }
-    final case class  Truncate(a: Long) extends ClobOp[Unit] {
+    final case class Truncate(a: Long) extends ClobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
 

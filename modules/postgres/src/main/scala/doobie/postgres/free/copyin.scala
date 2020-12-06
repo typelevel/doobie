@@ -8,11 +8,10 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
+import org.postgresql.util.ByteStreamWriter
 
-@silent("deprecated")
 object copyin { module =>
 
   // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternative to pattern-matching.
@@ -59,6 +58,7 @@ object copyin { module =>
       def getHandledRowCount: F[Long]
       def isActive: F[Boolean]
       def writeToCopy(a: Array[Byte], b: Int, c: Int): F[Unit]
+      def writeToCopy(a: ByteStreamWriter): F[Unit]
 
     }
 
@@ -87,7 +87,7 @@ object copyin { module =>
     final case class BracketCase[A, B](acquire: CopyInIO[A], use: A => CopyInIO[B], release: (A, ExitCase[Throwable]) => CopyInIO[Unit]) extends CopyInOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends CopyInOp[Unit] {
+    case object Shift extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CopyInIO[A]) extends CopyInOp[A] {
@@ -95,32 +95,35 @@ object copyin { module =>
     }
 
     // PGCopyIn-specific operations.
-    final case object CancelCopy extends CopyInOp[Unit] {
+    case object CancelCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
     }
-    final case object EndCopy extends CopyInOp[Long] {
+    case object EndCopy extends CopyInOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.endCopy
     }
-    final case object FlushCopy extends CopyInOp[Unit] {
+    case object FlushCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.flushCopy
     }
-    final case object GetFieldCount extends CopyInOp[Int] {
+    case object GetFieldCount extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldCount
     }
-    final case class  GetFieldFormat(a: Int) extends CopyInOp[Int] {
+    final case class GetFieldFormat(a: Int) extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
     }
-    final case object GetFormat extends CopyInOp[Int] {
+    case object GetFormat extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFormat
     }
-    final case object GetHandledRowCount extends CopyInOp[Long] {
+    case object GetHandledRowCount extends CopyInOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
     }
-    final case object IsActive extends CopyInOp[Boolean] {
+    case object IsActive extends CopyInOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isActive
     }
-    final case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
+    final case class WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a, b, c)
+    }
+    final case class WriteToCopy1(a: ByteStreamWriter) extends CopyInOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a)
     }
 
   }
@@ -150,6 +153,7 @@ object copyin { module =>
   val getHandledRowCount: CopyInIO[Long] = FF.liftF(GetHandledRowCount)
   val isActive: CopyInIO[Boolean] = FF.liftF(IsActive)
   def writeToCopy(a: Array[Byte], b: Int, c: Int): CopyInIO[Unit] = FF.liftF(WriteToCopy(a, b, c))
+  def writeToCopy(a: ByteStreamWriter): CopyInIO[Unit] = FF.liftF(WriteToCopy1(a))
 
   // CopyInIO is an Async
   implicit val AsyncCopyInIO: Async[CopyInIO] =
