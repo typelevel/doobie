@@ -53,7 +53,7 @@ object WeakAsync extends WeakAsyncLowPriorityInstances {
 
   def apply[F[_]](implicit ev: WeakAsync[F]): WeakAsync[F] = ev
 
-  implicit def doobieMonadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]) =
+  implicit def doobieMonadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancel[F, Throwable] =
     new MonadCancel[F, Throwable] {
       override def pure[A](x: A): F[A] = F.pure(x)
       override def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B] = F.flatMap(fa)(f)
@@ -89,11 +89,14 @@ object WeakAsync extends WeakAsyncLowPriorityInstances {
     * Leaking it from it's resource scope will lead to erorrs at runtime. */
   def liftK[F[_], G[_]](implicit F: Async[F], G: WeakAsync[G]): Resource[F, F ~> G] =
     Dispatcher[F].map(dispatcher =>
-      λ[F ~> G](fa =>
-        G.delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { case (running, cancel) =>
-          G.onCancel(G.fromFuture(G.pure(running)), G.fromFuture(G.delay(cancel())))
+      new(F ~> G) {
+        def apply[T](fa: F[T]) = {
+          G.delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { 
+            case (running, cancel) =>
+              G.onCancel(G.fromFuture(G.pure(running)), G.fromFuture(G.delay(cancel())))
+          }
         }
-      )
+      }
     )
 
 }

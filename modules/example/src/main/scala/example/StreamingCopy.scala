@@ -25,12 +25,14 @@ object StreamingCopy extends IOApp.Simple {
   /**
    * Cross-transactor streaming when the `source` and `sink` have the same schema.
    */
-  def fuseMap[F[_]: MonadError[*[_], Throwable], A, B](
+  def fuseMap[F[_], A, B](
     source: Stream[ConnectionIO, A],
     sink:   A => ConnectionIO[B]
   )(
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
+  )(
+    implicit ev: MonadError[F, Throwable]
   ): Stream[F, B] =
     fuseMapGeneric(source, identity[A], sink)(sourceXA, sinkXA)
 
@@ -40,13 +42,15 @@ object StreamingCopy extends IOApp.Simple {
    * The source output and sink input types can differ. This enables data transformations involving
    * potentially different database schemas.
    */
-  def fuseMapGeneric[F[_]: MonadError[*[_], Throwable], A, B, C](
+  def fuseMapGeneric[F[_], A, B, C](
     source:       Stream[ConnectionIO, A],
     sourceToSink: A => B,
     sink:         B => ConnectionIO[C]
   )(
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
+  )(
+    implicit ev: MonadError[F, Throwable]
   ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
