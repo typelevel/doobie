@@ -385,8 +385,8 @@ object query {
      * `sql`interpolator.
      * @group Constructors
      */
-     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-     def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
        Query[Unit, A](sql, pos, logHandler).toQuery0(())
 
     /** @group Typeclass Instances */

@@ -109,9 +109,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
 
     // Case class/object declaration
     def ctor(opname:String): String =
-      ("|final case " + (cparams match {
-        case Nil => s"object $cname"
-        case ps  => s"class  $cname$ctparams(${cargs.mkString(", ")})"
+      ((cparams match {
+        case Nil => s"|case object $cname"
+        case ps  => s"|final case class $cname$ctparams(${cargs.mkString(", ")})"
       }) + s""" extends ${opname}[$ret] {
         |      def visit[F[_]](v: Visitor[F]) = v.$mname${if (args.isEmpty) "" else s"($args)"}
         |    }""").trim.stripMargin
@@ -167,9 +167,11 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       (m.getModifiers & Modifier.STATIC) != 0
   }
 
-  // All method for this class and any superclasses/interfaces
+  // All non-deprecated methods for this class and any superclasses/interfaces
   def methods(c: Class[_]): List[Method] =
-    closure(c).flatMap(_.getDeclaredMethods.toList).distinct.filterNot(_.isStatic)
+    closure(c).flatMap(_.getDeclaredMethods.toList).distinct
+      .filterNot(_.isStatic)
+      .filter(_.getAnnotation(classOf[Deprecated]) == null)
 
   // Ctor values for all methods in of A plus superclasses, interfaces, etc.
   def ctors[A](implicit ev: ClassTag[A]): List[Ctor] =
@@ -213,11 +215,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |import doobie.WeakAsync
     |import scala.concurrent.Future
     |import scala.concurrent.duration.FiniteDuration
-    |import com.github.ghik.silencer.silent
     |
     |${imports[A].mkString("\n")}
     |
-    |@silent("deprecated")
     |object $mname { module =>
     |
     |  // Algebra of operations for $sname. Each accepts a visitor as an alternative to pattern-matching.
@@ -372,14 +372,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
      |package $pkg
      |
      |import cats.free.Free
-     |import com.github.ghik.silencer.silent
      |
      |${managed.map(ioImport).mkString("\n")}
      |
      |// A pair (J, Free[F, A]) with constructors that tie down J and F.
      |sealed trait Embedded[A]
      |
-     |@silent("deprecated")
      |object Embedded {
      |  ${managed.map(ClassTag(_)).map(embed(_)).mkString("\n  ") }
      |}
@@ -447,7 +445,6 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import doobie.WeakAsync
       |import scala.concurrent.Future
       |import scala.concurrent.duration.FiniteDuration
-      |import com.github.ghik.silencer.silent
       |
       |// Types referenced in the JDBC API
       |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
@@ -466,7 +463,6 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
-      |@silent("deprecated")
       |trait KleisliInterpreter[M[_]] { outer =>
       |
       |  implicit val asyncM: WeakAsync[M]

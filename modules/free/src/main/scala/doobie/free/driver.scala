@@ -10,7 +10,6 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.lang.String
 import java.sql.Connection
@@ -19,7 +18,6 @@ import java.sql.DriverPropertyInfo
 import java.util.Properties
 import java.util.logging.Logger
 
-@silent("deprecated")
 object driver { module =>
 
   // Algebra of operations for Driver. Each accepts a visitor as an alternative to pattern-matching.
@@ -113,25 +111,25 @@ object driver { module =>
     }
 
     // Driver-specific operations.
-    final case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
+    final case class AcceptsURL(a: String) extends DriverOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.acceptsURL(a)
     }
-    final case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
+    final case class Connect(a: String, b: Properties) extends DriverOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.connect(a, b)
     }
-    final case object GetMajorVersion extends DriverOp[Int] {
+    case object GetMajorVersion extends DriverOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMajorVersion
     }
-    final case object GetMinorVersion extends DriverOp[Int] {
+    case object GetMinorVersion extends DriverOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMinorVersion
     }
-    final case object GetParentLogger extends DriverOp[Logger] {
+    case object GetParentLogger extends DriverOp[Logger] {
       def visit[F[_]](v: Visitor[F]) = v.getParentLogger
     }
-    final case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
+    final case class GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
       def visit[F[_]](v: Visitor[F]) = v.getPropertyInfo(a, b)
     }
-    final case object JdbcCompliant extends DriverOp[Boolean] {
+    case object JdbcCompliant extends DriverOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.jdbcCompliant
     }
 

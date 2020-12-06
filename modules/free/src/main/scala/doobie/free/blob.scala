@@ -10,13 +10,11 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
 
-@silent("deprecated")
 object blob { module =>
 
   // Algebra of operations for Blob. Each accepts a visitor as an alternative to pattern-matching.
@@ -114,37 +112,37 @@ object blob { module =>
     }
 
     // Blob-specific operations.
-    final case object Free extends BlobOp[Unit] {
+    case object Free extends BlobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.free
     }
-    final case object GetBinaryStream extends BlobOp[InputStream] {
+    case object GetBinaryStream extends BlobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getBinaryStream
     }
-    final case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
+    final case class GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getBinaryStream(a, b)
     }
-    final case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
+    final case class GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getBytes(a, b)
     }
-    final case object Length extends BlobOp[Long] {
+    case object Length extends BlobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.length
     }
-    final case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
+    final case class Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
+    final case class Position1(a: Blob, b: Long) extends BlobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
+    final case class SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a)
     }
-    final case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+    final case class SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b)
     }
-    final case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+    final case class SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b, c, d)
     }
-    final case class  Truncate(a: Long) extends BlobOp[Unit] {
+    final case class Truncate(a: Long) extends BlobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
 

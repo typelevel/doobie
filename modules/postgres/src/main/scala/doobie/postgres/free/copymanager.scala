@@ -10,7 +10,6 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -23,7 +22,6 @@ import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.util.ByteStreamWriter
 
-@silent("deprecated")
 object copymanager { module =>
 
   // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternative to pattern-matching.
@@ -120,34 +118,34 @@ object copymanager { module =>
     }
 
     // PGCopyManager-specific operations.
-    final case class  CopyDual(a: String) extends CopyManagerOp[PGCopyDual] {
+    final case class CopyDual(a: String) extends CopyManagerOp[PGCopyDual] {
       def visit[F[_]](v: Visitor[F]) = v.copyDual(a)
     }
-    final case class  CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
+    final case class CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a)
     }
-    final case class  CopyIn1(a: String, b: ByteStreamWriter) extends CopyManagerOp[Long] {
+    final case class CopyIn1(a: String, b: ByteStreamWriter) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn2(a: String, b: InputStream) extends CopyManagerOp[Long] {
+    final case class CopyIn2(a: String, b: InputStream) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn3(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
+    final case class CopyIn3(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
-    final case class  CopyIn4(a: String, b: Reader) extends CopyManagerOp[Long] {
+    final case class CopyIn4(a: String, b: Reader) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn5(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
+    final case class CopyIn5(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
-    final case class  CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
+    final case class CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a)
     }
-    final case class  CopyOut1(a: String, b: OutputStream) extends CopyManagerOp[Long] {
+    final case class CopyOut1(a: String, b: OutputStream) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a, b)
     }
-    final case class  CopyOut2(a: String, b: Writer) extends CopyManagerOp[Long] {
+    final case class CopyOut2(a: String, b: Writer) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a, b)
     }
 

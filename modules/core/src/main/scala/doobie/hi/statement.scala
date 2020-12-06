@@ -5,10 +5,10 @@
 package doobie.hi
 
 import cats.effect.kernel.syntax.monadCancel._
-import doobie.enum.Holdability
-import doobie.enum.FetchDirection
-import doobie.enum.ResultSetConcurrency
-import doobie.enum.ResultSetType
+import doobie.enumerated.Holdability
+import doobie.enumerated.FetchDirection
+import doobie.enumerated.ResultSetConcurrency
+import doobie.enumerated.ResultSetType
 import doobie.implicits._
 
 import java.sql.SQLWarning

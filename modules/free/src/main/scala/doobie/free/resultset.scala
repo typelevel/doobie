@@ -10,7 +10,6 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.Reader
@@ -36,7 +35,6 @@ import java.sql.{ Array => SqlArray }
 import java.util.Calendar
 import java.util.Map
 
-@silent("deprecated")
 object resultset { module =>
 
   // Algebra of operations for ResultSet. Each accepts a visitor as an alternative to pattern-matching.
@@ -92,9 +90,7 @@ object resultset { module =>
       def getAsciiStream(a: Int): F[InputStream]
       def getAsciiStream(a: String): F[InputStream]
       def getBigDecimal(a: Int): F[BigDecimal]
-      def getBigDecimal(a: Int, b: Int): F[BigDecimal]
       def getBigDecimal(a: String): F[BigDecimal]
-      def getBigDecimal(a: String, b: Int): F[BigDecimal]
       def getBinaryStream(a: Int): F[InputStream]
       def getBinaryStream(a: String): F[InputStream]
       def getBlob(a: Int): F[Blob]
@@ -162,8 +158,6 @@ object resultset { module =>
       def getType: F[Int]
       def getURL(a: Int): F[URL]
       def getURL(a: String): F[URL]
-      def getUnicodeStream(a: Int): F[InputStream]
-      def getUnicodeStream(a: String): F[InputStream]
       def getWarnings: F[SQLWarning]
       def insertRow: F[Unit]
       def isAfterLast: F[Boolean]
@@ -318,589 +312,577 @@ object resultset { module =>
     }
 
     // ResultSet-specific operations.
-    final case class  Absolute(a: Int) extends ResultSetOp[Boolean] {
+    final case class Absolute(a: Int) extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.absolute(a)
     }
-    final case object AfterLast extends ResultSetOp[Unit] {
+    case object AfterLast extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.afterLast
     }
-    final case object BeforeFirst extends ResultSetOp[Unit] {
+    case object BeforeFirst extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.beforeFirst
     }
-    final case object CancelRowUpdates extends ResultSetOp[Unit] {
+    case object CancelRowUpdates extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelRowUpdates
     }
-    final case object ClearWarnings extends ResultSetOp[Unit] {
+    case object ClearWarnings extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
     }
-    final case object Close extends ResultSetOp[Unit] {
+    case object Close extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    final case object DeleteRow extends ResultSetOp[Unit] {
+    case object DeleteRow extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.deleteRow
     }
-    final case class  FindColumn(a: String) extends ResultSetOp[Int] {
+    final case class FindColumn(a: String) extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.findColumn(a)
     }
-    final case object First extends ResultSetOp[Boolean] {
+    case object First extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.first
     }
-    final case class  GetArray(a: Int) extends ResultSetOp[SqlArray] {
+    final case class GetArray(a: Int) extends ResultSetOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.getArray(a)
     }
-    final case class  GetArray1(a: String) extends ResultSetOp[SqlArray] {
+    final case class GetArray1(a: String) extends ResultSetOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.getArray(a)
     }
-    final case class  GetAsciiStream(a: Int) extends ResultSetOp[InputStream] {
+    final case class GetAsciiStream(a: Int) extends ResultSetOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getAsciiStream(a)
     }
-    final case class  GetAsciiStream1(a: String) extends ResultSetOp[InputStream] {
+    final case class GetAsciiStream1(a: String) extends ResultSetOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getAsciiStream(a)
     }
-    final case class  GetBigDecimal(a: Int) extends ResultSetOp[BigDecimal] {
+    final case class GetBigDecimal(a: Int) extends ResultSetOp[BigDecimal] {
       def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a)
     }
-    final case class  GetBigDecimal1(a: Int, b: Int) extends ResultSetOp[BigDecimal] {
-      def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a, b)
-    }
-    final case class  GetBigDecimal2(a: String) extends ResultSetOp[BigDecimal] {
+    final case class GetBigDecimal1(a: String) extends ResultSetOp[BigDecimal] {
       def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a)
     }
-    final case class  GetBigDecimal3(a: String, b: Int) extends ResultSetOp[BigDecimal] {
-      def visit[F[_]](v: Visitor[F]) = v.getBigDecimal(a, b)
-    }
-    final case class  GetBinaryStream(a: Int) extends ResultSetOp[InputStream] {
+    final case class GetBinaryStream(a: Int) extends ResultSetOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getBinaryStream(a)
     }
-    final case class  GetBinaryStream1(a: String) extends ResultSetOp[InputStream] {
+    final case class GetBinaryStream1(a: String) extends ResultSetOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getBinaryStream(a)
     }
-    final case class  GetBlob(a: Int) extends ResultSetOp[Blob] {
+    final case class GetBlob(a: Int) extends ResultSetOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.getBlob(a)
     }
-    final case class  GetBlob1(a: String) extends ResultSetOp[Blob] {
+    final case class GetBlob1(a: String) extends ResultSetOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.getBlob(a)
     }
-    final case class  GetBoolean(a: Int) extends ResultSetOp[Boolean] {
+    final case class GetBoolean(a: Int) extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getBoolean(a)
     }
-    final case class  GetBoolean1(a: String) extends ResultSetOp[Boolean] {
+    final case class GetBoolean1(a: String) extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getBoolean(a)
     }
-    final case class  GetByte(a: Int) extends ResultSetOp[Byte] {
+    final case class GetByte(a: Int) extends ResultSetOp[Byte] {
       def visit[F[_]](v: Visitor[F]) = v.getByte(a)
     }
-    final case class  GetByte1(a: String) extends ResultSetOp[Byte] {
+    final case class GetByte1(a: String) extends ResultSetOp[Byte] {
       def visit[F[_]](v: Visitor[F]) = v.getByte(a)
     }
-    final case class  GetBytes(a: Int) extends ResultSetOp[Array[Byte]] {
+    final case class GetBytes(a: Int) extends ResultSetOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getBytes(a)
     }
-    final case class  GetBytes1(a: String) extends ResultSetOp[Array[Byte]] {
+    final case class GetBytes1(a: String) extends ResultSetOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getBytes(a)
     }
-    final case class  GetCharacterStream(a: Int) extends ResultSetOp[Reader] {
+    final case class GetCharacterStream(a: Int) extends ResultSetOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a)
     }
-    final case class  GetCharacterStream1(a: String) extends ResultSetOp[Reader] {
+    final case class GetCharacterStream1(a: String) extends ResultSetOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getCharacterStream(a)
     }
-    final case class  GetClob(a: Int) extends ResultSetOp[Clob] {
+    final case class GetClob(a: Int) extends ResultSetOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.getClob(a)
     }
-    final case class  GetClob1(a: String) extends ResultSetOp[Clob] {
+    final case class GetClob1(a: String) extends ResultSetOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.getClob(a)
     }
-    final case object GetConcurrency extends ResultSetOp[Int] {
+    case object GetConcurrency extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getConcurrency
     }
-    final case object GetCursorName extends ResultSetOp[String] {
+    case object GetCursorName extends ResultSetOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getCursorName
     }
-    final case class  GetDate(a: Int) extends ResultSetOp[Date] {
+    final case class GetDate(a: Int) extends ResultSetOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a)
     }
-    final case class  GetDate1(a: Int, b: Calendar) extends ResultSetOp[Date] {
+    final case class GetDate1(a: Int, b: Calendar) extends ResultSetOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a, b)
     }
-    final case class  GetDate2(a: String) extends ResultSetOp[Date] {
+    final case class GetDate2(a: String) extends ResultSetOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a)
     }
-    final case class  GetDate3(a: String, b: Calendar) extends ResultSetOp[Date] {
+    final case class GetDate3(a: String, b: Calendar) extends ResultSetOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.getDate(a, b)
     }
-    final case class  GetDouble(a: Int) extends ResultSetOp[Double] {
+    final case class GetDouble(a: Int) extends ResultSetOp[Double] {
       def visit[F[_]](v: Visitor[F]) = v.getDouble(a)
     }
-    final case class  GetDouble1(a: String) extends ResultSetOp[Double] {
+    final case class GetDouble1(a: String) extends ResultSetOp[Double] {
       def visit[F[_]](v: Visitor[F]) = v.getDouble(a)
     }
-    final case object GetFetchDirection extends ResultSetOp[Int] {
+    case object GetFetchDirection extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchDirection
     }
-    final case object GetFetchSize extends ResultSetOp[Int] {
+    case object GetFetchSize extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchSize
     }
-    final case class  GetFloat(a: Int) extends ResultSetOp[Float] {
+    final case class GetFloat(a: Int) extends ResultSetOp[Float] {
       def visit[F[_]](v: Visitor[F]) = v.getFloat(a)
     }
-    final case class  GetFloat1(a: String) extends ResultSetOp[Float] {
+    final case class GetFloat1(a: String) extends ResultSetOp[Float] {
       def visit[F[_]](v: Visitor[F]) = v.getFloat(a)
     }
-    final case object GetHoldability extends ResultSetOp[Int] {
+    case object GetHoldability extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getHoldability
     }
-    final case class  GetInt(a: Int) extends ResultSetOp[Int] {
+    final case class GetInt(a: Int) extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getInt(a)
     }
-    final case class  GetInt1(a: String) extends ResultSetOp[Int] {
+    final case class GetInt1(a: String) extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getInt(a)
     }
-    final case class  GetLong(a: Int) extends ResultSetOp[Long] {
+    final case class GetLong(a: Int) extends ResultSetOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLong(a)
     }
-    final case class  GetLong1(a: String) extends ResultSetOp[Long] {
+    final case class GetLong1(a: String) extends ResultSetOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLong(a)
     }
-    final case object GetMetaData extends ResultSetOp[ResultSetMetaData] {
+    case object GetMetaData extends ResultSetOp[ResultSetMetaData] {
       def visit[F[_]](v: Visitor[F]) = v.getMetaData
     }
-    final case class  GetNCharacterStream(a: Int) extends ResultSetOp[Reader] {
+    final case class GetNCharacterStream(a: Int) extends ResultSetOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getNCharacterStream(a)
     }
-    final case class  GetNCharacterStream1(a: String) extends ResultSetOp[Reader] {
+    final case class GetNCharacterStream1(a: String) extends ResultSetOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.getNCharacterStream(a)
     }
-    final case class  GetNClob(a: Int) extends ResultSetOp[NClob] {
+    final case class GetNClob(a: Int) extends ResultSetOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.getNClob(a)
     }
-    final case class  GetNClob1(a: String) extends ResultSetOp[NClob] {
+    final case class GetNClob1(a: String) extends ResultSetOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.getNClob(a)
     }
-    final case class  GetNString(a: Int) extends ResultSetOp[String] {
+    final case class GetNString(a: Int) extends ResultSetOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getNString(a)
     }
-    final case class  GetNString1(a: String) extends ResultSetOp[String] {
+    final case class GetNString1(a: String) extends ResultSetOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getNString(a)
     }
-    final case class  GetObject(a: Int) extends ResultSetOp[AnyRef] {
+    final case class GetObject(a: Int) extends ResultSetOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    final case class  GetObject1[T](a: Int, b: Class[T]) extends ResultSetOp[T] {
+    final case class GetObject1[T](a: Int, b: Class[T]) extends ResultSetOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetObject2(a: Int, b: Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
+    final case class GetObject2(a: Int, b: Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetObject3(a: String) extends ResultSetOp[AnyRef] {
+    final case class GetObject3(a: String) extends ResultSetOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    final case class  GetObject4[T](a: String, b: Class[T]) extends ResultSetOp[T] {
+    final case class GetObject4[T](a: String, b: Class[T]) extends ResultSetOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetObject5(a: String, b: Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
+    final case class GetObject5(a: String, b: Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class  GetRef(a: Int) extends ResultSetOp[Ref] {
+    final case class GetRef(a: Int) extends ResultSetOp[Ref] {
       def visit[F[_]](v: Visitor[F]) = v.getRef(a)
     }
-    final case class  GetRef1(a: String) extends ResultSetOp[Ref] {
+    final case class GetRef1(a: String) extends ResultSetOp[Ref] {
       def visit[F[_]](v: Visitor[F]) = v.getRef(a)
     }
-    final case object GetRow extends ResultSetOp[Int] {
+    case object GetRow extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getRow
     }
-    final case class  GetRowId(a: Int) extends ResultSetOp[RowId] {
+    final case class GetRowId(a: Int) extends ResultSetOp[RowId] {
       def visit[F[_]](v: Visitor[F]) = v.getRowId(a)
     }
-    final case class  GetRowId1(a: String) extends ResultSetOp[RowId] {
+    final case class GetRowId1(a: String) extends ResultSetOp[RowId] {
       def visit[F[_]](v: Visitor[F]) = v.getRowId(a)
     }
-    final case class  GetSQLXML(a: Int) extends ResultSetOp[SQLXML] {
+    final case class GetSQLXML(a: Int) extends ResultSetOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLXML(a)
     }
-    final case class  GetSQLXML1(a: String) extends ResultSetOp[SQLXML] {
+    final case class GetSQLXML1(a: String) extends ResultSetOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLXML(a)
     }
-    final case class  GetShort(a: Int) extends ResultSetOp[Short] {
+    final case class GetShort(a: Int) extends ResultSetOp[Short] {
       def visit[F[_]](v: Visitor[F]) = v.getShort(a)
     }
-    final case class  GetShort1(a: String) extends ResultSetOp[Short] {
+    final case class GetShort1(a: String) extends ResultSetOp[Short] {
       def visit[F[_]](v: Visitor[F]) = v.getShort(a)
     }
-    final case object GetStatement extends ResultSetOp[Statement] {
+    case object GetStatement extends ResultSetOp[Statement] {
       def visit[F[_]](v: Visitor[F]) = v.getStatement
     }
-    final case class  GetString(a: Int) extends ResultSetOp[String] {
+    final case class GetString(a: Int) extends ResultSetOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getString(a)
     }
-    final case class  GetString1(a: String) extends ResultSetOp[String] {
+    final case class GetString1(a: String) extends ResultSetOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getString(a)
     }
-    final case class  GetTime(a: Int) extends ResultSetOp[Time] {
+    final case class GetTime(a: Int) extends ResultSetOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a)
     }
-    final case class  GetTime1(a: Int, b: Calendar) extends ResultSetOp[Time] {
+    final case class GetTime1(a: Int, b: Calendar) extends ResultSetOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a, b)
     }
-    final case class  GetTime2(a: String) extends ResultSetOp[Time] {
+    final case class GetTime2(a: String) extends ResultSetOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a)
     }
-    final case class  GetTime3(a: String, b: Calendar) extends ResultSetOp[Time] {
+    final case class GetTime3(a: String, b: Calendar) extends ResultSetOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.getTime(a, b)
     }
-    final case class  GetTimestamp(a: Int) extends ResultSetOp[Timestamp] {
+    final case class GetTimestamp(a: Int) extends ResultSetOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a)
     }
-    final case class  GetTimestamp1(a: Int, b: Calendar) extends ResultSetOp[Timestamp] {
+    final case class GetTimestamp1(a: Int, b: Calendar) extends ResultSetOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a, b)
     }
-    final case class  GetTimestamp2(a: String) extends ResultSetOp[Timestamp] {
+    final case class GetTimestamp2(a: String) extends ResultSetOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a)
     }
-    final case class  GetTimestamp3(a: String, b: Calendar) extends ResultSetOp[Timestamp] {
+    final case class GetTimestamp3(a: String, b: Calendar) extends ResultSetOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.getTimestamp(a, b)
     }
-    final case object GetType extends ResultSetOp[Int] {
+    case object GetType extends ResultSetOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getType
     }
-    final case class  GetURL(a: Int) extends ResultSetOp[URL] {
+    final case class GetURL(a: Int) extends ResultSetOp[URL] {
       def visit[F[_]](v: Visitor[F]) = v.getURL(a)
     }
-    final case class  GetURL1(a: String) extends ResultSetOp[URL] {
+    final case class GetURL1(a: String) extends ResultSetOp[URL] {
       def visit[F[_]](v: Visitor[F]) = v.getURL(a)
     }
-    final case class  GetUnicodeStream(a: Int) extends ResultSetOp[InputStream] {
-      def visit[F[_]](v: Visitor[F]) = v.getUnicodeStream(a)
-    }
-    final case class  GetUnicodeStream1(a: String) extends ResultSetOp[InputStream] {
-      def visit[F[_]](v: Visitor[F]) = v.getUnicodeStream(a)
-    }
-    final case object GetWarnings extends ResultSetOp[SQLWarning] {
+    case object GetWarnings extends ResultSetOp[SQLWarning] {
       def visit[F[_]](v: Visitor[F]) = v.getWarnings
     }
-    final case object InsertRow extends ResultSetOp[Unit] {
+    case object InsertRow extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.insertRow
     }
-    final case object IsAfterLast extends ResultSetOp[Boolean] {
+    case object IsAfterLast extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isAfterLast
     }
-    final case object IsBeforeFirst extends ResultSetOp[Boolean] {
+    case object IsBeforeFirst extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isBeforeFirst
     }
-    final case object IsClosed extends ResultSetOp[Boolean] {
+    case object IsClosed extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isClosed
     }
-    final case object IsFirst extends ResultSetOp[Boolean] {
+    case object IsFirst extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isFirst
     }
-    final case object IsLast extends ResultSetOp[Boolean] {
+    case object IsLast extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isLast
     }
-    final case class  IsWrapperFor(a: Class[_]) extends ResultSetOp[Boolean] {
+    final case class IsWrapperFor(a: Class[_]) extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
-    final case object Last extends ResultSetOp[Boolean] {
+    case object Last extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.last
     }
-    final case object MoveToCurrentRow extends ResultSetOp[Unit] {
+    case object MoveToCurrentRow extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.moveToCurrentRow
     }
-    final case object MoveToInsertRow extends ResultSetOp[Unit] {
+    case object MoveToInsertRow extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.moveToInsertRow
     }
-    final case object Next extends ResultSetOp[Boolean] {
+    case object Next extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.next
     }
-    final case object Previous extends ResultSetOp[Boolean] {
+    case object Previous extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.previous
     }
-    final case object RefreshRow extends ResultSetOp[Unit] {
+    case object RefreshRow extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.refreshRow
     }
-    final case class  Relative(a: Int) extends ResultSetOp[Boolean] {
+    final case class Relative(a: Int) extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.relative(a)
     }
-    final case object RowDeleted extends ResultSetOp[Boolean] {
+    case object RowDeleted extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.rowDeleted
     }
-    final case object RowInserted extends ResultSetOp[Boolean] {
+    case object RowInserted extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.rowInserted
     }
-    final case object RowUpdated extends ResultSetOp[Boolean] {
+    case object RowUpdated extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.rowUpdated
     }
-    final case class  SetFetchDirection(a: Int) extends ResultSetOp[Unit] {
+    final case class SetFetchDirection(a: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchDirection(a)
     }
-    final case class  SetFetchSize(a: Int) extends ResultSetOp[Unit] {
+    final case class SetFetchSize(a: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchSize(a)
     }
-    final case class  Unwrap[T](a: Class[T]) extends ResultSetOp[T] {
+    final case class Unwrap[T](a: Class[T]) extends ResultSetOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.unwrap(a)
     }
-    final case class  UpdateArray(a: Int, b: SqlArray) extends ResultSetOp[Unit] {
+    final case class UpdateArray(a: Int, b: SqlArray) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateArray(a, b)
     }
-    final case class  UpdateArray1(a: String, b: SqlArray) extends ResultSetOp[Unit] {
+    final case class UpdateArray1(a: String, b: SqlArray) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateArray(a, b)
     }
-    final case class  UpdateAsciiStream(a: Int, b: InputStream) extends ResultSetOp[Unit] {
+    final case class UpdateAsciiStream(a: Int, b: InputStream) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateAsciiStream(a, b)
     }
-    final case class  UpdateAsciiStream1(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateAsciiStream1(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateAsciiStream(a, b, c)
     }
-    final case class  UpdateAsciiStream2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateAsciiStream2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateAsciiStream(a, b, c)
     }
-    final case class  UpdateAsciiStream3(a: String, b: InputStream) extends ResultSetOp[Unit] {
+    final case class UpdateAsciiStream3(a: String, b: InputStream) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateAsciiStream(a, b)
     }
-    final case class  UpdateAsciiStream4(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateAsciiStream4(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateAsciiStream(a, b, c)
     }
-    final case class  UpdateAsciiStream5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateAsciiStream5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateAsciiStream(a, b, c)
     }
-    final case class  UpdateBigDecimal(a: Int, b: BigDecimal) extends ResultSetOp[Unit] {
+    final case class UpdateBigDecimal(a: Int, b: BigDecimal) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBigDecimal(a, b)
     }
-    final case class  UpdateBigDecimal1(a: String, b: BigDecimal) extends ResultSetOp[Unit] {
+    final case class UpdateBigDecimal1(a: String, b: BigDecimal) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBigDecimal(a, b)
     }
-    final case class  UpdateBinaryStream(a: Int, b: InputStream) extends ResultSetOp[Unit] {
+    final case class UpdateBinaryStream(a: Int, b: InputStream) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBinaryStream(a, b)
     }
-    final case class  UpdateBinaryStream1(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateBinaryStream1(a: Int, b: InputStream, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBinaryStream(a, b, c)
     }
-    final case class  UpdateBinaryStream2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateBinaryStream2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBinaryStream(a, b, c)
     }
-    final case class  UpdateBinaryStream3(a: String, b: InputStream) extends ResultSetOp[Unit] {
+    final case class UpdateBinaryStream3(a: String, b: InputStream) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBinaryStream(a, b)
     }
-    final case class  UpdateBinaryStream4(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateBinaryStream4(a: String, b: InputStream, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBinaryStream(a, b, c)
     }
-    final case class  UpdateBinaryStream5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateBinaryStream5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBinaryStream(a, b, c)
     }
-    final case class  UpdateBlob(a: Int, b: Blob) extends ResultSetOp[Unit] {
+    final case class UpdateBlob(a: Int, b: Blob) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBlob(a, b)
     }
-    final case class  UpdateBlob1(a: Int, b: InputStream) extends ResultSetOp[Unit] {
+    final case class UpdateBlob1(a: Int, b: InputStream) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBlob(a, b)
     }
-    final case class  UpdateBlob2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateBlob2(a: Int, b: InputStream, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBlob(a, b, c)
     }
-    final case class  UpdateBlob3(a: String, b: Blob) extends ResultSetOp[Unit] {
+    final case class UpdateBlob3(a: String, b: Blob) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBlob(a, b)
     }
-    final case class  UpdateBlob4(a: String, b: InputStream) extends ResultSetOp[Unit] {
+    final case class UpdateBlob4(a: String, b: InputStream) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBlob(a, b)
     }
-    final case class  UpdateBlob5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateBlob5(a: String, b: InputStream, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBlob(a, b, c)
     }
-    final case class  UpdateBoolean(a: Int, b: Boolean) extends ResultSetOp[Unit] {
+    final case class UpdateBoolean(a: Int, b: Boolean) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBoolean(a, b)
     }
-    final case class  UpdateBoolean1(a: String, b: Boolean) extends ResultSetOp[Unit] {
+    final case class UpdateBoolean1(a: String, b: Boolean) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBoolean(a, b)
     }
-    final case class  UpdateByte(a: Int, b: Byte) extends ResultSetOp[Unit] {
+    final case class UpdateByte(a: Int, b: Byte) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateByte(a, b)
     }
-    final case class  UpdateByte1(a: String, b: Byte) extends ResultSetOp[Unit] {
+    final case class UpdateByte1(a: String, b: Byte) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateByte(a, b)
     }
-    final case class  UpdateBytes(a: Int, b: Array[Byte]) extends ResultSetOp[Unit] {
+    final case class UpdateBytes(a: Int, b: Array[Byte]) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBytes(a, b)
     }
-    final case class  UpdateBytes1(a: String, b: Array[Byte]) extends ResultSetOp[Unit] {
+    final case class UpdateBytes1(a: String, b: Array[Byte]) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateBytes(a, b)
     }
-    final case class  UpdateCharacterStream(a: Int, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateCharacterStream(a: Int, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateCharacterStream(a, b)
     }
-    final case class  UpdateCharacterStream1(a: Int, b: Reader, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateCharacterStream1(a: Int, b: Reader, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateCharacterStream(a, b, c)
     }
-    final case class  UpdateCharacterStream2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateCharacterStream2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateCharacterStream(a, b, c)
     }
-    final case class  UpdateCharacterStream3(a: String, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateCharacterStream3(a: String, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateCharacterStream(a, b)
     }
-    final case class  UpdateCharacterStream4(a: String, b: Reader, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateCharacterStream4(a: String, b: Reader, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateCharacterStream(a, b, c)
     }
-    final case class  UpdateCharacterStream5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateCharacterStream5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateCharacterStream(a, b, c)
     }
-    final case class  UpdateClob(a: Int, b: Clob) extends ResultSetOp[Unit] {
+    final case class UpdateClob(a: Int, b: Clob) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateClob(a, b)
     }
-    final case class  UpdateClob1(a: Int, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateClob1(a: Int, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateClob(a, b)
     }
-    final case class  UpdateClob2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateClob2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateClob(a, b, c)
     }
-    final case class  UpdateClob3(a: String, b: Clob) extends ResultSetOp[Unit] {
+    final case class UpdateClob3(a: String, b: Clob) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateClob(a, b)
     }
-    final case class  UpdateClob4(a: String, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateClob4(a: String, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateClob(a, b)
     }
-    final case class  UpdateClob5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateClob5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateClob(a, b, c)
     }
-    final case class  UpdateDate(a: Int, b: Date) extends ResultSetOp[Unit] {
+    final case class UpdateDate(a: Int, b: Date) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateDate(a, b)
     }
-    final case class  UpdateDate1(a: String, b: Date) extends ResultSetOp[Unit] {
+    final case class UpdateDate1(a: String, b: Date) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateDate(a, b)
     }
-    final case class  UpdateDouble(a: Int, b: Double) extends ResultSetOp[Unit] {
+    final case class UpdateDouble(a: Int, b: Double) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateDouble(a, b)
     }
-    final case class  UpdateDouble1(a: String, b: Double) extends ResultSetOp[Unit] {
+    final case class UpdateDouble1(a: String, b: Double) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateDouble(a, b)
     }
-    final case class  UpdateFloat(a: Int, b: Float) extends ResultSetOp[Unit] {
+    final case class UpdateFloat(a: Int, b: Float) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateFloat(a, b)
     }
-    final case class  UpdateFloat1(a: String, b: Float) extends ResultSetOp[Unit] {
+    final case class UpdateFloat1(a: String, b: Float) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateFloat(a, b)
     }
-    final case class  UpdateInt(a: Int, b: Int) extends ResultSetOp[Unit] {
+    final case class UpdateInt(a: Int, b: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateInt(a, b)
     }
-    final case class  UpdateInt1(a: String, b: Int) extends ResultSetOp[Unit] {
+    final case class UpdateInt1(a: String, b: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateInt(a, b)
     }
-    final case class  UpdateLong(a: Int, b: Long) extends ResultSetOp[Unit] {
+    final case class UpdateLong(a: Int, b: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateLong(a, b)
     }
-    final case class  UpdateLong1(a: String, b: Long) extends ResultSetOp[Unit] {
+    final case class UpdateLong1(a: String, b: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateLong(a, b)
     }
-    final case class  UpdateNCharacterStream(a: Int, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateNCharacterStream(a: Int, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNCharacterStream(a, b)
     }
-    final case class  UpdateNCharacterStream1(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateNCharacterStream1(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNCharacterStream(a, b, c)
     }
-    final case class  UpdateNCharacterStream2(a: String, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateNCharacterStream2(a: String, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNCharacterStream(a, b)
     }
-    final case class  UpdateNCharacterStream3(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateNCharacterStream3(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNCharacterStream(a, b, c)
     }
-    final case class  UpdateNClob(a: Int, b: NClob) extends ResultSetOp[Unit] {
+    final case class UpdateNClob(a: Int, b: NClob) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNClob(a, b)
     }
-    final case class  UpdateNClob1(a: Int, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateNClob1(a: Int, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNClob(a, b)
     }
-    final case class  UpdateNClob2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateNClob2(a: Int, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNClob(a, b, c)
     }
-    final case class  UpdateNClob3(a: String, b: NClob) extends ResultSetOp[Unit] {
+    final case class UpdateNClob3(a: String, b: NClob) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNClob(a, b)
     }
-    final case class  UpdateNClob4(a: String, b: Reader) extends ResultSetOp[Unit] {
+    final case class UpdateNClob4(a: String, b: Reader) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNClob(a, b)
     }
-    final case class  UpdateNClob5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
+    final case class UpdateNClob5(a: String, b: Reader, c: Long) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNClob(a, b, c)
     }
-    final case class  UpdateNString(a: Int, b: String) extends ResultSetOp[Unit] {
+    final case class UpdateNString(a: Int, b: String) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNString(a, b)
     }
-    final case class  UpdateNString1(a: String, b: String) extends ResultSetOp[Unit] {
+    final case class UpdateNString1(a: String, b: String) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNString(a, b)
     }
-    final case class  UpdateNull(a: Int) extends ResultSetOp[Unit] {
+    final case class UpdateNull(a: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNull(a)
     }
-    final case class  UpdateNull1(a: String) extends ResultSetOp[Unit] {
+    final case class UpdateNull1(a: String) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateNull(a)
     }
-    final case class  UpdateObject(a: Int, b: AnyRef) extends ResultSetOp[Unit] {
+    final case class UpdateObject(a: Int, b: AnyRef) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b)
     }
-    final case class  UpdateObject1(a: Int, b: AnyRef, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateObject1(a: Int, b: AnyRef, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b, c)
     }
-    final case class  UpdateObject2(a: Int, b: AnyRef, c: SQLType) extends ResultSetOp[Unit] {
+    final case class UpdateObject2(a: Int, b: AnyRef, c: SQLType) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b, c)
     }
-    final case class  UpdateObject3(a: Int, b: AnyRef, c: SQLType, d: Int) extends ResultSetOp[Unit] {
+    final case class UpdateObject3(a: Int, b: AnyRef, c: SQLType, d: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b, c, d)
     }
-    final case class  UpdateObject4(a: String, b: AnyRef) extends ResultSetOp[Unit] {
+    final case class UpdateObject4(a: String, b: AnyRef) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b)
     }
-    final case class  UpdateObject5(a: String, b: AnyRef, c: Int) extends ResultSetOp[Unit] {
+    final case class UpdateObject5(a: String, b: AnyRef, c: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b, c)
     }
-    final case class  UpdateObject6(a: String, b: AnyRef, c: SQLType) extends ResultSetOp[Unit] {
+    final case class UpdateObject6(a: String, b: AnyRef, c: SQLType) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b, c)
     }
-    final case class  UpdateObject7(a: String, b: AnyRef, c: SQLType, d: Int) extends ResultSetOp[Unit] {
+    final case class UpdateObject7(a: String, b: AnyRef, c: SQLType, d: Int) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateObject(a, b, c, d)
     }
-    final case class  UpdateRef(a: Int, b: Ref) extends ResultSetOp[Unit] {
+    final case class UpdateRef(a: Int, b: Ref) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateRef(a, b)
     }
-    final case class  UpdateRef1(a: String, b: Ref) extends ResultSetOp[Unit] {
+    final case class UpdateRef1(a: String, b: Ref) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateRef(a, b)
     }
-    final case object UpdateRow extends ResultSetOp[Unit] {
+    case object UpdateRow extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateRow
     }
-    final case class  UpdateRowId(a: Int, b: RowId) extends ResultSetOp[Unit] {
+    final case class UpdateRowId(a: Int, b: RowId) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateRowId(a, b)
     }
-    final case class  UpdateRowId1(a: String, b: RowId) extends ResultSetOp[Unit] {
+    final case class UpdateRowId1(a: String, b: RowId) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateRowId(a, b)
     }
-    final case class  UpdateSQLXML(a: Int, b: SQLXML) extends ResultSetOp[Unit] {
+    final case class UpdateSQLXML(a: Int, b: SQLXML) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateSQLXML(a, b)
     }
-    final case class  UpdateSQLXML1(a: String, b: SQLXML) extends ResultSetOp[Unit] {
+    final case class UpdateSQLXML1(a: String, b: SQLXML) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateSQLXML(a, b)
     }
-    final case class  UpdateShort(a: Int, b: Short) extends ResultSetOp[Unit] {
+    final case class UpdateShort(a: Int, b: Short) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateShort(a, b)
     }
-    final case class  UpdateShort1(a: String, b: Short) extends ResultSetOp[Unit] {
+    final case class UpdateShort1(a: String, b: Short) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateShort(a, b)
     }
-    final case class  UpdateString(a: Int, b: String) extends ResultSetOp[Unit] {
+    final case class UpdateString(a: Int, b: String) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateString(a, b)
     }
-    final case class  UpdateString1(a: String, b: String) extends ResultSetOp[Unit] {
+    final case class UpdateString1(a: String, b: String) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateString(a, b)
     }
-    final case class  UpdateTime(a: Int, b: Time) extends ResultSetOp[Unit] {
+    final case class UpdateTime(a: Int, b: Time) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateTime(a, b)
     }
-    final case class  UpdateTime1(a: String, b: Time) extends ResultSetOp[Unit] {
+    final case class UpdateTime1(a: String, b: Time) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateTime(a, b)
     }
-    final case class  UpdateTimestamp(a: Int, b: Timestamp) extends ResultSetOp[Unit] {
+    final case class UpdateTimestamp(a: Int, b: Timestamp) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateTimestamp(a, b)
     }
-    final case class  UpdateTimestamp1(a: String, b: Timestamp) extends ResultSetOp[Unit] {
+    final case class UpdateTimestamp1(a: String, b: Timestamp) extends ResultSetOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.updateTimestamp(a, b)
     }
-    final case object WasNull extends ResultSetOp[Boolean] {
+    case object WasNull extends ResultSetOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.wasNull
     }
 
@@ -942,9 +924,7 @@ object resultset { module =>
   def getAsciiStream(a: Int): ResultSetIO[InputStream] = FF.liftF(GetAsciiStream(a))
   def getAsciiStream(a: String): ResultSetIO[InputStream] = FF.liftF(GetAsciiStream1(a))
   def getBigDecimal(a: Int): ResultSetIO[BigDecimal] = FF.liftF(GetBigDecimal(a))
-  def getBigDecimal(a: Int, b: Int): ResultSetIO[BigDecimal] = FF.liftF(GetBigDecimal1(a, b))
-  def getBigDecimal(a: String): ResultSetIO[BigDecimal] = FF.liftF(GetBigDecimal2(a))
-  def getBigDecimal(a: String, b: Int): ResultSetIO[BigDecimal] = FF.liftF(GetBigDecimal3(a, b))
+  def getBigDecimal(a: String): ResultSetIO[BigDecimal] = FF.liftF(GetBigDecimal1(a))
   def getBinaryStream(a: Int): ResultSetIO[InputStream] = FF.liftF(GetBinaryStream(a))
   def getBinaryStream(a: String): ResultSetIO[InputStream] = FF.liftF(GetBinaryStream1(a))
   def getBlob(a: Int): ResultSetIO[Blob] = FF.liftF(GetBlob(a))
@@ -1012,8 +992,6 @@ object resultset { module =>
   val getType: ResultSetIO[Int] = FF.liftF(GetType)
   def getURL(a: Int): ResultSetIO[URL] = FF.liftF(GetURL(a))
   def getURL(a: String): ResultSetIO[URL] = FF.liftF(GetURL1(a))
-  def getUnicodeStream(a: Int): ResultSetIO[InputStream] = FF.liftF(GetUnicodeStream(a))
-  def getUnicodeStream(a: String): ResultSetIO[InputStream] = FF.liftF(GetUnicodeStream1(a))
   val getWarnings: ResultSetIO[SQLWarning] = FF.liftF(GetWarnings)
   val insertRow: ResultSetIO[Unit] = FF.liftF(InsertRow)
   val isAfterLast: ResultSetIO[Boolean] = FF.liftF(IsAfterLast)

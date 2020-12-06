@@ -12,11 +12,12 @@ import cats.free.Free
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 // Types referenced in the JDBC API
 import java.io.InputStream
+import java.io.OutputStream
 import java.io.Reader
+import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.math.BigDecimal
@@ -28,17 +29,23 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.Date
 import java.sql.Driver
+import java.sql.DriverPropertyInfo
 import java.sql.NClob
+import java.sql.ParameterMetaData
 import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
+import java.sql.ResultSetMetaData
 import java.sql.RowId
+import java.sql.RowIdLifetime
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 import java.sql.SQLType
+import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
+import java.sql.ShardingKey
 import java.sql.Statement
 import java.sql.Struct
 import java.sql.Time
@@ -48,6 +55,7 @@ import java.util.Calendar
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
+import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.free.nclob.{ NClobIO, NClobOp }
@@ -76,7 +84,6 @@ object KleisliInterpreter {
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-@silent("deprecated")
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: WeakAsync[M]
@@ -446,6 +453,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def supportsSchemasInProcedureCalls = primitive(_.supportsSchemasInProcedureCalls)
     override def supportsSchemasInTableDefinitions = primitive(_.supportsSchemasInTableDefinitions)
     override def supportsSelectForUpdate = primitive(_.supportsSelectForUpdate)
+    override def supportsSharding = primitive(_.supportsSharding)
     override def supportsStatementPooling = primitive(_.supportsStatementPooling)
     override def supportsStoredFunctionsUsingCallSyntax = primitive(_.supportsStoredFunctionsUsingCallSyntax)
     override def supportsStoredProcedures = primitive(_.supportsStoredProcedures)
@@ -677,6 +685,7 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     // domain-specific operations are implemented in terms of `primitive`
     override def abort(a: Executor) = primitive(_.abort(a))
+    override def beginRequest = primitive(_.beginRequest)
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def commit = primitive(_.commit)
@@ -689,6 +698,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def createStatement(a: Int, b: Int) = primitive(_.createStatement(a, b))
     override def createStatement(a: Int, b: Int, c: Int) = primitive(_.createStatement(a, b, c))
     override def createStruct(a: String, b: Array[AnyRef]) = primitive(_.createStruct(a, b))
+    override def endRequest = primitive(_.endRequest)
     override def getAutoCommit = primitive(_.getAutoCommit)
     override def getCatalog = primitive(_.getCatalog)
     override def getClientInfo = primitive(_.getClientInfo)
@@ -698,7 +708,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap: Kleisli[M, Connection, Map[String, Class[_]]] = primitive(_.getTypeMap)
+    override def getTypeMap: Kleisli[M,Connection,Map[String,Class[_]]] = primitive(_.getTypeMap)
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)
@@ -727,6 +737,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setSavepoint = primitive(_.setSavepoint)
     override def setSavepoint(a: String) = primitive(_.setSavepoint(a))
     override def setSchema(a: String) = primitive(_.setSchema(a))
+    override def setShardingKey(a: ShardingKey) = primitive(_.setShardingKey(a))
+    override def setShardingKey(a: ShardingKey, b: ShardingKey) = primitive(_.setShardingKey(a, b))
+    override def setShardingKeyIfValid(a: ShardingKey, b: Int) = primitive(_.setShardingKeyIfValid(a, b))
+    override def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int) = primitive(_.setShardingKeyIfValid(a, b, c))
     override def setTransactionIsolation(a: Int) = primitive(_.setTransactionIsolation(a))
     override def setTypeMap(a: Map[String, Class[_]]) = primitive(_.setTypeMap(a))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
@@ -760,6 +774,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
     override def execute(a: String, b: Array[String]) = primitive(_.execute(a, b))
@@ -795,6 +812,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def setCursorName(a: String) = primitive(_.setCursorName(a))
     override def setEscapeProcessing(a: Boolean) = primitive(_.setEscapeProcessing(a))
@@ -838,6 +856,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute = primitive(_.execute)
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
@@ -879,6 +900,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def setArray(a: Int, b: SqlArray) = primitive(_.setArray(a, b))
     override def setAsciiStream(a: Int, b: InputStream) = primitive(_.setAsciiStream(a, b))
@@ -938,7 +960,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setTimestamp(a: Int, b: Timestamp) = primitive(_.setTimestamp(a, b))
     override def setTimestamp(a: Int, b: Timestamp, c: Calendar) = primitive(_.setTimestamp(a, b, c))
     override def setURL(a: Int, b: URL) = primitive(_.setURL(a, b))
-    override def setUnicodeStream(a: Int, b: InputStream, c: Int) = primitive(_.setUnicodeStream(a, b, c))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
 
   }
@@ -972,6 +993,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute = primitive(_.execute)
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
@@ -994,7 +1018,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getArray(a: Int) = primitive(_.getArray(a))
     override def getArray(a: String) = primitive(_.getArray(a))
     override def getBigDecimal(a: Int) = primitive(_.getBigDecimal(a))
-    override def getBigDecimal(a: Int, b: Int) = primitive(_.getBigDecimal(a, b))
     override def getBigDecimal(a: String) = primitive(_.getBigDecimal(a))
     override def getBlob(a: Int) = primitive(_.getBlob(a))
     override def getBlob(a: String) = primitive(_.getBlob(a))
@@ -1074,6 +1097,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def registerOutParameter(a: Int, b: Int) = primitive(_.registerOutParameter(a, b))
     override def registerOutParameter(a: Int, b: Int, c: Int) = primitive(_.registerOutParameter(a, b, c))
@@ -1192,7 +1216,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setTimestamp(a: String, b: Timestamp, c: Calendar) = primitive(_.setTimestamp(a, b, c))
     override def setURL(a: Int, b: URL) = primitive(_.setURL(a, b))
     override def setURL(a: String, b: URL) = primitive(_.setURL(a, b))
-    override def setUnicodeStream(a: Int, b: InputStream, c: Int) = primitive(_.setUnicodeStream(a, b, c))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
     override def wasNull = primitive(_.wasNull)
 
@@ -1233,9 +1256,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getAsciiStream(a: Int) = primitive(_.getAsciiStream(a))
     override def getAsciiStream(a: String) = primitive(_.getAsciiStream(a))
     override def getBigDecimal(a: Int) = primitive(_.getBigDecimal(a))
-    override def getBigDecimal(a: Int, b: Int) = primitive(_.getBigDecimal(a, b))
     override def getBigDecimal(a: String) = primitive(_.getBigDecimal(a))
-    override def getBigDecimal(a: String, b: Int) = primitive(_.getBigDecimal(a, b))
     override def getBinaryStream(a: Int) = primitive(_.getBinaryStream(a))
     override def getBinaryStream(a: String) = primitive(_.getBinaryStream(a))
     override def getBlob(a: Int) = primitive(_.getBlob(a))
@@ -1303,8 +1324,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getType = primitive(_.getType)
     override def getURL(a: Int) = primitive(_.getURL(a))
     override def getURL(a: String) = primitive(_.getURL(a))
-    override def getUnicodeStream(a: Int) = primitive(_.getUnicodeStream(a))
-    override def getUnicodeStream(a: String) = primitive(_.getUnicodeStream(a))
     override def getWarnings = primitive(_.getWarnings)
     override def insertRow = primitive(_.insertRow)
     override def isAfterLast = primitive(_.isAfterLast)

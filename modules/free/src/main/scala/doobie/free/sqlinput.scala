@@ -10,7 +10,6 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.io.InputStream
 import java.io.Reader
@@ -30,7 +29,6 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
-@silent("deprecated")
 object sqlinput { module =>
 
   // Algebra of operations for SQLInput. Each accepts a visitor as an alternative to pattern-matching.
@@ -145,88 +143,88 @@ object sqlinput { module =>
     }
 
     // SQLInput-specific operations.
-    final case object ReadArray extends SQLInputOp[SqlArray] {
+    case object ReadArray extends SQLInputOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.readArray
     }
-    final case object ReadAsciiStream extends SQLInputOp[InputStream] {
+    case object ReadAsciiStream extends SQLInputOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.readAsciiStream
     }
-    final case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
+    case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
       def visit[F[_]](v: Visitor[F]) = v.readBigDecimal
     }
-    final case object ReadBinaryStream extends SQLInputOp[InputStream] {
+    case object ReadBinaryStream extends SQLInputOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.readBinaryStream
     }
-    final case object ReadBlob extends SQLInputOp[Blob] {
+    case object ReadBlob extends SQLInputOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.readBlob
     }
-    final case object ReadBoolean extends SQLInputOp[Boolean] {
+    case object ReadBoolean extends SQLInputOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.readBoolean
     }
-    final case object ReadByte extends SQLInputOp[Byte] {
+    case object ReadByte extends SQLInputOp[Byte] {
       def visit[F[_]](v: Visitor[F]) = v.readByte
     }
-    final case object ReadBytes extends SQLInputOp[Array[Byte]] {
+    case object ReadBytes extends SQLInputOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.readBytes
     }
-    final case object ReadCharacterStream extends SQLInputOp[Reader] {
+    case object ReadCharacterStream extends SQLInputOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.readCharacterStream
     }
-    final case object ReadClob extends SQLInputOp[Clob] {
+    case object ReadClob extends SQLInputOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.readClob
     }
-    final case object ReadDate extends SQLInputOp[Date] {
+    case object ReadDate extends SQLInputOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.readDate
     }
-    final case object ReadDouble extends SQLInputOp[Double] {
+    case object ReadDouble extends SQLInputOp[Double] {
       def visit[F[_]](v: Visitor[F]) = v.readDouble
     }
-    final case object ReadFloat extends SQLInputOp[Float] {
+    case object ReadFloat extends SQLInputOp[Float] {
       def visit[F[_]](v: Visitor[F]) = v.readFloat
     }
-    final case object ReadInt extends SQLInputOp[Int] {
+    case object ReadInt extends SQLInputOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.readInt
     }
-    final case object ReadLong extends SQLInputOp[Long] {
+    case object ReadLong extends SQLInputOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.readLong
     }
-    final case object ReadNClob extends SQLInputOp[NClob] {
+    case object ReadNClob extends SQLInputOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.readNClob
     }
-    final case object ReadNString extends SQLInputOp[String] {
+    case object ReadNString extends SQLInputOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.readNString
     }
-    final case object ReadObject extends SQLInputOp[AnyRef] {
+    case object ReadObject extends SQLInputOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.readObject
     }
-    final case class  ReadObject1[T](a: Class[T]) extends SQLInputOp[T] {
+    final case class ReadObject1[T](a: Class[T]) extends SQLInputOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.readObject(a)
     }
-    final case object ReadRef extends SQLInputOp[Ref] {
+    case object ReadRef extends SQLInputOp[Ref] {
       def visit[F[_]](v: Visitor[F]) = v.readRef
     }
-    final case object ReadRowId extends SQLInputOp[RowId] {
+    case object ReadRowId extends SQLInputOp[RowId] {
       def visit[F[_]](v: Visitor[F]) = v.readRowId
     }
-    final case object ReadSQLXML extends SQLInputOp[SQLXML] {
+    case object ReadSQLXML extends SQLInputOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.readSQLXML
     }
-    final case object ReadShort extends SQLInputOp[Short] {
+    case object ReadShort extends SQLInputOp[Short] {
       def visit[F[_]](v: Visitor[F]) = v.readShort
     }
-    final case object ReadString extends SQLInputOp[String] {
+    case object ReadString extends SQLInputOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.readString
     }
-    final case object ReadTime extends SQLInputOp[Time] {
+    case object ReadTime extends SQLInputOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.readTime
     }
-    final case object ReadTimestamp extends SQLInputOp[Timestamp] {
+    case object ReadTimestamp extends SQLInputOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.readTimestamp
     }
-    final case object ReadURL extends SQLInputOp[URL] {
+    case object ReadURL extends SQLInputOp[URL] {
       def visit[F[_]](v: Visitor[F]) = v.readURL
     }
-    final case object WasNull extends SQLInputOp[Boolean] {
+    case object WasNull extends SQLInputOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.wasNull
     }
 

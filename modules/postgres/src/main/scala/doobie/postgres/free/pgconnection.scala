@@ -10,7 +10,6 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.lang.Class
 import java.lang.String
@@ -19,13 +18,11 @@ import java.util.Map
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
-import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
 import org.postgresql.replication.PGReplicationConnection
 
-@silent("deprecated")
 object pgconnection { module =>
 
   // Algebra of operations for PGConnection. Each accepts a visitor as an alternative to pattern-matching.
@@ -68,7 +65,6 @@ object pgconnection { module =>
 
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
-      def addDataType(a: String, b: String): F[Unit]
       def cancelQuery: F[Unit]
       def createArrayOf(a: String, b: AnyRef): F[SqlArray]
       def escapeIdentifier(a: String): F[String]
@@ -77,7 +73,6 @@ object pgconnection { module =>
       def getBackendPID: F[Int]
       def getCopyAPI: F[PGCopyManager]
       def getDefaultFetchSize: F[Int]
-      def getFastpathAPI: F[PGFastpath]
       def getLargeObjectAPI: F[LargeObjectManager]
       def getNotifications: F[Array[PGNotification]]
       def getNotifications(a: Int): F[Array[PGNotification]]
@@ -134,70 +129,64 @@ object pgconnection { module =>
     }
 
     // PGConnection-specific operations.
-    final case class  AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
+    final case class AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
     }
-    final case class  AddDataType1(a: String, b: String) extends PGConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
-    }
-    final case object CancelQuery extends PGConnectionOp[Unit] {
+    case object CancelQuery extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelQuery
     }
-    final case class  CreateArrayOf(a: String, b: AnyRef) extends PGConnectionOp[SqlArray] {
+    final case class CreateArrayOf(a: String, b: AnyRef) extends PGConnectionOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.createArrayOf(a, b)
     }
-    final case class  EscapeIdentifier(a: String) extends PGConnectionOp[String] {
+    final case class EscapeIdentifier(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.escapeIdentifier(a)
     }
-    final case class  EscapeLiteral(a: String) extends PGConnectionOp[String] {
+    final case class EscapeLiteral(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.escapeLiteral(a)
     }
-    final case object GetAutosave extends PGConnectionOp[AutoSave] {
+    case object GetAutosave extends PGConnectionOp[AutoSave] {
       def visit[F[_]](v: Visitor[F]) = v.getAutosave
     }
-    final case object GetBackendPID extends PGConnectionOp[Int] {
+    case object GetBackendPID extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getBackendPID
     }
-    final case object GetCopyAPI extends PGConnectionOp[PGCopyManager] {
+    case object GetCopyAPI extends PGConnectionOp[PGCopyManager] {
       def visit[F[_]](v: Visitor[F]) = v.getCopyAPI
     }
-    final case object GetDefaultFetchSize extends PGConnectionOp[Int] {
+    case object GetDefaultFetchSize extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDefaultFetchSize
     }
-    final case object GetFastpathAPI extends PGConnectionOp[PGFastpath] {
-      def visit[F[_]](v: Visitor[F]) = v.getFastpathAPI
-    }
-    final case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager] {
+    case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeObjectAPI
     }
-    final case object GetNotifications extends PGConnectionOp[Array[PGNotification]] {
+    case object GetNotifications extends PGConnectionOp[Array[PGNotification]] {
       def visit[F[_]](v: Visitor[F]) = v.getNotifications
     }
-    final case class  GetNotifications1(a: Int) extends PGConnectionOp[Array[PGNotification]] {
+    final case class GetNotifications1(a: Int) extends PGConnectionOp[Array[PGNotification]] {
       def visit[F[_]](v: Visitor[F]) = v.getNotifications(a)
     }
-    final case class  GetParameterStatus(a: String) extends PGConnectionOp[String] {
+    final case class GetParameterStatus(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getParameterStatus(a)
     }
-    final case object GetParameterStatuses extends PGConnectionOp[Map[String, String]] {
+    case object GetParameterStatuses extends PGConnectionOp[Map[String, String]] {
       def visit[F[_]](v: Visitor[F]) = v.getParameterStatuses
     }
-    final case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
+    case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
       def visit[F[_]](v: Visitor[F]) = v.getPreferQueryMode
     }
-    final case object GetPrepareThreshold extends PGConnectionOp[Int] {
+    case object GetPrepareThreshold extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getPrepareThreshold
     }
-    final case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
+    case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
       def visit[F[_]](v: Visitor[F]) = v.getReplicationAPI
     }
-    final case class  SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
+    final case class SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAutosave(a)
     }
-    final case class  SetDefaultFetchSize(a: Int) extends PGConnectionOp[Unit] {
+    final case class SetDefaultFetchSize(a: Int) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setDefaultFetchSize(a)
     }
-    final case class  SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit] {
+    final case class SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setPrepareThreshold(a)
     }
 
@@ -226,7 +215,6 @@ object pgconnection { module =>
 
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
-  def addDataType(a: String, b: String): PGConnectionIO[Unit] = FF.liftF(AddDataType1(a, b))
   val cancelQuery: PGConnectionIO[Unit] = FF.liftF(CancelQuery)
   def createArrayOf(a: String, b: AnyRef): PGConnectionIO[SqlArray] = FF.liftF(CreateArrayOf(a, b))
   def escapeIdentifier(a: String): PGConnectionIO[String] = FF.liftF(EscapeIdentifier(a))
@@ -235,7 +223,6 @@ object pgconnection { module =>
   val getBackendPID: PGConnectionIO[Int] = FF.liftF(GetBackendPID)
   val getCopyAPI: PGConnectionIO[PGCopyManager] = FF.liftF(GetCopyAPI)
   val getDefaultFetchSize: PGConnectionIO[Int] = FF.liftF(GetDefaultFetchSize)
-  val getFastpathAPI: PGConnectionIO[PGFastpath] = FF.liftF(GetFastpathAPI)
   val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] = FF.liftF(GetLargeObjectAPI)
   val getNotifications: PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications)
   def getNotifications(a: Int): PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications1(a))

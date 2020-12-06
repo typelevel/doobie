@@ -8,8 +8,8 @@ import cats._
 import cats.data.Chain
 import cats.syntax.all._
 
-import doobie._
-import doobie.enum.Nullability._
+import doobie._, doobie.implicits._
+import doobie.enumerated.Nullability._
 import doobie.util.pos.Pos
 import java.sql.{ PreparedStatement, ResultSet }
 import scala.Predef.augmentString

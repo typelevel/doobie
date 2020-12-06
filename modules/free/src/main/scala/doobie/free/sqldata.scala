@@ -10,14 +10,12 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import java.lang.String
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
-@silent("deprecated")
 object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternative to pattern-matching.
@@ -107,13 +105,13 @@ object sqldata { module =>
     }
 
     // SQLData-specific operations.
-    final case object GetSQLTypeName extends SQLDataOp[String] {
+    case object GetSQLTypeName extends SQLDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLTypeName
     }
-    final case class  ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
+    final case class ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.readSQL(a, b)
     }
-    final case class  WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
+    final case class WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeSQL(a)
     }
 

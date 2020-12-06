@@ -10,12 +10,10 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.util.ByteStreamWriter
 
-@silent("deprecated")
 object copyin { module =>
 
   // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternative to pattern-matching.
@@ -112,34 +110,34 @@ object copyin { module =>
     }
 
     // PGCopyIn-specific operations.
-    final case object CancelCopy extends CopyInOp[Unit] {
+    case object CancelCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
     }
-    final case object EndCopy extends CopyInOp[Long] {
+    case object EndCopy extends CopyInOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.endCopy
     }
-    final case object FlushCopy extends CopyInOp[Unit] {
+    case object FlushCopy extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.flushCopy
     }
-    final case object GetFieldCount extends CopyInOp[Int] {
+    case object GetFieldCount extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldCount
     }
-    final case class  GetFieldFormat(a: Int) extends CopyInOp[Int] {
+    final case class GetFieldFormat(a: Int) extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
     }
-    final case object GetFormat extends CopyInOp[Int] {
+    case object GetFormat extends CopyInOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFormat
     }
-    final case object GetHandledRowCount extends CopyInOp[Long] {
+    case object GetHandledRowCount extends CopyInOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
     }
-    final case object IsActive extends CopyInOp[Boolean] {
+    case object IsActive extends CopyInOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isActive
     }
-    final case class  WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
+    final case class WriteToCopy(a: Array[Byte], b: Int, c: Int) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a, b, c)
     }
-    final case class  WriteToCopy1(a: ByteStreamWriter) extends CopyInOp[Unit] {
+    final case class WriteToCopy1(a: ByteStreamWriter) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeToCopy(a)
     }
 

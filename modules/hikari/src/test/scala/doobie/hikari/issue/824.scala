@@ -10,12 +10,11 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.hikari._
 import doobie.implicits._
-import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 import scala.util.Random
 
 
-class `824` extends Specification {
+class `824` extends munit.FunSuite {
 
   import cats.effect.unsafe.implicits.global
 
@@ -31,13 +30,12 @@ class `824` extends Specification {
             )
     } yield xa
 
-    // Show the state of the pool
-    @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-    def report(ds: HikariDataSource): IO[Unit] =
-      IO {
-        val mx = ds.getHikariPoolMXBean; import mx._
-        println(s"Idle: $getIdleConnections, Active: $getActiveConnections, Total: $getTotalConnections, Waiting: $getThreadsAwaitingConnection")
-      }
+  // Show the state of the pool
+  def report(ds: HikariDataSource): IO[Unit] =
+    IO {
+      val mx = ds.getHikariPoolMXBean; import mx._
+      println(s"Idle: $getIdleConnections, Active: $getActiveConnections, Total: $getTotalConnections, Waiting: $getThreadsAwaitingConnection")
+    }
 
   // Yield final active connections within the use block, as well as total connections after use
   // block. Both should be zero
@@ -48,7 +46,7 @@ class `824` extends Specification {
       // Kick off a concurrent transaction, reporting the pool state on exit
       val random: IO[Fiber[IO, Throwable, Unit]] =
         for {
-          d <- IO(Random.nextInt(200) milliseconds)
+          d <- IO(Random.nextInt(200).milliseconds)
           f <- IO.sleep(d) *> xa.liftF(_(report(xa.kernel))).start
         } yield f
 
@@ -69,10 +67,8 @@ class `824` extends Specification {
 
     }
 
-  "HikariTransactor" should {
-    "close connections logically within `use` block and physically afterward." in {
-      prog.unsafeRunSync() must_== ((0, 0))
-    }
+  test("HikariTransactor should close connections logically within `use` block and physically afterward.") {
+    assertEquals(prog.unsafeRunSync(), (0, 0))
   }
 
 }

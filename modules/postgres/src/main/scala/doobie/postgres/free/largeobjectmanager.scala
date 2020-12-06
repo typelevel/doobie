@@ -10,12 +10,10 @@ import cats.free.{ Free => FF } // alias because some algebras have an op called
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
-@silent("deprecated")
 object largeobjectmanager { module =>
 
   // Algebra of operations for LargeObjectManager. Each accepts a visitor as an alternative to pattern-matching.
@@ -57,21 +55,15 @@ object largeobjectmanager { module =>
       def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]): F[A]
 
       // LargeObjectManager
-      def create: F[Int]
-      def create(a: Int): F[Int]
       def createLO: F[Long]
       def createLO(a: Int): F[Long]
-      def delete(a: Int): F[Unit]
       def delete(a: Long): F[Unit]
-      def open(a: Int): F[LargeObject]
       def open(a: Int, b: Boolean): F[LargeObject]
-      def open(a: Int, b: Int): F[LargeObject]
       def open(a: Int, b: Int, c: Boolean): F[LargeObject]
       def open(a: Long): F[LargeObject]
       def open(a: Long, b: Boolean): F[LargeObject]
       def open(a: Long, b: Int): F[LargeObject]
       def open(a: Long, b: Int, c: Boolean): F[LargeObject]
-      def unlink(a: Int): F[Unit]
       def unlink(a: Long): F[Unit]
 
     }
@@ -118,52 +110,34 @@ object largeobjectmanager { module =>
     }
 
     // LargeObjectManager-specific operations.
-    final case object Create extends LargeObjectManagerOp[Int] {
-      def visit[F[_]](v: Visitor[F]) = v.create
-    }
-    final case class  Create1(a: Int) extends LargeObjectManagerOp[Int] {
-      def visit[F[_]](v: Visitor[F]) = v.create(a)
-    }
-    final case object CreateLO extends LargeObjectManagerOp[Long] {
+    case object CreateLO extends LargeObjectManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.createLO
     }
-    final case class  CreateLO1(a: Int) extends LargeObjectManagerOp[Long] {
+    final case class CreateLO1(a: Int) extends LargeObjectManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.createLO(a)
     }
-    final case class  Delete(a: Int) extends LargeObjectManagerOp[Unit] {
+    final case class Delete(a: Long) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.delete(a)
     }
-    final case class  Delete1(a: Long) extends LargeObjectManagerOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.delete(a)
-    }
-    final case class  Open(a: Int) extends LargeObjectManagerOp[LargeObject] {
-      def visit[F[_]](v: Visitor[F]) = v.open(a)
-    }
-    final case class  Open1(a: Int, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class Open(a: Int, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    final case class  Open2(a: Int, b: Int) extends LargeObjectManagerOp[LargeObject] {
-      def visit[F[_]](v: Visitor[F]) = v.open(a, b)
-    }
-    final case class  Open3(a: Int, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class Open1(a: Int, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b, c)
     }
-    final case class  Open4(a: Long) extends LargeObjectManagerOp[LargeObject] {
+    final case class Open2(a: Long) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a)
     }
-    final case class  Open5(a: Long, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class Open3(a: Long, b: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    final case class  Open6(a: Long, b: Int) extends LargeObjectManagerOp[LargeObject] {
+    final case class Open4(a: Long, b: Int) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b)
     }
-    final case class  Open7(a: Long, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
+    final case class Open5(a: Long, b: Int, c: Boolean) extends LargeObjectManagerOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.open(a, b, c)
     }
-    final case class  Unlink(a: Int) extends LargeObjectManagerOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.unlink(a)
-    }
-    final case class  Unlink1(a: Long) extends LargeObjectManagerOp[Unit] {
+    final case class Unlink(a: Long) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.unlink(a)
     }
 
@@ -191,22 +165,16 @@ object largeobjectmanager { module =>
   def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]) = FF.liftF[LargeObjectManagerOp, A](FromFuture(fut))
 
   // Smart constructors for LargeObjectManager-specific operations.
-  val create: LargeObjectManagerIO[Int] = FF.liftF(Create)
-  def create(a: Int): LargeObjectManagerIO[Int] = FF.liftF(Create1(a))
   val createLO: LargeObjectManagerIO[Long] = FF.liftF(CreateLO)
   def createLO(a: Int): LargeObjectManagerIO[Long] = FF.liftF(CreateLO1(a))
-  def delete(a: Int): LargeObjectManagerIO[Unit] = FF.liftF(Delete(a))
-  def delete(a: Long): LargeObjectManagerIO[Unit] = FF.liftF(Delete1(a))
-  def open(a: Int): LargeObjectManagerIO[LargeObject] = FF.liftF(Open(a))
-  def open(a: Int, b: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open1(a, b))
-  def open(a: Int, b: Int): LargeObjectManagerIO[LargeObject] = FF.liftF(Open2(a, b))
-  def open(a: Int, b: Int, c: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open3(a, b, c))
-  def open(a: Long): LargeObjectManagerIO[LargeObject] = FF.liftF(Open4(a))
-  def open(a: Long, b: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open5(a, b))
-  def open(a: Long, b: Int): LargeObjectManagerIO[LargeObject] = FF.liftF(Open6(a, b))
-  def open(a: Long, b: Int, c: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open7(a, b, c))
-  def unlink(a: Int): LargeObjectManagerIO[Unit] = FF.liftF(Unlink(a))
-  def unlink(a: Long): LargeObjectManagerIO[Unit] = FF.liftF(Unlink1(a))
+  def delete(a: Long): LargeObjectManagerIO[Unit] = FF.liftF(Delete(a))
+  def open(a: Int, b: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open(a, b))
+  def open(a: Int, b: Int, c: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open1(a, b, c))
+  def open(a: Long): LargeObjectManagerIO[LargeObject] = FF.liftF(Open2(a))
+  def open(a: Long, b: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open3(a, b))
+  def open(a: Long, b: Int): LargeObjectManagerIO[LargeObject] = FF.liftF(Open4(a, b))
+  def open(a: Long, b: Int, c: Boolean): LargeObjectManagerIO[LargeObject] = FF.liftF(Open5(a, b, c))
+  def unlink(a: Long): LargeObjectManagerIO[Unit] = FF.liftF(Unlink(a))
 
   // Typeclass instances for LargeObjectManagerIO
   implicit val WeakAsyncLargeObjectManagerIO: WeakAsync[LargeObjectManagerIO] =

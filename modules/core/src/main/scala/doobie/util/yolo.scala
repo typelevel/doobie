@@ -4,7 +4,6 @@
 
 package doobie.util
 
-import scala.reflect.runtime.universe.TypeTag
 
 import cats.effect.kernel.Async
 import cats.instances.int._
@@ -18,6 +17,7 @@ import doobie.util.testing._
 import doobie.util.transactor._
 import fs2.Stream
 import scala.Predef._
+import org.tpolecat.typename._
 
 /** Module for implicit syntax useful in REPL session. */
 
@@ -29,7 +29,7 @@ object yolo {
     private def out(s: String, colors: Colors): ConnectionIO[Unit] =
       delay(Console.println(show"${colors.BLUE}  $s${colors.RESET}"))
 
-    implicit class Query0YoloOps[A: TypeTag](q: Query0[A]) {
+    implicit class Query0YoloOps[A: TypeName](q: Query0[A]) {
 
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
@@ -49,7 +49,7 @@ object yolo {
         ), colors)
     }
 
-    implicit class QueryYoloOps[I: TypeTag, A: TypeTag](q: Query[I,A]) {
+    implicit class QueryYoloOps[I: TypeName, A: TypeName](q: Query[I,A]) {
 
       def quick(i: I): M[Unit] =
         q.toQuery0(i).quick
@@ -72,7 +72,7 @@ object yolo {
         checkImpl(Analyzable.unpack(u), colors)
     }
 
-    implicit class UpdateYoloOps[I: TypeTag](u: Update[I]) {
+    implicit class UpdateYoloOps[I: TypeName](u: Update[I]) {
 
       def quick(i: I)(implicit colors: Colors = Colors.Ansi): M[Unit] =
         u.toUpdate0(i).quick

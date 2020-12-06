@@ -7,32 +7,29 @@ package doobie.util
 import cats.Contravariant
 import cats.free.ContravariantCoyoneda
 import cats.data.NonEmptyList
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 import java.sql.{PreparedStatement, ResultSet}
-
+import org.tpolecat.typename._
 import doobie.util.meta.Meta
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{Type, TypeTag}
-import shapeless._
-import shapeless.ops.hlist.IsHCons
 
 sealed abstract class Put[A](
-  val typeStack: NonEmptyList[Option[Type]],
+  val typeStack: NonEmptyList[Option[String]],
   val jdbcTargets: NonEmptyList[JdbcType],
   val put: ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
   val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
 ) {
 
-  protected def contramapImpl[B](f: B => A, typ: Option[Type]): Put[B]
+  protected def contramapImpl[B](f: B => A, typ: Option[String]): Put[B]
 
   def unsafeSetNull(ps: PreparedStatement, n: Int): Unit
 
   final def contramap[B](f: B => A): Put[B] =
     contramapImpl(f, None)
 
-  final def tcontramap[B](f: B => A)(implicit ev: TypeTag[B]): Put[B] =
-    contramapImpl(f, Some(ev.tpe))
+  final def tcontramap[B](f: B => A)(implicit ev: TypeName[B]): Put[B] =
+    contramapImpl(f, Some(ev.value))
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
@@ -63,13 +60,13 @@ object Put extends PutInstances {
   def apply[A](implicit ev: Put[A]): ev.type = ev
 
   final case class Basic[A](
-    override val typeStack: NonEmptyList[Option[Type]],
+    override val typeStack: NonEmptyList[Option[String]],
     override val jdbcTargets: NonEmptyList[JdbcType],
     override val put:  ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
     override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
   ) extends Put[A](typeStack, jdbcTargets, put, update) {
 
-    protected def contramapImpl[B](f: B => A, typ: Option[Type]): Put[B] =
+    protected def contramapImpl[B](f: B => A, typ: Option[String]): Put[B] =
       copy(typeStack = typ :: typeStack, update = update.contramap(f), put = put.contramap(f))
 
     def unsafeSetNull(ps: PreparedStatement, n: Int): Unit =
@@ -83,9 +80,9 @@ object Put extends PutInstances {
       jdbcTargets: NonEmptyList[JdbcType],
       put:  (PreparedStatement, Int, A) => Unit,
       update: (ResultSet, Int, A) => Unit
-    )(implicit ev: TypeTag[A]): Basic[A] =
+    )(implicit ev: TypeName[A]): Basic[A] =
       Basic(
-        NonEmptyList.of(Some(ev.tpe)),
+        NonEmptyList.of(Some(ev.value)),
         jdbcTargets,
         ContravariantCoyoneda.lift[(PreparedStatement, Int, *) => Unit, A](put),
         ContravariantCoyoneda.lift[(ResultSet, Int, *) => Unit, A](update)
@@ -95,20 +92,20 @@ object Put extends PutInstances {
       jdbcTarget: JdbcType,
       put:  (PreparedStatement, Int, A) => Unit,
       update: (ResultSet, Int, A) => Unit
-    )(implicit ev: TypeTag[A]): Basic[A] =
+    )(implicit ev: TypeName[A]): Basic[A] =
       many(NonEmptyList.of(jdbcTarget), put, update)
 
   }
 
   final case class Advanced[A](
-    override val typeStack: NonEmptyList[Option[Type]],
+    override val typeStack: NonEmptyList[Option[String]],
     override val jdbcTargets: NonEmptyList[JdbcType],
              val schemaTypes: NonEmptyList[String],
     override val put:  ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
     override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
   ) extends Put[A](typeStack, jdbcTargets, put, update) {
 
-    protected def contramapImpl[B](f: B => A, typ: Option[Type]): Put[B] =
+    protected def contramapImpl[B](f: B => A, typ: Option[String]): Put[B] =
       copy(typeStack = typ :: typeStack, update = update.contramap(f), put = put.contramap(f))
 
     def unsafeSetNull(ps: PreparedStatement, n: Int): Unit =
@@ -122,16 +119,16 @@ object Put extends PutInstances {
       schemaTypes: NonEmptyList[String],
       put:  (PreparedStatement, Int, A) => Unit,
       update: (ResultSet, Int, A) => Unit
-    )(implicit ev: TypeTag[A]): Advanced[A] =
+    )(implicit ev: TypeName[A]): Advanced[A] =
       Advanced(
-        NonEmptyList.of(Some(ev.tpe)),
+        NonEmptyList.of(Some(ev.value)),
         jdbcTargets,
         schemaTypes,
         ContravariantCoyoneda.lift[(PreparedStatement, Int, *) => Unit, A](put),
         ContravariantCoyoneda.lift[(ResultSet, Int, *) => Unit, A](update)
       )
 
-    def one[A: TypeTag](
+    def one[A: TypeName](
       jdbcTarget: JdbcType,
       schemaTypes: NonEmptyList[String],
       put:  (PreparedStatement, Int, A) => Unit,
@@ -140,7 +137,7 @@ object Put extends PutInstances {
       many(NonEmptyList.of(jdbcTarget), schemaTypes, put, update)
 
     @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
-    def array[A >: Null <: AnyRef: TypeTag](
+    def array[A >: Null <: AnyRef: TypeName](
       schemaTypes: NonEmptyList[String],
       elementType: String
     ): Advanced[Array[A]] =
@@ -160,7 +157,7 @@ object Put extends PutInstances {
         }
       )
 
-    def other[A >: Null <: AnyRef: TypeTag](schemaTypes: NonEmptyList[String]): Advanced[A] =
+    def other[A >: Null <: AnyRef: TypeName](schemaTypes: NonEmptyList[String]): Advanced[A] =
       many(
         NonEmptyList.of(JdbcType.Other, JdbcType.JavaObject),
         schemaTypes,
@@ -178,8 +175,7 @@ object Put extends PutInstances {
 
 }
 
-trait PutInstances {
-  import doobie.util.compat.=:=
+trait PutInstances extends PutPlatform {
 
   /** @group Instances */
   implicit val ContravariantPut: Contravariant[Put] =
@@ -189,22 +185,11 @@ trait PutInstances {
     }
 
   /** @group Instances */
-  implicit def ArrayTypeAsListPut[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[List[A]] =
+  implicit def ArrayTypeAsListPut[A: ClassTag: TypeName](implicit ev: Put[Array[A]]): Put[List[A]] =
     ev.tcontramap(_.toArray)
 
   /** @group Instances */
-  implicit def ArrayTypeAsVectorPut[A: ClassTag: TypeTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
+  implicit def ArrayTypeAsVectorPut[A: ClassTag: TypeName](implicit ev: Put[Array[A]]): Put[Vector[A]] =
     ev.tcontramap(_.toArray)
-
-  /** @group Instances */
-  implicit def unaryProductPut[A: TypeTag, L <: HList, H, T <: HList](
-     implicit G: Generic.Aux[A, L],
-              C: IsHCons.Aux[L, H, T],
-              H: Lazy[Put[H]],
-              E: (H :: HNil) =:= L
-  ): Put[A] = {
-    void(E) // E is a necessary constraint but isn't used directly
-    H.value.contramap[A](a => G.to(a).head)
-  }
 
 }

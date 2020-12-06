@@ -12,7 +12,6 @@ import cats.free.Free
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
 
 // Types referenced in the JDBC API
 import java.io.InputStream
@@ -21,23 +20,25 @@ import java.io.Reader
 import java.io.Writer
 import java.lang.Class
 import java.lang.String
-import java.sql.ResultSet
+import java.sql.{ Array => SqlArray }
+import java.util.Map
 import org.postgresql.PGConnection
+import org.postgresql.PGNotification
+import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
-import org.postgresql.fastpath.FastpathArg
-import org.postgresql.fastpath.{ Fastpath => PGFastpath }
 import org.postgresql.jdbc.AutoSave
+import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
+import org.postgresql.replication.PGReplicationConnection
 import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.postgres.free.copyin.{ CopyInIO, CopyInOp }
 import doobie.postgres.free.copymanager.{ CopyManagerIO, CopyManagerOp }
 import doobie.postgres.free.copyout.{ CopyOutIO, CopyOutOp }
-import doobie.postgres.free.fastpath.{ FastpathIO, FastpathOp }
 import doobie.postgres.free.largeobject.{ LargeObjectIO, LargeObjectOp }
 import doobie.postgres.free.largeobjectmanager.{ LargeObjectManagerIO, LargeObjectManagerOp }
 import doobie.postgres.free.pgconnection.{ PGConnectionIO, PGConnectionOp }
@@ -53,17 +54,15 @@ object KleisliInterpreter {
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-@silent("deprecated")
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: WeakAsync[M]
   import WeakAsync._
 
-  // The 7 interpreters, with definitions below. These can be overridden to customize behavior.
+  // The 6 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val CopyInInterpreter: CopyInOp ~> Kleisli[M, PGCopyIn, *] = new CopyInInterpreter { }
   lazy val CopyManagerInterpreter: CopyManagerOp ~> Kleisli[M, PGCopyManager, *] = new CopyManagerInterpreter { }
   lazy val CopyOutInterpreter: CopyOutOp ~> Kleisli[M, PGCopyOut, *] = new CopyOutInterpreter { }
-  lazy val FastpathInterpreter: FastpathOp ~> Kleisli[M, PGFastpath, *] = new FastpathInterpreter { }
   lazy val LargeObjectInterpreter: LargeObjectOp ~> Kleisli[M, LargeObject, *] = new LargeObjectInterpreter { }
   lazy val LargeObjectManagerInterpreter: LargeObjectManagerOp ~> Kleisli[M, LargeObjectManager, *] = new LargeObjectManagerInterpreter { }
   lazy val PGConnectionInterpreter: PGConnectionOp ~> Kleisli[M, PGConnection, *] = new PGConnectionInterpreter { }
@@ -110,7 +109,6 @@ trait KleisliInterpreter[M[_]] { outer =>
       case Embedded.CopyIn(j, fa) => Kleisli(_ => fa.foldMap(CopyInInterpreter).run(j))
       case Embedded.CopyManager(j, fa) => Kleisli(_ => fa.foldMap(CopyManagerInterpreter).run(j))
       case Embedded.CopyOut(j, fa) => Kleisli(_ => fa.foldMap(CopyOutInterpreter).run(j))
-      case Embedded.Fastpath(j, fa) => Kleisli(_ => fa.foldMap(FastpathInterpreter).run(j))
       case Embedded.LargeObject(j, fa) => Kleisli(_ => fa.foldMap(LargeObjectInterpreter).run(j))
       case Embedded.LargeObjectManager(j, fa) => Kleisli(_ => fa.foldMap(LargeObjectManagerInterpreter).run(j))
       case Embedded.PGConnection(j, fa) => Kleisli(_ => fa.foldMap(PGConnectionInterpreter).run(j))
@@ -217,41 +215,6 @@ trait KleisliInterpreter[M[_]] { outer =>
 
   }
 
-  trait FastpathInterpreter extends FastpathOp.Visitor[Kleisli[M, PGFastpath, *]] {
-
-    // common operations delegate to outer interpreter
-    override def raw[A](f: PGFastpath => A) = outer.raw(f)
-    override def embed[A](e: Embedded[A]) = outer.embed(e)
-    override def raiseError[A](e: Throwable) = outer.raiseError(e)
-    override def monotonic = outer.monotonic[PGFastpath]
-    override def realTime = outer.realTime[PGFastpath]
-    override def delay[A](thunk: => A) = outer.delay(thunk)
-    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
-    override def canceled = outer.canceled[PGFastpath]
-    
-    // for operations using FastpathIO we must call ourself recursively
-    override def handleErrorWith[A](fa: FastpathIO[A])(f: Throwable => FastpathIO[A]) = outer.handleErrorWith(this)(fa)(f)
-    override def forceR[A, B](fa: FastpathIO[A])(fb: FastpathIO[B]) = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[FastpathIO] => FastpathIO[A]) = outer.uncancelable(this, doobie.postgres.free.fastpath.capturePoll)(body)
-    override def poll[A](poll: Any, fa: FastpathIO[A]) = outer.poll(this)(poll, fa)
-    override def onCancel[A](fa: FastpathIO[A], fin: FastpathIO[Unit]) = outer.onCancel(this)(fa, fin)
-    override def fromFuture[A](fut: FastpathIO[Future[A]]) = outer.fromFuture(this)(fut)
-
-    // domain-specific operations are implemented in terms of `primitive`
-    override def addFunction(a: String, b: Int) = primitive(_.addFunction(a, b))
-    override def addFunctions(a: ResultSet) = primitive(_.addFunctions(a))
-    override def fastpath(a: Int, b: Array[FastpathArg]) = primitive(_.fastpath(a, b))
-    override def fastpath(a: Int, b: Boolean, c: Array[FastpathArg]) = primitive(_.fastpath(a, b, c))
-    override def fastpath(a: String, b: Array[FastpathArg]) = primitive(_.fastpath(a, b))
-    override def fastpath(a: String, b: Boolean, c: Array[FastpathArg]) = primitive(_.fastpath(a, b, c))
-    override def getData(a: String, b: Array[FastpathArg]) = primitive(_.getData(a, b))
-    override def getID(a: String) = primitive(_.getID(a))
-    override def getInteger(a: String, b: Array[FastpathArg]) = primitive(_.getInteger(a, b))
-    override def getLong(a: String, b: Array[FastpathArg]) = primitive(_.getLong(a, b))
-    override def getOID(a: String, b: Array[FastpathArg]) = primitive(_.getOID(a, b))
-
-  }
-
   trait LargeObjectInterpreter extends LargeObjectOp.Visitor[Kleisli[M, LargeObject, *]] {
 
     // common operations delegate to outer interpreter
@@ -278,7 +241,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getInputStream = primitive(_.getInputStream)
     override def getInputStream(a: Long) = primitive(_.getInputStream(a))
     override def getLongOID = primitive(_.getLongOID)
-    override def getOID = primitive(_.getOID)
     override def getOutputStream = primitive(_.getOutputStream)
     override def read(a: Array[Byte], b: Int, c: Int) = primitive(_.read(a, b, c))
     override def read(a: Int) = primitive(_.read(a))
@@ -317,21 +279,15 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
-    override def create = primitive(_.create)
-    override def create(a: Int) = primitive(_.create(a))
     override def createLO = primitive(_.createLO)
     override def createLO(a: Int) = primitive(_.createLO(a))
-    override def delete(a: Int) = primitive(_.delete(a))
     override def delete(a: Long) = primitive(_.delete(a))
-    override def open(a: Int) = primitive(_.open(a))
     override def open(a: Int, b: Boolean) = primitive(_.open(a, b))
-    override def open(a: Int, b: Int) = primitive(_.open(a, b))
     override def open(a: Int, b: Int, c: Boolean) = primitive(_.open(a, b, c))
     override def open(a: Long) = primitive(_.open(a))
     override def open(a: Long, b: Boolean) = primitive(_.open(a, b))
     override def open(a: Long, b: Int) = primitive(_.open(a, b))
     override def open(a: Long, b: Int, c: Boolean) = primitive(_.open(a, b, c))
-    override def unlink(a: Int) = primitive(_.unlink(a))
     override def unlink(a: Long) = primitive(_.unlink(a))
 
   }
@@ -358,7 +314,6 @@ trait KleisliInterpreter[M[_]] { outer =>
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
-    override def addDataType(a: String, b: String) = primitive(_.addDataType(a, b))
     override def cancelQuery = primitive(_.cancelQuery)
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))
     override def escapeIdentifier(a: String) = primitive(_.escapeIdentifier(a))
@@ -367,7 +322,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getBackendPID = primitive(_.getBackendPID)
     override def getCopyAPI = primitive(_.getCopyAPI)
     override def getDefaultFetchSize = primitive(_.getDefaultFetchSize)
-    override def getFastpathAPI = primitive(_.getFastpathAPI)
     override def getLargeObjectAPI = primitive(_.getLargeObjectAPI)
     override def getNotifications = primitive(_.getNotifications)
     override def getNotifications(a: Int) = primitive(_.getNotifications(a))
