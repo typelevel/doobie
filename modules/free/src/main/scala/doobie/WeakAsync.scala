@@ -10,6 +10,7 @@ import cats.effect.kernel.{ Async, MonadCancel, Poll, Resource, Sync }
 import cats.effect.std.Dispatcher
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import cats.Applicative
 
 trait WeakAsync[F[_]] {
   def pure[A](x: A): F[A]
@@ -33,6 +34,10 @@ trait WeakAsyncLowPriorityInstances {
 
   implicit def doobieSyncForWeakAsync[F[_]](implicit F: WeakAsync[F]): Sync[F] =
     new Sync[F] {
+      override val applicative = new Applicative[F] {
+        override def pure[A](x: A): F[A] = F.pure(x)
+        override def ap[A, B](ff: F[A => B])(fa: F[A]): F[B] = F.flatMap(ff)(f => F.flatMap(fa)(a => F.pure(f(a))))
+      }
       override def pure[A](x: A): F[A] = F.pure(x)
       override def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B] = F.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B] = F.tailRecM(a)(f)
