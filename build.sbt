@@ -138,7 +138,7 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val noDottySettings = Seq(
-  (publish / skip)    := isDotty.value,
+  (publish / skip)    := (publish / skip).value || isDotty.value,
   (Compile / sources) := { if (isDotty.value) Seq() else (Compile / sources).value },
   (Test    / sources) := { if (isDotty.value) Seq() else (Test    / sources).value },
   libraryDependencies := libraryDependencies.value.filterNot(_ => isDotty.value),
