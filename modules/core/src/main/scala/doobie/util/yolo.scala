@@ -38,7 +38,7 @@ object yolo {
          .evalMap(out(_, colors))
          .compile
          .drain
-         .transact(xa)
+         .transact(xa)(ev)
 
       def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(Analyzable.unpack(q), colors)
@@ -66,7 +66,7 @@ object yolo {
     implicit class Update0YoloOps(u: Update0) {
 
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        u.run.flatMap(a => out(show"$a row(s) updated", colors)).transact(xa)
+        u.run.flatMap(a => out(show"$a row(s) updated", colors)).transact(xa)(ev)
 
       def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(Analyzable.unpack(u), colors)
@@ -84,19 +84,19 @@ object yolo {
     implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        ca.flatMap(a => out(a.toString, colors)).transact(xa)
+        ca.flatMap(a => out(a.toString, colors)).transact(xa)(ev)
     }
 
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)
+        pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)(ev)
     }
 
     private def checkImpl(args: AnalysisArgs, colors: Colors): M[Unit] =
       analyze(args).flatMap { report =>
         val formatted = formatReport(args, report, colors)
         delay(println(formatted.padLeft("  ")))
-      }.transact(xa)
+      }.transact(xa)(ev)
   }
 }

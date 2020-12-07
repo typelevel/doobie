@@ -41,11 +41,21 @@ trait Modules {
   /** @group Module Aliases - Free API */ lazy val FS   = statement
 }
 
-trait LowPriorityInstances {
-  import WeakAsync._
+trait LowPriorityInstances2 {
 
+  implicit def monadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancel[F, Throwable] =
+    WeakAsync.doobieMonadCancelForWeakAsync[F]
+}
+
+trait LowPriorityInstances1 extends LowPriorityInstances2 {
+  
   implicit def syncForWeakAsync[F[_]](implicit F: WeakAsync[F]): Sync[F] =
-    doobieSyncForWeakAsync[F]
+     WeakAsync.doobieSyncForWeakAsync[F]
+
+}
+
+trait LowPriorityInstances extends LowPriorityInstances1 {
+  import WeakAsync._
 
   /** @group Typeclass Instances */  implicit lazy val SyncBlobIO: Sync[BlobIO] =
     doobieSyncForWeakAsync(blob.WeakAsyncBlobIO)
@@ -93,9 +103,6 @@ trait LowPriorityInstances {
 
 trait Instances extends LowPriorityInstances {
   import WeakAsync._
-
-  implicit def monadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancel[F, Throwable] =
-    doobieMonadCancelForWeakAsync[F]
 
   implicit def weakAsyncForAsync[F[_]](implicit F: Async[F]): WeakAsync[F] =
     doobieWeakAsyncForAsync[F]

@@ -203,12 +203,12 @@ object transactor  {
     /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
       * and translate it to back `M` effect. */
     def liftF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit ev: Async[M]): M[I] =
-      WeakAsync.liftK[M, ConnectionIO].use(toConnectionIO => trans.apply(mkEffect(toConnectionIO)))
+      WeakAsync.liftK[M, ConnectionIO].use(toConnectionIO => trans(ev).apply(mkEffect(toConnectionIO)))(ev)
     
     /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
       * `M ~> ConnectionIO` and translate it back to a `Stream` with `M` effects. */
     def liftS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit ev: Async[M]): Stream[M, I] =
-      Stream.resource(WeakAsync.liftK[M, ConnectionIO]).flatMap(toConnectionIO => transP.apply(mkStream(toConnectionIO)))
+      Stream.resource(WeakAsync.liftK[M, ConnectionIO])(ev).flatMap(toConnectionIO => transP(ev).apply(mkStream(toConnectionIO)))
 
     /** Embed a `Pipe` with `ConnectionIO` effects inside a `Pipe` with `M` effects by lifting incoming stream to 
       * `ConnectionIO` effects and lowering outgoing stream to `M` effects. */
@@ -300,12 +300,13 @@ object transactor  {
         def apply[A <: DataSource](
           dataSource: A,
           connectEC:  ExecutionContext
-        )(implicit ev: Async[M]
+        )(
+          implicit ev: Async[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
             val acquire = ev.evalOn(ev.delay(dataSource.getConnection()), connectEC)
             def release(c: Connection) = ev.blocking(c.close())
-            Resource.make(acquire)(release)
+            Resource.make(acquire)(release)(ev)
           }
           val interp  = KleisliInterpreter[M].ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
@@ -347,13 +348,13 @@ object transactor  {
         driver: String,
         conn: () => Connection,
         strategy: Strategy
-      )(implicit am: Async[M]): Transactor.Aux[M, Unit] =
+      )(implicit ev: Async[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
           _ => {
-            val acquire = am.blocking{ Class.forName(driver); conn() }
-            def release(c: Connection) = am.blocking{ c.close() }
-            Resource.make(acquire)(release)
+            val acquire = ev.blocking{ Class.forName(driver); conn() }
+            def release(c: Connection) = ev.blocking{ c.close() }
+            Resource.make(acquire)(release)(ev)
           },
           KleisliInterpreter[M].ConnectionInterpreter,
           strategy
