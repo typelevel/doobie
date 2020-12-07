@@ -58,9 +58,9 @@ However, for test and for experimentation as described in this book (and for sit
 ```scala mdoc:silent
 import doobie.util.ExecutionContexts
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling calling 
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -68,8 +68,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 ```
 
@@ -95,14 +94,12 @@ object HikariApp extends IOApp {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      be <- Blocker[IO]    // our blocking EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
-              ce,                                     // await connection here
-              be                                      // execute JDBC operations here
+              ce                                      // await connection here
             )
     } yield xa
 
@@ -135,13 +132,10 @@ If your application exposes an existing `javax.sql.DataSource` you can use it di
 import javax.sql.DataSource
 
 // Resource yielding a DataSourceTransactor[IO] wrapping the given `DataSource`
-def transactor(ds: DataSource)(
-  implicit ev: ContextShift[IO]
-): Resource[IO, DataSourceTransactor[IO]] =
+def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =
   for {
     ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-    be <- Blocker[IO]    // our blocking EC
-  } yield Transactor.fromDataSource[IO](ds, ce, be)
+  } yield Transactor.fromDataSource[IO](ds, ce)
 ```
 
 The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
@@ -154,13 +148,9 @@ If your application exposes an existing `Connection` you can use it directly by 
 ```scala mdoc:silent
 import java.sql.Connection
 
-// Resource yielding a Transactor[IO] wrapping the given `Connection`
-def transactor(c: Connection)(
-  implicit ev: ContextShift[IO]
-): Resource[IO, Transactor[IO]] =
-  Blocker[IO].map { b =>
-    Transactor.fromConnection[IO](c, b)
-  }
+// A Transactor[IO] wrapping the given `Connection`
+def transactor(c: Connection): Transactor[IO] =
+  Transactor.fromConnection[IO](c)
 ```
 
 ### Customizing Transactors
