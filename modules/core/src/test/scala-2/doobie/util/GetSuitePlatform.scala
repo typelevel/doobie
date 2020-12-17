@@ -4,17 +4,5 @@
 
 package doobie.util
 
-object GetSuitePlatform {
-  final case class Y(x: String) extends AnyVal
-  final case class P(x: Int) extends AnyVal
-}
-
-trait GetSuitePlatform { self: munit.FunSuite =>
-  import GetSuitePlatform._
-
-  test("Get should be derived for unary products (AnyVal)") {
-    Get[Y]
-    Get[P]
-  }
-
+trait GetSuitePlatform { self: GetSuite =>
 }
