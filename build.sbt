@@ -80,7 +80,7 @@ lazy val commonSettings =
 
     // MUnit
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "scalacheck-effect-munit" % "0.6.0"  % Test,
+      "org.typelevel"     %% "scalacheck-effect-munit" % "0.7.0"  % Test,
       "org.typelevel"     %% "munit-cats-effect-2"     % "0.11.0" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
