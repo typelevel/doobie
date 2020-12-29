@@ -7,7 +7,6 @@ package example
 import java.sql.Connection
 import scala.util.control.NonFatal
 
-import cats.MonadError
 import cats.data._
 import cats.effect._
 import cats.syntax.all._
@@ -32,7 +31,7 @@ object StreamingCopy extends IOApp.Simple {
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
   )(
-    implicit ev: MonadError[F, Throwable]
+    implicit ev: MonadCancelThrow[F]
   ): Stream[F, B] =
     fuseMapGeneric(source, identity[A], sink)(sourceXA, sinkXA)
 
@@ -50,7 +49,7 @@ object StreamingCopy extends IOApp.Simple {
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
   )(
-    implicit ev: MonadError[F, Throwable]
+    implicit ev: MonadCancelThrow[F]
   ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.

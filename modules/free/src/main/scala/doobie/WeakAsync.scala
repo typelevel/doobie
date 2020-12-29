@@ -6,7 +6,7 @@ package doobie
 
 import cats.~>
 import cats.implicits._
-import cats.effect.kernel.{ Async, MonadCancel, Poll, Resource, Sync }
+import cats.effect.kernel.{ Async, MonadCancelThrow, Poll, Resource, Sync }
 import cats.effect.std.Dispatcher
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -53,8 +53,8 @@ object WeakAsync extends WeakAsyncLowPriorityInstances {
 
   def apply[F[_]](implicit ev: WeakAsync[F]): WeakAsync[F] = ev
 
-  implicit def doobieMonadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancel[F, Throwable] =
-    new MonadCancel[F, Throwable] {
+  implicit def doobieMonadCancelForWeakAsync[F[_]](implicit F: WeakAsync[F]): MonadCancelThrow[F] =
+    new MonadCancelThrow[F] {
       override def pure[A](x: A): F[A] = F.pure(x)
       override def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B] = F.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B] = F.tailRecM(a)(f)

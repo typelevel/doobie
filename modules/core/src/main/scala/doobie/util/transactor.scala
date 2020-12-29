@@ -12,7 +12,7 @@ import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.kernel.{Async, MonadCancel, Resource}
+import cats.effect.kernel.{Async, MonadCancelThrow, Resource}
 import cats.effect.kernel.Resource.ExitCase
 
 import fs2.{Stream, Pipe}
@@ -119,7 +119,7 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: MonadCancel[M, Throwable]): Kleisli[M, Connection, *] ~> M =
+    def rawExec(implicit ev: MonadCancelThrow[M]): Kleisli[M, Connection, *] ~> M =
       new (Kleisli[M, Connection, *] ~> M) {
         def apply[T](k: Kleisli[M, Connection, T]): M[T] = connect(kernel).use(k.run)
       }
@@ -129,7 +129,7 @@ object transactor  {
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def exec(implicit ev: MonadCancel[M, Throwable]): Kleisli[M, Connection, *] ~> M =
+    def exec(implicit ev: MonadCancelThrow[M]): Kleisli[M, Connection, *] ~> M =
       new (Kleisli[M, Connection, *] ~> M) {
         def apply[T](ka: Kleisli[M, Connection, T]): M[T] =
           connect(kernel).use { conn =>
@@ -145,7 +145,7 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawTrans(implicit ev: MonadCancel[M, Throwable]): ConnectionIO ~> M =
+    def rawTrans(implicit ev: MonadCancelThrow[M]): ConnectionIO ~> M =
       new (ConnectionIO ~> M) {
         def apply[T](f: ConnectionIO[T]): M[T] =
           connect(kernel).use { conn =>
@@ -159,7 +159,7 @@ object transactor  {
      * program in `M`. This is the most common way to run a doobie program.
      * @group Natural Transformations
      */
-    def trans(implicit ev: MonadCancel[M, Throwable]): ConnectionIO ~> M =
+    def trans(implicit ev: MonadCancelThrow[M]): ConnectionIO ~> M =
       new (ConnectionIO ~> M) {
         def apply[T](f: ConnectionIO[T]): M[T] =
           connect(kernel).use { conn =>
@@ -167,7 +167,7 @@ object transactor  {
           }
       }
 
-    def rawTransP(implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
+    def rawTransP(implicit ev: MonadCancelThrow[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
       new (Stream[ConnectionIO, *] ~> Stream[M, *]) {
         def apply[T](s: Stream[ConnectionIO, T]) =
           Stream.resource(connect(kernel)).flatMap { conn =>
@@ -175,7 +175,7 @@ object transactor  {
           }.scope
       }
 
-    def transP(implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
+    def transP(implicit ev: MonadCancelThrow[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
       new (Stream[ConnectionIO, *] ~> Stream[M, *]) {
         def apply[T](s: Stream[ConnectionIO, T]) =
           Stream.resource(connect(kernel)).flatMap { c =>
@@ -183,7 +183,7 @@ object transactor  {
           }.scope
       }
 
-    def rawTransPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
+    def rawTransPK[I](implicit ev: MonadCancelThrow[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
       new (Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]) {
         def apply[T](s: Stream[Kleisli[ConnectionIO, I, *], T]) =
           Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
@@ -191,7 +191,7 @@ object transactor  {
           }.scope
       }
 
-    def transPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
+    def transPK[I](implicit ev: MonadCancelThrow[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
       new (Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]) {
         def apply[T](s: Stream[Kleisli[ConnectionIO, I, *], T]) =
           Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
@@ -244,7 +244,7 @@ object transactor  {
     /*
      * Convert the effect type of this transactor from M to M0
      */
-    def mapK[M0[_]](fk: M ~> M0): Transactor.Aux[M0, A] =
+    def mapK[M0[_]](fk: M ~> M0)(implicit ev1: MonadCancelThrow[M], ev2: MonadCancelThrow[M0]): Transactor.Aux[M0, A] =
       Transactor[M0, A](
         kernel,
         connect.andThen(_.mapK(fk)),
