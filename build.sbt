@@ -2,7 +2,7 @@ import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.3.0"
+lazy val catsVersion          = "2.3.1"
 lazy val catsEffectVersion    = "3.0.0-M4"
 lazy val circeVersion         = "0.13.0"
 lazy val collCompatVersion    = "2.3.1"
