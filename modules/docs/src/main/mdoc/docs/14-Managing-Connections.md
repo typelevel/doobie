@@ -121,7 +121,7 @@ object HikariApp extends IOApp {
 And running this program gives us the desired result.
 
 ```scala mdoc
-HikariApp.main(Array())
+// HikariApp.main(Array()) // https://github.com/typelevel/cats-effect/issues/1560
 ```
 
 ### Using an existing DataSource
