@@ -56,7 +56,7 @@ final class Write[A](
 
 }
 
-object Write extends WritePlatform {
+object Write extends WritePlatform with WriteLowerPriorityImplicits {
 
   def apply[A](implicit A: Write[A]): Write[A] = A
 
@@ -85,4 +85,16 @@ object Write extends WritePlatform {
       (rs, n, a) => P.unsafeUpdateNullable(rs, n, a)
     )
 
+}
+
+sealed trait WriteLowerPriorityImplicits {
+  implicit val ohnil: Write[Option[Unit]] =
+    new Write[Option[Unit]](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
+
+  implicit def opt[A](implicit A: Write[A]): Write[Option[A]] = new Write[Option[A]](
+    A.puts.map {case (p, _) => (p, Nullable)},
+    oa => oa.map(A.toList).getOrElse(A.puts.map(_ => null)),
+    (ps, i, oa) => oa.foreach(a => A.unsafeSet(ps, i, a)),
+    (ps, i, oa) => oa.foreach(a => A.unsafeUpdate(ps, i, a))
+  )
 }
