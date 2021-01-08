@@ -36,7 +36,7 @@ trait LowerPriorityWrite {
       { case (rs, n, h :: t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) }
     )
 
-  implicit def emptyProduct: Write[HNil] =
+  implicit val emptyProduct: Write[HNil] =
     new Write[HNil](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
 
   implicit def generic[B, A](implicit gen: Generic.Aux[B, A], A: Lazy[Write[A]]): Write[B] =
