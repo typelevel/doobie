@@ -5,47 +5,70 @@
 package doobie.util
 
 import shapeless.{ HList, HNil, ::, Generic, Lazy}
-import shapeless.labelled.{ FieldType }
+import shapeless.labelled.FieldType
 
 trait WritePlatform extends LowerPriorityWrite {
 
-  implicit def recordWrite[K <: Symbol, H, T <: HList](
-    implicit H: Lazy[Write[H]],
-              T: Lazy[Write[T]]
-  ): Write[FieldType[K, H] :: T] = {
+  implicit def recordWrite[K <: Symbol, H, T <: HList](implicit H: Lazy[Write[H]], T: Lazy[Write[T]]): Write[FieldType[K, H] :: T] = {
     new Write(
-      H.value.puts ++ T.value.puts,
-      { case h :: t => H.value.toList(h) ++ T.value.toList(t) },
-      { case (ps, n, h :: t) => H.value.unsafeSet(ps, n, h); T.value.unsafeSet(ps, n + H.value.length, t) },
-      { case (rs, n, h :: t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) }
+      puts = H.value.puts ++ T.value.puts,
+      toList = { case h :: t => H.value.toList(h) ++ T.value.toList(t)},
+      unsafeSet = { case (ps, n, h :: t) =>
+        H.value.unsafeSet(ps, n, h)
+        T.value.unsafeSet(ps, n + H.value.length, t)
+      },
+      unsafeUpdate = { case (rs, n, h :: t) =>
+        H.value.unsafeUpdate(rs, n, h)
+        T.value.unsafeUpdate(rs, n + H.value.length, t)
+      },
+      unsafeSetOption = { case (ps, n, oht) =>
+        H.value.unsafeSetOption(ps, n, oht.map(_.head))
+        T.value.unsafeSetOption(ps, n + H.value.length, oht.map(_.tail))
+      },
+      unsafeUpdateOption = { case (rs, n, oht) =>
+        H.value.unsafeUpdateOption(rs, n, oht.map(_.head))
+        T.value.unsafeUpdateOption(rs, n + H.value.length, oht.map(_.tail))
+      },
     )
   }
 
 }
 
 trait LowerPriorityWrite {
-
-  implicit def product[H, T <: HList](
-    implicit H: Lazy[Write[H]],
-              T: Lazy[Write[T]]
-  ): Write[H :: T] =
+  implicit def product[H, T <: HList](implicit H: Lazy[Write[H]], T: Lazy[Write[T]]): Write[H :: T] =
     new Write(
-      H.value.puts ++ T.value.puts,
-      { case h :: t => H.value.toList(h) ++ T.value.toList(t) },
-      { case (ps, n, h :: t) => H.value.unsafeSet(ps, n, h); T.value.unsafeSet(ps, n + H.value.length, t) },
-      { case (rs, n, h :: t) => H.value.unsafeUpdate(rs, n, h); T.value.unsafeUpdate(rs, n + H.value.length, t) }
+      puts = H.value.puts ++ T.value.puts,
+      toList = { case h :: t => H.value.toList(h) ++ T.value.toList(t) },
+      unsafeSet = { case (ps, n, h :: t) =>
+        H.value.unsafeSet(ps, n, h)
+        T.value.unsafeSet(ps, n + H.value.length, t)
+      },
+      unsafeUpdate = { case (rs, n, h :: t) =>
+        H.value.unsafeUpdate(rs, n, h)
+        T.value.unsafeUpdate(rs, n + H.value.length, t)
+      },
+      unsafeSetOption = { case (ps, n, oht) =>
+        H.value.unsafeSetOption(ps, n, oht.map(_.head))
+        T.value.unsafeSetOption(ps, n + H.value.length, oht.map(_.tail))
+      },
+      unsafeUpdateOption = { case (rs, n, oht) =>
+        H.value.unsafeUpdateOption(rs, n, oht.map(_.head))
+        T.value.unsafeUpdateOption(rs, n + H.value.length, oht.map(_.tail))
+      },
     )
 
   implicit val emptyProduct: Write[HNil] =
-    new Write[HNil](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
-
-  implicit def generic[B, A](implicit gen: Generic.Aux[B, A], A: Lazy[Write[A]]): Write[B] =
-    new Write[B](
-      A.value.puts,
-      b => A.value.toList(gen.to(b)),
-      (ps, n, b) => A.value.unsafeSet(ps, n, gen.to(b)),
-      (rs, n, b) => A.value.unsafeUpdate(rs, n, gen.to(b))
+    new Write[HNil](
+      puts = Nil,
+      toList = _ => Nil,
+      unsafeSet = (_, _, _) => (),
+      unsafeUpdate = (_, _, _) => (),
+      unsafeSetOption = (_, _, _) => (),
+      unsafeUpdateOption = (_, _, _) => (),
     )
 
+  implicit def generic[B, A](implicit gen: Generic.Aux[B, A], A: Lazy[Write[A]]): Write[B] = {
+    A.value.contramap(gen.to)
+  }
 }
 
