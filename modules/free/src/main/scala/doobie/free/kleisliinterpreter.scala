@@ -9,7 +9,6 @@ import cats.~>
 import cats.data.Kleisli
 import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 // Types referenced in the JDBC API
 import java.io.InputStream
@@ -64,7 +63,6 @@ import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply[M[_]](b: Blocker)(
     implicit am: Async[M],
              cs: ContextShift[M]
@@ -78,7 +76,6 @@ object KleisliInterpreter {
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-@silent("deprecated")
 trait KleisliInterpreter[M[_]] { outer =>
 
   implicit val asyncM: Async[M]
@@ -781,7 +778,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap = primitive(_.getTypeMap : Map[String, Class[_]]) // inferred is `Map[String, Class[_ <: Object]]` and 2.13 cares down the road because we end up with a refined type for this definition
+    override def getTypeMap = primitive(_.getTypeMap.asInstanceOf[java.util.Map[String, Class[_ <: Object]]])
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)
@@ -1041,7 +1038,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setTimestamp(a: Int, b: Timestamp) = primitive(_.setTimestamp(a, b))
     override def setTimestamp(a: Int, b: Timestamp, c: Calendar) = primitive(_.setTimestamp(a, b, c))
     override def setURL(a: Int, b: URL) = primitive(_.setURL(a, b))
-    override def setUnicodeStream(a: Int, b: InputStream, c: Int) = primitive(_.setUnicodeStream(a, b, c))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
 
   }
@@ -1107,7 +1103,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getArray(a: Int) = primitive(_.getArray(a))
     override def getArray(a: String) = primitive(_.getArray(a))
     override def getBigDecimal(a: Int) = primitive(_.getBigDecimal(a))
-    override def getBigDecimal(a: Int, b: Int) = primitive(_.getBigDecimal(a, b))
     override def getBigDecimal(a: String) = primitive(_.getBigDecimal(a))
     override def getBlob(a: Int) = primitive(_.getBlob(a))
     override def getBlob(a: String) = primitive(_.getBlob(a))
@@ -1305,7 +1300,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setTimestamp(a: String, b: Timestamp, c: Calendar) = primitive(_.setTimestamp(a, b, c))
     override def setURL(a: Int, b: URL) = primitive(_.setURL(a, b))
     override def setURL(a: String, b: URL) = primitive(_.setURL(a, b))
-    override def setUnicodeStream(a: Int, b: InputStream, c: Int) = primitive(_.setUnicodeStream(a, b, c))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
     override def wasNull = primitive(_.wasNull)
 
@@ -1356,9 +1350,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getAsciiStream(a: Int) = primitive(_.getAsciiStream(a))
     override def getAsciiStream(a: String) = primitive(_.getAsciiStream(a))
     override def getBigDecimal(a: Int) = primitive(_.getBigDecimal(a))
-    override def getBigDecimal(a: Int, b: Int) = primitive(_.getBigDecimal(a, b))
     override def getBigDecimal(a: String) = primitive(_.getBigDecimal(a))
-    override def getBigDecimal(a: String, b: Int) = primitive(_.getBigDecimal(a, b))
     override def getBinaryStream(a: Int) = primitive(_.getBinaryStream(a))
     override def getBinaryStream(a: String) = primitive(_.getBinaryStream(a))
     override def getBlob(a: Int) = primitive(_.getBlob(a))
@@ -1426,8 +1418,6 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getType = primitive(_.getType)
     override def getURL(a: Int) = primitive(_.getURL(a))
     override def getURL(a: String) = primitive(_.getURL(a))
-    override def getUnicodeStream(a: Int) = primitive(_.getUnicodeStream(a))
-    override def getUnicodeStream(a: String) = primitive(_.getUnicodeStream(a))
     override def getWarnings = primitive(_.getWarnings)
     override def insertRow = primitive(_.insertRow)
     override def isAfterLast = primitive(_.isAfterLast)

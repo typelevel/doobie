@@ -6,9 +6,6 @@ package doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.{ Effect, IO }
-import cats.instances.int._
-import cats.instances.list._
-import cats.instances.string._
 import cats.syntax.list._
 import cats.syntax.applicativeError._
 import cats.syntax.foldable._
@@ -19,7 +16,7 @@ import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
 import scala.Predef.augmentString
-import scala.reflect.runtime.universe.WeakTypeTag
+import org.tpolecat.typename._
 
 package testing {
 
@@ -86,7 +83,7 @@ package testing {
         def unpack(t: T) = impl(t)
       }
 
-    implicit def analyzableQuery[A: WeakTypeTag, B: WeakTypeTag]: Analyzable[Query[A, B]] =
+    implicit def analyzableQuery[A: TypeName, B: TypeName]: Analyzable[Query[A, B]] =
       instance { q =>
         AnalysisArgs(
           s"Query[${typeName[A]}, ${typeName[B]}]",
@@ -94,7 +91,7 @@ package testing {
         )
       }
 
-    implicit def analyzableQuery0[A: WeakTypeTag]: Analyzable[Query0[A]] =
+    implicit def analyzableQuery0[A: TypeName]: Analyzable[Query0[A]] =
       instance { q =>
         AnalysisArgs(
           s"Query0[${typeName[A]}]",
@@ -102,7 +99,7 @@ package testing {
         )
       }
 
-    implicit def analyzableUpdate[A: WeakTypeTag]: Analyzable[Update[A]] =
+    implicit def analyzableUpdate[A: TypeName]: Analyzable[Update[A]] =
       instance { q =>
         AnalysisArgs(
           s"Update[${typeName[A]}]",
@@ -142,12 +139,6 @@ package object testing {
   ): IO[AnalysisReport] =
     toIO(analyze(args).transact(xa))
 
-  private val packagePrefix = "\\b[a-z]+\\.".r
-
-  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def typeName[A](implicit tag: WeakTypeTag[A]): String =
-    packagePrefix.replaceAllIn(tag.tpe.toString, "")
-
   private def alignmentErrorsToBlock(
     es: NonEmptyList[AlignmentError]
   ): Block =
@@ -159,7 +150,7 @@ package object testing {
     case Left(e) =>
       List(AnalysisReport.Item(
         "SQL Compiles and TypeChecks",
-        Some(Block.fromLines(e.getMessage))
+        Some(Block.fromErrorMsgLines(e))
       ))
     case Right(a) =>
       AnalysisReport.Item("SQL Compiles and TypeChecks", None) ::

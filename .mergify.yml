@@ -1,0 +1,10 @@
+
+pull_request_rules:
+  - name: automatically merge scala-steward's PRs
+    conditions:
+      - author=scala-steward
+      - body~=labels:.*semver-patch.*
+      - status-success=build
+    actions:
+      merge:
+        method: merge

@@ -9,7 +9,7 @@ import java.sql.Connection
 import cats.data.{EitherK, Kleisli}
 import cats.effect.{ Blocker, IO, IOApp, ExitCode }
 import cats.free.Free
-import cats.implicits._
+import cats.syntax.all._
 import cats.{InjectK, ~>}
 import doobie._
 import doobie.free.connection.ConnectionOp
@@ -17,17 +17,23 @@ import doobie.implicits._
 import scala.concurrent.ExecutionContext
 import scala.io.StdIn
 
-object coproduct extends IOApp {
+object Coproduct extends IOApp {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
     def inject[G[_]](implicit ev: InjectK[F, G]): Free[G, A] =
-      fa.compile(λ[F ~> G](ev.inj(_)))
+      fa.compile {
+        new (F ~> G) {
+          def apply[T](fa: F[T]) = ev.inj(fa)
+        }
+      }
   }
 
   // This is kind of eh … we need to interpret into Kleisli so this is helpful
   implicit class MoreNaturalTransformationOps[F[_], G[_]](nat: F ~> G) {
-    def liftK[E] = λ[F ~> Kleisli[G, E, *]](fa => Kleisli(_ => nat(fa)))
+    def liftK[E] = new (F ~> Kleisli[G, E, *]) {
+      def apply[A](fa: F[A]) = Kleisli(_ => nat(fa))
+    }
   }
 
   // A console algebra
@@ -45,10 +51,14 @@ object coproduct extends IOApp {
   }
 
   // An interpreter into IO
-  val consoleInterp = λ[ConsoleOp ~> IO] {
-    case ReadLn     => IO(StdIn.readLine())
-    case PrintLn(s) => IO(Console.println(s))
-  }
+  val consoleInterp =
+    new (ConsoleOp ~> IO) {
+      def apply[A](fa: ConsoleOp[A]) =
+        fa match {
+          case ReadLn     => IO(StdIn.readLine())
+          case PrintLn(s) => IO(Console.println(s))
+        }
+    }
 
   // A module of ConnectionOp programs, parameterized over a coproduct. The trick here is that these
   // are domain-specific operations that are injected as programs, not as constructors (which would

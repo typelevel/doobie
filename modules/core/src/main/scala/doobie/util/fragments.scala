@@ -7,7 +7,7 @@ package util
 
 import doobie.implicits._
 import cats.Reducible
-import cats.implicits._
+import cats.syntax.all._
 
 /** Module of `Fragment` constructors. */
 object fragments {
@@ -15,6 +15,10 @@ object fragments {
   /** Returns `f IN (fs0, fs1, ...)`. */
   def in[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
     fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"IN (", fr",", fr")")
+
+  /** Returns `f IN ((fs0-A, fs0-B), (fs1-A, fs1-B), ...)`. */
+  def in[F[_]: Reducible, A: util.Put, B: util.Put](f: Fragment, fs: F[(A,B)]): Fragment =
+    fs.toList.map { case (a,b) => fr0"($a,$b)" }.foldSmash1(f ++ fr0"IN (", fr",", fr")")
 
   /** Returns `f NOT IN (fs0, fs1, ...)`. */
   def notIn[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =

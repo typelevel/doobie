@@ -42,9 +42,6 @@ object connection {
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getCopyAPI(k))
 
-  def pgGetFastpathAPI[A](k: FastpathIO[A]): ConnectionIO[A] =
-    pgGetConnection(PHPC.getFastpathAPI(k))
-
   def pgGetLargeObjectAPI[A](k: LargeObjectManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getLargeObjectAPI(k))
 

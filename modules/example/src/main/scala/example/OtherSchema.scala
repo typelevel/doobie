@@ -7,7 +7,7 @@ package example
 import cats.data.NonEmptyList
 import cats.effect.{ IO, IOApp, ExitCode }
 import doobie._
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 import doobie.implicits._
 import org.postgresql.util._
 

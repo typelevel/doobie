@@ -5,7 +5,7 @@
 package doobie.postgres.syntax
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import doobie.implicits._
 import doobie.postgres.sqlstate._
 import doobie._
@@ -14,7 +14,9 @@ import doobie.util.query.{Query, Query0}
 import doobie.hi.{HPS, HRS, HC}
 import doobie.free.ConnectionIO
 
-class PostgresMonadErrorOps[M[_]: MonadError[*[_], Throwable], A](ma: M[A]) {
+class PostgresMonadErrorOps[M[_], A](ma: M[A])(
+  implicit ev: MonadError[M, Throwable]
+) {
 
   def onSuccessfulCompletion(handler: => M[A]): M[A] =
     exceptSomeSqlState(ma) { case class00.SUCCESSFUL_COMPLETION => handler }
@@ -616,7 +618,9 @@ class PostgresMonadErrorOps[M[_]: MonadError[*[_], Throwable], A](ma: M[A]) {
 }
 
 trait ToPostgresMonadErrorOps {
-  implicit def toPostgresMonadErrorOps[M[_]: MonadError[*[_], Throwable], A](ma: M[A]): PostgresMonadErrorOps[M, A] =
+  implicit def toPostgresMonadErrorOps[M[_], A](ma: M[A])(
+    implicit ev: MonadError[M, Throwable]
+  ): PostgresMonadErrorOps[M, A] =
     new PostgresMonadErrorOps(ma)
 }
 

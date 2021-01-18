@@ -5,7 +5,7 @@
 package example
 
 import cats.effect.{Blocker, ExitCode, IO, IOApp}
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import fs2.{ io, text }

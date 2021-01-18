@@ -5,17 +5,14 @@
 package doobie.issue
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.{ ContextShift, IO }
 import doobie._, doobie.implicits._
 import org.scalacheck.Prop.forAll
-import org.specs2.ScalaCheck
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import scala.Predef._
 
-
-class `706` extends Specification with ScalaCheck {
+class `706` extends munit.ScalaCheckSuite {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -32,16 +29,14 @@ class `706` extends Specification with ScalaCheck {
   def insert[F[_]: Foldable, A: Write](as: F[A]): ConnectionIO[Int] =
     Update[A]("INSERT INTO test VALUES (?)").updateMany(as)
 
-  "updateMany" should {
-
-    "work correctly for valid inputs" ! forAll { (ns: List[Int]) =>
+  test("updateMany should work correctly for valid inputs") {
+    forAll { (ns: List[Int]) =>
       val prog = setup *> insert(ns)
-      prog.transact(xa).unsafeRunSync() must_== ns.length
+      assertEquals(prog.transact(xa).unsafeRunSync(), ns.length)
     }
-
-    // TODO: add a case for invalid inputs if we can find one that doesn't cause an
-    // exception to be thrown.
-
   }
+
+  // TODO: add a case for invalid inputs if we can find one that doesn't cause an
+  // exception to be thrown.
 
 }
