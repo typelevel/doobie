@@ -8,11 +8,9 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
-@silent("deprecated")
 object copyout { module =>
 
   // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternative to pattern-matching.
@@ -86,7 +84,7 @@ object copyout { module =>
     final case class BracketCase[A, B](acquire: CopyOutIO[A], use: A => CopyOutIO[B], release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]) extends CopyOutOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends CopyOutOp[Unit] {
+    case object Shift extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: CopyOutIO[A]) extends CopyOutOp[A] {
@@ -94,28 +92,28 @@ object copyout { module =>
     }
 
     // PGCopyOut-specific operations.
-    final case object CancelCopy extends CopyOutOp[Unit] {
+    case object CancelCopy extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancelCopy
     }
-    final case object GetFieldCount extends CopyOutOp[Int] {
+    case object GetFieldCount extends CopyOutOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldCount
     }
-    final case class  GetFieldFormat(a: Int) extends CopyOutOp[Int] {
+    final case class GetFieldFormat(a: Int) extends CopyOutOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFieldFormat(a)
     }
-    final case object GetFormat extends CopyOutOp[Int] {
+    case object GetFormat extends CopyOutOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFormat
     }
-    final case object GetHandledRowCount extends CopyOutOp[Long] {
+    case object GetHandledRowCount extends CopyOutOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getHandledRowCount
     }
-    final case object IsActive extends CopyOutOp[Boolean] {
+    case object IsActive extends CopyOutOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isActive
     }
-    final case object ReadFromCopy extends CopyOutOp[Array[Byte]] {
+    case object ReadFromCopy extends CopyOutOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.readFromCopy
     }
-    final case class  ReadFromCopy1(a: Boolean) extends CopyOutOp[Array[Byte]] {
+    final case class ReadFromCopy1(a: Boolean) extends CopyOutOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.readFromCopy(a)
     }
 

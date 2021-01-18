@@ -6,7 +6,7 @@
 package example
 
 import cats.effect.{ IO, IOApp, ExitCode }
-import cats.implicits._
+import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.postgres._
 import java.io.File

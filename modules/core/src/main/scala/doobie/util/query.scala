@@ -7,7 +7,7 @@ package doobie.util
 import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.syntax.bracket._
 import doobie._
 import doobie.implicits.AsyncPreparedStatementIO
@@ -385,8 +385,8 @@ object query {
      * `sql`interpolator.
      * @group Constructors
      */
-     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-     def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
        Query[Unit, A](sql, pos, logHandler).toQuery0(())
 
     /** @group Typeclass Instances */

@@ -4,7 +4,7 @@
 
 package doobie.syntax
 
-import cats.implicits._
+import cats.syntax.all._
 
 import doobie.syntax.SqlInterpolator.SingleFragment
 import doobie.util.Put

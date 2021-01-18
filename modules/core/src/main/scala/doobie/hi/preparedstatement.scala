@@ -4,16 +4,16 @@
 
 package doobie.hi
 
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 import doobie.util.{ Get, Put }
-import doobie.enum.ColumnNullable
-import doobie.enum.ParameterNullable
-import doobie.enum.ParameterMode
-import doobie.enum.Holdability
-import doobie.enum.Nullability.NullabilityKnown
-import doobie.enum.FetchDirection
-import doobie.enum.ResultSetConcurrency
-import doobie.enum.ResultSetType
+import doobie.enumerated.ColumnNullable
+import doobie.enumerated.ParameterNullable
+import doobie.enumerated.ParameterMode
+import doobie.enumerated.Holdability
+import doobie.enumerated.Nullability.NullabilityKnown
+import doobie.enumerated.FetchDirection
+import doobie.enumerated.ResultSetConcurrency
+import doobie.enumerated.ResultSetType
 
 import doobie.util.{ Read, Write }
 import doobie.util.analysis._
@@ -26,7 +26,7 @@ import java.sql.{ ParameterMetaData, ResultSetMetaData, SQLWarning }
 import scala.Predef.{ intArrayOps, intWrapper }
 
 import cats.Foldable
-import cats.implicits._
+import cats.syntax.all._
 import cats.data.Ior
 import cats.effect.syntax.bracket._
 import fs2.Stream

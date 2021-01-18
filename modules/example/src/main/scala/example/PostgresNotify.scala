@@ -7,7 +7,7 @@ package example
 
 import cats.~>
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
@@ -29,7 +29,11 @@ object PostgresNotify extends IOApp {
 
   /** A nonblocking timer for ConnectionIO. */
   implicit val ConnectionIOTimer: Timer[ConnectionIO] =
-    Timer[IO].mapK(λ[IO ~> ConnectionIO](_.to[ConnectionIO]))
+    Timer[IO].mapK {
+      new (IO ~> ConnectionIO) {
+        def apply[A](fa: IO[A]) = fa.to[ConnectionIO]
+      }
+    }
 
   /** A resource that listens on a channel and unlistens when we're done. */
   def channel(name: String): Resource[ConnectionIO, Unit] =

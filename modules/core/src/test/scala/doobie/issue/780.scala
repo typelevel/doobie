@@ -5,18 +5,12 @@
 package doobie.issue
 
 import doobie._
-import org.specs2.mutable.Specification
-import shapeless.{::, HNil}
 
+class `780` extends munit.FunSuite {
 
-class `780` extends Specification {
-
-  "deriving instances" should {
-    "work correctly for Write from class scope" in {
-      class Foo[A: Write, B: Write] {
-        Write[A :: B :: HNil]
-      }
-      true
+  test("deriving instances should work correctly for Write from class scope") {
+    class Foo[A: Write, B: Write] {
+      Write[(A, B)]
     }
   }
 

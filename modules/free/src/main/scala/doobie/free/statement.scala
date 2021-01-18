@@ -8,7 +8,6 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import java.lang.Class
 import java.lang.String
@@ -17,7 +16,6 @@ import java.sql.ResultSet
 import java.sql.SQLWarning
 import java.sql.Statement
 
-@silent("deprecated")
 object statement { module =>
 
   // Algebra of operations for Statement. Each accepts a visitor as an alternative to pattern-matching.
@@ -135,7 +133,7 @@ object statement { module =>
     final case class BracketCase[A, B](acquire: StatementIO[A], use: A => StatementIO[B], release: (A, ExitCase[Throwable]) => StatementIO[Unit]) extends StatementOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends StatementOp[Unit] {
+    case object Shift extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: StatementIO[A]) extends StatementOp[A] {
@@ -143,160 +141,160 @@ object statement { module =>
     }
 
     // Statement-specific operations.
-    final case class  AddBatch(a: String) extends StatementOp[Unit] {
+    final case class AddBatch(a: String) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addBatch(a)
     }
-    final case object Cancel extends StatementOp[Unit] {
+    case object Cancel extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.cancel
     }
-    final case object ClearBatch extends StatementOp[Unit] {
+    case object ClearBatch extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearBatch
     }
-    final case object ClearWarnings extends StatementOp[Unit] {
+    case object ClearWarnings extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
     }
-    final case object Close extends StatementOp[Unit] {
+    case object Close extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    final case object CloseOnCompletion extends StatementOp[Unit] {
+    case object CloseOnCompletion extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
     }
-    final case class  Execute(a: String) extends StatementOp[Boolean] {
+    final case class Execute(a: String) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a)
     }
-    final case class  Execute1(a: String, b: Array[Int]) extends StatementOp[Boolean] {
+    final case class Execute1(a: String, b: Array[Int]) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    final case class  Execute2(a: String, b: Array[String]) extends StatementOp[Boolean] {
+    final case class Execute2(a: String, b: Array[String]) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    final case class  Execute3(a: String, b: Int) extends StatementOp[Boolean] {
+    final case class Execute3(a: String, b: Int) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a, b)
     }
-    final case object ExecuteBatch extends StatementOp[Array[Int]] {
+    case object ExecuteBatch extends StatementOp[Array[Int]] {
       def visit[F[_]](v: Visitor[F]) = v.executeBatch
     }
-    final case object ExecuteLargeBatch extends StatementOp[Array[Long]] {
+    case object ExecuteLargeBatch extends StatementOp[Array[Long]] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeBatch
     }
-    final case class  ExecuteLargeUpdate(a: String) extends StatementOp[Long] {
+    final case class ExecuteLargeUpdate(a: String) extends StatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a)
     }
-    final case class  ExecuteLargeUpdate1(a: String, b: Array[Int]) extends StatementOp[Long] {
+    final case class ExecuteLargeUpdate1(a: String, b: Array[Int]) extends StatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    final case class  ExecuteLargeUpdate2(a: String, b: Array[String]) extends StatementOp[Long] {
+    final case class ExecuteLargeUpdate2(a: String, b: Array[String]) extends StatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    final case class  ExecuteLargeUpdate3(a: String, b: Int) extends StatementOp[Long] {
+    final case class ExecuteLargeUpdate3(a: String, b: Int) extends StatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.executeLargeUpdate(a, b)
     }
-    final case class  ExecuteQuery(a: String) extends StatementOp[ResultSet] {
+    final case class ExecuteQuery(a: String) extends StatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.executeQuery(a)
     }
-    final case class  ExecuteUpdate(a: String) extends StatementOp[Int] {
+    final case class ExecuteUpdate(a: String) extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a)
     }
-    final case class  ExecuteUpdate1(a: String, b: Array[Int]) extends StatementOp[Int] {
+    final case class ExecuteUpdate1(a: String, b: Array[Int]) extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    final case class  ExecuteUpdate2(a: String, b: Array[String]) extends StatementOp[Int] {
+    final case class ExecuteUpdate2(a: String, b: Array[String]) extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    final case class  ExecuteUpdate3(a: String, b: Int) extends StatementOp[Int] {
+    final case class ExecuteUpdate3(a: String, b: Int) extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.executeUpdate(a, b)
     }
-    final case object GetConnection extends StatementOp[Connection] {
+    case object GetConnection extends StatementOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.getConnection
     }
-    final case object GetFetchDirection extends StatementOp[Int] {
+    case object GetFetchDirection extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchDirection
     }
-    final case object GetFetchSize extends StatementOp[Int] {
+    case object GetFetchSize extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getFetchSize
     }
-    final case object GetGeneratedKeys extends StatementOp[ResultSet] {
+    case object GetGeneratedKeys extends StatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getGeneratedKeys
     }
-    final case object GetLargeMaxRows extends StatementOp[Long] {
+    case object GetLargeMaxRows extends StatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeMaxRows
     }
-    final case object GetLargeUpdateCount extends StatementOp[Long] {
+    case object GetLargeUpdateCount extends StatementOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeUpdateCount
     }
-    final case object GetMaxFieldSize extends StatementOp[Int] {
+    case object GetMaxFieldSize extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxFieldSize
     }
-    final case object GetMaxRows extends StatementOp[Int] {
+    case object GetMaxRows extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMaxRows
     }
-    final case object GetMoreResults extends StatementOp[Boolean] {
+    case object GetMoreResults extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getMoreResults
     }
-    final case class  GetMoreResults1(a: Int) extends StatementOp[Boolean] {
+    final case class GetMoreResults1(a: Int) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getMoreResults(a)
     }
-    final case object GetQueryTimeout extends StatementOp[Int] {
+    case object GetQueryTimeout extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getQueryTimeout
     }
-    final case object GetResultSet extends StatementOp[ResultSet] {
+    case object GetResultSet extends StatementOp[ResultSet] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSet
     }
-    final case object GetResultSetConcurrency extends StatementOp[Int] {
+    case object GetResultSetConcurrency extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetConcurrency
     }
-    final case object GetResultSetHoldability extends StatementOp[Int] {
+    case object GetResultSetHoldability extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetHoldability
     }
-    final case object GetResultSetType extends StatementOp[Int] {
+    case object GetResultSetType extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getResultSetType
     }
-    final case object GetUpdateCount extends StatementOp[Int] {
+    case object GetUpdateCount extends StatementOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getUpdateCount
     }
-    final case object GetWarnings extends StatementOp[SQLWarning] {
+    case object GetWarnings extends StatementOp[SQLWarning] {
       def visit[F[_]](v: Visitor[F]) = v.getWarnings
     }
-    final case object IsCloseOnCompletion extends StatementOp[Boolean] {
+    case object IsCloseOnCompletion extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isCloseOnCompletion
     }
-    final case object IsClosed extends StatementOp[Boolean] {
+    case object IsClosed extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isClosed
     }
-    final case object IsPoolable extends StatementOp[Boolean] {
+    case object IsPoolable extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
     }
-    final case class  IsWrapperFor(a: Class[_]) extends StatementOp[Boolean] {
+    final case class IsWrapperFor(a: Class[_]) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
-    final case class  SetCursorName(a: String) extends StatementOp[Unit] {
+    final case class SetCursorName(a: String) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setCursorName(a)
     }
-    final case class  SetEscapeProcessing(a: Boolean) extends StatementOp[Unit] {
+    final case class SetEscapeProcessing(a: Boolean) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setEscapeProcessing(a)
     }
-    final case class  SetFetchDirection(a: Int) extends StatementOp[Unit] {
+    final case class SetFetchDirection(a: Int) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchDirection(a)
     }
-    final case class  SetFetchSize(a: Int) extends StatementOp[Unit] {
+    final case class SetFetchSize(a: Int) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setFetchSize(a)
     }
-    final case class  SetLargeMaxRows(a: Long) extends StatementOp[Unit] {
+    final case class SetLargeMaxRows(a: Long) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setLargeMaxRows(a)
     }
-    final case class  SetMaxFieldSize(a: Int) extends StatementOp[Unit] {
+    final case class SetMaxFieldSize(a: Int) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setMaxFieldSize(a)
     }
-    final case class  SetMaxRows(a: Int) extends StatementOp[Unit] {
+    final case class SetMaxRows(a: Int) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setMaxRows(a)
     }
-    final case class  SetPoolable(a: Boolean) extends StatementOp[Unit] {
+    final case class SetPoolable(a: Boolean) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setPoolable(a)
     }
-    final case class  SetQueryTimeout(a: Int) extends StatementOp[Unit] {
+    final case class SetQueryTimeout(a: Int) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setQueryTimeout(a)
     }
-    final case class  Unwrap[T](a: Class[T]) extends StatementOp[T] {
+    final case class Unwrap[T](a: Class[T]) extends StatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.unwrap(a)
     }
 

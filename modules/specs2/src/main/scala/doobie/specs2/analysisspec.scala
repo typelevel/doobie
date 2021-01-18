@@ -11,7 +11,7 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.core.{ Fragment, Fragments }
 import org.specs2.specification.create.{ FormattingFragments => Format }
 import org.specs2.specification.dsl.Online._
-import scala.reflect.runtime.universe.TypeTag
+import org.tpolecat.typename._
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -40,14 +40,12 @@ object analysisspec {
     def check[A: Analyzable](a: A): Fragments =
       checkImpl(Analyzable.unpack(a))
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def checkOutput[A: TypeTag](q: Query0[A]): Fragments =
+    def checkOutput[A: TypeName](q: Query0[A]): Fragments =
       checkImpl(AnalysisArgs(
         s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
       ))
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+    def checkOutput[A: TypeName, B: TypeName](q: Query[A, B]) =
       checkImpl(AnalysisArgs(
         s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
       ))
