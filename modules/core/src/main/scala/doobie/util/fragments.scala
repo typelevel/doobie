@@ -7,7 +7,7 @@ package util
 
 import doobie.implicits._
 import cats.Reducible
-import cats.implicits._
+import cats.syntax.all._
 
 /** Module of `Fragment` constructors. */
 object fragments {

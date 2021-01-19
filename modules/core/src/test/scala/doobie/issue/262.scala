@@ -6,12 +6,10 @@ package doobie.issue
 
 import cats.effect.{ Async, Blocker, ContextShift, IO }
 import doobie._, doobie.implicits._
-import org.specs2.mutable.Specification
 import scala.concurrent.ExecutionContext
 import Predef._
 
-
-class `262` extends Specification {
+class `262` extends munit.FunSuite {
 
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
@@ -41,11 +39,9 @@ class `262` extends Specification {
   val xa: Transactor[IO] =
     Transactor.interpret.set(baseXa, Interp.ConnectionInterpreter)
 
-  "getColumnJdbcMeta" should {
-    "handle null metadata" in {
-      val prog = HC.prepareStatement("select 1")(HPS.getColumnJdbcMeta)
-      prog.transact(xa).unsafeRunSync() must_== Nil
-    }
+  test("getColumnJdbcMeta should handle null metadata") {
+    val prog = HC.prepareStatement("select 1")(HPS.getColumnJdbcMeta)
+    assertEquals(prog.transact(xa).unsafeRunSync(), Nil)
   }
 
 }

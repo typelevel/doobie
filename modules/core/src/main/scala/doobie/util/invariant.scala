@@ -4,13 +4,10 @@
 
 package doobie.util
 
-import scala.reflect.runtime.universe.{TypeApi, TypeTag}
-
 import cats.Show
-import cats.instances.int._
-import cats.instances.string._
 import cats.syntax.show._
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
+import org.tpolecat.typename._
 
 /**
  * Module defining the type of exceptions representing unmet expectations. These typically indicate a problem with
@@ -19,8 +16,6 @@ import doobie.enum.JdbcType
  * should be able to handle them in any meaningful way.
  */
 object invariant {
-
-  private implicit val showTypeApi: Show[TypeApi] = Show.fromToString
 
   sealed abstract class InvariantViolation(msg: String) extends Exception(msg)
 
@@ -31,18 +26,18 @@ object invariant {
     extends UnexpectedCursorPosition("Expected ResultSet exhaustion, but more rows were available.")
 
   /** Unexpected ordinal value for an enumerated type. */
-  final case class InvalidOrdinal[A](value: Int)(implicit ev: TypeTag[A])
-    extends InvariantViolation(show"${ev.tpe}: invalid ordinal: $value")
+  final case class InvalidOrdinal[A](value: Int)(implicit ev: TypeName[A])
+    extends InvariantViolation(show"${ev.value}: invalid ordinal: $value")
 
   /** Unexpected string value for an enumerated type. */
-  final case class InvalidEnum[A](value: String)(implicit ev: TypeTag[A])
-    extends InvariantViolation(show"${ev.tpe}: invalid enum: $value")
+  final case class InvalidEnum[A](value: String)(implicit ev: TypeName[A])
+    extends InvariantViolation(show"${ev.value}: invalid enumerated: $value")
 
-  final case class SecondaryValidationFailed[A](value: String)(implicit ev: TypeTag[A])
-    extends InvariantViolation(show"${ev.tpe}: validation failed: $value")
+  final case class SecondaryValidationFailed[A](value: String)(implicit ev: TypeName[A])
+    extends InvariantViolation(show"${ev.value}: validation failed: $value")
 
-  final case class InvalidValue[A, B](value: A, reason: String)(implicit sA: Show[A], evA: TypeTag[A], evB: TypeTag[B])
-    extends InvariantViolation(show"$value: ${evA.tpe} invalid for ${evB.tpe} because: $reason")
+  final case class InvalidValue[A, B](value: A, reason: String)(implicit sA: Show[A], evA: TypeName[A], evB: TypeName[B])
+    extends InvariantViolation(show"$value: ${evA.value} invalid for ${evB.value} because: $reason")
 
   /** The type of schema violations. */
   sealed abstract class MappingViolation(msg: String) extends InvariantViolation(msg) {
@@ -61,9 +56,9 @@ object invariant {
 
   /** Array violations. Not terribly illuminating at this point. */
   sealed abstract class ArrayStructureViolation(msg: String) extends InvariantViolation(msg)
-  final case object NullableCellRead
+  case object NullableCellRead
     extends ArrayStructureViolation("SQL `NULL` appears in an array cell that was asserted to be non-null.")
-  final case object NullableCellUpdate
+  case object NullableCellUpdate
     extends ArrayStructureViolation("Scala `null` value appears in an array cell that was asserted to be non-null.")
 
   /** Invalid JAVA_OBJECT mapping. */

@@ -5,7 +5,7 @@
 package doobie.postgres.syntax
 
 import cats.{ Foldable, ~> }
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect._
 import doobie._
 import doobie.implicits._
@@ -48,7 +48,11 @@ class FragmentOps(f: Fragment) {
 
     val streamResource: Resource[ConnectionIO, InputStream] =
       toInputStreamResource(byteStream)
-        .mapK(λ[F ~> ConnectionIO](Effect[F].toIO(_).to[ConnectionIO]))
+        .mapK {
+          new (F ~> ConnectionIO) {
+            def apply[A](fa: F[A]) = Effect[F].toIO(fa).to[ConnectionIO]
+          }
+        }
 
     streamResource.use(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))
 

@@ -42,7 +42,6 @@ object AnalysisTest {
       SELECT '(1, 2)'::point test
     """.query[PGpoint]
 
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   val pointTest2 = {
     Meta[PostgresPoint.Point] // why not? ... irritating that it must be instantiated. what to do?
     sql"""
