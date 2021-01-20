@@ -18,7 +18,7 @@ lazy val refinedVersion       = "0.9.19"
 lazy val scalaCheckVersion    = "1.15.1"
 lazy val scalatestVersion     = "3.2.3"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.10.5"
+lazy val specs2Version        = "4.10.6"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.4"
 lazy val scala30VersionOld    = "3.0.0-M2"
@@ -75,7 +75,7 @@ lazy val commonSettings =
 
     // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
+      compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
     ).filterNot(_ => isDotty.value),
 
     // MUnit
