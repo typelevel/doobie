@@ -4,4 +4,16 @@
 
 package doobie.util
 
-trait GetPlatform
+import magnolia._
+
+import org.tpolecat.typename.TypeName
+
+trait GetPlatform {
+  type Typeclass[T] = Get[T]
+
+  def combine[T: TypeName](ctx: UnaryCaseClass[Get, T]): Get[T] =
+    ctx.parameter.typeclass.tmap[T](ptype => ctx.rawConstruct(List(ptype)))
+
+  implicit def generic[A]: Get[A] = macro Magnolia.gen[A]
+}
+

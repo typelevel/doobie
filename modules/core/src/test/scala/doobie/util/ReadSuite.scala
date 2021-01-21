@@ -94,4 +94,13 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assertEquals(o, None)
   }
 
+  test("test get") {
+    import doobie.implicits._
+    case class A(str: String)
+    case class B(a: A)
+    val o = sql"SELECT 'a'".query[B].unique.transact(xa).unsafeRunSync()
+
+    assertEquals(o, B(A("a")))
+  }
+
 }

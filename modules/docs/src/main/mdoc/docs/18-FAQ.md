@@ -78,9 +78,6 @@ As of **doobie** 0.4.0 this is done via [statement fragments](08-Fragments.html)
 
 ```scala mdoc:silent
 case class Code(country: String)
-object Code {
-  implicit val puts: Put[Code] = Put[String].contramap(_.country)
-}
 case class City(code: Code, name: String, population: Int)
 
 def cities(code: Code, asc: Boolean): Query0[City] = {

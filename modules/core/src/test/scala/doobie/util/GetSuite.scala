@@ -13,12 +13,20 @@ import scala.concurrent.ExecutionContext
 
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
+  case class X(x: Int)
+  case class Q(x: String)
+
   case class Z(i: Int, s: String)
   object S
 
   test("Get should exist for primitive types") {
     Get[Int]
     Get[String]
+  }
+
+  test("Get should be derived for unary products") {
+    Get[X]
+    Get[Q]
   }
 
   test("Get should not be derived for non-unary products") {

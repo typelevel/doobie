@@ -2,16 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package doobie
+package util
 
-import doobie.Put
+trait PutSuitePlatform { self: munit.FunSuite =>
 
-trait PutSuitePlatform { self: PutSuite =>
-  case class X(x: Int)
-  case class Q(x: String)
-
-  test("Put should be derived for unary products") {
-    Put[X]
-    Put[Q]
+  test("Put should be derived for unary products (AnyVal)".ignore) {
   }
+
 }
