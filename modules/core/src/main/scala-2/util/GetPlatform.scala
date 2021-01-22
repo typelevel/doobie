@@ -11,8 +11,8 @@ import org.tpolecat.typename.TypeName
 trait GetPlatform {
   type Typeclass[T] = Get[T]
 
-  def combine[T: TypeName](ctx: UnaryCaseClass[Get, T]): Get[T] =
-    ctx.parameter.typeclass.tmap[T](ptype => ctx.rawConstruct(List(ptype)))
+  def combine[T: TypeName: Unary](ctx: CaseClass[Get, T]): Get[T] =
+    ctx.parameters.head.typeclass.tmap[T](ptype => ctx.rawConstruct(List(ptype)))
 
   implicit def generic[A]: Get[A] = macro Magnolia.gen[A]
 }

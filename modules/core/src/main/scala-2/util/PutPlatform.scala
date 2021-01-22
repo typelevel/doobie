@@ -9,8 +9,8 @@ import magnolia._
 trait PutPlatform {
   type Typeclass[T] = Put[T]
 
-  def combine[T](ctx: UnaryReadOnlyCaseClass[Put, T]): Put[T] = {
-    val parameter = ctx.parameter
+  def combine[T: Unary](ctx: ReadOnlyCaseClass[Put, T]): Put[T] = {
+    val parameter = ctx.parameters.head
     parameter.typeclass.contramap(t => parameter.dereference(t))
   }
 
