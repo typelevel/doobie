@@ -98,29 +98,22 @@ object Write extends WritePlatform with WriteLowerPriorityImplicits {
     new Write(
       puts = List((P, NoNulls)),
       toList = a => List(a),
-      unsafeSet = (ps, n, a) => P.unsafeSetNonNullable(ps, n, a),
-      unsafeUpdate = (rs, n, a) => P.unsafeUpdateNonNullable(rs, n, a),
-      unsafeSetOption = (ps, n, oa) => P.unsafeSetNullable(ps, n, oa),
-      unsafeUpdateOption = (rs, n, oa) => P.unsafeUpdateNullable(rs, n, oa),
-    )
-
-  implicit def fromPutOption[A](implicit P: Put[A]): Write[Option[A]] =
-    new Write(
-      puts = List((P, Nullable)),
-      toList = a => List(a),
-      unsafeSet = (ps, n, a) => P.unsafeSetNullable(ps, n, a),
-      unsafeUpdate = (rs, n, a) => P.unsafeUpdateNullable(rs, n, a),
-      unsafeSetOption = (ps, n, oa) => P.unsafeSetNullable(ps, n, oa.flatten),
-      unsafeUpdateOption = (rs, n, oa) => P.unsafeUpdateNullable(rs, n, oa.flatten),
+      unsafeSet = P.unsafeSetNonNullable,
+      unsafeUpdate = P.unsafeUpdateNonNullable,
+      unsafeSetOption = P.unsafeSetNullable,
+      unsafeUpdateOption = P.unsafeUpdateNullable,
     )
 }
 
 sealed trait WriteLowerPriorityImplicits {
   implicit def opt[A](implicit A: Write[A]): Write[Option[A]] = new Write[Option[A]](
     puts = A.puts.map { case (p, _) => (p, Nullable) },
-    toList = oa => oa.map(A.toList).getOrElse(A.puts.map(_ => null)),
-    unsafeSet = (ps, i, a) => A.unsafeSetOption(ps, i, a),
-    unsafeUpdate = (ps, i, a) => A.unsafeUpdateOption(ps, i, a),
+    toList = {
+      case None => A.puts.map(_ => None)
+      case Some(a) => A.toList(a).map(Some(_))
+    },
+    unsafeSet = A.unsafeSetOption,
+    unsafeUpdate = A.unsafeUpdateOption,
     unsafeSetOption = (ps, i, oa) => A.unsafeSetOption(ps, i, oa.flatten),
     unsafeUpdateOption = (ps, i, oa) => A.unsafeUpdateOption(ps, i, oa.flatten),
   )

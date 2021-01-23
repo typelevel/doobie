@@ -76,16 +76,13 @@ object Read extends ReadPlatform with ReadLowerPriorityImplicits {
 
   implicit def fromGet[A](implicit ev: Get[A]): Read[A] =
     new Read(List((ev, NoNulls)), ev.unsafeGetNonNullable, ev.unsafeGetNullable)
-
-  implicit def fromGetOption[A](implicit ev: Get[A]): Read[Option[A]] =
-    new Read(List((ev, Nullable)), ev.unsafeGetNullable, (rs, idx) => Option(ev.unsafeGetNullable(rs, idx)))
 }
 
 sealed trait ReadLowerPriorityImplicits {
   implicit def opt[A](implicit A: Read[A]): Read[Option[A]] =
     new Read[Option[A]](
       A.gets.map {case (g, _) => (g, Nullable)},
-      unsafeGet = (ps, i) => A.unsafeGetOption(ps, i),
+      unsafeGet = A.unsafeGetOption,
       unsafeGetOption = (ps, i) => Option(A.unsafeGetOption(ps, i)),
     )
 }
