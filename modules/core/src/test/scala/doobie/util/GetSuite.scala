@@ -13,11 +13,14 @@ import scala.concurrent.ExecutionContext
 
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
-  case class X(x: Int)
-  case class Q(x: String)
+  case class Yes1(x: Int)
+  case class Yes2(x: Yes1)
 
-  case class Z(i: Int, s: String)
-  object S
+  case class No1(i: Int, s: String)
+  object No2
+  case class Y private (x: String)
+  class No3(val x: Int)
+  class No4(x: Int)
 
   test("Get should exist for primitive types") {
     Get[Int]
@@ -25,14 +28,17 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
   }
 
   test("Get should be derived for unary products") {
-    Get[X]
-    Get[Q]
+    Get[Yes1]
+    Get[Yes2]
   }
 
   test("Get should not be derived for non-unary products") {
-    compileErrors("Get[Z]")
     compileErrors("Get[(Int, Int)]")
-    compileErrors("Get[S.type]")
+    compileErrors("Get[No1]")
+    compileErrors("Get[No1.type]")
+    compileErrors("Get[No2.type]")
+    compileErrors("Get[No3.type]")
+    compileErrors("Get[No4.type]")
   }
 }
 
