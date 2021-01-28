@@ -39,7 +39,7 @@ So summarizing, once you have a `Transactor[M]` you have a way of discharging `C
 
 Starting with version 0.6.0 **doobie** provides an asynchronous API that delegates blocking operations to dedicated execution contexts *if you use the provided `Transactor` implementations*. To construct any of the provided `Transactor[M]`s (other than `DriverManagerTransactor`) you need
 
-- `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
+- `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. If you use `IOApp` and interpret into `IO` this will be a fixed thread pool matching the numbers of your processors.
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
 - A `cats.effect.Blocker` for **executing JDBC operations**. Because your connection pool limits the number of active connections this should be an **unbounded** pool.
 
