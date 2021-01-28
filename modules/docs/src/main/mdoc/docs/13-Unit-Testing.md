@@ -135,9 +135,9 @@ Details are shown for failing tests.
 The `doobie-munit` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the ScalaTest package above.
 
 ```scala mdoc:silent
-import munit._
+import _root_.munit._
 
-class AnalysisTestScalaCheck extends FunSuite with doobie.munit.IOChecker {
+class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
 
   override val colors = doobie.util.Colors.None // just for docs
 
