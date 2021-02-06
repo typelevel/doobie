@@ -9,7 +9,19 @@ import Predef._
 
 trait TimeMeta {
 
+  @deprecated("Use doobie.implicits.javatimedrivernative instead. If you are using a database which doobie directly integrates with, " +
+    "You won't need this import anymore as datetime instances are provided in the DB-specific implicit import. " +
+    "e.g. for PostgreSQL: `import doobie.postgres.implicits._`. ",
+    since = "0.11.0"
+  )
   object javatime extends MetaConstructors with TimeMetaInstances
+
+  /**
+   * Use this import if you want to use the driver-native support for java.time.* types.
+   * This means that the java.time value is passed straight to the JDBC driver you're using
+   * without being converted to java.sql.* types (Unlike doobie.implicits.legacy.instant/localdate)
+   */
+  object javatimedrivernative extends MetaConstructors with TimeMetaInstances
 
 }
 
