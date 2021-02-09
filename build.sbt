@@ -9,6 +9,7 @@ lazy val fs2Version           = "2.5.0"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5"
 lazy val kindProjectorVersion = "0.11.2"
+lazy val magnoliaVersion      = "0.17.0"
 lazy val monixVersion         = "3.3.0"
 lazy val quillVersion         = "3.6.0-RC3"
 lazy val postGisVersion       = "2.5.0"
@@ -16,9 +17,8 @@ lazy val postgresVersion      = "42.2.18"
 lazy val refinedVersion       = "0.9.19"
 lazy val scalaCheckVersion    = "1.15.1"
 lazy val scalatestVersion     = "3.2.3"
-lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.10.5"
+lazy val specs2Version        = "4.10.6"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.4"
 lazy val scala30VersionOld    = "3.0.0-M2"
@@ -218,7 +218,7 @@ lazy val core = project
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "com.chuusai"    %% "shapeless" % shapelessVersion,
+      "com.propensive" %% "magnolia"  % magnoliaVersion,
     ).filterNot(_ => isDotty.value) ++ Seq(
       "org.tpolecat"   %% "typename"  % "0.1.3",
       "com.h2database" %  "h2"        % h2Version % "test",
@@ -435,7 +435,6 @@ lazy val docs = project
       "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
       "catsVersion"              -> catsVersion,
       "fs2Version"               -> fs2Version,
-      "shapelessVersion"         -> shapelessVersion,
       "h2Version"                -> h2Version,
       "postgresVersion"          -> postgresVersion,
       "quillVersion"             -> quillVersion,

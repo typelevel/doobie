@@ -10,13 +10,18 @@ trait ReadPlatform:
 
   // Trivial Read for EmptyTuple
   given Read[EmptyTuple] =
-    new Read[EmptyTuple](Nil, (_, _) => EmptyTuple)
+    new Read[EmptyTuple](Nil, (_, _) => EmptyTuple, (_, _) => Some(EmptyTuple))
 
   // Read for head and tail.
   given [H, T <: Tuple](using H: => Read[H], T: => Read[T]) as Read[H *: T] =
     new Read[H *: T](
       H.gets ++ T.gets,
-      (rs, n) => H.unsafeGet(rs, n) *: T.unsafeGet(rs, n + H.length)
+      (rs, n) => H.unsafeGet(rs, n) *: T.unsafeGet(rs, n + H.length),
+      (rs, n) =>
+        for {
+        h <- H.unsafeGetOption(rs, n)
+        t <- T.unsafeGetOption(rs, n + H.length)
+        } yield h *: t
     )
 
   // Generic Read for products.
@@ -27,38 +32,3 @@ trait ReadPlatform:
   ) as Read[P] =
     w.map(a => m.fromProduct(i(a)))
 
-  given roe as Read[Option[EmptyTuple]] =
-    new Read[Option[EmptyTuple]](Nil, (_, _) => Some(EmptyTuple))
-
-  given rou as Read[Option[Unit]] =
-    new Read[Option[Unit]](Nil, (_, _) => Some(()))
-
-  given cons1[H, T <: Tuple](
-    using H: => Read[Option[H]],
-          T: => Read[Option[T]],
-  ) as Read[Option[H *: T]] =
-    new Read[Option[H *: T]](
-      H.gets ++ T.gets,
-      (rs, n) =>
-        for {
-          h <- H.unsafeGet(rs, n)
-          t <- T.unsafeGet(rs, n + H.length)
-        } yield h *: t
-    )
-
-  given cons2[H, T <: Tuple](
-    using H: => Read[Option[H]],
-          T: => Read[Option[T]]
-  ) as Read[Option[Option[H] *: T]] =
-    new Read[Option[Option[H] *: T]](
-      H.gets ++ T.gets,
-      (rs, n) => T.unsafeGet(rs, n + H.length).map(H.unsafeGet(rs, n) *: _)
-    )
-
-  // Generic Read for option of products.
-  given [P <: Product, A](
-    using m: Mirror.ProductOf[P],
-          i: A =:= m.MirroredElemTypes,
-          w: Read[Option[A]]
-  ) as Read[Option[P]] =
-    w.map(a => a.map(a => m.fromProduct(i(a))))
