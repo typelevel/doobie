@@ -21,6 +21,12 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
   )
 
   test("trivial") { check(sql"select 1".query[Int]) }
+  
+  test("fail".fail) { check(sql"select 1".query[String]) }
+
+  final case class Foo[F[_]](x: Int)
+
+  test ("trivial case-class"){ check(sql"select 1".query[Foo[cats.Id]]) }
 
 }
 
