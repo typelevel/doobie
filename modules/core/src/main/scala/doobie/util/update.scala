@@ -7,7 +7,6 @@ package doobie.util
 import cats._
 import cats.syntax.all._
 import doobie._
-import doobie.implicits._
 import doobie.util.analysis.Analysis
 import doobie.util.log.{ Success, ExecFailure, LogEvent }
 import doobie.util.pos.Pos

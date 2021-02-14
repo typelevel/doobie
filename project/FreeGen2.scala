@@ -210,7 +210,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |package $pkg
     |
     |import cats.~>
-    |import cats.effect.kernel.{ Poll, Sync }
+    |import cats.effect.kernel.{ CancelScope, Poll, Sync }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
     |import doobie.WeakAsync
     |import scala.concurrent.Future
@@ -337,6 +337,8 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  implicit val WeakAsync${ioname}: WeakAsync[${ioname}] =
     |    new WeakAsync[${ioname}] {
     |      val monad = FF.catsFreeMonadForFree[${opname}]
+    |      override val applicative = monad
+    |      override val rootCancelScope = CancelScope.Cancelable
     |      override def pure[A](x: A): ${ioname}[A] = monad.pure(x)
     |      override def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = monad.flatMap(fa)(f)
     |      override def tailRecM[A, B](a: A)(f: A => ${ioname}[Either[A, B]]): ${ioname}[B] = monad.tailRecM(a)(f)

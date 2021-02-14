@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ Poll, Sync }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -717,6 +717,8 @@ object preparedstatement { module =>
   implicit val WeakAsyncPreparedStatementIO: WeakAsync[PreparedStatementIO] =
     new WeakAsync[PreparedStatementIO] {
       val monad = FF.catsFreeMonadForFree[PreparedStatementOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
       override def pure[A](x: A): PreparedStatementIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = monad.tailRecM(a)(f)

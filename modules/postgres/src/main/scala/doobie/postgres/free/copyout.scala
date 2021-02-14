@@ -5,7 +5,7 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.kernel.{ Poll, Sync }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -169,6 +169,8 @@ object copyout { module =>
   implicit val WeakAsyncCopyOutIO: WeakAsync[CopyOutIO] =
     new WeakAsync[CopyOutIO] {
       val monad = FF.catsFreeMonadForFree[CopyOutOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyOutIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = monad.tailRecM(a)(f)

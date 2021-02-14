@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ Poll, Sync }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -147,6 +147,8 @@ object sqldata { module =>
   implicit val WeakAsyncSQLDataIO: WeakAsync[SQLDataIO] =
     new WeakAsync[SQLDataIO] {
       val monad = FF.catsFreeMonadForFree[SQLDataOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
       override def pure[A](x: A): SQLDataIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = monad.tailRecM(a)(f)

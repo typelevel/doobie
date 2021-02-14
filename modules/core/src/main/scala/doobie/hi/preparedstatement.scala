@@ -39,7 +39,6 @@ import fs2.Stream.bracket
  */
 
 object preparedstatement {
-  import implicits._
 
   // fs2 handler, not public
   private def unrolled[A: Read](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =

@@ -5,7 +5,7 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.kernel.{ Poll, Sync }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -447,6 +447,8 @@ object connection { module =>
   implicit val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
     new WeakAsync[ConnectionIO] {
       val monad = FF.catsFreeMonadForFree[ConnectionOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
       override def pure[A](x: A): ConnectionIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = monad.tailRecM(a)(f)
