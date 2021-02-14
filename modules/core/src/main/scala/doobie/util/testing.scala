@@ -14,6 +14,7 @@ import cats.syntax.applicativeError._
 import cats.syntax.foldable._
 import cats.syntax.show._
 import doobie._
+import doobie.implicits._
 import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos

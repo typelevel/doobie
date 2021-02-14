@@ -7,6 +7,7 @@ package doobie.util
 import doobie.WeakAsync
 import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
 import doobie.free.KleisliInterpreter
+import doobie.implicits._
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
 import cats.{Monad, ~>}

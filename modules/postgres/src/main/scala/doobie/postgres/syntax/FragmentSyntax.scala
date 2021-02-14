@@ -10,6 +10,7 @@ import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
+import doobie.postgres.implicits._
 import fs2._
 import fs2.text._
 

@@ -10,6 +10,7 @@ import cats.effect.{ IO, IOApp }
 import cats.effect.syntax.monadCancel._
 import cats.syntax.all._
 import doobie._
+import doobie.implicits._
 
 // JDBC program using the low-level API
 object FreeUsage extends IOApp.Simple {

@@ -19,7 +19,8 @@ package object doobie
 
   /** Top-level import for all instances and syntax provided by doobie-free and doobie-core. */
   object implicits
-    extends syntax.AllSyntax
+    extends free.Instances
+       with syntax.AllSyntax
        with util.meta.SqlMeta
        with util.meta.TimeMeta
        with util.meta.LegacyMeta

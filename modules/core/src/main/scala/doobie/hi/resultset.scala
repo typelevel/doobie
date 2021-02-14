@@ -25,6 +25,7 @@ import java.sql.{ ResultSetMetaData, SQLWarning }
  */
 
 object resultset {
+  import implicits._
 
   /**
    * Non-strict unit for capturing effects.
