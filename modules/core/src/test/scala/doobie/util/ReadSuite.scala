@@ -73,4 +73,23 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assertEquals(o, List((1, 2, 3, 4, 5)))
   }
 
+  test("Read optionals") {
+    import doobie.implicits._
+    case class A(os: Option[String], oos: Option[Option[String]])
+
+    val o = sql"SELECT null, null, null, 'a'".query[(Option[Byte], Option[Int], Option[A])].unique.transact(xa).unsafeRunSync()
+
+    assertEquals(o, (None, None, Some(A(None, Some(Some("a"))))))
+  }
+
+  test("Read optionals2") {
+    import doobie.implicits._
+
+    case class A(os: String, oos: Option[Option[String]])
+
+    val o = sql"SELECT null, null".query[Option[A]].unique.transact(xa).unsafeRunSync()
+
+    assertEquals(o, None)
+  }
+
 }

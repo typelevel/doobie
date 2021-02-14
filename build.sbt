@@ -5,11 +5,11 @@ import sbt.dsl.LinterLevel.Ignore
 lazy val catsVersion          = "2.3.1"
 lazy val catsEffectVersion    = "3.0-65-7c98c86"
 lazy val circeVersion         = "0.13.0"
-lazy val collCompatVersion    = "2.3.1"
 lazy val fs2Version           = "3.0-21-1e66f47"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5"
 lazy val kindProjectorVersion = "0.11.2"
+lazy val magnoliaVersion      = "0.17.0"
 lazy val monixVersion         = "3.3.0"
 lazy val quillVersion         = "3.6.0-RC3"
 lazy val postGisVersion       = "2.5.0"
@@ -17,12 +17,12 @@ lazy val postgresVersion      = "42.2.18"
 lazy val refinedVersion       = "0.9.19"
 lazy val scalaCheckVersion    = "1.15.1"
 lazy val scalatestVersion     = "3.2.3"
-lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.10.5"
+lazy val specs2Version        = "4.10.6"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.4"
-lazy val scala30Version       = "3.0.0-M2"
+lazy val scala30VersionOld    = "3.0.0-M2"
+lazy val scala30Version       = "3.0.0-M3"
 lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
@@ -42,7 +42,7 @@ lazy val compilerFlags = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % collCompatVersion
+    "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2")
   )
 )
 
@@ -55,7 +55,7 @@ lazy val commonSettings =
   compilerFlags ++
   Seq(
     scalaVersion := scala213Version,
-    crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
+    crossScalaVersions := Seq(scala212Version, scala213Version, scala30VersionOld, scala30Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -75,13 +75,13 @@ lazy val commonSettings =
 
     // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
+      compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
     ).filterNot(_ => isDotty.value),
 
     // MUnit
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "scalacheck-effect-munit" % "0.6.0"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-2"     % "0.11.0" % Test,
+      "org.typelevel"     %% "scalacheck-effect-munit" % "0.7.0"  % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "0.12.0" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
@@ -218,9 +218,9 @@ lazy val core = project
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "com.chuusai"    %% "shapeless" % shapelessVersion,
+      "com.propensive" %% "magnolia"  % magnoliaVersion,
     ).filterNot(_ => isDotty.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "0.1.1",
+      "org.tpolecat"   %% "typename"  % "0.1.3",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
@@ -435,7 +435,6 @@ lazy val docs = project
       "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
       "catsVersion"              -> catsVersion,
       "fs2Version"               -> fs2Version,
-      "shapelessVersion"         -> shapelessVersion,
       "h2Version"                -> h2Version,
       "postgresVersion"          -> postgresVersion,
       "quillVersion"             -> quillVersion,
@@ -460,7 +459,7 @@ lazy val refined = project
     name := "doobie-refined",
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"     %% "refined" % refinedVersion,
+      "eu.timepit"     %% "refined" % (if (scalaVersion.value == "3.0.0-M2") "0.9.19" else "0.9.20"),
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )

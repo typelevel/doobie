@@ -13,5 +13,4 @@ class `780` extends munit.FunSuite {
       Write[(A, B)]
     }
   }
-
 }

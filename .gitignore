@@ -44,3 +44,6 @@ metals.sbt
 
 # VS-Code
 .vscode/
+
+# sbt
+.bsp/

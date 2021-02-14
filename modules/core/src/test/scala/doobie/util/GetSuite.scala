@@ -10,9 +10,6 @@ import doobie.enumerated.JdbcType.{ Array => _, _ }
 
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
-  case class X(x: Int)
-  case class Q(x: String)
-
   case class Z(i: Int, s: String)
   object S
 
@@ -21,17 +18,11 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     Get[String]
   }
 
-  test("Get should be derived for unary products") {
-    Get[X]
-    Get[Q]
-  }
-
   test("Get should not be derived for non-unary products") {
     compileErrors("Get[Z]")
     compileErrors("Get[(Int, Int)]")
     compileErrors("Get[S.type]")
   }
-
 }
 
 final case class Foo(s: String)

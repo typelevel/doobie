@@ -75,6 +75,22 @@ count("city").quick.unsafeRunSync()
 ```
 
 > Note that `Fragment.const` performs no escaping of passed strings. Passing user-supplied data is an **injection risk**.
+>
+
+You can also use Fragments in `fr` interpolator directly. Both parameters and SQL literals will be
+substituted correctly.
+
+```scala mdoc
+val countryCode: String = "NZL"
+val whereFragment: Fragment = fr"WHERE code = $countryCode"
+
+val frag = fr"SELECT name FROM country $whereFragment"
+
+frag.query[String].option.quick.unsafeRunSync()
+```
+
+> As long as your individual fragments were constructed securely (i.e. Never call `Fragment.const` with user supplied input),
+> You can freely concatenate or interpolate fragments without worrying about SQL injection.
 
 ### Whitespace handling
 
@@ -130,3 +146,4 @@ select(None, None, Nil, 10).check.unsafeRunSync() // no filters
 select(Some("U%"), None, Nil, 10).check.unsafeRunSync() // one filter
 select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync() // three filters
 ```
+
