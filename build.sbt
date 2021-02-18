@@ -459,7 +459,7 @@ lazy val refined = project
     name := "doobie-refined",
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"     %% "refined" % (if (scalaVersion.value == "3.0.0-M2") "0.9.19" else "0.9.20"),
+      "eu.timepit"     %% "refined" % (if (scalaVersion.value == "3.0.0-M2") "0.9.19" else "0.9.21"),
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )
