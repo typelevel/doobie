@@ -11,12 +11,12 @@ lazy val hikariVersion        = "3.4.5"
 lazy val kindProjectorVersion = "0.11.2"
 lazy val magnoliaVersion      = "0.17.0"
 lazy val monixVersion         = "3.3.0"
-lazy val quillVersion         = "3.6.0-RC3"
+lazy val quillVersion         = "3.6.1"
 lazy val postGisVersion       = "2.5.0"
-lazy val postgresVersion      = "42.2.18"
+lazy val postgresVersion      = "42.2.19"
 lazy val refinedVersion       = "0.9.19"
 lazy val scalaCheckVersion    = "1.15.1"
-lazy val scalatestVersion     = "3.2.3"
+lazy val scalatestVersion     = "3.2.4"
 lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.10.6"
 lazy val scala212Version      = "2.12.12"
@@ -459,7 +459,7 @@ lazy val refined = project
     name := "doobie-refined",
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"     %% "refined" % (if (scalaVersion.value == "3.0.0-M2") "0.9.19" else "0.9.20"),
+      "eu.timepit"     %% "refined" % (if (scalaVersion.value == "3.0.0-M2") "0.9.19" else "0.9.21"),
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )
