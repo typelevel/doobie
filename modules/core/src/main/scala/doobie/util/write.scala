@@ -110,7 +110,11 @@ sealed trait WriteLowerPriorityImplicits {
     puts = A.puts.map { case (p, _) => (p, Nullable) },
     toList = {
       case None => A.puts.map(_ => None)
-      case Some(a) => A.toList(a).map(Some(_))
+      case Some(a) =>
+        A.puts.zip(A.toList(a)).map {
+          case ((_, NoNulls), x) => Some(x)
+          case ((_, Nullable), ox) => ox
+        }
     },
     unsafeSet = A.unsafeSetOption,
     unsafeUpdate = A.unsafeUpdateOption,
