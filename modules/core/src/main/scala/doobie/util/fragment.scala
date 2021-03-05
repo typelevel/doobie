@@ -134,8 +134,45 @@ object fragment {
     private[util] def unsafeEquals(fb: Fragment): Boolean =
       sql == fb.sql && args == fb.args
 
+    /** Internals of this fragment. */
+    def internals: Fragment.Internals =
+      new Fragment.Internals {
+        type A = elems.type
+        val arg = elems
+        val write = Fragment.this.write
+        val elements = args
+        val pos = Fragment.this.pos
+        val sql = Fragment.this.sql
+      }
+
   }
   object Fragment {
+
+    /**
+     * Internals of a `Fragment`, available for diagnostic purposes. Monoidal structure is
+     * *not* preserved for the elements of this object.
+     */
+    trait Internals {
+
+      /** Existential type of this Fragment's argument (typically an HList). */
+      type A
+
+      /** This Fragment's argument, as an opaque value (typically an HList). */
+      def arg: A
+
+      /** A `Write` instance for `A`. */
+      def write: Write[A]
+
+      /** The elements of `a` as an untyped list. */
+      def elements: List[Any]
+
+      /** Source code position where this Fragment was constructed, if known. */
+      def pos: Option[Pos]
+
+      /** This `Fragment`'s SQL string. */
+      def sql: String
+
+    }
 
     /**
      * Construct a statement fragment with the given SQL string, which must contain sufficient `?`
