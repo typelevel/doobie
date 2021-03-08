@@ -13,14 +13,19 @@ import scala.jdk.CollectionConverters._
 
 object TimeArbitraries {
 
-  implicit val arbitraryLocalDate: Arbitrary[LocalDate] = Arbitrary {
-    for {
+  val localDateAdOnlyGen: Gen[LocalDate] = for {
       d <- Gen.chooseNum(
-        LocalDate.of(-500, 1, 1).toEpochDay,
+        LocalDate.of(1, 1, 1).toEpochDay,
         LocalDate.of(294276, 1, 1).toEpochDay
       )
     } yield LocalDate.ofEpochDay(d)
-  }
+
+  val localDateBcAndAdGen: Gen[LocalDate] = for {
+    d <- Gen.chooseNum(
+      LocalDate.of(-500, 1, 1).toEpochDay,
+      LocalDate.of(294276, 1, 1).toEpochDay
+    )
+  } yield LocalDate.ofEpochDay(d)
 
   implicit val arbitraryInstant: Arbitrary[Instant] = Arbitrary {
     for {
