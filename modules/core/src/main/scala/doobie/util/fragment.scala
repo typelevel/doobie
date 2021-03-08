@@ -12,7 +12,7 @@ import doobie._, doobie.implicits._
 import doobie.enumerated.Nullability._
 import doobie.util.pos.Pos
 import java.sql.{ PreparedStatement, ResultSet }
-import scala.Predef.augmentString
+import scala.Predef.{ augmentString, implicitly }
 
 /** Module defining the `Fragment` data type. */
 object fragment {
@@ -111,7 +111,7 @@ object fragment {
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLogHandler(h: LogHandler): Update0 =
-      Update[elems.type](sql, pos, h).toUpdate0(elems)
+      Update[elems.type](sql, pos)(implicitly[Write[elems.type]], h).toUpdate0(elems)
 
     override def toString =
       s"""Fragment("$sql")"""

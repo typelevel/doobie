@@ -190,8 +190,8 @@ object update {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
-      implicit W: Write[A]
+    def apply[A](sql0: String, pos0: Option[Pos] = None)(
+      implicit W: Write[A], logHandler0: LogHandler = LogHandler.nop
     ): Update[A] =
       new Update[A] {
         val write = W
