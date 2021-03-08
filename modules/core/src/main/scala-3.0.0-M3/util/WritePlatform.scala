@@ -10,36 +10,15 @@ trait WritePlatform:
 
   // Trivial write for empty tuple.
   given Write[EmptyTuple] =
-    new Write(
-      puts = Nil,
-      toList = _ => Nil,
-      unsafeSet = (_, _, _) => (),
-      unsafeUpdate = (_, _, _) => (),
-      unsafeSetOption = (_, _, _) => (),
-      unsafeUpdateOption = (_, _, _) => (),
-    )
+    new Write(Nil, _ => Nil, (_, _, _) => (),(_, _, _) => ())
 
   // Inductive write for writable head and tail.
   given [H, T <: Tuple](using H: => Write[H], T: => Write[T]): Write[H *: T] =
     new Write(
-      puts = H.puts ++ T.puts,
-      toList = { case h *: t => H.toList(h) ++ T.toList(t) },
-      unsafeSet = { case (ps, n, h *: t) =>
-        H.unsafeSet(ps, n, h)
-        T.unsafeSet(ps, n + H.length, t)
-      },
-      unsafeUpdate = { case (rs, n, h *: t) =>
-        H.unsafeUpdate(rs, n, h);
-        T.unsafeUpdate(rs, n + H.length, t)
-      },
-      unsafeSetOption = { case (ps, n, oht) =>
-        H.unsafeSetOption(ps, n, oht.map(_.head))
-        T.unsafeSetOption(ps, n + H.length, oht.map(_.tail))
-      },
-      unsafeUpdateOption = { case (rs, n, oht) =>
-        H.unsafeUpdateOption(rs, n, oht.map(_.head))
-        T.unsafeUpdateOption(rs, n + H.length, oht.map(_.tail))
-      },
+      H.puts ++ T.puts,
+      { case h *: t => H.toList(h) ++ T.toList(t) },
+      { case (ps, n, h *: t) => H.unsafeSet(ps, n, h); T.unsafeSet(ps, n + H.length, t) },
+      { case (rs, n, h *: t) => H.unsafeUpdate(rs, n, h); T.unsafeUpdate(rs, n + H.length, t) }
     )
 
   // Generic write for products.

@@ -15,10 +15,8 @@ final class Write[A](
   val puts: List[(Put[_], NullabilityKnown)],
   val toList: A => List[Any],
   val unsafeSet: (PreparedStatement, Int, A) => Unit,
-  val unsafeUpdate: (ResultSet, Int, A) => Unit,
-  val unsafeSetOption: (PreparedStatement, Int, Option[A]) => Unit,
-  val unsafeUpdateOption: (ResultSet, Int, Option[A]) => Unit,
-) { self =>
+  val unsafeUpdate: (ResultSet, Int, A) => Unit
+) {
 
   lazy val length = puts.length
 
@@ -30,34 +28,18 @@ final class Write[A](
 
   def contramap[B](f: B => A): Write[B] =
     new Write(
-      puts = puts,
-      toList = b => toList(f(b)),
-      unsafeSet = (ps, n, a) => unsafeSet(ps, n, f(a)),
-      unsafeUpdate = (rs, n, a) => unsafeUpdate(rs, n, f(a)),
-      unsafeSetOption = (ps, n, oa) => unsafeSetOption(ps, n, oa.map(f)),
-      unsafeUpdateOption = (rs, n, oa) => unsafeUpdateOption(rs, n, oa.map(f)),
+      puts,
+      b => toList(f(b)),
+      (ps, n, a) => unsafeSet(ps, n, f(a)),
+      (rs, n, a) => unsafeUpdate(rs, n, f(a))
     )
 
   def product[B](fb: Write[B]): Write[(A, B)] =
-    new Write[(A, B)](
-      puts = puts ++ fb.puts,
-      toList = { case (a, b) => toList(a) ++ fb.toList(b) },
-      unsafeSet = { case (ps, n, (a, b)) =>
-        self.unsafeSet(ps, n, a)
-        fb.unsafeSet(ps, n + length, b)
-      },
-      unsafeUpdate = { case (rs, n, (a, b)) =>
-        self.unsafeUpdate(rs, n, a)
-        fb.unsafeUpdate(rs, n + length, b)
-      },
-      unsafeSetOption = { case (ps, n, oab) =>
-        self.unsafeSetOption(ps, n, oab.map(_._1))
-        fb.unsafeSetOption(ps, n + length, oab.map(_._2))
-      },
-      unsafeUpdateOption = { case (rs, n, oab) =>
-        self.unsafeUpdateOption(rs, n, oab.map(_._1))
-        fb.unsafeUpdateOption(rs, n + length, oab.map(_._2))
-      },
+    new Write(
+      puts ++ fb.puts,
+      { case (a, b) => toList(a) ++ fb.toList(b) },
+      { case (ps, n, (a, b)) => unsafeSet(ps, n, a); fb.unsafeSet(ps, n + length, b) },
+      { case (rs, n, (a, b)) => unsafeUpdate(rs, n, a); fb.unsafeUpdate(rs, n + length, b) }
     )
 
   /**
@@ -85,43 +67,34 @@ object Write extends WritePlatform with WriteLowerPriorityImplicits {
     }
 
   implicit val unitComposite: Write[Unit] =
-    new Write(
-      puts = Nil,
-      toList = _ => Nil,
-      unsafeSet = (_, _, _) => (),
-      unsafeUpdate = (_, _, _) => (),
-      unsafeSetOption = (_, _, _) => (),
-      unsafeUpdateOption = (_, _, _) => (),
-    )
+    new Write(Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
 
   implicit def fromPut[A](implicit P: Put[A]): Write[A] =
     new Write(
-      puts = List((P, NoNulls)),
-      toList = a => List(a),
-      unsafeSet = (ps, n, a) => P.unsafeSetNonNullable(ps, n, a),
-      unsafeUpdate = (rs, n, a) => P.unsafeUpdateNonNullable(rs, n, a),
-      unsafeSetOption = (ps, n, oa) => P.unsafeSetNullable(ps, n, oa),
-      unsafeUpdateOption = (rs, n, oa) => P.unsafeUpdateNullable(rs, n, oa),
+      List((P, NoNulls)),
+      a => List(a),
+      (ps, n, a) => P.unsafeSetNonNullable(ps, n, a),
+      (rs, n, a) => P.unsafeUpdateNonNullable(rs, n, a)
     )
 
   implicit def fromPutOption[A](implicit P: Put[A]): Write[Option[A]] =
     new Write(
-      puts = List((P, Nullable)),
-      toList = a => List(a),
-      unsafeSet = (ps, n, a) => P.unsafeSetNullable(ps, n, a),
-      unsafeUpdate = (rs, n, a) => P.unsafeUpdateNullable(rs, n, a),
-      unsafeSetOption = (ps, n, oa) => P.unsafeSetNullable(ps, n, oa.flatten),
-      unsafeUpdateOption = (rs, n, oa) => P.unsafeUpdateNullable(rs, n, oa.flatten),
+      List((P, Nullable)),
+      a => List(a),
+      (ps, n, a) => P.unsafeSetNullable(ps, n, a),
+      (rs, n, a) => P.unsafeUpdateNullable(rs, n, a)
     )
+
 }
 
 sealed trait WriteLowerPriorityImplicits {
+  implicit val ohnil: Write[Option[Unit]] =
+    new Write[Option[Unit]](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
+
   implicit def opt[A](implicit A: Write[A]): Write[Option[A]] = new Write[Option[A]](
-    puts = A.puts.map { case (p, _) => (p, Nullable) },
-    toList = oa => oa.map(A.toList).getOrElse(A.puts.map(_ => null)),
-    unsafeSet = (ps, i, a) => A.unsafeSetOption(ps, i, a),
-    unsafeUpdate = (ps, i, a) => A.unsafeUpdateOption(ps, i, a),
-    unsafeSetOption = (ps, i, oa) => A.unsafeSetOption(ps, i, oa.flatten),
-    unsafeUpdateOption = (ps, i, oa) => A.unsafeUpdateOption(ps, i, oa.flatten),
+    A.puts.map {case (p, _) => (p, Nullable)},
+    oa => oa.map(A.toList).getOrElse(A.puts.map(_ => null)),
+    (ps, i, oa) => oa.foreach(a => A.unsafeSet(ps, i, a)),
+    (ps, i, oa) => oa.foreach(a => A.unsafeUpdate(ps, i, a))
   )
 }
