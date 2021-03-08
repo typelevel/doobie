@@ -142,7 +142,7 @@ trait DoobieContextBase[Dialect <: SqlIdiom, Naming <: NamingStrategy]
 
   // Turn an extractor into a `Read` so we can use the existing resultset.
   private implicit def extractorToRead[A](ex: Extractor[A]): Read[A] =
-    new Read[A](Nil, (rs, _) => ex(rs), (rs, _) => Some(ex(rs)))
+    new Read[A](Nil, (rs, _) => ex(rs))
 
   // Nothing to do here.
   override def close(): Unit = ()

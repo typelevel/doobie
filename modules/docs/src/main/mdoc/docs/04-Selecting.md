@@ -129,7 +129,35 @@ sql"select code, name, population, gnp from country"
   .quick
   .unsafeRunSync()
 ```
-**doobie** supports row mappings for atomic column types, as well as options, tuples, and case classes thereof. So let's try mapping rows to a case class.
+**doobie** supports row mappings for atomic column types, as well as options, tuples, `HList`s, shapeless records, and case classes thereof. So let's try the same query with an `HList`:
+
+```scala mdoc
+import shapeless._
+
+sql"select code, name, population, gnp from country"
+  .query[String :: String :: Int :: Option[Double] :: HNil]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync()
+```
+
+And with a shapeless record:
+
+```scala mdoc
+import shapeless.record.Record
+
+type Rec = Record.`'code -> String, 'name -> String, 'pop -> Int, 'gnp -> Option[Double]`.T
+
+sql"select code, name, population, gnp from country"
+  .query[Rec]
+  .stream
+  .take(5)
+  .quick
+  .unsafeRunSync()
+```
+
+And again, mapping rows to a case class.
 
 ```scala mdoc:silent
 case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
@@ -144,7 +172,7 @@ sql"select code, name, population, gnp from country"
   .unsafeRunSync()
 ```
 
-You can also nest case classes, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
+You can also nest case classes, `HList`s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:
 
 ```scala mdoc:silent
 case class Code(code: String)
