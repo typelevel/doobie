@@ -13,6 +13,7 @@ import doobie.implicits._
 import doobie.util.ExecutionContexts
 import java.awt.geom.Point2D
 import java.util.UUID
+import shapeless._
 
 // We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
 // is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
@@ -78,9 +79,6 @@ As of **doobie** 0.4.0 this is done via [statement fragments](08-Fragments.html)
 
 ```scala mdoc:silent
 case class Code(country: String)
-object Code {
-  implicit val puts: Put[Code] = Put[String].contramap(_.country)
-}
 case class City(code: Code, name: String, population: Int)
 
 def cities(code: Code, asc: Boolean): Query0[City] = {
