@@ -56,7 +56,7 @@ final class Read[A](
 
 }
 
-object Read extends ReadPlatform with ReadLowerPriorityImplicits {
+object Read extends ReadPlatform {
 
   def apply[A](implicit ev: Read[A]): ev.type = ev
 
@@ -76,9 +76,4 @@ object Read extends ReadPlatform with ReadLowerPriorityImplicits {
   implicit def fromGetOption[A](implicit ev: Get[A]): Read[Option[A]] =
     new Read(List((ev, Nullable)), ev.unsafeGetNullable)
 
-}
-
-sealed trait ReadLowerPriorityImplicits {
-  implicit def opt[A](implicit A: Read[A]): Read[Option[A]] =
-    new Read[Option[A]](A.gets.map{case (g, _) => (g, Nullable)}, unsafeGet = (ps, i) => Option(A.unsafeGet(ps, i)))
 }
