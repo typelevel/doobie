@@ -9,6 +9,8 @@ import doobie._
 import scala.concurrent.ExecutionContext
 
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
+  case class X(x: Int)
+  case class Q(x: String)
 
   case class Z(i: Int, s: String)
   object S
@@ -31,6 +33,11 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
   test("Put should exist for primitive types") {
     Put[Int]
     Put[String]
+  }
+
+  test("Put should be derived for unary products") {
+    Put[X]
+    Put[Q]
   }
 
   test("Put should not be derived for non-unary products") {
