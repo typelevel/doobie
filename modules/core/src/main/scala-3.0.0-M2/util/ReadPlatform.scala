@@ -10,18 +10,13 @@ trait ReadPlatform:
 
   // Trivial Read for EmptyTuple
   given Read[EmptyTuple] =
-    new Read[EmptyTuple](Nil, (_, _) => EmptyTuple, (_, _) => Some(EmptyTuple))
+    new Read[EmptyTuple](Nil, (_, _) => EmptyTuple)
 
   // Read for head and tail.
   given [H, T <: Tuple](using H: => Read[H], T: => Read[T]) as Read[H *: T] =
     new Read[H *: T](
       H.gets ++ T.gets,
-      (rs, n) => H.unsafeGet(rs, n) *: T.unsafeGet(rs, n + H.length),
-      (rs, n) =>
-        for {
-        h <- H.unsafeGetOption(rs, n)
-        t <- T.unsafeGetOption(rs, n + H.length)
-        } yield h *: t
+      (rs, n) => H.unsafeGet(rs, n) *: T.unsafeGet(rs, n + H.length)
     )
 
   // Generic Read for products.
