@@ -4,26 +4,29 @@
 
 package doobie.postgres
 
-import magnolia.{ReadOnlyCaseClass, Magnolia}
+import shapeless.{ HList, HNil, ::, Generic, Lazy }
 
-trait TextPlatform {
-  this: Text.type =>
+trait TextPlatform { this: Text.type =>
 
-  type Typeclass[T] = Text[T]
+  // HNil isn't a valid Text but a single-element HList is
+  implicit def single[A](
+    implicit csv: Text[A]
+  ): Text[A :: HNil] =
+    csv.contramap(_.head)
 
-  def combine[T](ctx: ReadOnlyCaseClass[Text, T]): Text[T] =
-    instance { (t, sb) =>
-      // cannot prove at compile-time with magnolia
-      if (ctx.parameters.isEmpty) {
-        sys.error(s"Sorry, ${ctx.typeName.short} doesnt work with `Text` because it has no columns")
-      }
+  // HLists of more that one element
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+  implicit def multiple[H, T <: HList](
+    implicit h: Text[H],
+             t: Text[T]
+  ): Text[H :: T] =
+    (h product t).contramap(l => (l.head, l.tail))
 
-      ctx.parameters.zipWithIndex.foreach {
-        case (param, idx) =>
-          if (idx != 0) sb.append(Text.DELIMETER)
-          param.typeclass.unsafeEncode(param.dereference(t), sb)
-      }
-    }
+  // Generic
+  implicit def generic[A, B](
+    implicit gen: Generic.Aux[A, B],
+             csv: Lazy[Text[B]]
+  ): Text[A] =
+    csv.value.contramap(gen.to)
 
-  implicit def generic[A]: Text[A] = macro Magnolia.gen[A]
 }

@@ -49,11 +49,11 @@ object query {
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
-        eet <- FPS.executeQuery.bracket(rs => for {
+        eet <- FPS.executeQuery.flatMap(rs => (for {
           t1 <- now
           et <- FPS.embed(rs, k).attempt
           t2 <- now
-        } yield (t1, et, t2))(FPS.embed(_, FRS.close)).attempt
+        } yield (t1, et, t2)).guarantee(FPS.embed(rs, FRS.close))).attempt
         tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
           for {
             t1 <- now

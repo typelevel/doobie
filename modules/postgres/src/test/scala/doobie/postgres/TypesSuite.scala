@@ -6,7 +6,7 @@ package doobie.postgres
 
 import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneOffset}
 import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
 
@@ -14,15 +14,12 @@ import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import doobie.implicits.javasql._
-import doobie.implicits.javatime.{JavaTimeInstantMeta => _, _}
-import doobie.implicits.javatime.{JavaTimeLocalDateMeta => NewJavaTimeLocalDateMeta}
-import doobie.implicits.legacy.instant._
-import doobie.implicits.legacy.localdate.{JavaTimeLocalDateMeta => LegacyLocalDateMeta}
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
 import doobie.util.arbitraries.SQLArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
+import doobie.util.arbitraries.TimeArbitraries
 import doobie.util.arbitraries.TimeArbitraries._
 import org.postgis._
 import org.postgresql.geometric._
@@ -44,8 +41,7 @@ class TypesSuite extends munit.ScalaCheckSuite {
     "postgres", ""
   )
 
-  def inOut[A: Get : Put](col: String, a: A): ConnectionIO[A] =
-    for {
+  def inOut[A: Get : Put](col: String, a: A): ConnectionIO[A] = for {
       _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
@@ -72,6 +68,7 @@ class TypesSuite extends munit.ScalaCheckSuite {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
       assertEquals(inOut(col, a).transact(xa).attempt.unsafeRunSync(), Right(a))
     }
+
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
       assertEquals(inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync(), Right(Some(a)))
     }
@@ -154,32 +151,32 @@ class TypesSuite extends munit.ScalaCheckSuite {
       timestamp
       The allowed range of p is from 0 to 6 for the timestamp and interval types.
    */
-  testInOutWithCustomTransform[java.sql.Timestamp]("timestamp") { ts => ts.setNanos(0); ts }
+  testInOutWithCustomTransform[java.sql.Timestamp]("timestamptz") { ts => ts.setNanos(0); ts }
+  testInOutWithCustomTransform[java.time.Instant]("timestamptz")(_.`with`(NANO_OF_SECOND, 0))
+  testInOutWithCustomTransform[java.time.OffsetDateTime]("timestamptz")(
+    _.`with`(NANO_OF_SECOND, 0)
+      .withOffsetSameInstant(ZoneOffset.UTC)
+  )
+  testInOutWithCustomTransform[java.time.ZonedDateTime]("timestamptz")(
+    _.`with`(NANO_OF_SECOND, 0)
+      .withZoneSameInstant(ZoneOffset.UTC)
+  )
+
+  /*
+    local date & time (not an instant in time)
+   */
   testInOutWithCustomTransform[java.time.LocalDateTime]("timestamp")(_.withNano(0))
-  testInOutWithCustomTransform[java.time.Instant]("timestamp")(_.`with`(NANO_OF_SECOND, 0))
 
-
-  /*
-      timestamp with time zone
-      For the time types, the allowed range of p is from 0 to 6 when eight-byte integer storage is used, or from 0 to 10 when floating-point storage is used.
-   */
-  skip("timestamp with time zone", "something weird going on")
-  // testInOutWithCustomTransformAndMatch[java.time.OffsetDateTime, java.sql.Timestamp]("timestamp with time zone")(_.withNano(0)) {
-  //   dt =>
-  //     Timestamp.valueOf(dt.atZoneSameInstant(ZoneOffset.UTC).toLocalDateTime)
-  // }
-
+  // Can only test "positive" years (AD) because Postgres JDBC driver incorrectly uses java.sql.Date#toLocalDate()
+  // which doesn't handle negative values
+  // https://github.com/pgjdbc/pgjdbc/blob/4595a5ae430ba5ee5463280d04c261d999813d0f/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L3648
+  testInOutWithCustomGen[java.time.LocalDate]("date", TimeArbitraries.localDateAdOnlyGen)
+  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))(JavaTimeLocalDateMeta.get, JavaTimeLocalDateMeta.put)
+  //  testInOut[java.time.LocalDate]("date", LocalDate.of(-500, 1, 1))(JavaTimeLocalDateMeta.get, JavaTimeLocalDateMeta.put)
   testInOut[java.sql.Date]("date")
-  // TODO LocalDate.of(-500,1,1) is failing
-  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))(NewJavaTimeLocalDateMeta.get, NewJavaTimeLocalDateMeta.put)
-  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))(LegacyLocalDateMeta.get, LegacyLocalDateMeta.put)
 
-  /*
-      time
-      The allowed range of p is from 0 to 6 for the timestamp and interval types.
-   */
   testInOut[java.sql.Time]("time")
-  testInOutWithCustomTransform[java.time.LocalTime]("time")(_.withNano(0))
+  testInOutWithCustomTransform[java.time.LocalTime]("time")(_.`with`(NANO_OF_SECOND, 0))
 
   skip("time with time zone")
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
@@ -289,5 +286,4 @@ class TypesSuite extends munit.ScalaCheckSuite {
 
   // hstore
   testInOut[Map[String, String]]("hstore")
-
 }

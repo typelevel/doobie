@@ -99,7 +99,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
   testInOutWithCustomTransform[java.time.LocalTime]("TIME")(_.withNano(0))
 
   testInOut[java.sql.Date]("DATE")
-  testInOut[java.time.LocalDate]("DATE")
+  testInOut[java.time.LocalDate]("DATE")(implicitly, implicitly, Arbitrary(localDateBcAndAdGen))
 
   /*
       TIMESTAMP

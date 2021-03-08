@@ -13,6 +13,7 @@ import doobie.implicits._
 import doobie.util.ExecutionContexts
 import java.awt.geom.Point2D
 import java.util.UUID
+import shapeless._
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling calling 
 // unsafe methods directly.
@@ -77,9 +78,6 @@ As of **doobie** 0.4.0 this is done via [statement fragments](08-Fragments.html)
 
 ```scala mdoc:silent
 case class Code(country: String)
-object Code {
-  implicit val puts: Put[Code] = Put[String].contramap(_.country)
-}
 case class City(code: Code, name: String, population: Int)
 
 def cities(code: Code, asc: Boolean): Query0[City] = {
@@ -206,20 +204,18 @@ implicit val nesMeta: Meta[NonEmptyString] = {
 
 ## How do I use `java.time` types with Doobie?
 
-Because some JDBC drivers do not support `java.time.Instant`/`LocalDate` out of the box, Doobie can convert them into 
-`java.sql.*` types before passing them to the underlying JDBC driver.
+This depends on whether the underlying JDBC driver you're using supports `java.time.*` types natively. 
+("native support" means that you can hand the driver e.g. a value of java.time.Instant and it will know how to convert 
+that to a value on-the-wire that the actual database can understand)
 
-Below are the imports you need for popular database drivers:
+If you're using PostgreSQL, you can import that instances via `import doobie.postgres.implicits._`
 
-| Database driver                  | java.time.Instant                   | java.time.LocalDate                   |
+If your JDBC driver supports the java.time types you're using natively, use `import doobie.implicits.javatimedrivernative._`.
+
+| Database driver                  | java.time.Instant                   | java.time.LocalDate                   | 
 | ---                              | ---                                 | ---                                   |
-| Postgres (org.postgresql.Driver) | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` |
-| MySQL (com.mysql.jdbc.Driver)    | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` |
-
-If your database driver supports `Instant`/`LocalDate` natively, you can `import doobie.implicits.javatime._`.
-
-Similarly, for other `java.time` types like `OffsetDateTime`, `LocalDateTime` where there are native driver support, 
-you can use the instances that live in `doobie.implicits.javatime` e.g. `import doobie.implicits.javatime.JavaTimeLocalDateTimeMeta`.
+| Postgres (org.postgresql.Driver) | `doobie.postgres.implicits._`       | `doobie.postgres.implicits._`         |
+| MySQL (com.mysql.jdbc.Driver)    | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` | 
 
 References:
 
