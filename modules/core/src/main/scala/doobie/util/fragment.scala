@@ -70,14 +70,8 @@ object fragment {
         }
       }
 
-      new Write(
-        puts,
-        toList,
-        unsafeSet,
-        unsafeUpdate,
-        unsafeSetOption = (ps, i, of) => of.foreach(f => unsafeSet(ps, i, f)),
-        unsafeUpdateOption = (rs, i, of) => of.foreach(f => unsafeUpdate(rs, i, f)),
-      )
+      new Write(puts, toList, unsafeSet, unsafeUpdate)
+
     }
 
     /**
