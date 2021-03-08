@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import doobie.enum.SqlState
+import doobie.enumerated.SqlState
 
 /** Module of SQLSTATE constants for PostgreSQL. */
 object sqlstate {

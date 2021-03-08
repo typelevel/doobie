@@ -4,7 +4,7 @@
 
 package example
 
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 
@@ -21,7 +21,7 @@ object Join {
       LEFT OUTER JOIN city c
         ON k.code = c.countrycode AND c.name like $filter
     """.query[(Country, Option[Int], Option[String])]
-       .map { case (k, a, b) => (k, (a, b).mapN(City)) }
+       .map { case (k, a, b) => (k, (a, b).mapN(City(_, _))) }
 
   // New style (better)
   def countriesAndCities2(filter: String): Query0[(Country, Option[City])] =

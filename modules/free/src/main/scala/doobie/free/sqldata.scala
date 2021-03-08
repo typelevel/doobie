@@ -8,14 +8,12 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import java.lang.String
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
-@silent("deprecated")
 object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternative to pattern-matching.
@@ -84,7 +82,7 @@ object sqldata { module =>
     final case class BracketCase[A, B](acquire: SQLDataIO[A], use: A => SQLDataIO[B], release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]) extends SQLDataOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends SQLDataOp[Unit] {
+    case object Shift extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: SQLDataIO[A]) extends SQLDataOp[A] {
@@ -92,13 +90,13 @@ object sqldata { module =>
     }
 
     // SQLData-specific operations.
-    final case object GetSQLTypeName extends SQLDataOp[String] {
+    case object GetSQLTypeName extends SQLDataOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getSQLTypeName
     }
-    final case class  ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
+    final case class ReadSQL(a: SQLInput, b: String) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.readSQL(a, b)
     }
-    final case class  WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
+    final case class WriteSQL(a: SQLOutput) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.writeSQL(a)
     }
 

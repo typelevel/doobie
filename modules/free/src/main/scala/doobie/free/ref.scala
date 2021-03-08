@@ -8,13 +8,11 @@ import cats.~>
 import cats.effect.{ Async, ContextShift, ExitCase }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
 
 import java.lang.String
 import java.sql.Ref
 import java.util.Map
 
-@silent("deprecated")
 object ref { module =>
 
   // Algebra of operations for Ref. Each accepts a visitor as an alternative to pattern-matching.
@@ -84,7 +82,7 @@ object ref { module =>
     final case class BracketCase[A, B](acquire: RefIO[A], use: A => RefIO[B], release: (A, ExitCase[Throwable]) => RefIO[Unit]) extends RefOp[B] {
       def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
     }
-    final case object Shift extends RefOp[Unit] {
+    case object Shift extends RefOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.shift
     }
     final case class EvalOn[A](ec: ExecutionContext, fa: RefIO[A]) extends RefOp[A] {
@@ -92,16 +90,16 @@ object ref { module =>
     }
 
     // Ref-specific operations.
-    final case object GetBaseTypeName extends RefOp[String] {
+    case object GetBaseTypeName extends RefOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getBaseTypeName
     }
-    final case object GetObject extends RefOp[AnyRef] {
+    case object GetObject extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject
     }
-    final case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
+    final case class GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    final case class  SetObject(a: AnyRef) extends RefOp[Unit] {
+    final case class SetObject(a: AnyRef) extends RefOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a)
     }
 

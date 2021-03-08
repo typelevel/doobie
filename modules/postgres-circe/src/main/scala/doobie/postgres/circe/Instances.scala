@@ -6,7 +6,7 @@ package doobie.postgres.circe
 
 import cats.Show
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import io.circe._
 import io.circe.jawn._
 import io.circe.syntax._

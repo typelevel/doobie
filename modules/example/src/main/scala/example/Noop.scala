@@ -5,7 +5,7 @@
 package example
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 
@@ -16,8 +16,8 @@ import doobie.implicits._
 object Noop {
 
   def noop[S[_]]: S ~> Either[String, *] =
-    λ[S ~> Either[String, *]] { c =>
-      Left(s"Can't interpret $c")
+    new (S ~> Either[String, *]) {
+      def apply[A](c: S[A]) = Left(s"Can't interpret $c")
     }
 
   val prog1: ConnectionIO[Int] =

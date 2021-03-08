@@ -5,7 +5,6 @@
 package doobie.specs2
 
 import cats.effect.{ Effect, IO }
-import cats.instances.list._
 import cats.syntax.foldable._
 import doobie.util.pretty._
 import doobie.util.testing.{
