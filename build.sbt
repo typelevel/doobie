@@ -2,12 +2,12 @@ import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.3.1"
-lazy val catsEffectVersion    = "2.3.1"
+lazy val catsVersion          = "2.4.2"
+lazy val catsEffectVersion    = "2.3.3"
 lazy val circeVersion         = "0.13.0"
-lazy val fs2Version           = "2.5.0"
+lazy val fs2Version           = "2.5.3"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "3.4.5"
+lazy val hikariVersion        = "4.0.3"
 lazy val kindProjectorVersion = "0.11.2"
 lazy val monixVersion         = "3.3.0"
 lazy val quillVersion         = "3.6.1"
@@ -20,9 +20,9 @@ lazy val shapelessVersion     = "2.3.3"
 lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.10.6"
 lazy val scala212Version      = "2.12.12"
-lazy val scala213Version      = "2.13.4"
-lazy val scala30VersionOld    = "3.0.0-M2"
-lazy val scala30Version       = "3.0.0-M3"
+lazy val scala213Version      = "2.13.5"
+lazy val scala30VersionOld    = "3.0.0-M3"
+lazy val scala30Version       = "3.0.0-RC1"
 lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
@@ -42,7 +42,7 @@ lazy val compilerFlags = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2")
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2"
   )
 )
 
@@ -80,8 +80,8 @@ lazy val commonSettings =
 
     // MUnit
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "scalacheck-effect-munit" % "0.7.0"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-2"     % "0.12.0" % Test,
+      "org.typelevel"     %% "scalacheck-effect-munit" % "0.7.1"  % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "0.13.1" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
@@ -220,7 +220,7 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => isDotty.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "0.1.3",
+      "org.tpolecat"   %% "typename"  % "0.1.5",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
@@ -460,7 +460,7 @@ lazy val refined = project
     name := "doobie-refined",
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"     %% "refined" % (if (scalaVersion.value == "3.0.0-M2") "0.9.19" else "0.9.21"),
+      "eu.timepit"     %% "refined" % "0.9.21",
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )

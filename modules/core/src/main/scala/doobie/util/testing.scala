@@ -160,7 +160,7 @@ package object testing {
         }
   }
 
-  private def toIO[F[_]: Effect, A](fa: F[A])(implicit F: Effect[F]): IO[A] =
+  private def toIO[F[_], A](fa: F[A])(implicit F: Effect[F]): IO[A] =
     IO.async { cb =>
       F.runAsync(fa)(out => IO(cb(out)))
         .unsafeRunSync()
