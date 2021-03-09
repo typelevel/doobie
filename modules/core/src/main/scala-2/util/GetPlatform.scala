@@ -4,7 +4,6 @@
 
 package doobie.util
 
-import scala.reflect.runtime.universe.TypeTag
 import shapeless._
 import shapeless.ops.hlist.IsHCons
 
@@ -12,7 +11,7 @@ trait GetPlatform {
   import doobie.util.compat.=:=
 
   /** @group Instances */
-  implicit def unaryProductGet[A: TypeTag, L <: HList, H, T <: HList](
+  implicit def unaryProductGet[A, L <: HList, H, T <: HList](
      implicit G: Generic.Aux[A, L],
               C: IsHCons.Aux[L, H, T],
               H: Lazy[Get[H]],

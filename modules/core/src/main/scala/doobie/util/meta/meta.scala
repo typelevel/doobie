@@ -114,7 +114,7 @@ trait MetaConstructors {
         Put.Advanced.one(jdbcTypes, schemaTypes, put, update)
       )
 
-    def array[A >: Null <: AnyRef: TypeName](
+    def array[A >: Null <: AnyRef](
       elementType: String,
       schemaH: String,
       schemaT: String*
