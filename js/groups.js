@@ -19,30 +19,24 @@ $(function() {
   if(cookieTg != "")
     currentGroups = JSON.parse(cookieTg);
 
-  // http://www.w3schools.com/js/js_cookies.asp
-  function setCookie(cname,cvalue,exdays) {
-    if(!exdays) exdays = 365;
-    var d = new Date();
-    d.setTime(d.getTime() + (exdays*24*60*60*1000));
-    var expires = "expires=" + d.toGMTString();
-    document.cookie = cname + "=" + encodeURIComponent(cvalue) + ";" + expires + ";path=/";
+  // https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie
+  function setCookie(cookieName, cookieValue, daysToExpire) {
+    if (!daysToExpire) daysToExpire = 365;
+    const now = new Date();
+    now.setDate(now.getDate() + daysToExpire);
+    // The lax value will send the cookie for all same-site
+    // requests and top-level navigation GET requests. This
+    // is sufficient for user tracking, but it will prevent
+    // many CSRF attacks. This is the default value in modern browsers.
+    document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};expires=${now.toUTCString()};path=/;samesite=lax`;
   }
 
-  // http://www.w3schools.com/js/js_cookies.asp
-  function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
-    for(var i = 0; i < ca.length; i++) {
-      var c = ca[i];
-      while (c.charAt(0) == ' ') {
-        c = c.substring(1);
-      }
-      if (c.indexOf(name) == 0) {
-        return c.substring(name.length, c.length);
-      }
-    }
-    return "";
+  // https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie#Example_2_Get_a_sample_cookie_named_test2
+  function getCookie(cookieName) {
+    const cookieAttr = decodeURIComponent(document.cookie)
+        .split(";")
+        .find(row => row.trimStart().startsWith(cookieName))
+    return cookieAttr ? cookieAttr.split("=")[1] : "";
   }
 
   $("dl").has("dd > pre").each(function() {
@@ -128,14 +122,13 @@ $(function() {
       .val(group);
 
     // Inline snippets:
-    for (var i = 0; i < catalog[supergroup].length; i++) {
-      var peer = catalog[supergroup][i];
-      if (peer == group) {
+    catalog[supergroup].forEach(peer => {
+      if (peer === group) {
         $("." + group).show();
       } else {
         $("." + peer).hide();
       }
-    }
+    })
 
     // Tabbed snippets:
     $("dl.tabbed").each(function() {
@@ -148,9 +141,7 @@ $(function() {
       });
     });
 
-    for (var i = 0; i < groupChangeListeners.length; i++) {
-      groupChangeListeners[i](group, supergroup, catalog);
-    }
+    groupChangeListeners.forEach(listener => listener(group, supergroup, catalog));
   }
 
   function switchToTab(dt) {
@@ -162,15 +153,12 @@ $(function() {
   }
 
   function groupOf(elem) {
-    var classAttribute = elem.next("dd").find("pre").attr("class");
+    const classAttribute = elem.next("dd").find("pre").attr("class");
     if (classAttribute) {
-      var currentClasses = classAttribute.split(' ');
-      var regex = new RegExp("^group-.*");
-      for(var i = 0; i < currentClasses.length; i++) {
-        if(regex.test(currentClasses[i])) {
-          return currentClasses[i];
-        }
-      }
+      const currentClasses = classAttribute.split(' ');
+      const regex = new RegExp("^group-.*");
+      const matchingClass = currentClasses.find(cc => regex.test(cc));
+      if (matchingClass) return matchingClass;
     }
 
     // No class found? Then use the tab title

@@ -149,15 +149,29 @@ a.anchor .anchor-link:before {
   content: "§";
 }
 
-a.go-to-source::before {
-  content: "📄";
-}
-
-.prettyprint .icon {
+.site-content .page-content .prettyprint .snippet-button {
   float: right;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: bold;
+  font-family: "Roboto", "Helvetica Neue", "Helvetica", Arial, sans-serif;
+  speak: none;
+  color: #4078c0;
+  border: 2px solid #e5e6e4;
+  padding: 4px 4px;
+  margin-left: 8px;
+  line-height: 1.2;
+  vertical-align: middle;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a.anchor .anchor-link, .icon {
+.site-content .page-content .prettyprint .snippet-button:hover {
+  background-color: #e5e6e4;
+  border: 2px solid #4078c0;
+}
+
+a.anchor .anchor-link {
   font-size: 18px;
   font-family: "icons" !important;
   font-style: normal !important;

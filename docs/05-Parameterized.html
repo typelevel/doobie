@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -190,7 +191,7 @@ import y._
     .stream
     .take(5)
     .quick
-    .unsafeRunSync
+    .unsafeRunSync()
 }
 //   Country(AFG,Afghanistan,22720000,Some(5976.0))
 //   Country(NLD,Netherlands,15864000,Some(371362.0))
@@ -207,7 +208,7 @@ import y._
 &quot;&quot;&quot;.query[Country]
 </code></pre>
 <p>And when we run the query &hellip; surprise, it works!</p>
-<pre class="prettyprint"><code class="language-scala">biggerThan(150000000).quick.unsafeRunSync // Let&#39;s see them all
+<pre class="prettyprint"><code class="language-scala">biggerThan(150000000).quick.unsafeRunSync() // Let&#39;s see them all
 //   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(IDN,Indonesia,212107000,Some(84982.0))
 //   Country(IND,India,1013662000,Some(447114.0))
@@ -233,7 +234,7 @@ import y._
   and   population &lt; ${range.max}
 &quot;&quot;&quot;.query[Country]
 
-populationIn(150000000 to 200000000).quick.unsafeRunSync
+populationIn(150000000 to 200000000).quick.unsafeRunSync()
 //   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
 </code></pre>
@@ -251,7 +252,7 @@ populationIn(150000000 to 200000000).quick.unsafeRunSync
 </code></pre>
 <p>Note that the <code>IN</code> clause must be non-empty, so <code>codes</code> is a <code>NonEmptyList</code>.</p>
 <p>Running this query gives us the desired result.</p>
-<pre class="prettyprint"><code class="language-scala">populationIn(100000000 to 300000000, NonEmptyList.of(&quot;USA&quot;, &quot;BRA&quot;, &quot;PAK&quot;, &quot;GBR&quot;)).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">populationIn(100000000 to 300000000, NonEmptyList.of(&quot;USA&quot;, &quot;BRA&quot;, &quot;PAK&quot;, &quot;GBR&quot;)).quick.unsafeRunSync()
 //   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
 //   Country(USA,United States,278357000,Some(8510700.0))
@@ -271,7 +272,7 @@ def proc(range: Range): Stream[ConnectionIO, Country] =
   HC.stream[Country](q, HPS.set((range.min, range.max)), 512)
 </code></pre>
 <p>Which produces the same output.</p>
-<pre class="prettyprint"><code class="language-scala">proc(150000000 to 200000000).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">proc(150000000 to 200000000).quick.unsafeRunSync()
 //   Country(BRA,Brazil,170115000,Some(776739.0))
 //   Country(PAK,Pakistan,156483000,Some(61289.0))
 </code></pre>
@@ -279,9 +280,9 @@ def proc(range: Range): Stream[ConnectionIO, Country] =
 <p>When setting parameters in the high-level API, we require an instance of <code>Write[A]</code> for the input type. It is not immediately obvious when using the <code>sql</code> interpolator, but the parameters (each of which require a <code>Put</code> instance, to be discussed in a later chapter) are gathered into an <code>HList</code> and treated as a single writable parameter.</p>
 <p><code>Write</code> instances are derived automatically for column types (and options thereof) that have <code>Put</code> instances, and for products of other writable types. We can summon their instances thus:</p>
 <pre class="prettyprint"><code class="language-scala">Write[(String, Boolean)]
-// res5: Write[(String, Boolean)] = doobie.util.Write@48881c09
+// res5: Write[(String, Boolean)] = doobie.util.Write@1fc04e
 Write[Country]
-// res6: Write[Country] = doobie.util.Write@4bbf39f9
+// res6: Write[Country] = doobie.util.Write@35a816c9
 </code></pre>
 <p>The <code>set</code> constructor takes an argument of any type with a <code>Write</code> instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.</p>
 <pre class="prettyprint"><code class="language-scala">// Set parameters as (String, Boolean) starting at index 1 (default)
@@ -301,7 +302,7 @@ HPS.set(2, true) *&gt; HPS.set(1, &quot;foo&quot;)
 
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/05-Parameterized.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/05-Parameterized.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -363,7 +364,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -388,7 +389,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

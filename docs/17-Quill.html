@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -144,8 +145,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#quill-integration" name="quill-integration" class="anchor"><span class="anchor-link"></span></a>Quill Integration</h2>
 <p>As of version 0.7 doobie now lets us use <a href="https://getquill.io">Quill</a> quotes to construct <code>ConnectionIO</code> programs. Quill provides statement construction and type mapping, and doobie takes care of statement execution.</p>
-<p>In order to use this feature we need to add the following dependency, which pulls in <code>quill-jdbc</code> 3.5.1 transitively.</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-quill&quot; % &quot;0.9.0&quot;
+<p>In order to use this feature we need to add the following dependency, which pulls in <code>quill-jdbc</code> 3.6.1 transitively.</p>
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-quill&quot; % &quot;0.12.1&quot;
 </code></pre>
 <p>The examples below require the following imports.</p>
 <pre class="prettyprint"><code class="language-scala">import io.getquill.{ idiom =&gt; _, _ }
@@ -164,19 +165,19 @@ import dc._
 <p>Following are some examples. Note the return types from <code>run</code>, which are normal doobie types. You can freely mix Quill quotes into existing doobie programs.</p>
 <p>Here is a query.</p>
 <pre class="prettyprint"><code class="language-scala">val q1 = quote { query[Country].filter(_.code == &quot;GBR&quot;) }
-// q1: AnyRef with Quoted[EntityQuery[Country]]{def quoted: io.getquill.ast.Filter;def ast: io.getquill.ast.Filter;def id856984138(): Unit;val liftings: Object} = querySchema(&quot;Country&quot;).filter(x2 =&gt; x2.code == &quot;GBR&quot;)
+// q1: AnyRef with Quoted[EntityQuery[Country]]{def quoted: io.getquill.ast.Filter;def ast: io.getquill.ast.Filter;def id433475329(): Unit;val liftings: Object} = querySchema(&quot;Country&quot;).filter(x2 =&gt; x2.code == &quot;GBR&quot;)
 
 // Select all at once
 run(q1)
 // res0: doobie.package.ConnectionIO[List[Country]] = Suspend(
-//   BracketCase(
-//     Suspend(
-//       PrepareStatement(
-//         &quot;SELECT x2.code, x2.name, x2.population FROM Country x2 WHERE x2.code = &#39;GBR&#39;&quot;
+//   a = BracketCase(
+//     acquire = Suspend(
+//       a = PrepareStatement(
+//         a = &quot;SELECT x2.code, x2.name, x2.population FROM Country x2 WHERE x2.code = &#39;GBR&#39;&quot;
 //       )
 //     ),
-//     doobie.hi.connection$$$Lambda$10667/1091598834@460da2f9,
-//     cats.effect.Bracket$$Lambda$10669/460742804@65053273
+//     use = doobie.hi.connection$$$Lambda$11410/0x0000000842e1f040@62344f,
+//     release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@5752870d
 //   )
 // )
 
@@ -186,17 +187,19 @@ stream(q1, 16)
 </code></pre>
 <p>A simple update.</p>
 <pre class="prettyprint"><code class="language-scala">val u1 = quote { query[Country].filter(_.name like &quot;U%&quot;).update(_.name -&gt; &quot;foo&quot;) }
-// u1: AnyRef with Quoted[Update[Country]]{def quoted: io.getquill.ast.Update;def ast: io.getquill.ast.Update;def id1699559150(): Unit;val liftings: Object} = querySchema(&quot;Country&quot;).filter(x3 =&gt; infix&quot;${x3.name} like ${&quot;U%&quot;}&quot;).update(x4 =&gt; x4.name -&gt; &quot;foo&quot;)
+// u1: AnyRef with Quoted[Update[Country]]{def quoted: io.getquill.ast.Update;def ast: io.getquill.ast.Update;def id1059160284(): Unit;val liftings: Object} = querySchema(&quot;Country&quot;).filter(x3 =&gt; infix&quot;${x3.name} like ${&quot;U%&quot;}&quot;).update(x4 =&gt; x4.name -&gt; &quot;foo&quot;)
 
 // Update yielding count of affected rows
 run(u1)
 // res2: doobie.package.ConnectionIO[Long] = Suspend(
-//   BracketCase(
-//     Suspend(
-//       PrepareStatement(&quot;UPDATE Country SET name = &#39;foo&#39; WHERE name like &#39;U%&#39;&quot;)
+//   a = BracketCase(
+//     acquire = Suspend(
+//       a = PrepareStatement(
+//         a = &quot;UPDATE Country SET name = &#39;foo&#39; WHERE name like &#39;U%&#39;&quot;
+//       )
 //     ),
-//     doobie.hi.connection$$$Lambda$10667/1091598834@76b82790,
-//     cats.effect.Bracket$$Lambda$10669/460742804@514d2cb9
+//     use = doobie.hi.connection$$$Lambda$11410/0x0000000842e1f040@54005a26,
+//     release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@3a9766bc
 //   )
 // )
 </code></pre>
@@ -206,24 +209,32 @@ run(u1)
     query[Country].filter(_.name like pat).update(_.name -&gt; &quot;foo&quot;)
   }
 }
-// u2: AnyRef with Quoted[BatchAction[Update[Country]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id255536088(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[String](&quot;U%&quot;, &quot;A%&quot;): io.getquill.quotation.ScalarValueLifting[List[String],String]}} = ?.foreach((pat) =&gt; querySchema(&quot;Country&quot;).filter(x5 =&gt; infix&quot;${x5.name} like $pat&quot;).update(x6 =&gt; x6.name -&gt; &quot;foo&quot;))
+// u2: AnyRef with Quoted[BatchAction[Update[Country]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id576795914(): Unit;val liftings: AnyRef{val scala.`package`.List.apply[String](&quot;U%&quot;, &quot;A%&quot;) : io.getquill.quotation.ScalarValueLifting[List[String],String]}} = ?.foreach((pat) =&gt; querySchema(&quot;Country&quot;).filter(x5 =&gt; infix&quot;${x5.name} like $pat&quot;).update(x6 =&gt; x6.name -&gt; &quot;foo&quot;))
 
 // Update yielding list of counts of affected rows
 run(u2)
 // res3: doobie.package.ConnectionIO[List[Long]] = FlatMapped(
-//   FlatMapped(
-//     Suspend(
-//       BracketCase(
-//         Suspend(
-//           PrepareStatement(&quot;UPDATE Country SET name = &#39;foo&#39; WHERE name like ?&quot;)
+//   c = FlatMapped(
+//     c = FlatMapped(
+//       c = FlatMapped(
+//         c = Suspend(
+//           a = BracketCase(
+//             acquire = Suspend(
+//               a = PrepareStatement(
+//                 a = &quot;UPDATE Country SET name = &#39;foo&#39; WHERE name like ?&quot;
+//               )
+//             ),
+//             use = doobie.hi.connection$$$Lambda$11410/0x0000000842e1f040@4a780ee5,
+//             release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@6b6eee82
+//           )
 //         ),
-//         doobie.hi.connection$$$Lambda$10667/1091598834@2a105aa7,
-//         cats.effect.Bracket$$Lambda$10669/460742804@1bc89093
-//       )
+//         f = cats.Monad$$Lambda$11319/0x0000000842da9840@60008e5f
+//       ),
+//       f = cats.Monad$$Lambda$11319/0x0000000842da9840@3cffa2e7
 //     ),
-//     cats.FlatMap$$Lambda$10847/809117672@2c7bb0dd
+//     f = cats.Monad$$Lambda$11319/0x0000000842da9840@367a9cbb
 //   ),
-//   cats.Monad$$Lambda$10635/1801863636@14eb790f
+//   f = cats.Monad$$Lambda$11319/0x0000000842da9840@2afc7e08
 // )
 </code></pre>
 <p>Now we will look at batch updates with generated keys. For this we will create a new table.</p>
@@ -239,20 +250,20 @@ run(u2)
 <pre class="prettyprint"><code class="language-scala">val u3 = quote {
   query[Foo].insert(lift(Foo(0, &quot;Joe&quot;))).returning(_.id)
 }
-// u3: AnyRef with Quoted[ActionReturning[Foo, Int]]{def quoted: io.getquill.ast.Returning;def ast: io.getquill.ast.Returning;def id831358186(): Unit;val liftings: AnyRef{val App.this.Foo.apply(0, &quot;Joe&quot;).id: io.getquill.quotation.ScalarValueLifting[Int,Int]; val App.this.Foo.apply(0, &quot;Joe&quot;).value: io.getquill.quotation.ScalarValueLifting[String,String]}} = querySchema(&quot;Foo&quot;).insert(v =&gt; v.id -&gt; ?, v =&gt; v.value -&gt; ?).returning((x7) =&gt; x7.id)
+// u3: AnyRef with Quoted[ActionReturning[Foo, Int]]{def quoted: io.getquill.ast.Returning;def ast: io.getquill.ast.Returning;def id65470030(): Unit;val liftings: AnyRef{val App.this.Foo.apply(0, &quot;Joe&quot;).id : io.getquill.quotation.ScalarValueLifting[Int,Int]; val App.this.Foo.apply(0, &quot;Joe&quot;).value : io.getquill.quotation.ScalarValueLifting[String,String]}} = querySchema(&quot;Foo&quot;).insert(v =&gt; v.id -&gt; ?, v =&gt; v.value -&gt; ?).returning((x7) =&gt; x7.id)
 
 // Update yielding a single id
 run(u3)
 // res4: doobie.package.ConnectionIO[Int] = Suspend(
-//   BracketCase(
-//     Suspend(
-//       PrepareStatement3(
-//         &quot;INSERT INTO Foo (id,value) VALUES (?, ?) RETURNING id&quot;,
-//         1
+//   a = BracketCase(
+//     acquire = Suspend(
+//       a = PrepareStatement3(
+//         a = &quot;INSERT INTO Foo (id,value) VALUES (?, ?) RETURNING id&quot;,
+//         b = 1
 //       )
 //     ),
-//     doobie.hi.connection$$$Lambda$11699/1217899299@3c06cc57,
-//     cats.effect.Bracket$$Lambda$10669/460742804@63159f4c
+//     use = doobie.hi.connection$$$Lambda$13508/0x00000008436ea040@1611d951,
+//     release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@fde41c2
 //   )
 // )
 </code></pre>
@@ -262,31 +273,37 @@ run(u3)
     query[Foo].insert(a).returning(_.id)
   }
 }
-// u4: AnyRef with Quoted[BatchAction[ActionReturning[Foo, Int]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id2064338510(): Unit;val liftings: AnyRef{val scala.collection.immutable.List.apply[App.this.Foo](App.this.Foo.apply(0, &quot;Joe&quot;), App.this.Foo.apply(0, &quot;Bob&quot;)): io.getquill.quotation.CaseClassValueLifting[List[App.this.Foo]]}} = ?.foreach((a) =&gt; querySchema(&quot;Foo&quot;).insert(v =&gt; v.id -&gt; a.id, v =&gt; v.value -&gt; a.value).returning((x8) =&gt; x8.id))
+// u4: AnyRef with Quoted[BatchAction[ActionReturning[Foo, Int]]]{def quoted: io.getquill.ast.Foreach;def ast: io.getquill.ast.Foreach;def id1411282(): Unit;val liftings: AnyRef{val scala.`package`.List.apply[App.this.Foo](App.this.Foo.apply(0, &quot;Joe&quot;), App.this.Foo.apply(0, &quot;Bob&quot;)) : io.getquill.quotation.CaseClassValueLifting[List[App.this.Foo]]}} = ?.foreach((a) =&gt; querySchema(&quot;Foo&quot;).insert(v =&gt; v.id -&gt; a.id, v =&gt; v.value -&gt; a.value).returning((x8) =&gt; x8.id))
 
 // Update yielding a list of ids
 run(u4)
 // res5: doobie.package.ConnectionIO[List[Int]] = FlatMapped(
-//   FlatMapped(
-//     Suspend(
-//       BracketCase(
-//         Suspend(
-//           PrepareStatement3(
-//             &quot;INSERT INTO Foo (id,value) VALUES (?, ?) RETURNING id&quot;,
-//             1
+//   c = FlatMapped(
+//     c = FlatMapped(
+//       c = FlatMapped(
+//         c = Suspend(
+//           a = BracketCase(
+//             acquire = Suspend(
+//               a = PrepareStatement3(
+//                 a = &quot;INSERT INTO Foo (id,value) VALUES (?, ?) RETURNING id&quot;,
+//                 b = 1
+//               )
+//             ),
+//             use = doobie.hi.connection$$$Lambda$13508/0x00000008436ea040@513cd7c6,
+//             release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@4ced3b66
 //           )
 //         ),
-//         doobie.hi.connection$$$Lambda$11699/1217899299@121926ab,
-//         cats.effect.Bracket$$Lambda$10669/460742804@5df506e6
-//       )
+//         f = cats.Monad$$Lambda$11319/0x0000000842da9840@93d224f
+//       ),
+//       f = cats.Monad$$Lambda$11319/0x0000000842da9840@2c6ff116
 //     ),
-//     cats.FlatMap$$Lambda$10847/809117672@571b0d7b
+//     f = cats.Monad$$Lambda$11319/0x0000000842da9840@1bda91ba
 //   ),
-//   cats.Monad$$Lambda$10635/1801863636@18bb172b
+//   f = cats.Monad$$Lambda$11319/0x0000000842da9840@3ec9afac
 // )
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/17-Quill.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/17-Quill.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -344,7 +361,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -369,7 +386,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

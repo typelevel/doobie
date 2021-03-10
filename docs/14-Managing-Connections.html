@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -162,9 +163,12 @@ import doobie.implicits._
 </ul>
 <p>Given this information a <code>Transactor[M]</code> can provide the following transformations:</p>
 <ul>
-  <li><code>trans: ConnectionIO ~&gt; M</code> A natural transformation of a program in <code>ConnectionIO</code> to the target monad <code>M</code> that uses the given <code>Strategy</code> to wrap the given program with additional setup, error-handling and cleanup operations. This yields an independent program in <code>M</code>. This is the most common way to run a doobie program.</li>
-  <li>e.g., <code>xa.trans.apply(program1)</code></li>
-  <li>you can also use the syntax <code>program1.transact(xa)</code>, which runs <code>xa.trans</code> under the hood</li>
+  <li><code>trans: ConnectionIO ~&gt; M</code> A natural transformation of a program in <code>ConnectionIO</code> to the target monad <code>M</code> that uses the given <code>Strategy</code> to wrap the given program with additional setup, error-handling and cleanup operations. This yields an independent program in <code>M</code>. This is the most common way to run a doobie program.
+    <ul>
+      <li>e.g., <code>xa.trans.apply(program1)</code></li>
+      <li>you can also use the syntax <code>program1.transact(xa)</code>, which runs <code>xa.trans</code> under the hood</li>
+    </ul>
+  </li>
   <li><code>rawTrans</code> natural transformation equivalent to <code>trans</code> but one that does not use the provided <code>Strategy</code> to wrap the given program with additional operations. This can be useful in cases where transactional handling is unsupported or undesired.</li>
   <li><code>rawTransP: Stream[ConnectionIO, ?] ~&gt; Stream[M, ?]</code> equivalent to <code>rawTrans</code> but expressed using <code>Stream</code>.</li>
   <li><code>transP: Stream[ConnectionIO, ?] ~&gt; Stream[M, ?]</code> equivalent to <code>trans</code> but expressed using <code>Stream</code>.</li>
@@ -175,7 +179,7 @@ import doobie.implicits._
 <h3><a href="#about-threading" name="about-threading" class="anchor"><span class="anchor-link"></span></a>About Threading</h3>
 <p>Starting with version 0.6.0 <strong>doobie</strong> provides an asynchronous API that delegates blocking operations to dedicated execution contexts <em>if you use the provided <code>Transactor</code> implementations</em>. To construct any of the provided <code>Transactor[M]</code>s (other than <code>DriverManagerTransactor</code>) you need</p>
 <ul>
-  <li><code>ContextShift[M]</code>, which provides a CPU-bound pool for <strong>non-blocking operations</strong>. This is typically backed by <code>ExecutionContext.global</code>. If you use <code>IOApp</code> and interpret into <code>IO</code> this will be available for free.</li>
+  <li><code>ContextShift[M]</code>, which provides a CPU-bound pool for <strong>non-blocking operations</strong>. If you use <code>IOApp</code> and interpret into <code>IO</code> the ContextShift will be backed by a fixed thread pool matching the numbers of your processors.</li>
   <li>An <code>ExecutionContext</code> for <strong>awaiting connection</strong> to the database. Because there can be an unbounded number of connections awaiting database access this should be a <strong>bounded</strong> pool.</li>
   <li>A <code>cats.effect.Blocker</code> for <strong>executing JDBC operations</strong>. Because your connection pool limits the number of active connections this should be an <strong>unbounded</strong> pool.</li>
 </ul>
@@ -281,7 +285,7 @@ def transactor(c: Connection)(
 val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -345,7 +349,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -370,7 +374,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

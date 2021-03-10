@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -186,7 +187,7 @@ val create =
     )
   &quot;&quot;&quot;.update.quick
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">(drop *&gt; create).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">(drop *&gt; create).unsafeRunSync()
 //   0 row(s) updated
 //   0 row(s) updated
 </code></pre>
@@ -200,26 +201,26 @@ def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
 }
 </code></pre>
 <p>Insert works fine, as does reading the result. No surprises.</p>
-<pre class="prettyprint"><code class="language-scala">insert(&quot;Bob&quot;, List(&quot;Nixon&quot;, &quot;Slappy&quot;)).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insert(&quot;Bob&quot;, List(&quot;Nixon&quot;, &quot;Slappy&quot;)).quick.unsafeRunSync()
 //   Person(1,Bob,List(Nixon, Slappy))
-insert(&quot;Alice&quot;, Nil).quick.unsafeRunSync
+insert(&quot;Alice&quot;, Nil).quick.unsafeRunSync()
 //   Person(2,Alice,List())
 </code></pre>
 <h3><a href="#lamentations-of-null" name="lamentations-of-null" class="anchor"><span class="anchor-link"></span></a>Lamentations of <code>NULL</code></h3>
 <p><strong>doobie</strong> maps nullable columns via <code>Option</code>, so <code>null</code> is never observed in programs that use the high-level API, and the typechecking feature discussed earlier will find mismatches. So this means if you have a nullable SQL <code>varchar[]</code> then you will be chided grimly if you don&rsquo;t map it as <code>Option[List[String]]</code> (or some other supported sequence type).</p>
 <p>However there is another axis of variation here: the <em>array cells</em> themselves may contain null values. And the query checker can&rsquo;t save you here because this is not reflected in the metadata provided by PostgreSQL or H2, and probably not by anyone.</p>
 <p>So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a <code>NULL</code> cell would result in a <code>NullableCellRead</code> exception.</p>
-<pre class="prettyprint"><code class="language-scala">sql&quot;select array[&#39;foo&#39;,&#39;bar&#39;,&#39;baz&#39;]&quot;.query[List[String]].quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">sql&quot;select array[&#39;foo&#39;,&#39;bar&#39;,&#39;baz&#39;]&quot;.query[List[String]].quick.unsafeRunSync()
 //   List(foo, bar, baz)
-sql&quot;select array[&#39;foo&#39;,&#39;bar&#39;,&#39;baz&#39;]&quot;.query[Option[List[String]]].quick.unsafeRunSync
+sql&quot;select array[&#39;foo&#39;,&#39;bar&#39;,&#39;baz&#39;]&quot;.query[Option[List[String]]].quick.unsafeRunSync()
 //   Some(List(foo, bar, baz))
-sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[List[Option[String]]].quick.unsafeRunSync
+sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[List[Option[String]]].quick.unsafeRunSync()
 //   List(Some(foo), None, Some(baz))
-sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[Option[List[Option[String]]]].quick.unsafeRunSync
+sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[Option[List[Option[String]]]].quick.unsafeRunSync()
 //   Some(List(Some(foo), None, Some(baz)))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/11-Arrays.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/11-Arrays.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -279,7 +280,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -304,7 +305,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

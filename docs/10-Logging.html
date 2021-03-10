@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -188,7 +189,7 @@ val xa = Transactor.fromDriverManager[IO](
 }
 </code></pre>
 <p>When we run our program we get our result as expected.</p>
-<pre class="prettyprint"><code class="language-scala">byName(&quot;U%&quot;).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">byName(&quot;U%&quot;).unsafeRunSync()
 // res0: List[(String, String)] = List(
 //   (&quot;United Arab Emirates&quot;, &quot;ARE&quot;),
 //   (&quot;United Kingdom&quot;, &quot;GBR&quot;),
@@ -242,9 +243,9 @@ def byName2(pat: String) = {
 </code></pre>
 <p>But that&rsquo;s not interesting. Let&rsquo;s at least print the event out.</p>
 <pre class="prettyprint"><code class="language-scala">val trivial = LogHandler(e =&gt; Console.println(&quot;*** &quot; + e))
-// trivial: LogHandler = LogHandler(&lt;function1&gt;)
-sql&quot;select 42&quot;.queryWithLogHandler[Int](trivial).unique.transact(xa).unsafeRunSync
-// *** Success(select 42,List(),1803748 nanoseconds,285008 nanoseconds)
+// trivial: LogHandler = LogHandler(unsafeRun = &lt;function1&gt;)
+sql&quot;select 42&quot;.queryWithLogHandler[Int](trivial).unique.transact(xa).unsafeRunSync()
+// *** Success(select 42,List(),1232801 nanoseconds,278121 nanoseconds)
 // res1: Int = 42
 </code></pre>
 <p>The <code>jdkLogHandler</code> implementation is straightforward. You might use it as a template to write a logger to suit your particular logging back-end.</p>
@@ -292,7 +293,7 @@ val jdkLogHandler: LogHandler = {
 <p>Note that the <code>LogHandler</code> invocation is part of your <code>ConnectionIO</code> program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.</p>
 <p>Further note that the handler is not transactional; anything your logger does stays done, even if the transaction is rolled back. This is only for diagnostics, not for business logic.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/10-Logging.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/10-Logging.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -354,7 +355,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -379,7 +380,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

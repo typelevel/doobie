@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -188,31 +189,46 @@ val b = fr&quot;where code = &#39;USA&#39;&quot;
 // b: Fragment = Fragment(&quot;where code = &#39;USA&#39; &quot;)
 val c = a ++ b // concatenation by ++
 // c: Fragment = Fragment(&quot;select name from country where code = &#39;USA&#39; &quot;) // concatenation by ++
-c.query[String].unique.quick.unsafeRunSync
+c.query[String].unique.quick.unsafeRunSync()
 //   United States
 </code></pre>
 <p>Fragments can capture arguments of any type with a <code>Put</code> instance, just as the <code>sql</code> interpolator does.</p>
 <pre class="prettyprint"><code class="language-scala">def whereCode(s: String) = fr&quot;where code = $s&quot;
 val fra = whereCode(&quot;FRA&quot;)
 // fra: Fragment = Fragment(&quot;where code = ? &quot;)
-(fr&quot;select name from country&quot; ++ fra).query[String].quick.unsafeRunSync
+(fr&quot;select name from country&quot; ++ fra).query[String].quick.unsafeRunSync()
 //   France
 </code></pre>
 <p>You can lift an arbitrary string value via <code>Fragment.const</code>, which allows you to parameterize on things that aren&rsquo;t valid SQL parameters.</p>
 <pre class="prettyprint"><code class="language-scala">def count(table: String) = (fr&quot;select count(*) from&quot; ++ Fragment.const(table)).query[Int].unique
-count(&quot;city&quot;).quick.unsafeRunSync
+count(&quot;city&quot;).quick.unsafeRunSync()
 //   4079
 </code></pre>
 <blockquote>
   <p>Note that <code>Fragment.const</code> performs no escaping of passed strings. Passing user-supplied data is an <strong>injection risk</strong>.</p>
 </blockquote>
+<p>You can also use Fragments in <code>fr</code> interpolator directly. Both parameters and SQL literals will be substituted correctly.</p>
+<pre class="prettyprint"><code class="language-scala">val countryCode: String = &quot;NZL&quot;
+// countryCode: String = &quot;NZL&quot;
+val whereFragment: Fragment = fr&quot;WHERE code = $countryCode&quot;
+// whereFragment: Fragment = Fragment(&quot;WHERE code = ? &quot;)
+
+val frag = fr&quot;SELECT name FROM country $whereFragment&quot;
+// frag: Fragment = Fragment(&quot;SELECT name FROM country WHERE code = ?  &quot;)
+
+frag.query[String].option.quick.unsafeRunSync()
+//   Some(New Zealand)
+</code></pre>
+<blockquote>
+  <p>As long as your individual fragments were constructed securely (i.e. Never call <code>Fragment.const</code> with user supplied input), You can freely concatenate or interpolate fragments without worrying about SQL injection.</p>
+</blockquote>
 <h3><a href="#whitespace-handling" name="whitespace-handling" class="anchor"><span class="anchor-link"></span></a>Whitespace handling</h3>
 <p>The rendered SQL string for a <code>fr</code> or <code>const</code> fragment will have a single space character appended, which is usually what you want. Normally you don&rsquo;t need to worry about whitespace when composing fragments.</p>
 <p>If you do <em>not</em> want a fragment to have trailing space you can use the <code>fr0</code> interpolator or <code>const0</code> constructor. This is used here and there in the <code>Fragments</code> module to yield prettier SQL strings.</p>
 <pre class="prettyprint"><code class="language-scala">fr&quot;IN (&quot; ++ List(1, 2, 3).map(n =&gt; fr&quot;$n&quot;).intercalate(fr&quot;,&quot;) ++ fr&quot;)&quot;
-// res3: Fragment = Fragment(&quot;IN ( ? , ? , ? ) &quot;)
+// res4: Fragment = Fragment(&quot;IN ( ? , ? , ? ) &quot;)
 fr0&quot;IN (&quot; ++ List(1, 2, 3).map(n =&gt; fr0&quot;$n&quot;).intercalate(fr&quot;,&quot;) ++ fr&quot;)&quot;
-// res4: Fragment = Fragment(&quot;IN (?, ?, ?) &quot;)
+// res5: Fragment = Fragment(&quot;IN (?, ?, ?) &quot;)
 </code></pre>
 <p>Note that the <code>sql</code> interpolator is simply an alias for <code>fr0</code>.</p>
 <h3><a href="#the-fragments-module" name="the-fragments-module" class="anchor"><span class="anchor-link"></span></a>The <code>Fragments</code> Module</h3>
@@ -245,16 +261,16 @@ def select(name: Option[String], pop: Option[Int], codes: List[String], limit: L
 </code></pre>
 <p>We first construct three optional filters, the third of which uses the <code>in</code> combinator to construct an SQL <code>IN</code> clause. The final statement uses the <code>whereAndOpt</code> combinator that constructs a <code>WHERE</code> clause with the passed sequence of <code>Option[Fragment]</code> joined with <code>AND</code> if any are defined, otherwise it evaluates to the empty fragment. The end result is that the <code>WHERE</code> clause appears only if at least one filter is defined.</p>
 <p>Let&rsquo;s look at a few possibilities.</p>
-<pre class="prettyprint"><code class="language-scala">select(None, None, Nil, 10).check.unsafeRunSync // no filters
-//   Query0[App.Info] defined at 08-Fragments.md:116
+<pre class="prettyprint"><code class="language-scala">select(None, None, Nil, 10).check.unsafeRunSync() // no filters
+//   Query0[App.this.Info] defined at 08-Fragments.md:131
 //   SELECT name, code, population FROM country LIMIT ?
 //   ✓ SQL Compiles and TypeChecks
 //   ✓ P01 Long  →  BIGINT (int8)
 //   ✓ C01 name       VARCHAR (varchar) NOT NULL  →  String
 //   ✓ C02 code       CHAR    (bpchar)  NOT NULL  →  String
 //   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int // no filters
-select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync // one filter
-//   Query0[App.Info] defined at 08-Fragments.md:116
+select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync() // one filter
+//   Query0[App.this.Info] defined at 08-Fragments.md:131
 //   SELECT name, code, population FROM country WHERE (name LIKE ? )
 //   LIMIT ?
 //   ✓ SQL Compiles and TypeChecks
@@ -263,8 +279,8 @@ select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync // one filter
 //   ✓ C01 name       VARCHAR (varchar) NOT NULL  →  String
 //   ✓ C02 code       CHAR    (bpchar)  NOT NULL  →  String
 //   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int // one filter
-select(Some(&quot;U%&quot;), Some(12345), List(&quot;FRA&quot;, &quot;GBR&quot;), 10).check.unsafeRunSync // three filters
-//   Query0[App.Info] defined at 08-Fragments.md:116
+select(Some(&quot;U%&quot;), Some(12345), List(&quot;FRA&quot;, &quot;GBR&quot;), 10).check.unsafeRunSync() // three filters
+//   Query0[App.this.Info] defined at 08-Fragments.md:131
 //   SELECT name, code, population FROM country WHERE (name LIKE ? ) AND
 //   (population &gt; ? ) AND (code IN (?, ?) ) LIMIT ?
 //   ✓ SQL Compiles and TypeChecks
@@ -278,7 +294,7 @@ select(Some(&quot;U%&quot;), Some(12345), List(&quot;FRA&quot;, &quot;GBR&quot;)
 //   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/08-Fragments.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/08-Fragments.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -339,7 +355,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -364,7 +380,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

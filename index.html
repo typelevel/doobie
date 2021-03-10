@@ -11,6 +11,7 @@
 <script type="text/javascript" src="js/page.js"></script>
 <script type="text/javascript" src="js/warnOldVersion.js"></script>
 <script type="text/javascript" src="js/groups.js"></script>
+<script type="text/javascript" src="js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -156,30 +157,32 @@ def find(n: String): ConnectionIO[Option[Country]] =
   sql&quot;select code, name, population from country where name = $n&quot;.query[Country].option
 </code></pre>
 <p>And then …</p>
-<pre class="prettyprint"><code class="language-scala">find(&quot;France&quot;).transact(xa).unsafeRunSync
-// res0: Option[Country] = Some(Country(&quot;FRA&quot;, &quot;France&quot;, 59225700L))
+<pre class="prettyprint"><code class="language-scala">find(&quot;France&quot;).transact(xa).unsafeRunSync()
+// res0: Option[Country] = Some(
+//   value = Country(code = &quot;FRA&quot;, name = &quot;France&quot;, population = 59225700L)
+// )
 </code></pre>
 <p><strong>doobie</strong> is a <a href="http://typelevel.org/"><strong>Typelevel</strong></a> project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala <a href="http://scala-lang.org/conduct.html"><strong>Code of Conduct</strong></a>.</p>
 <h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
-<p>The current version is <strong>0.9.0</strong> for <strong>Scala 2.12/13</strong> with</p>
+<p>The current version is <strong>0.12.1</strong> for <strong>Scala 2.12/13/0/0</strong> with</p>
 <ul>
-  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.1.1</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 2.3.0</li>
+  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.4.2</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 2.5.3</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.3</li>
 </ul>
 <p>To use <strong>doobie</strong> you need to add the following to your <code>build.sbt</code>. If you&rsquo;re not using the Postgres or H2 add-ons you&rsquo;ll also need to provide a JDBC driver for the database you&rsquo;re using.</p>
 <pre class="prettyprint"><code class="language-scala">libraryDependencies ++= Seq(
 
   // Start with this one
-  &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;      % &quot;0.9.0&quot;,
+  &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;      % &quot;0.12.1&quot;,
 
   // And add any of these as needed
-  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;0.9.0&quot;,          // H2 driver 1.4.200 + type mappings.
-  &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;0.9.0&quot;,          // HikariCP transactor.
-  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;0.9.0&quot;,          // Postgres driver 42.2.12 + type mappings.
-  &quot;org.tpolecat&quot; %% &quot;doobie-quill&quot;     % &quot;0.9.0&quot;,          // Support for Quill 3.5.1
-  &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;0.9.0&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
-  &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;0.9.0&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
+  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;0.12.1&quot;,          // H2 driver 1.4.200 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;0.12.1&quot;,          // HikariCP transactor.
+  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;0.12.1&quot;,          // Postgres driver 42.2.19 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-quill&quot;     % &quot;0.12.1&quot;,          // Support for Quill 3.6.1
+  &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;0.12.1&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
+  &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;0.12.1&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
 
 )
 </code></pre>
@@ -217,8 +220,27 @@ sbt:docs&gt; clean
 sbt:docs&gt; makeSite
 sbt:doce&gt; ghpagesPushSite
 </code></pre>
+<h2><a href="#adopters" name="adopters" class="anchor"><span class="anchor-link"></span></a>Adopters</h2>
+<p>Here&rsquo;s a (non-exhaustive) list of companies that use doobie in production. Don&rsquo;t see yours? <a href="https://github.com/tpolecat/doobie/edit/master/modules/docs/src/main/mdoc/index.md">You can add it in a PR!</a></p>
+<ul>
+  <li><a href="https://avast.com">Avast</a></li>
+  <li><a href="https://banno.com/">Banno at Jack Henry &amp; Associates</a></li>
+  <li><a href="https://crunchbase.com">Crunchbase</a></li>
+  <li><a href="https://doomoolmori.com">Doomoolmori</a></li>
+  <li><a href="https://www.ebay.com">eBay Inc.</a></li>
+  <li><a href="https://hi.fi">HIFI</a></li>
+  <li><a href="https://www.itv.com/">ITV</a></li>
+  <li><a href="https://lenses.io">lences.io</a></li>
+  <li><a href="https://www.medidata.com/">Medidata</a></li>
+  <li><a href="https://noirlab.edu">NOIRLab</a></li>
+  <li><a href="https://raiffeisen.ru">RaiffeisenBank Russia</a></li>
+  <li><a href="www.reachfive.com">ReachFive</a></li>
+  <li><a href="https://rudder.io">Rudder</a></li>
+  <li><a href="https://softwaremill.com">SoftwareMill</a></li>
+  <li><a href="https://unit.co">Unit</a></li>
+</ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/index.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/index.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -238,6 +260,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="index.html#presentations-blog-posts-etc-" class="header">Presentations, Blog Posts, etc.</a></li>
     <li><a href="index.html#testing" class="header">Testing</a></li>
     <li><a href="index.html#building-the-doc-site" class="header">Building the Doc Site</a></li>
+    <li><a href="index.html#adopters" class="header">Adopters</a></li>
   </ul></li>
 </ul>
 </div>
@@ -280,7 +303,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -305,7 +328,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

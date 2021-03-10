@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -194,8 +195,8 @@ import y._
   &quot;&quot;&quot;.query[Country]
 </code></pre>
 <p>Now let&rsquo;s try the <code>check</code> method provided by YOLO and see what happens.</p>
-<pre class="prettyprint"><code class="language-scala">biggerThan(0).check.unsafeRunSync
-//   Query0[App.Country] defined at 06-Checking.md:63
+<pre class="prettyprint"><code class="language-scala">biggerThan(0).check.unsafeRunSync()
+//   Query0[App.this.Country] defined at 06-Checking.md:63
 //   select code, name, population, gnp, indepyear
 //   from country
 //   where population &gt; ?
@@ -236,8 +237,8 @@ def biggerThan2(minPop: Int) =
     where population &gt; $minPop
   &quot;&quot;&quot;.query[Country2]
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">biggerThan2(0).check.unsafeRunSync
-//   Query0[App.Country2] defined at 06-Checking.md:83
+<pre class="prettyprint"><code class="language-scala">biggerThan2(0).check.unsafeRunSync()
+//   Query0[App.this.Country2] defined at 06-Checking.md:83
 //   select code, name, population, gnp
 //   from country
 //   where population &gt; ?
@@ -252,8 +253,8 @@ def biggerThan2(minPop: Int) =
 <h3><a href="#working-around-bad-metadata" name="working-around-bad-metadata" class="anchor"><span class="anchor-link"></span></a>Working Around Bad Metadata</h3>
 <p>Some drivers do not implement the JDBC metadata specification very well, which limits the usefulness of the query checking feature. MySQL and MS-SQL do a particularly rotten job in this department. In some cases queries simply cannot be checked because no metadata is available for the prepared statement (manifested as an exception) or the returned metadata is obviously inaccurate.</p>
 <p>However a common case is that <em>parameter</em> metadata is unavailable but <em>output column</em> metadata is. And in these cases there is a workaround: use <code>checkOutput</code> rather than <code>check</code>. This instructs <strong>doobie</strong> to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.</p>
-<pre class="prettyprint"><code class="language-scala">biggerThan(0).checkOutput.unsafeRunSync
-//   Query0[App.Country] defined at 06-Checking.md:63
+<pre class="prettyprint"><code class="language-scala">biggerThan(0).checkOutput.unsafeRunSync()
+//   Query0[App.this.Country] defined at 06-Checking.md:63
 //   select code, name, population, gnp, indepyear
 //   from country
 //   where population &gt; ?
@@ -284,7 +285,7 @@ def biggerThan2(minPop: Int) =
   <li>Coercibility of types. Mapping of Scala types to JDBC types and JDBC types to vendor types, is asymmetric with respect to reading and writing, and the specification is quite terrible. <strong>doobie</strong> encodes the JDBC spec and combines this with vendor-specific metadata to determine whether a given asserted mapping is sensible or not, and if not, will suggest a fix via changing the Scala type, and another via changing the schema type.</li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/06-Checking.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/06-Checking.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -345,7 +346,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -370,7 +371,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

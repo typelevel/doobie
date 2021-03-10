@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -178,8 +179,8 @@ val xa = Transactor.fromDriverManager[IO](
   val y = xa.yolo
   import y._
   val s = &quot;foo&quot;
-  sql&quot;select $s&quot;.query[String].check.unsafeRunSync
-  sql&quot;select $s :: char&quot;.query[String].check.unsafeRunSync
+  sql&quot;select $s&quot;.query[String].check.unsafeRunSync()
+  sql&quot;select $s :: char&quot;.query[String].check.unsafeRunSync()
 }
 //   Query0[String] defined at 18-FAQ.md:66
 //   select ?
@@ -224,9 +225,9 @@ def cities(code: Code, asc: Boolean): Query0[City] = {
 <pre class="prettyprint"><code class="language-scala">{
   val y = xa.yolo
   import y._
-  cities(Code(&quot;USA&quot;), true).check.unsafeRunSync
+  cities(Code(&quot;USA&quot;), true).check.unsafeRunSync()
 }
-//   Query0[App.City] defined at 18-FAQ.md:89
+//   Query0[App.this.City] defined at 18-FAQ.md:89
 //   SELECT countrycode, name, population
 //   FROM city
 //   WHERE countrycode = ?
@@ -241,8 +242,8 @@ def cities(code: Code, asc: Boolean): Query0[City] = {
 <pre class="prettyprint"><code class="language-scala">{
   val y = xa.yolo
   import y._
-  cities(Code(&quot;USA&quot;), true).stream.take(5).quick.unsafeRunSync
-  cities(Code(&quot;USA&quot;), false).stream.take(5).quick.unsafeRunSync
+  cities(Code(&quot;USA&quot;), true).stream.take(5).quick.unsafeRunSync()
+  cities(Code(&quot;USA&quot;), false).stream.take(5).quick.unsafeRunSync()
 }
 //   City(Code(USA),Abilene,115930)
 //   City(Code(USA),Akron,217074)
@@ -273,7 +274,7 @@ val join =
 <pre class="prettyprint"><code class="language-scala">{
   val y = xa.yolo
   import y._
-  join.stream.filter(_._1.name.startsWith(&quot;United&quot;)).quick.unsafeRunSync
+  join.stream.filter(_._1.name.startsWith(&quot;United&quot;)).quick.unsafeRunSync()
 }
 //   (Country(United Arab Emirates,ARE),Some(City2(Abu Dhabi,Abu Dhabi)))
 //   (Country(United Kingdom,GBR),Some(City2(London,England)))
@@ -330,8 +331,37 @@ implicit val nesMeta: Meta[NonEmptyString] = {
   distinct.string(&quot;nes&quot;).imap(NonEmptyString.apply)(_.value)
 }
 </code></pre>
+<h2><a href="#how-do-i-use-java-time-types-with-doobie-" name="how-do-i-use-java-time-types-with-doobie-" class="anchor"><span class="anchor-link"></span></a>How do I use <code>java.time</code> types with Doobie?</h2>
+<p>This depends on whether the underlying JDBC driver you&rsquo;re using supports <code>java.time.*</code> types natively. (&ldquo;native support&rdquo; means that you can hand the driver e.g. a value of java.time.Instant and it will know how to convert that to a value on-the-wire that the actual database can understand)</p>
+<p>If you&rsquo;re using PostgreSQL, you can import that instances via <code>import doobie.postgres.implicits._</code></p>
+<p>If your JDBC driver supports the java.time types you&rsquo;re using natively, use <code>import doobie.implicits.javatimedrivernative._</code>.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Database driver </th>
+      <th>java.time.Instant </th>
+      <th>java.time.LocalDate </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Postgres (org.postgresql.Driver) </td>
+      <td><code>doobie.postgres.implicits._</code> </td>
+      <td><code>doobie.postgres.implicits._</code> </td>
+    </tr>
+    <tr>
+      <td>MySQL (com.mysql.jdbc.Driver) </td>
+      <td><code>doobie.implicits.legacy.instant._</code> </td>
+      <td><code>doobie.implicits.legacy.localdate._</code> </td>
+    </tr>
+  </tbody>
+</table>
+<p>References:</p>
+<ul>
+  <li><a href="https://jdbc.postgresql.org/documentation/head/8-date-time.html">Postgres JDBC - Using Java 8 Date and Time classes</a></li>
+</ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/18-FAQ.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/18-FAQ.md">here</a>.
 </div>
 
 </div>
@@ -353,6 +383,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="../docs/18-FAQ.html#why-is-there-no-get-or-put-for-sqlxml-" class="header">Why is there no <code>Get</code> or <code>Put</code> for <code>SQLXML</code>?</a></li>
     <li><a href="../docs/18-FAQ.html#how-do-i-set-the-chunk-size-for-streaming-results-" class="header">How do I set the chunk size for streaming results?</a></li>
     <li><a href="../docs/18-FAQ.html#my-postgres-domains-are-all-type-checking-as-distinct-how-can-i-get-my-yolo-tests-to-pass-" class="header">My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?</a></li>
+    <li><a href="../docs/18-FAQ.html#how-do-i-use-java-time-types-with-doobie-" class="header">How do I use <code>java.time</code> types with Doobie?</a></li>
   </ul></li>
 </ul>
 </div>
@@ -395,7 +426,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -420,7 +451,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

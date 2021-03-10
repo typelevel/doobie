@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -144,9 +145,17 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-postgresql" name="extensions-for-postgresql" class="anchor"><span class="anchor-link"></span></a>Extensions for PostgreSQL</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;0.9.0&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;0.12.1&quot;
 </code></pre>
 <p>This library pulls in <a href="https://jdbc.postgresql.org">PostgreSQL JDBC Driver</a> as a transitive dependency.</p>
+<p>There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:</p>
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;0.12.1&quot;
+</code></pre>
+<p>Then, you will be able to import the implicits for dealing with JSON:</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.circe.json.implicits
+import doobie.postgres.circe.jsonb.implicits
+
+</code></pre>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
 <p>The following examples require a few imports.</p>
 <pre class="prettyprint"><code class="language-scala">import cats._
@@ -175,6 +184,14 @@ val xa = Transactor.fromDriverManager[IO](
 <pre class="prettyprint"><code class="language-scala">import doobie.postgres._
 import doobie.postgres.implicits._
 </code></pre>
+<h3><a href="#java-8-time-types-jsr310-" name="java-8-time-types-jsr310-" class="anchor"><span class="anchor-link"></span></a>Java 8 Time Types (JSR310)</h3>
+<p>An explicit import is required to bring mappings for <code>java.time.Instant</code> / <code>java.time.LocalDate</code></p>
+<pre class="prettyprint"><code class="language-scala">// Provides mappings for java.time.Instant
+import doobie.implicits.legacy.instant._ 
+
+// Provides mappings for java.time.LocalDate
+import doobie.implicits.legacy.localdate._
+</code></pre>
 <h3><a href="#array-types" name="array-types" class="anchor"><span class="anchor-link"></span></a>Array Types</h3>
 <p><strong>doobie</strong> supports single-dimensional arrays of the following types:</p>
 <ul>
@@ -199,7 +216,7 @@ import doobie.postgres.implicits._
 
 implicit val MyEnumMeta = pgEnum(MyEnum, &quot;myenum&quot;)
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">sql&quot;select &#39;foo&#39;::myenum&quot;.query[MyEnum.Value].unique.transact(xa).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">sql&quot;select &#39;foo&#39;::myenum&quot;.query[MyEnum.Value].unique.transact(xa).unsafeRunSync()
 // res0: MyEnum.Value = foo
 </code></pre>
 <p>It works, but <code>Enumeration</code> is terrible so it&rsquo;s unlikely you will want to do this. A better option, perhaps surprisingly, is to map <code>myenum</code> to a <strong>Java</strong> <code>enum</code> via the <code>pgJavaEnum</code> constructor.</p>
@@ -233,7 +250,7 @@ object FooBar {
 implicit val FoobarMeta: Meta[FooBar] =
   pgEnumStringOpt(&quot;myenum&quot;, FooBar.fromEnum, FooBar.toEnum)
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">sql&quot;select &#39;foo&#39;::myenum&quot;.query[FooBar].unique.transact(xa).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">sql&quot;select &#39;foo&#39;::myenum&quot;.query[FooBar].unique.transact(xa).unsafeRunSync()
 // res1: FooBar = Foo
 </code></pre>
 <h3><a href="#geometric-types" name="geometric-types" class="anchor"><span class="anchor-link"></span></a>Geometric Types</h3>
@@ -284,25 +301,25 @@ import doobie.postgres.pgisimplicits._
 <pre class="prettyprint"><code class="language-scala">val p = sql&quot;oops&quot;.query[String].unique // this won&#39;t work
 </code></pre>
 <p>Some of the recovery combinators demonstrated:</p>
-<pre class="prettyprint"><code class="language-scala">p.attempt.transact(xa).unsafeRunSync // attempt is provided by ApplicativeError instance
+<pre class="prettyprint"><code class="language-scala">p.attempt.transact(xa).unsafeRunSync() // attempt is provided by ApplicativeError instance
 // res2: Either[Throwable, String] = Left(
-//   org.postgresql.util.PSQLException: ERROR: syntax error at or near &quot;oops&quot;
+//   value = org.postgresql.util.PSQLException: ERROR: syntax error at or near &quot;oops&quot;
 //   Position: 1
 // ) // attempt is provided by ApplicativeError instance
 
-p.attemptSqlState.transact(xa).unsafeRunSync // this catches only SQL exceptions
-// res3: Either[SqlState, String] = Left(SqlState(&quot;42601&quot;)) // this catches only SQL exceptions
+p.attemptSqlState.transact(xa).unsafeRunSync() // this catches only SQL exceptions
+// res3: Either[SqlState, String] = Left(value = SqlState(value = &quot;42601&quot;)) // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState(&quot;42601&quot;) =&gt; &quot;caught!&quot; } .transact(xa).unsafeRunSync // catch it
-// res4: Either[String, String] = Left(&quot;caught!&quot;) // catch it
+p.attemptSomeSqlState { case SqlState(&quot;42601&quot;) =&gt; &quot;caught!&quot; } .transact(xa).unsafeRunSync() // catch it
+// res4: Either[String, String] = Left(value = &quot;caught!&quot;) // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR =&gt; &quot;caught!&quot; } .transact(xa).unsafeRunSync // same, w/constant
-// res5: Either[String, String] = Left(&quot;caught!&quot;) // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR =&gt; &quot;caught!&quot; } .transact(xa).unsafeRunSync() // same, w/constant
+// res5: Either[String, String] = Left(value = &quot;caught!&quot;) // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR =&gt; &quot;caught!&quot;.pure[ConnectionIO] } .transact(xa).unsafeRunSync // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR =&gt; &quot;caught!&quot;.pure[ConnectionIO] } .transact(xa).unsafeRunSync() // recover
 // res6: String = &quot;caught!&quot; // recover
 
-p.onSyntaxError(&quot;caught!&quot;.pure[ConnectionIO]).transact(xa).unsafeRunSync // using recovery combinator
+p.onSyntaxError(&quot;caught!&quot;.pure[ConnectionIO]).transact(xa).unsafeRunSync() // using recovery combinator
 // res7: String = &quot;caught!&quot;
 </code></pre>
 <h3><a href="#server-side-statements" name="server-side-statements" class="anchor"><span class="anchor-link"></span></a>Server-Side Statements</h3>
@@ -362,7 +379,7 @@ val foods = List(
   sql&quot;COPY food (name, vegetarian, calories) FROM STDIN&quot;.copyIn(fa)
 </code></pre>
 <p>We can run it thus, yielding the number of affected rows.</p>
-<pre class="prettyprint"><code class="language-scala">(create *&gt; insert(foods)).transact(xa).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">(create *&gt; insert(foods)).transact(xa).unsafeRunSync()
 // res8: Long = 3L
 </code></pre>
 <h3><a href="#fastpath" name="fastpath" class="anchor"><span class="anchor-link"></span></a>Fastpath</h3>
@@ -373,24 +390,24 @@ val foods = List(
   .query[String]    // Query0[String]
   .explain
   .transact(xa)
-  .unsafeRunSync
+  .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11)
+// Seq Scan on country  (cost=0.00..8.87 rows=287 width=11)
 </code></pre>
 <p>Similary, <code>explainAnalyze</code> will analyze the query <strong>and</strong> run it, comparing the query planner&rsquo;s estimates with real performance. Using the example above again:</p>
 <pre class="prettyprint"><code class="language-scala">sql&quot;select name from country&quot;
   .query[String]    // Query0[String]
   .explainAnalyze
   .transact(xa)
-  .unsafeRunSync
+  .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.012..1.799 rows=239 loops=1)
-// Planning Time: 0.147 ms
-// Execution Time: 4.005 ms
+// Seq Scan on country  (cost=0.00..8.87 rows=287 width=11) (actual time=0.021..2.054 rows=239 loops=1)
+// Planning Time: 0.210 ms
+// Execution Time: 3.968 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -406,6 +423,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
   <li><a href="../docs/15-Extensions-PostgreSQL.html#extensions-for-postgresql" class="header">Extensions for PostgreSQL</a>
   <ul>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#setting-up" class="header">Setting Up</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html#java-8-time-types-jsr310-" class="header">Java 8 Time Types (JSR310)</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#array-types" class="header">Array Types</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#enum-types" class="header">Enum Types</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#geometric-types" class="header">Geometric Types</a></li>
@@ -460,7 +478,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -485,7 +503,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

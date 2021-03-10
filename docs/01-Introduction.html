@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -185,9 +186,9 @@ $
 <p>You can of course change this setup if you like, but you will need to adjust your JDBC connection information accordingly. Most examples will work with any compliant database, but in a few cases (noted in the text) we rely on vendor-specific behavior.</p>
 <h4><a href="#scala-setup" name="scala-setup" class="anchor"><span class="anchor-link"></span></a>Scala Setup</h4>
 <p>On the Scala side you just need a console with the proper dependencies. A minimal <code>build.sbt</code> would look something like this.</p>
-<pre class="prettyprint"><code class="language-scala">scalaVersion := &quot;2.13.1&quot; // Scala 2.13.1
+<pre class="prettyprint"><code class="language-scala">scalaVersion := &quot;2.13.5&quot; // Scala 2.13.5
 
-lazy val doobieVersion = &quot;0.9.0&quot;
+lazy val doobieVersion = &quot;0.12.1&quot;
 
 libraryDependencies ++= Seq(
   &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;     % doobieVersion,
@@ -208,9 +209,9 @@ val nel = NonEmptyList.of(Person(&quot;Bob&quot;, 12), Person(&quot;Alice&quot;,
 </code></pre>
 <p>And sometimes they will appear with output.</p>
 <pre class="prettyprint"><code class="language-scala">nel.head
-// res0: Person = Person(&quot;Bob&quot;, 12)
+// res0: Person = Person(name = &quot;Bob&quot;, age = 12)
 nel.tail
-// res1: List[Person] = List(Person(&quot;Alice&quot;, 14))
+// res1: List[Person] = List(Person(name = &quot;Alice&quot;, age = 14))
 </code></pre>
 <p>Sometimes we demonstrate that something doesn&rsquo;t compile. In such cases it will be clear from the context that this is expected, and not a problem with the documentation.</p>
 <pre class="prettyprint"><code class="language-scala">woozle(nel) // doesn&#39;t compile
@@ -221,7 +222,7 @@ nel.tail
 <h3><a href="#feedback-and-contributions" name="feedback-and-contributions" class="anchor"><span class="anchor-link"></span></a>Feedback and Contributions</h3>
 <p>Feedback on <strong>doobie</strong> or this book is genuinely welcome. Please feel free to file a <a href="https://github.com/tpolecat/doobie">pull request</a> if you have a contribution, or file an <a href="https://github.com/tpolecat/doobie/issues">issue</a>, or chat with us on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/01-Introduction.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/01-Introduction.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -282,7 +283,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -307,7 +308,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -182,20 +183,23 @@ import y._
 <p>All <strong>doobie</strong> monads provide an <code>Async</code> instance, which extends <code>MonadError[?[_], Throwable]</code>. This means <code>ConnectionIO</code>, etc., have the following primitive operations:</p>
 <ul>
   <li><code>.attempt</code> converts <code>M[A]</code> into <code>M[Either[Throwable, A]]</code></li>
-  <li><code>fail</code> constructs an <code>M[A]</code> that fails with a provided <code>Throwable</code></li>
+  <li><code>raiseError</code> constructs an <code>M[A]</code> that fails with a provided <code>Throwable</code></li>
 </ul>
 <p>So any <strong>doobie</strong> program can be lifted into a disjunction simply by adding <code>.attempt</code>.</p>
 <pre class="prettyprint"><code class="language-scala">val p = 42.pure[ConnectionIO]
-// p: ConnectionIO[Int] = Pure(42)
+// p: ConnectionIO[Int] = Pure(a = 42)
 p.attempt
 // res0: ConnectionIO[Either[Throwable, Int]] = Suspend(
-//   HandleErrorWith(
-//     FlatMapped(Pure(42), cats.Monad$$Lambda$10635/1801863636@443f823f),
-//     cats.ApplicativeError$$Lambda$10732/1783129345@755e11b2
+//   a = HandleErrorWith(
+//     fa = FlatMapped(
+//       c = Pure(a = 42),
+//       f = cats.Monad$$Lambda$11319/0x0000000842da9840@411b359b
+//     ),
+//     f = cats.ApplicativeError$$Lambda$11420/0x0000000842e22040@3e86944b
 //   )
 // )
 </code></pre>
-<p>From the <code>.attempt</code> and <code>fail</code> combinators we can derive many other operations, as described in the Cats documentation. In addition <strong>doobie</strong> provides the following specialized combinators that only pay attention to <code>SQLException</code>:</p>
+<p>From the <code>.attempt</code> and <code>raiseError</code> combinators we can derive many other operations, as described in the Cats documentation. In addition <strong>doobie</strong> provides the following specialized combinators that only pay attention to <code>SQLException</code>:</p>
 <ul>
   <li><code>attemptSql</code> is like <code>attempt</code> but only traps <code>SQLException</code>.</li>
   <li><code>attemptSomeSql</code> traps only specified <code>SQLException</code>s.</li>
@@ -218,7 +222,7 @@ p.attempt
           id    SERIAL,
           name  VARCHAR NOT NULL UNIQUE
         )&quot;&quot;&quot;
-).traverse(_.update.quick).void.unsafeRunSync
+).traverse(_.update.quick).void.unsafeRunSync()
 //   0 row(s) updated
 //   0 row(s) updated
 </code></pre>
@@ -232,12 +236,12 @@ def insert(s: String): ConnectionIO[Person] = {
 }
 </code></pre>
 <p>The first insert will work.</p>
-<pre class="prettyprint"><code class="language-scala">insert(&quot;bob&quot;).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insert(&quot;bob&quot;).quick.unsafeRunSync()
 //   Person(1,bob)
 </code></pre>
 <p>The second will fail with a unique constraint violation.</p>
 <pre class="prettyprint"><code class="language-scala">try {
-  insert(&quot;bob&quot;).quick.unsafeRunSync
+  insert(&quot;bob&quot;).quick.unsafeRunSync()
 } catch {
   case e: java.sql.SQLException =&gt;
     println(e.getMessage)
@@ -256,14 +260,14 @@ def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
   }
 </code></pre>
 <p>Given this definition we can safely attempt to insert duplicate records and get a helpful error message rather than an exception.</p>
-<pre class="prettyprint"><code class="language-scala">safeInsert(&quot;bob&quot;).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">safeInsert(&quot;bob&quot;).quick.unsafeRunSync()
 //   Left(Oops!)
 
-safeInsert(&quot;steve&quot;).quick.unsafeRunSync
+safeInsert(&quot;steve&quot;).quick.unsafeRunSync()
 //   Right(Person(4,steve))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/09-Error-Handling.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/09-Error-Handling.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -324,7 +328,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -349,7 +353,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

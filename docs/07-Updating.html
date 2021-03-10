@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -189,7 +190,7 @@ val create =
   &quot;&quot;&quot;.update.run
 </code></pre>
 <p>We can compose these and run them together, yielding the total number of affected rows.</p>
-<pre class="prettyprint"><code class="language-scala">(drop, create).mapN(_ + _).transact(xa).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">(drop, create).mapN(_ + _).transact(xa).unsafeRunSync()
 // res0: Int = 0
 </code></pre>
 <h3><a href="#inserting" name="inserting" class="anchor"><span class="anchor-link"></span></a>Inserting</h3>
@@ -198,23 +199,23 @@ val create =
   sql&quot;insert into person (name, age) values ($name, $age)&quot;.update
 </code></pre>
 <p>Let&rsquo;s insert a few rows.</p>
-<pre class="prettyprint"><code class="language-scala">insert1(&quot;Alice&quot;, Some(12)).run.transact(xa).unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insert1(&quot;Alice&quot;, Some(12)).run.transact(xa).unsafeRunSync()
 // res1: Int = 1
-insert1(&quot;Bob&quot;, None).quick.unsafeRunSync // switch to YOLO mode
+insert1(&quot;Bob&quot;, None).quick.unsafeRunSync() // switch to YOLO mode
 //   1 row(s) updated
 </code></pre>
 <p>And read them back.</p>
 <pre class="prettyprint"><code class="language-scala">case class Person(id: Long, name: String, age: Option[Short])
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSync()
 //   Person(1,Alice,Some(12))
 //   Person(2,Bob,None)
 </code></pre>
 <h3><a href="#updating" name="updating" class="anchor"><span class="anchor-link"></span></a>Updating</h3>
 <p>Updating follows the same pattern. Here we update Alice&rsquo;s age.</p>
-<pre class="prettyprint"><code class="language-scala">sql&quot;update person set age = 15 where name = &#39;Alice&#39;&quot;.update.quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">sql&quot;update person set age = 15 where name = &#39;Alice&#39;&quot;.update.quick.unsafeRunSync()
 //   1 row(s) updated
-sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSync
+sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSync()
 //   Person(2,Bob,None)
 //   Person(1,Alice,Some(15))
 </code></pre>
@@ -227,7 +228,7 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
     p  &lt;- sql&quot;select id, name, age from person where id = $id&quot;.query[Person].unique
   } yield p
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">insert2(&quot;Jimmy&quot;, Some(42)).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insert2(&quot;Jimmy&quot;, Some(42)).quick.unsafeRunSync()
 //   Person(3,Jimmy,Some(42))
 </code></pre>
 <p>This is irritating but it is supported by all databases (although the &ldquo;get the last used id&rdquo; function will vary by vendor).</p>
@@ -242,7 +243,7 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
             .unique
   } yield p
 </code></pre>
-<pre class="prettyprint"><code class="language-scala">insert2_H2(&quot;Ramone&quot;, Some(42)).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insert2_H2(&quot;Ramone&quot;, Some(42)).quick.unsafeRunSync()
 //   Person(4,Ramone,Some(42))
 </code></pre>
 <p>Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.</p>
@@ -253,7 +254,7 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
 }
 </code></pre>
 <p>The <code>withUniqueGeneratedKeys</code> specifies that we expect exactly one row back (otherwise an exception will be raised), and requires a list of columns to return. This isn&rsquo;t the most beautiful API but it&rsquo;s what JDBC gives us. And it does work.</p>
-<pre class="prettyprint"><code class="language-scala">insert3(&quot;Elvis&quot;, None).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insert3(&quot;Elvis&quot;, None).quick.unsafeRunSync()
 //   Person(5,Elvis,None)
 </code></pre>
 <p>This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit <code>unique</code> and get a <code>Stream[ConnectionIO, Person]</code> back.</p>
@@ -264,11 +265,11 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
 }
 </code></pre>
 <p>Running this process updates all rows with a non-<code>NULL</code> age and returns them.</p>
-<pre class="prettyprint"><code class="language-scala">up.quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">up.quick.unsafeRunSync()
 //   Person(1,Alice,Some(16))
 //   Person(3,Jimmy,Some(43))
 //   Person(4,Ramone,Some(43))
-up.quick.unsafeRunSync // and again!
+up.quick.unsafeRunSync() // and again!
 //   Person(1,Alice,Some(17))
 //   Person(3,Jimmy,Some(44))
 //   Person(4,Ramone,Some(44))
@@ -298,7 +299,7 @@ val data = List[PersonInfo](
   (&quot;Daddy&quot;, None))
 </code></pre>
 <p>Running this program yields the number of updated rows.</p>
-<pre class="prettyprint"><code class="language-scala">insertMany(data).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insertMany(data).quick.unsafeRunSync()
 //   2
 </code></pre>
 <p>For databases that support it (such as PostgreSQL) we can use <code>updateManyWithGeneratedKeys</code> to return a stream of updated rows.</p>
@@ -316,13 +317,13 @@ val data2 = List[PersonInfo](
   (&quot;Jim-Bob&quot;, Some(12)))
 </code></pre>
 <p>Running this program yields the updated instances.</p>
-<pre class="prettyprint"><code class="language-scala">insertMany2(data2).quick.unsafeRunSync
+<pre class="prettyprint"><code class="language-scala">insertMany2(data2).quick.unsafeRunSync()
 //   Person(8,Banjo,Some(39))
 //   Person(9,Skeeter,None)
 //   Person(10,Jim-Bob,Some(12))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/07-Updating.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/07-Updating.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -385,7 +386,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -410,7 +411,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>

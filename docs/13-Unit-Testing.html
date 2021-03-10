@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../js/page.js"></script>
 <script type="text/javascript" src="../js/warnOldVersion.js"></script>
 <script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
 <link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
 <link rel="stylesheet" type="text/css" href="../css/page.css"/>
 
@@ -30,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.9.0
+0.12.1
 </div>
 </div>
 <div class="nav-toc">
@@ -229,7 +230,7 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info]   + SQL Compiles and TypeChecks
 // [info]   + C01 ?column? INTEGER (int4)    NULL?  →  Int
 // [info]   + C02 varchar  VARCHAR (varchar) NULL?  →  String
-// [info] + Query0[App.Country] defined at 13-Unit-Testing.md:57
+// [info] + Query0[App.this.Country] defined at 13-Unit-Testing.md:57
 // [info]   
 // [info]     select code, name, population, gnp, indepyear
 // [info]     from country
@@ -238,12 +239,12 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info]   + SQL Compiles and TypeChecks
 // [error]   x P01 Short  →  INTEGER (int4)
 // [error]    Short is not coercible to INTEGER (int4) according to the JDBC
-//    specification. Expected schema type was SMALLINT. (analysisspec.scala:62)
+//    specification. Expected schema type was SMALLINT. (analysisspec.scala:60)
 // [info] 
 // [error]   x C01 code       CHAR     (bpchar)  NOT NULL  →  Int
 // [error]    CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
 //    specification but is not a recommended target type. Expected schema
-//    type was INTEGER. (analysisspec.scala:62)
+//    type was INTEGER. (analysisspec.scala:60)
 // [info] 
 // [info]   + C02 name       VARCHAR  (varchar) NOT NULL  →  String
 // [info]   + C03 population INTEGER  (int4)    NOT NULL  →  Int
@@ -253,10 +254,10 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 //    schema type was FLOAT or DOUBLE.
 //    Reading a NULL value into Double will result in a runtime failure. Fix
 //    this by making the schema type NOT NULL or by changing the Scala type
-//    to Option[Double] (analysisspec.scala:62)
+//    to Option[Double] (analysisspec.scala:60)
 // [info] 
 // [error]   x C05 indepyear  SMALLINT (int2)    NULL      →  
-// [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:62)
+// [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:60)
 // [info] 
 // [info] + Update0 defined at 13-Unit-Testing.md:65
 // [info]   
@@ -268,7 +269,7 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info] 
 // [info] 
 // [info] Total for specification AnalysisTestSpec
-// [info] Finished in 298 ms
+// [info] Finished in 408 ms
 // 16 examples, 4 failures, 0 error
 // [info]
 </code></pre>
@@ -293,10 +294,10 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
 <p>Details are shown for failing tests.</p>
 <pre class="prettyprint"><code class="language-scala">// Run a test programmatically. Usually you would do this from sbt, bloop, etc.
 (new AnalysisTestScalaCheck).execute(color = false)
-// Session$App$AnalysisTestScalaCheck:
+// MdocSession$App$AnalysisTestScalaCheck:
 // - trivial
 // - biggerThan *** FAILED ***
-//   Query0[App.Country] defined at 13-Unit-Testing.md:57
+//   Query0[App.this.Country] defined at 13-Unit-Testing.md:57
 //     select code, name, population, gnp, indepyear
 //     from country
 //     where population &gt; ?
@@ -322,7 +323,7 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
 // - update
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/13-Unit-Testing.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/13-Unit-Testing.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -382,7 +383,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2020</span>
+<span class="text">&copy; 2021</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -407,7 +408,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.9.0', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
 
 
 </html>
