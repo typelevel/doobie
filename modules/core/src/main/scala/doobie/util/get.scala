@@ -136,7 +136,7 @@ object Get extends GetInstances {
       Advanced(NonEmptyList.of(Some(ev.value)), NonEmptyList.of(jdbcSource), schemaTypes, Coyoneda.lift(get))
 
     @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
-    def array[A >: Null <: AnyRef: TypeName](schemaTypes: NonEmptyList[String]): Advanced[Array[A]] =
+    def array[A >: Null <: AnyRef](schemaTypes: NonEmptyList[String]): Advanced[Array[A]] =
       one(JdbcType.Array, schemaTypes, (r, n) => {
           val a = r.getArray(n)
           (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
@@ -184,11 +184,11 @@ trait GetInstances extends GetPlatform {
     }
 
   /** @group Instances */
-  implicit def ArrayTypeAsListGet[A: ClassTag: TypeName](implicit ev: Get[Array[A]]): Get[List[A]] =
+  implicit def ArrayTypeAsListGet[A](implicit ev: Get[Array[A]]): Get[List[A]] =
     ev.tmap(_.toList)
 
   /** @group Instances */
-  implicit def ArrayTypeAsVectorGet[A: ClassTag: TypeName](implicit ev: Get[Array[A]]): Get[Vector[A]] =
+  implicit def ArrayTypeAsVectorGet[A](implicit ev: Get[Array[A]]): Get[Vector[A]] =
     ev.tmap(_.toVector)
 
 }

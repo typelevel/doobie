@@ -42,8 +42,8 @@ object Coproduct extends IOApp.Simple {
 
   // A module of ConsoleOp constructors, parameterized over a coproduct
   class ConsoleOps[F[_]](implicit ev: InjectK[ConsoleOp, F]) {
-    val readLn             = Free.inject[ConsoleOp, F](ReadLn)
-    def printLn(s: String) = Free.inject[ConsoleOp, F](PrintLn(s))
+    val readLn             = Free.liftInject[F](ReadLn)
+    def printLn(s: String) = Free.liftInject[F](PrintLn(s))
   }
   object ConsoleOps {
     implicit def instance[F[_]](implicit ev: InjectK[ConsoleOp, F]): ConsoleOps[F] = new ConsoleOps

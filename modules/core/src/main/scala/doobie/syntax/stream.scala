@@ -8,7 +8,7 @@ import doobie.util.compat.=:=
 import doobie.util.transactor.Transactor
 import doobie.free.connection.ConnectionIO
 import cats.data.Kleisli
-import cats.effect.kernel.{ Async, MonadCancelThrow, Sync }
+import cats.effect.kernel.{ Async, MonadCancelThrow }
 import fs2.{ Pipe, Stream }
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
@@ -22,7 +22,7 @@ class PipeOps[F[_], A, B](inner: Pipe[F, A, B]) {
 }
 
 trait ToStreamOps {
-  implicit def toDoobieStreamOps[F[_]: Sync, A](fa: Stream[F, A]): StreamOps[F, A] =
+  implicit def toDoobieStreamOps[F[_], A](fa: Stream[F, A]): StreamOps[F, A] =
     new StreamOps(fa)
   implicit def toDoobieKleisliStreamOps[A,  B](fa: Stream[Kleisli[ConnectionIO, A, *], B]): KleisliStreamOps[A, B] =
     new KleisliStreamOps(fa)
