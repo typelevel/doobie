@@ -119,3 +119,25 @@ sbt:docs> makeSite
 sbt:doce> ghpagesPushSite
 ```
 
+
+## Adopters
+
+Here's a (non-exhaustive) list of companies that use doobie in production.
+Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/edit/master/modules/docs/src/main/mdoc/index.md)
+
+ - [Avast](https://avast.com)
+ - [Banno at Jack Henry & Associates](https://banno.com/)
+ - [Crunchbase](https://crunchbase.com)
+ - [Doomoolmori](https://doomoolmori.com)   
+ - [eBay Inc.](https://www.ebay.com)
+ - [HIFI](https://hi.fi)
+ - [ITV](https://www.itv.com/)
+ - [lences.io](https://lenses.io)  
+ - [Medidata](https://www.medidata.com/)
+ - [NOIRLab](https://noirlab.edu)
+ - [RaiffeisenBank Russia](https://raiffeisen.ru)
+ - [ReachFive](www.reachfive.com)
+ - [Rudder](https://rudder.io)
+ - [SoftwareMill](https://softwaremill.com)
+ - [Unit](https://unit.co)
+

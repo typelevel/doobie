@@ -33,9 +33,9 @@ class LogSuite extends munit.FunSuite {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def eventForUniqueUpdate[A: Write](sql: String, arg: A = ()): LogEvent = {
     var result  = null : LogEvent
-    val handler = LogHandler(result = _)
+    implicit val handler = LogHandler(result = _)
     val cio     = sql"create table if not exists foo (bar integer)".update.run *>
-                  Update[A](sql, None, handler).run(arg)
+                  Update[A](sql, None).run(arg)
     cio.transact(xa).attempt.unsafeRunSync()
     result
   }
@@ -55,7 +55,7 @@ class LogSuite extends munit.FunSuite {
     }
   }
 
-  test("[Query] implicit handler") {
+  test("[Query] explicit handler") {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio = sql"select 1".queryWithLogHandler[Int](handler).unique
@@ -105,7 +105,7 @@ class LogSuite extends munit.FunSuite {
     }
   }
 
-  test("[Update] implicit handler") {
+  test("[Update] explicit handler") {
     var result  = null : LogEvent
     val handler = LogHandler(result = _)
     val cio = sql"drop table if exists barf".updateWithLogHandler(handler).run

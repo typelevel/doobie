@@ -137,7 +137,7 @@ object Put extends PutInstances {
       many(NonEmptyList.of(jdbcTarget), schemaTypes, put, update)
 
     @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
-    def array[A >: Null <: AnyRef: TypeName](
+    def array[A >: Null <: AnyRef](
       schemaTypes: NonEmptyList[String],
       elementType: String
     ): Advanced[Array[A]] =
@@ -185,11 +185,11 @@ trait PutInstances extends PutPlatform {
     }
 
   /** @group Instances */
-  implicit def ArrayTypeAsListPut[A: ClassTag: TypeName](implicit ev: Put[Array[A]]): Put[List[A]] =
+  implicit def ArrayTypeAsListPut[A: ClassTag](implicit ev: Put[Array[A]]): Put[List[A]] =
     ev.tcontramap(_.toArray)
 
   /** @group Instances */
-  implicit def ArrayTypeAsVectorPut[A: ClassTag: TypeName](implicit ev: Put[Array[A]]): Put[Vector[A]] =
+  implicit def ArrayTypeAsVectorPut[A: ClassTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
     ev.tcontramap(_.toArray)
 
 }

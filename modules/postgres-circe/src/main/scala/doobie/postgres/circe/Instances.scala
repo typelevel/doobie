@@ -12,7 +12,6 @@ import io.circe.jawn._
 import io.circe.syntax._
 import doobie.util._
 import org.postgresql.util.PGobject
-import scala.reflect.runtime.universe.TypeTag
 
 object Instances {
 
@@ -36,13 +35,13 @@ object Instances {
         parse(a.getValue).leftMap(_.show)
       )
 
-    def pgEncoderPutT[A: Encoder: TypeTag]: Put[A] =
+    def pgEncoderPutT[A: Encoder]: Put[A] =
       Put[Json].tcontramap(_.asJson)
 
     def pgEncoderPut[A: Encoder]: Put[A] =
       Put[Json].contramap(_.asJson)
 
-    def pgDecoderGetT[A: Decoder: TypeTag]: Get[A] =
+    def pgDecoderGetT[A: Decoder]: Get[A] =
       Get[Json].temap(json => json.as[A].leftMap(_.show))
 
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))
@@ -68,13 +67,13 @@ object Instances {
         parse(a.getValue).leftMap(_.show)
       )
 
-    def pgEncoderPutT[A: Encoder: TypeTag]: Put[A] =
+    def pgEncoderPutT[A: Encoder]: Put[A] =
       Put[Json].tcontramap(_.asJson)
 
     def pgEncoderPut[A: Encoder]: Put[A] =
       Put[Json].contramap(_.asJson)
 
-    def pgDecoderGetT[A: Decoder: TypeTag]: Get[A] =
+    def pgDecoderGetT[A: Decoder]: Get[A] =
       Get[Json].temap(json => json.as[A].leftMap(_.show))
 
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))
