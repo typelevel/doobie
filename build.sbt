@@ -3,9 +3,9 @@ import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.4.2"
-lazy val catsEffectVersion    = "3.0.0-RC3"
+lazy val catsEffectVersion    = "3.0.0"
 lazy val circeVersion         = "0.13.0"
-lazy val fs2Version           = "3.0-200-9689748"
+lazy val fs2Version           = "3.0.0"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
