@@ -13,12 +13,8 @@ import cats.syntax.all._
 object fragments {
 
   /** Returns `VALUES (fs0), (fs1), ...`. */
-  def values[F[_]: Reducible, A: util.Put](fs: F[A]): Fragment =
-    fs.toList.map(a => fr0"($a)").foldSmash1(fr0"VALUES ", fr",", fr"")
-
-  /** Returns `VALUES (fs0-A, fs0-B), (fs1-A, fs1-B), ...`. */
-  def values[F[_]: Reducible, A: util.Put, B: util.Put](fs: F[(A,B)]): Fragment =
-    fs.toList.map { case (a,b) => fr0"($a,$b)" }.foldSmash1(fr0"VALUES ", fr",", fr"")
+  def values[F[_]: Reducible, A](fs: F[A])(implicit w: util.Write[A]): Fragment =
+    fs.toList.map(a => fr0"(${w.toFragment(a)})").foldSmash1(fr0"VALUES ", fr",", fr"")
 
   /** Returns `f IN (fs0, fs1, ...)`. */
   def in[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
