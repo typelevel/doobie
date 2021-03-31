@@ -58,7 +58,7 @@ However, for test and for experimentation as described in this book (and for sit
 ```scala mdoc:silent
 import doobie.util.ExecutionContexts
 
-// This is just for testing. Consider using cats.effect.IOApp instead of calling calling 
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
 import cats.effect.unsafe.implicits.global
 

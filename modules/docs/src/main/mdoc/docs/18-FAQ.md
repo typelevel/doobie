@@ -15,7 +15,7 @@ import java.awt.geom.Point2D
 import java.util.UUID
 import shapeless._
 
-// This is just for testing. Consider using cats.effect.IOApp instead of calling calling 
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
 import cats.effect.unsafe.implicits.global
 

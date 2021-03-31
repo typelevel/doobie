@@ -14,7 +14,7 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// This is just for testing. Consider using cats.effect.IOApp instead of calling calling 
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
 import cats.effect.unsafe.implicits.global
 

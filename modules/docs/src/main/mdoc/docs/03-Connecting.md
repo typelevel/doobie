@@ -32,7 +32,7 @@ This is a perfectly respectable **doobie** program, but we can't run it as-is; w
 ```scala mdoc:silent
 import doobie.util.ExecutionContexts
 
-// This is just for testing. Consider using cats.effect.IOApp instead of calling calling 
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
 import cats.effect.unsafe.implicits.global
 
