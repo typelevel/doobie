@@ -15,6 +15,7 @@ import org.postgresql._
 import fs2.Stream
 import fs2.Stream._
 import scala.concurrent.duration._
+import cats.effect.Temporal
 
 /**
   * Example exposing PostrgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will
@@ -28,8 +29,8 @@ import scala.concurrent.duration._
 object PostgresNotify extends IOApp {
 
   /** A nonblocking timer for ConnectionIO. */
-  implicit val ConnectionIOTimer: Timer[ConnectionIO] =
-    Timer[IO].mapK {
+  implicit val ConnectionIOTimer: Temporal[ConnectionIO] =
+    Temporal[IO].mapK {
       new (IO ~> ConnectionIO) {
         def apply[A](fa: IO[A]) = fa.to[ConnectionIO]
       }

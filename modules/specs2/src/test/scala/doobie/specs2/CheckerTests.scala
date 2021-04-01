@@ -5,7 +5,7 @@
 package doobie.specs2
 
 import cats.Id
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification

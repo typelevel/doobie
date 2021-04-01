@@ -4,7 +4,7 @@
 
 package doobie.bench
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import java.sql.DriverManager
 import org.openjdk.jmh.annotations._
