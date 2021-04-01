@@ -2,10 +2,10 @@ import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.4.2"
-lazy val catsEffectVersion    = "2.3.3"
+lazy val catsVersion          = "2.5.0"
+lazy val catsEffectVersion    = "2.4.1"
 lazy val circeVersion         = "0.13.0"
-lazy val fs2Version           = "2.5.3"
+lazy val fs2Version           = "2.5.4"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
@@ -21,8 +21,8 @@ lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.10.6"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
-lazy val scala30VersionOld    = "3.0.0-M3"
-lazy val scala30Version       = "3.0.0-RC1"
+lazy val scala30RC1Version    = "3.0.0-RC1"
+lazy val scala30RC2Version    = "3.0.0-RC2"
 lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
@@ -42,7 +42,7 @@ lazy val compilerFlags = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2"
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3"
   )
 )
 
@@ -55,7 +55,7 @@ lazy val commonSettings =
   compilerFlags ++
   Seq(
     scalaVersion := scala213Version,
-    crossScalaVersions := Seq(scala212Version, scala213Version, scala30VersionOld, scala30Version),
+    crossScalaVersions := Seq(scala212Version, scala213Version, scala30RC1Version, scala30RC2Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -80,8 +80,8 @@ lazy val commonSettings =
 
     // MUnit
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "scalacheck-effect-munit" % "0.7.1"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-2"     % "0.13.1" % Test,
+      "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.0"  % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.1" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
@@ -220,7 +220,7 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => isDotty.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "0.1.5",
+      "org.tpolecat"   %% "typename"  % "0.1.6",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
@@ -460,7 +460,7 @@ lazy val refined = project
     name := "doobie-refined",
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
-      "eu.timepit"     %% "refined" % "0.9.21",
+      "eu.timepit"     %% "refined" % "0.9.22",
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )

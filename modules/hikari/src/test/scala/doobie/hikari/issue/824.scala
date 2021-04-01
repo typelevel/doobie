@@ -27,7 +27,7 @@ class `824` extends munit.FunSuite {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](16) // our connect EC
-      te <- Resource.liftF(IO.delay(Executors.newCachedThreadPool)) // our transaction EC
+      te <- Resource.eval(IO.delay(Executors.newCachedThreadPool)) // our transaction EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
