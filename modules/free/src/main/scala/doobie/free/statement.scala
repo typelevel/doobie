@@ -5,9 +5,11 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.lang.Class
 import java.lang.String
@@ -43,14 +45,18 @@ object statement { module =>
       // Common
       def raw[A](f: Statement => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): F[A]
+      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]): F[B]
+      def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]): F[A]
+      def poll[A](poll: Any, fa: StatementIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): F[A]
+      def fromFuture[A](fut: StatementIO[Future[A]]): F[A]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -59,6 +65,9 @@ object statement { module =>
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def closeOnCompletion: F[Unit]
+      def enquoteIdentifier(a: String, b: Boolean): F[String]
+      def enquoteLiteral(a: String): F[String]
+      def enquoteNCharLiteral(a: String): F[String]
       def execute(a: String): F[Boolean]
       def execute(a: String, b: Array[Int]): F[Boolean]
       def execute(a: String, b: Array[String]): F[Boolean]
@@ -94,6 +103,7 @@ object statement { module =>
       def isCloseOnCompletion: F[Boolean]
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
+      def isSimpleIdentifier(a: String): F[Boolean]
       def isWrapperFor(a: Class[_]): F[Boolean]
       def setCursorName(a: String): F[Unit]
       def setEscapeProcessing(a: Boolean): F[Unit]
@@ -115,29 +125,38 @@ object statement { module =>
     final case class Embed[A](e: Embedded[A]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends StatementOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: StatementIO[A], use: A => StatementIO[B], release: (A, ExitCase[Throwable]) => StatementIO[Unit]) extends StatementOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends StatementOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    case object Shift extends StatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: StatementIO[A]) extends StatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: StatementIO[A], fb: StatementIO[B]) extends StatementOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[StatementIO] => StatementIO[A]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: StatementIO[A]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends StatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: StatementIO[Future[A]]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // Statement-specific operations.
@@ -158,6 +177,15 @@ object statement { module =>
     }
     case object CloseOnCompletion extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
+    }
+    final case class EnquoteIdentifier(a: String, b: Boolean) extends StatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteIdentifier(a, b)
+    }
+    final case class EnquoteLiteral(a: String) extends StatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteLiteral(a)
+    }
+    final case class EnquoteNCharLiteral(a: String) extends StatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteNCharLiteral(a)
     }
     final case class Execute(a: String) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a)
@@ -264,6 +292,9 @@ object statement { module =>
     case object IsPoolable extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
     }
+    final case class IsSimpleIdentifier(a: String) extends StatementOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
+    }
     final case class IsWrapperFor(a: Class[_]) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
@@ -306,14 +337,20 @@ object statement { module =>
   def pure[A](a: A): StatementIO[A] = FF.pure[StatementOp, A](a)
   def raw[A](f: Statement => A): StatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[StatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): StatementIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): StatementIO[A] = FF.liftF[StatementOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): StatementIO[A] = FF.liftF[StatementOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): StatementIO[A] = FF.liftF[StatementOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): StatementIO[B] = FF.liftF[StatementOp, B](BracketCase(acquire, use, release))
-  val shift: StatementIO[Unit] = FF.liftF[StatementOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]) = FF.liftF[StatementOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = FF.liftF[StatementOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[StatementOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[StatementOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[StatementOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[StatementOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]) = FF.liftF[StatementOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]) = FF.liftF[StatementOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[StatementIO] {
+    def apply[A](fa: StatementIO[A]) = FF.liftF[StatementOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[StatementOp, Unit](Canceled)
+  def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) = FF.liftF[StatementOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: StatementIO[Future[A]]) = FF.liftF[StatementOp, A](FromFuture(fut))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
@@ -322,6 +359,9 @@ object statement { module =>
   val clearWarnings: StatementIO[Unit] = FF.liftF(ClearWarnings)
   val close: StatementIO[Unit] = FF.liftF(Close)
   val closeOnCompletion: StatementIO[Unit] = FF.liftF(CloseOnCompletion)
+  def enquoteIdentifier(a: String, b: Boolean): StatementIO[String] = FF.liftF(EnquoteIdentifier(a, b))
+  def enquoteLiteral(a: String): StatementIO[String] = FF.liftF(EnquoteLiteral(a))
+  def enquoteNCharLiteral(a: String): StatementIO[String] = FF.liftF(EnquoteNCharLiteral(a))
   def execute(a: String): StatementIO[Boolean] = FF.liftF(Execute(a))
   def execute(a: String, b: Array[Int]): StatementIO[Boolean] = FF.liftF(Execute1(a, b))
   def execute(a: String, b: Array[String]): StatementIO[Boolean] = FF.liftF(Execute2(a, b))
@@ -357,6 +397,7 @@ object statement { module =>
   val isCloseOnCompletion: StatementIO[Boolean] = FF.liftF(IsCloseOnCompletion)
   val isClosed: StatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: StatementIO[Boolean] = FF.liftF(IsPoolable)
+  def isSimpleIdentifier(a: String): StatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
   def isWrapperFor(a: Class[_]): StatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def setCursorName(a: String): StatementIO[Unit] = FF.liftF(SetCursorName(a))
   def setEscapeProcessing(a: Boolean): StatementIO[Unit] = FF.liftF(SetEscapeProcessing(a))
@@ -369,26 +410,25 @@ object statement { module =>
   def setQueryTimeout(a: Int): StatementIO[Unit] = FF.liftF(SetQueryTimeout(a))
   def unwrap[T](a: Class[T]): StatementIO[T] = FF.liftF(Unwrap(a))
 
-  // StatementIO is an Async
-  implicit val AsyncStatementIO: Async[StatementIO] =
-    new Async[StatementIO] {
-      val asyncM = FF.catsFreeMonadForFree[StatementOp]
-      def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): StatementIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): StatementIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): StatementIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => StatementIO[Unit]): StatementIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => StatementIO[A]): StatementIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // StatementIO is a ContextShift
-  implicit val ContextShiftStatementIO: ContextShift[StatementIO] =
-    new ContextShift[StatementIO] {
-      def shift: StatementIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for StatementIO
+  implicit val WeakAsyncStatementIO: WeakAsync[StatementIO] =
+    new WeakAsync[StatementIO] {
+      val monad = FF.catsFreeMonadForFree[StatementOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): StatementIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): StatementIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): StatementIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: StatementIO[FiniteDuration] = module.monotonic
+      override def realTime: StatementIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): StatementIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]): StatementIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]): StatementIO[A] = module.uncancelable(body)
+      override def canceled: StatementIO[Unit] = module.canceled
+      override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): StatementIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: StatementIO[Future[A]]): StatementIO[A] = module.fromFuture(fut)
     }
 }
 

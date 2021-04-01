@@ -4,26 +4,25 @@
 
 package doobie.postgres.hi
 
-import cats.effect.Blocker
 import cats.syntax.functor._
 import doobie.ConnectionIO
-import doobie.implicits.AsyncConnectionIO
+import doobie.implicits._
 import fs2.Stream
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject
 
 object lostreaming {
 
-  def createLOFromStream(data: Stream[ConnectionIO, Byte], blocker: Blocker): ConnectionIO[Long] =
+  def createLOFromStream(data: Stream[ConnectionIO, Byte]): ConnectionIO[Long] =
     createLO.flatMap { oid =>
       Stream.bracket(openLO(oid))(closeLO)
-        .flatMap(lo => data.through(fs2.io.writeOutputStream(getOutputStream(lo), blocker)))
+        .flatMap(lo => data.through(fs2.io.writeOutputStream(getOutputStream(lo))))
         .compile.drain.as(oid)
     }
 
-  def createStreamFromLO(oid: Long, chunkSize: Int, blocker: Blocker): Stream[ConnectionIO, Byte] =
+  def createStreamFromLO(oid: Long, chunkSize: Int): Stream[ConnectionIO, Byte] =
     Stream.bracket(openLO(oid))(closeLO)
-      .flatMap(lo => fs2.io.readInputStream(getInputStream(lo), chunkSize, blocker))
+      .flatMap(lo => fs2.io.readInputStream(getInputStream(lo), chunkSize))
 
   private val createLO: ConnectionIO[Long] =
     PHC.pgGetLargeObjectAPI(PFLOM.createLO)

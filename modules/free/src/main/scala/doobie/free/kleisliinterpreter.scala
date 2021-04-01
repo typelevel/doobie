@@ -7,12 +7,17 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
-import scala.concurrent.ExecutionContext
+import cats.effect.kernel.{ Poll, Sync }
+import cats.free.Free
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 // Types referenced in the JDBC API
 import java.io.InputStream
+import java.io.OutputStream
 import java.io.Reader
+import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.math.BigDecimal
@@ -24,17 +29,23 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.Date
 import java.sql.Driver
+import java.sql.DriverPropertyInfo
 import java.sql.NClob
+import java.sql.ParameterMetaData
 import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
+import java.sql.ResultSetMetaData
 import java.sql.RowId
+import java.sql.RowIdLifetime
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 import java.sql.SQLType
+import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
+import java.sql.ShardingKey
 import java.sql.Statement
 import java.sql.Struct
 import java.sql.Time
@@ -44,6 +55,7 @@ import java.util.Calendar
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
+import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.free.nclob.{ NClobIO, NClobOp }
@@ -63,27 +75,19 @@ import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
 
-  def apply[M[_]](b: Blocker)(
-    implicit am: Async[M],
-             cs: ContextShift[M]
+  def apply[M[_]](
+    implicit am: WeakAsync[M]
   ): KleisliInterpreter[M] =
     new KleisliInterpreter[M] {
       val asyncM = am
-      val contextShiftM = cs
-      val blocker = b
     }
-
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
 trait KleisliInterpreter[M[_]] { outer =>
 
-  implicit val asyncM: Async[M]
-
-  // We need these things in order to provide ContextShift[ConnectionIO] and so on, and also
-  // to support shifting blocking operations to another pool.
-  val contextShiftM: ContextShift[M]
-  val blocker: Blocker
+  implicit val asyncM: WeakAsync[M]
+  import WeakAsync._
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }
@@ -105,16 +109,39 @@ trait KleisliInterpreter[M[_]] { outer =>
   def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
     // primitive JDBC methods throw exceptions and so do we when reading values
     // so catch any non-fatal exceptions and lift them into the effect
-    blocker.blockOn[M, A](try {
-      asyncM.delay(f(a))
+    try {
+      asyncM.blocking(f(a))
     } catch {
       case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
-    })(contextShiftM)
+    }
   }
-  def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
   def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
-  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
+  def monotonic[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => asyncM.monotonic)
+  def realTime[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => asyncM.realTime)
+  def delay[J, A](thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(thunk))
+  def suspend[J, A](hint: Sync.Type)(thunk: => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.suspend(hint)(thunk))
+  def canceled[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.canceled)
+
+  // for operations using free structures we call the interpreter recursively
+  def handleErrorWith[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(f: Throwable => Free[G, A]): Kleisli[M, J, A] = Kleisli (j =>
+    asyncM.handleErrorWith(fa.foldMap(interpreter).run(j))(f.andThen(_.foldMap(interpreter).run(j)))
+  )
+  def forceR[G[_], J, A, B](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(fb: Free[G, B]): Kleisli[M, J, B] = Kleisli (j =>
+    asyncM.forceR(fa.foldMap(interpreter).run(j))(fb.foldMap(interpreter).run(j))
+  )
+  def uncancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *], capture: Poll[M] => Poll[Free[G, *]])(body: Poll[Free[G, *]] => Free[G, A]): Kleisli[M, J, A] = Kleisli(j =>  
+    asyncM.uncancelable(body.compose(capture).andThen(_.foldMap(interpreter).run(j)))
+  )
+  def poll[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(mpoll: Any, fa: Free[G, A]): Kleisli[M, J, A] = Kleisli(j => 
+    mpoll.asInstanceOf[Poll[M]].apply(fa.foldMap(interpreter).run(j))
+  )
+  def onCancel[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A], fin: Free[G, Unit]): Kleisli[M, J, A] = Kleisli (j =>
+    asyncM.onCancel(fa.foldMap(interpreter).run(j), fin.foldMap(interpreter).run(j))
+  )
+  def fromFuture[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, Future[A]]): Kleisli[M, J, A] = Kleisli(j =>
+    asyncM.fromFuture(fut.foldMap(interpreter).run(j))
+  )
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
     e match {
       case Embedded.NClob(j, fa) => Kleisli(_ => fa.foldMap(NClobInterpreter).run(j))
@@ -137,32 +164,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait NClobInterpreter extends NClobOp.Visitor[Kleisli[M, NClob, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: NClob => A): Kleisli[M, NClob, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, NClob, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, NClob, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, NClob, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, NClob, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => NClobIO[Unit]): Kleisli[M, NClob, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: NClobIO[A], f: Throwable => NClobIO[A]): Kleisli[M, NClob, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: NClobIO[A])(use: A => NClobIO[B])(release: (A, ExitCase[Throwable]) => NClobIO[Unit]): Kleisli[M, NClob, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, NClob, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: NClobIO[A]): Kleisli[M, NClob, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: NClob => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[NClob]
+    override def realTime = outer.realTime[NClob]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[NClob]
+    
+    // for operations using NClobIO we must call ourself recursively
+    override def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: NClobIO[A])(fb: NClobIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[NClobIO] => NClobIO[A]) = outer.uncancelable(this, doobie.free.nclob.capturePoll)(body)
+    override def poll[A](poll: Any, fa: NClobIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: NClobIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free)
@@ -184,32 +201,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait BlobInterpreter extends BlobOp.Visitor[Kleisli[M, Blob, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: Blob => A): Kleisli[M, Blob, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, Blob, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, Blob, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, Blob, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Blob, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): Kleisli[M, Blob, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): Kleisli[M, Blob, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): Kleisli[M, Blob, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, Blob, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): Kleisli[M, Blob, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: Blob => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[Blob]
+    override def realTime = outer.realTime[Blob]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[Blob]
+    
+    // for operations using BlobIO we must call ourself recursively
+    override def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]) = outer.uncancelable(this, doobie.free.blob.capturePoll)(body)
+    override def poll[A](poll: Any, fa: BlobIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: BlobIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free)
@@ -229,32 +236,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait ClobInterpreter extends ClobOp.Visitor[Kleisli[M, Clob, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: Clob => A): Kleisli[M, Clob, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, Clob, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, Clob, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, Clob, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Clob, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => ClobIO[Unit]): Kleisli[M, Clob, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: ClobIO[A], f: Throwable => ClobIO[A]): Kleisli[M, Clob, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: ClobIO[A])(use: A => ClobIO[B])(release: (A, ExitCase[Throwable]) => ClobIO[Unit]): Kleisli[M, Clob, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, Clob, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: ClobIO[A]): Kleisli[M, Clob, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: Clob => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[Clob]
+    override def realTime = outer.realTime[Clob]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[Clob]
+    
+    // for operations using ClobIO we must call ourself recursively
+    override def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]) = outer.uncancelable(this, doobie.free.clob.capturePoll)(body)
+    override def poll[A](poll: Any, fa: ClobIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: ClobIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def free = primitive(_.free)
@@ -276,32 +273,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait DatabaseMetaDataInterpreter extends DatabaseMetaDataOp.Visitor[Kleisli[M, DatabaseMetaData, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: DatabaseMetaData => A): Kleisli[M, DatabaseMetaData, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, DatabaseMetaData, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, DatabaseMetaData, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, DatabaseMetaData, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, DatabaseMetaData, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => DatabaseMetaDataIO[Unit]): Kleisli[M, DatabaseMetaData, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: DatabaseMetaDataIO[A], f: Throwable => DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: DatabaseMetaDataIO[A])(use: A => DatabaseMetaDataIO[B])(release: (A, ExitCase[Throwable]) => DatabaseMetaDataIO[Unit]): Kleisli[M, DatabaseMetaData, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, DatabaseMetaData, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: DatabaseMetaData => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[DatabaseMetaData]
+    override def realTime = outer.realTime[DatabaseMetaData]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[DatabaseMetaData]
+    
+    // for operations using DatabaseMetaDataIO we must call ourself recursively
+    override def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]) = outer.uncancelable(this, doobie.free.databasemetadata.capturePoll)(body)
+    override def poll[A](poll: Any, fa: DatabaseMetaDataIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: DatabaseMetaDataIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def allProceduresAreCallable = primitive(_.allProceduresAreCallable)
@@ -466,6 +453,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def supportsSchemasInProcedureCalls = primitive(_.supportsSchemasInProcedureCalls)
     override def supportsSchemasInTableDefinitions = primitive(_.supportsSchemasInTableDefinitions)
     override def supportsSelectForUpdate = primitive(_.supportsSelectForUpdate)
+    override def supportsSharding = primitive(_.supportsSharding)
     override def supportsStatementPooling = primitive(_.supportsStatementPooling)
     override def supportsStoredFunctionsUsingCallSyntax = primitive(_.supportsStoredFunctionsUsingCallSyntax)
     override def supportsStoredProcedures = primitive(_.supportsStoredProcedures)
@@ -488,32 +476,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait DriverInterpreter extends DriverOp.Visitor[Kleisli[M, Driver, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: Driver => A): Kleisli[M, Driver, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, Driver, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, Driver, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, Driver, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Driver, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): Kleisli[M, Driver, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): Kleisli[M, Driver, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): Kleisli[M, Driver, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, Driver, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): Kleisli[M, Driver, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: Driver => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[Driver]
+    override def realTime = outer.realTime[Driver]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[Driver]
+    
+    // for operations using DriverIO we must call ourself recursively
+    override def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]) = outer.uncancelable(this, doobie.free.driver.capturePoll)(body)
+    override def poll[A](poll: Any, fa: DriverIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: DriverIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def acceptsURL(a: String) = primitive(_.acceptsURL(a))
@@ -529,32 +507,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait RefInterpreter extends RefOp.Visitor[Kleisli[M, Ref, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: Ref => A): Kleisli[M, Ref, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, Ref, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, Ref, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, Ref, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Ref, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): Kleisli[M, Ref, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): Kleisli[M, Ref, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): Kleisli[M, Ref, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, Ref, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]): Kleisli[M, Ref, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: Ref => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[Ref]
+    override def realTime = outer.realTime[Ref]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[Ref]
+    
+    // for operations using RefIO we must call ourself recursively
+    override def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[RefIO] => RefIO[A]) = outer.uncancelable(this, doobie.free.ref.capturePoll)(body)
+    override def poll[A](poll: Any, fa: RefIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: RefIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def getBaseTypeName = primitive(_.getBaseTypeName)
@@ -567,32 +535,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait SQLDataInterpreter extends SQLDataOp.Visitor[Kleisli[M, SQLData, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: SQLData => A): Kleisli[M, SQLData, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, SQLData, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, SQLData, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, SQLData, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, SQLData, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLDataIO[Unit]): Kleisli[M, SQLData, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: SQLDataIO[A], f: Throwable => SQLDataIO[A]): Kleisli[M, SQLData, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: SQLDataIO[A])(use: A => SQLDataIO[B])(release: (A, ExitCase[Throwable]) => SQLDataIO[Unit]): Kleisli[M, SQLData, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, SQLData, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: SQLDataIO[A]): Kleisli[M, SQLData, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: SQLData => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[SQLData]
+    override def realTime = outer.realTime[SQLData]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[SQLData]
+    
+    // for operations using SQLDataIO we must call ourself recursively
+    override def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: SQLDataIO[A])(fb: SQLDataIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[SQLDataIO] => SQLDataIO[A]) = outer.uncancelable(this, doobie.free.sqldata.capturePoll)(body)
+    override def poll[A](poll: Any, fa: SQLDataIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: SQLDataIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def getSQLTypeName = primitive(_.getSQLTypeName)
@@ -604,32 +562,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait SQLInputInterpreter extends SQLInputOp.Visitor[Kleisli[M, SQLInput, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: SQLInput => A): Kleisli[M, SQLInput, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, SQLInput, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, SQLInput, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, SQLInput, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, SQLInput, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]): Kleisli[M, SQLInput, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): Kleisli[M, SQLInput, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): Kleisli[M, SQLInput, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, SQLInput, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): Kleisli[M, SQLInput, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: SQLInput => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[SQLInput]
+    override def realTime = outer.realTime[SQLInput]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[SQLInput]
+    
+    // for operations using SQLInputIO we must call ourself recursively
+    override def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]) = outer.uncancelable(this, doobie.free.sqlinput.capturePoll)(body)
+    override def poll[A](poll: Any, fa: SQLInputIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: SQLInputIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def readArray = primitive(_.readArray)
@@ -666,32 +614,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait SQLOutputInterpreter extends SQLOutputOp.Visitor[Kleisli[M, SQLOutput, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: SQLOutput => A): Kleisli[M, SQLOutput, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, SQLOutput, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, SQLOutput, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, SQLOutput, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, SQLOutput, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLOutputIO[Unit]): Kleisli[M, SQLOutput, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: SQLOutputIO[A], f: Throwable => SQLOutputIO[A]): Kleisli[M, SQLOutput, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: SQLOutputIO[A])(use: A => SQLOutputIO[B])(release: (A, ExitCase[Throwable]) => SQLOutputIO[Unit]): Kleisli[M, SQLOutput, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, SQLOutput, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: SQLOutputIO[A]): Kleisli[M, SQLOutput, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: SQLOutput => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[SQLOutput]
+    override def realTime = outer.realTime[SQLOutput]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[SQLOutput]
+    
+    // for operations using SQLOutputIO we must call ourself recursively
+    override def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: SQLOutputIO[A])(fb: SQLOutputIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[SQLOutputIO] => SQLOutputIO[A]) = outer.uncancelable(this, doobie.free.sqloutput.capturePoll)(body)
+    override def poll[A](poll: Any, fa: SQLOutputIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: SQLOutputIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def writeArray(a: SqlArray) = primitive(_.writeArray(a))
@@ -728,35 +666,26 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait ConnectionInterpreter extends ConnectionOp.Visitor[Kleisli[M, Connection, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: Connection => A): Kleisli[M, Connection, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, Connection, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, Connection, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, Connection, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Connection, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => ConnectionIO[Unit]): Kleisli[M, Connection, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: ConnectionIO[A], f: Throwable => ConnectionIO[A]): Kleisli[M, Connection, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: ConnectionIO[A])(use: A => ConnectionIO[B])(release: (A, ExitCase[Throwable]) => ConnectionIO[Unit]): Kleisli[M, Connection, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, Connection, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: ConnectionIO[A]): Kleisli[M, Connection, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: Connection => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[Connection]
+    override def realTime = outer.realTime[Connection]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[Connection]
+    
+    // for operations using ConnectionIO we must call ourself recursively
+    override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]) = outer.uncancelable(this, doobie.free.connection.capturePoll)(body)
+    override def poll[A](poll: Any, fa: ConnectionIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: ConnectionIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def abort(a: Executor) = primitive(_.abort(a))
+    override def beginRequest = primitive(_.beginRequest)
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def commit = primitive(_.commit)
@@ -769,6 +698,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def createStatement(a: Int, b: Int) = primitive(_.createStatement(a, b))
     override def createStatement(a: Int, b: Int, c: Int) = primitive(_.createStatement(a, b, c))
     override def createStruct(a: String, b: Array[AnyRef]) = primitive(_.createStruct(a, b))
+    override def endRequest = primitive(_.endRequest)
     override def getAutoCommit = primitive(_.getAutoCommit)
     override def getCatalog = primitive(_.getCatalog)
     override def getClientInfo = primitive(_.getClientInfo)
@@ -778,7 +708,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap = primitive(_.getTypeMap.asInstanceOf[java.util.Map[String, Class[_ <: Object]]])
+    override def getTypeMap: Kleisli[M,Connection,Map[String,Class[_]]] = primitive(_.getTypeMap)
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)
@@ -807,6 +737,10 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def setSavepoint = primitive(_.setSavepoint)
     override def setSavepoint(a: String) = primitive(_.setSavepoint(a))
     override def setSchema(a: String) = primitive(_.setSchema(a))
+    override def setShardingKey(a: ShardingKey) = primitive(_.setShardingKey(a))
+    override def setShardingKey(a: ShardingKey, b: ShardingKey) = primitive(_.setShardingKey(a, b))
+    override def setShardingKeyIfValid(a: ShardingKey, b: Int) = primitive(_.setShardingKeyIfValid(a, b))
+    override def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int) = primitive(_.setShardingKeyIfValid(a, b, c))
     override def setTransactionIsolation(a: Int) = primitive(_.setTransactionIsolation(a))
     override def setTypeMap(a: Map[String, Class[_]]) = primitive(_.setTypeMap(a))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
@@ -816,32 +750,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait StatementInterpreter extends StatementOp.Visitor[Kleisli[M, Statement, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: Statement => A): Kleisli[M, Statement, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, Statement, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, Statement, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, Statement, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, Statement, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => StatementIO[Unit]): Kleisli[M, Statement, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: StatementIO[A], f: Throwable => StatementIO[A]): Kleisli[M, Statement, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: StatementIO[A])(use: A => StatementIO[B])(release: (A, ExitCase[Throwable]) => StatementIO[Unit]): Kleisli[M, Statement, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, Statement, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: StatementIO[A]): Kleisli[M, Statement, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: Statement => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[Statement]
+    override def realTime = outer.realTime[Statement]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[Statement]
+    
+    // for operations using StatementIO we must call ourself recursively
+    override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]) = outer.uncancelable(this, doobie.free.statement.capturePoll)(body)
+    override def poll[A](poll: Any, fa: StatementIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: StatementIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch(a: String) = primitive(_.addBatch(a))
@@ -850,6 +774,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
     override def execute(a: String, b: Array[String]) = primitive(_.execute(a, b))
@@ -885,6 +812,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def setCursorName(a: String) = primitive(_.setCursorName(a))
     override def setEscapeProcessing(a: Boolean) = primitive(_.setEscapeProcessing(a))
@@ -902,32 +830,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait PreparedStatementInterpreter extends PreparedStatementOp.Visitor[Kleisli[M, PreparedStatement, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: PreparedStatement => A): Kleisli[M, PreparedStatement, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, PreparedStatement, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, PreparedStatement, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, PreparedStatement, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, PreparedStatement, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Unit]): Kleisli[M, PreparedStatement, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): Kleisli[M, PreparedStatement, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, PreparedStatement, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: PreparedStatement => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[PreparedStatement]
+    override def realTime = outer.realTime[PreparedStatement]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[PreparedStatement]
+    
+    // for operations using PreparedStatementIO we must call ourself recursively
+    override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = outer.uncancelable(this, doobie.free.preparedstatement.capturePoll)(body)
+    override def poll[A](poll: Any, fa: PreparedStatementIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: PreparedStatementIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch)
@@ -938,6 +856,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute = primitive(_.execute)
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
@@ -979,6 +900,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def setArray(a: Int, b: SqlArray) = primitive(_.setArray(a, b))
     override def setAsciiStream(a: Int, b: InputStream) = primitive(_.setAsciiStream(a, b))
@@ -1045,32 +967,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait CallableStatementInterpreter extends CallableStatementOp.Visitor[Kleisli[M, CallableStatement, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: CallableStatement => A): Kleisli[M, CallableStatement, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, CallableStatement, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, CallableStatement, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, CallableStatement, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, CallableStatement, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => CallableStatementIO[Unit]): Kleisli[M, CallableStatement, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: CallableStatementIO[A], f: Throwable => CallableStatementIO[A]): Kleisli[M, CallableStatement, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: CallableStatementIO[A])(use: A => CallableStatementIO[B])(release: (A, ExitCase[Throwable]) => CallableStatementIO[Unit]): Kleisli[M, CallableStatement, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, CallableStatement, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: CallableStatementIO[A]): Kleisli[M, CallableStatement, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: CallableStatement => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[CallableStatement]
+    override def realTime = outer.realTime[CallableStatement]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[CallableStatement]
+    
+    // for operations using CallableStatementIO we must call ourself recursively
+    override def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]) = outer.uncancelable(this, doobie.free.callablestatement.capturePoll)(body)
+    override def poll[A](poll: Any, fa: CallableStatementIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: CallableStatementIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def addBatch = primitive(_.addBatch)
@@ -1081,6 +993,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute = primitive(_.execute)
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
@@ -1182,6 +1097,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def registerOutParameter(a: Int, b: Int) = primitive(_.registerOutParameter(a, b))
     override def registerOutParameter(a: Int, b: Int, c: Int) = primitive(_.registerOutParameter(a, b, c))
@@ -1308,32 +1224,22 @@ trait KleisliInterpreter[M[_]] { outer =>
   trait ResultSetInterpreter extends ResultSetOp.Visitor[Kleisli[M, ResultSet, *]] {
 
     // common operations delegate to outer interpreter
-    override def raw[A](f: ResultSet => A): Kleisli[M, ResultSet, A] = outer.raw(f)
-    override def embed[A](e: Embedded[A]): Kleisli[M, ResultSet, A] = outer.embed(e)
-    override def delay[A](a: () => A): Kleisli[M, ResultSet, A] = outer.delay(a)
-    override def raiseError[A](err: Throwable): Kleisli[M, ResultSet, A] = outer.raiseError(err)
-    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, ResultSet, A] = outer.async(k)
-
-    // for asyncF we must call ourself recursively
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => ResultSetIO[Unit]): Kleisli[M, ResultSet, A] =
-      Kleisli(j => asyncM.asyncF(k.andThen(_.foldMap(this).run(j))))
-
-    // for handleErrorWith we must call ourself recursively
-    override def handleErrorWith[A](fa: ResultSetIO[A], f: Throwable => ResultSetIO[A]): Kleisli[M, ResultSet, A] =
-      Kleisli { j =>
-        val faʹ = fa.foldMap(this).run(j)
-        val fʹ  = f.andThen(_.foldMap(this).run(j))
-        asyncM.handleErrorWith(faʹ)(fʹ)
-      }
-
-    def bracketCase[A, B](acquire: ResultSetIO[A])(use: A => ResultSetIO[B])(release: (A, ExitCase[Throwable]) => ResultSetIO[Unit]): Kleisli[M, ResultSet, B] =
-      Kleisli(j => asyncM.bracketCase(acquire.foldMap(this).run(j))(use.andThen(_.foldMap(this).run(j)))((a, e) => release(a, e).foldMap(this).run(j)))
-
-    val shift: Kleisli[M, ResultSet, Unit] =
-      Kleisli(_ => contextShiftM.shift)
-
-    def evalOn[A](ec: ExecutionContext)(fa: ResultSetIO[A]): Kleisli[M, ResultSet, A] =
-      Kleisli(j => contextShiftM.evalOn(ec)(fa.foldMap(this).run(j)))
+    override def raw[A](f: ResultSet => A) = outer.raw(f)
+    override def embed[A](e: Embedded[A]) = outer.embed(e)
+    override def raiseError[A](e: Throwable) = outer.raiseError(e)
+    override def monotonic = outer.monotonic[ResultSet]
+    override def realTime = outer.realTime[ResultSet]
+    override def delay[A](thunk: => A) = outer.delay(thunk)
+    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
+    override def canceled = outer.canceled[ResultSet]
+    
+    // for operations using ResultSetIO we must call ourself recursively
+    override def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]) = outer.handleErrorWith(this)(fa)(f)
+    override def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]) = outer.forceR(this)(fa)(fb)
+    override def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]) = outer.uncancelable(this, doobie.free.resultset.capturePoll)(body)
+    override def poll[A](poll: Any, fa: ResultSetIO[A]) = outer.poll(this)(poll, fa)
+    override def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]) = outer.onCancel(this)(fa, fin)
+    override def fromFuture[A](fut: ResultSetIO[Future[A]]) = outer.fromFuture(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def absolute(a: Int) = primitive(_.absolute(a))

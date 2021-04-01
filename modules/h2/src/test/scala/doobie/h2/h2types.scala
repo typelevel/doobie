@@ -7,7 +7,7 @@ package doobie.h2
 import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import doobie._
 import doobie.h2.implicits._
 import doobie.implicits._
@@ -19,13 +19,11 @@ import org.scalacheck.{Arbitrary, Gen}
 import doobie.implicits.javasql._
 import doobie.implicits.javatime.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
 import doobie.implicits.legacy.instant.{JavaTimeInstantMeta => LegacyJavaTimeInstantMeta}
-import scala.concurrent.ExecutionContext
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 class h2typesspec extends munit.ScalaCheckSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

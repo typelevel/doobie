@@ -7,17 +7,16 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.{ Blocker, IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp }
 import cats.free.Free
 import cats.syntax.all._
 import cats.{InjectK, ~>}
 import doobie._
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
 import scala.io.StdIn
 
-object Coproduct extends IOApp {
+object Coproduct extends IOApp.Simple {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
@@ -89,8 +88,7 @@ object Coproduct extends IOApp {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, *] = {
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO].ConnectionInterpreter
   }
 
   // Our interpreted program
@@ -103,8 +101,8 @@ object Coproduct extends IOApp {
   )
 
   // Exec it!
-  def run(args: List[String]): IO[ExitCode] =
-    xa.exec.apply(iprog).as(ExitCode.Success)
+  def run: IO[Unit] =
+    xa.exec.apply(iprog)
 
   // Enter a pattern:
   // U%

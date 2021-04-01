@@ -4,9 +4,8 @@
 
 package doobie.postgres
 
-import cats.effect.{IO, ContextShift}
-import doobie._
-import doobie.implicits._
+import cats.effect.IO
+import doobie._, doobie.implicits._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.util.analysis.{ColumnTypeWarning, ColumnTypeError}
@@ -17,8 +16,7 @@ import scala.concurrent.ExecutionContext
 
 class CheckSuite extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

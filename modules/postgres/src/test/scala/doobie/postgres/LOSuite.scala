@@ -4,18 +4,16 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
-import scala.concurrent.ExecutionContext
 
 
 class LOSuite extends munit.FunSuite with FileEquality {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

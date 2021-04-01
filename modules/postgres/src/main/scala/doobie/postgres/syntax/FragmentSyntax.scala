@@ -4,17 +4,17 @@
 
 package doobie.postgres.syntax
 
-import cats.{ Foldable, ~> }
+import cats.Foldable
+import cats.effect.kernel.Resource
 import cats.syntax.all._
-import cats.effect._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
+import doobie.postgres.implicits._
 import fs2._
-import fs2.io._
 import fs2.text._
+
 import java.io.StringReader
-import java.io.InputStream
 
 class FragmentOps(f: Fragment) {
 
@@ -38,23 +38,27 @@ class FragmentOps(f: Fragment) {
    * `ConnectionIO` that inserts the values provided by `stream`, returning the number of affected
    * rows. Chunks input `stream` for more efficient sending to `STDIN` with `minChunkSize`.
    */
-  def copyIn[F[_]: ConcurrentEffect, A: Text](
-    stream: Stream[F, A],
+  def copyIn[A: Text](
+    stream: Stream[ConnectionIO, A],
     minChunkSize: Int
   ): ConnectionIO[Long] = {
 
-    val byteStream: Stream[F, Byte] =
+    val byteStream: Stream[ConnectionIO, Byte] =
       stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
 
-    val streamResource: Resource[ConnectionIO, InputStream] =
-      toInputStreamResource(byteStream)
-        .mapK {
-          new (F ~> ConnectionIO) {
-            def apply[A](fa: F[A]) = Effect[F].toIO(fa).to[ConnectionIO]
-          }
-        }
-
-    streamResource.use(s => PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, s)))
+    Stream.bracketCase(
+      PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))
+    ){
+      case (copyIn, Resource.ExitCase.Succeeded) => 
+        PHC.embed(copyIn, PFCI.isActive.ifM(PFCI.endCopy.void, PFCI.unit))
+      case (copyIn, _) => 
+        PHC.embed(copyIn, PFCI.cancelCopy)
+    }.flatMap(copyIn =>
+      byteStream.chunks.evalMap(bytes => 
+        PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
+      ) *>
+      Stream.eval(PHC.embed(copyIn, PFCI.endCopy))
+    ).compile.foldMonoid
 
   }
 

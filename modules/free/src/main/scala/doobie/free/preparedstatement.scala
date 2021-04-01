@@ -5,9 +5,11 @@
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.io.InputStream
 import java.io.Reader
@@ -61,14 +63,18 @@ object preparedstatement { module =>
       // Common
       def raw[A](f: PreparedStatement => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]): F[A]
+      def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): F[B]
+      def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): F[A]
+      def poll[A](poll: Any, fa: PreparedStatementIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
+      def fromFuture[A](fut: PreparedStatementIO[Future[A]]): F[A]
 
       // PreparedStatement
       def addBatch: F[Unit]
@@ -79,6 +85,9 @@ object preparedstatement { module =>
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def closeOnCompletion: F[Unit]
+      def enquoteIdentifier(a: String, b: Boolean): F[String]
+      def enquoteLiteral(a: String): F[String]
+      def enquoteNCharLiteral(a: String): F[String]
       def execute: F[Boolean]
       def execute(a: String): F[Boolean]
       def execute(a: String, b: Array[Int]): F[Boolean]
@@ -120,6 +129,7 @@ object preparedstatement { module =>
       def isCloseOnCompletion: F[Boolean]
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
+      def isSimpleIdentifier(a: String): F[Boolean]
       def isWrapperFor(a: Class[_]): F[Boolean]
       def setArray(a: Int, b: SqlArray): F[Unit]
       def setAsciiStream(a: Int, b: InputStream): F[Unit]
@@ -190,29 +200,38 @@ object preparedstatement { module =>
     final case class Embed[A](e: Embedded[A]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Unit]) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends PreparedStatementOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: PreparedStatementIO[A], use: A => PreparedStatementIO[B], release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]) extends PreparedStatementOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends PreparedStatementOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    case object Shift extends PreparedStatementOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: PreparedStatementIO[A], fb: PreparedStatementIO[B]) extends PreparedStatementOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends PreparedStatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: PreparedStatementIO[Future[A]]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // PreparedStatement-specific operations.
@@ -239,6 +258,15 @@ object preparedstatement { module =>
     }
     case object CloseOnCompletion extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
+    }
+    final case class EnquoteIdentifier(a: String, b: Boolean) extends PreparedStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteIdentifier(a, b)
+    }
+    final case class EnquoteLiteral(a: String) extends PreparedStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteLiteral(a)
+    }
+    final case class EnquoteNCharLiteral(a: String) extends PreparedStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteNCharLiteral(a)
     }
     case object Execute extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute
@@ -362,6 +390,9 @@ object preparedstatement { module =>
     }
     case object IsPoolable extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
+    }
+    final case class IsSimpleIdentifier(a: String) extends PreparedStatementOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
     }
     final case class IsWrapperFor(a: Class[_]) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
@@ -552,14 +583,20 @@ object preparedstatement { module =>
   def pure[A](a: A): PreparedStatementIO[A] = FF.pure[PreparedStatementOp, A](a)
   def raw[A](f: PreparedStatement => A): PreparedStatementIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[PreparedStatementOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): PreparedStatementIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: PreparedStatementIO[A], f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => PreparedStatementIO[Unit]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): PreparedStatementIO[B] = FF.liftF[PreparedStatementOp, B](BracketCase(acquire, use, release))
-  val shift: PreparedStatementIO[Unit] = FF.liftF[PreparedStatementOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = FF.liftF[PreparedStatementOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[PreparedStatementOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[PreparedStatementOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[PreparedStatementOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = FF.liftF[PreparedStatementOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[PreparedStatementIO] {
+    def apply[A](fa: PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)
+  def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: PreparedStatementIO[Future[A]]) = FF.liftF[PreparedStatementOp, A](FromFuture(fut))
 
   // Smart constructors for PreparedStatement-specific operations.
   val addBatch: PreparedStatementIO[Unit] = FF.liftF(AddBatch)
@@ -570,6 +607,9 @@ object preparedstatement { module =>
   val clearWarnings: PreparedStatementIO[Unit] = FF.liftF(ClearWarnings)
   val close: PreparedStatementIO[Unit] = FF.liftF(Close)
   val closeOnCompletion: PreparedStatementIO[Unit] = FF.liftF(CloseOnCompletion)
+  def enquoteIdentifier(a: String, b: Boolean): PreparedStatementIO[String] = FF.liftF(EnquoteIdentifier(a, b))
+  def enquoteLiteral(a: String): PreparedStatementIO[String] = FF.liftF(EnquoteLiteral(a))
+  def enquoteNCharLiteral(a: String): PreparedStatementIO[String] = FF.liftF(EnquoteNCharLiteral(a))
   val execute: PreparedStatementIO[Boolean] = FF.liftF(Execute)
   def execute(a: String): PreparedStatementIO[Boolean] = FF.liftF(Execute1(a))
   def execute(a: String, b: Array[Int]): PreparedStatementIO[Boolean] = FF.liftF(Execute2(a, b))
@@ -611,6 +651,7 @@ object preparedstatement { module =>
   val isCloseOnCompletion: PreparedStatementIO[Boolean] = FF.liftF(IsCloseOnCompletion)
   val isClosed: PreparedStatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: PreparedStatementIO[Boolean] = FF.liftF(IsPoolable)
+  def isSimpleIdentifier(a: String): PreparedStatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
   def isWrapperFor(a: Class[_]): PreparedStatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def setArray(a: Int, b: SqlArray): PreparedStatementIO[Unit] = FF.liftF(SetArray(a, b))
   def setAsciiStream(a: Int, b: InputStream): PreparedStatementIO[Unit] = FF.liftF(SetAsciiStream(a, b))
@@ -672,26 +713,25 @@ object preparedstatement { module =>
   def setURL(a: Int, b: URL): PreparedStatementIO[Unit] = FF.liftF(SetURL(a, b))
   def unwrap[T](a: Class[T]): PreparedStatementIO[T] = FF.liftF(Unwrap(a))
 
-  // PreparedStatementIO is an Async
-  implicit val AsyncPreparedStatementIO: Async[PreparedStatementIO] =
-    new Async[PreparedStatementIO] {
-      val asyncM = FF.catsFreeMonadForFree[PreparedStatementOp]
-      def bracketCase[A, B](acquire: PreparedStatementIO[A])(use: A => PreparedStatementIO[B])(release: (A, ExitCase[Throwable]) => PreparedStatementIO[Unit]): PreparedStatementIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): PreparedStatementIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): PreparedStatementIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): PreparedStatementIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => PreparedStatementIO[Unit]): PreparedStatementIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => PreparedStatementIO[A]): PreparedStatementIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // PreparedStatementIO is a ContextShift
-  implicit val ContextShiftPreparedStatementIO: ContextShift[PreparedStatementIO] =
-    new ContextShift[PreparedStatementIO] {
-      def shift: PreparedStatementIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: PreparedStatementIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for PreparedStatementIO
+  implicit val WeakAsyncPreparedStatementIO: WeakAsync[PreparedStatementIO] =
+    new WeakAsync[PreparedStatementIO] {
+      val monad = FF.catsFreeMonadForFree[PreparedStatementOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): PreparedStatementIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): PreparedStatementIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): PreparedStatementIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: PreparedStatementIO[FiniteDuration] = module.monotonic
+      override def realTime: PreparedStatementIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): PreparedStatementIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): PreparedStatementIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): PreparedStatementIO[A] = module.uncancelable(body)
+      override def canceled: PreparedStatementIO[Unit] = module.canceled
+      override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): PreparedStatementIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: PreparedStatementIO[Future[A]]): PreparedStatementIO[A] = module.fromFuture(fut)
     }
 }
 

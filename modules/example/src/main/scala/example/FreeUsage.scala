@@ -6,22 +6,22 @@ package example
 
 import java.io.File
 
-import cats.effect.{ IO, IOApp, ExitCode }
-import cats.effect.syntax.bracket._
+import cats.effect.{ IO, IOApp }
+import cats.effect.syntax.monadCancel._
 import cats.syntax.all._
 import doobie._
-import doobie.implicits.{ AsyncConnectionIO, AsyncPreparedStatementIO, AsyncResultSetIO }
+import doobie.implicits._
 
 // JDBC program using the low-level API
-object FreeUsage extends IOApp {
+object FreeUsage extends IOApp.Simple {
 
   final case class CountryCode(code: String)
 
-  def run(args: List[String]): IO[ExitCode] = {
+  def run: IO[Unit] = {
     val db = Transactor.fromDriverManager[IO](
       "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
     )
-    db.trans.apply(examples.void).as(ExitCode.Success)
+    db.trans.apply(examples.void)
   }
 
   def examples: ConnectionIO[String] =

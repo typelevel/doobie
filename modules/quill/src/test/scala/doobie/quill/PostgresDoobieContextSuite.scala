@@ -10,7 +10,6 @@ import doobie._
 import doobie.implicits._
 import doobie.quill.DoobieContext
 import io.getquill._
-import scala.concurrent.ExecutionContext
 
 class PostgresDoobieContextSuite extends munit.FunSuite {
 
@@ -18,8 +17,7 @@ class PostgresDoobieContextSuite extends munit.FunSuite {
   sys.props.put("quill.binds.log", "true")
   sys.props.put("org.slf4j.simpleLogger.defaultLogLevel", "debug")
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   // A transactor that always rolls back.
   lazy val xa =

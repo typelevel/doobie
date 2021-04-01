@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.effect.Async
+import doobie.WeakAsync
 
 trait Types {
   type CopyInIO[A]             = copyin.CopyInIO[A]
@@ -26,22 +26,22 @@ trait Modules {
 
 trait Instances {
 
-  implicit lazy val AsyncCopyInIO: Async[copyin.CopyInIO] =
-    copyin.AsyncCopyInIO
+  implicit lazy val WeakAsyncCopyInIO: WeakAsync[copyin.CopyInIO] =
+    copyin.WeakAsyncCopyInIO
 
-  implicit lazy val AsyncCopyManagerIO: Async[copymanager.CopyManagerIO] =
-    copymanager.AsyncCopyManagerIO
+  implicit lazy val WeakAsyncCopyManagerIO: WeakAsync[copymanager.CopyManagerIO] =
+    copymanager.WeakAsyncCopyManagerIO
 
-  implicit lazy val AsyncCopyOutIO: Async[copyout.CopyOutIO] =
-    copyout.AsyncCopyOutIO
+  implicit lazy val WeakAsyncCopyOutIO: WeakAsync[copyout.CopyOutIO] =
+    copyout.WeakAsyncCopyOutIO
 
-  implicit lazy val AsyncLargeObjectIO: Async[largeobject.LargeObjectIO] =
-    largeobject.AsyncLargeObjectIO
+  implicit lazy val WeakAsyncLargeObjectIO: WeakAsync[largeobject.LargeObjectIO] =
+    largeobject.WeakAsyncLargeObjectIO
 
-  implicit lazy val AsyncLargeObjectManagerIO: Async[largeobjectmanager.LargeObjectManagerIO] =
-    largeobjectmanager.AsyncLargeObjectManagerIO
+  implicit lazy val WeakAsyncLargeObjectManagerIO: WeakAsync[largeobjectmanager.LargeObjectManagerIO] =
+    largeobjectmanager.WeakAsyncLargeObjectManagerIO
 
-  implicit lazy val AsyncPGConnectionIO: Async[pgconnection.PGConnectionIO] =
-    pgconnection.AsyncPGConnectionIO
+  implicit lazy val WeakAsyncPGConnectionIO: WeakAsync[pgconnection.PGConnectionIO] =
+    pgconnection.WeakAsyncPGConnectionIO
 
 }

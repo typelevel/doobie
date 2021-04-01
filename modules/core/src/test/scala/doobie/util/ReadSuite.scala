@@ -5,10 +5,11 @@
 package doobie
 package util
 
-import cats.effect.{ContextShift, IO}
-import scala.concurrent.ExecutionContext
+import cats.effect.IO
 
 class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
+
+  import cats.effect.unsafe.implicits.global
 
   case class LenStr1(n: Int, s: String)
 
@@ -17,9 +18,6 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     implicit val LenStrMeta: Meta[LenStr2] =
       Meta[String].timap(s => LenStr2(s.length, s))(_.s)
   }
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

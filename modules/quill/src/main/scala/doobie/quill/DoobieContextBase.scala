@@ -6,7 +6,8 @@ package doobie.quill
 
 import cats.data.Nested
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import doobie.util.query.DefaultChunkSize
 import fs2.Stream
 import io.getquill.NamingStrategy

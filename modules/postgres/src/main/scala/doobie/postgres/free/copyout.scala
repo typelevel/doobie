@@ -5,9 +5,11 @@
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
@@ -38,14 +40,18 @@ object copyout { module =>
       // Common
       def raw[A](f: PGCopyOut => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]): F[A]
+      def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]): F[B]
+      def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): F[A]
+      def poll[A](poll: Any, fa: CopyOutIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): F[A]
+      def fromFuture[A](fut: CopyOutIO[Future[A]]): F[A]
 
       // PGCopyOut
       def cancelCopy: F[Unit]
@@ -66,29 +72,38 @@ object copyout { module =>
     final case class Embed[A](e: Embedded[A]) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends CopyOutOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]) extends CopyOutOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyOutOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]) extends CopyOutOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends CopyOutOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: CopyOutIO[A], use: A => CopyOutIO[B], release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]) extends CopyOutOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends CopyOutOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    case object Shift extends CopyOutOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: CopyOutIO[A]) extends CopyOutOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: CopyOutIO[A], fb: CopyOutIO[B]) extends CopyOutOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: CopyOutIO[A]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends CopyOutOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: CopyOutIO[Future[A]]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // PGCopyOut-specific operations.
@@ -125,14 +140,20 @@ object copyout { module =>
   def pure[A](a: A): CopyOutIO[A] = FF.pure[CopyOutOp, A](a)
   def raw[A](f: PGCopyOut => A): CopyOutIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyOutOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): CopyOutIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: CopyOutIO[A], f: Throwable => CopyOutIO[A]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): CopyOutIO[A] = FF.liftF[CopyOutOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyOutIO[A] = FF.liftF[CopyOutOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = FF.liftF[CopyOutOp, B](BracketCase(acquire, use, release))
-  val shift: CopyOutIO[Unit] = FF.liftF[CopyOutOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]) = FF.liftF[CopyOutOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = FF.liftF[CopyOutOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[CopyOutOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[CopyOutOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[CopyOutOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyOutOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]) = FF.liftF[CopyOutOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]) = FF.liftF[CopyOutOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[CopyOutIO] {
+    def apply[A](fa: CopyOutIO[A]) = FF.liftF[CopyOutOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[CopyOutOp, Unit](Canceled)
+  def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]) = FF.liftF[CopyOutOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: CopyOutIO[Future[A]]) = FF.liftF[CopyOutOp, A](FromFuture(fut))
 
   // Smart constructors for CopyOut-specific operations.
   val cancelCopy: CopyOutIO[Unit] = FF.liftF(CancelCopy)
@@ -144,26 +165,25 @@ object copyout { module =>
   val readFromCopy: CopyOutIO[Array[Byte]] = FF.liftF(ReadFromCopy)
   def readFromCopy(a: Boolean): CopyOutIO[Array[Byte]] = FF.liftF(ReadFromCopy1(a))
 
-  // CopyOutIO is an Async
-  implicit val AsyncCopyOutIO: Async[CopyOutIO] =
-    new Async[CopyOutIO] {
-      val asyncM = FF.catsFreeMonadForFree[CopyOutOp]
-      def bracketCase[A, B](acquire: CopyOutIO[A])(use: A => CopyOutIO[B])(release: (A, ExitCase[Throwable]) => CopyOutIO[Unit]): CopyOutIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): CopyOutIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): CopyOutIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyOutIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyOutIO[Unit]): CopyOutIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => CopyOutIO[A]): CopyOutIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // CopyOutIO is a ContextShift
-  implicit val ContextShiftCopyOutIO: ContextShift[CopyOutIO] =
-    new ContextShift[CopyOutIO] {
-      def shift: CopyOutIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: CopyOutIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for CopyOutIO
+  implicit val WeakAsyncCopyOutIO: WeakAsync[CopyOutIO] =
+    new WeakAsync[CopyOutIO] {
+      val monad = FF.catsFreeMonadForFree[CopyOutOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): CopyOutIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): CopyOutIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): CopyOutIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: CopyOutIO[FiniteDuration] = module.monotonic
+      override def realTime: CopyOutIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): CopyOutIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]): CopyOutIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): CopyOutIO[A] = module.uncancelable(body)
+      override def canceled: CopyOutIO[Unit] = module.canceled
+      override def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): CopyOutIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: CopyOutIO[Future[A]]): CopyOutIO[A] = module.fromFuture(fut)
     }
 }
 

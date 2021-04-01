@@ -4,17 +4,12 @@
 
 package doobie.specs2
 
-import scala.concurrent.ExecutionContext
-
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import org.specs2.mutable.Specification
 
 import doobie.Transactor
 
 class IOAnalysisMatchersChecks extends Specification with IOAnalysisMatchers {
-
-  implicit val contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
 
   lazy val transactor = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

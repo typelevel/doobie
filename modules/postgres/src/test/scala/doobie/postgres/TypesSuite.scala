@@ -9,8 +9,7 @@ import java.net.InetAddress
 import java.time.{LocalDate, ZoneOffset}
 import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
-import scala.concurrent.ExecutionContext
-import cats.effect.ContextShift
+
 import cats.effect.IO
 import doobie._
 import doobie.implicits._
@@ -34,8 +33,7 @@ import org.scalacheck.Prop.forAll
 
 class TypesSuite extends munit.ScalaCheckSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -275,16 +273,16 @@ class TypesSuite extends munit.ScalaCheckSuite {
   def testInOutGeom[A <: Geometry : Meta](a: A) =
     testInOut[A]("geometry", a)
 
-  testInOutGeom[Geometry](pts.next)
-  testInOutGeom[ComposedGeom](new MultiLineString(lsas.next))
-  testInOutGeom[GeometryCollection](new GeometryCollection(Array(pts.next, lss.next)))
-  testInOutGeom[MultiLineString](new MultiLineString(lsas.next))
-  testInOutGeom[MultiPolygon](new MultiPolygon(plas.next))
-  testInOutGeom[PointComposedGeom](lss.next)
-  testInOutGeom[LineString](lss.next)
-  testInOutGeom[MultiPoint](new MultiPoint(ptas.next))
-  testInOutGeom[Polygon](pls.next)
-  testInOutGeom[Point](pts.next)
+  testInOutGeom[Geometry](pts.next())
+  testInOutGeom[ComposedGeom](new MultiLineString(lsas.next()))
+  testInOutGeom[GeometryCollection](new GeometryCollection(Array(pts.next(), lss.next())))
+  testInOutGeom[MultiLineString](new MultiLineString(lsas.next()))
+  testInOutGeom[MultiPolygon](new MultiPolygon(plas.next()))
+  testInOutGeom[PointComposedGeom](lss.next())
+  testInOutGeom[LineString](lss.next())
+  testInOutGeom[MultiPoint](new MultiPoint(ptas.next()))
+  testInOutGeom[Polygon](pls.next())
+  testInOutGeom[Point](pts.next())
 
   // hstore
   testInOut[Map[String, String]]("hstore")

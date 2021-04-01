@@ -4,7 +4,6 @@
 
 package doobie.bench
 
-import cats.effect.IO
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._
@@ -17,6 +16,7 @@ final case class Person(name: String, age: Int)
 
 class text {
   import shared._
+  import cats.effect.unsafe.implicits.global
 
   def people(n: Int): List[Person] =
     List.fill(n)(Person("Bob", 42))
@@ -43,7 +43,7 @@ class text {
     )
 
   def copyin_stream(n: Int): ConnectionIO[Long] =
-    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(Stream.emits[IO, Person](people(n)), 10000)
+    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(Stream.emits[ConnectionIO, Person](people(n)), 10000)
 
   def copyin_foldable(n: Int): ConnectionIO[Long] =
     ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(people(n))

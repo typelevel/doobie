@@ -4,16 +4,14 @@
 
 package doobie.util
 
-import cats.effect.{ Async, Blocker, ContextShift, IO }
+import cats.effect.IO
 import cats.syntax.apply._
 import doobie._, doobie.implicits._
-import scala.concurrent.ExecutionContext
 
 
 class StrategySuite extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val baseXa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
@@ -25,9 +23,7 @@ class StrategySuite extends munit.FunSuite {
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class Interp extends KleisliInterpreter[IO] {
 
-    val asyncM = Async[IO]
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    val contextShiftM = contextShift
+    val asyncM = WeakAsync[IO]
 
     object Connection {
       var autoCommit: Option[Boolean] = None
@@ -45,18 +41,18 @@ class StrategySuite extends munit.FunSuite {
     }
 
     override lazy val ConnectionInterpreter = new ConnectionInterpreter {
-      override val close = delay(() => Connection.close = Some(())) *> super.close
-      override val rollback = delay(() => Connection.rollback = Some(())) *> super.rollback
-      override val commit = delay(() => Connection.commit = Some(())) *> super.commit
-      override def setAutoCommit(b: Boolean) = delay(() => Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
+      override val close = delay(Connection.close = Some(())) *> super.close
+      override val rollback = delay(Connection.rollback = Some(())) *> super.rollback
+      override val commit = delay(Connection.commit = Some(())) *> super.commit
+      override def setAutoCommit(b: Boolean) = delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
     }
 
     override lazy val PreparedStatementInterpreter = new PreparedStatementInterpreter {
-      override val close = delay(() => PreparedStatement.close = Some(())) *> super.close
+      override val close = delay(PreparedStatement.close = Some(())) *> super.close
     }
 
     override lazy val ResultSetInterpreter = new ResultSetInterpreter {
-      override val close = delay(() => ResultSet.close = Some(())) *> super.close
+      override val close = delay(ResultSet.close = Some(())) *> super.close
     }
 
   }

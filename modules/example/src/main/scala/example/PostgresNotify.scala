@@ -5,14 +5,13 @@
 // relies on streaming, so no cats for now
 package example
 
-import cats.~>
 import cats.effect._
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
 import org.postgresql._
-import fs2.Stream
+import fs2.{ Stream, Pipe }
 import fs2.Stream._
 import scala.concurrent.duration._
 
@@ -25,15 +24,7 @@ import scala.concurrent.duration._
   *
   * to send a notification. The program will exit after reading five notifications.
   */
-object PostgresNotify extends IOApp {
-
-  /** A nonblocking timer for ConnectionIO. */
-  implicit val ConnectionIOTimer: Timer[ConnectionIO] =
-    Timer[IO].mapK {
-      new (IO ~> ConnectionIO) {
-        def apply[A](fa: IO[A]) = fa.to[ConnectionIO]
-      }
-    }
+object PostgresNotify extends IOApp.Simple {
 
   /** A resource that listens on a channel and unlistens when we're done. */
   def channel(name: String): Resource[ConnectionIO, Unit] =
@@ -46,13 +37,15 @@ object PostgresNotify extends IOApp {
   def notificationStream(
     channelName:     String,
     pollingInterval: FiniteDuration
-  ): Stream[ConnectionIO, PGNotification] =
-    for {
+  ): Stream[IO, PGNotification] = {
+    val inner: Pipe[ConnectionIO, FiniteDuration, PGNotification] = ticks => for {
       _  <- resource(channel(channelName))
-      _  <- awakeEvery[ConnectionIO](pollingInterval)
+      _  <- ticks
       ns <- eval(PHC.pgGetNotifications <* HC.commit)
       n  <- emits(ns)
     } yield n
+    awakeEvery[IO](pollingInterval).through(inner.transact(xa))
+  }
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa = Transactor.fromDriverManager[IO](
@@ -63,12 +56,10 @@ object PostgresNotify extends IOApp {
     * Construct a stream of PGNotifications that prints to the console. Transform it to a
     * runnable process using the transcactor above, and run it.
     */
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     notificationStream("foo", 1.second)
       .map(n => show"${n.getPID} ${n.getName} ${n.getParameter}")
       .take(5)
-      .evalMap(s => HC.delay(Console.println(s))).compile.drain
-      .transact(xa)
-      .as(ExitCode.Success)
+      .evalMap(s => IO.delay(Console.println(s))).compile.drain
 
 }

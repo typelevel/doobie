@@ -5,7 +5,7 @@
 package doobie.refined
 
 import cats.Show
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.refined.implicits._
@@ -13,12 +13,10 @@ import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined._
 import doobie.util.invariant._
-import scala.concurrent.ExecutionContext
 
 class RefinedSuite extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

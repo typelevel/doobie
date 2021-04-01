@@ -4,16 +4,16 @@
 
 package example
 
-import cats.effect.{ IO, IOApp, ExitCode }
-import cats.effect.syntax.bracket._
+import cats.effect.{ IO, IOApp }
+import cats.effect.syntax.monadCancel._
 import cats.syntax.all._
 import doobie._
 import doobie.enumerated.JdbcType.Other
 import doobie.free.connection.ConnectionIO
-import doobie.syntax.connectionio._
+import doobie.implicits._
 import doobie.util.transactor.Transactor
 
-object CallableStatementExample extends IOApp {
+object CallableStatementExample extends IOApp.Simple {
 
   // cant be in world.sql as H2 does not support SQL functions
   def createFunc: ConnectionIO[Int] = {
@@ -44,11 +44,11 @@ object CallableStatementExample extends IOApp {
       "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
     )
 
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     for {
       _ <- createFunc.transact(xa)
       ns <- names(10).transact(xa)
       _  <- ns.traverse(s => IO(println(s)))
-    } yield ExitCode.Success
+    } yield ()
 
 }

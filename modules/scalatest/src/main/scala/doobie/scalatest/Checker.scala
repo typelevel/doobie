@@ -4,7 +4,8 @@
 
 package doobie.scalatest
 
-import cats.effect.{ Effect, IO }
+import cats.effect.{ Async, IO }
+import doobie.syntax.connectionio._
 import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
 import org.scalatest.Assertions
@@ -51,7 +52,7 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
     ))
 
   private def checkImpl(args: AnalysisArgs) = {
-    val report = analyzeIO(args, transactor).unsafeRunSync()
+    val report = U.unsafeRunSync(analyze(args).transact(transactor))
     if (!report.succeeded) {
       fail(
         formatReport(args, report, colors)
@@ -63,7 +64,10 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 }
 
 /** Implementation of Checker[IO] */
-trait IOChecker extends Checker[IO] {
-  self: Assertions =>
-  val M: Effect[IO] = implicitly
+trait IOChecker extends Checker[IO] { self: Assertions =>
+  import cats.effect.unsafe.implicits.global
+  override implicit val M: Async[IO] = IO.asyncForIO
+  override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
+    def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
+  }
 }

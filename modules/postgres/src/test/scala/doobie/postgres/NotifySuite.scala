@@ -4,19 +4,16 @@
 
 package doobie.postgres
 
-import cats.effect.{ IO, ContextShift, Sync }
+import cats.effect.{ IO, Sync }
 import cats.syntax.all._
 import doobie._, doobie.implicits._
 import org.postgresql.PGNotification
-import scala.concurrent.ExecutionContext
 
 
 class NotifySuite extends munit.FunSuite {
 
   import FC.{commit, delay}
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

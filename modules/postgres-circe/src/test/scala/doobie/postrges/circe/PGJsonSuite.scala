@@ -4,16 +4,14 @@
 
 package doobie.postgres.circe
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import io.circe.{Json, Encoder, Decoder}
-import scala.concurrent.ExecutionContext
 
 class PGJsonSuite extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

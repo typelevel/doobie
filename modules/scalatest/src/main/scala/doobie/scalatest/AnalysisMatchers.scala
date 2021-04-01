@@ -4,7 +4,8 @@
 
 package doobie.scalatest
 
-import cats.effect.{ Effect, IO }
+import cats.effect.{ Async, IO }
+import doobie.syntax.connectionio._
 import doobie.util.testing._
 import org.scalatest.matchers.{
   Matcher,
@@ -33,7 +34,7 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
     implicit analyzable: Analyzable[T]
   ): MatchResult = {
     val args = analyzable.unpack(t)
-    val report = analyzeIO(args, transactor).unsafeRunSync()
+    val report = U.unsafeRunSync(analyze(args).transact(transactor))
 
     MatchResult(
       report.succeeded,
@@ -50,5 +51,9 @@ trait AnalysisMatchers[F[_]] extends CheckerBase[F] {
 }
 
 trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
-  val M: Effect[IO] = implicitly
+  import cats.effect.unsafe.implicits.global
+  override implicit val M: Async[IO] = IO.asyncForIO
+  override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
+    def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
+  }
 }

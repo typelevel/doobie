@@ -10,31 +10,23 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.hikari._
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import java.util.concurrent.Executors
 
 
 class `824` extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  implicit def timer: Timer[IO] =
-    IO.timer(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](16) // our connect EC
-      te <- Resource.liftF(IO.delay(Executors.newCachedThreadPool)) // our transaction EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
-              ce,                                     // await connection here
-              Blocker.liftExecutorService(te)         // execute JDBC operations here
+              ce                                      // await connection here              
             )
     } yield xa
 
@@ -52,10 +44,10 @@ class `824` extends munit.FunSuite {
 
 
       // Kick off a concurrent transaction, reporting the pool state on exit
-      val random: IO[Fiber[IO, Unit]] =
+      val random: IO[Fiber[IO, Throwable, Unit]] =
         for {
           d <- IO(Random.nextInt(200).milliseconds)
-          f <- (IO.sleep(d) *> report(xa.kernel)).to[ConnectionIO].transact(xa).start
+          f <- IO.sleep(d) *> xa.liftF(_(report(xa.kernel))).start
         } yield f
 
       // Run a bunch of transactions at once, then return the active connection count

@@ -13,6 +13,8 @@ import scala.util.Random
 
 class ProcessSuite extends munit.ScalaCheckSuite {
 
+  import cats.effect.unsafe.implicits.global
+
   test("repeatEvalChunks must yield the same result irrespective of chunk size") {
     forAll { (n0: Int) =>
       val dataSize  = 1000

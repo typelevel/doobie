@@ -5,7 +5,7 @@
 package doobie.h2
 package syntax
 
-import cats.effect.Sync
+import cats.effect.kernel.Sync
 
 final class H2TransactorOps[M[_]](h2: H2Transactor[M])(implicit ev: Sync[M]) {
 

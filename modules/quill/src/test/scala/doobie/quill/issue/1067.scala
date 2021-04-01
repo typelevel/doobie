@@ -9,13 +9,11 @@ import cats.effect._
 import doobie._
 import doobie.implicits._
 import io.getquill._
-import scala.concurrent.ExecutionContext
 
 // https://github.com/tpolecat/doobie/issues/1067
 class `1067` extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   lazy val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",

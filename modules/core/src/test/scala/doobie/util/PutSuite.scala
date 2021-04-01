@@ -4,9 +4,8 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._
-import scala.concurrent.ExecutionContext
 
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class X(x: Int)
@@ -17,9 +16,6 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
 
   case class Reg1(x: Int)
   case class Reg2(x: Int)
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

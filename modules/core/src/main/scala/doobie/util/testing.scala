@@ -5,7 +5,10 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.effect.{ Effect, IO }
+import cats.effect.kernel.Async
+import cats.instances.int._
+import cats.instances.list._
+import cats.instances.string._
 import cats.syntax.list._
 import cats.syntax.applicativeError._
 import cats.syntax.foldable._
@@ -20,12 +23,17 @@ import org.tpolecat.typename._
 
 package testing {
 
+  trait UnsafeRun[F[_]] {
+    def unsafeRunSync[A](fa: F[A]): A
+  }
+
   /**
     * Common base trait for various checkers and matchers.
     */
   trait CheckerBase[M[_]] {
     // Effect type, required instances
-    implicit def M: Effect[M]
+    implicit def M: Async[M]
+    implicit def U: UnsafeRun[M]
     def transactor: Transactor[M]
     def colors: Colors = Colors.Ansi
   }
@@ -133,12 +141,6 @@ package object testing {
         )
       }
 
-  def analyzeIO[F[_]: Effect](
-    args: AnalysisArgs,
-    xa: Transactor[F]
-  ): IO[AnalysisReport] =
-    toIO(analyze(args).transact(xa))
-
   private def alignmentErrorsToBlock(
     es: NonEmptyList[AlignmentError]
   ): Block =
@@ -159,12 +161,6 @@ package object testing {
           AnalysisReport.Item(s, es.toNel.map(alignmentErrorsToBlock))
         }
   }
-
-  private def toIO[F[_], A](fa: F[A])(implicit F: Effect[F]): IO[A] =
-    IO.async { cb =>
-      F.runAsync(fa)(out => IO(cb(out)))
-        .unsafeRunSync()
-    }
 
   /**
     * Simple formatting for analysis results.

@@ -8,9 +8,9 @@ import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import cats.effect.syntax.bracket._
+import cats.effect.kernel.syntax.monadCancel._
 import doobie._
-import doobie.implicits.AsyncPreparedStatementIO
+import doobie.implicits._
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }

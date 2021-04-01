@@ -5,7 +5,7 @@
 package example
 
 import cats.syntax.all._
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp }
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets
 import java.io.InputStream
 import fs2._
 
-object PostgresCopyInCsv extends IOApp {
+object PostgresCopyInCsv extends IOApp.Simple {
 
   def putStrLn(s: String): IO[Unit] = IO(println(s))
 
@@ -61,10 +61,9 @@ object PostgresCopyInCsv extends IOApp {
       .map(_.toString)
       .flatMap(ct => putStrLn(show"loaded $ct from Stream[IO, Byte]"))
 
-  def run(args: List[String]): IO[ExitCode] = {
+  def run: IO[Unit] = {
     // Should print "loaded 4 from Stream[IO, Byte]" twice
     simpleExample >> fromByteStreamExample
-      .as(ExitCode.Success)
   }
     
     

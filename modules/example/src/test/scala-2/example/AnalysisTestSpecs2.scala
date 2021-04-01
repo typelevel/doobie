@@ -4,17 +4,13 @@
 
 package example
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO 
 import doobie._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 
 
 class AnalysisTestSpecs2 extends Specification with IOChecker {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
 
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""

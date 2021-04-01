@@ -7,16 +7,12 @@ package doobie.util
 import cats.data.NonEmptyList
 import cats.syntax.all._
 import doobie._, doobie.implicits._
-import cats.effect.ContextShift
-import scala.concurrent.ExecutionContext
 import cats.effect.IO
 
 
 class FragmentsSuite extends munit.FunSuite {
   import Fragments._
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

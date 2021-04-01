@@ -5,15 +5,13 @@
 package doobie.util
 
 import cats.syntax.all._
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
-import scala.concurrent.ExecutionContext
 
 class LogSuite extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",

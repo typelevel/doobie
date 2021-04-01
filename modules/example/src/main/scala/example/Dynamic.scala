@@ -6,12 +6,12 @@ package example
 
 import doobie._
 import doobie.implicits._
-import cats.effect.{ IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp }
 import cats.syntax.all._
 
 // Sketch of a program to run a query and get the output without knowing how many columns will
 // come back, or their types. This can be useful for building query tools, etc.
-object Dynamic extends IOApp {
+object Dynamic extends IOApp.Simple {
 
   type Headers = List[String]
   type Data    = List[List[Object]]
@@ -23,12 +23,12 @@ object Dynamic extends IOApp {
   )
 
   // Entry point. Run a query and print the results out.
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     connProg("U%").transact(xa).flatMap { case (headers, data) =>
       for {
         _ <- IO(println(headers))
         _ <- data.traverse(d => IO(println(d)))
-      } yield ExitCode.Success
+      } yield ()
     }
 
   // Construct a parameterized query and execute it with a custom program.

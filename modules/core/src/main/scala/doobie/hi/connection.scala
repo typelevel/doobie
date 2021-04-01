@@ -20,7 +20,7 @@ import scala.collection.immutable.Map
 
 import cats.Foldable
 import cats.syntax.all._
-import cats.effect.syntax.bracket._
+import cats.effect.kernel.syntax.monadCancel._
 import fs2.Stream
 import fs2.Stream.{ eval, bracket }
 

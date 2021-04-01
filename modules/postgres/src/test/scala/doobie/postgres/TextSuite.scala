@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.postgres.implicits._
@@ -12,13 +12,11 @@ import fs2._
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
-import scala.concurrent.ExecutionContext
 
 
 class TextSuite extends munit.ScalaCheckSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -102,9 +100,17 @@ class TextSuite extends munit.ScalaCheckSuite {
     }
   }
 
-  test("copyIn should correctly insert batches of rows via Stream") {
+  test("correctly insert batches of rows via Stream") { 
     forAll(genRows) { rs =>
-      val rsʹ = (create *> insert.copyIn(Stream.emits[IO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
+      val rsʹ = (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
+      assertEquals(rs, rsʹ)
+    }
+  }
+
+  test("correctly insert batches of rows via Stream in IO") { 
+    forAll(genRows) { rs =>
+      val inner = (rows: Stream[ConnectionIO, Row]) => Stream.eval(create *> insert.copyIn(rows, 100) *> selectAll)
+      val rsʹ = Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.unsafeRunSync()
       assertEquals(rs, rsʹ)
     }
   }
