@@ -139,6 +139,8 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [RaiffeisenBank Russia](https://raiffeisen.ru)
  - [ReachFive](www.reachfive.com)
  - [Rudder](https://rudder.io)
+ - [SecurityScorecard](https://securityscorecard.io)
  - [SoftwareMill](https://softwaremill.com)
  - [Unit](https://unit.co)
+ - [CurrencyCloud](https://www.currencycloud.com)
 

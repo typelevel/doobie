@@ -50,7 +50,7 @@ class FragmentOps(f: Fragment) {
       toInputStreamResource(byteStream)
         .mapK {
           new (F ~> ConnectionIO) {
-            def apply[A](fa: F[A]) = Effect[F].toIO(fa).to[ConnectionIO]
+            def apply[AA](fa: F[AA]) = Effect[F].toIO(fa).to[ConnectionIO]
           }
         }
 
