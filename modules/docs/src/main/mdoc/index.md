@@ -142,4 +142,5 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [SecurityScorecard](https://securityscorecard.io)
  - [SoftwareMill](https://softwaremill.com)
  - [Unit](https://unit.co)
+ - [CurrencyCloud](https://www.currencycloud.com)
 
