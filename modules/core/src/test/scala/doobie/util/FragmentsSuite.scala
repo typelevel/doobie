@@ -28,6 +28,14 @@ class FragmentsSuite extends munit.FunSuite {
   val fs   = List(1,2,3).map(n => fr"$n")
   val ofs  = List(1,2,3).map(n => Some(fr"$n").filter(_ => n % 2 =!= 0))
 
+  test("values for one column") {
+    assertEquals(values(nel).query[Unit].sql, "VALUES (?), (?), (?) ")
+  }
+
+  test("values for two columns") {
+    assertEquals(values(NonEmptyList.of((1, true), (2, false))).query[Unit].sql, "VALUES (?,?), (?,?) ")
+  }
+
   test("in for one column") {
     assertEquals(in(fr"foo", nel).query[Unit].sql, "foo IN (?, ?, ?) ")
   }
