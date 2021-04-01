@@ -78,7 +78,7 @@ trait Instances {
   // of each 1-d array type. In the non-nullable case we simply check for nulls and perform a cast;
   // in the nullable case we must copy the array in both directions to lift/unlift Option.
   @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals", "org.wartremover.warts.Throw"))
-  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeName](elemType: String, arrayType: String, arrayTypeT: String*): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
+  private def boxedPair[A >: Null <: AnyRef: ClassTag](elemType: String, arrayType: String, arrayTypeT: String*): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
     val raw = Meta.Advanced.array[A](elemType, arrayType, arrayTypeT: _*)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
@@ -130,7 +130,7 @@ trait Instances {
   // lifted case because the representation is identical, assuming no nulls. In the long run this
   // may need to become something slower but safer. Unclear.
   @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.ArrayEquals", "org.wartremover.warts.AsInstanceOf"))
-  private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag: TypeName](f: A => B, g: B => A)(
+  private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag](f: A => B, g: B => A)(
     implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) =
     // TODO: assert, somehow, that A is the boxed version of B so we catch errors on instance
     // construction, which is somewhat better than at [logical] execution time.
