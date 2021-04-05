@@ -12,7 +12,6 @@ import scala.Predef._
 import scala.reflect.ClassTag
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import doobie.util.meta.Meta
-import org.tpolecat.typename._
 
 trait Instances {
 
@@ -34,7 +33,7 @@ trait Instances {
 
   // see postgres contrib for an explanation of array mapping; we may want to factor this out
 
-  private def boxedPair[A >: Null <: AnyRef: ClassTag: TypeName]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
+  private def boxedPair[A >: Null <: AnyRef: ClassTag]: (Meta[Array[A]], Meta[Array[Option[A]]]) = {
     val raw = Meta.Advanced.other[Array[Object]]("ARRAY").timap[Array[A]](
       a => if (a == null) null else a.map(_.asInstanceOf[A]))(
       a => if (a == null) null else a.map(_.asInstanceOf[Object]))
@@ -69,7 +68,7 @@ trait Instances {
   implicit val liftedStringArrayType: Meta[Array[Option[java.lang.String]]] = boxedStringPair._2
 
 
-  private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag: TypeName](f: A => B, g: B => A)(
+  private def unboxedPair[A >: Null <: AnyRef: ClassTag, B <: AnyVal: ClassTag](f: A => B, g: B => A)(
     implicit boxed: Meta[Array[A]], boxedLifted: Meta[Array[Option[A]]]): (Meta[Array[B]], Meta[Array[Option[B]]]) =
     (boxed.timap(a => if (a == null) null else a.map(f))(a => if (a == null) null else a.map(g)),
      boxedLifted.timap(_.asInstanceOf[Array[Option[B]]])(_.asInstanceOf[Array[Option[A]]]))

@@ -55,9 +55,9 @@ object HikariTransactor {
     blocker:         Blocker
   ): Resource[M, HikariTransactor[M]] =
     for {
-      _ <- Resource.liftF(Async[M].delay(Class.forName(driverClassName)))
+      _ <- Resource.eval(Async[M].delay(Class.forName(driverClassName)))
       t <- initial[M](connectEC, blocker)
-      _ <- Resource.liftF {
+      _ <- Resource.eval {
             t.configure { ds =>
               Async[M].delay {
                 ds setJdbcUrl  url
