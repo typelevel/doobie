@@ -26,7 +26,7 @@ class `824` extends munit.FunSuite {
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
-              ce                                      // await connection here              
+              ce                                      // await connection here
             )
     } yield xa
 

@@ -12,6 +12,10 @@ import cats.syntax.all._
 /** Module of `Fragment` constructors. */
 object fragments {
 
+  /** Returns `VALUES (fs0), (fs1), ...`. */
+  def values[F[_]: Reducible, A](fs: F[A])(implicit w: util.Write[A]): Fragment =
+    fs.toList.map(a => fr0"(${w.toFragment(a)})").foldSmash1(fr0"VALUES ", fr",", fr"")
+
   /** Returns `f IN (fs0, fs1, ...)`. */
   def in[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =
     fs.toList.map(a => fr0"$a").foldSmash1(f ++ fr0"IN (", fr",", fr")")

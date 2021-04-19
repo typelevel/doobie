@@ -113,25 +113,26 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
           case c    => stdChar(c, sb)
         }
         sb.append('"')
+        ()
       }
     }
 
   //Char
-  implicit val charInstance:    Text[Char]    = instance((n, sb) => sb.append(n.toString))
+  implicit val charInstance:    Text[Char]    = instance((n, sb) => {sb.append(n.toString); ()})
 
   // Primitive Numerics
-  implicit val intInstance:    Text[Int]    = instance((n, sb) => sb.append(n))
-  implicit val shortInstance:  Text[Short]  = instance((n, sb) => sb.append(n))
-  implicit val longInstance:   Text[Long]   = instance((n, sb) => sb.append(n))
-  implicit val floatInstance:  Text[Float]  = instance((n, sb) => sb.append(n))
-  implicit val doubleInstance: Text[Double] = instance((n, sb) => sb.append(n))
+  implicit val intInstance:    Text[Int]    = instance((n, sb) => {sb.append(n); ()})
+  implicit val shortInstance:  Text[Short]  = instance((n, sb) => {sb.append(n); ()})
+  implicit val longInstance:   Text[Long]   = instance((n, sb) => {sb.append(n); ()})
+  implicit val floatInstance:  Text[Float]  = instance((n, sb) => {sb.append(n); ()})
+  implicit val doubleInstance: Text[Double] = instance((n, sb) => {sb.append(n); ()})
 
   // Big Numerics
-  implicit val bigDecimalInstance: Text[BigDecimal] = instance { (n, sb) => sb.append(n.toString) }
+  implicit val bigDecimalInstance: Text[BigDecimal] = instance { (n, sb) => {sb.append(n.toString); ()} }
 
   // Boolean
   implicit val booleanInstance: Text[Boolean] =
-    instance((b, sb) => sb.append(b))
+    instance((b, sb) => {sb.append(b); ()})
 
   // Date, Time, etc.
 
@@ -145,6 +146,7 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
         val pad = bs.length * 2 - hex.length
         (0 until pad).foreach(_ => sb.append("0"))
         sb.append(hex)
+        ()
       }
     }
 
@@ -153,8 +155,8 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
     implicit csv: Text[A]
   ): Text[Option[A]] =
     instance {
-      case (Some(a), sb) => csv.unsafeEncode(a, sb)
-      case (None, sb)    => sb.append(Text.NULL)
+      case (Some(a), sb) => {csv.unsafeEncode(a, sb); ()}
+      case (None, sb)    => {sb.append(Text.NULL); ()}
     }
 
 }
@@ -176,6 +178,7 @@ trait TextInstances0 extends TextInstances1 { this: Text.type =>
         ev.unsafeArrayEncode(a, sb)
       }
       sb.append('}')
+      ()
     }
 
 }
