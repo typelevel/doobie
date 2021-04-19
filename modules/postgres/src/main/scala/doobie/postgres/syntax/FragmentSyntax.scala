@@ -49,12 +49,12 @@ class FragmentOps(f: Fragment) {
     Stream.bracketCase(
       PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))
     ){
-      case (copyIn, Resource.ExitCase.Succeeded) => 
+      case (copyIn, Resource.ExitCase.Succeeded) =>
         PHC.embed(copyIn, PFCI.isActive.ifM(PFCI.endCopy.void, PFCI.unit))
-      case (copyIn, _) => 
+      case (copyIn, _) =>
         PHC.embed(copyIn, PFCI.cancelCopy)
     }.flatMap(copyIn =>
-      byteStream.chunks.evalMap(bytes => 
+      byteStream.chunks.evalMap(bytes =>
         PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
       ) *>
       Stream.eval(PHC.embed(copyIn, PFCI.endCopy))
