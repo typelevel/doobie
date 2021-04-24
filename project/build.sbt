@@ -1,3 +1,3 @@
 // Required for the freegen definition for postgres in ../build.sbt
-val postgresVersion = "42.2.19"
+val postgresVersion = "42.2.20"
 libraryDependencies += "org.postgresql" % "postgresql" % postgresVersion

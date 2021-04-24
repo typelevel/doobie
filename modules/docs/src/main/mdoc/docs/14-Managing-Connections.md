@@ -13,7 +13,7 @@ import doobie.implicits._
 
 ### About Transactors
 
-Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
+Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
 A `Transactor[M]` consists of the following bits of information:
 
