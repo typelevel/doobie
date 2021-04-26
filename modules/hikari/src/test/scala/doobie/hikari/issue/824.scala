@@ -14,6 +14,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import java.util.concurrent.Executors
+import cats.effect.Temporal
 
 
 class `824` extends munit.FunSuite {
@@ -21,7 +22,7 @@ class `824` extends munit.FunSuite {
   implicit def contextShift: ContextShift[IO] =
     IO.contextShift(ExecutionContext.global)
 
-  implicit def timer: Timer[IO] =
+  implicit def timer: Temporal[IO] =
     IO.timer(ExecutionContext.global)
 
   val transactor: Resource[IO, HikariTransactor[IO]] =

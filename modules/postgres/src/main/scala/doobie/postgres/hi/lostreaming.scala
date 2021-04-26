@@ -4,7 +4,6 @@
 
 package doobie.postgres.hi
 
-import cats.effect.Blocker
 import cats.syntax.functor._
 import doobie.ConnectionIO
 import doobie.implicits.AsyncConnectionIO
@@ -14,14 +13,14 @@ import org.postgresql.largeobject.LargeObject
 
 object lostreaming {
 
-  def createLOFromStream(data: Stream[ConnectionIO, Byte], blocker: Blocker): ConnectionIO[Long] =
+  def createLOFromStream(data: Stream[ConnectionIO, Byte]): ConnectionIO[Long] =
     createLO.flatMap { oid =>
       Stream.bracket(openLO(oid))(closeLO)
         .flatMap(lo => data.through(fs2.io.writeOutputStream(getOutputStream(lo), blocker)))
         .compile.drain.as(oid)
     }
 
-  def createStreamFromLO(oid: Long, chunkSize: Int, blocker: Blocker): Stream[ConnectionIO, Byte] =
+  def createStreamFromLO(oid: Long, chunkSize: Int): Stream[ConnectionIO, Byte] =
     Stream.bracket(openLO(oid))(closeLO)
       .flatMap(lo => fs2.io.readInputStream(getInputStream(lo), chunkSize, blocker))
 

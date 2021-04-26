@@ -10,7 +10,6 @@ import java.time.{LocalDate, ZoneOffset}
 import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
 import scala.concurrent.ExecutionContext
-import cats.effect.ContextShift
 import cats.effect.IO
 import doobie._
 import doobie.implicits._
