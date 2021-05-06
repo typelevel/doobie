@@ -4,7 +4,7 @@ import sbt.dsl.LinterLevel.Ignore
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.6.0"
 lazy val catsEffectVersion    = "2.5.0"
-lazy val circeVersion         = "0.13.0"
+lazy val circeVersion         = settingKey[String]("Circe version.")
 lazy val fs2Version           = "2.5.5"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "3.4.5" // N.B. Hikari v4 introduces a breaking change via slf4j v2
@@ -120,6 +120,14 @@ lazy val commonSettings =
       else
         old
     },
+
+    circeVersion := {
+      scalaVersion.value match {
+        case `scala30Version`    => "0.14.0-M6"
+        case `scala30VersionOld` => "0.14.0-M5"
+        case _                   => "0.13.0"
+      }
+    }
 
   )
 
@@ -324,11 +332,10 @@ lazy val `postgres-circe` = project
     name  := "doobie-postgres-circe",
     description := "Postgres circe support for doobie.",
     libraryDependencies ++= Seq(
-      "io.circe"    %% "circe-core"    % circeVersion,
-      "io.circe"    %% "circe-parser"  % circeVersion
+      "io.circe"    %% "circe-core"    % circeVersion.value,
+      "io.circe"    %% "circe-parser"  % circeVersion.value
     )
   )
-  .settings(noDottySettings)
 
 lazy val h2 = project
   .in(file("modules/h2"))
@@ -411,9 +418,9 @@ lazy val docs = project
     scalacOptions := Nil,
 
     libraryDependencies ++= Seq(
-      "io.circe"    %% "circe-core"    % circeVersion,
-      "io.circe"    %% "circe-generic" % circeVersion,
-      "io.circe"    %% "circe-parser"  % circeVersion,
+      "io.circe"    %% "circe-core"    % circeVersion.value,
+      "io.circe"    %% "circe-generic" % circeVersion.value,
+      "io.circe"    %% "circe-parser"  % circeVersion.value,
       "io.monix"    %% "monix-eval"    % monixVersion,
     ),
     fork in Test := true,
