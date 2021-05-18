@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie.scalatest.IOChecker
 import doobie.util.transactor.Transactor
 import org.scalatest._

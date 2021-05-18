@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.{Blocker, ExitCode, IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._

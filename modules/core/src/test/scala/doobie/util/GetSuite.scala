@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, Effect, IO }
+import cats.effect.{ Effect, IO }
 import cats.effect.syntax.effect._
 import cats.syntax.applicativeError._
 import doobie._, doobie.implicits._

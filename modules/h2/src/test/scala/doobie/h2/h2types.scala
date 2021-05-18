@@ -7,7 +7,7 @@ package doobie.h2
 import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import doobie._
 import doobie.h2.implicits._
 import doobie.implicits._

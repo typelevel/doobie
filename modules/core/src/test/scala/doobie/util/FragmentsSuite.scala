@@ -7,7 +7,6 @@ package doobie.util
 import cats.data.NonEmptyList
 import cats.syntax.all._
 import doobie._, doobie.implicits._
-import cats.effect.ContextShift
 import scala.concurrent.ExecutionContext
 import cats.effect.IO
 
