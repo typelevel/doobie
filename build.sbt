@@ -7,7 +7,7 @@ lazy val catsEffectVersion    = "2.5.1"
 lazy val circeVersion         = settingKey[String]("Circe version.")
 lazy val fs2Version           = "2.5.6"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "3.4.5" // N.B. Hikari v4 introduces a breaking change via slf4j v2
+lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val monixVersion         = "3.4.0"
 lazy val quillVersion         = "3.7.1"
@@ -359,8 +359,10 @@ lazy val hikari = project
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
     libraryDependencies ++= Seq(
-      "com.zaxxer"     % "HikariCP"   % hikariVersion,
+      //needs to be excluded, otherwise coursier may resolve slf4j-api 2 if > Java 11
+      "com.zaxxer"     % "HikariCP"   % hikariVersion exclude("org.slf4j", "slf4j-api"),
       "com.h2database" % "h2"         % h2Version      % "test",
+      "org.slf4j"      % "slf4j-api"  % slf4jVersion,
       "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
     )
   )
