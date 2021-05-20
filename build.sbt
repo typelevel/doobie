@@ -2,28 +2,27 @@ import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.5.0"
-lazy val catsEffectVersion    = "2.4.1"
-lazy val circeVersion         = "0.13.0"
-lazy val fs2Version           = "2.5.4"
+lazy val catsVersion          = "2.6.1"
+lazy val catsEffectVersion    = "2.5.1"
+lazy val circeVersion         = settingKey[String]("Circe version.")
+lazy val fs2Version           = "2.5.6"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "3.4.5" // N.B. Hikari v4 introduces a breaking change via slf4j v2
+lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
-lazy val monixVersion         = "3.3.0"
-lazy val quillVersion         = "3.6.1"
+lazy val monixVersion         = "3.4.0"
+lazy val quillVersion         = "3.7.1"
 lazy val postGisVersion       = "2.5.0"
-lazy val postgresVersion      = "42.2.19"
-lazy val refinedVersion       = "0.9.23"
-lazy val scalaCheckVersion    = "1.15.1"
-lazy val scalatestVersion     = "3.2.7"
+lazy val postgresVersion      = "42.2.20"
+lazy val refinedVersion       = "0.9.25"
+lazy val scalaCheckVersion    = "1.15.4"
+lazy val scalatestVersion     = "3.2.9"
 lazy val munitVersion         = "0.7.23"
-lazy val shapelessVersion     = "2.3.4"
+lazy val shapelessVersion     = "2.3.7"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.10.6"
+lazy val specs2Version        = "4.11.0"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
-lazy val scala30VersionOld    = "3.0.0-RC1"
-lazy val scala30Version       = "3.0.0-RC2"
+lazy val scala30Version    = "3.0.0"
 lazy val slf4jVersion         = "1.7.30"
 
 // These are releases to ignore during MiMa checks
@@ -43,7 +42,7 @@ lazy val compilerFlags = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3"
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4"
   )
 )
 
@@ -56,7 +55,7 @@ lazy val commonSettings =
   compilerFlags ++
   Seq(
     scalaVersion := scala213Version,
-    crossScalaVersions := Seq(scala212Version, scala213Version, scala30VersionOld, scala30Version),
+    crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -81,8 +80,8 @@ lazy val commonSettings =
 
     // MUnit
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.0"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.1" % Test,
+      "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.2"  % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.3" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
@@ -121,6 +120,13 @@ lazy val commonSettings =
       else
         old
     },
+
+    circeVersion := {
+      scalaVersion.value match {
+        case `scala30Version`    => "0.14.0-M7"
+        case _                   => "0.13.0"
+      }
+    }
 
   )
 
@@ -222,7 +228,7 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => isDotty.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "0.1.6",
+      "org.tpolecat"   %% "typename"  % "1.0.0",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
@@ -326,11 +332,10 @@ lazy val `postgres-circe` = project
     name  := "doobie-postgres-circe",
     description := "Postgres circe support for doobie.",
     libraryDependencies ++= Seq(
-      "io.circe"    %% "circe-core"    % circeVersion,
-      "io.circe"    %% "circe-parser"  % circeVersion
+      "io.circe"    %% "circe-core"    % circeVersion.value,
+      "io.circe"    %% "circe-parser"  % circeVersion.value
     )
   )
-  .settings(noDottySettings)
 
 lazy val h2 = project
   .in(file("modules/h2"))
@@ -356,8 +361,10 @@ lazy val hikari = project
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
     libraryDependencies ++= Seq(
-      "com.zaxxer"     % "HikariCP"   % hikariVersion,
+      //needs to be excluded, otherwise coursier may resolve slf4j-api 2 if > Java 11
+      "com.zaxxer"     % "HikariCP"   % hikariVersion exclude("org.slf4j", "slf4j-api"),
       "com.h2database" % "h2"         % h2Version      % "test",
+      "org.slf4j"      % "slf4j-api"  % slf4jVersion,
       "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
     )
   )
@@ -429,9 +436,9 @@ lazy val docs = project
     scalacOptions := Nil,
 
     libraryDependencies ++= Seq(
-      "io.circe"    %% "circe-core"    % circeVersion,
-      "io.circe"    %% "circe-generic" % circeVersion,
-      "io.circe"    %% "circe-parser"  % circeVersion,
+      "io.circe"    %% "circe-core"    % circeVersion.value,
+      "io.circe"    %% "circe-generic" % circeVersion.value,
+      "io.circe"    %% "circe-parser"  % circeVersion.value,
       "io.monix"    %% "monix-eval"    % monixVersion,
     ),
     fork in Test := true,
