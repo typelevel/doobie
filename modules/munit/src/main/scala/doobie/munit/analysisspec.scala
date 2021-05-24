@@ -13,7 +13,7 @@ import munit.{Assertions, Location}
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
- * 
+ *
  * {{{
  * class ExampleSuite extends FunSuite with IOChecker {
  *
@@ -60,7 +60,7 @@ object analysisspec {
   }
 
   /** Implementation of Checker[IO] */
-  trait IOChecker extends Checker[IO] { 
+  trait IOChecker extends Checker[IO] {
     self: Assertions =>
     import cats.effect.unsafe.implicits.global
     override implicit val M: Async[IO] = IO.asyncForIO

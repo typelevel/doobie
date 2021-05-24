@@ -135,13 +135,18 @@ The `doobie-munit` add-on provides a mix-in trait that we can add to any `Assert
 
 ```scala mdoc:silent
 import _root_.munit._
+
 class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
+
   override val colors = doobie.util.Colors.None // just for docs
+
   val transactor = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
   )
+
   test("trivial")    { check(trivial)        }
   test("biggerThan") { check(biggerThan(0))  }
   test("update")     { check(update("", "")) }
+
 }
 ```
