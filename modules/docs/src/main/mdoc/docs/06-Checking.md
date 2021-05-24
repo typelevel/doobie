@@ -98,7 +98,7 @@ def biggerThan2(minPop: Int) =
 biggerThan2(0).check.unsafeRunSync()
 ```
 
-**doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2` and `doobie-scalatest` packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.
+**doobie** supports `check` for queries and updates in four ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2`, `doobie-scalatest` and `doobie-munit` packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.
 
 ### Working Around Bad Metadata
 

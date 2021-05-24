@@ -16,6 +16,7 @@ lazy val postgresVersion      = "42.2.19"
 lazy val refinedVersion       = "0.9.25"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.9"
+lazy val munitVersion         = "0.7.26"
 lazy val shapelessVersion     = "2.3.4"
 lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.10.6"
@@ -161,6 +162,7 @@ lazy val doobie = project.in(file("."))
     quill,
     refined,
     scalatest,
+    munit,
     specs2,
   )
 
@@ -389,6 +391,22 @@ lazy val scalatest = project
   )
   .settings(noDottySettings)
 
+lazy val munit = project
+  .in(file("modules/munit"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := s"doobie-munit",
+    description := "MUnit support for doobie.",
+    testFrameworks += new TestFramework("munit.Framework"),
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % munitVersion,
+      "com.h2database"  %  "h2"  % h2Version % "test"
+    )
+  )
+
 lazy val bench = project
   .in(file("modules/bench"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -399,7 +417,7 @@ lazy val bench = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
+  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, quill)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
