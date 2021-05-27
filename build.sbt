@@ -397,7 +397,6 @@ lazy val scalatest = project
       "com.h2database" %  "h2"        % h2Version % "test"
     )
   )
-  .settings(noDottySettings)
 
 lazy val munit = project
   .in(file("modules/munit"))
