@@ -5,24 +5,25 @@ import sbt.dsl.LinterLevel.Ignore
 lazy val catsVersion          = "2.6.1"
 lazy val catsEffectVersion    = "2.5.1"
 lazy val circeVersion         = settingKey[String]("Circe version.")
-lazy val fs2Version           = "3.0.4"
+lazy val fs2Version           = "2.5.7"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val monixVersion         = "3.4.0"
 lazy val quillVersion         = "3.7.1"
 lazy val postGisVersion       = "2.5.0"
-lazy val postgresVersion      = "42.2.20"
-lazy val refinedVersion       = "0.9.25"
+lazy val postgresVersion      = "42.2.22"
+lazy val refinedVersion       = "0.9.26"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.9"
+lazy val munitVersion         = "0.7.26"
 lazy val shapelessVersion     = "2.3.7"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.11.0"
+lazy val specs2Version        = "4.12.2"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
 lazy val scala30Version    = "3.0.0"
-lazy val slf4jVersion         = "1.7.30"
+lazy val slf4jVersion         = "1.7.31"
 
 // These are releases to ignore during MiMa checks
 lazy val botchedReleases = Set("0.8.0", "0.8.1")
@@ -80,7 +81,7 @@ lazy val commonSettings =
     // MUnit
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.2"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.3" % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.5" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
@@ -168,6 +169,7 @@ lazy val doobie = project.in(file("."))
     quill,
     refined,
     scalatest,
+    munit,
     specs2,
   )
 
@@ -395,7 +397,22 @@ lazy val scalatest = project
       "com.h2database" %  "h2"        % h2Version % "test"
     )
   )
-  .settings(noDottySettings)
+
+lazy val munit = project
+  .in(file("modules/munit"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := s"doobie-munit",
+    description := "MUnit support for doobie.",
+    testFrameworks += new TestFramework("munit.Framework"),
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % munitVersion,
+      "com.h2database"  %  "h2"  % h2Version % "test"
+    )
+  )
 
 lazy val bench = project
   .in(file("modules/bench"))
@@ -407,7 +424,7 @@ lazy val bench = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, hikari, h2, scalatest, quill)
+  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, quill)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
