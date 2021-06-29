@@ -12,18 +12,18 @@ lazy val kindProjectorVersion = "0.11.2"
 lazy val monixVersion         = "3.4.0"
 lazy val quillVersion         = "3.7.1"
 lazy val postGisVersion       = "2.5.0"
-lazy val postgresVersion      = "42.2.20"
+lazy val postgresVersion      = "42.2.22"
 lazy val refinedVersion       = "0.9.26"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.9"
 lazy val munitVersion         = "0.7.26"
 lazy val shapelessVersion     = "2.3.7"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.11.0"
-lazy val scala212Version      = "2.12.14"
+lazy val specs2Version        = "4.12.2"
+lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
 lazy val scala30Version    = "3.0.0"
-lazy val slf4jVersion         = "1.7.30"
+lazy val slf4jVersion         = "1.7.31"
 
 // These are releases to ignore during MiMa checks
 lazy val botchedReleases = Set("0.8.0", "0.8.1")
@@ -81,7 +81,7 @@ lazy val commonSettings =
     // MUnit
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.2"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.3" % Test,
+      "org.typelevel"     %% "munit-cats-effect-2"     % "1.0.5" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
@@ -397,7 +397,6 @@ lazy val scalatest = project
       "com.h2database" %  "h2"        % h2Version % "test"
     )
   )
-  .settings(noDottySettings)
 
 lazy val munit = project
   .in(file("modules/munit"))
