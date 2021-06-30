@@ -5,7 +5,7 @@ import sbt.dsl.LinterLevel.Ignore
 lazy val catsVersion          = "2.6.1"
 lazy val catsEffectVersion    = "2.5.1"
 lazy val circeVersion         = settingKey[String]("Circe version.")
-lazy val fs2Version           = "2.5.6"
+lazy val fs2Version           = "2.5.7"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
@@ -19,7 +19,7 @@ lazy val scalatestVersion     = "3.2.9"
 lazy val munitVersion         = "0.7.26"
 lazy val shapelessVersion     = "2.3.7"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.11.0"
+lazy val specs2Version        = "4.12.2"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
 lazy val scala30Version    = "3.0.0"
