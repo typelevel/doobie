@@ -48,8 +48,14 @@ final class Read[A](
   def map[B](f: A => B): Read[B] =
       new Read(gets, (rs, n) => f(unsafeGet(rs, n)))
 
-  def ap[B](ff: Read[A => B]): Read[B] =
-    new Read(gets ++ ff.gets, (rs, n) => ff.unsafeGet(rs, n)(unsafeGet(rs, n + ff.length)))
+  def product[B](fb: Read[B]): Read[(A, B)] = {
+    new Read(gets ++ fb.gets, (rs, n) => (this.unsafeGet(rs, n), fb.unsafeGet(rs, n + this.length)))
+  }
+
+  // ap is kept for binary compatibility reasons
+  def ap[B](ff: Read[A => B]): Read[B] = {
+    ff.product(this).map { case (f, a) => f(a) }
+  }
 
   def get(n: Int): ResultSetIO[A] =
     FRS.raw(unsafeGet(_, n))
@@ -62,6 +68,10 @@ object Read extends ReadPlatform {
 
   implicit val ReadApply: Applicative[Read] =
     new Applicative[Read] {
+
+      // Not strictly needed, but removes a few layers of function call
+      override def product[A, B](fa: Read[A], fb: Read[B]): Read[(A, B)] = fa.product(fb)
+
       def ap[A, B](ff: Read[A => B])(fa: Read[A]): Read[B] = fa.ap(ff)
       def pure[A](x: A): Read[A] = new Read(Nil, (_, _) => x)
       override def map[A, B](fa: Read[A])(f: A => B): Read[B] = fa.map(f)
