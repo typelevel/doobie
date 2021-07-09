@@ -131,6 +131,7 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [Doomoolmori](https://doomoolmori.com)   
  - [eBay Inc.](https://www.ebay.com)
  - [Evolution](https://www.evolution.com/)
+ - [FinDynamic](https://www.findynamic.com/en)
  - [HIFI](https://hi.fi)
  - [ITV](https://www.itv.com/)
  - [lences.io](https://lenses.io)  

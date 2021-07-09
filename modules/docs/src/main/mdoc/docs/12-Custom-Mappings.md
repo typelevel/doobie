@@ -56,6 +56,8 @@ Instances are provided for the following Scala types:
 - `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime` and `ZonedDateTime` from the `java.time` package; and
 - single-element case classes wrapping one of the above types.
 
+The `java.time` instances may require a separate import , dependent on your Database Driver . See the [doobie-faq](https://tpolecat.github.io/doobie/docs/18-FAQ.html#how-do-i-use-java-time-types-with-doobie-) for details
+
 The above cases are defined by the JDBC specification. See later chapters on vendor-specific additions, which provide mappings for some non-standard types such as `UUID`s and network addresses.
 
 #### Deriving Get and Put from Existing Instances
