@@ -75,4 +75,15 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assertEquals(o, List((1, 2, 3, 4, 5)))
   }
 
+  test("Read should select correct columns when combined with `product`") {
+    import cats.syntax.all._
+    import doobie.implicits._
+    val r = util.Read[Int].product(util.Read[Int].product(util.Read[Int]))
+
+    val q = sql"SELECT 1, 2, 3".query(r).to[List]
+    val o = q.transact(xa).unsafeRunSync()
+
+    assertEquals(o, List((1, (2, 3))))
+  }
+
 }
