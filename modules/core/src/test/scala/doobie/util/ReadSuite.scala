@@ -60,6 +60,17 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assertEquals(util.Read[LenStr2].length, 1)
   }
 
+  test(".product should product the correct ordering of gets") {
+    import cats.syntax.all._
+
+    val readInt = util.Read[Int]
+    val readString = util.Read[String]
+
+    val p = readInt.product(readString)
+
+    assertEquals(p.gets, (readInt.gets ++ readString.gets))
+  }
+
   test("Read should select correct columns when combined with `ap`") {
     import cats.syntax.all._
     import doobie.implicits._
