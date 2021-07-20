@@ -23,7 +23,7 @@ lazy val specs2Version        = "4.12.3"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
 lazy val scala30Version    = "3.0.1"
-lazy val slf4jVersion         = "1.7.31"
+lazy val slf4jVersion         = "1.7.32"
 
 // These are releases to ignore during MiMa checks
 lazy val botchedReleases = Set("0.8.0", "0.8.1")
