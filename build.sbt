@@ -4,13 +4,13 @@ import sbt.dsl.LinterLevel.Ignore
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.6.1"
 lazy val catsEffectVersion    = "2.5.1"
-lazy val circeVersion         = settingKey[String]("Circe version.")
+lazy val circeVersion         = "0.14.1"
 lazy val fs2Version           = "2.5.9"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val monixVersion         = "3.4.0"
-lazy val quillVersion         = "3.8.0"
+lazy val quillVersion         = settingKey[String]("Quill version.")
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.2.23"
 lazy val refinedVersion       = "0.9.27"
@@ -121,10 +121,10 @@ lazy val commonSettings =
         old
     },
 
-    circeVersion := {
+    quillVersion := {
       scalaVersion.value match {
-        case `scala30Version`    => "0.14.0-M7"
-        case _                   => "0.13.0"
+        case `scala30Version`    => "3.7.2.Beta.1.4"
+        case _                   => "3.7.2"
       }
     }
 
@@ -332,8 +332,8 @@ lazy val `postgres-circe` = project
     name  := "doobie-postgres-circe",
     description := "Postgres circe support for doobie.",
     libraryDependencies ++= Seq(
-      "io.circe"    %% "circe-core"    % circeVersion.value,
-      "io.circe"    %% "circe-parser"  % circeVersion.value
+      "io.circe"    %% "circe-core"    % circeVersion,
+      "io.circe"    %% "circe-parser"  % circeVersion
     )
   )
 
@@ -435,9 +435,9 @@ lazy val docs = project
     scalacOptions := Nil,
 
     libraryDependencies ++= Seq(
-      "io.circe"    %% "circe-core"    % circeVersion.value,
-      "io.circe"    %% "circe-generic" % circeVersion.value,
-      "io.circe"    %% "circe-parser"  % circeVersion.value,
+      "io.circe"    %% "circe-core"    % circeVersion,
+      "io.circe"    %% "circe-generic" % circeVersion,
+      "io.circe"    %% "circe-parser"  % circeVersion,
       "io.monix"    %% "monix-eval"    % monixVersion,
     ),
     fork in Test := true,
@@ -462,7 +462,7 @@ lazy val docs = project
       "shapelessVersion"         -> shapelessVersion,
       "h2Version"                -> h2Version,
       "postgresVersion"          -> postgresVersion,
-      "quillVersion"             -> quillVersion,
+      "quillVersion"             -> quillVersion.value,
       "scalaVersion"             -> scalaVersion.value,
     ),
 
@@ -500,7 +500,7 @@ lazy val quill = project
     name := "doobie-quill",
     description := "Quill support for doobie.",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc"   % quillVersion,
+      "io.getquill" %% "quill-jdbc"   % quillVersion.value,
       "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
     ),
   )
