@@ -177,6 +177,9 @@ implicit val jsonMeta: Meta[Json] =
 
 There are similar constructors for array types and other possibilities, but `other` is by far the most common in user code and we won't discuss the others here. See the Scaladoc for more information.
 
+## Custom Mappings for `Option[A]`
+
+Currently, you can't specify custom behavior for `Get[Option[A]]` and `Put[Option[A]]` (same for `Meta[Option[A]]`) for yours `A` type (even if you'll place local instances). The default behavior for encoding a `None` value - it's encodes as `null` and can't be overridden. Attend, if your column is defined as not nullable and you try to specify custom mappings for `Option[A]` you may get a runtime exception "the `null` value violates the not-null column".
 
 ## Column Vector Mappings
 
