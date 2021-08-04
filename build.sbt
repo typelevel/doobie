@@ -3,7 +3,7 @@ import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.6.1"
-lazy val catsEffectVersion    = "2.5.2"
+lazy val catsEffectVersion    = "2.5.3"
 lazy val circeVersion         = "0.14.1"
 lazy val fs2Version           = "2.5.9"
 lazy val h2Version            = "1.4.200"
