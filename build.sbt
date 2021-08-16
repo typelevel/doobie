@@ -22,7 +22,7 @@ lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.12.3"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
-lazy val scala30Version    = "3.0.1"
+lazy val scala30Version       = "3.0.1"
 lazy val slf4jVersion         = "1.7.32"
 
 // These are releases to ignore during MiMa checks
@@ -282,8 +282,8 @@ lazy val postgres = project
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2Version,
-      "org.postgresql" % "postgresql" % postgresVersion,
+      "co.fs2"         %% "fs2-io"     % fs2Version,
+      "org.postgresql" %  "postgresql" % postgresVersion,
       postgisDep % "provided"
     ),
     scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
@@ -409,8 +409,8 @@ lazy val munit = project
     description := "MUnit support for doobie.",
     testFrameworks += new TestFramework("munit.Framework"),
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
-      "com.h2database"  %  "h2"  % h2Version % "test"
+      "org.scalameta"   %% "munit" % munitVersion,
+      "com.h2database"  %  "h2"    % h2Version % "test"
     )
   )
 
