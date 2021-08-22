@@ -6,7 +6,10 @@ package doobie.util.meta
 
 import doobie.util.{Get, Put}
 
+import scala.annotation.nowarn
 
+
+@nowarn("msg=.*never used.*")
 class MetaSuite extends munit.FunSuite {
 
   test("Meta should exist for primitive types") {

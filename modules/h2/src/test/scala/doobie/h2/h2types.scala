@@ -17,7 +17,7 @@ import doobie.util.arbitraries.TimeArbitraries._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import doobie.implicits.javasql._
-import doobie.implicits.javatime.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
+import doobie.implicits.javatimedrivernative.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
 import doobie.implicits.legacy.instant.{JavaTimeInstantMeta => LegacyJavaTimeInstantMeta}
 import scala.concurrent.ExecutionContext
 
