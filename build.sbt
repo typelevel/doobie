@@ -3,7 +3,7 @@ import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.6.1"
-lazy val catsEffectVersion    = "2.5.2"
+lazy val catsEffectVersion    = "2.5.3"
 lazy val circeVersion         = "0.14.1"
 lazy val fs2Version           = "2.5.9"
 lazy val h2Version            = "1.4.200"
@@ -16,13 +16,13 @@ lazy val postgresVersion      = "42.2.23"
 lazy val refinedVersion       = "0.9.27"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.9"
-lazy val munitVersion         = "0.7.27"
+lazy val munitVersion         = "0.7.28"
 lazy val shapelessVersion     = "2.3.7"
 lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.12.3"
 lazy val scala212Version      = "2.12.12"
 lazy val scala213Version      = "2.13.5"
-lazy val scala30Version    = "3.0.1"
+lazy val scala30Version       = "3.0.1"
 lazy val slf4jVersion         = "1.7.32"
 
 // These are releases to ignore during MiMa checks
@@ -282,8 +282,8 @@ lazy val postgres = project
     name  := "doobie-postgres",
     description := "Postgres support for doobie.",
     libraryDependencies ++= Seq(
-      "co.fs2" %% "fs2-io"     % fs2Version,
-      "org.postgresql" % "postgresql" % postgresVersion,
+      "co.fs2"         %% "fs2-io"     % fs2Version,
+      "org.postgresql" %  "postgresql" % postgresVersion,
       postgisDep % "provided"
     ),
     scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
@@ -409,8 +409,8 @@ lazy val munit = project
     description := "MUnit support for doobie.",
     testFrameworks += new TestFramework("munit.Framework"),
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
-      "com.h2database"  %  "h2"  % h2Version % "test"
+      "org.scalameta"   %% "munit" % munitVersion,
+      "com.h2database"  %  "h2"    % h2Version % "test"
     )
   )
 
