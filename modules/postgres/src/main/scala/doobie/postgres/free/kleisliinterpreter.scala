@@ -7,7 +7,7 @@ package doobie.postgres.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.{ Async, Blocker, ContextShift, ExitCase }
+import cats.effect.{ Async, ExitCase }
 import scala.concurrent.ExecutionContext
 
 // Types referenced in the JDBC API
@@ -34,10 +34,8 @@ import doobie.postgres.free.pgconnection.{ PGConnectionIO, PGConnectionOp }
 
 object KleisliInterpreter {
 
-  def apply[M[_]](b: Blocker)(
-    implicit am: Async[M],
-             cs: ContextShift[M]
-  ): KleisliInterpreter[M] =
+  def apply[M[_]](
+    implicit am: Async[M]): KleisliInterpreter[M] =
     new KleisliInterpreter[M] {
       val asyncM = am
       val contextShiftM = cs
@@ -77,7 +75,7 @@ trait KleisliInterpreter[M[_]] { outer =>
   def delay[J, A](a: () => A): Kleisli[M, J, A] = Kleisli(_ => asyncM.delay(a()))
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
   def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
-  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async(k))
+  def async[J, A](k: (Either[Throwable, A] => Unit) => Unit): Kleisli[M, J, A] = Kleisli(_ => asyncM.async_(k))
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
     e match {
       case Embedded.CopyIn(j, fa) => Kleisli(_ => fa.foldMap(CopyInInterpreter).run(j))

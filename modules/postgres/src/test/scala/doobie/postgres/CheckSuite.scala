@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{IO, ContextShift}
+import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import doobie.postgres.enums._

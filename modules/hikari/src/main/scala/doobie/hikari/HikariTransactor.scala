@@ -15,9 +15,7 @@ object HikariTransactor {
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def apply[M[_]: Async: ContextShift](
     hikariDataSource : HikariDataSource,
-    connectEC:         ExecutionContext,
-    blocker:           Blocker
-  ): HikariTransactor[M] =
+    connectEC:         ExecutionContext): HikariTransactor[M] =
     Transactor.fromDataSource[M](hikariDataSource, connectEC, blocker)
 
   private def createDataSourceResource[M[_]: Sync](factory: => HikariDataSource): Resource[M, HikariDataSource] = {
@@ -28,9 +26,7 @@ object HikariTransactor {
 
   /** Resource yielding an unconfigured `HikariTransactor`. */
   def initial[M[_]: Async: ContextShift](
-    connectEC: ExecutionContext,
-    blocker: Blocker
-  ): Resource[M, HikariTransactor[M]] = {
+    connectEC: ExecutionContext): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource)
       .map(Transactor.fromDataSource[M](_, connectEC, blocker))
   }
@@ -38,9 +34,7 @@ object HikariTransactor {
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig. */
   def fromHikariConfig[M[_]: Async: ContextShift](
     hikariConfig: HikariConfig,
-    connectEC: ExecutionContext,
-    blocker: Blocker
-  ): Resource[M, HikariTransactor[M]] = {
+    connectEC: ExecutionContext): Resource[M, HikariTransactor[M]] = {
     createDataSourceResource(new HikariDataSource(hikariConfig))
       .map(Transactor.fromDataSource[M](_, connectEC, blocker))
   }
@@ -51,9 +45,7 @@ object HikariTransactor {
     url:             String,
     user:            String,
     pass:            String,
-    connectEC:       ExecutionContext,
-    blocker:         Blocker
-  ): Resource[M, HikariTransactor[M]] =
+    connectEC:       ExecutionContext): Resource[M, HikariTransactor[M]] =
     for {
       _ <- Resource.eval(Async[M].delay(Class.forName(driverClassName)))
       t <- initial[M](connectEC, blocker)

@@ -7,25 +7,26 @@ package doobie.postgres
 import java.util.concurrent.Executors
 
 import cats.effect.syntax.effect._
-import cats.effect.{Blocker, ConcurrentEffect, ContextShift, IO, Timer}
+import cats.effect.{ConcurrentEffect, IO}
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.implicits._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import cats.effect.Temporal
 
 class PGConcurrentSuiteIO extends PGConcurrentSuite[IO] {
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val E: ConcurrentEffect[IO] = IO.ioConcurrentEffect
-  implicit def T: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
+  implicit def T: Temporal[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
 }
 
 
 trait PGConcurrentSuite[F[_]] extends munit.FunSuite {
 
   implicit def E: ConcurrentEffect[F]
-  implicit def T: Timer[F]
+  implicit def T: Temporal[F]
   implicit def contextShift: ContextShift[F]
 
   def transactor() = {

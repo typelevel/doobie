@@ -8,6 +8,7 @@ import cats.effect._
 import doobie._
 import doobie.hikari._
 import doobie.implicits._
+import cats.effect.Resource
 
 object HikariExample extends IOApp {
 
@@ -15,7 +16,7 @@ object HikariExample extends IOApp {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](32)
-      blocker <- Blocker[IO]
+      blocker <- Resource.unit[IO]
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",

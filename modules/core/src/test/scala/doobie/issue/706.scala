@@ -6,7 +6,7 @@ package doobie.issue
 
 import cats._
 import cats.syntax.all._
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import org.scalacheck.Prop.forAll
 import scala.concurrent.ExecutionContext

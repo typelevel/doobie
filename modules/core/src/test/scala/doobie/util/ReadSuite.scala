@@ -5,7 +5,7 @@
 package doobie
 package util
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import scala.concurrent.ExecutionContext
 
 class ReadSuite extends munit.FunSuite with ReadSuitePlatform {

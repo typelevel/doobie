@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification

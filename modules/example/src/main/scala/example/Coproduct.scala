@@ -7,7 +7,7 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.{ Blocker, IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp, ExitCode }
 import cats.free.Free
 import cats.syntax.all._
 import cats.{InjectK, ~>}

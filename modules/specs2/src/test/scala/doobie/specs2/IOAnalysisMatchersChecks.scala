@@ -6,7 +6,7 @@ package doobie.specs2
 
 import scala.concurrent.ExecutionContext
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import org.specs2.mutable.Specification
 
 import doobie.Transactor
