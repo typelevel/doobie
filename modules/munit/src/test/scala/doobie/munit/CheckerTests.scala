@@ -4,7 +4,7 @@
 
 package doobie.munit
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie.syntax.string._
 import doobie.util.Read
 import doobie.util.transactor.Transactor

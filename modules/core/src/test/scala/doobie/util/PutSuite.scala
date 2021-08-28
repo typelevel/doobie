@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._
 import scala.concurrent.ExecutionContext
 

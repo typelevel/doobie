@@ -16,9 +16,7 @@ object H2Transactor {
     url:        String,
     user:       String,
     pass:       String,
-    connectEC:  ExecutionContext,
-    blocker:    Blocker
-  ): Resource[M, H2Transactor[M]] = {
+    connectEC:  ExecutionContext): Resource[M, H2Transactor[M]] = {
     val alloc = Async[M].delay(JdbcConnectionPool.create(url, user, pass))
     val free  = (ds: JdbcConnectionPool) => Async[M].delay(ds.dispose())
     Resource.make(alloc)(free).map(Transactor.fromDataSource[M](_, connectEC, blocker))

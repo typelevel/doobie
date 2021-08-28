@@ -4,7 +4,7 @@
 
 package doobie.issue
 
-import cats.effect.{ Async, Blocker, ContextShift, IO }
+import cats.effect.{ Async, IO }
 import doobie._, doobie.implicits._
 import scala.concurrent.ExecutionContext
 import Predef._

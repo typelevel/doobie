@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import cats.effect.{ IO, ContextShift, Sync }
+import cats.effect.{ IO, Sync }
 import cats.syntax.all._
 import doobie._, doobie.implicits._
 import org.postgresql.PGNotification

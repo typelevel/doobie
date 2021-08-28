@@ -9,7 +9,6 @@ import cats.data.Kleisli
 import org.postgresql.{ PGConnection, PGNotification }
 import doobie._, doobie.implicits._
 import doobie.postgres.free.KleisliInterpreter
-import cats.effect.Blocker
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.Executors
 
