@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 13
-        uses: olafurpg/setup-scala@v10
+      - name: Set up JDK
+        uses: olafurpg/setup-scala@v13
         with:
           java-version: 8
       - name: Cache SBT
@@ -16,6 +16,6 @@ jobs:
       - name: Start up Postgres
         run: docker-compose up -d
       - name: Run tests
-        run: csbt headerCheck +test docs/makeSite
+        run: sbt headerCheck +test docs/makeSite
       - name: Shut down Postgres
         run: docker-compose down
