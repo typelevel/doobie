@@ -46,6 +46,10 @@ lazy val compilerFlags = Seq(
   )
 )
 
+val isDotty = Def.setting(
+  CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
+)
+
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
