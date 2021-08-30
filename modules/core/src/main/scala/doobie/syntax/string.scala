@@ -7,7 +7,7 @@ package doobie.syntax
 import cats.syntax.all._
 
 import doobie.syntax.SqlInterpolator.SingleFragment
-import doobie.util.Put
+import doobie.util.{Put, Write}
 import doobie.util.fragment.{Elem, Fragment}
 import doobie.util.pos.Pos
 
@@ -52,9 +52,12 @@ object SqlInterpolator {
   object SingleFragment {
     val empty = SingleFragment(Fragment.empty)
 
-    implicit def fromPut[A](a: A)(implicit put: Put[A]): SingleFragment[A] = SingleFragment(Fragment("?", Elem.Arg(a, put) :: Nil, None))
-    implicit def fromPutOption[A](a: Option[A])(implicit put: Put[A]): SingleFragment[A] = SingleFragment(Fragment("?", Elem.Opt(a, put) :: Nil, None))
+    @deprecated("Use fromWrite", since = "0.13.5")
+    def fromPut[A](a: A)(implicit put: Put[A]): SingleFragment[A] = SingleFragment(Fragment("?", Elem.Arg(a, put) :: Nil, None))
+    @deprecated("Use fromWrite", since = "0.13.5")
+    def fromPutOption[A](a: Option[A])(implicit put: Put[A]): SingleFragment[A] = SingleFragment(Fragment("?", Elem.Opt(a, put) :: Nil, None))
     implicit def fromFragment(fr: Fragment): SingleFragment[Nothing] = SingleFragment(fr)
+    implicit def fromWrite[A](a: A)(implicit write: Write[A]): SingleFragment[A] = SingleFragment(write.toFragment(a))
   }
 }
 

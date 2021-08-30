@@ -32,11 +32,10 @@ class StringSuite extends munit.FunSuite {
     assertEquals(q.sql, "foo bar ?")
   }
 
-  test("sql interpolator should not support product params") {
-    Write[(Int, String)]
-    compileErrors {
-      """ val a = (1, "two"); sql"foo $a bar baz".query[Int] """
-    }
+  test("sql interpolator should support product params") {
+    val a = (1, "two")
+    val q = sql"foo bar $a".query[Int]
+    assertEquals(q.sql, "foo bar ?,?")
   }
 
 }
