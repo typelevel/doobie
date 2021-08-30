@@ -46,6 +46,10 @@ lazy val compilerFlags = Seq(
   )
 )
 
+val isDotty = Def.setting(
+  CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
+)
+
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
@@ -75,7 +79,7 @@ lazy val commonSettings =
 
     // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+      compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.1" cross CrossVersion.full),
     ).filterNot(_ => isDotty.value),
 
     // MUnit
