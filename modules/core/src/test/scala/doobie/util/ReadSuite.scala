@@ -58,6 +58,17 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assertEquals(util.Read[LenStr2].length, 1)
   }
 
+  test(".product should product the correct ordering of gets") {
+    import cats.syntax.all._
+
+    val readInt = util.Read[Int]
+    val readString = util.Read[String]
+
+    val p = readInt.product(readString)
+
+    assertEquals(p.gets, (readInt.gets ++ readString.gets))
+  }
+
   test("Read should select correct columns when combined with `ap`") {
     import cats.syntax.all._
     import doobie.implicits._
@@ -71,6 +82,17 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     val o = q.transact(xa).unsafeRunSync()
 
     assertEquals(o, List((1, 2, 3, 4, 5)))
+  }
+
+  test("Read should select correct columns when combined with `product`") {
+    import cats.syntax.all._
+    import doobie.implicits._
+    val r = util.Read[Int].product(util.Read[Int].product(util.Read[Int]))
+
+    val q = sql"SELECT 1, 2, 3".query(r).to[List]
+    val o = q.transact(xa).unsafeRunSync()
+
+    assertEquals(o, List((1, (2, 3))))
   }
 
 }
