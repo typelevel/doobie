@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -153,7 +153,7 @@ import doobie._
 import doobie.implicits._
 </code></pre>
 <h3><a href="#about-transactors" name="about-transactors" class="anchor"><span class="anchor-link"></span></a>About Transactors</h3>
-<p>Most <strong>doobie</strong> programs are values of type <code>ConnectionIO[A]</code> or <code>Stream[ConnnectionIO, A]</code> that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a <code>Transactor</code>.</p>
+<p>Most <strong>doobie</strong> programs are values of type <code>ConnectionIO[A]</code> or <code>Stream[ConnectionIO, A]</code> that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a <code>Transactor</code>.</p>
 <p>A <code>Transactor[M]</code> consists of the following bits of information:</p>
 <ul>
   <li>An arbitrary piece of configuration, called the <code>kernel</code>, particular to a given implementation (see below);</li>
@@ -191,9 +191,9 @@ import doobie.implicits._
 <p>However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the <code>DriverManager</code> is fine. Support in <strong>doobie</strong> is via <code>DriverManagerTransactor</code>. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the <code>DriverManager</code> static API).</p>
 <pre class="prettyprint"><code class="language-scala">import doobie.util.ExecutionContexts
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -201,8 +201,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 </code></pre>
 <h3><a href="#using-a-hikaricp-connection-pool" name="using-a-hikaricp-connection-pool" class="anchor"><span class="anchor-link"></span></a>Using a HikariCP Connection Pool</h3>
@@ -220,14 +219,12 @@ object HikariApp extends IOApp {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce &lt;- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      be &lt;- Blocker[IO]    // our blocking EC
       xa &lt;- HikariTransactor.newHikariTransactor[IO](
               &quot;org.h2.Driver&quot;,                        // driver classname
               &quot;jdbc:h2:mem:test;DB_CLOSE_DELAY=-1&quot;,   // connect URL
               &quot;sa&quot;,                                   // username
               &quot;&quot;,                                     // password
-              ce,                                     // await connection here
-              be                                      // execute JDBC operations here
+              ce                                      // await connection here
             )
     } yield xa
 
@@ -246,46 +243,38 @@ object HikariApp extends IOApp {
 }
 </code></pre>
 <p>And running this program gives us the desired result.</p>
-<pre class="prettyprint"><code class="language-scala">HikariApp.main(Array())
-// 42
-</code></pre>
-<h3><a href="#using-an-existing-datasource" name="using-an-existing-datasource" class="anchor"><span class="anchor-link"></span></a>Using an existing DataSource</h3>
-<p>If your application exposes an existing <code>javax.sql.DataSource</code> you can use it directly by wrapping it in a <code>DataSourceTransactor</code>. You still need to provide execution contexts.</p>
-<pre class="prettyprint"><code class="language-scala">import javax.sql.DataSource
+<pre class="prettyprint"><code class="language-scala"><br/>```
 
-// Resource yielding a DataSourceTransactor[IO] wrapping the given `DataSource`
-def transactor(ds: DataSource)(
-  implicit ev: ContextShift[IO]
-): Resource[IO, DataSourceTransactor[IO]] =
-  for {
-    ce &lt;- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-    be &lt;- Blocker[IO]    // our blocking EC
-  } yield Transactor.fromDataSource[IO](ds, ce, be)
-</code></pre>
-<p>The <code>configure</code> method on <code>DataSourceTransactor</code> provides access to the underlying <code>DataSource</code> if additional configuration is required.</p>
-<h3><a href="#using-an-existing-jdbc-connection" name="using-an-existing-jdbc-connection" class="anchor"><span class="anchor-link"></span></a>Using an Existing JDBC Connection</h3>
-<p>If your application exposes an existing <code>Connection</code> you can use it directly by wrapping it in a <code>Transactor</code>. You still need to provide an execution context for blocking operations. Note that you are responsible for closing the <code>Connection</code>.</p>
-<pre class="prettyprint"><code class="language-scala">import java.sql.Connection
+### Using an existing DataSource
 
-// Resource yielding a Transactor[IO] wrapping the given `Connection`
-def transactor(c: Connection)(
-  implicit ev: ContextShift[IO]
-): Resource[IO, Transactor[IO]] =
-  Blocker[IO].map { b =&gt;
-    Transactor.fromConnection[IO](c, b)
-  }
-</code></pre>
-<h3><a href="#customizing-transactors" name="customizing-transactors" class="anchor"><span class="anchor-link"></span></a>Customizing Transactors</h3>
-<p>If the default <code>Transactor</code> behavior don&rsquo;t meet your needs you can replace any member with one that does what you need. See the Scaladoc for <code>Transactor</code> and <code>Strategy</code> for details on the structure. Lenses are provided to make it straightforward to replace just the piece you&rsquo;re interested in. For example, to create a transactor that is the same as <code>xa</code> but always rolls back (for testing perhaps) you can say:</p>
-<pre class="prettyprint"><code class="language-scala">val testXa = Transactor.after.set(xa, HC.rollback)
-</code></pre>
-<p>As another example, Hive&rsquo;s JDBC driver doesn&rsquo;t support transaction commit or rollback, you can create your own <code>Transactor</code> to accommodate that, like:</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.free.connection.unit
+If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`. You still need to provide execution contexts.
 
-val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))
 </code></pre>
+<p>import javax.sql.DataSource</p>
+<p>// Resource yielding a DataSourceTransactor[IO] wrapping the given <code>DataSource</code> def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =  for {  ce &lt;- ExecutionContexts.fixedThreadPool<a href="32">IO</a> // our connect EC  } yield Transactor.fromDataSource[IO](ds, ce)</p>
+<pre><code><br/>The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
+
+
+### Using an Existing JDBC Connection
+
+If your application exposes an existing `Connection` you can use it directly by wrapping it in a `Transactor`. You still need to provide an execution context for blocking operations. Note that you are responsible for closing the `Connection`.
+
+</code></pre>
+<p>import java.sql.Connection</p>
+<p>// A Transactor[IO] wrapping the given <code>Connection</code> def transactor(c: Connection): Transactor[IO] =  Transactor.fromConnection<a href="c">IO</a></p>
+<pre><code><br/>### Customizing Transactors
+
+If the default `Transactor` behavior don&#39;t meet your needs you can replace any member with one that does what you need. See the Scaladoc for `Transactor` and `Strategy` for details on the structure. Lenses are provided to make it straightforward to replace just the piece you&#39;re interested in. For example, to create a transactor that is the same as `xa` but always rolls back (for testing perhaps) you can say:
+
+</code></pre>
+<p>val testXa = Transactor.after.set(xa, HC.rollback)</p>
+<pre><code><br/>As another example, Hive&#39;s JDBC driver doesn&#39;t support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like:
+
+</code></pre>
+<p>import doobie.free.connection.unit</p>
+<p>val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit)) ```</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -304,9 +293,6 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="../docs/14-Managing-Connections.html#about-threading" class="header">About Threading</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-the-jdbc-drivermanager" class="header">Using the JDBC DriverManager</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-a-hikaricp-connection-pool" class="header">Using a HikariCP Connection Pool</a></li>
-    <li><a href="../docs/14-Managing-Connections.html#using-an-existing-datasource" class="header">Using an existing DataSource</a></li>
-    <li><a href="../docs/14-Managing-Connections.html#using-an-existing-jdbc-connection" class="header">Using an Existing JDBC Connection</a></li>
-    <li><a href="../docs/14-Managing-Connections.html#customizing-transactors" class="header">Customizing Transactors</a></li>
   </ul></li>
 </ul>
 </div>
@@ -374,7 +360,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

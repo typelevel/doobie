@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -155,9 +155,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -165,8 +165,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 
 val y = xa.yolo
@@ -196,29 +195,6 @@ import y._
 </code></pre>
 <p>Now let&rsquo;s try the <code>check</code> method provided by YOLO and see what happens.</p>
 <pre class="prettyprint"><code class="language-scala">biggerThan(0).check.unsafeRunSync()
-//   Query0[App.this.Country] defined at 06-Checking.md:63
-//   select code, name, population, gnp, indepyear
-//   from country
-//   where population &gt; ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✕ P01 Short  →  INTEGER (int4)
-//     Short is not coercible to INTEGER (int4) according to the JDBC
-//     specification. Expected schema type was SMALLINT.
-//   ✕ C01 code       CHAR     (bpchar)  NOT NULL  →  Int
-//     CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
-//     specification but is not a recommended target type. Expected
-//     schema type was INTEGER.
-//   ✓ C02 name       VARCHAR  (varchar) NOT NULL  →  String
-//   ✓ C03 population INTEGER  (int4)    NOT NULL  →  Int
-//   ✕ C04 gnp        NUMERIC  (numeric) NULL      →  Double
-//     NUMERIC (numeric) is ostensibly coercible to Double according to
-//     the JDBC specification but is not a recommended target type.
-//     Expected schema type was FLOAT or DOUBLE.
-//     Reading a NULL value into Double will result in a runtime failure.
-//     Fix this by making the schema type NOT NULL or by changing the
-//     Scala type to Option[Double]
-//   ✕ C05 indepyear  SMALLINT (int2)    NULL      →  
-//     Column is unused. Remove it from the SELECT statement.
 </code></pre>
 <p>Yikes, there are quite a few problems, in several categories. In this case <strong>doobie</strong> found</p>
 <ul>
@@ -238,42 +214,12 @@ def biggerThan2(minPop: Int) =
   &quot;&quot;&quot;.query[Country2]
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">biggerThan2(0).check.unsafeRunSync()
-//   Query0[App.this.Country2] defined at 06-Checking.md:83
-//   select code, name, population, gnp
-//   from country
-//   where population &gt; ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 Int  →  INTEGER (int4)
-//   ✓ C01 code       CHAR    (bpchar)  NOT NULL  →  String
-//   ✓ C02 name       VARCHAR (varchar) NOT NULL  →  String
-//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
-//   ✓ C04 gnp        NUMERIC (numeric) NULL      →  Option[BigDecimal]
 </code></pre>
-<p><strong>doobie</strong> supports <code>check</code> for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the <code>doobie-specs2</code> and <code>doobie-scalatest</code> packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.</p>
+<p><strong>doobie</strong> supports <code>check</code> for queries and updates in four ways: programmatically, via YOLO mode in the REPL, and via the <code>doobie-specs2</code>, <code>doobie-scalatest</code> and <code>doobie-munit</code> packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.</p>
 <h3><a href="#working-around-bad-metadata" name="working-around-bad-metadata" class="anchor"><span class="anchor-link"></span></a>Working Around Bad Metadata</h3>
 <p>Some drivers do not implement the JDBC metadata specification very well, which limits the usefulness of the query checking feature. MySQL and MS-SQL do a particularly rotten job in this department. In some cases queries simply cannot be checked because no metadata is available for the prepared statement (manifested as an exception) or the returned metadata is obviously inaccurate.</p>
 <p>However a common case is that <em>parameter</em> metadata is unavailable but <em>output column</em> metadata is. And in these cases there is a workaround: use <code>checkOutput</code> rather than <code>check</code>. This instructs <strong>doobie</strong> to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.</p>
 <pre class="prettyprint"><code class="language-scala">biggerThan(0).checkOutput.unsafeRunSync()
-//   Query0[App.this.Country] defined at 06-Checking.md:63
-//   select code, name, population, gnp, indepyear
-//   from country
-//   where population &gt; ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✕ C01 code       CHAR     (bpchar)  NOT NULL  →  Int
-//     CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
-//     specification but is not a recommended target type. Expected
-//     schema type was INTEGER.
-//   ✓ C02 name       VARCHAR  (varchar) NOT NULL  →  String
-//   ✓ C03 population INTEGER  (int4)    NOT NULL  →  Int
-//   ✕ C04 gnp        NUMERIC  (numeric) NULL      →  Double
-//     NUMERIC (numeric) is ostensibly coercible to Double according to
-//     the JDBC specification but is not a recommended target type.
-//     Expected schema type was FLOAT or DOUBLE.
-//     Reading a NULL value into Double will result in a runtime failure.
-//     Fix this by making the schema type NOT NULL or by changing the
-//     Scala type to Option[Double]
-//   ✕ C05 indepyear  SMALLINT (int2)    NULL      →  
-//     Column is unused. Remove it from the SELECT statement.
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>The <code>check</code> logic requires both a database connection and concrete <code>Get</code> and <code>Put</code> instances that define column-level JDBC mappings.</p>
@@ -285,7 +231,7 @@ def biggerThan2(minPop: Int) =
   <li>Coercibility of types. Mapping of Scala types to JDBC types and JDBC types to vendor types, is asymmetric with respect to reading and writing, and the specification is quite terrible. <strong>doobie</strong> encodes the JDBC spec and combines this with vendor-specific metadata to determine whether a given asserted mapping is sensible or not, and if not, will suggest a fix via changing the Scala type, and another via changing the schema type.</li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/06-Checking.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/06-Checking.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -371,7 +317,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

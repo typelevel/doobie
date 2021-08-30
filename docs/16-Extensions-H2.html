@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -145,7 +145,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-h2" name="extensions-for-h2" class="anchor"><span class="anchor-link"></span></a>Extensions for H2</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.h2database.com/html/main.html">H2</a> . To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot; % &quot;0.12.1&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot; % &quot;1.0.0-RC1&quot;
 </code></pre>
 <p>This library pulls in H2 as a transitive dependency.</p>
 <h3><a href="#array-types" name="array-types" class="anchor"><span class="anchor-link"></span></a>Array Types</h3>
@@ -179,13 +179,11 @@ object H2App extends IOApp {
   val transactor: Resource[IO, H2Transactor[IO]] =
     for {
       ce &lt;- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      be &lt;- Blocker[IO]    // our blocking EC
       xa &lt;- H2Transactor.newH2Transactor[IO](
               &quot;jdbc:h2:mem:test;DB_CLOSE_DELAY=-1&quot;, // connect URL
               &quot;sa&quot;,                                   // username
               &quot;&quot;,                                     // password
               ce,                                     // await connection here
-              be                                      // execute JDBC operations here
             )
     } yield xa
 
@@ -204,7 +202,7 @@ object H2App extends IOApp {
 }
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/16-Extensions-H2.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/16-Extensions-H2.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -289,7 +287,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

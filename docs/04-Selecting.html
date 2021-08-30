@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -156,9 +156,9 @@ import cats.effect._
 import cats.implicits._
 import fs2.Stream
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on our synchronous EC. See the chapter on connection handling for more info.
@@ -166,8 +166,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                          // password
 )
 </code></pre>
 <p>We will be playing with the <code>country</code> table, shown here for reference. If you don&rsquo;t have the <code>world</code> database set up, go back to the <a href="01-Introduction.html">Introduction</a> for instructions.</p>
@@ -237,11 +236,6 @@ import y._
   .take(5)       // Stream[ConnectionIO, String]
   .quick         // IO[Unit]
   .unsafeRunSync()
-//   Afghanistan
-//   Netherlands
-//   Netherlands Antilles
-//   Albania
-//   Algeria
 </code></pre>
 <p>This syntax allows you to quickly run a <code>Query0[A]</code> or <code>Stream[ConnectionIO, A]</code> and see the results printed to the console. This isn&rsquo;t a huge deal but it can save you some keystrokes when you&rsquo;re just messing around.</p>
 <ul>
@@ -256,11 +250,6 @@ import y._
   .take(5)
   .quick
   .unsafeRunSync()
-//   (AFG,Afghanistan,22720000,Some(5976.0))
-//   (NLD,Netherlands,15864000,Some(371362.0))
-//   (ANT,Netherlands Antilles,217000,Some(1941.0))
-//   (ALB,Albania,3401200,Some(3205.0))
-//   (DZA,Algeria,31471000,Some(49982.0))
 </code></pre>
 <p><strong>doobie</strong> supports row mappings for atomic column types, as well as options, tuples, <code>HList</code>s, shapeless records, and case classes thereof. So let&rsquo;s try the same query with an <code>HList</code>:</p>
 <pre class="prettyprint"><code class="language-scala">import shapeless._
@@ -271,11 +260,6 @@ sql&quot;select code, name, population, gnp from country&quot;
   .take(5)
   .quick
   .unsafeRunSync()
-//   AFG :: Afghanistan :: 22720000 :: Some(5976.0) :: HNil
-//   NLD :: Netherlands :: 15864000 :: Some(371362.0) :: HNil
-//   ANT :: Netherlands Antilles :: 217000 :: Some(1941.0) :: HNil
-//   ALB :: Albania :: 3401200 :: Some(3205.0) :: HNil
-//   DZA :: Algeria :: 31471000 :: Some(49982.0) :: HNil
 </code></pre>
 <p>And with a shapeless record:</p>
 <pre class="prettyprint"><code class="language-scala">import shapeless.record.Record
@@ -288,11 +272,6 @@ sql&quot;select code, name, population, gnp from country&quot;
   .take(5)
   .quick
   .unsafeRunSync()
-//   AFG :: Afghanistan :: 22720000 :: Some(5976.0) :: HNil
-//   NLD :: Netherlands :: 15864000 :: Some(371362.0) :: HNil
-//   ANT :: Netherlands Antilles :: 217000 :: Some(1941.0) :: HNil
-//   ALB :: Albania :: 3401200 :: Some(3205.0) :: HNil
-//   DZA :: Algeria :: 31471000 :: Some(49982.0) :: HNil
 </code></pre>
 <p>And again, mapping rows to a case class.</p>
 <pre class="prettyprint"><code class="language-scala">case class Country(code: String, name: String, pop: Int, gnp: Option[Double])
@@ -303,11 +282,6 @@ sql&quot;select code, name, population, gnp from country&quot;
   .take(5)
   .quick
   .unsafeRunSync()
-//   Country(AFG,Afghanistan,22720000,Some(5976.0))
-//   Country(NLD,Netherlands,15864000,Some(371362.0))
-//   Country(ANT,Netherlands Antilles,217000,Some(1941.0))
-//   Country(ALB,Albania,3401200,Some(3205.0))
-//   Country(DZA,Algeria,31471000,Some(49982.0))
 </code></pre>
 <p>You can also nest case classes, <code>HList</code>s, shapeless records, and/or tuples arbitrarily as long as the eventual members are of supported columns types. For instance, here we map the same set of columns to a tuple of two case classes:</p>
 <pre class="prettyprint"><code class="language-scala">case class Code(code: String)
@@ -319,11 +293,6 @@ case class Country2(name: String, pop: Int, gnp: Option[Double])
   .take(5)
   .quick
   .unsafeRunSync()
-//   (Code(AFG),Country2(Afghanistan,22720000,Some(5976.0)))
-//   (Code(NLD),Country2(Netherlands,15864000,Some(371362.0)))
-//   (Code(ANT),Country2(Netherlands Antilles,217000,Some(1941.0)))
-//   (Code(ALB),Country2(Albania,3401200,Some(3205.0)))
-//   (Code(DZA),Country2(Algeria,31471000,Some(49982.0)))
 </code></pre>
 <p>And just for fun, since the <code>Code</code> values are constructed from the primary key, let&rsquo;s turn the results into a <code>Map</code>. Trivial but useful.</p>
 <pre class="prettyprint"><code class="language-scala">sql&quot;select code, name, population, gnp from country&quot;
@@ -333,7 +302,6 @@ case class Country2(name: String, pop: Int, gnp: Option[Double])
   .map(_.toMap)
   .quick
   .unsafeRunSync()
-//   HashMap(Code(ANT) -&gt; Country2(Netherlands Antilles,217000,Some(1941.0)), Code(ALB) -&gt; Country2(Albania,3401200,Some(3205.0)), Code(DZA) -&gt; Country2(Algeria,31471000,Some(49982.0)), Code(NLD) -&gt; Country2(Netherlands,15864000,Some(371362.0)), Code(AFG) -&gt; Country2(Afghanistan,22720000,Some(5976.0)))
 </code></pre>
 <h3><a href="#final-streaming" name="final-streaming" class="anchor"><span class="anchor-link"></span></a>Final Streaming</h3>
 <p>In the examples above we construct a <code>Stream[ConnectionIO, A]</code> and discharge it via <code>.compile.toList</code>, yielding a <code>ConnectionIO[List[A]]</code> which eventually becomes a <code>IO[List[A]]</code>. So the construction and execution of the <code>Stream</code> is entirely internal to the <strong>doobie</strong> program.</p>
@@ -367,11 +335,10 @@ proc.take(5)        // Stream[ConnectionIO, (Code, Country2)]
     .map(_.toMap)   // ConnectionIO[Map[Code, Country2]]
     .quick
     .unsafeRunSync()
-//   HashMap(Code(ANT) -&gt; Country2(Netherlands Antilles,217000,Some(1941.0)), Code(ALB) -&gt; Country2(Albania,3401200,Some(3205.0)), Code(DZA) -&gt; Country2(Algeria,31471000,Some(49982.0)), Code(NLD) -&gt; Country2(Netherlands,15864000,Some(371362.0)), Code(AFG) -&gt; Country2(Afghanistan,22720000,Some(5976.0)))
 </code></pre>
 <p>The <code>stream</code> combinator is parameterized on the element type and consumes a statement and a program in <code>PreparedStatementIO</code> that sets input parameters and any other pre-execution configuration. In this case the &ldquo;prepare&rdquo; program is a no-op.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/04-Selecting.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/04-Selecting.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -460,7 +427,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

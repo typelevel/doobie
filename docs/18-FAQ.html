@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -157,18 +157,17 @@ import java.awt.geom.Point2D
 import java.util.UUID
 import shapeless._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
-// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an our synchronous EC. See the chapter on connection handling for more info.
+// A transactor that gets connections from java.sql.DriverManager. 
+// See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
   &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 </code></pre>
 <h3><a href="#how-do-i-do-an-in-clause-" name="how-do-i-do-an-in-clause-" class="anchor"><span class="anchor-link"></span></a>How do I do an <code>IN</code> clause?</h3>
@@ -182,16 +181,6 @@ val xa = Transactor.fromDriverManager[IO](
   sql&quot;select $s&quot;.query[String].check.unsafeRunSync()
   sql&quot;select $s :: char&quot;.query[String].check.unsafeRunSync()
 }
-//   Query0[String] defined at 18-FAQ.md:66
-//   select ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 String  →  VARCHAR (text)
-//   ✓ C01 ?column? VARCHAR (text) NULL?  →  String
-//   Query0[String] defined at 18-FAQ.md:67
-//   select ? :: char
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 String  →  CHAR (bpchar)
-//   ✓ C01 bpchar CHAR (bpchar) NULL?  →  String
 </code></pre>
 <h3><a href="#how-do-i-do-several-things-in-the-same-transaction-" name="how-do-i-do-several-things-in-the-same-transaction-" class="anchor"><span class="anchor-link"></span></a>How do I do several things in the same transaction?</h3>
 <p>You can use a <code>for</code> comprehension to compose any number of <code>ConnectionIO</code> programs, and then call <code>.transact(xa)</code> on the result. All of the composed programs will run in the same transaction. For this reason it&rsquo;s useful for your APIs to expose values in <code>ConnectionIO</code>, so higher-level code can place transaction boundaries as needed.</p>
@@ -227,16 +216,6 @@ def cities(code: Code, asc: Boolean): Query0[City] = {
   import y._
   cities(Code(&quot;USA&quot;), true).check.unsafeRunSync()
 }
-//   Query0[App.this.City] defined at 18-FAQ.md:89
-//   SELECT countrycode, name, population
-//   FROM city
-//   WHERE countrycode = ?
-//   ORDER BY name ASC
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 String  →  CHAR (bpchar)
-//   ✓ C01 countrycode CHAR    (bpchar)  NOT NULL  →  String
-//   ✓ C02 name        VARCHAR (varchar) NOT NULL  →  String
-//   ✓ C03 population  INTEGER (int4)    NOT NULL  →  Int
 </code></pre>
 <p>And it works!</p>
 <pre class="prettyprint"><code class="language-scala">{
@@ -245,16 +224,6 @@ def cities(code: Code, asc: Boolean): Query0[City] = {
   cities(Code(&quot;USA&quot;), true).stream.take(5).quick.unsafeRunSync()
   cities(Code(&quot;USA&quot;), false).stream.take(5).quick.unsafeRunSync()
 }
-//   City(Code(USA),Abilene,115930)
-//   City(Code(USA),Akron,217074)
-//   City(Code(USA),Albany,93994)
-//   City(Code(USA),Albuquerque,448607)
-//   City(Code(USA),Alexandria,128283)
-//   City(Code(USA),Yonkers,196086)
-//   City(Code(USA),Worcester,172648)
-//   City(Code(USA),Winston-Salem,185776)
-//   City(Code(USA),Wichita Falls,104197)
-//   City(Code(USA),Wichita,344284)
 </code></pre>
 <h3><a href="#how-do-i-handle-outer-joins-" name="how-do-i-handle-outer-joins-" class="anchor"><span class="anchor-link"></span></a>How do I handle outer joins?</h3>
 <p>With an outer join you end up with set of nullable columns, which you typically want to map to a single <code>Option</code> of some composite type, which doobie can do for you. If all columns are null you will get back <code>None</code>.</p>
@@ -276,10 +245,6 @@ val join =
   import y._
   join.stream.filter(_._1.name.startsWith(&quot;United&quot;)).quick.unsafeRunSync()
 }
-//   (Country(United Arab Emirates,ARE),Some(City2(Abu Dhabi,Abu Dhabi)))
-//   (Country(United Kingdom,GBR),Some(City2(London,England)))
-//   (Country(United States,USA),Some(City2(Washington,District of Columbia)))
-//   (Country(United States Minor Outlying Islands,UMI),None)
 </code></pre>
 <h3><a href="#how-do-i-log-the-sql-produced-for-my-query-after-interpolation-" name="how-do-i-log-the-sql-produced-for-my-query-after-interpolation-" class="anchor"><span class="anchor-link"></span></a>How do I log the SQL produced for my query after interpolation?</h3>
 <p>As of <strong>doobie</strong> 0.4 there is a reasonable solution to the logging/instrumentation question. See <a href="10-Logging.html">Chapter 10</a> for more details.</p>
@@ -361,7 +326,7 @@ implicit val nesMeta: Meta[NonEmptyString] = {
   <li><a href="https://jdbc.postgresql.org/documentation/head/8-date-time.html">Postgres JDBC - Using Java 8 Date and Time classes</a></li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/18-FAQ.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/18-FAQ.md">here</a>.
 </div>
 
 </div>
@@ -451,7 +416,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

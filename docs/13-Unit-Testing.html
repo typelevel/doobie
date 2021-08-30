@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -144,7 +144,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#unit-testing" name="unit-testing" class="anchor"><span class="anchor-link"></span></a>Unit Testing</h2>
-<p>The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your <a href="http://etorreborre.github.io/specs2/">Specs2</a> or <a href="http://www.scalatest.org/">ScalaTest</a> unit tests.</p>
+<p>The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your <a href="http://etorreborre.github.io/specs2/">Specs2</a>, <a href="http://www.scalatest.org/">ScalaTest</a> or <a href="https://scalameta.org/munit">MUnit</a> unit tests.</p>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
 <p>As with earlier chapters we set up a <code>Transactor</code> and YOLO mode. We will also use the <code>doobie-specs2</code> and <code>doobie-scalatest</code> add-ons.</p>
 <pre class="prettyprint"><code class="language-scala">import doobie._
@@ -154,9 +154,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -164,8 +164,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 </code></pre>
 <p>And again we are playing with the <code>country</code> table, given here for reference.</p>
@@ -223,14 +222,14 @@ import _root_.org.specs2.main.{ Arguments, Report }
 runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info] AnalysisTestSpec
 // [info] 
-// [info] + Query0[(Int, String)] defined at 13-Unit-Testing.md:51
+// [info] + Query0[(Int, String)] defined at 13-Unit-Testing.md:50
 // [info]   
 // [info]     select 42, &#39;foo&#39;::varchar
 // [info]   
 // [info]   + SQL Compiles and TypeChecks
 // [info]   + C01 ?column? INTEGER (int4)    NULL?  →  Int
 // [info]   + C02 varchar  VARCHAR (varchar) NULL?  →  String
-// [info] + Query0[App.this.Country] defined at 13-Unit-Testing.md:57
+// [info] + Query0[App.this.Country] defined at 13-Unit-Testing.md:56
 // [info]   
 // [info]     select code, name, population, gnp, indepyear
 // [info]     from country
@@ -239,12 +238,12 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info]   + SQL Compiles and TypeChecks
 // [error]   x P01 Short  →  INTEGER (int4)
 // [error]    Short is not coercible to INTEGER (int4) according to the JDBC
-//    specification. Expected schema type was SMALLINT. (analysisspec.scala:60)
+//    specification. Expected schema type was SMALLINT. (analysisspec.scala:61)
 // [info] 
 // [error]   x C01 code       CHAR     (bpchar)  NOT NULL  →  Int
 // [error]    CHAR (bpchar) is ostensibly coercible to Int according to the JDBC
 //    specification but is not a recommended target type. Expected schema
-//    type was INTEGER. (analysisspec.scala:60)
+//    type was INTEGER. (analysisspec.scala:61)
 // [info] 
 // [info]   + C02 name       VARCHAR  (varchar) NOT NULL  →  String
 // [info]   + C03 population INTEGER  (int4)    NOT NULL  →  Int
@@ -254,12 +253,12 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 //    schema type was FLOAT or DOUBLE.
 //    Reading a NULL value into Double will result in a runtime failure. Fix
 //    this by making the schema type NOT NULL or by changing the Scala type
-//    to Option[Double] (analysisspec.scala:60)
+//    to Option[Double] (analysisspec.scala:61)
 // [info] 
 // [error]   x C05 indepyear  SMALLINT (int2)    NULL      →  
-// [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:60)
+// [error]    Column is unused. Remove it from the SELECT statement. (analysisspec.scala:61)
 // [info] 
-// [info] + Update0 defined at 13-Unit-Testing.md:65
+// [info] + Update0 defined at 13-Unit-Testing.md:64
 // [info]   
 // [info]     update country set name = ? where name = ?
 // [info]   
@@ -269,7 +268,7 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info] 
 // [info] 
 // [info] Total for specification AnalysisTestSpec
-// [info] Finished in 408 ms
+// [info] Finished in 315 ms
 // 16 examples, 4 failures, 0 error
 // [info]
 </code></pre>
@@ -297,7 +296,7 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
 // MdocSession$App$AnalysisTestScalaCheck:
 // - trivial
 // - biggerThan *** FAILED ***
-//   Query0[App.this.Country] defined at 13-Unit-Testing.md:57
+//   Query0[App.this.Country] defined at 13-Unit-Testing.md:56
 //     select code, name, population, gnp, indepyear
 //     from country
 //     where population &gt; ?
@@ -319,11 +318,29 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
 //       Fix this by making the schema type NOT NULL or by changing the
 //       Scala type to Option[Double]
 //     ✕ C05 indepyear  SMALLINT (int2)    NULL      →  
-//       Column is unused. Remove it from the SELECT statement. (Checker.scala:56)
+//       Column is unused. Remove it from the SELECT statement. (Checker.scala:57)
 // - update
 </code></pre>
+<h3><a href="#the-munit-package" name="the-munit-package" class="anchor"><span class="anchor-link"></span></a>The MUnit Package</h3>
+<p>The <code>doobie-munit</code> add-on provides a mix-in trait that we can add to any <code>Assertions</code> implementation (like <code>FunSuite</code>) much like the ScalaTest package above.</p>
+<pre class="prettyprint"><code class="language-scala">import _root_.munit._
+
+class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
+
+  override val colors = doobie.util.Colors.None // just for docs
+
+  val transactor = Transactor.fromDriverManager[IO](
+    &quot;org.postgresql.Driver&quot;, &quot;jdbc:postgresql:world&quot;, &quot;postgres&quot;, &quot;&quot;
+  )
+
+  test(&quot;trivial&quot;)    { check(trivial)        }
+  test(&quot;biggerThan&quot;) { check(biggerThan(0))  }
+  test(&quot;update&quot;)     { check(update(&quot;&quot;, &quot;&quot;)) }
+
+}
+</code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/13-Unit-Testing.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/13-Unit-Testing.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -341,6 +358,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="../docs/13-Unit-Testing.html#setting-up" class="header">Setting Up</a></li>
     <li><a href="../docs/13-Unit-Testing.html#the-specs2-package" class="header">The Specs2 Package</a></li>
     <li><a href="../docs/13-Unit-Testing.html#the-scalatest-package" class="header">The ScalaTest Package</a></li>
+    <li><a href="../docs/13-Unit-Testing.html#the-munit-package" class="header">The MUnit Package</a></li>
   </ul></li>
 </ul>
 </div>
@@ -408,7 +426,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

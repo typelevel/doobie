@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -154,9 +154,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -164,8 +164,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 
 val y = xa.yolo
@@ -193,9 +192,9 @@ p.attempt
 //   a = HandleErrorWith(
 //     fa = FlatMapped(
 //       c = Pure(a = 42),
-//       f = cats.Monad$$Lambda$11319/0x0000000842da9840@411b359b
+//       f = cats.Monad$$Lambda$22736/0x0000000845589840@3aa7774
 //     ),
-//     f = cats.ApplicativeError$$Lambda$11420/0x0000000842e22040@3e86944b
+//     f = cats.ApplicativeError$$Lambda$22858/0x000000084562b840@1d9a29b0
 //   )
 // )
 </code></pre>
@@ -223,8 +222,6 @@ p.attempt
           name  VARCHAR NOT NULL UNIQUE
         )&quot;&quot;&quot;
 ).traverse(_.update.quick).void.unsafeRunSync()
-//   0 row(s) updated
-//   0 row(s) updated
 </code></pre>
 <p>Alright, let&rsquo;s define a <code>Person</code> data type and a way to insert instances.</p>
 <pre class="prettyprint"><code class="language-scala">case class Person(id: Int, name: String)
@@ -237,7 +234,6 @@ def insert(s: String): ConnectionIO[Person] = {
 </code></pre>
 <p>The first insert will work.</p>
 <pre class="prettyprint"><code class="language-scala">insert(&quot;bob&quot;).quick.unsafeRunSync()
-//   Person(1,bob)
 </code></pre>
 <p>The second will fail with a unique constraint violation.</p>
 <pre class="prettyprint"><code class="language-scala">try {
@@ -261,13 +257,11 @@ def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
 </code></pre>
 <p>Given this definition we can safely attempt to insert duplicate records and get a helpful error message rather than an exception.</p>
 <pre class="prettyprint"><code class="language-scala">safeInsert(&quot;bob&quot;).quick.unsafeRunSync()
-//   Left(Oops!)
 
 safeInsert(&quot;steve&quot;).quick.unsafeRunSync()
-//   Right(Person(4,steve))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/09-Error-Handling.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/09-Error-Handling.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -353,7 +347,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -163,9 +163,9 @@ import cats.implicits._
 <p>This is a perfectly respectable <strong>doobie</strong> program, but we can&rsquo;t run it as-is; we need a <code>Connection</code> first. There are several ways to do this, but here let&rsquo;s use a <code>Transactor</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import doobie.util.ExecutionContexts
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -173,8 +173,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 </code></pre>
 <p>A <code>Transactor</code> is a data type that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform <code>ConnectionIO ~&gt; IO</code>, which gives us a program we can run. Specifically it gives us an <code>IO</code> that, when run, will connect to the database and execute single transaction.</p>
@@ -182,51 +181,9 @@ val xa = Transactor.fromDriverManager[IO](
 <p>The <code>DriverManagerTransactor</code> simply delegates to the <code>java.sql.DriverManager</code> to allocate connections, which is fine for development but inefficient for production use. In a later chapter we discuss other approaches for connection management.</p>
 <p>And here we go.</p>
 <pre class="prettyprint"><code class="language-scala">val io = program1.transact(xa)
-// io: IO[Int] = Async(
-//   k = cats.effect.internals.IOAsync$$$Lambda$11250/0x0000000842ca2040@7d9821fe,
-//   trampolineAfter = true,
-//   trace = StackTrace(
-//     stackTrace = List(
-//       cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
-//       cats.effect.internals.IOTracing$.buildCachedFrame(IOTracing.scala:39),
-//       cats.effect.internals.IOTracing$.cached(IOTracing.scala:34),
-//       cats.effect.internals.IOAsync$.apply(IOAsync.scala:30),
-//       cats.effect.internals.IOBracket$.apply(IOBracket.scala:54),
-//       cats.effect.IO.bracketCase(IO.scala:613),
-//       cats.effect.IOLowPriorityInstances$IOEffect.bracketCase(IO.scala:904),
-//       cats.effect.IOLowPriorityInstances$IOEffect.bracketCase(IO.scala:863),
-//       cats.effect.Resource.loop$1(Resource.scala:126),
-//       cats.effect.Resource.fold(Resource.scala:135),
-//       cats.effect.Resource.use_(Resource.scala:142),
-//       cats.effect.ResourceLike.use(ResourceLike.scala:33),
-//       doobie.util.transactor$Transactor$$anon$4.apply(transactor.scala:166),
-//       doobie.util.transactor$Transactor$$anon$4.apply(transactor.scala:164),
-//       doobie.syntax.ConnectionIOOps.transact(connectionio.scala:15),
-//       repl.MdocSession$App.&lt;init&gt;(03-Connecting.md:59),
-//       repl.MdocSession$.app(03-Connecting.md:3),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withErr(Console.scala:193),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$1(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withOut(Console.scala:164),
-//       mdoc.internal.document.DocumentBuilder$$doc$.build(DocumentBuilder.scala:88),
-//       mdoc.internal.markdown.MarkdownBuilder$.buildDocument(MarkdownBuilder.scala:44),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:182),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:149),
-//       mdoc.internal.markdown.Processor.processDocument(Processor.scala:49),
-//       mdoc.internal.markdown.Markdown$.toMarkdown(Markdown.scala:131),
-//       mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
-//       mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
-//       mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
-//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
-//       scala.collection.immutable.List.foldLeft(List.scala:79),
-//       mdoc.internal.cli.MainOps.generateCompleteSite(MainOps.scala:155),
-//       mdoc.internal.cli.MainOps.run(MainOps.scala:177),
-// ...
+// io: IO[Int] = Uncancelable(
+//   body = cats.effect.IO$$$Lambda$22748/0x0000000845592840@61d5d380
+// )
 io.unsafeRunSync()
 // res0: Int = 42
 </code></pre>
@@ -239,58 +196,14 @@ io.unsafeRunSync()
 <p>Now let&rsquo;s use the <code>sql</code> string interpolator to construct a query that asks the <em>database</em> to compute a constant. We will cover this construction in great detail later on, but the meaning of <code>program2</code> is &ldquo;run the query, interpret the resultset as a stream of <code>Int</code> values, and yield its one and only element.&rdquo;</p>
 <pre class="prettyprint"><code class="language-scala">val program2 = sql&quot;select 42&quot;.query[Int].unique
 // program2: ConnectionIO[Int] = Suspend(
-//   a = BracketCase(
-//     acquire = Suspend(a = PrepareStatement(a = &quot;select 42&quot;)),
-//     use = doobie.hi.connection$$$Lambda$11410/0x0000000842e1f040@3259216f,
-//     release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@3b5b4bad
+//   a = Uncancelable(
+//     body = cats.effect.kernel.MonadCancel$$Lambda$22775/0x00000008455c1840@31cacc12
 //   )
 // )
 val io2 = program2.transact(xa)
-// io2: IO[Int] = Async(
-//   k = cats.effect.internals.IOAsync$$$Lambda$11250/0x0000000842ca2040@67582f8c,
-//   trampolineAfter = true,
-//   trace = StackTrace(
-//     stackTrace = List(
-//       cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
-//       cats.effect.internals.IOTracing$.buildCachedFrame(IOTracing.scala:39),
-//       cats.effect.internals.IOTracing$.cached(IOTracing.scala:34),
-//       cats.effect.internals.IOAsync$.apply(IOAsync.scala:30),
-//       cats.effect.internals.IOBracket$.apply(IOBracket.scala:54),
-//       cats.effect.IO.bracketCase(IO.scala:613),
-//       cats.effect.IOLowPriorityInstances$IOEffect.bracketCase(IO.scala:904),
-//       cats.effect.IOLowPriorityInstances$IOEffect.bracketCase(IO.scala:863),
-//       cats.effect.Resource.loop$1(Resource.scala:126),
-//       cats.effect.Resource.fold(Resource.scala:135),
-//       cats.effect.Resource.use_(Resource.scala:142),
-//       cats.effect.ResourceLike.use(ResourceLike.scala:33),
-//       doobie.util.transactor$Transactor$$anon$4.apply(transactor.scala:166),
-//       doobie.util.transactor$Transactor$$anon$4.apply(transactor.scala:164),
-//       doobie.syntax.ConnectionIOOps.transact(connectionio.scala:15),
-//       repl.MdocSession$App.&lt;init&gt;(03-Connecting.md:59),
-//       repl.MdocSession$.app(03-Connecting.md:3),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withErr(Console.scala:193),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$1(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withOut(Console.scala:164),
-//       mdoc.internal.document.DocumentBuilder$$doc$.build(DocumentBuilder.scala:88),
-//       mdoc.internal.markdown.MarkdownBuilder$.buildDocument(MarkdownBuilder.scala:44),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:182),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:149),
-//       mdoc.internal.markdown.Processor.processDocument(Processor.scala:49),
-//       mdoc.internal.markdown.Markdown$.toMarkdown(Markdown.scala:131),
-//       mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
-//       mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
-//       mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
-//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
-//       scala.collection.immutable.List.foldLeft(List.scala:79),
-//       mdoc.internal.cli.MainOps.generateCompleteSite(MainOps.scala:155),
-//       mdoc.internal.cli.MainOps.run(MainOps.scala:177),
-// ...
+// io2: IO[Int] = Uncancelable(
+//   body = cats.effect.IO$$$Lambda$22748/0x0000000845592840@4c62e85c
+// )
 io2.unsafeRunSync()
 // res1: Int = 42
 </code></pre>
@@ -305,7 +218,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And behold!</p>
 <pre class="prettyprint"><code class="language-scala">program3.transact(xa).unsafeRunSync()
-// res2: (Int, Double) = (42, 0.6665541706606746)
+// res2: (Int, Double) = (42, 0.027555175125598907)
 </code></pre>
 <p>The astute among you will note that we don&rsquo;t actually need a monad to do this; an applicative functor is all we need here. So we could also write <code>program3</code> as:</p>
 <pre class="prettyprint"><code class="language-scala">val program3a = {
@@ -316,7 +229,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And lo, it was good:</p>
 <pre class="prettyprint"><code class="language-scala">program3a.transact(xa).unsafeRunSync()
-// res3: (Int, Double) = (42, 0.6726323547773063)
+// res3: (Int, Double) = (42, 0.6492877062410116)
 </code></pre>
 <p>And of course this composition can continue indefinitely.</p>
 <pre class="prettyprint"><code class="language-scala">val valuesList = program3a.replicateA(5)
@@ -326,134 +239,50 @@ io2.unsafeRunSync()
 //       c = FlatMapped(
 //         c = FlatMapped(
 //           c = Suspend(
-//             a = BracketCase(
-//               acquire = Suspend(a = PrepareStatement(a = &quot;select 42&quot;)),
-//               use = doobie.hi.connection$$$Lambda$11410/0x0000000842e1f040@630197c0,
-//               release = cats.effect.Bracket$$Lambda$11412/0x0000000842e20840@3198dcfb
+//             a = Uncancelable(
+//               body = cats.effect.kernel.MonadCancel$$Lambda$22775/0x00000008455c1840@11163b60
 //             )
 //           ),
-//           f = cats.FlatMap$$Lambda$11403/0x0000000842e1a040@61a78808
+//           f = cats.FlatMap$$Lambda$22841/0x0000000845618040@59a6f518
 //         ),
-//         f = cats.Monad$$Lambda$11319/0x0000000842da9840@f3066b
+//         f = cats.Monad$$Lambda$22736/0x0000000845589840@6179ae71
 //       ),
-//       f = cats.FlatMap$$Lambda$11462/0x000000084236b840@6fa33e22
+//       f = cats.FlatMap$$Lambda$22893/0x0000000845654040@299f6ed8
 //     ),
-//     f = cats.Monad$$Lambda$11319/0x0000000842da9840@182b4829
+//     f = cats.Monad$$Lambda$22736/0x0000000845589840@8160f4d
 //   ),
-//   f = cats.Monad$$Lambda$11319/0x0000000842da9840@459174ec
+//   f = cats.Monad$$Lambda$22736/0x0000000845589840@66f62562
 // )
 val result = valuesList.transact(xa)
-// result: IO[List[(Int, Double)]] = Async(
-//   k = cats.effect.internals.IOAsync$$$Lambda$11250/0x0000000842ca2040@27bdc54a,
-//   trampolineAfter = true,
-//   trace = StackTrace(
-//     stackTrace = List(
-//       cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
-//       cats.effect.internals.IOTracing$.buildCachedFrame(IOTracing.scala:39),
-//       cats.effect.internals.IOTracing$.cached(IOTracing.scala:34),
-//       cats.effect.internals.IOAsync$.apply(IOAsync.scala:30),
-//       cats.effect.internals.IOBracket$.apply(IOBracket.scala:54),
-//       cats.effect.IO.bracketCase(IO.scala:613),
-//       cats.effect.IOLowPriorityInstances$IOEffect.bracketCase(IO.scala:904),
-//       cats.effect.IOLowPriorityInstances$IOEffect.bracketCase(IO.scala:863),
-//       cats.effect.Resource.loop$1(Resource.scala:126),
-//       cats.effect.Resource.fold(Resource.scala:135),
-//       cats.effect.Resource.use_(Resource.scala:142),
-//       cats.effect.ResourceLike.use(ResourceLike.scala:33),
-//       doobie.util.transactor$Transactor$$anon$4.apply(transactor.scala:166),
-//       doobie.util.transactor$Transactor$$anon$4.apply(transactor.scala:164),
-//       doobie.syntax.ConnectionIOOps.transact(connectionio.scala:15),
-//       repl.MdocSession$App.&lt;init&gt;(03-Connecting.md:59),
-//       repl.MdocSession$.app(03-Connecting.md:3),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withErr(Console.scala:193),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$1(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withOut(Console.scala:164),
-//       mdoc.internal.document.DocumentBuilder$$doc$.build(DocumentBuilder.scala:88),
-//       mdoc.internal.markdown.MarkdownBuilder$.buildDocument(MarkdownBuilder.scala:44),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:182),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:149),
-//       mdoc.internal.markdown.Processor.processDocument(Processor.scala:49),
-//       mdoc.internal.markdown.Markdown$.toMarkdown(Markdown.scala:131),
-//       mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
-//       mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
-//       mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
-//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
-//       scala.collection.immutable.List.foldLeft(List.scala:79),
-//       mdoc.internal.cli.MainOps.generateCompleteSite(MainOps.scala:155),
-//       mdoc.internal.cli.MainOps.run(MainOps.scala:177),
-// ...
+// result: IO[List[(Int, Double)]] = Uncancelable(
+//   body = cats.effect.IO$$$Lambda$22748/0x0000000845592840@7735afb0
+// )
 result.unsafeRunSync().foreach(println)
-// (42,0.5178153174929321)
-// (42,0.9609610605984926)
-// (42,0.43182543478906155)
-// (42,0.08959762426093221)
-// (42,0.9504121146164834)
+// (42,0.4603482740931213)
+// (42,0.5525994123890996)
+// (42,0.8223814032971859)
+// (42,0.05237969430163503)
+// (42,0.13618540903553367)
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>All of the <strong>doobie</strong> monads are implemented via <code>Free</code> and have no operational semantics; we can only &ldquo;run&rdquo; a <strong>doobie</strong> program by transforming <code>FooIO</code> (for some carrier type <code>java.sql.Foo</code>) to a monad that actually has some meaning.</p>
 <p>Out of the box <strong>doobie</strong> provides an interpreter from its free monads to <code>Kleisli[M, Foo, ?]</code> given <code>Async[M]</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import cats.~&gt;
 import cats.data.Kleisli
-import cats.effect.Blocker
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO](Blocker.liftExecutionContext(ExecutionContexts.synchronous)).ConnectionInterpreter
-// interpreter: ConnectionOp ~&gt; Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$11@1a1d26a5
+val interpreter = KleisliInterpreter[IO].ConnectionInterpreter
+// interpreter: ConnectionOp ~&gt; Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$11@7f9f4d97
 val kleisli = program1.foldMap(interpreter)
 // kleisli: Kleisli[IO, Connection, Int] = Kleisli(
-//   run = cats.data.KleisliFlatMap$$Lambda$11354/0x0000000842df0040@5df876fb
+//   run = cats.data.KleisliFlatMap$$Lambda$22777/0x00000008455c6840@4bac5a7a
 // )
 val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
-// io3: IO[Int] = Bind(
-//   source = Delay(thunk = &lt;function0&gt;),
-//   f = cats.data.KleisliFlatMap$$Lambda$11354/0x0000000842df0040@5df876fb,
-//   trace = StackTrace(
-//     stackTrace = List(
-//       cats.effect.internals.IOTracing$.buildFrame(IOTracing.scala:48),
-//       cats.effect.internals.IOTracing$.buildCachedFrame(IOTracing.scala:39),
-//       cats.effect.internals.IOTracing$.cached(IOTracing.scala:34),
-//       cats.effect.IO.flatMap(IO.scala:133),
-//       cats.effect.IOLowPriorityInstances$IOEffect.flatMap(IO.scala:886),
-//       cats.effect.IOLowPriorityInstances$IOEffect.flatMap(IO.scala:863),
-//       cats.syntax.FlatMapOps$.$greater$greater$eq$extension(flatMap.scala:24),
-//       repl.MdocSession$App.&lt;init&gt;(03-Connecting.md:145),
-//       repl.MdocSession$.app(03-Connecting.md:3),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withErr(Console.scala:193),
-//       mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$1(DocumentBuilder.scala:89),
-//       scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),
-//       scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),
-//       scala.Console$.withOut(Console.scala:164),
-//       mdoc.internal.document.DocumentBuilder$$doc$.build(DocumentBuilder.scala:88),
-//       mdoc.internal.markdown.MarkdownBuilder$.buildDocument(MarkdownBuilder.scala:44),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:182),
-//       mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:149),
-//       mdoc.internal.markdown.Processor.processDocument(Processor.scala:49),
-//       mdoc.internal.markdown.Markdown$.toMarkdown(Markdown.scala:131),
-//       mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:82),
-//       mdoc.internal.cli.MainOps.handleFile(MainOps.scala:110),
-//       mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),
-//       scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:169),
-//       scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:165),
-//       scala.collection.immutable.List.foldLeft(List.scala:79),
-//       mdoc.internal.cli.MainOps.generateCompleteSite(MainOps.scala:155),
-//       mdoc.internal.cli.MainOps.run(MainOps.scala:177),
-//       mdoc.internal.cli.MainOps$.process(MainOps.scala:269),
-//       mdoc.Main$.process(Main.scala:26),
-//       mdoc.Main$.process(Main.scala:21),
-//       mdoc.Main$.main(Main.scala:16),
-//       mdoc.Main.main(Main.scala),
-//       java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method),
-//       java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMetho...
+// io3: IO[Int] = FlatMap(
+//   ioe = Delay(thunk = &lt;function0&gt;),
+//   f = cats.data.KleisliFlatMap$$Lambda$22777/0x00000008455c6840@4bac5a7a
+// )
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection
 // res5: Int = 42
 </code></pre>
@@ -471,7 +300,7 @@ val mxa = Transactor.fromDriverManager[Task](
 sql&quot;select 42&quot;.query[Int].unique.transact(mxa)
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/03-Connecting.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/03-Connecting.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -557,7 +386,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

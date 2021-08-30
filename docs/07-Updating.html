@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -155,9 +155,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -165,8 +165,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 
 val y = xa.yolo
@@ -202,22 +201,16 @@ val create =
 <pre class="prettyprint"><code class="language-scala">insert1(&quot;Alice&quot;, Some(12)).run.transact(xa).unsafeRunSync()
 // res1: Int = 1
 insert1(&quot;Bob&quot;, None).quick.unsafeRunSync() // switch to YOLO mode
-//   1 row(s) updated
 </code></pre>
 <p>And read them back.</p>
 <pre class="prettyprint"><code class="language-scala">case class Person(id: Long, name: String, age: Option[Short])
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSync()
-//   Person(1,Alice,Some(12))
-//   Person(2,Bob,None)
 </code></pre>
 <h3><a href="#updating" name="updating" class="anchor"><span class="anchor-link"></span></a>Updating</h3>
 <p>Updating follows the same pattern. Here we update Alice&rsquo;s age.</p>
 <pre class="prettyprint"><code class="language-scala">sql&quot;update person set age = 15 where name = &#39;Alice&#39;&quot;.update.quick.unsafeRunSync()
-//   1 row(s) updated
 sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSync()
-//   Person(2,Bob,None)
-//   Person(1,Alice,Some(15))
 </code></pre>
 <h3><a href="#retrieving-results" name="retrieving-results" class="anchor"><span class="anchor-link"></span></a>Retrieving Results</h3>
 <p>When we insert we usually want the new row back, so let&rsquo;s do that. First we&rsquo;ll do it the hard way, by inserting, getting the last used key via <code>lastVal()</code>, then selecting the indicated row.</p>
@@ -229,7 +222,6 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
   } yield p
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">insert2(&quot;Jimmy&quot;, Some(42)).quick.unsafeRunSync()
-//   Person(3,Jimmy,Some(42))
 </code></pre>
 <p>This is irritating but it is supported by all databases (although the &ldquo;get the last used id&rdquo; function will vary by vendor).</p>
 <p>Some database (like H2) allow you to return [only] the inserted id, allowing the above operation to be reduced to two statements (see below for an explanation of <code>withUniqueGeneratedKeys</code>).</p>
@@ -244,7 +236,6 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
   } yield p
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">insert2_H2(&quot;Ramone&quot;, Some(42)).quick.unsafeRunSync()
-//   Person(4,Ramone,Some(42))
 </code></pre>
 <p>Other databases (including PostgreSQL) provide a way to do this in one shot by returning multiple specified columns from the inserted row.</p>
 <pre class="prettyprint"><code class="language-scala">def insert3(name: String, age: Option[Short]): ConnectionIO[Person] = {
@@ -255,7 +246,6 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
 </code></pre>
 <p>The <code>withUniqueGeneratedKeys</code> specifies that we expect exactly one row back (otherwise an exception will be raised), and requires a list of columns to return. This isn&rsquo;t the most beautiful API but it&rsquo;s what JDBC gives us. And it does work.</p>
 <pre class="prettyprint"><code class="language-scala">insert3(&quot;Elvis&quot;, None).quick.unsafeRunSync()
-//   Person(5,Elvis,None)
 </code></pre>
 <p>This mechanism also works for updates, for databases that support it. In the case of multiple row updates we omit <code>unique</code> and get a <code>Stream[ConnectionIO, Person]</code> back.</p>
 <pre class="prettyprint"><code class="language-scala">val up = {
@@ -266,13 +256,7 @@ sql&quot;select id, name, age from person&quot;.query[Person].quick.unsafeRunSyn
 </code></pre>
 <p>Running this process updates all rows with a non-<code>NULL</code> age and returns them.</p>
 <pre class="prettyprint"><code class="language-scala">up.quick.unsafeRunSync()
-//   Person(1,Alice,Some(16))
-//   Person(3,Jimmy,Some(43))
-//   Person(4,Ramone,Some(43))
 up.quick.unsafeRunSync() // and again!
-//   Person(1,Alice,Some(17))
-//   Person(3,Jimmy,Some(44))
-//   Person(4,Ramone,Some(44))
 </code></pre>
 <h3><a href="#batch-updates" name="batch-updates" class="anchor"><span class="anchor-link"></span></a>Batch Updates</h3>
 <p><strong>doobie</strong> supports batch updating via the <code>updateMany</code> and <code>updateManyWithGeneratedKeys</code> operations on the <code>Update</code> data type (which we haven&rsquo;t seen before). An <code>Update0</code>, which is the type of an <code>sql&quot;...&quot;.update</code> expression, represents a parameterized statement where the arguments are known. An <code>Update[A]</code> is more general, and represents a parameterized statement where the composite argument of type <code>A</code> is <em>not</em> known.</p>
@@ -300,7 +284,6 @@ val data = List[PersonInfo](
 </code></pre>
 <p>Running this program yields the number of updated rows.</p>
 <pre class="prettyprint"><code class="language-scala">insertMany(data).quick.unsafeRunSync()
-//   2
 </code></pre>
 <p>For databases that support it (such as PostgreSQL) we can use <code>updateManyWithGeneratedKeys</code> to return a stream of updated rows.</p>
 <pre class="prettyprint"><code class="language-scala">import fs2.Stream
@@ -318,12 +301,9 @@ val data2 = List[PersonInfo](
 </code></pre>
 <p>Running this program yields the updated instances.</p>
 <pre class="prettyprint"><code class="language-scala">insertMany2(data2).quick.unsafeRunSync()
-//   Person(8,Banjo,Some(39))
-//   Person(9,Skeeter,None)
-//   Person(10,Jim-Bob,Some(12))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/07-Updating.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/07-Updating.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -411,7 +391,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>

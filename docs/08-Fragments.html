@@ -31,7 +31,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -90,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-0.12.1
+1.0.0-RC1
 </div>
 </div>
 <div class="nav-toc">
@@ -155,9 +155,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we&#39;re using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -165,8 +165,7 @@ val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
   &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
   &quot;postgres&quot;,                  // user
-  &quot;&quot;,                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  &quot;&quot;                           // password
 )
 
 val y = xa.yolo
@@ -190,19 +189,16 @@ val b = fr&quot;where code = &#39;USA&#39;&quot;
 val c = a ++ b // concatenation by ++
 // c: Fragment = Fragment(&quot;select name from country where code = &#39;USA&#39; &quot;) // concatenation by ++
 c.query[String].unique.quick.unsafeRunSync()
-//   United States
 </code></pre>
 <p>Fragments can capture arguments of any type with a <code>Put</code> instance, just as the <code>sql</code> interpolator does.</p>
 <pre class="prettyprint"><code class="language-scala">def whereCode(s: String) = fr&quot;where code = $s&quot;
 val fra = whereCode(&quot;FRA&quot;)
 // fra: Fragment = Fragment(&quot;where code = ? &quot;)
 (fr&quot;select name from country&quot; ++ fra).query[String].quick.unsafeRunSync()
-//   France
 </code></pre>
 <p>You can lift an arbitrary string value via <code>Fragment.const</code>, which allows you to parameterize on things that aren&rsquo;t valid SQL parameters.</p>
 <pre class="prettyprint"><code class="language-scala">def count(table: String) = (fr&quot;select count(*) from&quot; ++ Fragment.const(table)).query[Int].unique
 count(&quot;city&quot;).quick.unsafeRunSync()
-//   4079
 </code></pre>
 <blockquote>
   <p>Note that <code>Fragment.const</code> performs no escaping of passed strings. Passing user-supplied data is an <strong>injection risk</strong>.</p>
@@ -217,7 +213,6 @@ val frag = fr&quot;SELECT name FROM country $whereFragment&quot;
 // frag: Fragment = Fragment(&quot;SELECT name FROM country WHERE code = ?  &quot;)
 
 frag.query[String].option.quick.unsafeRunSync()
-//   Some(New Zealand)
 </code></pre>
 <blockquote>
   <p>As long as your individual fragments were constructed securely (i.e. Never call <code>Fragment.const</code> with user supplied input), You can freely concatenate or interpolate fragments without worrying about SQL injection.</p>
@@ -261,40 +256,12 @@ def select(name: Option[String], pop: Option[Int], codes: List[String], limit: L
 </code></pre>
 <p>We first construct three optional filters, the third of which uses the <code>in</code> combinator to construct an SQL <code>IN</code> clause. The final statement uses the <code>whereAndOpt</code> combinator that constructs a <code>WHERE</code> clause with the passed sequence of <code>Option[Fragment]</code> joined with <code>AND</code> if any are defined, otherwise it evaluates to the empty fragment. The end result is that the <code>WHERE</code> clause appears only if at least one filter is defined.</p>
 <p>Let&rsquo;s look at a few possibilities.</p>
-<pre class="prettyprint"><code class="language-scala">select(None, None, Nil, 10).check.unsafeRunSync() // no filters
-//   Query0[App.this.Info] defined at 08-Fragments.md:131
-//   SELECT name, code, population FROM country LIMIT ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 Long  →  BIGINT (int8)
-//   ✓ C01 name       VARCHAR (varchar) NOT NULL  →  String
-//   ✓ C02 code       CHAR    (bpchar)  NOT NULL  →  String
-//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int // no filters
-select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync() // one filter
-//   Query0[App.this.Info] defined at 08-Fragments.md:131
-//   SELECT name, code, population FROM country WHERE (name LIKE ? )
-//   LIMIT ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 String  →  VARCHAR (text)
-//   ✓ P02 Long    →  BIGINT  (int8)
-//   ✓ C01 name       VARCHAR (varchar) NOT NULL  →  String
-//   ✓ C02 code       CHAR    (bpchar)  NOT NULL  →  String
-//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int // one filter
+<pre class="prettyprint"><code class="language-scala">select(None, None, Nil, 10).check.unsafeRunSync() // no filters // no filters
+select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync() // one filter // one filter
 select(Some(&quot;U%&quot;), Some(12345), List(&quot;FRA&quot;, &quot;GBR&quot;), 10).check.unsafeRunSync() // three filters
-//   Query0[App.this.Info] defined at 08-Fragments.md:131
-//   SELECT name, code, population FROM country WHERE (name LIKE ? ) AND
-//   (population &gt; ? ) AND (code IN (?, ?) ) LIMIT ?
-//   ✓ SQL Compiles and TypeChecks
-//   ✓ P01 String  →  VARCHAR (text)
-//   ✓ P02 Int     →  INTEGER (int4)
-//   ✓ P03 String  →  CHAR    (bpchar)
-//   ✓ P04 String  →  CHAR    (bpchar)
-//   ✓ P05 Long    →  BIGINT  (int8)
-//   ✓ C01 name       VARCHAR (varchar) NOT NULL  →  String
-//   ✓ C02 code       CHAR    (bpchar)  NOT NULL  →  String
-//   ✓ C03 population INTEGER (int4)    NOT NULL  →  Int
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v0.12.1/modules/docs/target/mdoc/docs/08-Fragments.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/08-Fragments.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -380,7 +347,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.12.1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
 
 
 </html>
