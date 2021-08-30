@@ -5,11 +5,15 @@
 package doobie
 package util
 
-import shapeless._, shapeless.record._
+import shapeless._
+import shapeless.record._
+
+import scala.annotation.nowarn
 
 trait WriteSuitePlatform { self: munit.FunSuite =>
 
   test("Write should exist for shapeless record types") {
+    @nowarn("msg=.*never used.*")
     type DL = (Double, Long)
     type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
     util.Write[A]

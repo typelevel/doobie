@@ -4,8 +4,9 @@
 
 package doobie.util
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.{IO, ContextShift}
 import doobie._
+
 import scala.concurrent.ExecutionContext
 
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
