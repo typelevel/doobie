@@ -29,6 +29,8 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
+import scala.collection.compat.immutable.LazyList
+
 
 // Establish that we can write and read various types.
 
@@ -256,35 +258,35 @@ class TypesSuite extends munit.ScalaCheckSuite {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble).iterator
-  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next, rnd.next)).iterator
-  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator
-  lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
-    lazy val p = pts.next;
-    Array(p, pts.next, pts.next, pts.next, p)
+  lazy val rnd: Iterator[Double] = LazyList.continually(scala.util.Random.nextDouble()).iterator
+  lazy val pts: Iterator[Point] = LazyList.continually(new Point(rnd.next(), rnd.next())).iterator
+  lazy val lss: Iterator[LineString] = LazyList.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
+  lazy val lrs: Iterator[LinearRing] = LazyList.continually(new LinearRing({
+    lazy val p = pts.next();
+    Array(p, pts.next(), pts.next(), pts.next(), p)
   })).iterator
-  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next)).iterator
+  lazy val pls: Iterator[Polygon] = LazyList.continually(new Polygon(lras.next())).iterator
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator
-  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator
+  lazy val ptas: Iterator[Array[Point]] = LazyList.continually(Array(pts.next(), pts.next(), pts.next())).iterator
+  lazy val plas: Iterator[Array[Polygon]] = LazyList.continually(Array(pls.next(), pls.next(), pls.next())).iterator
+  lazy val lsas: Iterator[Array[LineString]] = LazyList.continually(Array(lss.next(), lss.next(), lss.next())).iterator
+  lazy val lras: Iterator[Array[LinearRing]] = LazyList.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
 
   // All these types map to `geometry`
   def testInOutGeom[A <: Geometry : Meta](a: A) =
     testInOut[A]("geometry", a)
 
-  testInOutGeom[Geometry](pts.next)
-  testInOutGeom[ComposedGeom](new MultiLineString(lsas.next))
-  testInOutGeom[GeometryCollection](new GeometryCollection(Array(pts.next, lss.next)))
-  testInOutGeom[MultiLineString](new MultiLineString(lsas.next))
-  testInOutGeom[MultiPolygon](new MultiPolygon(plas.next))
-  testInOutGeom[PointComposedGeom](lss.next)
-  testInOutGeom[LineString](lss.next)
-  testInOutGeom[MultiPoint](new MultiPoint(ptas.next))
-  testInOutGeom[Polygon](pls.next)
-  testInOutGeom[Point](pts.next)
+  testInOutGeom[Geometry](pts.next())
+  testInOutGeom[ComposedGeom](new MultiLineString(lsas.next()))
+  testInOutGeom[GeometryCollection](new GeometryCollection(Array(pts.next(), lss.next())))
+  testInOutGeom[MultiLineString](new MultiLineString(lsas.next()))
+  testInOutGeom[MultiPolygon](new MultiPolygon(plas.next()))
+  testInOutGeom[PointComposedGeom](lss.next())
+  testInOutGeom[LineString](lss.next())
+  testInOutGeom[MultiPoint](new MultiPoint(ptas.next()))
+  testInOutGeom[Polygon](pls.next())
+  testInOutGeom[Point](pts.next())
 
   // hstore
   testInOut[Map[String, String]]("hstore")

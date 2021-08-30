@@ -13,6 +13,7 @@ import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
 
+  import CheckerChecks._
   implicit def contextShift: ContextShift[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
@@ -24,8 +25,6 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
   test("trivial") { check(sql"select 1".query[Int]) }
 
   test("fail".fail) { check(sql"select 1".query[String]) }
-
-  final case class Foo[F[_]](x: Int)
 
   test ("trivial case-class"){ check(sql"select 1".query[Foo[cats.Id]]) }
 
@@ -52,6 +51,10 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
     check(sql"SELECT '1', '2', 3, 4".query(combined))
   }
 
+}
+
+object CheckerChecks {
+  final case class Foo[F[_]](x: Int)
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
