@@ -1,14 +1,15 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -19,8 +20,8 @@ import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.util.ByteStreamWriter
 
-@silent("deprecated")
 object copymanager { module =>
 
   // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternative to pattern-matching.
@@ -48,18 +49,23 @@ object copymanager { module =>
       // Common
       def raw[A](f: PGCopyManager => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]): F[A]
+      def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]): F[B]
+      def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): F[A]
+      def poll[A](poll: Any, fa: CopyManagerIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): F[A]
+      def fromFuture[A](fut: CopyManagerIO[Future[A]]): F[A]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
       def copyIn(a: String): F[PGCopyIn]
+      def copyIn(a: String, b: ByteStreamWriter): F[Long]
       def copyIn(a: String, b: InputStream): F[Long]
       def copyIn(a: String, b: InputStream, c: Int): F[Long]
       def copyIn(a: String, b: Reader): F[Long]
@@ -77,57 +83,69 @@ object copymanager { module =>
     final case class Embed[A](e: Embedded[A]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends CopyManagerOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: CopyManagerIO[A], use: A => CopyManagerIO[B], release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]) extends CopyManagerOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends CopyManagerOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    final case object Shift extends CopyManagerOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: CopyManagerIO[A]) extends CopyManagerOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: CopyManagerIO[A], fb: CopyManagerIO[B]) extends CopyManagerOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: CopyManagerIO[A]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends CopyManagerOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: CopyManagerIO[Future[A]]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // PGCopyManager-specific operations.
-    final case class  CopyDual(a: String) extends CopyManagerOp[PGCopyDual] {
+    final case class CopyDual(a: String) extends CopyManagerOp[PGCopyDual] {
       def visit[F[_]](v: Visitor[F]) = v.copyDual(a)
     }
-    final case class  CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
+    final case class CopyIn(a: String) extends CopyManagerOp[PGCopyIn] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a)
     }
-    final case class  CopyIn1(a: String, b: InputStream) extends CopyManagerOp[Long] {
+    final case class CopyIn1(a: String, b: ByteStreamWriter) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn2(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
-      def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
-    }
-    final case class  CopyIn3(a: String, b: Reader) extends CopyManagerOp[Long] {
+    final case class CopyIn2(a: String, b: InputStream) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
     }
-    final case class  CopyIn4(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
+    final case class CopyIn3(a: String, b: InputStream, c: Int) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
     }
-    final case class  CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
+    final case class CopyIn4(a: String, b: Reader) extends CopyManagerOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b)
+    }
+    final case class CopyIn5(a: String, b: Reader, c: Int) extends CopyManagerOp[Long] {
+      def visit[F[_]](v: Visitor[F]) = v.copyIn(a, b, c)
+    }
+    final case class CopyOut(a: String) extends CopyManagerOp[PGCopyOut] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a)
     }
-    final case class  CopyOut1(a: String, b: OutputStream) extends CopyManagerOp[Long] {
+    final case class CopyOut1(a: String, b: OutputStream) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a, b)
     }
-    final case class  CopyOut2(a: String, b: Writer) extends CopyManagerOp[Long] {
+    final case class CopyOut2(a: String, b: Writer) extends CopyManagerOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.copyOut(a, b)
     }
 
@@ -139,46 +157,52 @@ object copymanager { module =>
   def pure[A](a: A): CopyManagerIO[A] = FF.pure[CopyManagerOp, A](a)
   def raw[A](f: PGCopyManager => A): CopyManagerIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[CopyManagerOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): CopyManagerIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: CopyManagerIO[A], f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = FF.liftF[CopyManagerOp, B](BracketCase(acquire, use, release))
-  val shift: CopyManagerIO[Unit] = FF.liftF[CopyManagerOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = FF.liftF[CopyManagerOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[CopyManagerOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[CopyManagerOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[CopyManagerOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[CopyManagerOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]) = FF.liftF[CopyManagerOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[CopyManagerIO] {
+    def apply[A](fa: CopyManagerIO[A]) = FF.liftF[CopyManagerOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)
+  def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = FF.liftF[CopyManagerOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: CopyManagerIO[Future[A]]) = FF.liftF[CopyManagerOp, A](FromFuture(fut))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))
   def copyIn(a: String): CopyManagerIO[PGCopyIn] = FF.liftF(CopyIn(a))
-  def copyIn(a: String, b: InputStream): CopyManagerIO[Long] = FF.liftF(CopyIn1(a, b))
-  def copyIn(a: String, b: InputStream, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn2(a, b, c))
-  def copyIn(a: String, b: Reader): CopyManagerIO[Long] = FF.liftF(CopyIn3(a, b))
-  def copyIn(a: String, b: Reader, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn4(a, b, c))
+  def copyIn(a: String, b: ByteStreamWriter): CopyManagerIO[Long] = FF.liftF(CopyIn1(a, b))
+  def copyIn(a: String, b: InputStream): CopyManagerIO[Long] = FF.liftF(CopyIn2(a, b))
+  def copyIn(a: String, b: InputStream, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn3(a, b, c))
+  def copyIn(a: String, b: Reader): CopyManagerIO[Long] = FF.liftF(CopyIn4(a, b))
+  def copyIn(a: String, b: Reader, c: Int): CopyManagerIO[Long] = FF.liftF(CopyIn5(a, b, c))
   def copyOut(a: String): CopyManagerIO[PGCopyOut] = FF.liftF(CopyOut(a))
   def copyOut(a: String, b: OutputStream): CopyManagerIO[Long] = FF.liftF(CopyOut1(a, b))
   def copyOut(a: String, b: Writer): CopyManagerIO[Long] = FF.liftF(CopyOut2(a, b))
 
-  // CopyManagerIO is an Async
-  implicit val AsyncCopyManagerIO: Async[CopyManagerIO] =
-    new Async[CopyManagerIO] {
-      val asyncM = FF.catsFreeMonadForFree[CopyManagerOp]
-      def bracketCase[A, B](acquire: CopyManagerIO[A])(use: A => CopyManagerIO[B])(release: (A, ExitCase[Throwable]) => CopyManagerIO[Unit]): CopyManagerIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): CopyManagerIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): CopyManagerIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): CopyManagerIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => CopyManagerIO[Unit]): CopyManagerIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => CopyManagerIO[A]): CopyManagerIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // CopyManagerIO is a ContextShift
-  implicit val ContextShiftCopyManagerIO: ContextShift[CopyManagerIO] =
-    new ContextShift[CopyManagerIO] {
-      def shift: CopyManagerIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: CopyManagerIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for CopyManagerIO
+  implicit val WeakAsyncCopyManagerIO: WeakAsync[CopyManagerIO] =
+    new WeakAsync[CopyManagerIO] {
+      val monad = FF.catsFreeMonadForFree[CopyManagerOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): CopyManagerIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): CopyManagerIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): CopyManagerIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: CopyManagerIO[FiniteDuration] = module.monotonic
+      override def realTime: CopyManagerIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): CopyManagerIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]): CopyManagerIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): CopyManagerIO[A] = module.uncancelable(body)
+      override def canceled: CopyManagerIO[Unit] = module.canceled
+      override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): CopyManagerIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: CopyManagerIO[Future[A]]): CopyManagerIO[A] = module.fromFuture(fut)
     }
 }
 

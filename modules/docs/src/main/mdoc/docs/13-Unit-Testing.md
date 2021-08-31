@@ -1,6 +1,6 @@
 ## Unit Testing
 
-The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/) or [ScalaTest](http://www.scalatest.org/) unit tests.
+The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/), [ScalaTest](http://www.scalatest.org/) or [MUnit](https://scalameta.org/munit) unit tests.
 
 ### Setting Up
 
@@ -14,9 +14,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -24,8 +24,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 ```
 
@@ -128,4 +127,26 @@ Details are shown for failing tests.
 ```scala mdoc
 // Run a test programmatically. Usually you would do this from sbt, bloop, etc.
 (new AnalysisTestScalaCheck).execute(color = false)
+```
+
+### The MUnit Package
+
+The `doobie-munit` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the ScalaTest package above.
+
+```scala mdoc:silent
+import _root_.munit._
+
+class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
+
+  override val colors = doobie.util.Colors.None // just for docs
+
+  val transactor = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  )
+
+  test("trivial")    { check(trivial)        }
+  test("biggerThan") { check(biggerThan(0))  }
+  test("update")     { check(update("", "")) }
+
+}
 ```

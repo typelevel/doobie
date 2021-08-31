@@ -1,21 +1,17 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.specs2
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
-
 
 trait MatcherChecks[M[_]] extends Specification
     with Checker[M]
     with AnalysisMatchers[M] {
-
-  implicit def contextShift: ContextShift[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
@@ -36,7 +32,4 @@ trait MatcherChecks[M[_]] extends Specification
   }
 }
 
-class IOMatcherCheck extends MatcherChecks[IO] with IOChecker {
-  def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-}
+class IOMatcherCheck extends MatcherChecks[IO] with IOChecker

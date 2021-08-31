@@ -15,18 +15,17 @@ import java.awt.geom.Point2D
 import java.util.UUID
 import shapeless._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
-// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an our synchronous EC. See the chapter on connection handling for more info.
+// A transactor that gets connections from java.sql.DriverManager. 
+// See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
   "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
 )
 ```
 
@@ -47,8 +46,8 @@ Interpolated parameters are replaced with `?` placeholders, so if you need to as
   val y = xa.yolo
   import y._
   val s = "foo"
-  sql"select $s".query[String].check.unsafeRunSync
-  sql"select $s :: char".query[String].check.unsafeRunSync
+  sql"select $s".query[String].check.unsafeRunSync()
+  sql"select $s :: char".query[String].check.unsafeRunSync()
 }
 ```
 
@@ -98,7 +97,7 @@ We can check the resulting `Query0` as expected.
 {
   val y = xa.yolo
   import y._
-  cities(Code("USA"), true).check.unsafeRunSync
+  cities(Code("USA"), true).check.unsafeRunSync()
 }
 ```
 
@@ -108,8 +107,8 @@ And it works!
 {
   val y = xa.yolo
   import y._
-  cities(Code("USA"), true).stream.take(5).quick.unsafeRunSync
-  cities(Code("USA"), false).stream.take(5).quick.unsafeRunSync
+  cities(Code("USA"), true).stream.take(5).quick.unsafeRunSync()
+  cities(Code("USA"), false).stream.take(5).quick.unsafeRunSync()
 }
 ```
 
@@ -137,7 +136,7 @@ Some examples, filtered for size.
 {
   val y = xa.yolo
   import y._
-  join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync
+  join.stream.filter(_._1.name.startsWith("United")).quick.unsafeRunSync()
 }
 ```
 
@@ -202,3 +201,22 @@ implicit val nesMeta: Meta[NonEmptyString] = {
   distinct.string("nes").imap(NonEmptyString.apply)(_.value)
 }
 ```
+
+## How do I use `java.time` types with Doobie?
+
+This depends on whether the underlying JDBC driver you're using supports `java.time.*` types natively. 
+("native support" means that you can hand the driver e.g. a value of java.time.Instant and it will know how to convert 
+that to a value on-the-wire that the actual database can understand)
+
+If you're using PostgreSQL, you can import that instances via `import doobie.postgres.implicits._`
+
+If your JDBC driver supports the java.time types you're using natively, use `import doobie.implicits.javatimedrivernative._`.
+
+| Database driver                  | java.time.Instant                   | java.time.LocalDate                   | 
+| ---                              | ---                                 | ---                                   |
+| Postgres (org.postgresql.Driver) | `doobie.postgres.implicits._`       | `doobie.postgres.implicits._`         |
+| MySQL (com.mysql.jdbc.Driver)    | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` | 
+
+References:
+
+- [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/head/8-date-time.html)

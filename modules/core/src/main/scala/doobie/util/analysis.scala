@@ -1,17 +1,16 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
 
-import doobie.enum.Nullability
-import doobie.enum.Nullability._
-import doobie.enum.ParameterMode
-import doobie.enum.JdbcType
+import doobie.enumerated.Nullability
+import doobie.enumerated.Nullability._
+import doobie.enumerated.ParameterMode
+import doobie.enumerated.JdbcType
 import doobie.util.pretty._
 
 import scala.Predef._ // TODO: minimize
-import scala.reflect.runtime.universe.Type
 
 import cats.implicits._
 import cats.data.Ior
@@ -64,7 +63,7 @@ object analysis {
     }
   }
 
-  final case class NullabilityMisalignment(index: Int, name: String, st: Option[Type], jdk: NullabilityKnown, jdbc: NullabilityKnown) extends AlignmentError {
+  final case class NullabilityMisalignment(index: Int, name: String, st: Option[String], jdk: NullabilityKnown, jdbc: NullabilityKnown) extends AlignmentError {
     override val tag = "C"
     override def msg = this match {
       // https://github.com/tpolecat/doobie/issues/164 ... NoNulls means "maybe no nulls"  :-\
@@ -192,7 +191,7 @@ object analysis {
   private val packagePrefix = "\\b[a-z]+\\.".r
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  private def typeName(t: Option[Type], n: NullabilityKnown): String = {
+  private def typeName(t: Option[String], n: NullabilityKnown): String = {
     val name = packagePrefix.replaceAllIn(t.fold("«erased»")(_.toString), "")
     n match {
       case NoNulls  => name

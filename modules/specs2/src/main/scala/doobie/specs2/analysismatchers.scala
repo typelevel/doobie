@@ -1,18 +1,20 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.specs2
 
-import cats.effect.{ Effect, IO }
+import cats.effect.{ Async, IO }
 import cats.instances.list._
 import cats.syntax.foldable._
+import doobie.syntax.connectionio._
 import doobie.util.pretty._
 import doobie.util.testing.{
   AnalysisReport,
   Analyzable,
-  analyzeIO,
-  CheckerBase
+  analyze,
+  CheckerBase,
+  UnsafeRun
 }
 import org.specs2.matcher.{ Expectable, Matcher, MatchResult }
 
@@ -30,10 +32,11 @@ object analysismatchers {
     def typecheck[T](implicit analyzable: Analyzable[T]): Matcher[T] =
       new Matcher[T] {
         def apply[S <: T](t: Expectable[S]): MatchResult[S] = {
-          val report = analyzeIO(
-            analyzable.unpack(t.value),
-            transactor
-          ).unsafeRunSync
+          val report = U.unsafeRunSync(
+            analyze(
+              analyzable.unpack(t.value)
+            ).transact(transactor)
+          )
           reportToMatchResult(report, t)
         }
       }
@@ -70,6 +73,10 @@ object analysismatchers {
   }
 
   trait IOAnalysisMatchers extends AnalysisMatchers[IO] {
-    implicit val M: Effect[IO] = implicitly
+    import cats.effect.unsafe.implicits.global
+    override implicit val M: Async[IO] = IO.asyncForIO
+    override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
+      def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
+    }
   }
 }

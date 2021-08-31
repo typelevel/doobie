@@ -1,51 +1,41 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.hikari.issue
 
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import com.zaxxer.hikari.HikariDataSource
 import doobie._
 import doobie.hikari._
 import doobie.implicits._
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import java.util.concurrent.Executors
 
 
-class `824` extends Specification {
+class `824` extends munit.FunSuite {
 
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-
-  implicit def timer: Timer[IO] =
-    IO.timer(ExecutionContext.global)
+  import cats.effect.unsafe.implicits.global
 
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](16) // our connect EC
-      te <- Resource.liftF(IO.delay(Executors.newCachedThreadPool)) // our transaction EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
-              ce,                                     // await connection here
-              Blocker.liftExecutorService(te)         // execute JDBC operations here
+              ce                                      // await connection here
             )
     } yield xa
 
-    // Show the state of the pool
-    @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
-    def report(ds: HikariDataSource): IO[Unit] =
-      IO {
-        val mx = ds.getHikariPoolMXBean; import mx._
-        println(s"Idle: $getIdleConnections, Active: $getActiveConnections, Total: $getTotalConnections, Waiting: $getThreadsAwaitingConnection")
-      }
+  // Show the state of the pool
+  def report(ds: HikariDataSource): IO[Unit] =
+    IO {
+      val mx = ds.getHikariPoolMXBean; import mx._
+      println(s"Idle: $getIdleConnections, Active: $getActiveConnections, Total: $getTotalConnections, Waiting: $getThreadsAwaitingConnection")
+    }
 
   // Yield final active connections within the use block, as well as total connections after use
   // block. Both should be zero
@@ -54,10 +44,10 @@ class `824` extends Specification {
 
 
       // Kick off a concurrent transaction, reporting the pool state on exit
-      val random: IO[Fiber[IO, Unit]] =
+      val random: IO[Fiber[IO, Throwable, Unit]] =
         for {
-          d <- IO(Random.nextInt(200) milliseconds)
-          f <- (IO.sleep(d) *> report(xa.kernel)).to[ConnectionIO].transact(xa).start
+          d <- IO(Random.nextInt(200).milliseconds)
+          f <- IO.sleep(d) *> xa.liftF(_(report(xa.kernel))).start
         } yield f
 
       // Run a bunch of transactions at once, then return the active connection count
@@ -77,10 +67,8 @@ class `824` extends Specification {
 
     }
 
-  "HikariTransactor" should {
-    "close connections logically within `use` block and physically afterward." in {
-      prog.unsafeRunSync must_== ((0, 0))
-    }
+  test("HikariTransactor should close connections logically within `use` block and physically afterward.") {
+    assertEquals(prog.unsafeRunSync(), (0, 0))
   }
 
 }

@@ -1,11 +1,11 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.h2
 package syntax
 
-import cats.effect.Sync
+import cats.effect.kernel.Sync
 
 final class H2TransactorOps[M[_]](h2: H2Transactor[M])(implicit ev: Sync[M]) {
 

@@ -1,11 +1,11 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.util.analysis.Analysis
@@ -190,8 +190,8 @@ object update {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
-      implicit W: Write[A]
+    def apply[A](sql0: String, pos0: Option[Pos] = None)(
+      implicit W: Write[A], logHandler0: LogHandler = LogHandler.nop
     ): Update[A] =
       new Update[A] {
         val write = W

@@ -1,14 +1,15 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.lang.String
 import java.sql.Connection
@@ -17,7 +18,6 @@ import java.sql.DriverPropertyInfo
 import java.util.Properties
 import java.util.logging.Logger
 
-@silent("deprecated")
 object driver { module =>
 
   // Algebra of operations for Driver. Each accepts a visitor as an alternative to pattern-matching.
@@ -45,14 +45,18 @@ object driver { module =>
       // Common
       def raw[A](f: Driver => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]): F[A]
+      def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]): F[B]
+      def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): F[A]
+      def poll[A](poll: Any, fa: DriverIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): F[A]
+      def fromFuture[A](fut: DriverIO[Future[A]]): F[A]
 
       // Driver
       def acceptsURL(a: String): F[Boolean]
@@ -72,51 +76,60 @@ object driver { module =>
     final case class Embed[A](e: Embedded[A]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends DriverOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: DriverIO[A], use: A => DriverIO[B], release: (A, ExitCase[Throwable]) => DriverIO[Unit]) extends DriverOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends DriverOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    final case object Shift extends DriverOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: DriverIO[A]) extends DriverOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: DriverIO[A], fb: DriverIO[B]) extends DriverOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[DriverIO] => DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: DriverIO[A]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends DriverOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: DriverIO[Future[A]]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // Driver-specific operations.
-    final case class  AcceptsURL(a: String) extends DriverOp[Boolean] {
+    final case class AcceptsURL(a: String) extends DriverOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.acceptsURL(a)
     }
-    final case class  Connect(a: String, b: Properties) extends DriverOp[Connection] {
+    final case class Connect(a: String, b: Properties) extends DriverOp[Connection] {
       def visit[F[_]](v: Visitor[F]) = v.connect(a, b)
     }
-    final case object GetMajorVersion extends DriverOp[Int] {
+    case object GetMajorVersion extends DriverOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMajorVersion
     }
-    final case object GetMinorVersion extends DriverOp[Int] {
+    case object GetMinorVersion extends DriverOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getMinorVersion
     }
-    final case object GetParentLogger extends DriverOp[Logger] {
+    case object GetParentLogger extends DriverOp[Logger] {
       def visit[F[_]](v: Visitor[F]) = v.getParentLogger
     }
-    final case class  GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
+    final case class GetPropertyInfo(a: String, b: Properties) extends DriverOp[Array[DriverPropertyInfo]] {
       def visit[F[_]](v: Visitor[F]) = v.getPropertyInfo(a, b)
     }
-    final case object JdbcCompliant extends DriverOp[Boolean] {
+    case object JdbcCompliant extends DriverOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.jdbcCompliant
     }
 
@@ -128,14 +141,20 @@ object driver { module =>
   def pure[A](a: A): DriverIO[A] = FF.pure[DriverOp, A](a)
   def raw[A](f: Driver => A): DriverIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[DriverOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): DriverIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: DriverIO[A], f: Throwable => DriverIO[A]): DriverIO[A] = FF.liftF[DriverOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): DriverIO[A] = FF.liftF[DriverOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): DriverIO[A] = FF.liftF[DriverOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => DriverIO[Unit]): DriverIO[A] = FF.liftF[DriverOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = FF.liftF[DriverOp, B](BracketCase(acquire, use, release))
-  val shift: DriverIO[Unit] = FF.liftF[DriverOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = FF.liftF[DriverOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = FF.liftF[DriverOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[DriverOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[DriverOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[DriverOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[DriverOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]) = FF.liftF[DriverOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]) = FF.liftF[DriverOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[DriverIO] {
+    def apply[A](fa: DriverIO[A]) = FF.liftF[DriverOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[DriverOp, Unit](Canceled)
+  def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = FF.liftF[DriverOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: DriverIO[Future[A]]) = FF.liftF[DriverOp, A](FromFuture(fut))
 
   // Smart constructors for Driver-specific operations.
   def acceptsURL(a: String): DriverIO[Boolean] = FF.liftF(AcceptsURL(a))
@@ -146,26 +165,25 @@ object driver { module =>
   def getPropertyInfo(a: String, b: Properties): DriverIO[Array[DriverPropertyInfo]] = FF.liftF(GetPropertyInfo(a, b))
   val jdbcCompliant: DriverIO[Boolean] = FF.liftF(JdbcCompliant)
 
-  // DriverIO is an Async
-  implicit val AsyncDriverIO: Async[DriverIO] =
-    new Async[DriverIO] {
-      val asyncM = FF.catsFreeMonadForFree[DriverOp]
-      def bracketCase[A, B](acquire: DriverIO[A])(use: A => DriverIO[B])(release: (A, ExitCase[Throwable]) => DriverIO[Unit]): DriverIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): DriverIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): DriverIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): DriverIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => DriverIO[Unit]): DriverIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => DriverIO[A]): DriverIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // DriverIO is a ContextShift
-  implicit val ContextShiftDriverIO: ContextShift[DriverIO] =
-    new ContextShift[DriverIO] {
-      def shift: DriverIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: DriverIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for DriverIO
+  implicit val WeakAsyncDriverIO: WeakAsync[DriverIO] =
+    new WeakAsync[DriverIO] {
+      val monad = FF.catsFreeMonadForFree[DriverOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): DriverIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): DriverIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): DriverIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: DriverIO[FiniteDuration] = module.monotonic
+      override def realTime: DriverIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): DriverIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]): DriverIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): DriverIO[A] = module.uncancelable(body)
+      override def canceled: DriverIO[Unit] = module.canceled
+      override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): DriverIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: DriverIO[Future[A]]): DriverIO[A] = module.fromFuture(fut)
     }
 }
 

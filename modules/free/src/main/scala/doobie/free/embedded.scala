@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -23,6 +23,7 @@ import resultset.ResultSetIO
 
 // A pair (J, Free[F, A]) with constructors that tie down J and F.
 sealed trait Embedded[A]
+
 object Embedded {
   final case class NClob[A](j: java.sql.NClob, fa: NClobIO[A]) extends Embedded[A]
   final case class Blob[A](j: java.sql.Blob, fa: BlobIO[A]) extends Embedded[A]

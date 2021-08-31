@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,14 +6,13 @@ package doobie.util
 
 import cats._
 import cats.data.Chain
-import cats.implicits._
+import cats.syntax.all._
 
 import doobie._, doobie.implicits._
-import doobie.util.pos.Pos
-import doobie.enum.Nullability._
+import doobie.enumerated.Nullability._
 import doobie.util.pos.Pos
 import java.sql.{ PreparedStatement, ResultSet }
-import scala.Predef.augmentString
+import scala.Predef.{ augmentString, implicitly }
 
 /** Module defining the `Fragment` data type. */
 object fragment {
@@ -112,7 +111,7 @@ object fragment {
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLogHandler(h: LogHandler): Update0 =
-      Update[elems.type](sql, pos, h).toUpdate0(elems)
+      Update[elems.type](sql, pos)(implicitly[Write[elems.type]], h).toUpdate0(elems)
 
     override def toString =
       s"""Fragment("$sql")"""
@@ -129,8 +128,45 @@ object fragment {
     private[util] def unsafeEquals(fb: Fragment): Boolean =
       sql == fb.sql && args == fb.args
 
+    /** Internals of this fragment. */
+    def internals: Fragment.Internals =
+      new Fragment.Internals {
+        type A = elems.type
+        val arg = elems
+        val write = Fragment.this.write
+        val elements = args
+        val pos = Fragment.this.pos
+        val sql = Fragment.this.sql
+      }
+
   }
   object Fragment {
+
+    /**
+     * Internals of a `Fragment`, available for diagnostic purposes. Monoidal structure is
+     * *not* preserved for the elements of this object.
+     */
+    trait Internals {
+
+      /** Existential type of this Fragment's argument (typically an HList). */
+      type A
+
+      /** This Fragment's argument, as an opaque value (typically an HList). */
+      def arg: A
+
+      /** A `Write` instance for `A`. */
+      def write: Write[A]
+
+      /** The elements of `a` as an untyped list. */
+      def elements: List[Any]
+
+      /** Source code position where this Fragment was constructed, if known. */
+      def pos: Option[Pos]
+
+      /** This `Fragment`'s SQL string. */
+      def sql: String
+
+    }
 
     /**
      * Construct a statement fragment with the given SQL string, which must contain sufficient `?`

@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,10 +6,10 @@ package doobie.syntax
 
 import cats.ApplicativeError
 import doobie.util.{ catchsql => C }
-import doobie.enum.SqlState
+import doobie.enumerated.SqlState
 import java.sql.SQLException
 
-class ApplicativeErrorOps[M[_]: ApplicativeError[*[_], Throwable], A](self: M[A]) {
+class ApplicativeErrorOps[M[_], A](self: M[A])(implicit ev: ApplicativeError[M, Throwable]) {
   def attemptSql: M[Either[SQLException, A]] = C.attemptSql(self)
   def attemptSqlState: M[Either[SqlState, A]] = C.attemptSqlState(self)
   def attemptSomeSqlState[B](f: PartialFunction[SqlState, B]): M[Either[B, A]] = C.attemptSomeSqlState(self)(f)
@@ -20,7 +20,9 @@ class ApplicativeErrorOps[M[_]: ApplicativeError[*[_], Throwable], A](self: M[A]
 }
 
 trait ToApplicativeErrorOps {
-  implicit def toDoobieApplicativeErrorOps[M[_]: ApplicativeError[*[_], Throwable], A](ma: M[A]): ApplicativeErrorOps[M, A] =
+  implicit def toDoobieApplicativeErrorOps[M[_], A](ma: M[A])(
+    implicit ev: ApplicativeError[M, Throwable]
+  ): ApplicativeErrorOps[M, A] =
     new ApplicativeErrorOps(ma)
 }
 

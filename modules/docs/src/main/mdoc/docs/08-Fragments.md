@@ -15,9 +15,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -25,8 +25,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 
 val y = xa.yolo
@@ -57,7 +56,7 @@ You can construct a SQL `Fragment` using the `fr` interpolator, which behaves ju
 val a = fr"select name from country"
 val b = fr"where code = 'USA'"
 val c = a ++ b // concatenation by ++
-c.query[String].unique.quick.unsafeRunSync
+c.query[String].unique.quick.unsafeRunSync()
 ```
 
 Fragments can capture arguments of any type with a `Put` instance, just as the `sql` interpolator does.
@@ -65,17 +64,33 @@ Fragments can capture arguments of any type with a `Put` instance, just as the `
 ```scala mdoc
 def whereCode(s: String) = fr"where code = $s"
 val fra = whereCode("FRA")
-(fr"select name from country" ++ fra).query[String].quick.unsafeRunSync
+(fr"select name from country" ++ fra).query[String].quick.unsafeRunSync()
 ```
 
 You can lift an arbitrary string value via `Fragment.const`, which allows you to parameterize on things that aren't valid SQL parameters.
 
 ```scala mdoc
 def count(table: String) = (fr"select count(*) from" ++ Fragment.const(table)).query[Int].unique
-count("city").quick.unsafeRunSync
+count("city").quick.unsafeRunSync()
 ```
 
 > Note that `Fragment.const` performs no escaping of passed strings. Passing user-supplied data is an **injection risk**.
+>
+
+You can also use Fragments in `fr` interpolator directly. Both parameters and SQL literals will be
+substituted correctly.
+
+```scala mdoc
+val countryCode: String = "NZL"
+val whereFragment: Fragment = fr"WHERE code = $countryCode"
+
+val frag = fr"SELECT name FROM country $whereFragment"
+
+frag.query[String].option.quick.unsafeRunSync()
+```
+
+> As long as your individual fragments were constructed securely (i.e. Never call `Fragment.const` with user supplied input),
+> You can freely concatenate or interpolate fragments without worrying about SQL injection.
 
 ### Whitespace handling
 
@@ -127,7 +142,8 @@ We first construct three optional filters, the third of which uses the `in` comb
 Let's look at a few possibilities.
 
 ```scala mdoc
-select(None, None, Nil, 10).check.unsafeRunSync // no filters
-select(Some("U%"), None, Nil, 10).check.unsafeRunSync // one filter
-select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync // three filters
+select(None, None, Nil, 10).check.unsafeRunSync() // no filters
+select(Some("U%"), None, Nil, 10).check.unsafeRunSync() // one filter
+select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync() // three filters
 ```
+

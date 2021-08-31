@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,32 +6,17 @@ package doobie.postgres.hi
 
 import cats.~>
 import cats.data.Kleisli
+import cats.free.Free
 import org.postgresql.{ PGConnection, PGNotification }
 import doobie._, doobie.implicits._
-import doobie.postgres.free.KleisliInterpreter
-import cats.effect.Blocker
-import scala.concurrent.ExecutionContext
-import java.util.concurrent.Executors
+import doobie.postgres.free.{ Embeddable, KleisliInterpreter }
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {
 
-  // For now we're going to hardcode a daemon threaded blocker because there's no way to pass
-  // through the one from the other interpreter.
-  private val blocker = Blocker.liftExecutionContext(
-    ExecutionContext.fromExecutor(
-      Executors.newCachedThreadPool { (r: Runnable) =>
-        val t = new Thread(r)
-        t.setName("doobie.postgres.hi.connection.blocker")
-        t.setDaemon(true)
-        t
-      }
-    )
-  )
-
   // An intepreter for lifting PGConnectionIO into ConnectionIO
   val defaultInterpreter: PFPC.PGConnectionOp ~> Kleisli[ConnectionIO, PGConnection, *] =
-    KleisliInterpreter[ConnectionIO](blocker).PGConnectionInterpreter
+    KleisliInterpreter[ConnectionIO].PGConnectionInterpreter
 
   val pgGetBackendPID: ConnectionIO[Int] =
     pgGetConnection(PFPC.getBackendPID)
@@ -39,11 +24,11 @@ object connection {
   def pgGetConnection[A](k: PGConnectionIO[A]): ConnectionIO[A] =
     FC.unwrap(classOf[PGConnection]).flatMap(k.foldMap(defaultInterpreter).run)
 
+  def embed[F[_], J, B](j: J, op: Free[F, B])(implicit ev: Embeddable[F, J]): ConnectionIO[B] =
+    pgGetConnection(PFPC.embed(j, op))
+
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getCopyAPI(k))
-
-  def pgGetFastpathAPI[A](k: FastpathIO[A]): ConnectionIO[A] =
-    pgGetConnection(PHPC.getFastpathAPI(k))
 
   def pgGetLargeObjectAPI[A](k: LargeObjectManagerIO[A]): ConnectionIO[A] =
     pgGetConnection(PHPC.getLargeObjectAPI(k))

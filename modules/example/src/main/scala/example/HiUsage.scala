@@ -1,18 +1,18 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package example
 
 import cats.Show
-import cats.effect.{ IO, IOApp, ExitCode }
-import cats.implicits._
+import cats.effect.{ IO, IOApp }
+import cats.syntax.all._
 import fs2.Stream
 import doobie._
 import doobie.implicits._
 
 // JDBC program using the high-level API
-object HiUsage extends IOApp {
+object HiUsage extends IOApp.Simple {
 
   // A very simple data type we will read
   final case class CountryCode(code: Option[String])
@@ -21,11 +21,11 @@ object HiUsage extends IOApp {
   }
 
   // Program entry point
-  def run(args: List[String]): IO[ExitCode] = {
+  def run: IO[Unit] = {
     val db = Transactor.fromDriverManager[IO](
       "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
     )
-    example.transact(db).as(ExitCode.Success)
+    example.transact(db)
   }
 
   // An example action. Streams results to stdout

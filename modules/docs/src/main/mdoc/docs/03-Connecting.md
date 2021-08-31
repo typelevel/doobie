@@ -32,9 +32,9 @@ This is a perfectly respectable **doobie** program, but we can't run it as-is; w
 ```scala mdoc:silent
 import doobie.util.ExecutionContexts
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -42,8 +42,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 ```
 
@@ -61,7 +60,7 @@ And here we go.
 
 ```scala mdoc
 val io = program1.transact(xa)
-io.unsafeRunSync
+io.unsafeRunSync()
 ```
 
 Hooray! We have computed a constant. It's not very interesting because we never ask the database to perform any work, but it's a first step.
@@ -77,7 +76,7 @@ Now let's use the `sql` string interpolator to construct a query that asks the *
 ```scala mdoc
 val program2 = sql"select 42".query[Int].unique
 val io2 = program2.transact(xa)
-io2.unsafeRunSync
+io2.unsafeRunSync()
 ```
 
 Ok! We have now connected to a database to compute a constant. Considerably more impressive.
@@ -97,7 +96,7 @@ val program3: ConnectionIO[(Int, Double)] =
 And behold!
 
 ```scala mdoc
-program3.transact(xa).unsafeRunSync
+program3.transact(xa).unsafeRunSync()
 ```
 
 The astute among you will note that we don't actually need a monad to do this; an applicative functor is all we need here. So we could also write `program3` as:
@@ -113,7 +112,7 @@ val program3a = {
 And lo, it was good:
 
 ```scala mdoc
-program3a.transact(xa).unsafeRunSync
+program3a.transact(xa).unsafeRunSync()
 ```
 
 And of course this composition can continue indefinitely.
@@ -121,7 +120,7 @@ And of course this composition can continue indefinitely.
 ```scala mdoc
 val valuesList = program3a.replicateA(5)
 val result = valuesList.transact(xa)
-result.unsafeRunSync.foreach(println)
+result.unsafeRunSync().foreach(println)
 ```
 
 ### Diving Deeper
@@ -133,14 +132,13 @@ Out of the box **doobie** provides an interpreter from its free monads to `Kleis
 ```scala mdoc
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.Blocker
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO](Blocker.liftExecutionContext(ExecutionContexts.synchronous)).ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO].ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
 val io3 = IO(null: java.sql.Connection) >>= kleisli.run
-io3.unsafeRunSync // sneaky; program1 never looks at the connection
+io3.unsafeRunSync() // sneaky; program1 never looks at the connection
 ```
 
 So the interpreter above is used to transform a `ConnectionIO[A]` program into a `Kleisli[IO, Connection, A]`. Then we construct an `IO[Connection]` (returning `null`) and bind it through the `Kleisli`, yielding our `IO[Int]`. This of course only works because `program1` is a pure value that does not look at the connection.

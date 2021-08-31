@@ -15,9 +15,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -25,8 +25,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 
 val y = xa.yolo
@@ -72,7 +71,7 @@ def biggerThan(minPop: Short) =
 Now let's try the `check` method provided by YOLO and see what happens.
 
 ```scala mdoc
-biggerThan(0).check.unsafeRunSync
+biggerThan(0).check.unsafeRunSync()
 ```
 
 Yikes, there are quite a few problems, in several categories. In this case **doobie** found
@@ -96,10 +95,10 @@ def biggerThan2(minPop: Int) =
 ```
 
 ```scala mdoc
-biggerThan2(0).check.unsafeRunSync
+biggerThan2(0).check.unsafeRunSync()
 ```
 
-**doobie** supports `check` for queries and updates in three ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2` and `doobie-scalatest` packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.
+**doobie** supports `check` for queries and updates in four ways: programmatically, via YOLO mode in the REPL, and via the `doobie-specs2`, `doobie-scalatest` and `doobie-munit` packages, which allow checking to become part of your unit test suite. We will investigate this in the chapter on testing.
 
 ### Working Around Bad Metadata
 
@@ -108,7 +107,7 @@ Some drivers do not implement the JDBC metadata specification very well, which l
 However a common case is that *parameter* metadata is unavailable but *output column* metadata is. And in these cases there is a workaround: use `checkOutput` rather than `check`. This instructs **doobie** to punt on the input parameters and only check output columns. Unsatisfying but better than nothing.
 
 ```scala mdoc
-biggerThan(0).checkOutput.unsafeRunSync
+biggerThan(0).checkOutput.unsafeRunSync()
 ```
 
 ### Diving Deeper

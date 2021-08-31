@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -8,11 +8,11 @@ import java.sql.{PreparedStatement, ResultSet}
 
 import cats.Invariant
 import cats.data.NonEmptyList
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 import doobie.util.{Get, Put}
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
+import org.tpolecat.typename._
 
 /**
  * Convenience for introducing a symmetric `Get`/`Put` pair into implicit scope, and for deriving
@@ -27,7 +27,7 @@ final class Meta[A](val get: Get[A], val put: Put[A]) {
     new Meta(get.map(f), put.contramap(g))
 
   /** Variant of `imap` that takes a type tag, to aid in diagnostics. */
-  def timap[B: TypeTag](f: A => B)(g: B => A): Meta[B] =
+  def timap[B: TypeName](f: A => B)(g: B => A): Meta[B] =
     new Meta(get.tmap(f), put.tcontramap(g))
 
 }
@@ -57,7 +57,7 @@ trait MetaConstructors {
    */
   object Basic {
 
-    def many[A: TypeTag](
+    def many[A: TypeName](
       jdbcTarget: NonEmptyList[JdbcType],
       jdbcSource: NonEmptyList[JdbcType],
       jdbcSourceSecondary: List[JdbcType],
@@ -70,7 +70,7 @@ trait MetaConstructors {
         Put.Basic.many(jdbcTarget, put, update)
       )
 
-    def one[A: TypeTag](
+    def one[A: TypeName](
       jdbcType: JdbcType,
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A,
@@ -90,7 +90,7 @@ trait MetaConstructors {
    */
   object Advanced {
 
-    def many[A: TypeTag](
+    def many[A: TypeName](
       jdbcTypes: NonEmptyList[JdbcType],
       schemaTypes: NonEmptyList[String],
       get: (ResultSet, Int) => A,
@@ -102,7 +102,7 @@ trait MetaConstructors {
         Put.Advanced.many(jdbcTypes, schemaTypes, put, update)
       )
 
-    def one[A: TypeTag](
+    def one[A: TypeName](
       jdbcTypes: JdbcType,
       schemaTypes: NonEmptyList[String],
       get: (ResultSet, Int) => A,
@@ -114,7 +114,7 @@ trait MetaConstructors {
         Put.Advanced.one(jdbcTypes, schemaTypes, put, update)
       )
 
-    def array[A >: Null <: AnyRef: TypeTag](
+    def array[A >: Null <: AnyRef](
       elementType: String,
       schemaH: String,
       schemaT: String*
@@ -124,7 +124,7 @@ trait MetaConstructors {
         Put.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList), elementType)
       )
 
-    def other[A >: Null <: AnyRef: TypeTag: ClassTag](
+    def other[A >: Null <: AnyRef: TypeName: ClassTag](
       schemaH: String,
       schemaT: String*
     ): Meta[A] =
@@ -138,7 +138,7 @@ trait MetaConstructors {
 }
 
 trait MetaInstances { this: MetaConstructors =>
-  import doobie.enum.JdbcType.{Boolean => JdbcBoolean, _}
+  import doobie.enumerated.JdbcType.{Boolean => JdbcBoolean, _}
 
   /** @group Instances */
   implicit val GetPutInvariant: Invariant[Meta] =

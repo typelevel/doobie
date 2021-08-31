@@ -1,18 +1,15 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.scalatest
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie.syntax.string._
 import doobie.util.transactor.Transactor
 import org.scalatest._
-import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matchers with Checker[M] {
-
-  implicit def contextShift: ContextShift[M]
 
   lazy val transactor = Transactor.fromDriverManager[M](
     "org.h2.Driver",
@@ -24,7 +21,4 @@ trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matc
 
 }
 
-class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
-  def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
-}
+class IOCheckerCheck extends CheckerChecks[IO] with IOChecker

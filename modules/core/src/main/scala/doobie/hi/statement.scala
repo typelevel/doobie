@@ -1,14 +1,15 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.hi
 
-import cats.effect.syntax.bracket._
-import doobie.enum.Holdability
-import doobie.enum.FetchDirection
-import doobie.enum.ResultSetConcurrency
-import doobie.enum.ResultSetType
+import cats.effect.kernel.syntax.monadCancel._
+import doobie.enumerated.Holdability
+import doobie.enumerated.FetchDirection
+import doobie.enumerated.ResultSetConcurrency
+import doobie.enumerated.ResultSetType
+import doobie.implicits._
 
 import java.sql.SQLWarning
 

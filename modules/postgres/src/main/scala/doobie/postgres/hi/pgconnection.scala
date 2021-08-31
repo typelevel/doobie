@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -13,9 +13,6 @@ object pgconnection {
 
   def getCopyAPI[A](k: CopyManagerIO[A]): PGConnectionIO[A] =
     PFPC.getCopyAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
-
-  def getFastpathAPI[A](k: FastpathIO[A]): PGConnectionIO[A] =
-    PFPC.getFastpathAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
 
   def getLargeObjectAPI[A](k: LargeObjectManagerIO[A]): PGConnectionIO[A] =
     PFPC.getLargeObjectAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()

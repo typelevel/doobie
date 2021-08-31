@@ -1,14 +1,13 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package example
 
 import cats.data.NonEmptyList
-import cats.effect.{ IO, IOApp, ExitCode }
-import cats.implicits._
+import cats.effect.{ IO, IOApp }
 import doobie._
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 import doobie.implicits._
 import org.postgresql.util._
 
@@ -22,7 +21,7 @@ import org.postgresql.util._
  *   );
  *
  */
-object OtherSchema extends IOApp {
+object OtherSchema extends IOApp.Simple {
 
   // Ok this mapping goes via String when reading and PGObject when writing, and it understands
   // when the type is reported as OTHER (schemaType).
@@ -54,7 +53,7 @@ object OtherSchema extends IOApp {
   implicit val meta: Meta[ReturnStatus.Value] =
     wackyPostgresMapping(""""returns_data"."return_status"""").timap(ReturnStatus.withName)(_.toString)
 
-  def run(args: List[String]): IO[ExitCode] = {
+  def run: IO[Unit] = {
 
     // Some setup
     val xa = Transactor.fromDriverManager[IO](
@@ -71,7 +70,7 @@ object OtherSchema extends IOApp {
     val q2 = sql"SELECT ${ReturnStatus.IN_PROGRESS}::returns_data.return_status".query[ReturnStatus.Value]
     val p2 = q2.check *> q2.unique.quick
 
-    (p1 *> p2) as ExitCode.Success
+    (p1 *> p2)
 
   }
 

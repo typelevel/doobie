@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,10 +6,10 @@ package doobie.hi
 
 import cats.{ Alternative, Monad }
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 
-import doobie.enum.Holdability
-import doobie.enum.FetchDirection
+import doobie.enumerated.Holdability
+import doobie.enumerated.FetchDirection
 import doobie.util.{ Read, Write }
 import doobie.util.compat.FactoryCompat
 import doobie.util.invariant._

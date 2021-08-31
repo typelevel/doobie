@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,9 +6,6 @@ package doobie.postgres
 
 import cats.{ ContravariantSemigroupal, Foldable }
 import cats.syntax.foldable._
-
-import shapeless.{ HList, HNil, ::, <:!<, Generic, Lazy }
-import com.github.ghik.silencer.silent
 
 /**
  * Typeclass for types that can be written as Postgres literal text, using the default DELIMETER
@@ -55,7 +52,7 @@ trait Text[A] { outer =>
     }
 
 }
-object Text extends TextInstances {
+object Text extends TextInstances with TextPlatform {
   def apply[A](implicit ev: Text[A]): ev.type = ev
 
   val DELIMETER: Char = '\t'
@@ -115,26 +112,27 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
           case '\\' => sb.append("\\\\\\\\") // srsly
           case c    => stdChar(c, sb)
         }
-        sb.append('"') : @silent
+        sb.append('"')
+        ()
       }
     }
 
   //Char
-  implicit val charInstance:    Text[Char]    = instance((n, sb) => sb.append(n.toString)) : @silent
+  implicit val charInstance:    Text[Char]    = instance((n, sb) => {sb.append(n.toString); ()})
 
   // Primitive Numerics
-  implicit val intInstance:    Text[Int]    = instance((n, sb) => sb.append(n)) : @silent
-  implicit val shortInstance:  Text[Short]  = instance((n, sb) => sb.append(n)) : @silent
-  implicit val longInstance:   Text[Long]   = instance((n, sb) => sb.append(n)) : @silent
-  implicit val floatInstance:  Text[Float]  = instance((n, sb) => sb.append(n)) : @silent
-  implicit val doubleInstance: Text[Double] = instance((n, sb) => sb.append(n)) : @silent
+  implicit val intInstance:    Text[Int]    = instance((n, sb) => {sb.append(n); ()})
+  implicit val shortInstance:  Text[Short]  = instance((n, sb) => {sb.append(n); ()})
+  implicit val longInstance:   Text[Long]   = instance((n, sb) => {sb.append(n); ()})
+  implicit val floatInstance:  Text[Float]  = instance((n, sb) => {sb.append(n); ()})
+  implicit val doubleInstance: Text[Double] = instance((n, sb) => {sb.append(n); ()})
 
   // Big Numerics
-  implicit val bigDecimalInstance: Text[BigDecimal] = instance { (n, sb) => sb.append(n.toString) : @silent }
+  implicit val bigDecimalInstance: Text[BigDecimal] = instance { (n, sb) => {sb.append(n.toString); ()} }
 
   // Boolean
   implicit val booleanInstance: Text[Boolean] =
-    instance((b, sb) => sb.append(b)) : @silent
+    instance((b, sb) => {sb.append(b); ()})
 
   // Date, Time, etc.
 
@@ -147,40 +145,19 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
         val hex = BigInt(1, bs).toString(16)
         val pad = bs.length * 2 - hex.length
         (0 until pad).foreach(_ => sb.append("0"))
-        sb.append(hex) : @silent
+        sb.append(hex)
+        ()
       }
     }
 
   // Any non-option Text can be lifted to Option
   implicit def option[A](
-    implicit csv: Text[A],
-             @silent nope: A <:!< Option[X] forSome { type X }
+    implicit csv: Text[A]
   ): Text[Option[A]] =
     instance {
-      case (Some(a), sb) => csv.unsafeEncode(a, sb)
-      case (None, sb)    => sb.append(Text.NULL) : @silent
+      case (Some(a), sb) => {csv.unsafeEncode(a, sb); ()}
+      case (None, sb)    => {sb.append(Text.NULL); ()}
     }
-
-  // HNil isn't a valid Text but a single-element HList is
-  implicit def single[A](
-    implicit csv: Text[A]
-  ): Text[A :: HNil] =
-    csv.contramap(_.head)
-
-  // HLists of more that one element
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-  implicit def multiple[H, T <: HList](
-    implicit h: Text[H],
-             t: Text[T]
-  ): Text[H :: T] =
-    (h product t).contramap(l => (l.head, l.tail))
-
-  // Generic
-  implicit def generic[A, B](
-    implicit gen: Generic.Aux[A, B],
-             csv: Lazy[Text[B]]
-  ): Text[A] =
-    csv.value.contramap(gen.to)
 
 }
 
@@ -200,7 +177,8 @@ trait TextInstances0 extends TextInstances1 { this: Text.type =>
         else sb.append(',')
         ev.unsafeArrayEncode(a, sb)
       }
-      sb.append('}') : @silent
+      sb.append('}')
+      ()
     }
 
 }

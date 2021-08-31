@@ -1,30 +1,28 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
 
+import doobie.WeakAsync
 import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
 import doobie.free.KleisliInterpreter
+import doobie.implicits._
 import doobie.util.lens._
 import doobie.util.yolo.Yolo
-import cats.{Applicative, Defer, Monad, ~>}
+import cats.{Monad, ~>}
 import cats.data.Kleisli
-import cats.effect.{Async, Blocker, Bracket, ContextShift, ExitCase, Resource, Sync}
-import cats.instances.long._
-import cats.syntax.show._
+import cats.effect.kernel.{Async, MonadCancelThrow, Resource}
+import cats.effect.kernel.Resource.ExitCase
 
-import fs2.Stream
+import fs2.{Stream, Pipe}
 import java.sql.{Connection, DriverManager}
 
 import javax.sql.DataSource
-import java.util.concurrent.{Executors, ThreadFactory}
 
 import scala.concurrent.ExecutionContext
 
 object transactor  {
-
-  import doobie.free.connection.AsyncConnectionIO
 
   /** @group Type Aliases */
   type Interpreter[M[_]] = ConnectionOp ~> Kleisli[M, Connection, *]
@@ -48,8 +46,8 @@ object transactor  {
       _ <- Resource.make(doobie.FC.unit)(_ => always)
       _ <- Resource.makeCase(before) { case (_, exitCase) =>
         exitCase match {
-          case ExitCase.Completed => after
-          case ExitCase.Error(_) | ExitCase.Canceled => oops
+          case ExitCase.Succeeded => after
+          case ExitCase.Errored(_) | ExitCase.Canceled => oops
         }
       }
     } yield ()
@@ -103,7 +101,7 @@ object transactor  {
     def strategy: Strategy
 
     /** Construct a [[Yolo]] for REPL experimentation. */
-    def yolo(implicit ev1: Sync[M]): Yolo[M] = new Yolo(this)
+    def yolo(implicit ev: Async[M]): Yolo[M] = new Yolo(this)
 
     /**
      * Construct a program to perform arbitrary configuration on the kernel value (changing the
@@ -121,21 +119,24 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawExec(implicit ev: Bracket[M, Throwable]): Kleisli[M, Connection, *] ~> M =
-      λ[Kleisli[M, Connection, *] ~> M](k => connect(kernel).use(k.run))
+    def rawExec(implicit ev: MonadCancelThrow[M]): Kleisli[M, Connection, *] ~> M =
+      new (Kleisli[M, Connection, *] ~> M) {
+        def apply[T](k: Kleisli[M, Connection, T]): M[T] = connect(kernel).use(k.run)
+      }
 
     /**
       * Natural transformation that provides a connection and binds through a `Kleisli` program
       * using the given `Strategy`, yielding an independent program in `M`.
       * @group Natural Transformations
       */
-    def exec(implicit ev: Bracket[M, Throwable], D: Defer[M]): Kleisli[M, Connection, *] ~> M =
-      λ[Kleisli[M, Connection, *] ~> M] { ka =>
-        connect(kernel).use { conn =>
-          strategy.resource.mapK(run(conn)).use { _ =>
-            ka.run(conn)
+    def exec(implicit ev: MonadCancelThrow[M]): Kleisli[M, Connection, *] ~> M =
+      new (Kleisli[M, Connection, *] ~> M) {
+        def apply[T](ka: Kleisli[M, Connection, T]): M[T] =
+          connect(kernel).use { conn =>
+            strategy.resource.mapK(run(conn)).use { _ =>
+              ka.run(conn)
+            }
           }
-        }
       }
 
     /**
@@ -144,11 +145,12 @@ object transactor  {
      * where transactional handling is unsupported or undesired.
      * @group Natural Transformations
      */
-    def rawTrans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M] { f =>
-        connect(kernel).use { conn =>
-          f.foldMap(interpret).run(conn)
-        }
+    def rawTrans(implicit ev: MonadCancelThrow[M]): ConnectionIO ~> M =
+      new (ConnectionIO ~> M) {
+        def apply[T](f: ConnectionIO[T]): M[T] =
+          connect(kernel).use { conn =>
+            f.foldMap(interpret).run(conn)
+          }
       }
 
     /**
@@ -157,50 +159,72 @@ object transactor  {
      * program in `M`. This is the most common way to run a doobie program.
      * @group Natural Transformations
      */
-    def trans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M] { f =>
-        connect(kernel).use { conn =>
-          strategy.resource.use(_ => f).foldMap(interpret).run(conn)
-        }
+    def trans(implicit ev: MonadCancelThrow[M]): ConnectionIO ~> M =
+      new (ConnectionIO ~> M) {
+        def apply[T](f: ConnectionIO[T]): M[T] =
+          connect(kernel).use { conn =>
+            strategy.resource.use(_ => f).foldMap(interpret).run(conn)
+          }
       }
 
-    def rawTransP[T](implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
-      λ[Stream[ConnectionIO, *] ~> Stream[M, *]] { s =>
-        Stream.resource(connect(kernel)).flatMap { conn =>
-          s.translate(run(conn))
-        }.scope
+    def rawTransP(implicit ev: MonadCancelThrow[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
+      new (Stream[ConnectionIO, *] ~> Stream[M, *]) {
+        def apply[T](s: Stream[ConnectionIO, T]) =
+          Stream.resource(connect(kernel)).flatMap { conn =>
+            s.translate(run(conn))
+          }.scope
       }
 
-    def transP(implicit ev: Monad[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
-      λ[Stream[ConnectionIO, *] ~> Stream[M, *]] { s =>
-        Stream.resource(connect(kernel)).flatMap { c =>
-          Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
-        }.scope
+    def transP(implicit ev: MonadCancelThrow[M]): Stream[ConnectionIO, *] ~> Stream[M, *] =
+      new (Stream[ConnectionIO, *] ~> Stream[M, *]) {
+        def apply[T](s: Stream[ConnectionIO, T]) =
+          Stream.resource(connect(kernel)).flatMap { c =>
+            Stream.resource(strategy.resource).flatMap(_ => s).translate(run(c))
+          }.scope
       }
 
-    def rawTransPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
-      λ[Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]] { s =>
-        Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
-          s.translate(runKleisli[I](c))
-        }.scope
+    def rawTransPK[I](implicit ev: MonadCancelThrow[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
+      new (Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]) {
+        def apply[T](s: Stream[Kleisli[ConnectionIO, I, *], T]) =
+          Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
+            s.translate(runKleisli[I](c))
+          }.scope
       }
 
-    def transPK[I](implicit ev: Monad[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
-      λ[Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]] { s =>
-        Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
-          Stream.resource(strategy.resource.mapK(Kleisli.liftK[ConnectionIO, I])).flatMap(_ => s)
-            .translate(runKleisli[I](c))
-        }.scope
+    def transPK[I](implicit ev: MonadCancelThrow[M]): Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *] =
+      new (Stream[Kleisli[ConnectionIO, I, *], *] ~> Stream[Kleisli[M, I, *], *]) {
+        def apply[T](s: Stream[Kleisli[ConnectionIO, I, *], T]) =
+          Stream.resource(connect(kernel)).translate(Kleisli.liftK[M, I]).flatMap { c =>
+            Stream.resource(strategy.resource.mapK(Kleisli.liftK[ConnectionIO, I])).flatMap(_ => s)
+              .translate(runKleisli[I](c))
+          }.scope
       }
+
+    /** Create a program expressed as `ConnectionIO` effect using a provided natural transformation `M ~> ConnectionIO`
+      * and translate it to back `M` effect. */
+    def liftF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit ev: Async[M]): M[I] =
+      WeakAsync.liftK[M, ConnectionIO].use(toConnectionIO => trans(ev).apply(mkEffect(toConnectionIO)))(ev)
+    
+    /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation 
+      * `M ~> ConnectionIO` and translate it back to a `Stream` with `M` effects. */
+    def liftS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit ev: Async[M]): Stream[M, I] =
+      Stream.resource(WeakAsync.liftK[M, ConnectionIO])(ev).flatMap(toConnectionIO => transP(ev).apply(mkStream(toConnectionIO)))
+
+    /** Embed a `Pipe` with `ConnectionIO` effects inside a `Pipe` with `M` effects by lifting incoming stream to 
+      * `ConnectionIO` effects and lowering outgoing stream to `M` effects. */
+    def liftP[I, O](inner: Pipe[ConnectionIO, I, O])(implicit ev: Async[M]): Pipe[M, I, O] =
+      (in: Stream[M, I]) => liftS(toConnectionIO => in.translate(toConnectionIO).through(inner))
 
     private def run(c: Connection)(implicit ev: Monad[M]): ConnectionIO ~> M =
-      λ[ConnectionIO ~> M] { f =>
-        f.foldMap(interpret).run(c)
+      new (ConnectionIO ~> M) {
+        def apply[T](f: ConnectionIO[T]) =
+          f.foldMap(interpret).run(c)
       }
 
     private def runKleisli[B](c: Connection)(implicit ev: Monad[M]): Kleisli[ConnectionIO, B, *] ~> Kleisli[M, B, *] =
-      λ[Kleisli[ConnectionIO, B, *] ~> Kleisli[M, B, *]] { f =>
-        Kleisli(f.run(_).foldMap(interpret).run(c))
+      new (Kleisli[ConnectionIO, B, *] ~> Kleisli[M, B, *]) {
+        def apply[T](f: Kleisli[ConnectionIO, B, T]) =
+          Kleisli(f.run(_).foldMap(interpret).run(c))
       }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -220,11 +244,15 @@ object transactor  {
     /*
      * Convert the effect type of this transactor from M to M0
      */
-    def mapK[M0[_]](fk: M ~> M0)(implicit B: Bracket[M, Throwable], D: Defer[M0], A: Applicative[M0]): Transactor.Aux[M0, A] =
+    def mapK[M0[_]](fk: M ~> M0)(implicit ev1: MonadCancelThrow[M], ev2: MonadCancelThrow[M0]): Transactor.Aux[M0, A] =
       Transactor[M0, A](
         kernel,
         connect.andThen(_.mapK(fk)),
-        interpret.andThen(λ[Kleisli[M, Connection, *] ~> Kleisli[M0, Connection, *]](_.mapK(fk))),
+        interpret.andThen(
+          new (Kleisli[M, Connection, *] ~> Kleisli[M0, Connection, *]) {
+            def apply[T](f: Kleisli[M, Connection, T]) = f.mapK(fk)
+          }
+        ),
         strategy
       )
   }
@@ -262,7 +290,7 @@ object transactor  {
      * @group Constructors
      */
      object fromDataSource {
-       def apply[M[_]] = new FromDataSourceUnapplied[M]
+      def apply[M[_]] = new FromDataSourceUnapplied[M]
 
       /**
        * Constructor of `Transactor[M, D]` fixed for `M`; see the `apply` method for details.
@@ -271,17 +299,16 @@ object transactor  {
       class FromDataSourceUnapplied[M[_]] {
         def apply[A <: DataSource](
           dataSource: A,
-          connectEC:  ExecutionContext,
-          blocker: Blocker
-        )(implicit ev: Async[M],
-                   cs: ContextShift[M]
+          connectEC:  ExecutionContext
+        )(
+          implicit ev: Async[M]
         ): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
-            val acquire = cs.evalOn(connectEC)(ev.delay(dataSource.getConnection))
-            def release(c: Connection) = blocker.blockOn(ev.delay(c.close()))
-            Resource.make(acquire)(release)
+            val acquire = ev.evalOn(ev.delay(dataSource.getConnection()), connectEC)
+            def release(c: Connection) = ev.blocking(c.close())
+            Resource.make(acquire)(release)(ev)
           }
-          val interp  = KleisliInterpreter[M](blocker).ConnectionInterpreter
+          val interp  = KleisliInterpreter[M].ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
         }
       }
@@ -295,12 +322,11 @@ object transactor  {
      * @param blocker for blocking database operations
      * @group Constructors
      */
-    def fromConnection[M[_]: Async: ContextShift](
-      connection: Connection,
-      blocker: Blocker
+    def fromConnection[M[_]: Async](
+      connection: Connection
     ): Transactor.Aux[M, Connection] = {
       val connect = (c: Connection) => Resource.pure[M, Connection](c)
-      val interp  = KleisliInterpreter[M](blocker).ConnectionInterpreter
+      val interp  = KleisliInterpreter[M].ConnectionInterpreter
       Transactor(connection, connect, interp, Strategy.default)
     }
 
@@ -317,64 +343,33 @@ object transactor  {
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     object fromDriverManager {
 
-      // An unbounded cached pool of daemon threads.
-      private lazy val defaultBlocker: Blocker = Blocker.liftExecutionContext {
-        ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
-          new ThreadFactory {
-            def newThread(r: Runnable): Thread = {
-              val th = new Thread(r)
-              th.setName(show"doobie-fromDriverManager-pool-${th.getId}")
-              th.setDaemon(true)
-              th
-            }
-          }
-        ))
-      }
-
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create[M[_]](
         driver: String,
         conn: () => Connection,
-        strategy: Strategy,
-        blocker: Blocker
-      )(implicit am: Async[M], cs: ContextShift[M]): Transactor.Aux[M, Unit] =
+        strategy: Strategy
+      )(implicit ev: Async[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
           _ => {
-            val acquire = blocker.blockOn(am.delay { Class.forName(driver); conn() })
-            def release(c: Connection) = blocker.blockOn(am.delay { c.close() })
-            Resource.make(acquire)(release)
+            val acquire = ev.blocking{ Class.forName(driver); conn() }
+            def release(c: Connection) = ev.blocking{ c.close() }
+            Resource.make(acquire)(release)(ev)
           },
-          KleisliInterpreter[M](blocker).ConnectionInterpreter,
+          KleisliInterpreter[M].ConnectionInterpreter,
           strategy
         )
-
-      def apply[M[_]: Async: ContextShift](
-        driver: String,
-        url:    String,
-        blocker: Blocker
-      ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url), Strategy.default, blocker)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
        * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
        * @param url        a connection URL, specific to your driver
        */
-      def apply[M[_]: Async: ContextShift](
+      def apply[M[_]: Async](
         driver: String,
         url:    String
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, defaultBlocker)
-
-      def apply[M[_]: Async: ContextShift](
-        driver: String,
-        url:    String,
-        user:   String,
-        pass:   String,
-        blocker: Blocker
-      ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default, blocker)
+        create(driver, () => DriverManager.getConnection(url), Strategy.default)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -383,13 +378,13 @@ object transactor  {
        * @param user       database username
        * @param pass       database password
        */
-      def apply[M[_]: Async: ContextShift](
+      def apply[M[_]: Async](
         driver: String,
         url:    String,
         user:   String,
         pass:   String
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, user, pass, defaultBlocker)
+        create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default)
 
       /**
        * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
@@ -397,26 +392,12 @@ object transactor  {
        * @param url        a connection URL, specific to your driver
        * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
        */
-      def apply[M[_]: Async: ContextShift](
-        driver: String,
-        url:    String,
-        info:   java.util.Properties,
-        blocker: Blocker
-      ): Transactor.Aux[M, Unit] =
-        create(driver, () => DriverManager.getConnection(url, info), Strategy.default, blocker)
-
-      /**
-       * Construct a new `Transactor` that uses the JDBC `DriverManager` to allocate connections.
-       * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
-       * @param url        a connection URL, specific to your driver
-       * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
-       */
-      def apply[M[_]: Async: ContextShift](
+      def apply[M[_]: Async](
         driver: String,
         url:    String,
         info:   java.util.Properties
       ): Transactor.Aux[M, Unit] =
-        apply(driver, url, info, defaultBlocker)
+        create(driver, () => DriverManager.getConnection(url, info), Strategy.default)
 
     }
 

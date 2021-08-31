@@ -17,9 +17,9 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -27,8 +27,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 
 val y = xa.yolo
@@ -57,7 +56,7 @@ val create =
 ```
 
 ```scala mdoc
-(drop *> create).unsafeRunSync
+(drop *> create).unsafeRunSync()
 ```
 
 **doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default. No special handling is required, other than importing the vendor-specific array support above.
@@ -75,8 +74,8 @@ def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
 Insert works fine, as does reading the result. No surprises.
 
 ```scala mdoc
-insert("Bob", List("Nixon", "Slappy")).quick.unsafeRunSync
-insert("Alice", Nil).quick.unsafeRunSync
+insert("Bob", List("Nixon", "Slappy")).quick.unsafeRunSync()
+insert("Alice", Nil).quick.unsafeRunSync()
 ```
 
 ### Lamentations of `NULL`
@@ -88,8 +87,8 @@ However there is another axis of variation here: the *array cells* themselves ma
 So there are actually four ways to map an array, and you should carefully consider which is appropriate for your schema. In the first two cases reading a `NULL` cell would result in a `NullableCellRead` exception.
 
 ```scala mdoc
-sql"select array['foo','bar','baz']".query[List[String]].quick.unsafeRunSync
-sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRunSync
-sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync
-sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync
+sql"select array['foo','bar','baz']".query[List[String]].quick.unsafeRunSync()
+sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRunSync()
+sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync()
+sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync()
 ```

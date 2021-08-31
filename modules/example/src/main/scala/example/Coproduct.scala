@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -7,27 +7,32 @@ package example
 import java.sql.Connection
 
 import cats.data.{EitherK, Kleisli}
-import cats.effect.{ Blocker, IO, IOApp, ExitCode }
+import cats.effect.{ IO, IOApp }
 import cats.free.Free
-import cats.implicits._
+import cats.syntax.all._
 import cats.{InjectK, ~>}
 import doobie._
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
-import scala.concurrent.ExecutionContext
 import scala.io.StdIn
 
-object coproduct extends IOApp {
+object Coproduct extends IOApp.Simple {
 
   // This is merged in cats
   implicit class MoreFreeOps[F[_], A](fa: Free[F, A]) {
     def inject[G[_]](implicit ev: InjectK[F, G]): Free[G, A] =
-      fa.compile(λ[F ~> G](ev.inj(_)))
+      fa.compile {
+        new (F ~> G) {
+          def apply[T](fa: F[T]) = ev.inj(fa)
+        }
+      }
   }
 
   // This is kind of eh … we need to interpret into Kleisli so this is helpful
   implicit class MoreNaturalTransformationOps[F[_], G[_]](nat: F ~> G) {
-    def liftK[E] = λ[F ~> Kleisli[G, E, *]](fa => Kleisli(_ => nat(fa)))
+    def liftK[E] = new (F ~> Kleisli[G, E, *]) {
+      def apply[A](fa: F[A]) = Kleisli(_ => nat(fa))
+    }
   }
 
   // A console algebra
@@ -37,18 +42,22 @@ object coproduct extends IOApp {
 
   // A module of ConsoleOp constructors, parameterized over a coproduct
   class ConsoleOps[F[_]](implicit ev: InjectK[ConsoleOp, F]) {
-    val readLn             = Free.inject[ConsoleOp, F](ReadLn)
-    def printLn(s: String) = Free.inject[ConsoleOp, F](PrintLn(s))
+    val readLn             = Free.liftInject[F](ReadLn)
+    def printLn(s: String) = Free.liftInject[F](PrintLn(s))
   }
   object ConsoleOps {
     implicit def instance[F[_]](implicit ev: InjectK[ConsoleOp, F]): ConsoleOps[F] = new ConsoleOps
   }
 
   // An interpreter into IO
-  val consoleInterp = λ[ConsoleOp ~> IO] {
-    case ReadLn     => IO(StdIn.readLine)
-    case PrintLn(s) => IO(Console.println(s))
-  }
+  val consoleInterp =
+    new (ConsoleOp ~> IO) {
+      def apply[A](fa: ConsoleOp[A]) =
+        fa match {
+          case ReadLn     => IO(StdIn.readLine())
+          case PrintLn(s) => IO(Console.println(s))
+        }
+    }
 
   // A module of ConnectionOp programs, parameterized over a coproduct. The trick here is that these
   // are domain-specific operations that are injected as programs, not as constructors (which would
@@ -79,8 +88,7 @@ object coproduct extends IOApp {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, *] = {
-    val blocker = Blocker.liftExecutionContext(ExecutionContext.global)
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](blocker).ConnectionInterpreter
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO].ConnectionInterpreter
   }
 
   // Our interpreted program
@@ -93,8 +101,8 @@ object coproduct extends IOApp {
   )
 
   // Exec it!
-  def run(args: List[String]): IO[ExitCode] =
-    xa.exec.apply(iprog).as(ExitCode.Success)
+  def run: IO[Unit] =
+    xa.exec.apply(iprog)
 
   // Enter a pattern:
   // U%

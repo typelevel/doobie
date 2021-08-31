@@ -1,19 +1,15 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.bench
 
-import cats.effect.{ ContextShift, IO }
+import cats.effect.IO
 import doobie._, doobie.implicits._
 import java.sql.DriverManager
 import org.openjdk.jmh.annotations._
-import scala.concurrent.ExecutionContext
 
 object shared {
-
-  implicit def contextShift: ContextShift[IO] =
-    IO.contextShift(ExecutionContext.global)
 
   @State(Scope.Benchmark)
   val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
@@ -21,6 +17,7 @@ object shared {
 
 class bench {
   import shared._
+  import cats.effect.unsafe.implicits.global
 
   // Baseline hand-written JDBC code
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.While"))
@@ -58,7 +55,7 @@ class bench {
       .compile.toList
       .transact(xa)
       .map(_.length)
-      .unsafeRunSync
+      .unsafeRunSync()
 
   // Reading via .list, which uses a lower-level collector
   def doobieBench(n: Int): Int =
@@ -67,7 +64,7 @@ class bench {
       .to[List]
       .transact(xa)
       .map(_.length)
-      .unsafeRunSync
+      .unsafeRunSync()
 
   // Reading via .vector, which uses a lower-level collector
   def doobieBenchV(n: Int): Int =
@@ -76,7 +73,7 @@ class bench {
       .to[Vector]
       .transact(xa)
       .map(_.length)
-      .unsafeRunSync
+      .unsafeRunSync()
 
 
   @Benchmark

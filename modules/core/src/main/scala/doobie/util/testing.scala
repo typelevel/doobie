@@ -1,11 +1,11 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.effect.{ Effect, IO }
+import cats.effect.kernel.Async
 import cats.instances.int._
 import cats.instances.list._
 import cats.instances.string._
@@ -19,16 +19,21 @@ import doobie.util.analysis._
 import doobie.util.pretty._
 import doobie.util.pos.Pos
 import scala.Predef.augmentString
-import scala.reflect.runtime.universe.WeakTypeTag
+import org.tpolecat.typename._
 
 package testing {
+
+  trait UnsafeRun[F[_]] {
+    def unsafeRunSync[A](fa: F[A]): A
+  }
 
   /**
     * Common base trait for various checkers and matchers.
     */
   trait CheckerBase[M[_]] {
     // Effect type, required instances
-    implicit def M: Effect[M]
+    implicit def M: Async[M]
+    implicit def U: UnsafeRun[M]
     def transactor: Transactor[M]
     def colors: Colors = Colors.Ansi
   }
@@ -86,7 +91,7 @@ package testing {
         def unpack(t: T) = impl(t)
       }
 
-    implicit def analyzableQuery[A: WeakTypeTag, B: WeakTypeTag]: Analyzable[Query[A, B]] =
+    implicit def analyzableQuery[A: TypeName, B: TypeName]: Analyzable[Query[A, B]] =
       instance { q =>
         AnalysisArgs(
           s"Query[${typeName[A]}, ${typeName[B]}]",
@@ -94,7 +99,7 @@ package testing {
         )
       }
 
-    implicit def analyzableQuery0[A: WeakTypeTag]: Analyzable[Query0[A]] =
+    implicit def analyzableQuery0[A: TypeName]: Analyzable[Query0[A]] =
       instance { q =>
         AnalysisArgs(
           s"Query0[${typeName[A]}]",
@@ -102,7 +107,7 @@ package testing {
         )
       }
 
-    implicit def analyzableUpdate[A: WeakTypeTag]: Analyzable[Update[A]] =
+    implicit def analyzableUpdate[A: TypeName]: Analyzable[Update[A]] =
       instance { q =>
         AnalysisArgs(
           s"Update[${typeName[A]}]",
@@ -136,18 +141,6 @@ package object testing {
         )
       }
 
-  def analyzeIO[F[_]: Effect](
-    args: AnalysisArgs,
-    xa: Transactor[F]
-  ): IO[AnalysisReport] =
-    toIO(analyze(args).transact(xa))
-
-  private val packagePrefix = "\\b[a-z]+\\.".r
-
-  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def typeName[A](implicit tag: WeakTypeTag[A]): String =
-    packagePrefix.replaceAllIn(tag.tpe.toString, "")
-
   private def alignmentErrorsToBlock(
     es: NonEmptyList[AlignmentError]
   ): Block =
@@ -159,7 +152,7 @@ package object testing {
     case Left(e) =>
       List(AnalysisReport.Item(
         "SQL Compiles and TypeChecks",
-        Some(Block.fromLines(e.getMessage))
+        Some(Block.fromErrorMsgLines(e))
       ))
     case Right(a) =>
       AnalysisReport.Item("SQL Compiles and TypeChecks", None) ::
@@ -168,12 +161,6 @@ package object testing {
           AnalysisReport.Item(s, es.toNel.map(alignmentErrorsToBlock))
         }
   }
-
-  private def toIO[F[_]: Effect, A](fa: F[A])(implicit F: Effect[F]): IO[A] =
-    IO.async { cb =>
-      F.runAsync(fa)(out => IO(cb(out)))
-        .unsafeRunSync
-    }
 
   /**
     * Simple formatting for analysis results.

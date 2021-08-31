@@ -1,17 +1,18 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.specs2
 
-import cats.effect.{ Effect, IO }
+import cats.effect.{ Async, IO }
+import doobie.syntax.connectionio._
 import doobie.util.query.{ Query, Query0 }
 import doobie.util.testing._
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{ Fragment, Fragments }
 import org.specs2.specification.create.{ FormattingFragments => Format }
 import org.specs2.specification.dsl.Online._
-import scala.reflect.runtime.universe.TypeTag
+import org.tpolecat.typename._
 
 /**
  * Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
@@ -40,14 +41,12 @@ object analysisspec {
     def check[A: Analyzable](a: A): Fragments =
       checkImpl(Analyzable.unpack(a))
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def checkOutput[A: TypeTag](q: Query0[A]): Fragments =
+    def checkOutput[A: TypeName](q: Query0[A]): Fragments =
       checkImpl(AnalysisArgs(
         s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
       ))
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def checkOutput[A: TypeTag, B: TypeTag](q: Query[A, B]) =
+    def checkOutput[A: TypeName, B: TypeName](q: Query[A, B]) =
       checkImpl(AnalysisArgs(
         s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
       ))
@@ -55,7 +54,7 @@ object analysisspec {
     private def checkImpl(args: AnalysisArgs): Fragments =
       // continuesWith is necessary to make sure the query doesn't run too early
       s"${args.header}\n\n${args.cleanedSql.padLeft("  ").toString}\n" >> ok.continueWith {
-        val report = analyzeIO(args, transactor).unsafeRunSync
+        val report = U.unsafeRunSync(analyze(args).transact(transactor))
         indentBlock(
           report.items.map { item =>
             item.description ! item.error.fold(ok) {
@@ -77,6 +76,10 @@ object analysisspec {
 
   /** Implementation of Checker[IO] */
   trait IOChecker extends Checker[IO] { this: Specification =>
-    val M: Effect[IO] = implicitly
+    import cats.effect.unsafe.implicits.global
+    override implicit val M: Async[IO] = IO.asyncForIO
+    override implicit val U: UnsafeRun[IO] = new UnsafeRun[IO] {
+      def unsafeRunSync[A](ioa: IO[A]) = ioa.unsafeRunSync()
+    }
   }
 }

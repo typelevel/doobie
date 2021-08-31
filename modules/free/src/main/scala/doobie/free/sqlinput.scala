@@ -1,14 +1,15 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.io.InputStream
 import java.io.Reader
@@ -28,7 +29,6 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
-@silent("deprecated")
 object sqlinput { module =>
 
   // Algebra of operations for SQLInput. Each accepts a visitor as an alternative to pattern-matching.
@@ -56,14 +56,18 @@ object sqlinput { module =>
       // Common
       def raw[A](f: SQLInput => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]): F[A]
+      def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]): F[B]
+      def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): F[A]
+      def poll[A](poll: Any, fa: SQLInputIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): F[A]
+      def fromFuture[A](fut: SQLInputIO[Future[A]]): F[A]
 
       // SQLInput
       def readArray: F[SqlArray]
@@ -104,114 +108,123 @@ object sqlinput { module =>
     final case class Embed[A](e: Embedded[A]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends SQLInputOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: SQLInputIO[A], use: A => SQLInputIO[B], release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]) extends SQLInputOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends SQLInputOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    final case object Shift extends SQLInputOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: SQLInputIO[A]) extends SQLInputOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: SQLInputIO[A], fb: SQLInputIO[B]) extends SQLInputOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: SQLInputIO[A]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends SQLInputOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: SQLInputIO[Future[A]]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // SQLInput-specific operations.
-    final case object ReadArray extends SQLInputOp[SqlArray] {
+    case object ReadArray extends SQLInputOp[SqlArray] {
       def visit[F[_]](v: Visitor[F]) = v.readArray
     }
-    final case object ReadAsciiStream extends SQLInputOp[InputStream] {
+    case object ReadAsciiStream extends SQLInputOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.readAsciiStream
     }
-    final case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
+    case object ReadBigDecimal extends SQLInputOp[BigDecimal] {
       def visit[F[_]](v: Visitor[F]) = v.readBigDecimal
     }
-    final case object ReadBinaryStream extends SQLInputOp[InputStream] {
+    case object ReadBinaryStream extends SQLInputOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.readBinaryStream
     }
-    final case object ReadBlob extends SQLInputOp[Blob] {
+    case object ReadBlob extends SQLInputOp[Blob] {
       def visit[F[_]](v: Visitor[F]) = v.readBlob
     }
-    final case object ReadBoolean extends SQLInputOp[Boolean] {
+    case object ReadBoolean extends SQLInputOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.readBoolean
     }
-    final case object ReadByte extends SQLInputOp[Byte] {
+    case object ReadByte extends SQLInputOp[Byte] {
       def visit[F[_]](v: Visitor[F]) = v.readByte
     }
-    final case object ReadBytes extends SQLInputOp[Array[Byte]] {
+    case object ReadBytes extends SQLInputOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.readBytes
     }
-    final case object ReadCharacterStream extends SQLInputOp[Reader] {
+    case object ReadCharacterStream extends SQLInputOp[Reader] {
       def visit[F[_]](v: Visitor[F]) = v.readCharacterStream
     }
-    final case object ReadClob extends SQLInputOp[Clob] {
+    case object ReadClob extends SQLInputOp[Clob] {
       def visit[F[_]](v: Visitor[F]) = v.readClob
     }
-    final case object ReadDate extends SQLInputOp[Date] {
+    case object ReadDate extends SQLInputOp[Date] {
       def visit[F[_]](v: Visitor[F]) = v.readDate
     }
-    final case object ReadDouble extends SQLInputOp[Double] {
+    case object ReadDouble extends SQLInputOp[Double] {
       def visit[F[_]](v: Visitor[F]) = v.readDouble
     }
-    final case object ReadFloat extends SQLInputOp[Float] {
+    case object ReadFloat extends SQLInputOp[Float] {
       def visit[F[_]](v: Visitor[F]) = v.readFloat
     }
-    final case object ReadInt extends SQLInputOp[Int] {
+    case object ReadInt extends SQLInputOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.readInt
     }
-    final case object ReadLong extends SQLInputOp[Long] {
+    case object ReadLong extends SQLInputOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.readLong
     }
-    final case object ReadNClob extends SQLInputOp[NClob] {
+    case object ReadNClob extends SQLInputOp[NClob] {
       def visit[F[_]](v: Visitor[F]) = v.readNClob
     }
-    final case object ReadNString extends SQLInputOp[String] {
+    case object ReadNString extends SQLInputOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.readNString
     }
-    final case object ReadObject extends SQLInputOp[AnyRef] {
+    case object ReadObject extends SQLInputOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.readObject
     }
-    final case class  ReadObject1[T](a: Class[T]) extends SQLInputOp[T] {
+    final case class ReadObject1[T](a: Class[T]) extends SQLInputOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.readObject(a)
     }
-    final case object ReadRef extends SQLInputOp[Ref] {
+    case object ReadRef extends SQLInputOp[Ref] {
       def visit[F[_]](v: Visitor[F]) = v.readRef
     }
-    final case object ReadRowId extends SQLInputOp[RowId] {
+    case object ReadRowId extends SQLInputOp[RowId] {
       def visit[F[_]](v: Visitor[F]) = v.readRowId
     }
-    final case object ReadSQLXML extends SQLInputOp[SQLXML] {
+    case object ReadSQLXML extends SQLInputOp[SQLXML] {
       def visit[F[_]](v: Visitor[F]) = v.readSQLXML
     }
-    final case object ReadShort extends SQLInputOp[Short] {
+    case object ReadShort extends SQLInputOp[Short] {
       def visit[F[_]](v: Visitor[F]) = v.readShort
     }
-    final case object ReadString extends SQLInputOp[String] {
+    case object ReadString extends SQLInputOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.readString
     }
-    final case object ReadTime extends SQLInputOp[Time] {
+    case object ReadTime extends SQLInputOp[Time] {
       def visit[F[_]](v: Visitor[F]) = v.readTime
     }
-    final case object ReadTimestamp extends SQLInputOp[Timestamp] {
+    case object ReadTimestamp extends SQLInputOp[Timestamp] {
       def visit[F[_]](v: Visitor[F]) = v.readTimestamp
     }
-    final case object ReadURL extends SQLInputOp[URL] {
+    case object ReadURL extends SQLInputOp[URL] {
       def visit[F[_]](v: Visitor[F]) = v.readURL
     }
-    final case object WasNull extends SQLInputOp[Boolean] {
+    case object WasNull extends SQLInputOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.wasNull
     }
 
@@ -223,14 +236,20 @@ object sqlinput { module =>
   def pure[A](a: A): SQLInputIO[A] = FF.pure[SQLInputOp, A](a)
   def raw[A](f: SQLInput => A): SQLInputIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[SQLInputOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): SQLInputIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: SQLInputIO[A], f: Throwable => SQLInputIO[A]): SQLInputIO[A] = FF.liftF[SQLInputOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): SQLInputIO[A] = FF.liftF[SQLInputOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): SQLInputIO[A] = FF.liftF[SQLInputOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => SQLInputIO[Unit]): SQLInputIO[A] = FF.liftF[SQLInputOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): SQLInputIO[B] = FF.liftF[SQLInputOp, B](BracketCase(acquire, use, release))
-  val shift: SQLInputIO[Unit] = FF.liftF[SQLInputOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]) = FF.liftF[SQLInputOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = FF.liftF[SQLInputOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[SQLInputOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[SQLInputOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[SQLInputOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[SQLInputOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]) = FF.liftF[SQLInputOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]) = FF.liftF[SQLInputOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[SQLInputIO] {
+    def apply[A](fa: SQLInputIO[A]) = FF.liftF[SQLInputOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[SQLInputOp, Unit](Canceled)
+  def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) = FF.liftF[SQLInputOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: SQLInputIO[Future[A]]) = FF.liftF[SQLInputOp, A](FromFuture(fut))
 
   // Smart constructors for SQLInput-specific operations.
   val readArray: SQLInputIO[SqlArray] = FF.liftF(ReadArray)
@@ -262,26 +281,25 @@ object sqlinput { module =>
   val readURL: SQLInputIO[URL] = FF.liftF(ReadURL)
   val wasNull: SQLInputIO[Boolean] = FF.liftF(WasNull)
 
-  // SQLInputIO is an Async
-  implicit val AsyncSQLInputIO: Async[SQLInputIO] =
-    new Async[SQLInputIO] {
-      val asyncM = FF.catsFreeMonadForFree[SQLInputOp]
-      def bracketCase[A, B](acquire: SQLInputIO[A])(use: A => SQLInputIO[B])(release: (A, ExitCase[Throwable]) => SQLInputIO[Unit]): SQLInputIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): SQLInputIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): SQLInputIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): SQLInputIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => SQLInputIO[Unit]): SQLInputIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => SQLInputIO[A]): SQLInputIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // SQLInputIO is a ContextShift
-  implicit val ContextShiftSQLInputIO: ContextShift[SQLInputIO] =
-    new ContextShift[SQLInputIO] {
-      def shift: SQLInputIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: SQLInputIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for SQLInputIO
+  implicit val WeakAsyncSQLInputIO: WeakAsync[SQLInputIO] =
+    new WeakAsync[SQLInputIO] {
+      val monad = FF.catsFreeMonadForFree[SQLInputOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): SQLInputIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): SQLInputIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): SQLInputIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: SQLInputIO[FiniteDuration] = module.monotonic
+      override def realTime: SQLInputIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): SQLInputIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]): SQLInputIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): SQLInputIO[A] = module.uncancelable(body)
+      override def canceled: SQLInputIO[Unit] = module.canceled
+      override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): SQLInputIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: SQLInputIO[Future[A]]): SQLInputIO[A] = module.fromFuture(fut)
     }
 }
 

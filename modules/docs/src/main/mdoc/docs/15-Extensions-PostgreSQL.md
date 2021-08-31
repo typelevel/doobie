@@ -8,7 +8,33 @@ libraryDependencies += "org.tpolecat" %% "doobie-postgres" % "$version$"
 ```
 @@@
 
+
 This library pulls in [PostgreSQL JDBC Driver](https://jdbc.postgresql.org) as a transitive dependency.
+
+
+
+There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:
+
+@@@ vars
+
+```scala
+libraryDependencies += "org.tpolecat" %% "doobie-postgres-circe" % "$version$"
+```
+
+@@@
+
+Then, you will be able to import the implicits for dealing with JSON:
+
+@@@ vars
+
+```scala
+import doobie.postgres.circe.json.implicits
+import doobie.postgres.circe.jsonb.implicits
+
+```
+
+@@@
+
 
 ### Setting Up
 
@@ -23,9 +49,9 @@ import doobie._
 import doobie.implicits._
 import doobie.util.ExecutionContexts
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -33,8 +59,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 ```
 
@@ -47,6 +72,18 @@ implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```scala mdoc:silent
 import doobie.postgres._
 import doobie.postgres.implicits._
+```
+
+### Java 8 Time Types (JSR310)
+
+An explicit import is required to bring mappings for `java.time.Instant` / `java.time.LocalDate`
+
+```scala mdoc:silent
+// Provides mappings for java.time.Instant
+import doobie.implicits.legacy.instant._ 
+
+// Provides mappings for java.time.LocalDate
+import doobie.implicits.legacy.localdate._
 ```
 
 ### Array Types
@@ -84,7 +121,7 @@ implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
 ```
 
 ```scala mdoc
-sql"select 'foo'::myenum".query[MyEnum.Value].unique.transact(xa).unsafeRunSync
+sql"select 'foo'::myenum".query[MyEnum.Value].unique.transact(xa).unsafeRunSync()
 ```
 
 It works, but `Enumeration` is terrible so it's unlikely you will want to do this. A better option, perhaps surprisingly, is to map `myenum` to a **Java** `enum` via the `pgJavaEnum` constructor.
@@ -127,7 +164,7 @@ implicit val FoobarMeta: Meta[FooBar] =
 ```
 
 ```scala mdoc
-sql"select 'foo'::myenum".query[FooBar].unique.transact(xa).unsafeRunSync
+sql"select 'foo'::myenum".query[FooBar].unique.transact(xa).unsafeRunSync()
 ```
 
 
@@ -193,17 +230,17 @@ val p = sql"oops".query[String].unique // this won't work
 Some of the recovery combinators demonstrated:
 
 ```scala mdoc
-p.attempt.transact(xa).unsafeRunSync // attempt is provided by ApplicativeError instance
+p.attempt.transact(xa).unsafeRunSync() // attempt is provided by ApplicativeError instance
 
-p.attemptSqlState.transact(xa).unsafeRunSync // this catches only SQL exceptions
+p.attemptSqlState.transact(xa).unsafeRunSync() // this catches only SQL exceptions
 
-p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .transact(xa).unsafeRunSync // catch it
+p.attemptSomeSqlState { case SqlState("42601") => "caught!" } .transact(xa).unsafeRunSync() // catch it
 
-p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .transact(xa).unsafeRunSync // same, w/constant
+p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!" } .transact(xa).unsafeRunSync() // same, w/constant
 
-p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .transact(xa).unsafeRunSync // recover
+p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR => "caught!".pure[ConnectionIO] } .transact(xa).unsafeRunSync() // recover
 
-p.onSyntaxError("caught!".pure[ConnectionIO]).transact(xa).unsafeRunSync // using recovery combinator
+p.onSyntaxError("caught!".pure[ConnectionIO]).transact(xa).unsafeRunSync() // using recovery combinator
 ```
 
 
@@ -291,7 +328,7 @@ def insert[F[_]: Foldable](fa: F[Food]): ConnectionIO[Long] =
 We can run it thus, yielding the number of affected rows.
 
 ```scala mdoc
-(create *> insert(foods)).transact(xa).unsafeRunSync
+(create *> insert(foods)).transact(xa).unsafeRunSync()
 ```
 
 ### Fastpath
@@ -309,7 +346,7 @@ sql"select name from country"
   .query[String]    // Query0[String]
   .explain
   .transact(xa)
-  .unsafeRunSync
+  .unsafeRunSync()
   .foreach(println)
 ```
 
@@ -321,7 +358,7 @@ sql"select name from country"
   .query[String]    // Query0[String]
   .explainAnalyze
   .transact(xa)
-  .unsafeRunSync
+  .unsafeRunSync()
   .foreach(println)
 ```
 

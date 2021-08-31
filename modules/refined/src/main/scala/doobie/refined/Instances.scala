@@ -1,11 +1,11 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie
 package refined
 
-import scala.reflect.runtime.universe.TypeTag
+import org.tpolecat.typename._
 
 import doobie.util.invariant._
 import eu.timepit.refined.api.{ RefType, Validate }
@@ -16,7 +16,7 @@ trait Instances {
     implicit metaT:    Meta[T],
              validate: Validate[T, P],
              refType:  RefType[F],
-             manifest: TypeTag[F[T,P]]
+             manifest: TypeName[F[T,P]]
   ): Meta[F[T, P]] =
     metaT.timap[F[T,P]](
       refineType[T,P,F])(
@@ -33,14 +33,14 @@ trait Instances {
     implicit readT: Read[T],
              validate: Validate[T, P],
              refType:  RefType[F],
-             manifest: TypeTag[F[T,P]]
+             manifest: TypeName[F[T,P]]
   ): Read[F[T,P]] =
     readT.map[F[T,P]](refineType[T,P,F])
 
   private def refineType[T,P,F[_,_]](t: T)(
     implicit refType:  RefType[F],
              validate: Validate[T, P],
-             manifest: TypeTag[F[T,P]]
+             manifest: TypeName[F[T,P]]
   ): F[T,P] =
     rightOrException[F[T,P]](refType.refine[P](t)(validate))
 
@@ -51,7 +51,7 @@ trait Instances {
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   private def rightOrException[T](either: Either[String, T])(
-    implicit manifest: TypeTag[T]
+    implicit manifest: TypeName[T]
   ): T =
     either match {
       case Left(err) => throw new SecondaryValidationFailed[T](err)(manifest)

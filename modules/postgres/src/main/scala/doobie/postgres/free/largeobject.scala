@@ -1,20 +1,20 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.postgres.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
 
-@silent("deprecated")
 object largeobject { module =>
 
   // Algebra of operations for LargeObject. Each accepts a visitor as an alternative to pattern-matching.
@@ -42,14 +42,18 @@ object largeobject { module =>
       // Common
       def raw[A](f: LargeObject => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]): F[A]
+      def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]): F[B]
+      def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): F[A]
+      def poll[A](poll: Any, fa: LargeObjectIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
+      def fromFuture[A](fut: LargeObjectIO[Future[A]]): F[A]
 
       // LargeObject
       def close: F[Unit]
@@ -57,7 +61,6 @@ object largeobject { module =>
       def getInputStream: F[InputStream]
       def getInputStream(a: Long): F[InputStream]
       def getLongOID: F[Long]
-      def getOID: F[Int]
       def getOutputStream: F[OutputStream]
       def read(a: Array[Byte], b: Int, c: Int): F[Int]
       def read(a: Int): F[Array[Byte]]
@@ -82,90 +85,96 @@ object largeobject { module =>
     final case class Embed[A](e: Embedded[A]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends LargeObjectOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: LargeObjectIO[A], use: A => LargeObjectIO[B], release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]) extends LargeObjectOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends LargeObjectOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    final case object Shift extends LargeObjectOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: LargeObjectIO[A], fb: LargeObjectIO[B]) extends LargeObjectOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: LargeObjectIO[A]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends LargeObjectOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: LargeObjectIO[Future[A]]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // LargeObject-specific operations.
-    final case object Close extends LargeObjectOp[Unit] {
+    case object Close extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.close
     }
-    final case object Copy extends LargeObjectOp[LargeObject] {
+    case object Copy extends LargeObjectOp[LargeObject] {
       def visit[F[_]](v: Visitor[F]) = v.copy
     }
-    final case object GetInputStream extends LargeObjectOp[InputStream] {
+    case object GetInputStream extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream
     }
-    final case class  GetInputStream1(a: Long) extends LargeObjectOp[InputStream] {
+    final case class GetInputStream1(a: Long) extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream(a)
     }
-    final case object GetLongOID extends LargeObjectOp[Long] {
+    case object GetLongOID extends LargeObjectOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.getLongOID
     }
-    final case object GetOID extends LargeObjectOp[Int] {
-      def visit[F[_]](v: Visitor[F]) = v.getOID
-    }
-    final case object GetOutputStream extends LargeObjectOp[OutputStream] {
+    case object GetOutputStream extends LargeObjectOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getOutputStream
     }
-    final case class  Read(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Int] {
+    final case class Read(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.read(a, b, c)
     }
-    final case class  Read1(a: Int) extends LargeObjectOp[Array[Byte]] {
+    final case class Read1(a: Int) extends LargeObjectOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.read(a)
     }
-    final case class  Seek(a: Int) extends LargeObjectOp[Unit] {
+    final case class Seek(a: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.seek(a)
     }
-    final case class  Seek1(a: Int, b: Int) extends LargeObjectOp[Unit] {
+    final case class Seek1(a: Int, b: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.seek(a, b)
     }
-    final case class  Seek64(a: Long, b: Int) extends LargeObjectOp[Unit] {
+    final case class Seek64(a: Long, b: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.seek64(a, b)
     }
-    final case object Size extends LargeObjectOp[Int] {
+    case object Size extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.size
     }
-    final case object Size64 extends LargeObjectOp[Long] {
+    case object Size64 extends LargeObjectOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.size64
     }
-    final case object Tell extends LargeObjectOp[Int] {
+    case object Tell extends LargeObjectOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.tell
     }
-    final case object Tell64 extends LargeObjectOp[Long] {
+    case object Tell64 extends LargeObjectOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.tell64
     }
-    final case class  Truncate(a: Int) extends LargeObjectOp[Unit] {
+    final case class Truncate(a: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
-    final case class  Truncate64(a: Long) extends LargeObjectOp[Unit] {
+    final case class Truncate64(a: Long) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate64(a)
     }
-    final case class  Write(a: Array[Byte]) extends LargeObjectOp[Unit] {
+    final case class Write(a: Array[Byte]) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.write(a)
     }
-    final case class  Write1(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Unit] {
+    final case class Write1(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.write(a, b, c)
     }
 
@@ -177,14 +186,20 @@ object largeobject { module =>
   def pure[A](a: A): LargeObjectIO[A] = FF.pure[LargeObjectOp, A](a)
   def raw[A](f: LargeObject => A): LargeObjectIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[LargeObjectOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): LargeObjectIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: LargeObjectIO[A], f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => LargeObjectIO[Unit]): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): LargeObjectIO[B] = FF.liftF[LargeObjectOp, B](BracketCase(acquire, use, release))
-  val shift: LargeObjectIO[Unit] = FF.liftF[LargeObjectOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = FF.liftF[LargeObjectOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[LargeObjectOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[LargeObjectOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[LargeObjectOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[LargeObjectOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]) = FF.liftF[LargeObjectOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[LargeObjectIO] {
+    def apply[A](fa: LargeObjectIO[A]) = FF.liftF[LargeObjectOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
+  def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: LargeObjectIO[Future[A]]) = FF.liftF[LargeObjectOp, A](FromFuture(fut))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
@@ -192,7 +207,6 @@ object largeobject { module =>
   val getInputStream: LargeObjectIO[InputStream] = FF.liftF(GetInputStream)
   def getInputStream(a: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream1(a))
   val getLongOID: LargeObjectIO[Long] = FF.liftF(GetLongOID)
-  val getOID: LargeObjectIO[Int] = FF.liftF(GetOID)
   val getOutputStream: LargeObjectIO[OutputStream] = FF.liftF(GetOutputStream)
   def read(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Int] = FF.liftF(Read(a, b, c))
   def read(a: Int): LargeObjectIO[Array[Byte]] = FF.liftF(Read1(a))
@@ -208,26 +222,25 @@ object largeobject { module =>
   def write(a: Array[Byte]): LargeObjectIO[Unit] = FF.liftF(Write(a))
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] = FF.liftF(Write1(a, b, c))
 
-  // LargeObjectIO is an Async
-  implicit val AsyncLargeObjectIO: Async[LargeObjectIO] =
-    new Async[LargeObjectIO] {
-      val asyncM = FF.catsFreeMonadForFree[LargeObjectOp]
-      def bracketCase[A, B](acquire: LargeObjectIO[A])(use: A => LargeObjectIO[B])(release: (A, ExitCase[Throwable]) => LargeObjectIO[Unit]): LargeObjectIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): LargeObjectIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): LargeObjectIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): LargeObjectIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => LargeObjectIO[Unit]): LargeObjectIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => LargeObjectIO[Either[A, B]]): LargeObjectIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => LargeObjectIO[A]): LargeObjectIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // LargeObjectIO is a ContextShift
-  implicit val ContextShiftLargeObjectIO: ContextShift[LargeObjectIO] =
-    new ContextShift[LargeObjectIO] {
-      def shift: LargeObjectIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: LargeObjectIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for LargeObjectIO
+  implicit val WeakAsyncLargeObjectIO: WeakAsync[LargeObjectIO] =
+    new WeakAsync[LargeObjectIO] {
+      val monad = FF.catsFreeMonadForFree[LargeObjectOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): LargeObjectIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => LargeObjectIO[Either[A, B]]): LargeObjectIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): LargeObjectIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): LargeObjectIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: LargeObjectIO[FiniteDuration] = module.monotonic
+      override def realTime: LargeObjectIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): LargeObjectIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]): LargeObjectIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): LargeObjectIO[A] = module.uncancelable(body)
+      override def canceled: LargeObjectIO[Unit] = module.canceled
+      override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: LargeObjectIO[Future[A]]): LargeObjectIO[A] = module.fromFuture(fut)
     }
 }
 

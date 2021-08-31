@@ -1,11 +1,10 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.bench
 
-import cats.effect.IO
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -17,6 +16,7 @@ final case class Person(name: String, age: Int)
 
 class text {
   import shared._
+  import cats.effect.unsafe.implicits.global
 
   def people(n: Int): List[Person] =
     List.fill(n)(Person("Bob", 42))
@@ -43,24 +43,24 @@ class text {
     )
 
   def copyin_stream(n: Int): ConnectionIO[Long] =
-    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(Stream.emits[IO, Person](people(n)), 10000)
+    ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(Stream.emits[ConnectionIO, Person](people(n)), 10000)
 
   def copyin_foldable(n: Int): ConnectionIO[Long] =
     ddl *> sql"COPY bench_person (name, age) FROM STDIN".copyIn(people(n))
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def naive_copyin: Int = naive(10000).transact(xa).unsafeRunSync
+  def naive_copyin: Int = naive(10000).transact(xa).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def jdbc_copyin: Int = optimized(10000).transact(xa).unsafeRunSync
+  def jdbc_copyin: Int = optimized(10000).transact(xa).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def fast_copyin_stream: Long = copyin_stream(10000).transact(xa).unsafeRunSync
+  def fast_copyin_stream: Long = copyin_stream(10000).transact(xa).unsafeRunSync()
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def fast_copyin_foldable: Long = copyin_foldable(10000).transact(xa).unsafeRunSync
+  def fast_copyin_foldable: Long = copyin_foldable(10000).transact(xa).unsafeRunSync()
 }

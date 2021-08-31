@@ -23,7 +23,7 @@ import doobie.implicits._
 import cats.effect.IO
 import scala.concurrent.ExecutionContext
 
-implicit val cs = IO.contextShift(ExecutionContext.global)
+import cats.effect.unsafe.implicits.global
 
 val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
@@ -38,7 +38,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
 And then …
 
 ```scala mdoc
-find("France").transact(xa).unsafeRunSync
+find("France").transact(xa).unsafeRunSync()
 ```
 
 **doobie** is a [**Typelevel**](http://typelevel.org/) project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala [**Code of Conduct**](http://scala-lang.org/conduct.html).
@@ -118,4 +118,30 @@ sbt:docs> clean
 sbt:docs> makeSite
 sbt:doce> ghpagesPushSite
 ```
+
+
+## Adopters
+
+Here's a (non-exhaustive) list of companies that use doobie in production.
+Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/edit/master/modules/docs/src/main/mdoc/index.md)
+
+ - [Avast](https://avast.com)
+ - [Banno at Jack Henry & Associates](https://banno.com/)
+ - [Crunchbase](https://crunchbase.com)
+ - [Doomoolmori](https://doomoolmori.com)   
+ - [eBay Inc.](https://www.ebay.com)
+ - [Evolution](https://www.evolution.com/)
+ - [FinDynamic](https://www.findynamic.com/en)
+ - [HIFI](https://hi.fi)
+ - [ITV](https://www.itv.com/)
+ - [lences.io](https://lenses.io)  
+ - [Medidata](https://www.medidata.com/)
+ - [NOIRLab](https://noirlab.edu)
+ - [RaiffeisenBank Russia](https://raiffeisen.ru)
+ - [ReachFive](www.reachfive.com)
+ - [Rudder](https://rudder.io)
+ - [SecurityScorecard](https://securityscorecard.io)
+ - [SoftwareMill](https://softwaremill.com)
+ - [Unit](https://unit.co)
+ - [CurrencyCloud](https://www.currencycloud.com)
 

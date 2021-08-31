@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -7,10 +7,10 @@ package doobie.util
 import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-import cats.implicits._
-import cats.effect.syntax.bracket._
+import cats.syntax.all._
+import cats.effect.kernel.syntax.monadCancel._
 import doobie._
-import doobie.implicits.AsyncPreparedStatementIO
+import doobie.implicits._
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
@@ -49,11 +49,11 @@ object query {
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
-        eet <- FPS.executeQuery.bracket(rs => for {
+        eet <- FPS.executeQuery.flatMap(rs => (for {
           t1 <- now
           et <- FPS.embed(rs, k).attempt
           t2 <- now
-        } yield (t1, et, t2))(FPS.embed(_, FRS.close)).attempt
+        } yield (t1, et, t2)).guarantee(FPS.embed(rs, FRS.close))).attempt
         tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
           for {
             t1 <- now
@@ -385,8 +385,8 @@ object query {
      * `sql`interpolator.
      * @group Constructors
      */
-     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-     def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
        Query[Unit, A](sql, pos, logHandler).toQuery0(())
 
     /** @group Typeclass Instances */

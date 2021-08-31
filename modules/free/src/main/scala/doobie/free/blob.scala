@@ -1,20 +1,20 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
 
-@silent("deprecated")
 object blob { module =>
 
   // Algebra of operations for Blob. Each accepts a visitor as an alternative to pattern-matching.
@@ -42,14 +42,18 @@ object blob { module =>
       // Common
       def raw[A](f: Blob => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]): F[A]
+      def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]): F[B]
+      def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]): F[A]
+      def poll[A](poll: Any, fa: BlobIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]): F[A]
+      def fromFuture[A](fut: BlobIO[Future[A]]): F[A]
 
       // Blob
       def free: F[Unit]
@@ -73,63 +77,72 @@ object blob { module =>
     final case class Embed[A](e: Embedded[A]) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends BlobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]) extends BlobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends BlobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]) extends BlobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends BlobOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: BlobIO[A], use: A => BlobIO[B], release: (A, ExitCase[Throwable]) => BlobIO[Unit]) extends BlobOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends BlobOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    final case object Shift extends BlobOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: BlobIO[A]) extends BlobOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: BlobIO[A], fb: BlobIO[B]) extends BlobOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[BlobIO] => BlobIO[A]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: BlobIO[A]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends BlobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: BlobIO[Future[A]]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // Blob-specific operations.
-    final case object Free extends BlobOp[Unit] {
+    case object Free extends BlobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.free
     }
-    final case object GetBinaryStream extends BlobOp[InputStream] {
+    case object GetBinaryStream extends BlobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getBinaryStream
     }
-    final case class  GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
+    final case class GetBinaryStream1(a: Long, b: Long) extends BlobOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getBinaryStream(a, b)
     }
-    final case class  GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
+    final case class GetBytes(a: Long, b: Int) extends BlobOp[Array[Byte]] {
       def visit[F[_]](v: Visitor[F]) = v.getBytes(a, b)
     }
-    final case object Length extends BlobOp[Long] {
+    case object Length extends BlobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.length
     }
-    final case class  Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
+    final case class Position(a: Array[Byte], b: Long) extends BlobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  Position1(a: Blob, b: Long) extends BlobOp[Long] {
+    final case class Position1(a: Blob, b: Long) extends BlobOp[Long] {
       def visit[F[_]](v: Visitor[F]) = v.position(a, b)
     }
-    final case class  SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
+    final case class SetBinaryStream(a: Long) extends BlobOp[OutputStream] {
       def visit[F[_]](v: Visitor[F]) = v.setBinaryStream(a)
     }
-    final case class  SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
+    final case class SetBytes(a: Long, b: Array[Byte]) extends BlobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b)
     }
-    final case class  SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
+    final case class SetBytes1(a: Long, b: Array[Byte], c: Int, d: Int) extends BlobOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.setBytes(a, b, c, d)
     }
-    final case class  Truncate(a: Long) extends BlobOp[Unit] {
+    final case class Truncate(a: Long) extends BlobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.truncate(a)
     }
 
@@ -141,14 +154,20 @@ object blob { module =>
   def pure[A](a: A): BlobIO[A] = FF.pure[BlobOp, A](a)
   def raw[A](f: Blob => A): BlobIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[BlobOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): BlobIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: BlobIO[A], f: Throwable => BlobIO[A]): BlobIO[A] = FF.liftF[BlobOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): BlobIO[A] = FF.liftF[BlobOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): BlobIO[A] = FF.liftF[BlobOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => BlobIO[Unit]): BlobIO[A] = FF.liftF[BlobOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = FF.liftF[BlobOp, B](BracketCase(acquire, use, release))
-  val shift: BlobIO[Unit] = FF.liftF[BlobOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]) = FF.liftF[BlobOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = FF.liftF[BlobOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[BlobOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[BlobOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[BlobOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[BlobOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]) = FF.liftF[BlobOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]) = FF.liftF[BlobOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[BlobIO] {
+    def apply[A](fa: BlobIO[A]) = FF.liftF[BlobOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[BlobOp, Unit](Canceled)
+  def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]) = FF.liftF[BlobOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: BlobIO[Future[A]]) = FF.liftF[BlobOp, A](FromFuture(fut))
 
   // Smart constructors for Blob-specific operations.
   val free: BlobIO[Unit] = FF.liftF(Free)
@@ -163,26 +182,25 @@ object blob { module =>
   def setBytes(a: Long, b: Array[Byte], c: Int, d: Int): BlobIO[Int] = FF.liftF(SetBytes1(a, b, c, d))
   def truncate(a: Long): BlobIO[Unit] = FF.liftF(Truncate(a))
 
-  // BlobIO is an Async
-  implicit val AsyncBlobIO: Async[BlobIO] =
-    new Async[BlobIO] {
-      val asyncM = FF.catsFreeMonadForFree[BlobOp]
-      def bracketCase[A, B](acquire: BlobIO[A])(use: A => BlobIO[B])(release: (A, ExitCase[Throwable]) => BlobIO[Unit]): BlobIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): BlobIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): BlobIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): BlobIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => BlobIO[Unit]): BlobIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => BlobIO[A]): BlobIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // BlobIO is a ContextShift
-  implicit val ContextShiftBlobIO: ContextShift[BlobIO] =
-    new ContextShift[BlobIO] {
-      def shift: BlobIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: BlobIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for BlobIO
+  implicit val WeakAsyncBlobIO: WeakAsync[BlobIO] =
+    new WeakAsync[BlobIO] {
+      val monad = FF.catsFreeMonadForFree[BlobOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): BlobIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): BlobIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): BlobIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: BlobIO[FiniteDuration] = module.monotonic
+      override def realTime: BlobIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): BlobIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]): BlobIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]): BlobIO[A] = module.uncancelable(body)
+      override def canceled: BlobIO[Unit] = module.canceled
+      override def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]): BlobIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: BlobIO[Future[A]]): BlobIO[A] = module.fromFuture(fut)
     }
 }
 

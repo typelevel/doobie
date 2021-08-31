@@ -1,14 +1,14 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.postgres.hi
 
-import cats.implicits._
+import cats.syntax.all._
+import doobie.postgres.implicits._
 import java.io.{ File, OutputStream, InputStream }
 
 object largeobjectmanager {
-  import implicits._
 
   val createLO: LargeObjectManagerIO[Long] =
     PFLOM.createLO

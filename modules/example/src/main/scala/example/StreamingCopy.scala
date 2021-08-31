@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -9,7 +9,7 @@ import scala.util.control.NonFatal
 
 import cats.data._
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import fs2.Stream
@@ -19,17 +19,19 @@ import fs2.Stream
  * on either side (by putting a typo in the `read` or `write` statements) both transactions will
  * roll back.
  */
-object StreamingCopy extends IOApp {
+object StreamingCopy extends IOApp.Simple {
 
   /**
    * Cross-transactor streaming when the `source` and `sink` have the same schema.
    */
-  def fuseMap[F[_]: Effect, A, B](
+  def fuseMap[F[_], A, B](
     source: Stream[ConnectionIO, A],
     sink:   A => ConnectionIO[B]
   )(
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
+  )(
+    implicit ev: MonadCancelThrow[F]
   ): Stream[F, B] =
     fuseMapGeneric(source, identity[A], sink)(sourceXA, sinkXA)
 
@@ -39,13 +41,15 @@ object StreamingCopy extends IOApp {
    * The source output and sink input types can differ. This enables data transformations involving
    * potentially different database schemas.
    */
-  def fuseMapGeneric[F[_]: Effect, A, B, C](
+  def fuseMapGeneric[F[_], A, B, C](
     source:       Stream[ConnectionIO, A],
     sourceToSink: A => B,
     sink:         B => ConnectionIO[C]
   )(
     sourceXA: Transactor[F],
     sinkXA:   Transactor[F]
+  )(
+    implicit ev: MonadCancelThrow[F]
   ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.
@@ -61,7 +65,7 @@ object StreamingCopy extends IOApp {
 
       // Now we can interpret a ConnectionIO into a Stream of F via the sink interpreter.
       def evalS(f: ConnectionIO[_]): Stream[F, Nothing] =
-        Stream.eval_(interpS(f)(c))
+        Stream.eval(interpS(f)(c)).drain
 
       // And can thus lift all the sink operations into Stream of F
       val sinkʹ  = (a: A) => evalS(sink(sourceToSink(a)))
@@ -149,11 +153,11 @@ object StreamingCopy extends IOApp {
   }
 
   // Our main program
-  def run(args: List[String]): IO[ExitCode] =
+  def run: IO[Unit] =
     for {
       _ <- fuseMap(read, write)(pg, h2).compile.drain // do the copy with fuseMap
       n <- sql"select count(*) from city".query[Int].unique.transact(h2)
       _ <- IO(Console.println(show"Copied $n cities!"))
-    } yield ExitCode.Success
+    } yield ()
 
 }

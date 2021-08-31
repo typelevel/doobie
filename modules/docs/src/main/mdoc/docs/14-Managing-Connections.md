@@ -13,7 +13,7 @@ import doobie.implicits._
 
 ### About Transactors
 
-Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
+Most **doobie** programs are values of type `ConnectionIO[A]` or `Stream[ConnectionIO, A]` that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a `Transactor`.
 
 A `Transactor[M]` consists of the following bits of information:
 
@@ -25,8 +25,8 @@ A `Transactor[M]` consists of the following bits of information:
 Given this information a `Transactor[M]` can provide the following transformations:
 
 - `trans: ConnectionIO ~> M` A natural transformation of a program in `ConnectionIO` to the target monad `M` that uses the given `Strategy` to wrap the given program with additional setup, error-handling and cleanup operations. This yields an independent program in `M`. This is the most common way to run a doobie program.
-  - e.g., `xa.trans.apply(program1)`
-  - you can also use the syntax `program1.transact(xa)`, which runs `xa.trans` under the hood
+    - e.g., `xa.trans.apply(program1)`
+    - you can also use the syntax `program1.transact(xa)`, which runs `xa.trans` under the hood
 - `rawTrans` natural transformation equivalent to `trans` but one that does not use the provided `Strategy` to wrap the given program with additional operations. This can be useful in cases where transactional handling is unsupported or undesired.
 - `rawTransP: Stream[ConnectionIO, ?] ~> Stream[M, ?]` equivalent to `rawTrans` but expressed using `Stream`.
 - `transP: Stream[ConnectionIO, ?] ~> Stream[M, ?]` equivalent to `trans` but expressed using `Stream`.
@@ -39,9 +39,13 @@ So summarizing, once you have a `Transactor[M]` you have a way of discharging `C
 
 Starting with version 0.6.0 **doobie** provides an asynchronous API that delegates blocking operations to dedicated execution contexts *if you use the provided `Transactor` implementations*. To construct any of the provided `Transactor[M]`s (other than `DriverManagerTransactor`) you need
 
-- `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. This is typically backed by `ExecutionContext.global`. If you use `IOApp` and interpret into `IO` this will be available for free.
+- `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. If you use `IOApp` and interpret into `IO` the ContextShift will be backed by a fixed thread pool matching the numbers of your processors.
 - An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
 - A `cats.effect.Blocker` for **executing JDBC operations**. Because your connection pool limits the number of active connections this should be an **unbounded** pool.
+
+The reason for having separate pools for awaiting connections and executing JDBC operations is liveness - we must avoid the situation where all the threads in the pool are blocked on acquiring a JDBC connection, meaning that no logical threads are able to make progress and release the connection they're currently holding.
+
+Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
 
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 
@@ -54,9 +58,9 @@ However, for test and for experimentation as described in this book (and for sit
 ```scala mdoc:silent
 import doobie.util.ExecutionContexts
 
-// We need a ContextShift[IO] before we can construct a Transactor[IO]. The passed ExecutionContext
-// is where nonblocking operations will be executed. For testing here we're using a synchronous EC.
-implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
 
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
@@ -64,8 +68,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  "",                          // password
-  Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
+  ""                           // password
 )
 ```
 
@@ -91,14 +94,12 @@ object HikariApp extends IOApp {
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      be <- Blocker[IO]    // our blocking EC
       xa <- HikariTransactor.newHikariTransactor[IO](
               "org.h2.Driver",                        // driver classname
               "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
               "sa",                                   // username
               "",                                     // password
-              ce,                                     // await connection here
-              be                                      // execute JDBC operations here
+              ce                                      // await connection here
             )
     } yield xa
 
@@ -120,7 +121,7 @@ object HikariApp extends IOApp {
 And running this program gives us the desired result.
 
 ```scala mdoc
-HikariApp.main(Array())
+// HikariApp.main(Array()) // https://github.com/typelevel/cats-effect/issues/1560
 ```
 
 ### Using an existing DataSource
@@ -131,13 +132,10 @@ If your application exposes an existing `javax.sql.DataSource` you can use it di
 import javax.sql.DataSource
 
 // Resource yielding a DataSourceTransactor[IO] wrapping the given `DataSource`
-def transactor(ds: DataSource)(
-  implicit ev: ContextShift[IO]
-): Resource[IO, DataSourceTransactor[IO]] =
+def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =
   for {
     ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-    be <- Blocker[IO]    // our blocking EC
-  } yield Transactor.fromDataSource[IO](ds, ce, be)
+  } yield Transactor.fromDataSource[IO](ds, ce)
 ```
 
 The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
@@ -150,13 +148,9 @@ If your application exposes an existing `Connection` you can use it directly by 
 ```scala mdoc:silent
 import java.sql.Connection
 
-// Resource yielding a Transactor[IO] wrapping the given `Connection`
-def transactor(c: Connection)(
-  implicit ev: ContextShift[IO]
-): Resource[IO, Transactor[IO]] =
-  Blocker[IO].map { b =>
-    Transactor.fromConnection[IO](c, b)
-  }
+// A Transactor[IO] wrapping the given `Connection`
+def transactor(c: Connection): Transactor[IO] =
+  Transactor.fromConnection[IO](c)
 ```
 
 ### Customizing Transactors

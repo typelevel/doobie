@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -42,7 +42,6 @@ object AnalysisTest {
       SELECT '(1, 2)'::point test
     """.query[PGpoint]
 
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   val pointTest2 = {
     Meta[PostgresPoint.Point] // why not? ... irritating that it must be instantiated. what to do?
     sql"""

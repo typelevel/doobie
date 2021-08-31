@@ -1,14 +1,14 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package example
 
-import cats.effect.{ IO, IOApp, ExitCode }
-import cats.implicits._
+import cats.effect.{ IO, IOApp }
+import cats.syntax.all._
 import doobie._, doobie.implicits._
 
-object FragmentExample extends IOApp {
+object FragmentExample extends IOApp.Simple {
 
   // Import some convenience constructors.
   import Fragments.{ in, whereAndOpt }
@@ -55,7 +55,7 @@ object FragmentExample extends IOApp {
     q.check *> q.quick
   }
 
-  def run(args: List[String]): IO[ExitCode] =
-    prog.as(ExitCode.Success)
+  def run: IO[Unit] =
+    prog.void
 
 }

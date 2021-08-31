@@ -1,20 +1,20 @@
-// Copyright (c) 2013-2018 Rob Norris and Contributors
+// Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.free
 
 import cats.~>
-import cats.effect.{ Async, ContextShift, ExitCase }
+import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
-import scala.concurrent.ExecutionContext
-import com.github.ghik.silencer.silent
+import doobie.WeakAsync
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import java.lang.String
 import java.sql.Ref
 import java.util.Map
 
-@silent("deprecated")
 object ref { module =>
 
   // Algebra of operations for Ref. Each accepts a visitor as an alternative to pattern-matching.
@@ -42,14 +42,18 @@ object ref { module =>
       // Common
       def raw[A](f: Ref => A): F[A]
       def embed[A](e: Embedded[A]): F[A]
-      def delay[A](a: () => A): F[A]
-      def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): F[A]
       def raiseError[A](e: Throwable): F[A]
-      def async[A](k: (Either[Throwable, A] => Unit) => Unit): F[A]
-      def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): F[A]
-      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): F[B]
-      def shift: F[Unit]
-      def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]): F[A]
+      def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): F[A]
+      def monotonic: F[FiniteDuration]
+      def realTime: F[FiniteDuration]
+      def delay[A](thunk: => A): F[A]
+      def suspend[A](hint: Sync.Type)(thunk: => A): F[A]
+      def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]): F[B]
+      def uncancelable[A](body: Poll[RefIO] => RefIO[A]): F[A]
+      def poll[A](poll: Any, fa: RefIO[A]): F[A]
+      def canceled: F[Unit]
+      def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): F[A]
+      def fromFuture[A](fut: RefIO[Future[A]]): F[A]
 
       // Ref
       def getBaseTypeName: F[String]
@@ -66,42 +70,51 @@ object ref { module =>
     final case class Embed[A](e: Embedded[A]) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.embed(e)
     }
-    final case class Delay[A](a: () => A) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.delay(a)
-    }
-    final case class HandleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa, f)
-    }
     final case class RaiseError[A](e: Throwable) extends RefOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.raiseError(e)
     }
-    final case class Async1[A](k: (Either[Throwable, A] => Unit) => Unit) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.async(k)
+    final case class HandleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.handleErrorWith(fa)(f)
     }
-    final case class AsyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.asyncF(k)
+    case object Monotonic extends RefOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.monotonic
     }
-    final case class BracketCase[A, B](acquire: RefIO[A], use: A => RefIO[B], release: (A, ExitCase[Throwable]) => RefIO[Unit]) extends RefOp[B] {
-      def visit[F[_]](v: Visitor[F]) = v.bracketCase(acquire)(use)(release)
+    case object Realtime extends RefOp[FiniteDuration] {
+      def visit[F[_]](v: Visitor[F]) = v.realTime
     }
-    final case object Shift extends RefOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.shift
+    case class Suspend[A](hint: Sync.Type, thunk: () => A) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.suspend(hint)(thunk())
     }
-    final case class EvalOn[A](ec: ExecutionContext, fa: RefIO[A]) extends RefOp[A] {
-      def visit[F[_]](v: Visitor[F]) = v.evalOn(ec)(fa)
+    case class ForceR[A, B](fa: RefIO[A], fb: RefIO[B]) extends RefOp[B] {
+      def visit[F[_]](v: Visitor[F]) = v.forceR(fa)(fb)
+    }
+    case class Uncancelable[A](body: Poll[RefIO] => RefIO[A]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.uncancelable(body)
+    }
+    case class Poll1[A](poll: Any, fa: RefIO[A]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.poll(poll, fa)
+    }
+    case object Canceled extends RefOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.canceled
+    }
+    case class OnCancel[A](fa: RefIO[A], fin: RefIO[Unit]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.onCancel(fa, fin)
+    }
+    case class FromFuture[A](fut: RefIO[Future[A]]) extends RefOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
 
     // Ref-specific operations.
-    final case object GetBaseTypeName extends RefOp[String] {
+    case object GetBaseTypeName extends RefOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getBaseTypeName
     }
-    final case object GetObject extends RefOp[AnyRef] {
+    case object GetObject extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject
     }
-    final case class  GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
+    final case class GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
-    final case class  SetObject(a: AnyRef) extends RefOp[Unit] {
+    final case class SetObject(a: AnyRef) extends RefOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setObject(a)
     }
 
@@ -113,14 +126,20 @@ object ref { module =>
   def pure[A](a: A): RefIO[A] = FF.pure[RefOp, A](a)
   def raw[A](f: Ref => A): RefIO[A] = FF.liftF(Raw(f))
   def embed[F[_], J, A](j: J, fa: FF[F, A])(implicit ev: Embeddable[F, J]): FF[RefOp, A] = FF.liftF(Embed(ev.embed(j, fa)))
-  def delay[A](a: => A): RefIO[A] = FF.liftF(Delay(() => a))
-  def handleErrorWith[A](fa: RefIO[A], f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))
   def raiseError[A](err: Throwable): RefIO[A] = FF.liftF[RefOp, A](RaiseError(err))
-  def async[A](k: (Either[Throwable, A] => Unit) => Unit): RefIO[A] = FF.liftF[RefOp, A](Async1(k))
-  def asyncF[A](k: (Either[Throwable, A] => Unit) => RefIO[Unit]): RefIO[A] = FF.liftF[RefOp, A](AsyncF(k))
-  def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = FF.liftF[RefOp, B](BracketCase(acquire, use, release))
-  val shift: RefIO[Unit] = FF.liftF[RefOp, Unit](Shift)
-  def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]) = FF.liftF[RefOp, A](EvalOn(ec, fa))
+  def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = FF.liftF[RefOp, A](HandleErrorWith(fa, f))
+  val monotonic = FF.liftF[RefOp, FiniteDuration](Monotonic)
+  val realtime = FF.liftF[RefOp, FiniteDuration](Realtime)
+  def delay[A](thunk: => A) = FF.liftF[RefOp, A](Suspend(Sync.Type.Delay, () => thunk))
+  def suspend[A](hint: Sync.Type)(thunk: => A) = FF.liftF[RefOp, A](Suspend(hint, () => thunk))
+  def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = FF.liftF[RefOp, B](ForceR(fa, fb))
+  def uncancelable[A](body: Poll[RefIO] => RefIO[A]) = FF.liftF[RefOp, A](Uncancelable(body))
+  def capturePoll[M[_]](mpoll: Poll[M]) = new Poll[RefIO] {
+    def apply[A](fa: RefIO[A]) = FF.liftF[RefOp, A](Poll1(mpoll, fa))
+  }
+  val canceled = FF.liftF[RefOp, Unit](Canceled)
+  def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]) = FF.liftF[RefOp, A](OnCancel(fa, fin))
+  def fromFuture[A](fut: RefIO[Future[A]]) = FF.liftF[RefOp, A](FromFuture(fut))
 
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
@@ -128,26 +147,25 @@ object ref { module =>
   def getObject(a: Map[String, Class[_]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
-  // RefIO is an Async
-  implicit val AsyncRefIO: Async[RefIO] =
-    new Async[RefIO] {
-      val asyncM = FF.catsFreeMonadForFree[RefOp]
-      def bracketCase[A, B](acquire: RefIO[A])(use: A => RefIO[B])(release: (A, ExitCase[Throwable]) => RefIO[Unit]): RefIO[B] = module.bracketCase(acquire)(use)(release)
-      def pure[A](x: A): RefIO[A] = asyncM.pure(x)
-      def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = module.handleErrorWith(fa, f)
-      def raiseError[A](e: Throwable): RefIO[A] = module.raiseError(e)
-      def async[A](k: (Either[Throwable,A] => Unit) => Unit): RefIO[A] = module.async(k)
-      def asyncF[A](k: (Either[Throwable,A] => Unit) => RefIO[Unit]): RefIO[A] = module.asyncF(k)
-      def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = asyncM.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = asyncM.tailRecM(a)(f)
-      def suspend[A](thunk: => RefIO[A]): RefIO[A] = asyncM.flatten(module.delay(thunk))
-    }
-
-  // RefIO is a ContextShift
-  implicit val ContextShiftRefIO: ContextShift[RefIO] =
-    new ContextShift[RefIO] {
-      def shift: RefIO[Unit] = module.shift
-      def evalOn[A](ec: ExecutionContext)(fa: RefIO[A]) = module.evalOn(ec)(fa)
+  // Typeclass instances for RefIO
+  implicit val WeakAsyncRefIO: WeakAsync[RefIO] =
+    new WeakAsync[RefIO] {
+      val monad = FF.catsFreeMonadForFree[RefOp]
+      override val applicative = monad
+      override val rootCancelScope = CancelScope.Cancelable
+      override def pure[A](x: A): RefIO[A] = monad.pure(x)
+      override def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = monad.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = monad.tailRecM(a)(f)
+      override def raiseError[A](e: Throwable): RefIO[A] = module.raiseError(e)
+      override def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): RefIO[A] = module.handleErrorWith(fa)(f)
+      override def monotonic: RefIO[FiniteDuration] = module.monotonic
+      override def realTime: RefIO[FiniteDuration] = module.realtime
+      override def suspend[A](hint: Sync.Type)(thunk: => A): RefIO[A] = module.suspend(hint)(thunk)
+      override def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]): RefIO[B] = module.forceR(fa)(fb)
+      override def uncancelable[A](body: Poll[RefIO] => RefIO[A]): RefIO[A] = module.uncancelable(body)
+      override def canceled: RefIO[Unit] = module.canceled
+      override def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): RefIO[A] = module.onCancel(fa, fin)
+      override def fromFuture[A](fut: RefIO[Future[A]]): RefIO[A] = module.fromFuture(fut)
     }
 }
 
