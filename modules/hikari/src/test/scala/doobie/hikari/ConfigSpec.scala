@@ -6,50 +6,51 @@ package doobie.hikari
 
 import cats.effect.IO
 import com.zaxxer.hikari.HikariConfig
-import org.specs2.mutable.Specification
 
-class ConfigSpec extends Specification {
+class ConfigSpec extends munit.FunSuite {
 
-  "Default should be the same as unmodified HikariConfig" in {
+  test("Default should be the same as unmodified HikariConfig") {
+
+    import cats.effect.unsafe.implicits.global
 
     val actual = Config.makeHikariConfig[IO](Config()).unsafeRunSync()
     val expected = new HikariConfig()
 
-    actual.getCatalog must_=== (expected.getCatalog)
-    actual.getConnectionTimeout must_=== (expected.getConnectionTimeout)
-    actual.getIdleTimeout must_=== (expected.getIdleTimeout)
-    actual.getLeakDetectionThreshold must_=== (expected.getLeakDetectionThreshold)
-    actual.getMaximumPoolSize must_=== (expected.getMaximumPoolSize)
-    actual.getMaxLifetime must_=== (expected.getMaxLifetime)
-    actual.getMinimumIdle must_=== (expected.getMinimumIdle)
-    actual.getPassword must_=== (expected.getPassword)
-    actual.getPoolName must_=== (expected.getPoolName)
-    actual.getUsername must_=== (expected.getUsername)
-    actual.getValidationTimeout must_=== (expected.getValidationTimeout)
+    assertEquals(actual.getCatalog, expected.getCatalog)
+    assertEquals(actual.getConnectionTimeout, expected.getConnectionTimeout)
+    assertEquals(actual.getIdleTimeout, expected.getIdleTimeout)
+    assertEquals(actual.getLeakDetectionThreshold, expected.getLeakDetectionThreshold)
+    assertEquals(actual.getMaximumPoolSize, expected.getMaximumPoolSize)
+    assertEquals(actual.getMaxLifetime, expected.getMaxLifetime)
+    assertEquals(actual.getMinimumIdle, expected.getMinimumIdle)
+    assertEquals(actual.getPassword, expected.getPassword)
+    assertEquals(actual.getPoolName, expected.getPoolName)
+    assertEquals(actual.getUsername, expected.getUsername)
+    assertEquals(actual.getValidationTimeout, expected.getValidationTimeout)
 
-    actual.isAllowPoolSuspension must_=== (expected.isAllowPoolSuspension)
-    actual.isAutoCommit must_=== (expected.isAutoCommit)
-    actual.getConnectionInitSql must_=== (expected.getConnectionInitSql)
-    actual.getConnectionTestQuery must_=== (expected.getConnectionTestQuery)
-    actual.getDataSourceClassName must_=== (expected.getDataSourceClassName)
-    actual.getDataSourceJNDI must_=== (expected.getDataSourceJNDI)
-    actual.getDriverClassName must_=== (expected.getDriverClassName)
-    actual.getInitializationFailTimeout must_=== (expected.getInitializationFailTimeout)
-    actual.isIsolateInternalQueries must_=== (expected.isIsolateInternalQueries)
-    actual.getJdbcUrl must_=== (expected.getJdbcUrl)
-    actual.isReadOnly must_=== (expected.isReadOnly)
-    actual.isRegisterMbeans must_=== (expected.isRegisterMbeans)
-    actual.getSchema must_=== (expected.getSchema)
-    actual.getTransactionIsolation must_=== (expected.getTransactionIsolation)
+    assertEquals(actual.isAllowPoolSuspension, expected.isAllowPoolSuspension)
+    assertEquals(actual.isAutoCommit, expected.isAutoCommit)
+    assertEquals(actual.getConnectionInitSql, expected.getConnectionInitSql)
+    assertEquals(actual.getConnectionTestQuery, expected.getConnectionTestQuery)
+    assertEquals(actual.getDataSourceClassName, expected.getDataSourceClassName)
+    assertEquals(actual.getDataSourceJNDI, expected.getDataSourceJNDI)
+    assertEquals(actual.getDriverClassName, expected.getDriverClassName)
+    assertEquals(actual.getInitializationFailTimeout, expected.getInitializationFailTimeout)
+    assertEquals(actual.isIsolateInternalQueries, expected.isIsolateInternalQueries)
+    assertEquals(actual.getJdbcUrl, expected.getJdbcUrl)
+    assertEquals(actual.isReadOnly, expected.isReadOnly)
+    assertEquals(actual.isRegisterMbeans, expected.isRegisterMbeans)
+    assertEquals(actual.getSchema, expected.getSchema)
+    assertEquals(actual.getTransactionIsolation, expected.getTransactionIsolation)
 
-    actual.getDataSource must_=== (expected.getDataSource)
-    actual.getDataSourceProperties must_=== (expected.getDataSourceProperties)
-    actual.getHealthCheckProperties must_=== (expected.getHealthCheckProperties)
-    actual.getHealthCheckRegistry must_=== (expected.getHealthCheckRegistry)
-    actual.getMetricRegistry must_=== (expected.getMetricRegistry)
-    actual.getMetricsTrackerFactory must_=== (expected.getMetricsTrackerFactory)
-    actual.getScheduledExecutor must_=== (expected.getScheduledExecutor)
-    actual.getThreadFactory must_=== (expected.getThreadFactory)
+    assertEquals(actual.getDataSource, expected.getDataSource)
+    assertEquals(actual.getDataSourceProperties, expected.getDataSourceProperties)
+    assertEquals(actual.getHealthCheckProperties, expected.getHealthCheckProperties)
+    assertEquals(actual.getHealthCheckRegistry, expected.getHealthCheckRegistry)
+    assertEquals(actual.getMetricRegistry, expected.getMetricRegistry)
+    assertEquals(actual.getMetricsTrackerFactory, expected.getMetricsTrackerFactory)
+    assertEquals(actual.getScheduledExecutor, expected.getScheduledExecutor)
+    assertEquals(actual.getThreadFactory, expected.getThreadFactory)
 
   }
 }

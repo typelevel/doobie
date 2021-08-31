@@ -40,10 +40,9 @@ object HikariTransactor {
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config. */
-  def fromConfig[M[_]: Async: ContextShift](
+  def fromConfig[M[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
-    blocker: Blocker,
     dataSource: Option[DataSource] = None,
     dataSourceProperties: Option[Properties] = None,
     healthCheckProperties: Option[Properties] = None,
@@ -54,7 +53,7 @@ object HikariTransactor {
     threadFactory: Option[ThreadFactory] = None,
   ): Resource[M, HikariTransactor[M]] = {
     Resource
-      .liftF(
+      .liftK(
         Config.makeHikariConfig(
           config,
           dataSource,
@@ -68,7 +67,7 @@ object HikariTransactor {
         )
       )
       .flatMap { hikariConfig =>
-        fromHikariConfig(hikariConfig, connectEC, blocker)
+        fromHikariConfig(hikariConfig, connectEC)
       }
   }
 
