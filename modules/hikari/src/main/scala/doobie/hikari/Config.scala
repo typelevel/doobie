@@ -11,7 +11,7 @@ import cats.effect.Sync
 import cats.syntax.show._
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.metrics.MetricsTrackerFactory
-import doobie.`enum`.TransactionIsolation
+import doobie.enumerated.TransactionIsolation
 import javax.sql.DataSource
 
 import scala.concurrent.duration.Duration
