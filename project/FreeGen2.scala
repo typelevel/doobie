@@ -212,6 +212,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |import cats.~>
     |import cats.effect.kernel.{ CancelScope, Poll, Sync }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+    |import doobie.util.log.LogEvent
     |import doobie.WeakAsync
     |import scala.concurrent.Future
     |import scala.concurrent.duration.FiniteDuration
@@ -257,6 +258,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def canceled: F[Unit]
     |      def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]): F[A]
     |      def fromFuture[A](fut: ${ioname}[Future[A]]): F[A]
+    |      def performLogging(event: LogEvent): F[Unit]
     |
     |      // $sname
           ${ctors[A].map(_.visitor).mkString("\n    ")}
@@ -303,6 +305,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    case class FromFuture[A](fut: ${ioname}[Future[A]]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     |    }
+    |    case class PerformLogging(event: LogEvent) extends ${opname}[Unit] {
+    |      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
+    |    }
     |
     |    // $sname-specific operations.
     |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
@@ -329,6 +334,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  val canceled = FF.liftF[${opname}, Unit](Canceled)
     |  def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]) = FF.liftF[${opname}, A](OnCancel(fa, fin))
     |  def fromFuture[A](fut: ${ioname}[Future[A]]) = FF.liftF[${opname}, A](FromFuture(fut))
+    |  def performLogging(event: LogEvent) = FF.liftF[${opname}, Unit](PerformLogging(event))
     |
     |  // Smart constructors for $oname-specific operations.
     |  ${ctors[A].map(_.lifted(ioname)).mkString("\n  ")}
@@ -408,7 +414,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    override def delay[A](thunk: => A) = outer.delay(thunk)
        |    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
        |    override def canceled = outer.canceled[${sname}]
-       |    
+       |
+       |    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+       |
        |    // for operations using ${ioname} we must call ourself recursively
        |    override def handleErrorWith[A](fa: ${ioname}[A])(f: Throwable => ${ioname}[A]) = outer.handleErrorWith(this)(fa)(f)
        |    override def forceR[A, B](fa: ${ioname}[A])(fb: ${ioname}[B]) = outer.forceR(this)(fa)(fb)
@@ -445,6 +453,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import cats.effect.kernel.{ Poll, Sync }
       |import cats.free.Free
       |import doobie.WeakAsync
+      |import doobie.util.log.{LogEvent, LogHandlerM}
       |import scala.concurrent.Future
       |import scala.concurrent.duration.FiniteDuration
       |
@@ -455,19 +464,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
       |object KleisliInterpreter {
-      |
-      |  def apply[M[_]](
-      |    implicit am: WeakAsync[M]
-      |  ): KleisliInterpreter[M] =
-      |    new KleisliInterpreter[M] {
-      |      val asyncM = am
-      |    }
+      |  def apply[M[_]: WeakAsync](logHandler: Option[LogHandlerM[M]]): KleisliInterpreter[M] =
+      |    new KleisliInterpreter[M](logHandler)
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
-      |trait KleisliInterpreter[M[_]] { outer =>
-      |
-      |  implicit val asyncM: WeakAsync[M]
+      |class KleisliInterpreter[M[_]](logHandler: Option[LogHandlerM[M]])(implicit val asyncM: WeakAsync[M]) { outer =>
       |  import WeakAsync._
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.

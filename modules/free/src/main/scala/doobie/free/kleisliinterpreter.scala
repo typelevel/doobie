@@ -10,6 +10,7 @@ import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
 import doobie.WeakAsync
+import doobie.util.log.{LogEvent, LogHandlerM}
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -74,19 +75,12 @@ import doobie.free.callablestatement.{ CallableStatementIO, CallableStatementOp 
 import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
-
-  def apply[M[_]](
-    implicit am: WeakAsync[M]
-  ): KleisliInterpreter[M] =
-    new KleisliInterpreter[M] {
-      val asyncM = am
-    }
+  def apply[M[_]: WeakAsync](logHandler: Option[LogHandlerM[M]]): KleisliInterpreter[M] =
+    new KleisliInterpreter[M](logHandler)
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-trait KleisliInterpreter[M[_]] { outer =>
-
-  implicit val asyncM: WeakAsync[M]
+class KleisliInterpreter[M[_]](logHandler: Option[LogHandlerM[M]])(implicit val asyncM: WeakAsync[M]) { outer =>
   import WeakAsync._
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
@@ -172,7 +166,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[NClob]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using NClobIO we must call ourself recursively
     override def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: NClobIO[A])(fb: NClobIO[B]) = outer.forceR(this)(fa)(fb)
@@ -209,7 +205,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[Blob]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using BlobIO we must call ourself recursively
     override def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]) = outer.forceR(this)(fa)(fb)
@@ -244,7 +242,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[Clob]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using ClobIO we must call ourself recursively
     override def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]) = outer.forceR(this)(fa)(fb)
@@ -281,7 +281,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[DatabaseMetaData]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using DatabaseMetaDataIO we must call ourself recursively
     override def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]) = outer.forceR(this)(fa)(fb)
@@ -484,7 +486,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[Driver]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using DriverIO we must call ourself recursively
     override def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]) = outer.forceR(this)(fa)(fb)
@@ -515,7 +519,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[Ref]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using RefIO we must call ourself recursively
     override def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]) = outer.forceR(this)(fa)(fb)
@@ -543,7 +549,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[SQLData]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using SQLDataIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: SQLDataIO[A])(fb: SQLDataIO[B]) = outer.forceR(this)(fa)(fb)
@@ -570,7 +578,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[SQLInput]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using SQLInputIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]) = outer.forceR(this)(fa)(fb)
@@ -622,7 +632,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[SQLOutput]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using SQLOutputIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: SQLOutputIO[A])(fb: SQLOutputIO[B]) = outer.forceR(this)(fa)(fb)
@@ -674,7 +686,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[Connection]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using ConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]) = outer.forceR(this)(fa)(fb)
@@ -758,7 +772,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[Statement]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using StatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]) = outer.forceR(this)(fa)(fb)
@@ -838,7 +854,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PreparedStatement]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using PreparedStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]) = outer.forceR(this)(fa)(fb)
@@ -975,7 +993,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[CallableStatement]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using CallableStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]) = outer.forceR(this)(fa)(fb)
@@ -1232,7 +1252,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[ResultSet]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+
     // for operations using ResultSetIO we must call ourself recursively
     override def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]) = outer.forceR(this)(fa)(fb)

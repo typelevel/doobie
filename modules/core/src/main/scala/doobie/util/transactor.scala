@@ -9,6 +9,7 @@ import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, set
 import doobie.free.KleisliInterpreter
 import doobie.implicits._
 import doobie.util.lens._
+import doobie.util.log.LogHandlerM
 import doobie.util.yolo.Yolo
 import cats.{Monad, ~>}
 import cats.data.Kleisli
@@ -290,25 +291,23 @@ object transactor  {
      * @group Constructors
      */
      object fromDataSource {
-      def apply[M[_]] = new FromDataSourceUnapplied[M]
+      def apply[M[_]] = new FromDataSourceUnapplied[M](None)
 
       /**
        * Constructor of `Transactor[M, D]` fixed for `M`; see the `apply` method for details.
        * @group Constructors (Partially Applied)
        */
-      class FromDataSourceUnapplied[M[_]] {
-        def apply[A <: DataSource](
-          dataSource: A,
-          connectEC:  ExecutionContext
-        )(
-          implicit ev: Async[M]
-        ): Transactor.Aux[M, A] = {
+      class FromDataSourceUnapplied[M[_]](logHandler: Option[LogHandlerM[M]]) {
+        def withLogHandler(logHandler: LogHandlerM[M]): FromDataSourceUnapplied[M] = new FromDataSourceUnapplied(Some(logHandler))
+        def withLogHandler(logHandler: Option[LogHandlerM[M]]): FromDataSourceUnapplied[M] = new FromDataSourceUnapplied(logHandler)
+
+        def apply[A <: DataSource](dataSource: A, connectEC: ExecutionContext)(implicit ev: Async[M]): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
             val acquire = ev.evalOn(ev.delay(dataSource.getConnection()), connectEC)
             def release(c: Connection) = ev.blocking(c.close())
             Resource.make(acquire)(release)(ev)
           }
-          val interp  = KleisliInterpreter[M].ConnectionInterpreter
+          val interp  = KleisliInterpreter[M](logHandler).ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
         }
       }
@@ -322,14 +321,17 @@ object transactor  {
      * @param blocker for blocking database operations
      * @group Constructors
      */
-    def fromConnection[M[_]: Async](
-      connection: Connection
-    ): Transactor.Aux[M, Connection] = {
-      val connect = (c: Connection) => Resource.pure[M, Connection](c)
-      val interp  = KleisliInterpreter[M].ConnectionInterpreter
-      Transactor(connection, connect, interp, Strategy.default)
-    }
+    def fromConnection[M[_]]: FromConnectionUnapplied[M] = new FromConnectionUnapplied[M](None)
 
+    class FromConnectionUnapplied[M[_]](logHandler: Option[LogHandlerM[M]]) {
+      def withLogHandler(logHandler: LogHandlerM[M]) = new FromConnectionUnapplied(Some(logHandler))
+
+      def apply(connection: Connection)(implicit async: Async[M]): Transactor.Aux[M, Connection] = {
+        val connect = (c: Connection) => Resource.pure[M, Connection](c)
+        val interp  = KleisliInterpreter[M](logHandler).ConnectionInterpreter
+        Transactor(connection, connect, interp, Strategy.default)
+      }
+    }
     /**
      * Module of constructors for `Transactor` that use the JDBC `DriverManager` to allocate
      * connections. Note that `DriverManager` is unbounded and will happily allocate new connections
@@ -340,11 +342,14 @@ object transactor  {
      * TL;DR this is fine for console apps but don't use it for a web application.
      * @group Constructors
      */
+    def fromDriverManager[M[_]] = new FromDriverManagerUnapplied[M](logHandler = None)
+
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    object fromDriverManager {
+    class FromDriverManagerUnapplied[M[_]](logHandler: Option[LogHandlerM[M]]) {
+      def withLogHandler(logHandler: LogHandlerM[M]) = new FromDriverManagerUnapplied(Some(logHandler))
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-      private def create[M[_]](
+      private def create(
         driver: String,
         conn: () => Connection,
         strategy: Strategy
@@ -356,7 +361,7 @@ object transactor  {
             def release(c: Connection) = ev.blocking{ c.close() }
             Resource.make(acquire)(release)(ev)
           },
-          KleisliInterpreter[M].ConnectionInterpreter,
+          KleisliInterpreter[M](logHandler).ConnectionInterpreter,
           strategy
         )
 
@@ -365,10 +370,7 @@ object transactor  {
        * @param driver     the class name of the JDBC driver, like "org.h2.Driver"
        * @param url        a connection URL, specific to your driver
        */
-      def apply[M[_]: Async](
-        driver: String,
-        url:    String
-      ): Transactor.Aux[M, Unit] =
+      def apply(driver: String, url: String)(implicit ev: Async[M]): Transactor.Aux[M, Unit] =
         create(driver, () => DriverManager.getConnection(url), Strategy.default)
 
       /**
@@ -378,12 +380,12 @@ object transactor  {
        * @param user       database username
        * @param pass       database password
        */
-      def apply[M[_]: Async](
+      def apply(
         driver: String,
         url:    String,
         user:   String,
         pass:   String
-      ): Transactor.Aux[M, Unit] =
+      )(implicit ev: Async[M]): Transactor.Aux[M, Unit] =
         create(driver, () => DriverManager.getConnection(url, user, pass), Strategy.default)
 
       /**
@@ -392,11 +394,11 @@ object transactor  {
        * @param url        a connection URL, specific to your driver
        * @param info       a `Properties` containing connection information (see `DriverManager.getConnection`)
        */
-      def apply[M[_]: Async](
+      def apply(
         driver: String,
         url:    String,
         info:   java.util.Properties
-      ): Transactor.Aux[M, Unit] =
+      )(implicit ev: Async[M]): Transactor.Aux[M, Unit] =
         create(driver, () => DriverManager.getConnection(url, info), Strategy.default)
 
     }

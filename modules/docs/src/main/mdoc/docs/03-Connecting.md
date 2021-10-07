@@ -135,7 +135,7 @@ import cats.data.Kleisli
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO].ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO](None).ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
 val io3 = IO(null: java.sql.Connection) >>= kleisli.run
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection

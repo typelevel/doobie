@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -70,6 +71,7 @@ object connection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
       def fromFuture[A](fut: ConnectionIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -174,6 +176,9 @@ object connection { module =>
     }
     case class FromFuture[A](fut: ConnectionIO[Future[A]]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // Connection-specific operations.
@@ -380,6 +385,7 @@ object connection { module =>
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: ConnectionIO[Future[A]]) = FF.liftF[ConnectionOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[ConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))

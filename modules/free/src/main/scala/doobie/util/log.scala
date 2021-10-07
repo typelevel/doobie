@@ -4,6 +4,8 @@
 
 package doobie.util
 
+import cats.effect.Sync
+
 import java.util.logging.Logger
 import scala.concurrent.duration.{ FiniteDuration => FD }
 import scala.Predef.augmentString
@@ -36,7 +38,7 @@ object log {
    */
   final case class LogHandler(unsafeRun: LogEvent => Unit)
 
-  /**
+    /**
    * Module of instances and constructors for `LogHandler`.
    * @group Handlers
    */
@@ -89,8 +91,30 @@ object log {
 
       }
     }
-
-
   }
 
+  /**
+   * A sink for `LogEvent`s.
+   * @group Handlers
+   */
+  trait LogHandlerM[M[_]]{
+    def run(logEvent: LogEvent): M[Unit]
+  }
+
+  /**
+   * Module of instances and constructors for `LogHandler`.
+   * @group Handlers
+   */
+  object LogHandlerM {
+    def apply[M[_]: Sync](f: LogEvent => Unit): LogHandlerM[M] =
+      (logEvent: LogEvent) => Sync[M].delay(f(logEvent))
+
+    /**
+     * A LogHandler that writes a default format to a JDK Logger. This is provided for demonstration
+     * purposes and is not intended for production use.
+     * @group Constructors
+     */
+    def jdkLogHandler[M[_]: Sync]: LogHandlerM[M] =
+      LogHandlerM[M](event => LogHandler.jdkLogHandler.unsafeRun(event))
+  }
 }

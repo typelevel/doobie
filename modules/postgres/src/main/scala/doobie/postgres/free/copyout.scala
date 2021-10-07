@@ -7,6 +7,7 @@ package doobie.postgres.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -52,6 +53,7 @@ object copyout { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): F[A]
       def fromFuture[A](fut: CopyOutIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // PGCopyOut
       def cancelCopy: F[Unit]
@@ -105,6 +107,9 @@ object copyout { module =>
     case class FromFuture[A](fut: CopyOutIO[Future[A]]) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class PerformLogging(event: LogEvent) extends CopyOutOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
+    }
 
     // PGCopyOut-specific operations.
     case object CancelCopy extends CopyOutOp[Unit] {
@@ -154,6 +159,7 @@ object copyout { module =>
   val canceled = FF.liftF[CopyOutOp, Unit](Canceled)
   def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]) = FF.liftF[CopyOutOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: CopyOutIO[Future[A]]) = FF.liftF[CopyOutOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[CopyOutOp, Unit](PerformLogging(event))
 
   // Smart constructors for CopyOut-specific operations.
   val cancelCopy: CopyOutIO[Unit] = FF.liftF(CancelCopy)

@@ -88,7 +88,7 @@ object Coproduct extends IOApp.Simple {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, *] = {
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO].ConnectionInterpreter
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](None).ConnectionInterpreter
   }
 
   // Our interpreted program
