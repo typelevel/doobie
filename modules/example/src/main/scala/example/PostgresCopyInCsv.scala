@@ -33,7 +33,7 @@ object PostgresCopyInCsv extends IOApp.Simple {
   val is: IO[InputStream] = IO.delay(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8))).widen[InputStream]
 
   // We can also convert a Stream[F, Byte] into an input stream to pass to the pg driver
-  val byteStream = Stream.emit(csv).through(text.utf8Encode).covary[IO]
+  val byteStream = Stream.emit(csv).through(text.utf8.encode).covary[IO]
 
   // Create a temorary table to hold the input data
   val createTable: ConnectionIO[Int] = sql"CREATE TEMP TABLE favorite_foods(name TEXT, food TEXT)".update.run
