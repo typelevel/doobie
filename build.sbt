@@ -9,7 +9,6 @@ lazy val fs2Version           = "3.0.6"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
-lazy val monixVersion         = "3.4.0"
 lazy val quillVersion         = settingKey[String]("Quill version.")
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.2.24"
@@ -44,6 +43,10 @@ lazy val compilerFlags = Seq(
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4"
   )
+)
+
+val isDotty = Def.setting(
+  CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
 )
 
 lazy val buildSettings = Seq(
@@ -438,9 +441,8 @@ lazy val docs = project
       "io.circe"    %% "circe-core"    % circeVersion,
       "io.circe"    %% "circe-generic" % circeVersion,
       "io.circe"    %% "circe-parser"  % circeVersion,
-      "io.monix"    %% "monix-eval"    % monixVersion,
     ),
-    fork in Test := true,
+    Test / fork := true,
 
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
