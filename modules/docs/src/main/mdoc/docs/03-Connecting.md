@@ -149,13 +149,4 @@ There is a bit more going on when calling `transact` (we add commit/rollback han
 
 #### Using Your Own Target Monad
 
-As mentioned earlier, you can use any monad `M[_]` given `cats.effect.Async[M]`. For example, here we use [Monix](https://monix.io/) `Task`.
-```
-import monix.eval.Task
-
-val mxa = Transactor.fromDriverManager[Task](
-  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
-)
-
-sql"select 42".query[Int].unique.transact(mxa)
-```
+As mentioned earlier, you can use any monad `M[_]` given `cats.effect.Async[M]`.
