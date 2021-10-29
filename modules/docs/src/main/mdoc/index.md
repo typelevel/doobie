@@ -144,4 +144,5 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [SoftwareMill](https://softwaremill.com)
  - [Unit](https://unit.co)
  - [CurrencyCloud](https://www.currencycloud.com)
+ - [Lawfully](https://www.lawfully.com)
 
