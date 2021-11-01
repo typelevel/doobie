@@ -9,7 +9,6 @@ lazy val fs2Version           = "3.0.6"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
-lazy val quillVersion         = settingKey[String]("Quill version.")
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.3.1"
 lazy val refinedVersion       = "0.9.27"
@@ -124,13 +123,6 @@ lazy val commonSettings =
         old
     },
 
-    quillVersion := {
-      scalaVersion.value match {
-        case `scala30Version`    => "3.7.2.Beta.1.4"
-        case _                   => "3.7.2"
-      }
-    }
-
   )
 
 lazy val publishSettings = Seq(
@@ -169,7 +161,6 @@ lazy val doobie = project.in(file("."))
     hikari,
     postgres,
     `postgres-circe`,
-    quill,
     refined,
     scalatest,
     munit,
@@ -427,7 +418,7 @@ lazy val bench = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, quill)
+  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
@@ -464,7 +455,6 @@ lazy val docs = project
       "shapelessVersion"         -> shapelessVersion,
       "h2Version"                -> h2Version,
       "postgresVersion"          -> postgresVersion,
-      "quillVersion"             -> quillVersion.value,
       "scalaVersion"             -> scalaVersion.value,
     ),
 
@@ -490,20 +480,3 @@ lazy val refined = project
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )
-
-lazy val quill = project
-  .in(file("modules/quill"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .dependsOn(core)
-  .dependsOn(postgres % "test")
-  .settings(doobieSettings)
-  .settings(publishSettings)
-  .settings(
-    name := "doobie-quill",
-    description := "Quill support for doobie.",
-    libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc"   % quillVersion.value,
-      "org.slf4j"   %  "slf4j-simple" % slf4jVersion % "test"
-    ),
-  )
-  .settings(noDottySettings)
