@@ -123,7 +123,7 @@ sbt:doce> ghpagesPushSite
 ## Adopters
 
 Here's a (non-exhaustive) list of companies that use doobie in production.
-Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/edit/master/modules/docs/src/main/mdoc/index.md)
+Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/edit/main/modules/docs/src/main/mdoc/index.md)
 
  - [Avast](https://avast.com)
  - [Banno at Jack Henry & Associates](https://banno.com/)
@@ -145,4 +145,5 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [Unit](https://unit.co)
  - [CurrencyCloud](https://www.currencycloud.com)
  - [Lawfully](https://www.lawfully.com)
+ - [The Guardian](https://www.theguardian.com)
 
