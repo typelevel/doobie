@@ -120,8 +120,8 @@ object HikariApp extends IOApp {
 
 And running this program gives us the desired result.
 
-```scala mdoc
-// HikariApp.main(Array()) // https://github.com/typelevel/cats-effect/issues/1560
+```scala mdoc:silent
+HikariApp.main(Array())
 ```
 
 ### Using an existing DataSource
