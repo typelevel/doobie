@@ -25,7 +25,7 @@ object StreamToFile extends IOApp.Simple {
         .stream
         .map { case (n, p) => show"$n, $p" }
         .intersperse("\n")
-        .through(text.utf8Encode)
+        .through(text.utf8.encode)
         .transact(xa)
         .through(Files[IO].writeAll(Paths.get("/tmp/out.txt")))
         .compile
