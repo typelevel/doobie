@@ -68,7 +68,6 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-h2"        % "$version$",          // H2 driver $h2Version$ + type mappings.
   "org.tpolecat" %% "doobie-hikari"    % "$version$",          // HikariCP transactor.
   "org.tpolecat" %% "doobie-postgres"  % "$version$",          // Postgres driver $postgresVersion$ + type mappings.
-  "org.tpolecat" %% "doobie-quill"     % "$version$",          // Support for Quill $quillVersion$
   "org.tpolecat" %% "doobie-specs2"    % "$version$" % "test", // Specs2 support for typechecking statements.
   "org.tpolecat" %% "doobie-scalatest" % "$version$" % "test"  // ScalaTest support for typechecking statements.
 
@@ -128,13 +127,13 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [Avast](https://avast.com)
  - [Banno at Jack Henry & Associates](https://banno.com/)
  - [Crunchbase](https://crunchbase.com)
- - [Doomoolmori](https://doomoolmori.com)   
+ - [Doomoolmori](https://doomoolmori.com)
  - [eBay Inc.](https://www.ebay.com)
  - [Evolution](https://www.evolution.com/)
  - [FinDynamic](https://www.findynamic.com/en)
  - [HIFI](https://hi.fi)
  - [ITV](https://www.itv.com/)
- - [lences.io](https://lenses.io)  
+ - [lences.io](https://lenses.io)
  - [Medidata](https://www.medidata.com/)
  - [NOIRLab](https://noirlab.edu)
  - [RaiffeisenBank Russia](https://raiffeisen.ru)

@@ -15,8 +15,7 @@
 * [Managing-Connections](14-Managing-Connections.md)
 * [Extensions-PostgreSQL](15-Extensions-PostgreSQL.md)
 * [Extensions-H2](16-Extensions-H2.md)
-* [Quill](17-Quill.md)
-* [FAQ](18-FAQ.md)
+* [FAQ](17-FAQ.md)
 @@@
 
 # Book of Doobie
