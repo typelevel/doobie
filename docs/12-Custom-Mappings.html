@@ -56,8 +56,7 @@
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -115,8 +114,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -326,15 +324,15 @@ implicit val jsonGet: Get[Json] =
 <p>Consider the <code>Point</code> class from Java AWT, which is logically a pair of <code>Int</code>s but is not a case class and is thus not eligible for automatic derivation of <code>Read</code> and <code>Write</code> instances. We can define these by hand by mapping to and from the Scala type <code>(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
 <pre class="prettyprint"><code class="language-scala">implicit val pointRead: Read[Point] =
   Read[(Int, Int)].map { case (x, y) =&gt; new Point(x, y) }
-// pointRead: Read[Point] = doobie.util.Read@2acdf3b5
+// pointRead: Read[Point] = doobie.util.Read@3ec8314f
 
 implicit val pointWrite: Write[Point] =
   Write[(Int, Int)].contramap(p =&gt; (p.x, p.y))
-// pointWrite: Write[Point] = doobie.util.Write@526574d
+// pointWrite: Write[Point] = doobie.util.Write@12666e0a
 </code></pre>
 <p>There is no equivalent to <code>Meta</code> for bidirectional column vector mappings.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/12-Custom-Mappings.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/12-Custom-Mappings.md">here</a>.
 </div>
 
 <div class="nav-next">

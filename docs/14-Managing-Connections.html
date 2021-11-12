@@ -56,8 +56,7 @@
     <li><a href="../docs/14-Managing-Connections.html" class="active page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -115,8 +114,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/14-Managing-Connections.html" class="active page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -243,38 +241,38 @@ object HikariApp extends IOApp {
 }
 </code></pre>
 <p>And running this program gives us the desired result.</p>
-<pre class="prettyprint"><code class="language-scala"><br/>```
-
-### Using an existing DataSource
-
-If your application exposes an existing `javax.sql.DataSource` you can use it directly by wrapping it in a `DataSourceTransactor`. You still need to provide execution contexts.
-
+<pre class="prettyprint"><code class="language-scala">HikariApp.main(Array())
 </code></pre>
-<p>import javax.sql.DataSource</p>
-<p>// Resource yielding a DataSourceTransactor[IO] wrapping the given <code>DataSource</code> def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =  for {  ce &lt;- ExecutionContexts.fixedThreadPool<a href="32">IO</a> // our connect EC  } yield Transactor.fromDataSource[IO](ds, ce)</p>
-<pre><code><br/>The `configure` method on `DataSourceTransactor` provides access to the underlying `DataSource` if additional configuration is required.
+<h3><a href="#using-an-existing-datasource" name="using-an-existing-datasource" class="anchor"><span class="anchor-link"></span></a>Using an existing DataSource</h3>
+<p>If your application exposes an existing <code>javax.sql.DataSource</code> you can use it directly by wrapping it in a <code>DataSourceTransactor</code>. You still need to provide execution contexts.</p>
+<pre class="prettyprint"><code class="language-scala">import javax.sql.DataSource
 
-
-### Using an Existing JDBC Connection
-
-If your application exposes an existing `Connection` you can use it directly by wrapping it in a `Transactor`. You still need to provide an execution context for blocking operations. Note that you are responsible for closing the `Connection`.
-
+// Resource yielding a DataSourceTransactor[IO] wrapping the given `DataSource`
+def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =
+  for {
+    ce &lt;- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
+  } yield Transactor.fromDataSource[IO](ds, ce)
 </code></pre>
-<p>import java.sql.Connection</p>
-<p>// A Transactor[IO] wrapping the given <code>Connection</code> def transactor(c: Connection): Transactor[IO] =  Transactor.fromConnection<a href="c">IO</a></p>
-<pre><code><br/>### Customizing Transactors
+<p>The <code>configure</code> method on <code>DataSourceTransactor</code> provides access to the underlying <code>DataSource</code> if additional configuration is required.</p>
+<h3><a href="#using-an-existing-jdbc-connection" name="using-an-existing-jdbc-connection" class="anchor"><span class="anchor-link"></span></a>Using an Existing JDBC Connection</h3>
+<p>If your application exposes an existing <code>Connection</code> you can use it directly by wrapping it in a <code>Transactor</code>. You still need to provide an execution context for blocking operations. Note that you are responsible for closing the <code>Connection</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import java.sql.Connection
 
-If the default `Transactor` behavior don&#39;t meet your needs you can replace any member with one that does what you need. See the Scaladoc for `Transactor` and `Strategy` for details on the structure. Lenses are provided to make it straightforward to replace just the piece you&#39;re interested in. For example, to create a transactor that is the same as `xa` but always rolls back (for testing perhaps) you can say:
-
+// A Transactor[IO] wrapping the given `Connection`
+def transactor(c: Connection): Transactor[IO] =
+  Transactor.fromConnection[IO](c)
 </code></pre>
-<p>val testXa = Transactor.after.set(xa, HC.rollback)</p>
-<pre><code><br/>As another example, Hive&#39;s JDBC driver doesn&#39;t support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like:
-
+<h3><a href="#customizing-transactors" name="customizing-transactors" class="anchor"><span class="anchor-link"></span></a>Customizing Transactors</h3>
+<p>If the default <code>Transactor</code> behavior don&rsquo;t meet your needs you can replace any member with one that does what you need. See the Scaladoc for <code>Transactor</code> and <code>Strategy</code> for details on the structure. Lenses are provided to make it straightforward to replace just the piece you&rsquo;re interested in. For example, to create a transactor that is the same as <code>xa</code> but always rolls back (for testing perhaps) you can say:</p>
+<pre class="prettyprint"><code class="language-scala">val testXa = Transactor.after.set(xa, HC.rollback)
 </code></pre>
-<p>import doobie.free.connection.unit</p>
-<p>val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit)) ```</p>
+<p>As another example, Hive&rsquo;s JDBC driver doesn&rsquo;t support transaction commit or rollback, you can create your own <code>Transactor</code> to accommodate that, like:</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.free.connection.unit
+
+val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))
+</code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -293,6 +291,9 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="../docs/14-Managing-Connections.html#about-threading" class="header">About Threading</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-the-jdbc-drivermanager" class="header">Using the JDBC DriverManager</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-a-hikaricp-connection-pool" class="header">Using a HikariCP Connection Pool</a></li>
+    <li><a href="../docs/14-Managing-Connections.html#using-an-existing-datasource" class="header">Using an existing DataSource</a></li>
+    <li><a href="../docs/14-Managing-Connections.html#using-an-existing-jdbc-connection" class="header">Using an Existing JDBC Connection</a></li>
+    <li><a href="../docs/14-Managing-Connections.html#customizing-transactors" class="header">Customizing Transactors</a></li>
   </ul></li>
 </ul>
 </div>

@@ -56,8 +56,7 @@
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="active page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -115,8 +114,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="active page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -400,13 +398,13 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.011..1.553 rows=239 loops=1)
-// Planning Time: 0.167 ms
-// Execution Time: 3.042 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.014..1.926 rows=239 loops=1)
+// Planning Time: 0.223 ms
+// Execution Time: 3.974 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">

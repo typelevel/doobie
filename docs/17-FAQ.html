@@ -56,8 +56,7 @@
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="active page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="active page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -115,8 +114,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="../docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="../docs/18-FAQ.html" class="active page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/17-FAQ.html" class="active page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -161,7 +159,7 @@ import shapeless._
 // unsafe methods directly.
 import cats.effect.unsafe.implicits.global
 
-// A transactor that gets connections from java.sql.DriverManager. 
+// A transactor that gets connections from java.sql.DriverManager.
 // See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
   &quot;org.postgresql.Driver&quot;,     // driver classname
@@ -326,7 +324,7 @@ implicit val nesMeta: Meta[NonEmptyString] = {
   <li><a href="https://jdbc.postgresql.org/documentation/head/8-date-time.html">Postgres JDBC - Using Java 8 Date and Time classes</a></li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/docs/18-FAQ.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/17-FAQ.md">here</a>.
 </div>
 
 </div>
@@ -336,19 +334,19 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <div class="nav-title">On this page:</div>
 <div class="nav-toc">
 <ul>
-  <li><a href="../docs/18-FAQ.html#frequently-asked-questions" class="header">Frequently-Asked Questions</a>
+  <li><a href="../docs/17-FAQ.html#frequently-asked-questions" class="header">Frequently-Asked Questions</a>
   <ul>
-    <li><a href="../docs/18-FAQ.html#how-do-i-do-an-in-clause-" class="header">How do I do an <code>IN</code> clause?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-ascribe-an-sql-type-to-an-interpolated-parameter-" class="header">How do I ascribe an SQL type to an interpolated parameter?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-do-several-things-in-the-same-transaction-" class="header">How do I do several things in the same transaction?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-run-something-outside-of-a-transaction-" class="header">How do I run something outside of a transaction?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-turn-an-arbitrary-sql-string-into-a-query0-update0-" class="header">How do I turn an arbitrary SQL string into a <code>Query0/Update0</code>?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-handle-outer-joins-" class="header">How do I handle outer joins?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-log-the-sql-produced-for-my-query-after-interpolation-" class="header">How do I log the SQL produced for my query after interpolation?</a></li>
-    <li><a href="../docs/18-FAQ.html#why-is-there-no-get-or-put-for-sqlxml-" class="header">Why is there no <code>Get</code> or <code>Put</code> for <code>SQLXML</code>?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-set-the-chunk-size-for-streaming-results-" class="header">How do I set the chunk size for streaming results?</a></li>
-    <li><a href="../docs/18-FAQ.html#my-postgres-domains-are-all-type-checking-as-distinct-how-can-i-get-my-yolo-tests-to-pass-" class="header">My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?</a></li>
-    <li><a href="../docs/18-FAQ.html#how-do-i-use-java-time-types-with-doobie-" class="header">How do I use <code>java.time</code> types with Doobie?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-do-an-in-clause-" class="header">How do I do an <code>IN</code> clause?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-ascribe-an-sql-type-to-an-interpolated-parameter-" class="header">How do I ascribe an SQL type to an interpolated parameter?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-do-several-things-in-the-same-transaction-" class="header">How do I do several things in the same transaction?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-run-something-outside-of-a-transaction-" class="header">How do I run something outside of a transaction?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-turn-an-arbitrary-sql-string-into-a-query0-update0-" class="header">How do I turn an arbitrary SQL string into a <code>Query0/Update0</code>?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-handle-outer-joins-" class="header">How do I handle outer joins?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-log-the-sql-produced-for-my-query-after-interpolation-" class="header">How do I log the SQL produced for my query after interpolation?</a></li>
+    <li><a href="../docs/17-FAQ.html#why-is-there-no-get-or-put-for-sqlxml-" class="header">Why is there no <code>Get</code> or <code>Put</code> for <code>SQLXML</code>?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-set-the-chunk-size-for-streaming-results-" class="header">How do I set the chunk size for streaming results?</a></li>
+    <li><a href="../docs/17-FAQ.html#my-postgres-domains-are-all-type-checking-as-distinct-how-can-i-get-my-yolo-tests-to-pass-" class="header">My Postgres domains are all type checking as DISTINCT! How can I get my Yolo tests to pass?</a></li>
+    <li><a href="../docs/17-FAQ.html#how-do-i-use-java-time-types-with-doobie-" class="header">How do I use <code>java.time</code> types with Doobie?</a></li>
   </ul></li>
 </ul>
 </div>

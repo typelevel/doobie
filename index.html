@@ -56,8 +56,7 @@
     <li><a href="docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -115,8 +114,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
-    <li><a href="docs/17-Quill.html" class="page">Quill Integration</a></li>
-    <li><a href="docs/18-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
   </ul></li>
 </ul>
 </div>
@@ -164,10 +162,10 @@ def find(n: String): ConnectionIO[Option[Country]] =
 </code></pre>
 <p><strong>doobie</strong> is a <a href="http://typelevel.org/"><strong>Typelevel</strong></a> project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala <a href="http://scala-lang.org/conduct.html"><strong>Code of Conduct</strong></a>.</p>
 <h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
-<p>The current version is <strong>1.0.0-RC1</strong> for <strong>Scala 2.12/13/0</strong> with</p>
+<p>The current version is <strong>1.0.0-RC1</strong> for <strong>Scala 2.12/13/1</strong> with</p>
 <ul>
   <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.6.1</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.0.3</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.0.6</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.7</li>
 </ul>
 <p>To use <strong>doobie</strong> you need to add the following to your <code>build.sbt</code>. If you&rsquo;re not using the Postgres or H2 add-ons you&rsquo;ll also need to provide a JDBC driver for the database you&rsquo;re using.</p>
@@ -179,8 +177,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
   // And add any of these as needed
   &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC1&quot;,          // H2 driver 1.4.200 + type mappings.
   &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;1.0.0-RC1&quot;,          // HikariCP transactor.
-  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC1&quot;,          // Postgres driver 42.2.23 + type mappings.
-  &quot;org.tpolecat&quot; %% &quot;doobie-quill&quot;     % &quot;1.0.0-RC1&quot;,          // Support for Quill 3.7.2
+  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC1&quot;,          // Postgres driver 42.3.1 + type mappings.
   &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;1.0.0-RC1&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
   &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;1.0.0-RC1&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
 
@@ -221,7 +218,7 @@ sbt:docs&gt; makeSite
 sbt:doce&gt; ghpagesPushSite
 </code></pre>
 <h2><a href="#adopters" name="adopters" class="anchor"><span class="anchor-link"></span></a>Adopters</h2>
-<p>Here&rsquo;s a (non-exhaustive) list of companies that use doobie in production. Don&rsquo;t see yours? <a href="https://github.com/tpolecat/doobie/edit/master/modules/docs/src/main/mdoc/index.md">You can add it in a PR!</a></p>
+<p>Here&rsquo;s a (non-exhaustive) list of companies that use doobie in production. Don&rsquo;t see yours? <a href="https://github.com/tpolecat/doobie/edit/main/modules/docs/src/main/mdoc/index.md">You can add it in a PR!</a></p>
 <ul>
   <li><a href="https://avast.com">Avast</a></li>
   <li><a href="https://banno.com/">Banno at Jack Henry &amp; Associates</a></li>
@@ -242,9 +239,11 @@ sbt:doce&gt; ghpagesPushSite
   <li><a href="https://softwaremill.com">SoftwareMill</a></li>
   <li><a href="https://unit.co">Unit</a></li>
   <li><a href="https://www.currencycloud.com">CurrencyCloud</a></li>
+  <li><a href="https://www.lawfully.com">Lawfully</a></li>
+  <li><a href="https://www.theguardian.com">The Guardian</a></li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC1/modules/docs/target/mdoc/index.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/index.md">here</a>.
 </div>
 
 <div class="nav-next">
