@@ -159,6 +159,7 @@ lazy val doobie = project.in(file("."))
     free,
     h2,
     hikari,
+    macros,
     postgres,
     `postgres-circe`,
     refined,
@@ -166,6 +167,26 @@ lazy val doobie = project.in(file("."))
     munit,
     specs2,
   )
+
+lazy val macros = project
+  .in(file("modules/macros"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-macros",
+    description := "Pure functional JDBC layer for Scala.",
+    scalacOptions += "-Yno-predef",
+    libraryDependencies ++= Seq(
+      "co.fs2"         %% "fs2-core"    % fs2Version,
+      "org.typelevel"  %% "cats-core"   % catsVersion,
+      "org.typelevel"  %% "cats-free"   % catsVersion,
+      "org.typelevel"  %% "cats-effect" % catsEffectVersion,
+    ) ++Seq(
+      scalaOrganization.value %  "scala-reflect" % scalaVersion.value
+    ).filterNot(_ => isDotty.value),
+  )
+
 
 lazy val free = project
   .in(file("modules/free"))
@@ -182,9 +203,7 @@ lazy val free = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-    ) ++Seq(
-      scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for macros
-    ).filterNot(_ => isDotty.value),
+    ),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
@@ -206,7 +225,7 @@ lazy val free = project
         classOf[java.sql.ResultSet]
       )
     }
-  )
+  ).dependsOn(macros)
 
 
 lazy val core = project
