@@ -178,10 +178,7 @@ lazy val macros = project
     description := "Pure functional JDBC layer for Scala.",
     scalacOptions += "-Yno-predef",
     libraryDependencies ++= Seq(
-      "co.fs2"         %% "fs2-core"    % fs2Version,
-      "org.typelevel"  %% "cats-core"   % catsVersion,
-      "org.typelevel"  %% "cats-free"   % catsVersion,
-      "org.typelevel"  %% "cats-effect" % catsEffectVersion,
+      "org.typelevel"  %% "cats-core" % catsVersion,
     ) ++Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value
     ).filterNot(_ => isDotty.value),
@@ -203,7 +200,9 @@ lazy val free = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-    ),
+    ) ++ Seq(
+      "com.chuusai"    %% "shapeless" % shapelessVersion,
+    ).filterNot(_ => isDotty.value),
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
