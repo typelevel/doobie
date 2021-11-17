@@ -199,7 +199,8 @@ lazy val core = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
-      "org.tpolecat"   %% "typename"  % "1.0.0",
+      "org.tpolecat"   %% "typename"    % "1.0.0",
+      "com.h2database" % "h2" % h2Version % "test"
     ) ++ Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => isDotty.value),
