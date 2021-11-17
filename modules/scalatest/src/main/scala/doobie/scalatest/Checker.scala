@@ -5,7 +5,6 @@
 package doobie.scalatest
 
 import cats.effect.{ Async, IO }
-import doobie.syntax.connectionio._
 import doobie.util.query.{Query, Query0}
 import doobie.util.testing._
 import org.scalatest.Assertions

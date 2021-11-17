@@ -6,6 +6,7 @@ package doobie.util
 
 import doobie.util.pos.Pos
 import scala.quoted.{ Expr, Quotes }
+import scala.annotation.nowarn
 
 trait PosPlatform {
 
@@ -18,7 +19,8 @@ object PosPlatform {
 
   def originImpl(using ctx: Quotes): Expr[Pos] = {
     val rootPosition = ctx.reflect.Position.ofMacroExpansion
-    val file = Expr(rootPosition.sourceFile.jpath.toString)
+    @nowarn
+    val file = Expr(rootPosition.sourceFile.path.toString)
     val line = Expr(rootPosition.startLine + 1)
     '{Pos($file, $line)}
   }

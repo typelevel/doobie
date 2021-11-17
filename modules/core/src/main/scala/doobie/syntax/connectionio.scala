@@ -34,7 +34,7 @@ class KleisliConnectionIOOps[A, B](ma: Kleisli[ConnectionIO, A, B]) {
     ma.mapK(xa.trans)
 }
 
-trait ToConnectionIOOps {
+private[doobie]trait ToConnectionIOOps {
   implicit def toConnectionIOOps[A](ma: ConnectionIO[A]): ConnectionIOOps[A] =
     new ConnectionIOOps(ma)
 
@@ -47,5 +47,3 @@ trait ToConnectionIOOps {
   implicit def toKleisliConnectionIOOps[A, B](ma: Kleisli[ConnectionIO, A, B]): KleisliConnectionIOOps[A, B] =
     new KleisliConnectionIOOps[A, B](ma)
 }
-
-object connectionio extends ToConnectionIOOps

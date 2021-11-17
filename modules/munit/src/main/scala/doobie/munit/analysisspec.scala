@@ -6,7 +6,6 @@ package doobie.munit
 
 import cats.effect.{IO, Async}
 import doobie.munit.analysisspec.Checker.ErrorItems
-import doobie.syntax.connectionio._
 import doobie.util.query.{Query0, Query}
 import doobie.util.testing._
 import org.tpolecat.typename._

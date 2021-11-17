@@ -42,7 +42,7 @@ object connection { module =>
   type ConnectionIO[A] = FF[ConnectionOp, A]
 
   // Module of instances and constructors of ConnectionOp.
-  object ConnectionOp {
+  object ConnectionOp extends doobie.syntax.ToConnectionIOOps {
 
     // Given a Connection we can embed a ConnectionIO program in any algebra that understands embedding.
     implicit val ConnectionOpEmbeddable: Embeddable[ConnectionOp, Connection] =
