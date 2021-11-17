@@ -7,7 +7,6 @@ package example
 import cats.effect._
 import doobie._
 import doobie.hikari._
-import doobie.implicits._
 
 object HikariExample extends IOApp.Simple {
 

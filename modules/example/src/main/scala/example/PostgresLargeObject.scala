@@ -7,7 +7,7 @@ package example
 
 import cats.effect.{ IO, IOApp }
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie._
 import doobie.postgres._
 import java.io.File
 
