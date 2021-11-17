@@ -11,7 +11,6 @@ import doobie.postgres.implicits._
 import doobie.util.analysis.{ColumnTypeWarning, ColumnTypeError}
 
 import java.time.{Instant, OffsetDateTime, LocalDate, LocalDateTime, LocalTime}
-import scala.concurrent.ExecutionContext
 
 
 class CheckSuite extends munit.FunSuite {

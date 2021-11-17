@@ -6,7 +6,7 @@ package doobie.postgres
 
 import cats.effect.IO
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie._
 import doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
 

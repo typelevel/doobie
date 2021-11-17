@@ -12,7 +12,6 @@ import java.util.UUID
 
 import cats.effect.IO
 import doobie._
-import doobie.implicits._
 import doobie.implicits.javasql._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
