@@ -177,7 +177,6 @@ lazy val free = project
     name := "doobie-free",
     description := "Pure functional JDBC layer for Scala.",
     scalacOptions += "-Yno-predef",
-    scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
       "co.fs2"         %% "fs2-core"    % fs2Version,
       "org.typelevel"  %% "cats-core"   % catsVersion,

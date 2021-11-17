@@ -15,9 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 
 // Types referenced in the JDBC API
 import java.io.InputStream
-import java.io.OutputStream
 import java.io.Reader
-import java.io.Writer
 import java.lang.Class
 import java.lang.String
 import java.math.BigDecimal
@@ -29,20 +27,15 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.Date
 import java.sql.Driver
-import java.sql.DriverPropertyInfo
 import java.sql.NClob
-import java.sql.ParameterMetaData
 import java.sql.PreparedStatement
 import java.sql.Ref
 import java.sql.ResultSet
-import java.sql.ResultSetMetaData
 import java.sql.RowId
-import java.sql.RowIdLifetime
 import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 import java.sql.SQLType
-import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
 import java.sql.ShardingKey
@@ -55,7 +48,6 @@ import java.util.Calendar
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
-import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
 import doobie.free.nclob.{ NClobIO, NClobOp }

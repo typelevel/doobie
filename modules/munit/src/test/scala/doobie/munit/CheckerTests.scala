@@ -13,7 +13,6 @@ import doobie.syntax.string._
 import doobie.util.Read
 import doobie.util.transactor.Transactor
 import munit._
-import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
 
