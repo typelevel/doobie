@@ -200,9 +200,17 @@ lazy val free = project
       "org.typelevel"  %% "cats-core"   % catsVersion,
       "org.typelevel"  %% "cats-free"   % catsVersion,
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
+      "org.tpolecat"   %% "typename"  % "1.0.0",
     ) ++ Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => isDotty.value),
+        unmanagedSourceDirectories in Compile += {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
+        case _                       => sourceDir / "scala-2.13+"
+      }
+    },
     freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
@@ -243,13 +251,6 @@ lazy val core = project
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
-    unmanagedSourceDirectories in Compile += {
-      val sourceDir = (sourceDirectory in Compile).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
-        case _                       => sourceDir / "scala-2.13+"
-      }
-    },
     sourceGenerators in Compile += Def.task {
       val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
