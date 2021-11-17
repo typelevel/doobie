@@ -167,26 +167,10 @@ lazy val doobie = project.in(file("."))
     specs2,
   )
 
-lazy val macros = project
-  .in(file("modules/macros"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(doobieSettings)
-  .settings(publishSettings)
-  .settings(
-    name := "doobie-macros",
-    description := "Pure functional JDBC layer for Scala.",
-    scalacOptions += "-Yno-predef",
-    libraryDependencies ++= Seq(
-      "org.typelevel"  %% "cats-core" % catsVersion,
-    ) ++Seq(
-      scalaOrganization.value %  "scala-reflect" % scalaVersion.value
-    ).filterNot(_ => isDotty.value),
-  )
-
-
 lazy val core = project
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(macros)
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(freeGen2Settings)
@@ -251,7 +235,23 @@ lazy val core = project
             |""".stripMargin)
       Seq(outFile)
     }.taskValue
-  ).dependsOn(macros)
+  )
+
+lazy val macros = project
+  .in(file("modules/macros"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(doobieSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "doobie-macros",
+    description := "Pure functional JDBC layer for Scala.",
+    scalacOptions += "-Yno-predef",
+    libraryDependencies ++= Seq(
+      "org.typelevel"  %% "cats-core" % catsVersion,
+    ) ++Seq(
+      scalaOrganization.value %  "scala-reflect" % scalaVersion.value
+    ).filterNot(_ => isDotty.value),
+  )
 
 lazy val example = project
   .in(file("modules/example"))
