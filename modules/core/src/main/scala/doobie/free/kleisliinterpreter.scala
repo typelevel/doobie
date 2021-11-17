@@ -50,20 +50,20 @@ import java.util.Properties
 import java.util.concurrent.Executor
 
 // Algebras and free monads thereof referenced by our interpreter.
-import doobie.free.nclob.{ NClobIO, NClobOp }
-import doobie.free.blob.{ BlobIO, BlobOp }
-import doobie.free.clob.{ ClobIO, ClobOp }
-import doobie.free.databasemetadata.{ DatabaseMetaDataIO, DatabaseMetaDataOp }
-import doobie.free.driver.{ DriverIO, DriverOp }
-import doobie.free.ref.{ RefIO, RefOp }
-import doobie.free.sqldata.{ SQLDataIO, SQLDataOp }
-import doobie.free.sqlinput.{ SQLInputIO, SQLInputOp }
-import doobie.free.sqloutput.{ SQLOutputIO, SQLOutputOp }
-import doobie.free.connection.{ ConnectionIO, ConnectionOp }
-import doobie.free.statement.{ StatementIO, StatementOp }
-import doobie.free.preparedstatement.{ PreparedStatementIO, PreparedStatementOp }
-import doobie.free.callablestatement.{ CallableStatementIO, CallableStatementOp }
-import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
+import doobie.free.nclob.NClobOp
+import doobie.free.blob.BlobOp
+import doobie.free.clob.ClobOp
+import doobie.free.databasemetadata.DatabaseMetaDataOp
+import doobie.free.driver.DriverOp
+import doobie.free.ref.RefOp
+import doobie.free.sqldata.SQLDataOp
+import doobie.free.sqlinput.SQLInputOp
+import doobie.free.sqloutput.SQLOutputOp
+import doobie.free.connection.ConnectionOp
+import doobie.free.statement.StatementOp
+import doobie.free.preparedstatement.PreparedStatementOp
+import doobie.free.callablestatement.CallableStatementOp
+import doobie.free.resultset.ResultSetOp
 
 object KleisliInterpreter {
 

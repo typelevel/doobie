@@ -156,7 +156,6 @@ lazy val doobie = project.in(file("."))
     core,
     docs,
     example,
-    free,
     h2,
     hikari,
     macros,
@@ -185,14 +184,14 @@ lazy val macros = project
   )
 
 
-lazy val free = project
-  .in(file("modules/free"))
+lazy val core = project
+  .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publishSettings)
   .settings(freeGen2Settings)
   .settings(
-    name := "doobie-free",
+    name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     scalacOptions += "-Yno-predef",
     libraryDependencies ++= Seq(
@@ -231,26 +230,7 @@ lazy val free = project
         classOf[java.sql.CallableStatement],
         classOf[java.sql.ResultSet]
       )
-    }
-  ).dependsOn(macros)
-
-
-lazy val core = project
-  .in(file("modules/core"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .dependsOn(free)
-  .settings(doobieSettings)
-  .settings(publishSettings)
-  .settings(
-    name := "doobie-core",
-    description := "Pure functional JDBC layer for Scala.",
-    libraryDependencies ++= Seq(
-      "com.chuusai"    %% "shapeless" % shapelessVersion,
-    ).filterNot(_ => isDotty.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "1.0.0",
-      "com.h2database" %  "h2"        % h2Version % "test",
-    ),
-    scalacOptions += "-Yno-predef",
+    },
     sourceGenerators in Compile += Def.task {
       val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
@@ -270,7 +250,7 @@ lazy val core = project
             |""".stripMargin)
       Seq(outFile)
     }.taskValue
-  )
+  ).dependsOn(macros)
 
 lazy val example = project
   .in(file("modules/example"))
