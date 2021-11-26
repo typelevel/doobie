@@ -7,7 +7,7 @@ package doobie.postgres.circe
 import cats.effect.IO
 import doobie._
 import doobie.implicits._
-import io.circe.{Json, Encoder, Decoder}
+import io.circe.{Decoder, Encoder, Json}
 
 class PGJsonSuite extends munit.FunSuite {
 
