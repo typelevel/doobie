@@ -8,7 +8,6 @@ import cats.effect.{ IO, IOApp }
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._
-import fs2.text
 import fs2.io.file.Files
 import java.nio.file.Paths
 import fs2.text.utf8
