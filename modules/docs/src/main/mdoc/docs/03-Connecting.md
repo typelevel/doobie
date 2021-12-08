@@ -46,6 +46,23 @@ val xa = Transactor.fromDriverManager[IO](
 )
 ```
 
+To use sqlite, your code like 
+
+```scala mdoc:silent
+import doobie.util.ExecutionContexts
+
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
+
+// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
+// on an our synchronous EC. See the chapter on connection handling for more info.
+val xa = Transactor.fromDriverManager[IO](
+  "com.sqlite.JDBC",     // driver classname
+  "jdbc:sqlite:/some/where/sqlite.db",    //
+)
+```
+
 ```scala mdoc:invisible
 implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```

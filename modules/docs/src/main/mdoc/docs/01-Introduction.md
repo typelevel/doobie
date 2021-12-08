@@ -79,7 +79,15 @@ libraryDependencies ++= Seq(
 
 The `-Ypartial-unification` compiler flag enables a bug fix that makes working with functional code significantly easier. See the Cats [Getting Started](https://github.com/typelevel/cats#getting-started) for more info on this if it interests you. **If you're using Scala 2.13+ the compiler no longer accepts that option**.
 
-If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/).
+If you want to use scala 3.x, you cannot use doobie-specs2 yet.
+
+If you are not using PostgreSQL you can omit `doobie-postgres` and will need to add the appropriate JDBC driver as a dependency. Note that there is a `doobie-h2` add-on if you happen to be using [H2](http://www.h2database.com/). 
+
+If you want to use [Sqlite](https://sqlite.com/index.html), you have to use a little different config in `libraryDependencies`.
+
+```scala
+   "org.xerial" % "sqlite-jdbc" % "3.36.0.3",
+```
 
 ### Conventions
 
