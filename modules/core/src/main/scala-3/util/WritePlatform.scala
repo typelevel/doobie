@@ -22,7 +22,7 @@ trait WritePlatform:
     )
 
   // Generic write for products.
-  given [P <: Product, A](
+  given derived[P <: Product, A](
     using m: Mirror.ProductOf[P],
           i: m.MirroredElemTypes =:= A,
           w: Write[A]

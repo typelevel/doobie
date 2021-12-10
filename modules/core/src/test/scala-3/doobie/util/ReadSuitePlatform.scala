@@ -21,4 +21,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
     util.Read[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
   }
 
+  test("derives") {
+    case class Foo(a: String, b: Int) derives util.Read
+  }
 }

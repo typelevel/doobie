@@ -20,7 +20,7 @@ trait ReadPlatform:
     )
 
   // Generic Read for products.
-  given [P <: Product, A](
+  given derived [P <: Product, A](
     using m: Mirror.ProductOf[P],
           i: A =:= m.MirroredElemTypes,
           w: Read[A]
