@@ -5,6 +5,7 @@
 package doobie.postgres.syntax
 
 import cats.Foldable
+import cats.effect.Ref
 import cats.effect.kernel.Resource
 import cats.syntax.all._
 import doobie._
@@ -47,20 +48,23 @@ class FragmentOps(f: Fragment) {
     val byteStream: Stream[ConnectionIO, Byte] =
       stream.chunkMin(minChunkSize).map(foldToString(_)).through(encode)
 
-    Stream.bracketCase(
-      PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))
-    ){
-      case (copyIn, Resource.ExitCase.Succeeded) =>
-        PHC.embed(copyIn, PFCI.isActive.ifM(PFCI.endCopy.void, PFCI.unit))
-      case (copyIn, _) =>
-        PHC.embed(copyIn, PFCI.cancelCopy)
-    }.flatMap(copyIn =>
-      byteStream.chunks.evalMap(bytes =>
-        PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
-      ) *>
-      Stream.eval(PHC.embed(copyIn, PFCI.endCopy))
-    ).compile.foldMonoid
+    // use a reference to capture the number of affected rows, as determined by `endCopy`.
+    // we need to run that in the finalizer of the `bracket`, and the result from that is ignored.
+    Ref.of[ConnectionIO, Long](-1L).flatMap { numRowsRef =>
+      val copyAll: ConnectionIO[Unit] =
+        Stream.bracketCase(PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))){
+          case (copyIn, Resource.ExitCase.Succeeded) =>
+            PHC.embed(copyIn, PFCI.endCopy).flatMap(numRowsRef.set)
+          case (copyIn, _) =>
+            PHC.embed(copyIn, PFCI.cancelCopy)
+        }.flatMap { copyIn =>
+          byteStream.chunks.evalMap(bytes =>
+            PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
+          )
+        }.compile.drain
 
+      copyAll.flatMap(_ => numRowsRef.get)
+    }
   }
 
   /** Folds given `F` to string, encoding each `A` with `Text` instance and joining resulting strings with `\n` */
