@@ -2,16 +2,16 @@ import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.6.1"
-lazy val catsEffectVersion    = "3.2.9"
+lazy val catsVersion          = "2.7.0"
+lazy val catsEffectVersion    = "3.3.0"
 lazy val circeVersion         = "0.14.1"
-lazy val fs2Version           = "3.0.6"
-lazy val h2Version            = "2.0.202"
+lazy val fs2Version           = "3.2.3"
+lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.3.1"
-lazy val refinedVersion       = "0.9.27"
+lazy val refinedVersion       = "0.9.28"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.10"
 lazy val munitVersion         = "0.7.29"
@@ -40,7 +40,7 @@ lazy val compilerFlags = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4"
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
   )
 )
 
@@ -83,7 +83,7 @@ lazy val commonSettings =
     // MUnit
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.3"  % Test,
-      "org.typelevel"     %% "munit-cats-effect-3"     % "1.0.6" % Test,
+      "org.typelevel"     %% "munit-cats-effect-3"     % "1.0.7" % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
