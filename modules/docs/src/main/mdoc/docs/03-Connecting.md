@@ -39,12 +39,14 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "org.postgresql.Driver",     // JDBC driver classname
+  "jdbc:postgresql:world",     // Connect URL
   "postgres",                  // user
   ""                           // password
 )
 ```
+
+Please consult your JDBC driver's documentation for the driver class name and connection URL.
 
 ```scala mdoc:invisible
 implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
