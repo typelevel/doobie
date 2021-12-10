@@ -15,6 +15,7 @@ import fs2._
 import fs2.text._
 
 import java.io.StringReader
+import fs2.text.utf8.encode
 
 class FragmentOps(f: Fragment) {
 
@@ -44,7 +45,7 @@ class FragmentOps(f: Fragment) {
   ): ConnectionIO[Long] = {
 
     val byteStream: Stream[ConnectionIO, Byte] =
-      stream.chunkMin(minChunkSize).map(foldToString(_)).through(utf8Encode)
+      stream.chunkMin(minChunkSize).map(foldToString(_)).through(encode)
 
     Stream.bracketCase(
       PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))
