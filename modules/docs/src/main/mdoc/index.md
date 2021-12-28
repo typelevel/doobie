@@ -93,6 +93,7 @@ Note that **doobie** is pre-1.0 software and is still undergoing active developm
 
 Listed newest first. If you have given a presentation or have written a blog post that includes **doobie**, let me know and I'll add it to this list.
 
+- [Learn Doobie for the Greater Good](https://blog.rockthejvm.com/doobie/) by Daniel Ciocîrlan, Rock the JVM Blog, 28-Dec 2021
 - [Typechecking SQL queries with doobie](https://blog.godatadriven.com/doobie-monix-jdbc-example) by Bas Beelen, GoDataDriven, 13-Feb 2018
 - [Doobie - Feedback from the Trenches](http://fr.slideshare.net/normation/doobie-feedbacks-from-the-trenches-scalaio-2016) by François Armand, ScalaIO, October 2016
 - [Pure Functional Database Programming with Fixpoint Types](https://www.youtube.com/watch?v=7xSfLPD6tiQ) by Rob Norris - Scala World, 2016 - [slides](http://tpolecat.github.io/presentations/sw2016/slides.html#1)
