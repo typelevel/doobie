@@ -6,8 +6,8 @@ package doobie.postgres
 
 import doobie._
 import doobie.util.invariant._
-
 import org.postgis._
+import org.postgresql.util.PGobject
 
 import scala.reflect.ClassTag
 import org.tpolecat.typename._
@@ -15,9 +15,10 @@ import org.tpolecat.typename._
 trait PgisInstances {
 
   // PostGIS outer types
-  implicit val PGgeometryType: Meta[PGgeometry] = Meta.Advanced.other[PGgeometry]("geometry")
-  implicit val PGbox3dType: Meta[PGbox3d]       = Meta.Advanced.other[PGbox3d]("box3d")
-  implicit val PGbox2dType: Meta[PGbox2d]       = Meta.Advanced.other[PGbox2d]("box2d")
+  implicit val PGGeographyType: Meta[PGgeography] = Meta.Advanced.other[PGgeography]("geography")
+  implicit val PGgeometryType: Meta[PGgeometry]   = Meta.Advanced.other[PGgeometry]("geometry")
+  implicit val PGbox3dType: Meta[PGbox3d]         = Meta.Advanced.other[PGbox3d]("box3d")
+  implicit val PGbox2dType: Meta[PGbox2d]         = Meta.Advanced.other[PGbox2d]("box2d")
 
   // Constructor for geometry types via the `Geometry` member of PGgeometry
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
@@ -27,6 +28,10 @@ trait PgisInstances {
       catch {
         case _: ClassCastException => throw InvalidObjectMapping(A.runtimeClass, g.getGeometry.getClass)
       })(new PGgeometry(_))
+
+  // geography point conversions
+  implicit val geographyPointGet: Get[Point] = Get[PGgeography].tmap(g => g.getGeometry.getFirstPoint)
+  implicit val geographyPointPut: Put[Point] = Put[PGgeography].tcontramap(p => new PGgeography(p.getFirstPoint))
 
   // PostGIS Geometry Types
   implicit val GeometryType: Meta[Geometry]                     = geometryType[Geometry]

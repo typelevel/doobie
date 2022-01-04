@@ -284,6 +284,10 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOutGeom[Polygon](pls.next())
   testInOutGeom[Point](pts.next())
 
+  val geographyPoint = new Point(41, 2)
+  geographyPoint.setSrid(4326)
+  testInOut[Point]("geography(POINT, 4326)", geographyPoint)
+
   // hstore
   testInOut[Map[String, String]]("hstore")
 }
