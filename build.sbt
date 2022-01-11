@@ -33,6 +33,9 @@ ThisBuild / githubWorkflowBuildPreamble +=
     name = Some("Start up Postgres"),
   )
 
+ThisBuild / scalaVersion := scala213Version
+ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
+
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
@@ -63,8 +66,6 @@ lazy val buildSettings = Seq(
 lazy val commonSettings =
   compilerFlags ++
   Seq(
-    scalaVersion := scala213Version,
-    crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
 
     // These sbt-header settings can't be set in ThisBuild for some reason
     headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
