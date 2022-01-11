@@ -39,9 +39,12 @@ ThisBuild / githubWorkflowBuildPreamble ++= Seq(
     commands = List("headerCheckAll"),
     name = Some("Check Headers"),
   ),
-  WorkflowStep.Run(
-    commands = List("sbt docs/makeSite"), // don't run the matrix build, it only works for `scalaVersion`
-    name = Some("Check Headers"),
+)
+ThisBuild / githubWorkflowBuildPostamble ++= Seq(
+  WorkflowStep.Sbt(
+    commands = List("docs/makeSite"),
+    name = Some(s"Check Doc Site ($scala213Version only)"),
+    cond = Some(s"matrix.scala == '$scala213Version'"),
   )
 )
 

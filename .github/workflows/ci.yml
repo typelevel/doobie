@@ -61,13 +61,14 @@ jobs:
       - name: Check Headers
         run: sbt ++${{ matrix.scala }} headerCheckAll
 
-      - name: Check Headers
-        run: sbt docs/makeSite
-
       - name: Check that workflows are up to date
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
       - run: sbt ++${{ matrix.scala }} ci
+
+      - name: Check Doc Site (2.13.7 only)
+        if: matrix.scala == '2.13.7'
+        run: sbt ++${{ matrix.scala }} docs/makeSite
 
       - name: Make target directories
         run: mkdir -p modules/scalatest/target modules/refined/target target modules/postgres/target modules/docs/target modules/postgres-circe/target modules/h2/target modules/hikari/target modules/munit/target modules/h2-circe/target modules/core/target modules/example/target modules/specs2/target modules/free/target modules/bench/target project/target
