@@ -23,8 +23,8 @@ lazy val scala213Version      = "2.13.7"
 lazy val scala30Version       = "3.1.0"
 lazy val slf4jVersion         = "1.7.32"
 
-
 ThisBuild / tlBaseVersion := "0.13"
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
 
