@@ -23,7 +23,10 @@ lazy val scala213Version      = "2.13.7"
 lazy val scala30Version       = "3.1.0"
 lazy val slf4jVersion         = "1.7.32"
 
+// Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
+ThisBuild / scalaVersion := scala213Version
+ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
@@ -32,9 +35,6 @@ ThisBuild / githubWorkflowBuildPreamble +=
     commands = List("docker-compose up -d"),
     name = Some("Start up Postgres"),
   )
-
-ThisBuild / scalaVersion := scala213Version
-ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
@@ -52,10 +52,6 @@ lazy val compilerFlags = Seq(
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
   )
-)
-
-val isDotty = Def.setting(
-  CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
 )
 
 lazy val buildSettings = Seq(
@@ -86,7 +82,7 @@ lazy val commonSettings =
     // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
       compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
-    ).filterNot(_ => isDotty.value),
+    ).filterNot(_ => tlIsScala3.value),
 
     // MUnit
     libraryDependencies ++= Seq(
@@ -125,7 +121,7 @@ lazy val commonSettings =
     // dottydoc really doesn't work at all right now
     Compile / doc / sources := {
       val old = (Compile / doc / sources).value
-      if (isDotty.value)
+      if (tlIsScala3.value)
         Seq()
       else
         old
@@ -134,10 +130,10 @@ lazy val commonSettings =
   )
 
 lazy val noDottySettings = Seq(
-  (publish / skip)    := (publish / skip).value || isDotty.value,
-  (Compile / sources) := { if (isDotty.value) Seq() else (Compile / sources).value },
-  (Test    / sources) := { if (isDotty.value) Seq() else (Test    / sources).value },
-  libraryDependencies := libraryDependencies.value.filterNot(_ => isDotty.value),
+  (publish / skip)    := (publish / skip).value || tlIsScala3.value,
+  (Compile / sources) := { if (tlIsScala3.value) Seq() else (Compile / sources).value },
+  (Test    / sources) := { if (tlIsScala3.value) Seq() else (Test    / sources).value },
+  libraryDependencies := libraryDependencies.value.filterNot(_ => tlIsScala3.value),
 )
 
 lazy val doobieSettings = buildSettings ++ commonSettings
@@ -179,7 +175,7 @@ lazy val free = project
       "org.typelevel"  %% "cats-effect" % catsEffectVersion,
     ) ++Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for macros
-    ).filterNot(_ => isDotty.value),
+    ).filterNot(_ => tlIsScala3.value),
     freeGen2Dir     := (Compile / scalaSource).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
@@ -214,7 +210,7 @@ lazy val core = project
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
-    ).filterNot(_ => isDotty.value) ++ Seq(
+    ).filterNot(_ => tlIsScala3.value) ++ Seq(
       "org.tpolecat"   %% "typename"  % "1.0.0",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
