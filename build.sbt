@@ -23,20 +23,22 @@ lazy val scala213Version      = "2.13.7"
 lazy val scala30Version       = "3.1.0"
 lazy val slf4jVersion         = "1.7.32"
 
-// These are releases to ignore during MiMa checks
-lazy val botchedReleases = Set("0.8.0", "0.8.1")
+
+ThisBuild / tlBaseVersion := "0.13"
+ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
+ThisBuild / tlSonatypeUseLegacyHost := false
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
 
 lazy val compilerFlags = Seq(
-  scalacOptions in (Compile, console) ++= Seq(
+  Compile / console / scalacOptions ++= Seq(
     "-Ydelambdafy:inline",    // http://fs2.io/faq.html
   ),
-  scalacOptions in (Compile, doc) --= Seq(
+  Compile / doc / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
-  scalacOptions in Test --= Seq(
+  Test / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
@@ -69,9 +71,9 @@ lazy val commonSettings =
     )),
 
     // Scaladoc options
-    scalacOptions in (Compile, doc) ++= Seq(
+    Compile / doc / scalacOptions ++= Seq(
       "-groups",
-      "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
+      "-sourcepath", (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-doc-source-url", "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
     ),
 
@@ -95,8 +97,8 @@ lazy val commonSettings =
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
 
     // Add some more source directories
-    unmanagedSourceDirectories in Compile ++= {
-      val sourceDir = (sourceDirectory in Compile).value
+    Compile / unmanagedSourceDirectories ++= {
+      val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _))  => Seq(sourceDir / "scala-3")
         case Some((2, _))  => Seq(sourceDir / "scala-2")
@@ -105,8 +107,8 @@ lazy val commonSettings =
     },
 
     // Also for test
-    unmanagedSourceDirectories in Test ++= {
-      val sourceDir = (sourceDirectory in Test).value
+    Test / unmanagedSourceDirectories ++= {
+      val sourceDir = (Test / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _))  => Seq(sourceDir / "scala-3")
         case Some((2, _))  => Seq(sourceDir / "scala-2")
@@ -125,20 +127,6 @@ lazy val commonSettings =
 
   )
 
-lazy val publishSettings = Seq(
-  homepage := Some(url("https://github.com/tpolecat/doobie")),
-  developers := List(
-    Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
-  ),
-  mappings in (Compile, packageSrc) ++= (managedSources in Compile).value pair sbt.io.Path.relativeTo(sourceManaged.value / "main" / "scala"),
-  mimaPreviousArtifacts ~= { as => as.filterNot(a => botchedReleases.contains(a.revision)) }
-)
-
-lazy val noPublishSettings = Seq(
-  skip in publish := true,
-  mimaPreviousArtifacts := Set()
-)
-
 lazy val noDottySettings = Seq(
   (publish / skip)    := (publish / skip).value || isDotty.value,
   (Compile / sources) := { if (isDotty.value) Seq() else (Compile / sources).value },
@@ -149,8 +137,8 @@ lazy val noDottySettings = Seq(
 lazy val doobieSettings = buildSettings ++ commonSettings
 
 lazy val doobie = project.in(file("."))
+  .enablePlugins(NoPublishPlugin)
   .settings(doobieSettings)
-  .settings(noPublishSettings)
   .aggregate(
     bench,
     core,
@@ -172,7 +160,6 @@ lazy val free = project
   .in(file("modules/free"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(freeGen2Settings)
   .settings(
     name := "doobie-free",
@@ -187,7 +174,7 @@ lazy val free = project
     ) ++Seq(
       scalaOrganization.value %  "scala-reflect" % scalaVersion.value, // required for macros
     ).filterNot(_ => isDotty.value),
-    freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "free",
+    freeGen2Dir     := (Compile / scalaSource).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
       import java.sql._
@@ -216,7 +203,6 @@ lazy val core = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(free)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
@@ -227,15 +213,15 @@ lazy val core = project
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
-    unmanagedSourceDirectories in Compile += {
-      val sourceDir = (sourceDirectory in Compile).value
+    Compile / unmanagedSourceDirectories += {
+      val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
         case _                       => sourceDir / "scala-2.13+"
       }
     },
-    sourceGenerators in Compile += Def.task {
-      val outDir = (sourceManaged in Compile).value / "scala" / "doobie"
+    Compile / sourceGenerators += Def.task {
+      val outDir = (Compile / sourceManaged).value / "scala" / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
       outDir.mkdirs
       val v = version.value
@@ -257,8 +243,9 @@ lazy val core = project
 
 lazy val example = project
   .in(file("modules/example"))
+  .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
-  .settings(doobieSettings ++ noPublishSettings)
+  .settings(doobieSettings)
   .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
   .settings(
     libraryDependencies ++= Seq(
@@ -271,7 +258,6 @@ lazy val postgres = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core % "compile->compile;test->test")
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(freeGen2Settings)
   .settings(
     name  := "doobie-postgres",
@@ -282,7 +268,7 @@ lazy val postgres = project
       postgisDep % "provided"
     ),
     scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
-    freeGen2Dir     := (scalaSource in Compile).value / "doobie" / "postgres" / "free",
+    freeGen2Dir     := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
     freeGen2Classes := {
       import java.sql._
@@ -314,7 +300,7 @@ lazy val postgres = project
       import org.postgresql.util._
       import org.postgresql.geometric._
       """,
-    initialCommands in consoleQuick := ""
+    consoleQuick / initialCommands := ""
   )
 
 lazy val `postgres-circe` = project
@@ -322,7 +308,6 @@ lazy val `postgres-circe` = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core, postgres)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name  := "doobie-postgres-circe",
     description := "Postgres circe support for doobie.",
@@ -336,7 +321,6 @@ lazy val h2 = project
   .in(file("modules/h2"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .dependsOn(core % "compile->compile;test->test")
   .settings(
     name  := "doobie-h2",
@@ -350,7 +334,6 @@ lazy val `h2-circe` = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core, h2)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name  := "doobie-h2-circe",
     description := "h2 circe support for doobie.",
@@ -366,7 +349,6 @@ lazy val hikari = project
   .dependsOn(core)
   .dependsOn(postgres % "test")
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
@@ -385,7 +367,6 @@ lazy val specs2 = project
   .dependsOn(core)
   .dependsOn(h2 % "test")
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name := "doobie-specs2",
     description := "Specs2 support for doobie.",
@@ -398,7 +379,6 @@ lazy val scalatest = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name := s"doobie-scalatest",
     description := "Scalatest support for doobie.",
@@ -413,7 +393,6 @@ lazy val munit = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name := s"doobie-munit",
     description := "MUnit support for doobie.",
@@ -426,21 +405,21 @@ lazy val munit = project
 
 lazy val bench = project
   .in(file("modules/bench"))
+  .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(JmhPlugin)
   .dependsOn(core, postgres)
   .settings(doobieSettings)
-  .settings(noPublishSettings)
 
 lazy val docs = project
   .in(file("modules/docs"))
   .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest)
+  .enablePlugins(NoPublishPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
   .enablePlugins(MdocPlugin)
   .settings(doobieSettings)
-  .settings(noPublishSettings)
   .settings(
     scalacOptions := Nil,
 
@@ -460,7 +439,7 @@ lazy val docs = project
     paradoxTheme       := Some(builtinParadoxTheme("generic")),
     version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     paradoxProperties ++= Map(
-      "scala-versions"           -> (crossScalaVersions in core).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
+      "scala-versions"           -> (core / crossScalaVersions).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
       "org"                      -> organization.value,
       "scala.binary.version"     -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
       "core-dep"                 -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
@@ -487,7 +466,6 @@ lazy val refined = project
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
-  .settings(publishSettings)
   .settings(
     name := "doobie-refined",
     description := "Refined support for doobie.",
