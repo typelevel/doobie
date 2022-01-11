@@ -24,9 +24,14 @@ lazy val scala30Version       = "3.1.0"
 lazy val slf4jVersion         = "1.7.32"
 
 ThisBuild / tlBaseVersion := "0.13"
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowBuildPreamble +=
+  WorkflowStep.Run(
+    commands = List("docker-compose up -d"),
+    name = Some("Start up Postgres"),
+  )
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
