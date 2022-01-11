@@ -30,11 +30,20 @@ ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30V
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
-ThisBuild / githubWorkflowBuildPreamble +=
+ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   WorkflowStep.Run(
     commands = List("docker-compose up -d"),
     name = Some("Start up Postgres"),
+  ),
+  WorkflowStep.Sbt(
+    commands = List("headerCheckAll"),
+    name = Some("Check Headers"),
+  ),
+  WorkflowStep.Run(
+    commands = List("sbt docs/makeSite"), // don't run the matrix build, it only works for `scalaVersion`
+    name = Some("Check Headers"),
   )
+)
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion

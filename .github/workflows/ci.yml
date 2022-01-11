@@ -58,6 +58,12 @@ jobs:
       - name: Start up Postgres
         run: docker-compose up -d
 
+      - name: Check Headers
+        run: sbt ++${{ matrix.scala }} headerCheckAll
+
+      - name: Check Headers
+        run: sbt docs/makeSite
+
       - name: Check that workflows are up to date
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
