@@ -25,6 +25,7 @@ lazy val slf4jVersion         = "1.7.32"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
+ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshits on `main`
 ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
