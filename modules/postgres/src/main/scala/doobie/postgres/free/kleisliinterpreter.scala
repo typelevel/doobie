@@ -18,13 +18,21 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
+import java.lang.Class
+import java.lang.String
+import java.sql.{ Array => SqlArray }
+import java.util.Map
 import org.postgresql.PGConnection
+import org.postgresql.PGNotification
+import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.jdbc.AutoSave
+import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
+import org.postgresql.replication.PGReplicationConnection
 import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
@@ -310,6 +318,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))
     override def escapeIdentifier(a: String) = primitive(_.escapeIdentifier(a))
     override def escapeLiteral(a: String) = primitive(_.escapeLiteral(a))
+    override def getAdaptiveFetch = primitive(_.getAdaptiveFetch)
     override def getAutosave = primitive(_.getAutosave)
     override def getBackendPID = primitive(_.getBackendPID)
     override def getCopyAPI = primitive(_.getCopyAPI)
@@ -322,6 +331,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getPreferQueryMode = primitive(_.getPreferQueryMode)
     override def getPrepareThreshold = primitive(_.getPrepareThreshold)
     override def getReplicationAPI = primitive(_.getReplicationAPI)
+    override def setAdaptiveFetch(a: Boolean) = primitive(_.setAdaptiveFetch(a))
     override def setAutosave(a: AutoSave) = primitive(_.setAutosave(a))
     override def setDefaultFetchSize(a: Int) = primitive(_.setDefaultFetchSize(a))
     override def setPrepareThreshold(a: Int) = primitive(_.setPrepareThreshold(a))

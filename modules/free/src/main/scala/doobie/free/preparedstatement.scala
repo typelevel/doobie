@@ -85,9 +85,6 @@ object preparedstatement { module =>
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def closeOnCompletion: F[Unit]
-      def enquoteIdentifier(a: String, b: Boolean): F[String]
-      def enquoteLiteral(a: String): F[String]
-      def enquoteNCharLiteral(a: String): F[String]
       def execute: F[Boolean]
       def execute(a: String): F[Boolean]
       def execute(a: String, b: Array[Int]): F[Boolean]
@@ -129,7 +126,6 @@ object preparedstatement { module =>
       def isCloseOnCompletion: F[Boolean]
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
-      def isSimpleIdentifier(a: String): F[Boolean]
       def isWrapperFor(a: Class[_]): F[Boolean]
       def setArray(a: Int, b: SqlArray): F[Unit]
       def setAsciiStream(a: Int, b: InputStream): F[Unit]
@@ -259,15 +255,6 @@ object preparedstatement { module =>
     case object CloseOnCompletion extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
     }
-    final case class EnquoteIdentifier(a: String, b: Boolean) extends PreparedStatementOp[String] {
-      def visit[F[_]](v: Visitor[F]) = v.enquoteIdentifier(a, b)
-    }
-    final case class EnquoteLiteral(a: String) extends PreparedStatementOp[String] {
-      def visit[F[_]](v: Visitor[F]) = v.enquoteLiteral(a)
-    }
-    final case class EnquoteNCharLiteral(a: String) extends PreparedStatementOp[String] {
-      def visit[F[_]](v: Visitor[F]) = v.enquoteNCharLiteral(a)
-    }
     case object Execute extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute
     }
@@ -390,9 +377,6 @@ object preparedstatement { module =>
     }
     case object IsPoolable extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
-    }
-    final case class IsSimpleIdentifier(a: String) extends PreparedStatementOp[Boolean] {
-      def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
     }
     final case class IsWrapperFor(a: Class[_]) extends PreparedStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
@@ -607,9 +591,6 @@ object preparedstatement { module =>
   val clearWarnings: PreparedStatementIO[Unit] = FF.liftF(ClearWarnings)
   val close: PreparedStatementIO[Unit] = FF.liftF(Close)
   val closeOnCompletion: PreparedStatementIO[Unit] = FF.liftF(CloseOnCompletion)
-  def enquoteIdentifier(a: String, b: Boolean): PreparedStatementIO[String] = FF.liftF(EnquoteIdentifier(a, b))
-  def enquoteLiteral(a: String): PreparedStatementIO[String] = FF.liftF(EnquoteLiteral(a))
-  def enquoteNCharLiteral(a: String): PreparedStatementIO[String] = FF.liftF(EnquoteNCharLiteral(a))
   val execute: PreparedStatementIO[Boolean] = FF.liftF(Execute)
   def execute(a: String): PreparedStatementIO[Boolean] = FF.liftF(Execute1(a))
   def execute(a: String, b: Array[Int]): PreparedStatementIO[Boolean] = FF.liftF(Execute2(a, b))
@@ -651,7 +632,6 @@ object preparedstatement { module =>
   val isCloseOnCompletion: PreparedStatementIO[Boolean] = FF.liftF(IsCloseOnCompletion)
   val isClosed: PreparedStatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: PreparedStatementIO[Boolean] = FF.liftF(IsPoolable)
-  def isSimpleIdentifier(a: String): PreparedStatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
   def isWrapperFor(a: Class[_]): PreparedStatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def setArray(a: Int, b: SqlArray): PreparedStatementIO[Unit] = FF.liftF(SetArray(a, b))
   def setAsciiStream(a: Int, b: InputStream): PreparedStatementIO[Unit] = FF.liftF(SetAsciiStream(a, b))
