@@ -20,4 +20,6 @@ package object postgres
   object pgisimplicits
     extends PgisInstances
 
+  object pgisgeographyimplicits
+    extends PgisGeographyInstances
 }
