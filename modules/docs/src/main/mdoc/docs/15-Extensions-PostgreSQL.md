@@ -213,6 +213,25 @@ In addition to the general types above, **doobie** provides mappings for the fol
 - `Polygon`
 - `Point`
 
+[Geographic types](http://postgis.net/workshops/postgis-intro/geography.html) mappings are defined in a different object (`pgisgeographyimplicits`), to allow geometric types using geodetic coordinates.
+
+```
+import doobie.postgres.pgisgeographyimplicits._
+
+// or define the implicit conversion manually
+
+implicit val geographyPoint: Meta[Point] =
+  doobie.postgres.pgisgeographyimplicits.PointType
+```
+- Point
+- Polygon
+- MultiPoint
+- LineString
+- PointComposedGeom
+- MultiPolygon
+- MultiLineString
+
+
 ### Other Nonstandard Types
 
 - The `uuid` schema type is supported and maps to `java.util.UUID`.
