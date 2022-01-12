@@ -11,8 +11,6 @@ import doobie.postgres.implicits._
 import doobie.util.analysis.{ColumnTypeWarning, ColumnTypeError}
 
 import java.time.{Instant, OffsetDateTime, LocalDate, LocalDateTime, LocalTime}
-import scala.concurrent.ExecutionContext
-
 
 class CheckSuite extends munit.FunSuite {
 
@@ -30,7 +28,7 @@ class CheckSuite extends munit.FunSuite {
   }
 
   test("OffsetDateTime Read and Write typechecks") {
-    val t = OffsetDateTime.parse("2019-02-13T22:03:21.000+08")
+    val t = OffsetDateTime.parse("2019-02-13T22:03:21.000+08:00")
     successRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[OffsetDateTime](t, "TIMESTAMPTZ")
 
