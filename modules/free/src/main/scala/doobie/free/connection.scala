@@ -23,7 +23,6 @@ import java.sql.PreparedStatement
 import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
-import java.sql.ShardingKey
 import java.sql.Statement
 import java.sql.Struct
 import java.sql.{ Array => SqlArray }
@@ -73,7 +72,6 @@ object connection { module =>
 
       // Connection
       def abort(a: Executor): F[Unit]
-      def beginRequest: F[Unit]
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def commit: F[Unit]
@@ -86,7 +84,6 @@ object connection { module =>
       def createStatement(a: Int, b: Int): F[Statement]
       def createStatement(a: Int, b: Int, c: Int): F[Statement]
       def createStruct(a: String, b: Array[AnyRef]): F[Struct]
-      def endRequest: F[Unit]
       def getAutoCommit: F[Boolean]
       def getCatalog: F[String]
       def getClientInfo: F[Properties]
@@ -125,10 +122,6 @@ object connection { module =>
       def setSavepoint: F[Savepoint]
       def setSavepoint(a: String): F[Savepoint]
       def setSchema(a: String): F[Unit]
-      def setShardingKey(a: ShardingKey): F[Unit]
-      def setShardingKey(a: ShardingKey, b: ShardingKey): F[Unit]
-      def setShardingKeyIfValid(a: ShardingKey, b: Int): F[Boolean]
-      def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int): F[Boolean]
       def setTransactionIsolation(a: Int): F[Unit]
       def setTypeMap(a: Map[String, Class[_]]): F[Unit]
       def unwrap[T](a: Class[T]): F[T]
@@ -180,9 +173,6 @@ object connection { module =>
     final case class Abort(a: Executor) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.abort(a)
     }
-    case object BeginRequest extends ConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.beginRequest
-    }
     case object ClearWarnings extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
     }
@@ -218,9 +208,6 @@ object connection { module =>
     }
     final case class CreateStruct(a: String, b: Array[AnyRef]) extends ConnectionOp[Struct] {
       def visit[F[_]](v: Visitor[F]) = v.createStruct(a, b)
-    }
-    case object EndRequest extends ConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.endRequest
     }
     case object GetAutoCommit extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getAutoCommit
@@ -336,18 +323,6 @@ object connection { module =>
     final case class SetSchema(a: String) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setSchema(a)
     }
-    final case class SetShardingKey(a: ShardingKey) extends ConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.setShardingKey(a)
-    }
-    final case class SetShardingKey1(a: ShardingKey, b: ShardingKey) extends ConnectionOp[Unit] {
-      def visit[F[_]](v: Visitor[F]) = v.setShardingKey(a, b)
-    }
-    final case class SetShardingKeyIfValid(a: ShardingKey, b: Int) extends ConnectionOp[Boolean] {
-      def visit[F[_]](v: Visitor[F]) = v.setShardingKeyIfValid(a, b)
-    }
-    final case class SetShardingKeyIfValid1(a: ShardingKey, b: ShardingKey, c: Int) extends ConnectionOp[Boolean] {
-      def visit[F[_]](v: Visitor[F]) = v.setShardingKeyIfValid(a, b, c)
-    }
     final case class SetTransactionIsolation(a: Int) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTransactionIsolation(a)
     }
@@ -383,7 +358,6 @@ object connection { module =>
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
-  val beginRequest: ConnectionIO[Unit] = FF.liftF(BeginRequest)
   val clearWarnings: ConnectionIO[Unit] = FF.liftF(ClearWarnings)
   val close: ConnectionIO[Unit] = FF.liftF(Close)
   val commit: ConnectionIO[Unit] = FF.liftF(Commit)
@@ -396,7 +370,6 @@ object connection { module =>
   def createStatement(a: Int, b: Int): ConnectionIO[Statement] = FF.liftF(CreateStatement1(a, b))
   def createStatement(a: Int, b: Int, c: Int): ConnectionIO[Statement] = FF.liftF(CreateStatement2(a, b, c))
   def createStruct(a: String, b: Array[AnyRef]): ConnectionIO[Struct] = FF.liftF(CreateStruct(a, b))
-  val endRequest: ConnectionIO[Unit] = FF.liftF(EndRequest)
   val getAutoCommit: ConnectionIO[Boolean] = FF.liftF(GetAutoCommit)
   val getCatalog: ConnectionIO[String] = FF.liftF(GetCatalog)
   val getClientInfo: ConnectionIO[Properties] = FF.liftF(GetClientInfo)
@@ -435,10 +408,6 @@ object connection { module =>
   val setSavepoint: ConnectionIO[Savepoint] = FF.liftF(SetSavepoint)
   def setSavepoint(a: String): ConnectionIO[Savepoint] = FF.liftF(SetSavepoint1(a))
   def setSchema(a: String): ConnectionIO[Unit] = FF.liftF(SetSchema(a))
-  def setShardingKey(a: ShardingKey): ConnectionIO[Unit] = FF.liftF(SetShardingKey(a))
-  def setShardingKey(a: ShardingKey, b: ShardingKey): ConnectionIO[Unit] = FF.liftF(SetShardingKey1(a, b))
-  def setShardingKeyIfValid(a: ShardingKey, b: Int): ConnectionIO[Boolean] = FF.liftF(SetShardingKeyIfValid(a, b))
-  def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int): ConnectionIO[Boolean] = FF.liftF(SetShardingKeyIfValid1(a, b, c))
   def setTransactionIsolation(a: Int): ConnectionIO[Unit] = FF.liftF(SetTransactionIsolation(a))
   def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))

@@ -8,7 +8,6 @@ import cats.effect.IO
 import cats.syntax.apply._
 import doobie._, doobie.implicits._
 
-
 class StrategySuite extends munit.FunSuite {
 
   import cats.effect.unsafe.implicits.global
@@ -45,6 +44,7 @@ class StrategySuite extends munit.FunSuite {
       override val rollback = delay(Connection.rollback = Some(())) *> super.rollback
       override val commit = delay(Connection.commit = Some(())) *> super.commit
       override def setAutoCommit(b: Boolean) = delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
+      override def getTypeMap = super.getTypeMap.asInstanceOf // No idea. Type error on Java 8 if we don't do this.
     }
 
     override lazy val PreparedStatementInterpreter = new PreparedStatementInterpreter {

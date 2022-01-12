@@ -221,7 +221,6 @@ object databasemetadata { module =>
       def supportsSchemasInProcedureCalls: F[Boolean]
       def supportsSchemasInTableDefinitions: F[Boolean]
       def supportsSelectForUpdate: F[Boolean]
-      def supportsSharding: F[Boolean]
       def supportsStatementPooling: F[Boolean]
       def supportsStoredFunctionsUsingCallSyntax: F[Boolean]
       def supportsStoredProcedures: F[Boolean]
@@ -769,9 +768,6 @@ object databasemetadata { module =>
     case object SupportsSelectForUpdate extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSelectForUpdate
     }
-    case object SupportsSharding extends DatabaseMetaDataOp[Boolean] {
-      def visit[F[_]](v: Visitor[F]) = v.supportsSharding
-    }
     case object SupportsStatementPooling extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsStatementPooling
     }
@@ -1007,7 +1003,6 @@ object databasemetadata { module =>
   val supportsSchemasInProcedureCalls: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSchemasInProcedureCalls)
   val supportsSchemasInTableDefinitions: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSchemasInTableDefinitions)
   val supportsSelectForUpdate: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSelectForUpdate)
-  val supportsSharding: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSharding)
   val supportsStatementPooling: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsStatementPooling)
   val supportsStoredFunctionsUsingCallSyntax: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsStoredFunctionsUsingCallSyntax)
   val supportsStoredProcedures: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsStoredProcedures)

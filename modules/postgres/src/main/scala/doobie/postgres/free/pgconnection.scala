@@ -69,6 +69,7 @@ object pgconnection { module =>
       def createArrayOf(a: String, b: AnyRef): F[SqlArray]
       def escapeIdentifier(a: String): F[String]
       def escapeLiteral(a: String): F[String]
+      def getAdaptiveFetch: F[Boolean]
       def getAutosave: F[AutoSave]
       def getBackendPID: F[Int]
       def getCopyAPI: F[PGCopyManager]
@@ -81,6 +82,7 @@ object pgconnection { module =>
       def getPreferQueryMode: F[PreferQueryMode]
       def getPrepareThreshold: F[Int]
       def getReplicationAPI: F[PGReplicationConnection]
+      def setAdaptiveFetch(a: Boolean): F[Unit]
       def setAutosave(a: AutoSave): F[Unit]
       def setDefaultFetchSize(a: Int): F[Unit]
       def setPrepareThreshold(a: Int): F[Unit]
@@ -144,6 +146,9 @@ object pgconnection { module =>
     final case class EscapeLiteral(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.escapeLiteral(a)
     }
+    case object GetAdaptiveFetch extends PGConnectionOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.getAdaptiveFetch
+    }
     case object GetAutosave extends PGConnectionOp[AutoSave] {
       def visit[F[_]](v: Visitor[F]) = v.getAutosave
     }
@@ -179,6 +184,9 @@ object pgconnection { module =>
     }
     case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
       def visit[F[_]](v: Visitor[F]) = v.getReplicationAPI
+    }
+    final case class SetAdaptiveFetch(a: Boolean) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setAdaptiveFetch(a)
     }
     final case class SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAutosave(a)
@@ -219,6 +227,7 @@ object pgconnection { module =>
   def createArrayOf(a: String, b: AnyRef): PGConnectionIO[SqlArray] = FF.liftF(CreateArrayOf(a, b))
   def escapeIdentifier(a: String): PGConnectionIO[String] = FF.liftF(EscapeIdentifier(a))
   def escapeLiteral(a: String): PGConnectionIO[String] = FF.liftF(EscapeLiteral(a))
+  val getAdaptiveFetch: PGConnectionIO[Boolean] = FF.liftF(GetAdaptiveFetch)
   val getAutosave: PGConnectionIO[AutoSave] = FF.liftF(GetAutosave)
   val getBackendPID: PGConnectionIO[Int] = FF.liftF(GetBackendPID)
   val getCopyAPI: PGConnectionIO[PGCopyManager] = FF.liftF(GetCopyAPI)
@@ -231,6 +240,7 @@ object pgconnection { module =>
   val getPreferQueryMode: PGConnectionIO[PreferQueryMode] = FF.liftF(GetPreferQueryMode)
   val getPrepareThreshold: PGConnectionIO[Int] = FF.liftF(GetPrepareThreshold)
   val getReplicationAPI: PGConnectionIO[PGReplicationConnection] = FF.liftF(GetReplicationAPI)
+  def setAdaptiveFetch(a: Boolean): PGConnectionIO[Unit] = FF.liftF(SetAdaptiveFetch(a))
   def setAutosave(a: AutoSave): PGConnectionIO[Unit] = FF.liftF(SetAutosave(a))
   def setDefaultFetchSize(a: Int): PGConnectionIO[Unit] = FF.liftF(SetDefaultFetchSize(a))
   def setPrepareThreshold(a: Int): PGConnectionIO[Unit] = FF.liftF(SetPrepareThreshold(a))
