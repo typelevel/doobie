@@ -321,10 +321,11 @@ object transactor  {
      * @param blocker for blocking database operations
      * @group Constructors
      */
-    def fromConnection[M[_]: Applicative]: FromConnectionUnapplied[M] = new FromConnectionUnapplied[M](LogHandlerM.noop)
+    def fromConnection[M[_]]: FromConnectionUnapplied[M] = new FromConnectionUnapplied[M](None)
 
-    class FromConnectionUnapplied[M[_]](logHandler: LogHandlerM[M]) {
-      def withLogHandler(logHandler: LogHandlerM[M]) = new FromConnectionUnapplied(logHandler)
+    class FromConnectionUnapplied[M[_]](maybeLogHandler: Option[LogHandlerM[M]]) {
+      def withLogHandler(logHandler: LogHandlerM[M]) = new FromConnectionUnapplied(Some(logHandler))
+      private def logHandler(implicit A: Applicative[M]): LogHandlerM[M] = maybeLogHandler.getOrElse(LogHandlerM.noop)
 
       def apply(connection: Connection)(implicit async: Async[M]): Transactor.Aux[M, Connection] = {
         val connect = (c: Connection) => Resource.pure[M, Connection](c)
