@@ -66,7 +66,7 @@ jobs:
 
       - run: sbt ++${{ matrix.scala }} ci
 
-      - name: Check Doc Site (2.13.7 only)
+      - name: Check Doc Site (2.13.8 only)
         if: matrix.scala == '2.13.8'
         run: sbt ++${{ matrix.scala }} docs/makeSite
 
@@ -127,12 +127,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.7)
+      - name: Download target directories (2.13.8)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-2.13.7-${{ matrix.java }}
+          name: target-${{ matrix.os }}-2.13.8-${{ matrix.java }}
 
-      - name: Inflate target directories (2.13.7)
+      - name: Inflate target directories (2.13.8)
         run: |
           tar xf targets.tar
           rm targets.tar
