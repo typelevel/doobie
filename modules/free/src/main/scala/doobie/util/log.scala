@@ -4,6 +4,7 @@
 
 package doobie.util
 
+import cats.Applicative
 import cats.effect.Sync
 
 import java.util.logging.Logger
@@ -106,6 +107,9 @@ object log {
    * @group Handlers
    */
   object LogHandlerM {
+    def noop[M[_]: Applicative]: LogHandlerM[M] =
+      _ => Applicative[M].unit
+
     def apply[M[_]: Sync](f: LogEvent => Unit): LogHandlerM[M] =
       (logEvent: LogEvent) => Sync[M].delay(f(logEvent))
 

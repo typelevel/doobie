@@ -11,7 +11,7 @@ import doobie.implicits._
 import doobie.util.lens._
 import doobie.util.log.LogHandlerM
 import doobie.util.yolo.Yolo
-import cats.{Monad, ~>}
+import cats.{Applicative, Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, MonadCancelThrow, Resource}
 import cats.effect.kernel.Resource.ExitCase
@@ -297,9 +297,9 @@ object transactor  {
        * Constructor of `Transactor[M, D]` fixed for `M`; see the `apply` method for details.
        * @group Constructors (Partially Applied)
        */
-      class FromDataSourceUnapplied[M[_]](logHandler: Option[LogHandlerM[M]]) {
+      class FromDataSourceUnapplied[M[_]](maybeLogHandler: Option[LogHandlerM[M]]) {
         def withLogHandler(logHandler: LogHandlerM[M]): FromDataSourceUnapplied[M] = new FromDataSourceUnapplied(Some(logHandler))
-        def withLogHandler(logHandler: Option[LogHandlerM[M]]): FromDataSourceUnapplied[M] = new FromDataSourceUnapplied(logHandler)
+        private def logHandler(implicit A: Applicative[M]): LogHandlerM[M] = maybeLogHandler.getOrElse(LogHandlerM.noop)
 
         def apply[A <: DataSource](dataSource: A, connectEC: ExecutionContext)(implicit ev: Async[M]): Transactor.Aux[M, A] = {
           val connect = (dataSource: A) => {
@@ -321,10 +321,10 @@ object transactor  {
      * @param blocker for blocking database operations
      * @group Constructors
      */
-    def fromConnection[M[_]]: FromConnectionUnapplied[M] = new FromConnectionUnapplied[M](None)
+    def fromConnection[M[_]: Applicative]: FromConnectionUnapplied[M] = new FromConnectionUnapplied[M](LogHandlerM.noop)
 
-    class FromConnectionUnapplied[M[_]](logHandler: Option[LogHandlerM[M]]) {
-      def withLogHandler(logHandler: LogHandlerM[M]) = new FromConnectionUnapplied(Some(logHandler))
+    class FromConnectionUnapplied[M[_]](logHandler: LogHandlerM[M]) {
+      def withLogHandler(logHandler: LogHandlerM[M]) = new FromConnectionUnapplied(logHandler)
 
       def apply(connection: Connection)(implicit async: Async[M]): Transactor.Aux[M, Connection] = {
         val connect = (c: Connection) => Resource.pure[M, Connection](c)
@@ -342,11 +342,12 @@ object transactor  {
      * TL;DR this is fine for console apps but don't use it for a web application.
      * @group Constructors
      */
-    def fromDriverManager[M[_]] = new FromDriverManagerUnapplied[M](logHandler = None)
+    def fromDriverManager[M[_]] = new FromDriverManagerUnapplied[M](maybeLogHandler = None)
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    class FromDriverManagerUnapplied[M[_]](logHandler: Option[LogHandlerM[M]]) {
+    class FromDriverManagerUnapplied[M[_]](maybeLogHandler: Option[LogHandlerM[M]]) {
       def withLogHandler(logHandler: LogHandlerM[M]) = new FromDriverManagerUnapplied(Some(logHandler))
+      private def logHandler(implicit A: Applicative[M]): LogHandlerM[M] = maybeLogHandler.getOrElse(LogHandlerM.noop)
 
       @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create(

@@ -415,7 +415,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
        |    override def canceled = outer.canceled[${sname}]
        |
-       |    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler match {case Some(lh) => lh.run(event); case None => asyncM.pure(())})
+       |    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
        |
        |    // for operations using ${ioname} we must call ourself recursively
        |    override def handleErrorWith[A](fa: ${ioname}[A])(f: Throwable => ${ioname}[A]) = outer.handleErrorWith(this)(fa)(f)
@@ -464,12 +464,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
       |object KleisliInterpreter {
-      |  def apply[M[_]: WeakAsync](logHandler: Option[LogHandlerM[M]]): KleisliInterpreter[M] =
+      |  def apply[M[_]: WeakAsync](logHandler: LogHandlerM[M]): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M](logHandler)
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
-      |class KleisliInterpreter[M[_]](logHandler: Option[LogHandlerM[M]])(implicit val asyncM: WeakAsync[M]) { outer =>
+      |class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: WeakAsync[M]) { outer =>
       |  import WeakAsync._
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
