@@ -73,7 +73,7 @@ jobs:
       - name: Generate API documentation
         run: sbt '++${{ matrix.scala }}' doc
 
-      - name: Check Doc Site (2.13.7 only)
+      - name: Check Doc Site (2.13.8 only)
         if: matrix.scala == '2.13.8'
         run: sbt '++${{ matrix.scala }}' docs/makeSite
 
