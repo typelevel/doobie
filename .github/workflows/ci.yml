@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 2.13.7, 3.1.0]
+        scala: [2.12.15, 2.13.8, 3.1.0]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -73,8 +73,8 @@ jobs:
       - name: Generate API documentation
         run: sbt '++${{ matrix.scala }}' doc
 
-      - name: Check Doc Site (2.13.7 only)
-        if: matrix.scala == '2.13.7'
+      - name: Check Doc Site (2.13.8 only)
+        if: matrix.scala == '2.13.8'
         run: sbt '++${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
@@ -96,7 +96,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.7]
+        scala: [2.13.8]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -134,12 +134,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.7)
+      - name: Download target directories (2.13.8)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-2.13.7-${{ matrix.java }}
+          name: target-${{ matrix.os }}-2.13.8-${{ matrix.java }}
 
-      - name: Inflate target directories (2.13.7)
+      - name: Inflate target directories (2.13.8)
         run: |
           tar xf targets.tar
           rm targets.tar
