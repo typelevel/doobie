@@ -74,7 +74,7 @@ jobs:
         run: sbt '++${{ matrix.scala }}' doc
 
       - name: Check Doc Site (2.13.7 only)
-        if: matrix.scala == '2.13.7'
+        if: matrix.scala == '2.13.8'
         run: sbt '++${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
