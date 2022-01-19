@@ -21,7 +21,7 @@ lazy val specs2Version        = "4.13.0"
 lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
 lazy val scala30Version       = "3.1.0"
-lazy val slf4jVersion         = "1.7.32"
+lazy val slf4jVersion         = "1.7.33"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
