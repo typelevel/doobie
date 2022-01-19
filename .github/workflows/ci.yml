@@ -59,16 +59,23 @@ jobs:
         run: docker-compose up -d
 
       - name: Check Headers
-        run: sbt ++${{ matrix.scala }} headerCheckAll
+        run: sbt '++${{ matrix.scala }}' headerCheckAll
 
       - name: Check that workflows are up to date
-        run: sbt ++${{ matrix.scala }} githubWorkflowCheck
+        run: sbt '++${{ matrix.scala }}' 'project /' githubWorkflowCheck
 
-      - run: sbt ++${{ matrix.scala }} ci
+      - name: Test
+        run: sbt '++${{ matrix.scala }}' test
+
+      - name: Check binary compatibility
+        run: sbt '++${{ matrix.scala }}' mimaReportBinaryIssues
+
+      - name: Generate API documentation
+        run: sbt '++${{ matrix.scala }}' doc
 
       - name: Check Doc Site (2.13.7 only)
         if: matrix.scala == '2.13.7'
-        run: sbt ++${{ matrix.scala }} docs/makeSite
+        run: sbt '++${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
         run: mkdir -p modules/scalatest/target modules/refined/target target modules/postgres/target modules/docs/target modules/postgres-circe/target modules/h2/target modules/hikari/target modules/munit/target modules/h2-circe/target modules/core/target modules/example/target modules/specs2/target modules/free/target modules/bench/target project/target
@@ -158,4 +165,5 @@ jobs:
           echo "$PGP_PASSPHRASE" | gpg --pinentry-mode loopback --passphrase-fd 0 --import /tmp/signing-key.gpg
           (echo "$PGP_PASSPHRASE"; echo; echo) | gpg --command-fd 0 --pinentry-mode loopback --change-passphrase $(gpg --list-secret-keys --with-colons 2> /dev/null | grep '^sec:' | cut --delimiter ':' --fields 5 | tail -n 1)
 
-      - run: sbt ++${{ matrix.scala }} tlRelease
+      - name: Publish
+        run: sbt '++${{ matrix.scala }}' tlRelease
