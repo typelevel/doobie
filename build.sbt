@@ -3,25 +3,25 @@ import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.7.0"
-lazy val catsEffectVersion    = "3.3.4"
+lazy val catsEffectVersion    = "3.3.5"
 lazy val circeVersion         = "0.14.1"
 lazy val fs2Version           = "3.2.4"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val postGisVersion       = "2.5.1"
-lazy val postgresVersion      = "42.3.1"
+lazy val postgresVersion      = "42.3.3"
 lazy val refinedVersion       = "0.9.28"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.10"
 lazy val munitVersion         = "0.7.29"
-lazy val shapelessVersion     = "2.3.7"
+lazy val shapelessVersion     = "2.3.8"
 lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.13.2"
 lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
-lazy val scala30Version       = "3.1.0"
-lazy val slf4jVersion         = "1.7.35"
+lazy val scala30Version       = "3.1.1"
+lazy val slf4jVersion         = "1.7.36"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
