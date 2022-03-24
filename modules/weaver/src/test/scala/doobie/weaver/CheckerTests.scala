@@ -11,7 +11,7 @@ import doobie.util.transactor.Transactor
 import weaver._
 import cats.effect.kernel.Resource
 
-object CheckerChecks extends IOSuite with IOChecker {
+object CheckerTests extends IOSuite with IOChecker {
 
   override type Res = Transactor[IO]
   override def sharedResource: Resource[IO,Res] = 
@@ -59,4 +59,3 @@ object CheckerChecks extends IOSuite with IOChecker {
   }
 
 }
-
