@@ -35,17 +35,14 @@ Given this information a `Transactor[M]` can provide the following transformatio
 
 So summarizing, once you have a `Transactor[M]` you have a way of discharging `ConnectionIO` and replacing it with some effectful `M` like `IO`. In effect this turns a **doobie** program into a "real" program value that you can integrate with the rest of your application; all doobieness is left behind.
 
-### About Threading
+### About threading
 
-Starting with version 0.6.0 **doobie** provides an asynchronous API that delegates blocking operations to dedicated execution contexts *if you use the provided `Transactor` implementations*. To construct any of the provided `Transactor[M]`s (other than `DriverManagerTransactor`) you need
+Throughout our doobie program we will run both non-blocking CPU-bound tasks or blocking JDBC operations.
+Both of these will be handled by the Cats-Effect runtime.
 
-- `ContextShift[M]`, which provides a CPU-bound pool for **non-blocking operations**. If you use `IOApp` and interpret into `IO` the ContextShift will be backed by a fixed thread pool matching the numbers of your processors.
-- An `ExecutionContext` for **awaiting connection** to the database. Because there can be an unbounded number of connections awaiting database access this should be a **bounded** pool.
-- A `cats.effect.Blocker` for **executing JDBC operations**. Because your connection pool limits the number of active connections this should be an **unbounded** pool.
-
-The reason for having separate pools for awaiting connections and executing JDBC operations is liveness - we must avoid the situation where all the threads in the pool are blocked on acquiring a JDBC connection, meaning that no logical threads are able to make progress and release the connection they're currently holding.
-
-Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
+Requesting and waiting for a connection from the connection pool is a blocking operation too, but this has to be handled by the `connectEC` ExecutionContext.
+This ExecutionContext should be **bounded**, as we do not want to create hundreds and thousands of threads (one for each request) waiting for database connection when the database is busy.
+The maximum thread limit for `connectEC` should be the same as your underlying JDBC connection pool, since any more threads are guaranteed to be blocked.
 
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
 
