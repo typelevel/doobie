@@ -5,8 +5,7 @@
 package doobie.util.meta
 
 import java.sql.{PreparedStatement, ResultSet}
-
-import cats.Invariant
+import cats.{Invariant, Show}
 import cats.data.NonEmptyList
 import doobie.enumerated.JdbcType
 import doobie.util.{Get, Put}
@@ -29,6 +28,10 @@ final class Meta[A](val get: Get[A], val put: Put[A]) {
   /** Variant of `imap` that takes a type tag, to aid in diagnostics. */
   def timap[B: TypeName](f: A => B)(g: B => A): Meta[B] =
     new Meta(get.tmap(f), put.tcontramap(g))
+
+  /** Variant of `timap` that allows the reading conversion to fail. */
+  def tiemap[B: TypeName](f: A => Either[String, B])(g: B => A)(implicit showA: Show[A]): Meta[B] =
+    new Meta(get.temap(f), put.contramap(g))
 
 }
 
