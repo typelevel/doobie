@@ -4,8 +4,11 @@
 
 package doobie.util.meta
 
+import cats.effect.IO
+import doobie._, doobie.implicits._
 import doobie.util.{Get, Put}
 
+case class Foo(str: String)
 
 class MetaSuite extends munit.FunSuite {
 
@@ -20,6 +23,30 @@ class MetaSuite extends munit.FunSuite {
 
   test("Meta should imply Put") {
     def foo[A: Meta] = Put[A]
+  }
+
+}
+
+class MetaDBSuite extends munit.FunSuite {
+
+  import cats.effect.unsafe.implicits.global
+
+  lazy val xa = Transactor.fromDriverManager[IO](
+    "org.h2.Driver",
+    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    "sa", ""
+  )
+
+  implicit def FooMeta: Meta[Foo] = Meta[String].tiemap(s => Either.cond(!s.isEmpty, Foo(s), "may not be empty"))(_.str)
+
+  test("Meta.tiemap should accept valid values") {
+    val x = sql"select 'bar'".query[Foo].unique.transact(xa).unsafeRunSync()
+    assertEquals(x, Foo("bar"))
+  }
+
+  test("Meta.tiemap should reject invalid values") {
+    val x = sql"select ''".query[Foo].unique.transact(xa).attempt.unsafeRunSync()
+    assertEquals(x, Left(doobie.util.invariant.InvalidValue[String, Foo]("", "may not be empty")))
   }
 
 }
