@@ -99,6 +99,7 @@ object Config {
       scheduledExecutor.foreach(c.setScheduledExecutor)
       threadFactory.foreach(c.setThreadFactory)
 
+      c.validate()
       c
     }
 
