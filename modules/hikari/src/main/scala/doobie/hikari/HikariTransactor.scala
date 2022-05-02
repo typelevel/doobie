@@ -8,6 +8,7 @@ package hikari
 import java.util.Properties
 import java.util.concurrent.{ScheduledExecutorService, ThreadFactory}
 
+import cats.effect.implicits._
 import cats.effect.kernel.{ Async, Resource, Sync }
 import com.zaxxer.hikari.metrics.MetricsTrackerFactory
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -118,6 +119,7 @@ object HikariTransactor {
    */
   def fromHikariConfig[M[_]: Async](hikariConfig: HikariConfig): Resource[M, HikariTransactor[M]] =
   for {
+    _ <- Sync[M].delay(hikariConfig.validate()).toResource // to populate unset fields with default values, like `maximumPoolSize`
     // Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
     connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
