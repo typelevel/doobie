@@ -15,6 +15,7 @@ class ConfigSpec extends munit.FunSuite {
 
     val actual = Config.makeHikariConfig[IO](Config()).unsafeRunSync()
     val expected = new HikariConfig()
+    expected.validate()
 
     assertEquals(actual.getCatalog, expected.getCatalog)
     assertEquals(actual.getConnectionTimeout, expected.getConnectionTimeout)
