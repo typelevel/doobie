@@ -25,9 +25,9 @@ final case class Config(
   connectionTimeout: Duration = Duration(30, TimeUnit.SECONDS),
   idleTimeout: Duration = Duration(10, TimeUnit.MINUTES),
   leakDetectionThreshold: Duration = Duration.Zero,
-  maximumPoolSize: Option[Int] = None,
+  maximumPoolSize: Option[Int] = Some(10),
   maxLifetime: Duration = Duration(30, TimeUnit.MINUTES),
-  minimumIdle: Option[Int] = None,
+  minimumIdle: Option[Int] = Some(10),
   password: Option[String] = None,
   poolName: Option[String] = None,
   username: Option[String] = None,
@@ -99,7 +99,6 @@ object Config {
       scheduledExecutor.foreach(c.setScheduledExecutor)
       threadFactory.foreach(c.setThreadFactory)
 
-      c.validate()
       c
     }
 
