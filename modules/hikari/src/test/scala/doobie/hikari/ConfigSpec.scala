@@ -13,8 +13,10 @@ class ConfigSpec extends munit.FunSuite {
 
     import cats.effect.unsafe.implicits.global
 
-    val actual = Config.makeHikariConfig[IO](Config()).unsafeRunSync()
+    val actual = Config.makeHikariConfig[IO](Config(jdbcUrl = Some("jdbcUrl"), poolName = Some("poolName"))).unsafeRunSync()
     val expected = new HikariConfig()
+    expected.setJdbcUrl("jdbcUrl") // mandatory argument
+    expected.setPoolName("poolName") // otherwise the pool name is generated
     expected.validate()
 
     assertEquals(actual.getCatalog, expected.getCatalog)
