@@ -9,8 +9,6 @@ import java.time._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Arbitrary, Gen}
 
-import scala.jdk.CollectionConverters._
-
 object TimeArbitraries {
 
   val localDateAdOnlyGen: Gen[LocalDate] = for {
@@ -59,7 +57,7 @@ object TimeArbitraries {
 
   implicit val arbitraryZoneId: Arbitrary[ZoneId] = Arbitrary {
     for {
-      k <- Gen.oneOf(ZoneId.SHORT_IDS.asScala.values)
+      k <- Gen.oneOf(doobie.util.compat.mapToScala(ZoneId.SHORT_IDS).values)
     } yield ZoneId.of(k)
   }
 
