@@ -20,7 +20,7 @@ lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.15.0"
 lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
-lazy val scala30Version       = "3.1.1"
+lazy val scala30Version       = "3.1.3"
 lazy val slf4jVersion         = "1.7.36"
 
 // Basic versioning and publishing stuff
