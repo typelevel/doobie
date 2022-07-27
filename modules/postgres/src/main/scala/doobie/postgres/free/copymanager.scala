@@ -7,6 +7,7 @@ package doobie.postgres.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -61,6 +62,7 @@ object copymanager { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): F[A]
       def fromFuture[A](fut: CopyManagerIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // PGCopyManager
       def copyDual(a: String): F[PGCopyDual]
@@ -115,6 +117,9 @@ object copymanager { module =>
     }
     case class FromFuture[A](fut: CopyManagerIO[Future[A]]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends CopyManagerOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // PGCopyManager-specific operations.
@@ -171,6 +176,7 @@ object copymanager { module =>
   val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)
   def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = FF.liftF[CopyManagerOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: CopyManagerIO[Future[A]]) = FF.liftF[CopyManagerOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[CopyManagerOp, Unit](PerformLogging(event))
 
   // Smart constructors for CopyManager-specific operations.
   def copyDual(a: String): CopyManagerIO[PGCopyDual] = FF.liftF(CopyDual(a))

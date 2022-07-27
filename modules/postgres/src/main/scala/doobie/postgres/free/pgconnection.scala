@@ -7,6 +7,7 @@ package doobie.postgres.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -62,6 +63,7 @@ object pgconnection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): F[A]
       def fromFuture[A](fut: PGConnectionIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
@@ -128,6 +130,9 @@ object pgconnection { module =>
     }
     case class FromFuture[A](fut: PGConnectionIO[Future[A]]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // PGConnection-specific operations.
@@ -220,6 +225,7 @@ object pgconnection { module =>
   val canceled = FF.liftF[PGConnectionOp, Unit](Canceled)
   def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) = FF.liftF[PGConnectionOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: PGConnectionIO[Future[A]]) = FF.liftF[PGConnectionOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[PGConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
