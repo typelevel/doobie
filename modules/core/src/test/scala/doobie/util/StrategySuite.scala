@@ -20,9 +20,7 @@ class StrategySuite extends munit.FunSuite {
 
   // an instrumented interpreter
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
-  class Interp extends KleisliInterpreter[IO] {
-
-    val asyncM = WeakAsync[IO]
+  class Interp extends KleisliInterpreter[IO](LogHandlerM.noop) {
 
     object Connection {
       var autoCommit: Option[Boolean] = None

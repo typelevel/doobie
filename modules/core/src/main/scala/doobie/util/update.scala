@@ -49,7 +49,12 @@ object update {
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
       val args = write.toList(a)
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
-      def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
+      def log(e: LogEvent): PreparedStatementIO[Unit] =
+        for {
+          _ <- FPS.delay(logHandler.unsafeRun(e))
+          _ <- FPS.performLogging(e)
+        } yield ()
+
       for {
         t0 <- now
         en <- FPS.executeUpdate.attempt

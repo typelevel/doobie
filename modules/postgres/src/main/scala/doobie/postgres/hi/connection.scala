@@ -16,7 +16,7 @@ object connection {
 
   // An intepreter for lifting PGConnectionIO into ConnectionIO
   val defaultInterpreter: PFPC.PGConnectionOp ~> Kleisli[ConnectionIO, PGConnection, *] =
-    KleisliInterpreter[ConnectionIO].PGConnectionInterpreter
+    KleisliInterpreter[ConnectionIO](LogHandlerM.noop).PGConnectionInterpreter
 
   val pgGetBackendPID: ConnectionIO[Int] =
     pgGetConnection(PFPC.getBackendPID)

@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -57,6 +58,7 @@ object clob { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): F[A]
       def fromFuture[A](fut: ClobIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // Clob
       def free: F[Unit]
@@ -114,6 +116,9 @@ object clob { module =>
     }
     case class FromFuture[A](fut: ClobIO[Future[A]]) extends ClobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends ClobOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // Clob-specific operations.
@@ -179,6 +184,7 @@ object clob { module =>
   val canceled = FF.liftF[ClobOp, Unit](Canceled)
   def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]) = FF.liftF[ClobOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: ClobIO[Future[A]]) = FF.liftF[ClobOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[ClobOp, Unit](PerformLogging(event))
 
   // Smart constructors for Clob-specific operations.
   val free: ClobIO[Unit] = FF.liftF(Free)
