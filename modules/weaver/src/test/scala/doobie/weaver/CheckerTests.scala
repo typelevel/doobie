@@ -26,7 +26,9 @@ object CheckerTests extends IOSuite with IOChecker {
   }
 
   test("fail") { implicit transactor =>
-    check(sql"select 1".query[String]) 
+    check(sql"select 1".query[String]).map(expectation =>
+      expectation.xor(success)
+    )
   }
 
   final case class Foo[F[_]](x: Int)
