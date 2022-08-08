@@ -22,6 +22,7 @@ lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
 lazy val scala30Version       = "3.1.1"
 lazy val slf4jVersion         = "1.7.36"
+lazy val weaverVersion        = "0.7.14"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
@@ -169,6 +170,7 @@ lazy val doobie = project.in(file("."))
     scalatest,
     munit,
     specs2,
+    weaver
   )
 
 lazy val free = project
@@ -414,6 +416,21 @@ lazy val munit = project
     testFrameworks += new TestFramework("munit.Framework"),
     libraryDependencies ++= Seq(
       "org.scalameta"   %% "munit" % munitVersion,
+      "com.h2database"  %  "h2"    % h2Version % "test"
+    )
+  )
+
+lazy val weaver = project
+  .in(file("modules/weaver"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(
+    name := s"doobie-weaver",
+    description := "Weaver support for doobie.",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+    libraryDependencies ++= Seq(
+      "com.disneystreaming" %% "weaver-cats" % weaverVersion,
       "com.h2database"  %  "h2"    % h2Version % "test"
     )
   )
