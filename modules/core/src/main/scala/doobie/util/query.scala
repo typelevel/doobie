@@ -46,7 +46,12 @@ object query {
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       val args = write.toList(a)
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
-      def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
+      def log(e: LogEvent): PreparedStatementIO[Unit] =
+        for {
+          _ <- FPS.delay(logHandler.unsafeRun(e))
+          _ <- FPS.performLogging(e)
+        } yield ()
+
       for {
         t0 <- now
         eet <- FPS.executeQuery.flatMap(rs => (for {

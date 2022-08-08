@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -74,6 +75,7 @@ object resultset { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): F[A]
       def fromFuture[A](fut: ResultSetIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // ResultSet
       def absolute(a: Int): F[Boolean]
@@ -309,6 +311,9 @@ object resultset { module =>
     }
     case class FromFuture[A](fut: ResultSetIO[Future[A]]) extends ResultSetOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends ResultSetOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // ResultSet-specific operations.
@@ -908,6 +913,7 @@ object resultset { module =>
   val canceled = FF.liftF[ResultSetOp, Unit](Canceled)
   def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]) = FF.liftF[ResultSetOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: ResultSetIO[Future[A]]) = FF.liftF[ResultSetOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[ResultSetOp, Unit](PerformLogging(event))
 
   // Smart constructors for ResultSet-specific operations.
   def absolute(a: Int): ResultSetIO[Boolean] = FF.liftF(Absolute(a))
