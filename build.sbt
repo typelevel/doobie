@@ -22,7 +22,7 @@ lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
 lazy val scala30Version       = "3.1.1"
 lazy val slf4jVersion         = "1.7.36"
-lazy val weaverVersion        = "0.7.11"
+lazy val weaverVersion        = "0.7.14"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
