@@ -445,7 +445,7 @@ lazy val bench = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest)
+  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, weaver)
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
