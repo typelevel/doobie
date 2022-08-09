@@ -9,9 +9,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: ['**']
+    branches: ['**', '!update/**', '!pr/**']
   push:
-    branches: ['**']
+    branches: ['**', '!update/**', '!pr/**']
     tags: [v*]
 
 env:
@@ -37,12 +37,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download Java (temurin@8)
+        id: download-java-temurin-8
+        if: matrix.java == 'temurin@8'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 8
+
       - name: Setup Java (temurin@8)
         if: matrix.java == 'temurin@8'
         uses: actions/setup-java@v2
         with:
-          distribution: temurin
+          distribution: jdkfile
           java-version: 8
+          jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
 
       - name: Cache sbt
         uses: actions/cache@v2
@@ -111,12 +120,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download Java (temurin@8)
+        id: download-java-temurin-8
+        if: matrix.java == 'temurin@8'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 8
+
       - name: Setup Java (temurin@8)
         if: matrix.java == 'temurin@8'
         uses: actions/setup-java@v2
         with:
-          distribution: temurin
+          distribution: jdkfile
           java-version: 8
+          jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
 
       - name: Cache sbt
         uses: actions/cache@v2

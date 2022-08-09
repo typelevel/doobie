@@ -7,6 +7,7 @@ package doobie.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -57,6 +58,7 @@ object statement { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): F[A]
       def fromFuture[A](fut: StatementIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // Statement
       def addBatch(a: String): F[Unit]
@@ -153,6 +155,9 @@ object statement { module =>
     }
     case class FromFuture[A](fut: StatementIO[Future[A]]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends StatementOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // Statement-specific operations.
@@ -335,6 +340,7 @@ object statement { module =>
   val canceled = FF.liftF[StatementOp, Unit](Canceled)
   def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) = FF.liftF[StatementOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: StatementIO[Future[A]]) = FF.liftF[StatementOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[StatementOp, Unit](PerformLogging(event))
 
   // Smart constructors for Statement-specific operations.
   def addBatch(a: String): StatementIO[Unit] = FF.liftF(AddBatch(a))
