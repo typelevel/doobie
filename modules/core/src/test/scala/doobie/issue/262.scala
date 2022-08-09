@@ -12,9 +12,7 @@ class `262` extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
 
   // an interpreter that returns null when we ask for statement metadata
-  object Interp extends KleisliInterpreter[IO] {
-    val asyncM = WeakAsync[IO]
-
+  object Interp extends KleisliInterpreter[IO](LogHandlerM.noop) {
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {
         override def getMetaData = primitive(_ => null)

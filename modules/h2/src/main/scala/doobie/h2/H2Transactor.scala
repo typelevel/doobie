@@ -7,6 +7,7 @@ package h2
 
 import cats.effect.kernel._
 import org.h2.jdbcx.JdbcConnectionPool
+
 import scala.concurrent.ExecutionContext
 
 object H2Transactor {
@@ -16,11 +17,12 @@ object H2Transactor {
     url:        String,
     user:       String,
     pass:       String,
-    connectEC:  ExecutionContext
+    connectEC:  ExecutionContext,
+    logHandler: Option[LogHandlerM[M]] = None
   ): Resource[M, H2Transactor[M]] = {
     val alloc = Async[M].delay(JdbcConnectionPool.create(url, user, pass))
     val free  = (ds: JdbcConnectionPool) => Async[M].delay(ds.dispose())
-    Resource.make(alloc)(free).map(Transactor.fromDataSource[M](_, connectEC))
+    Resource.make(alloc)(free).map(Transactor.fromDataSource[M].withLogHandler(logHandler.getOrElse(LogHandlerM.noop))(_, connectEC))
   }
 
 }
