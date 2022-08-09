@@ -158,11 +158,10 @@ The `check` function takes an implicit `Transactor[F]` parameter. Since Weaver h
 to manage shared resources, it is convenient to use that to allocate the transcator. 
 
 ```scala mdoc:silent
-import weaver._
+import _root_.weaver._
+import doobie.weaver._
 
 object AnalysisTestSuite extends IOSuite with IOChecker {
-  
-  override val colors = doobie.util.Colors.None // just for docs
 
   override type Res = Transactor[IO]
   override def sharedResource: Resource[IO,Res] = 
