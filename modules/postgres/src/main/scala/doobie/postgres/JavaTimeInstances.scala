@@ -8,27 +8,28 @@ import doobie.Meta
 import doobie.enumerated.{JdbcType => JT}
 import doobie.util.meta.MetaConstructors
 
-import java.time.{OffsetDateTime, ZoneOffset} // Using database JDBC driver native support
+import java.time.{OffsetDateTime, ZoneOffset}
 
 /**
  * Instances for JSR-310 date time types.
  *
- * Implementation is based on https://jdbc.postgresql.org/documentation/head/8-date-time.html, using
+ * Implementation is based on https://jdbc.postgresql.org/documentation/head/java8-date-time.html, using
  * native support for Postgres JDBC driver.
  */
 trait JavaTimeInstances extends MetaConstructors {
 
   /**
-   * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
-   * When writing to the database, the same instant is preserved if your target column is of type TIMESTAMPTZ
-   * (The JDBC driver works out the timezone conversion for you). Note that since offset information is not stored in
-   * the database column, retrieving the same value will yield the same instant in time, but with offset = 0 (UTC)
+   * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ).
+   *
+   * Allows `TimeWithTimezone` and `Timestamp` reluctantly. See comment in the driver:
+   * https://github.com/pgjdbc/pgjdbc/blob/REL42.4.1/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L645
    */
   implicit val JavaTimeOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
-    Basic.one[java.time.OffsetDateTime](
-      JT.Timestamp,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Date, JT.Time),
-      _.getObject(_, classOf[java.time.OffsetDateTime]), _.setObject(_, _), _.updateObject(_, _))
+    Basic.oneObject(
+      JT.TimestampWithTimezone,
+      List(JT.Timestamp, JT.TimeWithTimezone),
+      classOf[java.time.OffsetDateTime]
+    )
 
   /**
    * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
@@ -38,38 +39,18 @@ trait JavaTimeInstances extends MetaConstructors {
 
   /**
    * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
-   * When writing to the database, the same instant is preserved if your target column is of type TIMESTAMPTZ
-   * (The JDBC driver works out the timezone conversion for you). Note that since zone information is not stored in
-   * the database column, retrieving the same value will yield the same instant in time, but in UTC.
    */
   implicit val JavaTimeZonedDateTimeMeta: Meta[java.time.ZonedDateTime] =
     JavaTimeOffsetDateTimeMeta.timap(_.atZoneSameInstant(ZoneOffset.UTC))(_.toOffsetDateTime)
 
   /**
-   * This type should map to TIMESTAMP
-   */
-  implicit val JavaTimeLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
-    Basic.one[java.time.LocalDateTime](
-      JT.Timestamp,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Date, JT.Time),
-      _.getObject(_, classOf[java.time.LocalDateTime]), _.setObject(_, _), _.updateObject(_, _))
-
-  /**
-   * This type should map to DATE
+   * Allows `Timestamp`:
+   * https://github.com/pgjdbc/pgjdbc/blob/REL42.4.1/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L732
    */
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
-    Basic.one[java.time.LocalDate](
+    Basic.oneObject(
       JT.Date,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Timestamp),
-      _.getObject(_, classOf[java.time.LocalDate]), _.setObject(_, _), _.updateObject(_, _))
-
-  /**
-   * This type should map to TIME
-   */
-  implicit val JavaTimeLocalTimeMeta: Meta[java.time.LocalTime] =
-    Basic.one[java.time.LocalTime](
-      JT.Time,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Timestamp),
-      _.getObject(_, classOf[java.time.LocalTime]), _.setObject(_, _), _.updateObject(_, _))
-
+      List(JT.Timestamp),
+      classOf[java.time.LocalDate]
+    )
 }

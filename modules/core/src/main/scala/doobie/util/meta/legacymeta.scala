@@ -6,32 +6,19 @@ package doobie.util.meta
 
 trait LegacyMeta {
 
-  object legacy {
-
-    object instant extends LegacyInstantMetaInstance
-
-    object localdate extends LegacyLocalDateMetaInstance
-
-  }
+  object legacy extends LegacyTimeMetaInstance
 
 }
 
-trait LegacyLocalDateMetaInstance {
+trait LegacyTimeMetaInstance {
 
-  import doobie.implicits.javasql.DateMeta
-
-  /** @group Instances */
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
-    DateMeta.imap(_.toLocalDate)(java.sql.Date.valueOf)
+    Meta.DateMeta.imap(_.toLocalDate)(java.sql.Date.valueOf)
 
-}
+  implicit val JavaTimeLocalTimeMeta: Meta[java.time.LocalTime] =
+    Meta.TimeMeta.imap(_.toLocalTime)(java.sql.Time.valueOf)
 
-trait LegacyInstantMetaInstance {
-
-  import doobie.implicits.javasql.TimestampMeta
-
-  /** @group Instances */
   implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
-    TimestampMeta.imap(_.toInstant)(java.sql.Timestamp.from)
+    Meta.TimestampMeta.imap(_.toInstant)(java.sql.Timestamp.from)
 
 }

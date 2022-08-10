@@ -76,14 +76,10 @@ import doobie.postgres.implicits._
 
 ### Java 8 Time Types (JSR310)
 
-An explicit import is required to bring mappings for `java.time.Instant` / `java.time.LocalDate`
+Mappings are available by default for Java 8 time types, but if you want more lenient mappings that exactly match the behaviour of the driver you can add the import below.
 
 ```scala mdoc:silent
-// Provides mappings for java.time.Instant
-import doobie.implicits.legacy.instant._ 
-
-// Provides mappings for java.time.LocalDate
-import doobie.implicits.legacy.localdate._
+import doobie.postgres.implicits._
 ```
 
 ### Array Types

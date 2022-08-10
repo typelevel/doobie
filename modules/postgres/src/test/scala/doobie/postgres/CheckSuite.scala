@@ -5,12 +5,14 @@
 package doobie.postgres
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
-import doobie.util.analysis.{ColumnTypeWarning, ColumnTypeError}
+import doobie.util.analysis.{ColumnTypeError, ColumnTypeWarning}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 
-import java.time.{Instant, OffsetDateTime, LocalDate, LocalDateTime, LocalTime}
+import doobie.util.analysis.ParameterTypeError
 
 class CheckSuite extends munit.FunSuite {
 
@@ -32,21 +34,21 @@ class CheckSuite extends munit.FunSuite {
     successRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[OffsetDateTime](t, "TIMESTAMPTZ")
 
-    successReadUnfortunately[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
-    successWriteUnfortunately[OffsetDateTime](t, "TIMESTAMP")
+    warnRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
+    errorWrite[OffsetDateTime](t, "TIMESTAMP")
 
-    warnRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
-    warnRead[OffsetDateTime](sql"SELECT '03:21' :: TIME")
+    failedRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
+    failedRead[OffsetDateTime](sql"SELECT '03:21' :: TIME")
     warnRead[OffsetDateTime](sql"SELECT '03:21' :: TIMETZ")
-    warnRead[OffsetDateTime](sql"SELECT '2019-02-13' :: DATE")
+    failedRead[OffsetDateTime](sql"SELECT '2019-02-13' :: DATE")
 
-    successWriteUnfortunately[OffsetDateTime](t, "TEXT")
-    successWriteUnfortunately[OffsetDateTime](t, "TIME")
-    successWriteUnfortunately[OffsetDateTime](t, "TIMETZ")
-    successWriteUnfortunately[OffsetDateTime](t, "DATE")
+    errorWrite[OffsetDateTime](t, "TEXT")
+    errorWrite[OffsetDateTime](t, "TIME")
+    errorWrite[OffsetDateTime](t, "TIMETZ")
+    errorWrite[OffsetDateTime](t, "DATE")
 
     failedRead[OffsetDateTime](sql"SELECT '123' :: BYTEA")
-    successWriteUnfortunately[OffsetDateTime](t, "BYTEA")
+    errorWrite[OffsetDateTime](t, "BYTEA")
   }
 
   test("Instant Read and Write typechecks") {
@@ -54,21 +56,21 @@ class CheckSuite extends munit.FunSuite {
     successRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[Instant](t, "TIMESTAMPTZ")
 
-    successReadUnfortunately[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
-    successWriteUnfortunately[Instant](t, "TIMESTAMP")
+    warnRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
+    errorWrite[Instant](t, "TIMESTAMP")
 
-    warnRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
-    warnRead[Instant](sql"SELECT '03:21' :: TIME")
+    failedRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
+    failedRead[Instant](sql"SELECT '03:21' :: TIME")
     warnRead[Instant](sql"SELECT '03:21' :: TIMETZ")
-    warnRead[Instant](sql"SELECT '2019-02-13' :: DATE")
+    failedRead[Instant](sql"SELECT '2019-02-13' :: DATE")
 
-    successWriteUnfortunately[Instant](t, "TEXT")
-    successWriteUnfortunately[Instant](t, "TIME")
-    successWriteUnfortunately[Instant](t, "TIMETZ")
-    successWriteUnfortunately[Instant](t, "DATE")
+    errorWrite[Instant](t, "TEXT")
+    errorWrite[Instant](t, "TIME")
+    errorWrite[Instant](t, "TIMETZ")
+    errorWrite[Instant](t, "DATE")
 
     failedRead[Instant](sql"SELECT '123' :: BYTEA")
-    successWriteUnfortunately[Instant](t, "BYTEA")
+    errorWrite[Instant](t, "BYTEA")
   }
 
   test("LocalDateTime Read and Write typechecks") {
@@ -76,21 +78,21 @@ class CheckSuite extends munit.FunSuite {
     successRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TIMESTAMP")
     successWrite[LocalDateTime](t, "TIMESTAMP")
 
-    successReadUnfortunately[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TIMESTAMPTZ")
-    successWriteUnfortunately[LocalDateTime](t, "TIMESTAMPTZ")
+    failedRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TIMESTAMPTZ")
+    errorWrite[LocalDateTime](t, "TIMESTAMPTZ")
 
-    warnRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TEXT")
-    warnRead[LocalDateTime](sql"SELECT '03:21' :: TIME")
-    warnRead[LocalDateTime](sql"SELECT '03:21' :: TIMETZ")
-    warnRead[LocalDateTime](sql"SELECT '2019-02-13' :: DATE")
+    failedRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TEXT")
+    failedRead[LocalDateTime](sql"SELECT '03:21' :: TIME")
+    failedRead[LocalDateTime](sql"SELECT '03:21' :: TIMETZ")
+    failedRead[LocalDateTime](sql"SELECT '2019-02-13' :: DATE")
 
-    successWriteUnfortunately[LocalDateTime](t, "TEXT")
-    successWriteUnfortunately[LocalDateTime](t, "TIME")
-    successWriteUnfortunately[LocalDateTime](t, "TIMETZ")
-    successWriteUnfortunately[LocalDateTime](t, "DATE")
+    errorWrite[LocalDateTime](t, "TEXT")
+    errorWrite[LocalDateTime](t, "TIME")
+    errorWrite[LocalDateTime](t, "TIMETZ")
+    errorWrite[LocalDateTime](t, "DATE")
 
     failedRead[LocalDateTime](sql"SELECT '123' :: BYTEA")
-    successWriteUnfortunately[LocalDateTime](t, "BYTEA")
+    errorWrite[LocalDateTime](t, "BYTEA")
   }
 
   test("LocalDate Read and Write typechecks") {
@@ -99,18 +101,19 @@ class CheckSuite extends munit.FunSuite {
     successWrite[LocalDate](t, "DATE")
 
     warnRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
-    warnRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
-    warnRead[LocalDate](sql"SELECT '2015-02-23' :: TEXT")
+    failedRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
+    failedRead[LocalDate](sql"SELECT '2015-02-23' :: TEXT")
     failedRead[LocalDate](sql"SELECT '03:21' :: TIME")
     failedRead[LocalDate](sql"SELECT '03:21' :: TIMETZ")
 
-    successWriteUnfortunately[LocalDate](t, "TEXT")
-    successWriteUnfortunately[LocalDate](t, "TIME")
-    successWriteUnfortunately[LocalDate](t, "TIMETZ")
-    successWriteUnfortunately[LocalDate](t, "DATE")
+    errorWrite[LocalDate](t, "TIMESTAMP")
+    errorWrite[LocalDate](t, "TIMESTAMPTZ")
+    errorWrite[LocalDate](t, "TEXT")
+    errorWrite[LocalDate](t, "TIME")
+    errorWrite[LocalDate](t, "TIMETZ")
 
     failedRead[LocalDate](sql"SELECT '123' :: BYTEA")
-    successWriteUnfortunately[LocalDate](t, "BYTEA")
+    errorWrite[LocalDate](t, "BYTEA")
   }
 
   test("LocalTime Read and Write typechecks") {
@@ -118,46 +121,58 @@ class CheckSuite extends munit.FunSuite {
     successRead[LocalTime](sql"SELECT '23:13' :: TIME")
     successWrite[LocalTime](t, "TIME")
 
-    warnRead[LocalTime](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
-    warnRead[LocalTime](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
-    warnRead[LocalTime](sql"SELECT '2015-02-23' :: TEXT")
+    failedRead[LocalTime](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
+    failedRead[LocalTime](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
+    failedRead[LocalTime](sql"SELECT '2015-02-23' :: TEXT")
     failedRead[LocalTime](sql"SELECT '2015-02-23' :: DATE")
 
-    successWriteUnfortunately[LocalTime](t, "TEXT")
-    successWriteUnfortunately[LocalTime](t, "TIME")
-    successWriteUnfortunately[LocalTime](t, "TIMETZ")
-    successWriteUnfortunately[LocalTime](t, "DATE")
+    errorWrite[LocalTime](t, "TIMESTAMP")
+    errorWrite[LocalTime](t, "TIMESTAMPTZ")
+    errorWrite[LocalTime](t, "TEXT")
+    errorWrite[LocalTime](t, "TIMETZ")
+    errorWrite[LocalTime](t, "DATE")
 
     failedRead[LocalTime](sql"SELECT '123' :: BYTEA")
-    successWriteUnfortunately[LocalTime](t, "BYTEA")
+    errorWrite[LocalTime](t, "BYTEA")
   }
 
   private def successRead[A: Read](frag: Fragment): Unit = {
     val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
     assertEquals(analysisResult.columnAlignmentErrors, Nil)
+
+    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
+    assert(result.isRight)
   }
 
   private def successWrite[A: Put](value: A, dbType: String): Unit = {
     val frag = sql"SELECT $value :: " ++ Fragment.const(dbType)
     val analysisResult = frag.update.analysis.transact(xa).unsafeRunSync()
-    assertEquals(analysisResult.columnAlignmentErrors, Nil)
+    assertEquals(analysisResult.parameterAlignmentErrors, Nil)
   }
 
   private def warnRead[A: Read](frag: Fragment): Unit = {
     val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
     val errorClasses = analysisResult.columnAlignmentErrors.map(_.getClass)
     assertEquals(errorClasses, List(classOf[ColumnTypeWarning]))
+
+    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
+    assert(result.isRight)
   }
 
   private def failedRead[A: Read](frag: Fragment): Unit = {
     val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
     val errorClasses = analysisResult.columnAlignmentErrors.map(_.getClass)
     assertEquals(errorClasses, List(classOf[ColumnTypeError]))
+
+    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
+    assert(result.isLeft)
   }
 
-  private def successWriteUnfortunately[A: Put](value: A, dbType: String): Unit = successWrite(value, dbType)
-
-  // Some DB types really shouldn't type check but driver is too lenient
-  private def successReadUnfortunately[A: Read](frag: Fragment): Unit = successRead(frag)
+  private def errorWrite[A: Put](value: A, dbType: String): Unit = {
+    val frag = sql"SELECT $value :: " ++ Fragment.const(dbType)
+    val analysisResult = frag.update.analysis.transact(xa).unsafeRunSync()
+    val errorClasses = analysisResult.parameterAlignmentErrors.map(_.getClass)
+    assertEquals(errorClasses, List(classOf[ParameterTypeError]))
+  }
 
 }

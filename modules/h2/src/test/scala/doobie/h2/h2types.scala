@@ -4,21 +4,19 @@
 
 package doobie.h2
 
-import java.time.temporal.ChronoField.NANO_OF_SECOND
 import java.util.UUID
 
 import cats.effect.IO
 import doobie._
 import doobie.h2.implicits._
 import doobie.implicits._
+import doobie.util.analysis.Analysis
+import doobie.util.analysis.ColumnTypeError
+import doobie.util.analysis.ColumnTypeWarning
 import doobie.util.arbitraries.SQLArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
-import doobie.util.arbitraries.TimeArbitraries._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
-import doobie.implicits.javasql._
-import doobie.implicits.javatime.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
-import doobie.implicits.legacy.instant.{JavaTimeInstantMeta => LegacyJavaTimeInstantMeta}
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 class h2typesspec extends munit.ScalaCheckSuite {
@@ -46,15 +44,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
     } yield (a0)
 
   def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll { (t: A) => assertEquals(inOut(col, t).transact(xa).attempt.unsafeRunSync(), Right(t)) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll { (t: A) => assertEquals(inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(t))) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
-    }
+    testInOutWithCustomGen(col, arbitrary.arbitrary)
   }
 
   def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) = {
@@ -63,18 +53,6 @@ class h2typesspec extends munit.ScalaCheckSuite {
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
       forAll(gen) { (t: A) => assertEquals(  inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(t))) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(  inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
-    }
-  }
-
-  def testInOutWithCustomTransform[A](col: String)(f: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll { (t: A) => assertEquals(  inOut(col, f(t)).transact(xa).attempt.unsafeRunSync(), Right(f(t))) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll { (t: A) => assertEquals(  inOutOpt[A](col, Some(f(t))).transact(xa).attempt.unsafeRunSync(), Right(Some(f(t)))) }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
       assertEquals(  inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
@@ -96,36 +74,32 @@ class h2typesspec extends munit.ScalaCheckSuite {
       If fractional seconds precision is specified it should be from 0 to 9, 0 is default.
    */
   testInOut[java.sql.Time]("TIME")
-  testInOutWithCustomTransform[java.time.LocalTime]("TIME")(_.withNano(0))
+  testInOut[java.time.LocalTime]("TIME(9)")
 
   testInOut[java.sql.Date]("DATE")
-  testInOut[java.time.LocalDate]("DATE")(implicitly, implicitly, Arbitrary(localDateBcAndAdGen))
+  testInOut[java.time.LocalDate]("DATE")
 
   /*
       TIMESTAMP
       If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
    */
-  testInOutWithCustomTransform[java.sql.Timestamp]("TIMESTAMP") { ts => ts.setNanos(0); ts }
-  testInOutWithCustomTransform[java.time.LocalDateTime]("TIMESTAMP")(_.withNano(0))
-  testInOutWithCustomTransform[java.time.Instant]("TIMESTAMP")(_.`with`(NANO_OF_SECOND, 0))(
-    LegacyJavaTimeInstantMeta.get, LegacyJavaTimeInstantMeta.put, arbitraryInstant
-  )
-  testInOutWithCustomTransform[java.time.Instant]("TIMESTAMP")(_.`with`(NANO_OF_SECOND, 0))(
-    NewJavaTimeInstantMeta.get, NewJavaTimeInstantMeta.put, arbitraryInstant
-  )
+  testInOut[java.sql.Timestamp]("TIMESTAMP(9)")
+  testInOut[java.time.LocalDateTime]("TIMESTAMP(9)")
 
   /*
       TIME WITH TIMEZONE
       If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
    */
-  testInOutWithCustomTransform[java.time.OffsetTime]("TIME WITH TIME ZONE")(_.withNano(0))
+  testInOut[java.time.OffsetTime]("TIME(9) WITH TIME ZONE")
 
   /*
       TIMESTAMP WITH TIME ZONE
       If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
    */
-  testInOutWithCustomTransform[java.time.OffsetDateTime]("TIMESTAMP WITH TIME ZONE")(_.withNano(0))
-  testInOutWithCustomTransform[java.time.ZonedDateTime]("TIMESTAMP WITH TIME ZONE")(_.withFixedOffsetZone().withNano(0))
+  testInOut[java.time.OffsetDateTime]("TIMESTAMP(9) WITH TIME ZONE")
+  testInOut[java.time.Instant]("TIMESTAMP(9) WITH TIME ZONE")
+
+  testInOut[java.time.ZoneId]("VARCHAR")
 
   testInOut[List[Byte]]("BINARY")
   skip("OTHER")
@@ -147,7 +121,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
     assertEquals(a.alignmentErrors, Nil)
   }
   test("Mapping for Boolean should pass query analysis for ascribed BOOLEAN") {
-    val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync()
+    val a = sql"select true::BOOLEAN".query[Boolean].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.alignmentErrors, Nil)
   }
 
@@ -158,6 +132,88 @@ class h2typesspec extends munit.ScalaCheckSuite {
   test("Mapping for UUID should pass query analysis for ascribed UUID") {
     val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.alignmentErrors, Nil)
+  }
+
+  test("Mapping for LocalDate should pass query analysis for DATE") {
+    val a = analyzeDate[java.time.LocalDate]
+    assertEquals(a.alignmentErrors, Nil)
+  }
+
+  test("Mapping for LocalDate should fail query analysis for TIMESTAMP") {
+    val a = analyzeTimestamp[java.time.LocalDate]
+    assertAnalyzeColumnError(a)
+  }
+
+  test("Mapping for LocalTime should pass query analysis for TIME") {
+    val a = analyzeTime[java.time.LocalTime]
+    assertEquals(a.alignmentErrors, Nil)
+  }
+
+  test("Mapping for LocalTime should fail query analysis for TIME WITH TIME ZONE") {
+    val a = analyzeTimeWithTimeZone[java.time.LocalTime]
+    assertAnalyzeColumnError(a)
+  }
+
+  test("Mapping for OffsetTime should pass query analysis for TIME WITH TIME ZONE") {
+    val a = analyzeTimeWithTimeZone[java.time.OffsetTime]
+    assertEquals(a.alignmentErrors, Nil)
+  }
+
+  test("Mapping for OffsetTime should fail query analysis for TIME") {
+    val a = analyzeTime[java.time.OffsetTime]
+    assertAnalyzeColumnError(a)
+  }
+
+  test("Mapping for LocalDateTime should pass query analysis for TIMESTAMP") {
+    val a = analyzeTimestamp[java.time.LocalDateTime]
+    assertEquals(a.alignmentErrors, Nil)
+  }
+
+  test("Mapping for LocalDateTime should fail query analysis for DATE") {
+    val a = analyzeDate[java.time.LocalDateTime]
+    assertAnalyzeColumnError(a)
+  }
+
+  test("Mapping for LocalDateTime should fail query analysis for TIME") {
+    val a = analyzeTime[java.time.LocalDateTime]
+    assertAnalyzeColumnError(a)
+  }
+
+  test("Mapping for LocalDateTime should fail query analysis for TIMESTAMP WITH TIME ZONE") {
+    val a = analyzeTimestampWithTimeZone[java.time.LocalDateTime]
+    assertAnalyzeColumnError(a)
+  }
+
+  test("Mapping for OffsetDateTime should pass query analysis for TIMESTAMP WITH TIME ZONE") {
+    val a = analyzeTimestampWithTimeZone[java.time.OffsetDateTime]
+    assertEquals(a.alignmentErrors, Nil)
+  }
+
+  test("Mapping for OffsetDateTime should warn query analysis for TIME WITH TIME ZONE") {
+    val a = analyzeTimeWithTimeZone[java.time.OffsetDateTime]
+    assertAnalyzeColumnWarning(a)
+  }
+
+  test("Mapping for OffsetDateTime should fail query analysis for TIMESTAMP") {
+    val a = analyzeTimestamp[java.time.OffsetDateTime]
+    assertAnalyzeColumnError(a)
+  }
+
+  private def analyzeDate[R: Read] = analyze(sql"select '2000-01-02'::DATE".query[R])
+  private def analyzeTime[R: Read] = analyze(sql"select '01:02:03'::TIME".query[R])
+  private def analyzeTimeWithTimeZone[R: Read] = analyze(sql"select '01:02:03+04:05'::TIME WITH TIME ZONE".query[R])
+  private def analyzeTimestamp[R: Read] = analyze(sql"select '2000-01-02T01:02:03'::TIMESTAMP".query[R])
+  private def analyzeTimestampWithTimeZone[R: Read] = analyze(sql"select '2000-01-02T01:02:03+04:05'::TIMESTAMP WITH TIME ZONE".query[R])
+
+  private def analyze[R](q: Query0[R]) = q.analysis.transact(xa).unsafeRunSync()
+
+  private def assertAnalyzeColumnWarning(result: Analysis): Unit = {
+    val errorClasses = result.alignmentErrors.map(_.getClass)
+    assertEquals(errorClasses, List(classOf[ColumnTypeWarning]))
+  }
+  private def assertAnalyzeColumnError(result: Analysis): Unit = {
+    val errorClasses = result.alignmentErrors.map(_.getClass)
+    assertEquals(errorClasses, List(classOf[ColumnTypeError]))
   }
 
 }
