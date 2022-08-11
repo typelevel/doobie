@@ -1,6 +1,6 @@
 ## Unit Testing
 
-The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/), [ScalaTest](http://www.scalatest.org/) or [MUnit](https://scalameta.org/munit) unit tests.
+The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/), [ScalaTest](http://www.scalatest.org/), [MUnit](https://scalameta.org/munit) or [Weaver](https://disneystreaming.github.io/weaver-test/) unit tests.
 
 ### Setting Up
 
@@ -147,6 +147,31 @@ class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
   test("trivial")    { check(trivial)        }
   test("biggerThan") { check(biggerThan(0))  }
   test("update")     { check(update("", "")) }
+
+}
+```
+
+### The Weaver Package
+
+The `doobie-weaver` add-on provides a mix-in trait what we can add to any effectful test Suite. 
+The `check` function takes an implicit `Transactor[F]` parameter. Since Weaver has its own way 
+to manage shared resources, it is convenient to use that to allocate the transcator. 
+
+```scala mdoc:silent
+import _root_.weaver._
+import doobie.weaver._
+
+object AnalysisTestSuite extends IOSuite with IOChecker {
+
+  override type Res = Transactor[IO]
+  override def sharedResource: Resource[IO,Res] = 
+    Resource.pure(Transactor.fromDriverManager[IO](
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    ))
+
+  test("trivial")    { implicit transactor => check(trivial)        }
+  test("biggerThan") { implicit transactor => check(biggerThan(0))  }
+  test("update")     { implicit transactor => check(update("", "")) }
 
 }
 ```
