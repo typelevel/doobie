@@ -8,12 +8,12 @@ import java.util.UUID
 
 import cats.effect.IO
 import doobie._
-import doobie.h2.implicits._
 import doobie.implicits._
+import doobie.h2.implicits._
+import doobie.h2.util.arbitraries.SQLArbitraries._
 import doobie.util.analysis.Analysis
 import doobie.util.analysis.ColumnTypeError
 import doobie.util.analysis.ColumnTypeWarning
-import doobie.util.arbitraries.SQLArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}

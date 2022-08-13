@@ -3,7 +3,7 @@ version: '3.1'
 
 services:
 
-  db:
+  postgres:
     image: mdillon/postgis:11 # postgres with postgis
     restart: always
     environment:
@@ -14,6 +14,15 @@ services:
       - 5432:5432
     volumes:
       - ./init/:/docker-entrypoint-initdb.d/
+
+  mysql:
+    image: mysql:5.7-debian
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: world
+    ports:
+      - 3306:3306
 
   adminer:
     image: adminer

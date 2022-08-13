@@ -24,7 +24,7 @@ trait JavaTimeInstances extends MetaConstructors {
    * Allows `TimeWithTimezone` and `Timestamp` reluctantly. See comment in the driver:
    * https://github.com/pgjdbc/pgjdbc/blob/REL42.4.1/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L645
    */
-  implicit val JavaTimeOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
+  implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
     Basic.oneObject(
       JT.TimestampWithTimezone,
       List(JT.Timestamp, JT.TimeWithTimezone),
@@ -34,23 +34,29 @@ trait JavaTimeInstances extends MetaConstructors {
   /**
    * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
    */
-  implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
-    JavaTimeOffsetDateTimeMeta.timap(_.toInstant)(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
+  implicit val JavaInstantMeta: Meta[java.time.Instant] =
+    JavaOffsetDateTimeMeta.timap(_.toInstant)(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
 
   /**
    * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
    */
-  implicit val JavaTimeZonedDateTimeMeta: Meta[java.time.ZonedDateTime] =
-    JavaTimeOffsetDateTimeMeta.timap(_.atZoneSameInstant(ZoneOffset.UTC))(_.toOffsetDateTime)
+  implicit val JavaZonedDateTimeMeta: Meta[java.time.ZonedDateTime] =
+    JavaOffsetDateTimeMeta.timap(_.atZoneSameInstant(ZoneOffset.UTC))(_.toOffsetDateTime)
 
   /**
    * Allows `Timestamp`:
    * https://github.com/pgjdbc/pgjdbc/blob/REL42.4.1/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L732
    */
-  implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
+  implicit val JavaLocalDateMeta: Meta[java.time.LocalDate] =
     Basic.oneObject(
       JT.Date,
       List(JT.Timestamp),
       classOf[java.time.LocalDate]
     )
+
+  implicit val JavaLocalTimeMeta: Meta[java.time.LocalTime] = Meta.JavaLocalTimeMeta
+
+  implicit val JavaLocalDateTimeMeta: Meta[java.time.LocalDateTime] = Meta.JavaLocalDateTimeMeta
+
+  implicit val JavaOffsetTimeMeta: Meta[java.time.OffsetTime] = Meta.JavaOffsetTimeMeta
 }

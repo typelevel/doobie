@@ -76,7 +76,7 @@ import doobie.postgres.implicits._
 
 ### Java 8 Time Types (JSR310)
 
-Mappings are available by default for Java 8 time types, but if you want more lenient mappings that exactly match the behaviour of the driver you can add the import below.
+Mappings are available by default for Java 8 time types, but if you want more lenient mappings you can add the import below.
 
 ```scala mdoc:silent
 import doobie.postgres.implicits._

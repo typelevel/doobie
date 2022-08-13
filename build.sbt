@@ -9,6 +9,7 @@ lazy val fs2Version           = "3.2.11"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
+lazy val mysqlVersion         = "8.0.30"
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.3.5"
 lazy val refinedVersion       = "0.9.28"
@@ -164,6 +165,7 @@ lazy val doobie = project.in(file("."))
     h2,
     `h2-circe`,
     hikari,
+    mysql,
     postgres,
     `postgres-circe`,
     refined,
@@ -268,6 +270,18 @@ lazy val example = project
     libraryDependencies ++= Seq(
       "co.fs2" %% "fs2-io"     % fs2Version
     )
+  )
+
+lazy val mysql = project
+  .in(file("modules/mysql"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(doobieSettings)
+  .settings(
+    name := "doobie-mysql",
+    libraryDependencies ++= Seq(
+      "mysql" % "mysql-connector-java" % mysqlVersion,
+    ),
   )
 
 lazy val postgres = project

@@ -2,12 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util.arbitraries
+package doobie.h2.util.arbitraries
 
-import java.sql.{Date, Time, Timestamp}
+import java.sql.Date
+import java.sql.Time
+import java.sql.Timestamp
 
-import org.scalacheck.{Arbitrary, Gen}
-import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
 
 object SQLArbitraries {
 
@@ -21,19 +23,18 @@ object SQLArbitraries {
 
   implicit val arbitraryDate: Arbitrary[Date] = Arbitrary {
     for {
-      y <- Gen.chooseNum(0,8099)
+      y <- Gen.chooseNum(0, 8099)
       m <- Gen.chooseNum(0, 11)
       d <- Gen.chooseNum(1, 31)
-    } yield new Date(y,m,d)
+    } yield new Date(y, m, d)
   }
 
   implicit val arbitraryTimestamp: Arbitrary[Timestamp] = Arbitrary {
     for {
-      d <- arbitrary[Date]
-      t <- arbitrary[Time]
-      n <- Gen.chooseNum(0,999999999)
+      d <- Arbitrary.arbitrary[Date]
+      t <- Arbitrary.arbitrary[Time]
+      n <- Gen.chooseNum(0, 999999999)
     } yield new Timestamp(d.getYear, d.getMonth, d.getDate, t.getHours, t.getMinutes, t.getSeconds, n)
   }
-
 
 }

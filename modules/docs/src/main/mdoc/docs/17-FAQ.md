@@ -204,8 +204,17 @@ implicit val nesMeta: Meta[NonEmptyString] = {
 
 ## How do I use `java.time` types with Doobie?
 
-Instances are available by default which rely on the underlying JDBC driver supporting the 4.2 JDBC spec.
+Instances are available by default which rely on the underlying JDBC driver supporting the 4.2 JDBC spec. Because these instances are generic they only allow exact column matches:
 
-If your JDBC driver is not spec compliant or does not support version 4.2 you can import instances that are derived from `java.sql.` via `import doobie.implicits.legacy._`
+| java.time       | database column |
+|-----------------| --- |
+| OffsetDateTime  | timestamp with timezone |
+| Instant         | timestamp with timezone |
+| LocalDateTime   | timestamp |
+| LocalDate       | date |
+| LocalTime       | time |
+| OffsetTime      | time with timezone |
 
-If you're using PostgreSQL, more lenient instances are available via `import doobie.postgres.implicits._`
+These instances are all that is needed for PostgreSQL or H2.
+
+If you are using MySQL you probably want to import the more lenient instances via `import doobie.mysql.implicits._`

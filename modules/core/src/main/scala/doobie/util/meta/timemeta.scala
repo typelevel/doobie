@@ -16,7 +16,15 @@ trait TimeMetaInstances { this: MetaConstructors =>
   import Predef.classOf
 
   /** @group Instances */
-  implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
+  implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
+    Basic.oneObject(
+      TimestampWithTimezone,
+      List(TimeWithTimezone),
+      classOf[java.time.OffsetDateTime]
+    )
+
+  /** @group Instances */
+  implicit val JavaLocalDateMeta: Meta[java.time.LocalDate] =
     Basic.oneObject(
       Date,
       Nil,
@@ -32,7 +40,7 @@ trait TimeMetaInstances { this: MetaConstructors =>
     )
 
   /** @group Instances */
-  implicit val JavaTimeLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
+  implicit val JavaLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
     Basic.oneObject(
       Timestamp,
       Nil,
@@ -47,18 +55,10 @@ trait TimeMetaInstances { this: MetaConstructors =>
       classOf[java.time.OffsetTime]
     )
 
-  /** @group Instances */
-  implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
-    Basic.oneObject(
-      TimestampWithTimezone,
-      List(TimeWithTimezone),
-      classOf[java.time.OffsetDateTime]
-    )
-
   // extra instances not in the spec
 
   /** @group Instances */
-  implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
+  implicit val JavaInstantMeta: Meta[java.time.Instant] =
     JavaOffsetDateTimeMeta.imap(_.toInstant)(_.atOffset(java.time.ZoneOffset.UTC))
 
   /** @group Instances */

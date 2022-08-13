@@ -6,8 +6,7 @@ package doobie.postgres.util.arbitraries
 
 import java.time._
 
-import scala.math.Ordering.Implicits._
-
+import doobie.util.arbitraries.GenHelpers
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 
@@ -36,10 +35,10 @@ object TimeArbitraries {
 
   // 4713 BC to 5874897 AD
   implicit val arbitraryLocalDate: Arbitrary[LocalDate] = Arbitrary {
-    chooseT(MinDate, MaxDate, LocalDate.of(0, 1, 1), LocalDate.of(1970, 1, 1))
+    GenHelpers.chooseT(MinDate, MaxDate, LocalDate.of(0, 1, 1), LocalDate.of(1970, 1, 1))
   }
 
-  // 00:00:00 to 24:00:00
+  // 00:00:00.000000 to 23:59:59.999999
   implicit val arbitraryLocalTime: Arbitrary[LocalTime] = Arbitrary {
     val min = micros(LocalTime.MIN.toNanoOfDay)
     val max = micros(LocalTime.MAX.toNanoOfDay)
@@ -51,7 +50,7 @@ object TimeArbitraries {
   implicit val arbitraryOffsetTime: Arbitrary[OffsetTime] = Arbitrary {
     val min = LocalTime.MIN.atOffset(MaxOffset)
     val max = LocalTime.MAX.atOffset(MinOffset)
-    chooseT(min, max).map { time =>
+    GenHelpers.chooseT(min, max).map { time =>
       // ideally generate without nanos, but dont want to deal with negative offsets
       val nanos = time.getNano
       time.withNano(micros(nanos) * 1000)
@@ -60,7 +59,7 @@ object TimeArbitraries {
 
   implicit val arbitraryLocalDateTime: Arbitrary[LocalDateTime] = Arbitrary {
     for {
-      date <- chooseT(MinTimestampDate, MaxTimestampDate)
+      date <- GenHelpers.chooseT(MinTimestampDate, MaxTimestampDate)
       time <- arbitraryLocalTime.arbitrary
     } yield LocalDateTime.of(date, time)
   }
@@ -70,7 +69,7 @@ object TimeArbitraries {
   }
 
   implicit val arbitraryZoneOffset: Arbitrary[ZoneOffset] = Arbitrary {
-    chooseT(MaxOffset, MinOffset, ZoneOffset.UTC)
+    GenHelpers.chooseT(MaxOffset, MinOffset, ZoneOffset.UTC)
   }
 
   implicit val arbitraryOffsetDateTime: Arbitrary[OffsetDateTime] = Arbitrary {
@@ -78,19 +77,6 @@ object TimeArbitraries {
       dateTime <- arbitraryLocalDateTime.arbitrary
       offset <- arbitraryZoneOffset.arbitrary
     } yield dateTime.atOffset(offset)
-  }
-
-  /**
-   * [[Gen.chooseNum]] but allows `T` to have an `Ordering` instead of `Numeric`.
-   */
-  private def chooseT[T](minT: T, maxT: T, specials: T*)(implicit ord: Ordering[T], c: Gen.Choose[T]): Gen[T] = {
-    val basics = List(minT, maxT)
-    val basicsAndSpecials = for {
-      t <- specials ++ basics if t >= minT && t <= maxT
-    } yield (1, Gen.const(t))
-    val other = (basicsAndSpecials.length, c.choose(minT, maxT))
-    val allGens = basicsAndSpecials :+ other
-    Gen.frequency(allGens: _*)
   }
 
 }
