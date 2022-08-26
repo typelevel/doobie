@@ -5,7 +5,7 @@ import sbt.dsl.LinterLevel.Ignore
 lazy val catsVersion          = "2.7.0"
 lazy val catsEffectVersion    = "3.3.11"
 lazy val circeVersion         = "0.14.2"
-lazy val fs2Version           = "3.2.11"
+lazy val fs2Version           = "3.2.12"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
@@ -22,6 +22,7 @@ lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
 lazy val scala30Version       = "3.1.1"
 lazy val slf4jVersion         = "1.7.36"
+lazy val weaverVersion        = "0.7.15"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
@@ -63,7 +64,7 @@ lazy val compilerFlags = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0"
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1"
   )
 )
 
@@ -169,6 +170,7 @@ lazy val doobie = project.in(file("."))
     scalatest,
     munit,
     specs2,
+    weaver
   )
 
 lazy val free = project
@@ -418,6 +420,21 @@ lazy val munit = project
     )
   )
 
+lazy val weaver = project
+  .in(file("modules/weaver"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(
+    name := s"doobie-weaver",
+    description := "Weaver support for doobie.",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+    libraryDependencies ++= Seq(
+      "com.disneystreaming" %% "weaver-cats" % weaverVersion,
+      "com.h2database"  %  "h2"    % h2Version % "test"
+    )
+  )
+
 lazy val bench = project
   .in(file("modules/bench"))
   .enablePlugins(NoPublishPlugin)
@@ -428,7 +445,7 @@ lazy val bench = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest)
+  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, weaver)
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
