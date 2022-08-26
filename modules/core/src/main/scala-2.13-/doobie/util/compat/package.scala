@@ -6,10 +6,13 @@ package doobie.util
 
 import java.{util => ju}
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.immutable.Map
 
 package object compat {
   type =:=[From, To] = scala.Predef.=:=[From, To]
 
   def propertiesToScala(p: ju.Properties): Map[String, String] = p.asScala.toMap
+  def mapToScala[K, V](m: ju.Map[K, V]): mutable.Map[K, V] = m.asScala
+  def scalaToMap[K, V](m: Map[K, V]): ju.Map[K, V] = m.asJava
 }
