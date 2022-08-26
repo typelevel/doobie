@@ -13,7 +13,6 @@ import doobie.syntax.string._
 import doobie.util.Read
 import doobie.util.transactor.Transactor
 import munit._
-import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
 
@@ -26,9 +25,7 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
   test("trivial") { check(sql"select 1".query[Int]) }
   test("fail".fail) { check(sql"select 1".query[String]) }
 
-  final case class Foo[F[_]](x: Int)
-
-  test ("trivial case-class"){ check(sql"select 1".query[Foo[cats.Id]]) }
+  test ("trivial case-class"){ check(sql"select 1".query[CheckerChecks.Foo[cats.Id]]) }
 
   test("Read should select correct columns when combined with `product`") {
     import cats.syntax.all._
@@ -53,6 +50,10 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
     check(sql"SELECT '1', '2', 3, 4".query(combined))
   }
 
+}
+
+object CheckerChecks {
+  final case class Foo[F[_]](x: Int)
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {
