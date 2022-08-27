@@ -117,7 +117,6 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut[java.sql.Timestamp]("timestamptz")
   testInOut[java.time.Instant]("timestamptz")
   testInOutTweakExpected[java.time.OffsetDateTime]("timestamptz")(_.withOffsetSameInstant(ZoneOffset.UTC)) // +148488-07-03T02:38:17Z != +148488-07-03T00:00-02:38:17
-  testInOutTweakExpected[java.time.ZonedDateTime]("timestamptz")(_.withZoneSameInstant(ZoneOffset.UTC))
 
   /*
     local date & time (not an instant in time)
