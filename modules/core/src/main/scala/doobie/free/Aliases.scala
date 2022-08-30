@@ -4,6 +4,7 @@
 
 package doobie.free
 
+import cats.{Monoid, Semigroup}
 import doobie.WeakAsync
 
 trait Types {
@@ -53,6 +54,12 @@ trait Instances  {
 
   /** @group Typeclass Instances */  implicit lazy val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
     connection.WeakAsyncConnectionIO
+
+  /** @group Typeclass Instances */  implicit def MonoidConnectionIO[A: Monoid]: Monoid[ConnectionIO[A]] =
+    connection.MonoidConnectionIO[A]
+
+  /** @group Typeclass Instances */  implicit def SemigroupConnectionIO[A: Semigroup]: Semigroup[ConnectionIO[A]] =
+    connection.SemigroupConnectionIO[A]
 
   /** @group Typeclass Instances */  implicit lazy val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
     databasemetadata.WeakAsyncDatabaseMetaDataIO

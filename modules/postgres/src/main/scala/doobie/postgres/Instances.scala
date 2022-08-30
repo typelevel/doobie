@@ -14,8 +14,6 @@ import java.net.InetAddress
 import org.postgresql.util._
 import org.postgresql.geometric._
 
-import scala.jdk.CollectionConverters._
-import scala.Predef._
 import scala.reflect.ClassTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
@@ -241,6 +239,6 @@ trait Instances {
 
   /** HSTORE maps to a Map[String, String]. */
   implicit val hstoreMeta: Meta[Map[String, String]] =
-    hstoreMetaJava.timap[Map[String, String]](_.asScala.toMap)(_.asJava)
+    hstoreMetaJava.timap[Map[String, String]](doobie.util.compat.mapToScala(_).toMap)(doobie.util.compat.scalaToMap(_))
 
 }

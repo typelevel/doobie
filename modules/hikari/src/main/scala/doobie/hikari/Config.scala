@@ -19,15 +19,15 @@ import scala.concurrent.duration.Duration
 /** Configuration case class, susceptible to PureConfig.
   * Helps with creating `com.zaxxer.hikari.HikariConfig`,
   * which in turn is used to create `doobie.hikari.HikariTransactor`.
-  * See the method `HikariTransactor.fromConfig` */
+  * See the method `HikariTransactor.fromConfigAutoEc` */
 final case class Config(
   catalog: Option[String] = None,
   connectionTimeout: Duration = Duration(30, TimeUnit.SECONDS),
   idleTimeout: Duration = Duration(10, TimeUnit.MINUTES),
   leakDetectionThreshold: Duration = Duration.Zero,
-  maximumPoolSize: Option[Int] = None,
+  maximumPoolSize: Option[Int] = Some(10),
   maxLifetime: Duration = Duration(30, TimeUnit.MINUTES),
-  minimumIdle: Option[Int] = None,
+  minimumIdle: Option[Int] = Some(10),
   password: Option[String] = None,
   poolName: Option[String] = None,
   username: Option[String] = None,

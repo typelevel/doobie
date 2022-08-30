@@ -5,37 +5,37 @@
 package doobie.util
 
 import cats.syntax.all._
-import cats.effect.IO
-import doobie._, doobie.implicits._
-import doobie.util.log.{ LogEvent, Success, ProcessingFailure }
+import cats.effect.{IO, IOLocal}
+import doobie._
+import doobie.implicits._
+import doobie.util.log.{LogEvent, ProcessingFailure, Success}
 
 class LogSuite extends munit.FunSuite {
 
   import cats.effect.unsafe.implicits.global
 
-  val xa = Transactor.fromDriverManager[IO](
+  val ioLocal: IOLocal[LogEvent] =
+    IOLocal[LogEvent](null).unsafeRunSync()
+
+  val xa = Transactor.fromDriverManager[IO].withLogHandler(ioLocal.set)(
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
   )
 
+  def eventForCIO[A](cio: ConnectionIO[A]): LogEvent =
+    cio.transact(xa).attempt.flatMap(_ => ioLocal.get).unsafeRunSync()
+
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def eventForUniqueQuery[A: Write](sql: String, arg: A = ()): LogEvent = {
-    var result  = null : LogEvent
-    val handler = LogHandler(result = _)
-    val cio     = Query[A, Unit](sql, None, handler).unique(arg)
-    cio.transact(xa).attempt.unsafeRunSync()
-    result
+    eventForCIO(Query[A, Unit](sql, None).unique(arg))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def eventForUniqueUpdate[A: Write](sql: String, arg: A = ()): LogEvent = {
-    var result  = null : LogEvent
-    implicit val handler = LogHandler(result = _)
-    val cio     = sql"create table if not exists foo (bar integer)".update.run *>
-                  Update[A](sql, None).run(arg)
-    cio.transact(xa).attempt.unsafeRunSync()
-    result
+    val cio = sql"create table if not exists foo (bar integer)".update.run *>
+      Update[A](sql, None).run(arg)
+    eventForCIO(cio)
   }
 
   test("[Query] default handler") {
@@ -43,22 +43,14 @@ class LogSuite extends munit.FunSuite {
   }
 
   test("[Query] implicit handler") {
-    var result  = null : LogEvent
-    implicit val handler: LogHandler = LogHandler(result = _)
-    val cio = sql"select 1".query[Int].unique
-    cio.transact(xa).attempt.unsafeRunSync()
-    result match {
+    eventForCIO(sql"select 1".query[Int].unique) match {
       case Success(_, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
 
   test("[Query] explicit handler") {
-    var result  = null : LogEvent
-    val handler = LogHandler(result = _)
-    val cio = sql"select 1".queryWithLogHandler[Int](handler).unique
-    cio.transact(xa).attempt.unsafeRunSync()
-    result match {
+    eventForCIO(sql"select 1".query[Int].unique) match {
       case Success(_, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
@@ -93,22 +85,16 @@ class LogSuite extends munit.FunSuite {
   }
 
   test("[Update] implicit handler") {
-    var result  = null : LogEvent
-    implicit val handler: LogHandler = LogHandler(result = _)
     val cio = sql"drop table if exists barf".update.run
-    cio.transact(xa).attempt.unsafeRunSync()
-    result match {
+    eventForCIO(cio) match {
       case Success(_, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
 
   test("[Update] explicit handler") {
-    var result  = null : LogEvent
-    val handler = LogHandler(result = _)
-    val cio = sql"drop table if exists barf".updateWithLogHandler(handler).run
-    cio.transact(xa).attempt.unsafeRunSync()
-    result match {
+    val cio = sql"drop table if exists barf".update.run
+    eventForCIO(cio) match {
       case Success(_, _, _, _) => ()
       case a => fail(s"no match: $a")
     }

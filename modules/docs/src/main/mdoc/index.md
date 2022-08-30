@@ -82,8 +82,8 @@ Note that **doobie** is pre-1.0 software and is still undergoing active developm
 ## Documentation and Support
 
 - Behold the sparkly [**documentation**](docs/01-Introduction.html) ← start here
-- The [**Scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.12) will be handy once you get your feet wet.
-- See the [**changelog**](https://github.com/tpolecat/doobie/blob/series/0.5.x/CHANGELOG.md) for an overview of changes in this and previous versions.
+- The [**Scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_$scala.binary.version$) will be handy once you get your feet wet.
+- See [**releases**](https://github.com/tpolecat/doobie/releases) for an overview of changes in this and previous versions.
 - The [**Gitter Channel**](https://gitter.im/tpolecat/doobie) is a great place to chat!
 - There is a [**Scala Exercises**](https://www.scala-exercises.org/) module, courtesy of our friends at 47 Degrees!
 - There is also the [**source**](https://github.com/tpolecat/doobie). Check out the examples too.
@@ -138,6 +138,7 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [lences.io](https://lenses.io)
  - [Medidata](https://www.medidata.com/)
  - [NOIRLab](https://noirlab.edu)
+ - [On Air Entertainment](https://onairentertainment.com/)
  - [RaiffeisenBank Russia](https://raiffeisen.ru)
  - [ReachFive](www.reachfive.com)
  - [Rudder](https://rudder.io)

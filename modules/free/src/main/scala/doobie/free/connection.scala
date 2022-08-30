@@ -4,13 +4,14 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{Applicative, Monoid, Semigroup, ~>}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import java.lang.Class
 import java.lang.String
 import java.sql.Blob
@@ -25,7 +26,7 @@ import java.sql.SQLXML
 import java.sql.Savepoint
 import java.sql.Statement
 import java.sql.Struct
-import java.sql.{ Array => SqlArray }
+import java.sql.{Array => SqlArray}
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
@@ -69,6 +70,7 @@ object connection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
       def fromFuture[A](fut: ConnectionIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // Connection
       def abort(a: Executor): F[Unit]
@@ -167,6 +169,9 @@ object connection { module =>
     }
     case class FromFuture[A](fut: ConnectionIO[Future[A]]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class PerformLogging(event: LogEvent) extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
 
     // Connection-specific operations.
@@ -355,6 +360,7 @@ object connection { module =>
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: ConnectionIO[Future[A]]) = FF.liftF[ConnectionOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[ConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
@@ -432,5 +438,16 @@ object connection { module =>
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: ConnectionIO[Future[A]]): ConnectionIO[A] = module.fromFuture(fut)
     }
+
+  implicit def MonoidConnectionIO[A : Monoid]: Monoid[ConnectionIO[A]] = new Monoid[ConnectionIO[A]] {
+    override def empty: ConnectionIO[A] = Applicative[ConnectionIO].pure(Monoid[A].empty)
+    override def combine(x: ConnectionIO[A], y: ConnectionIO[A]): ConnectionIO[A] =
+      Applicative[ConnectionIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+
+  implicit def SemigroupConnectionIO[A : Semigroup]: Semigroup[ConnectionIO[A]] = new Semigroup[ConnectionIO[A]] {
+    override def combine(x: ConnectionIO[A], y: ConnectionIO[A]): ConnectionIO[A] =
+      Applicative[ConnectionIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }
 }
 
