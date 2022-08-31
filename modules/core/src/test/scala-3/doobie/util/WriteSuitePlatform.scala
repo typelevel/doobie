@@ -2,26 +2,29 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
-package util
+package doobie.util
 
 trait WriteSuitePlatform { self: munit.FunSuite =>
 
   case class Woozle(a: (String, Int), b: Int *: String *: EmptyTuple, c: Boolean)
 
   test("Write should exist for some fancy types") {
-    util.Write[Woozle]
-    util.Write[(Woozle, String)]
-    util.Write[(Int, Woozle *: Woozle *: String *: EmptyTuple)]
+    import doobie.generic.auto._
+
+    Write[Woozle]
+    Write[(Woozle, String)]
+    Write[(Int, Woozle *: Woozle *: String *: EmptyTuple)]
   }
 
   test("Write should exist for option of some fancy types") {
-    util.Write[Option[Woozle]]
-    util.Write[Option[(Woozle, String)]]
-    util.Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
+    import doobie.generic.auto._
+
+    Write[Option[Woozle]]
+    Write[Option[(Woozle, String)]]
+    Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
   }
 
   test("derives") {
-    case class Foo(a: String, b: Int) derives util.Write
+    case class Foo(a: String, b: Int) derives Write
   }
 }

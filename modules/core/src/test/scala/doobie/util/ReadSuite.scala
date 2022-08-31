@@ -2,10 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
-package util
+package doobie.util
 
 import cats.effect.IO
+import doobie.util.meta.Meta
+import doobie.util.transactor.Transactor
 
 class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
@@ -26,43 +27,63 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   )
 
   test("Read should exist for some fancy types") {
-    util.Read[Int]
-    util.Read[(Int, Int)]
-    util.Read[(Int, Int, String)]
-    util.Read[(Int, (Int, String))]
+    import doobie.generic.auto._
+
+    Read[Int]
+    Read[(Int, Int)]
+    Read[(Int, Int, String)]
+    Read[(Int, (Int, String))]
+  }
+
+  test("Read is not auto derived without an import") {
+    compileErrors("Read[(Int, Int)]")
+    compileErrors("Read[(Int, Int, String)]")
+    compileErrors("Read[(Int, (Int, String))]")
+  }
+
+  test("Read can be manually derived") {
+    Read.derived[LenStr1]
   }
 
   test("Read should exist for Unit") {
-    util.Read[Unit]
-    assertEquals(util.Read[(Int, Unit)].length, 1)
+    import doobie.generic.auto._
+
+    Read[Unit]
+    assertEquals(Read[(Int, Unit)].length, 1)
   }
 
   test("Read should exist for option of some fancy types") {
-    util.Read[Option[Int]]
-    util.Read[Option[(Int, Int)]]
-    util.Read[Option[(Int, Int, String)]]
-    util.Read[Option[(Int, (Int, String))]]
-    util.Read[Option[(Int, Option[(Int, String)])]]
+    import doobie.generic.auto._
+
+    Read[Option[Int]]
+    Read[Option[(Int, Int)]]
+    Read[Option[(Int, Int, String)]]
+    Read[Option[(Int, (Int, String))]]
+    Read[Option[(Int, Option[(Int, String)])]]
   }
 
   test("Read should exist for option of Unit") {
-    util.Read[Option[Unit]]
-    assertEquals(util.Read[Option[(Int, Unit)]].length, 1)
+    import doobie.generic.auto._
+
+    Read[Option[Unit]]
+    assertEquals(Read[Option[(Int, Unit)]].length, 1)
   }
 
   test("Read should select multi-column instance by default") {
-    assertEquals(util.Read[LenStr1].length, 2)
+    import doobie.generic.auto._
+
+    assertEquals(Read[LenStr1].length, 2)
   }
 
   test("Read should select 1-column instance when available") {
-    assertEquals(util.Read[LenStr2].length, 1)
+    assertEquals(Read[LenStr2].length, 1)
   }
 
   test(".product should product the correct ordering of gets") {
     import cats.syntax.all._
 
-    val readInt = util.Read[Int]
-    val readString = util.Read[String]
+    val readInt = Read[Int]
+    val readString = Read[String]
 
     val p = readInt.product(readString)
 
@@ -73,7 +94,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     import cats.syntax.all._
     import doobie.implicits._
 
-    val r = util.Read[Int]
+    val r = Read[Int]
 
     val c = (r, r, r, r, r).tupled
 
@@ -87,7 +108,8 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   test("Read should select correct columns when combined with `product`") {
     import cats.syntax.all._
     import doobie.implicits._
-    val r = util.Read[Int].product(util.Read[Int].product(util.Read[Int]))
+
+    val r = Read[Int].product(Read[Int].product(Read[Int]))
 
     val q = sql"SELECT 1, 2, 3".query(r).to[List]
     val o = q.transact(xa).unsafeRunSync()

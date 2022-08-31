@@ -13,5 +13,7 @@ trait GetPlatform:
     using p: Mirror.ProductOf[P],
           i: p.MirroredElemTypes =:= (A *: EmptyTuple),
           g: Get[A],
-  ): Get[P] =
-    g.map(a => p.fromProduct(a *: EmptyTuple))
+  ): MkGet[P] = {
+    val get = g.map(a => p.fromProduct(a *: EmptyTuple))
+    MkGet.lift(get)
+  }

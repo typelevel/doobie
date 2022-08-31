@@ -5,7 +5,7 @@
 package doobie.util.meta
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie._
 import doobie.util.{Get, Put}
 
 case class Foo(str: String)
@@ -28,7 +28,7 @@ class MetaSuite extends munit.FunSuite {
 }
 
 class MetaDBSuite extends munit.FunSuite {
-
+  import doobie.implicits._
   import cats.effect.unsafe.implicits.global
 
   lazy val xa = Transactor.fromDriverManager[IO](

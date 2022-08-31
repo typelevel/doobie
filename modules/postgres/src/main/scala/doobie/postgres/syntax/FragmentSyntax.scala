@@ -31,7 +31,7 @@ class FragmentOps(f: Fragment) {
     // TODO: stream this rather than constructing the string in memory.
     if (fa.isEmpty) 0L.pure[ConnectionIO] else {
       val data = foldToString(fa)
-      PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql, new StringReader(data)))
+      PHC.pgGetCopyAPI(PFCM.copyIn(f.query[Unit].sql, new StringReader(data)))
     }
   }
 
@@ -52,7 +52,7 @@ class FragmentOps(f: Fragment) {
     // we need to run that in the finalizer of the `bracket`, and the result from that is ignored.
     Ref.of[ConnectionIO, Long](-1L).flatMap { numRowsRef =>
       val copyAll: ConnectionIO[Unit] =
-        Stream.bracketCase(PHC.pgGetCopyAPI(PFCM.copyIn(f.query.sql))){
+        Stream.bracketCase(PHC.pgGetCopyAPI(PFCM.copyIn(f.query[Unit].sql))){
           case (copyIn, Resource.ExitCase.Succeeded) =>
             PHC.embed(copyIn, PFCI.endCopy).flatMap(numRowsRef.set)
           case (copyIn, _) =>

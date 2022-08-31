@@ -70,7 +70,7 @@ object fragment {
         }
       }
 
-      new Write(puts, toList, unsafeSet, unsafeUpdate)
+      Write(puts, toList, unsafeSet, unsafeUpdate)
 
     }
 

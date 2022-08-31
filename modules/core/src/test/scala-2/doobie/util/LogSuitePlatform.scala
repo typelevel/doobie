@@ -8,6 +8,7 @@ import doobie.util.log.{ Success, ProcessingFailure }
 import shapeless._
 
 trait LogSuitePlatform { self: LogSuite =>
+  import doobie.generic.auto._
 
   test("[Query] n-arg success") {
     val Sql = "select 1 where ? = ?"

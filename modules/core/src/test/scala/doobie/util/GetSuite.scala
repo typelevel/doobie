@@ -5,8 +5,8 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
-import doobie.enumerated.JdbcType.{ Array => _, _ }
+import doobie._
+import doobie.enumerated.JdbcType
 
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
@@ -21,9 +21,21 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     Get[String]
   }
 
-  test("Get should be derived for unary products") {
+  test("Get should be auto derived for unary products") {
+    import doobie.generic.auto._
+
     Get[X]
     Get[Q]
+  }
+
+  test("Get is not auto derived without an import") {
+    compileErrors("Get[X]")
+    compileErrors("Get[Q]")
+  }
+
+  test("Get can be manually derived for unary products") {
+    Get.derived[X]
+    Get.derived[Q]
   }
 
   test("Get should not be derived for non-unary products") {
@@ -39,8 +51,8 @@ final case class Bar(n: Int)
 
 
 class GetDBSuite extends munit.FunSuite {
-
   import cats.effect.unsafe.implicits.global
+  import doobie.syntax.all._
 
   lazy val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
@@ -65,7 +77,7 @@ class GetDBSuite extends munit.FunSuite {
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyRef)") {
     def x = sql"select null".query[Foo].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, Char)))
+    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
   }
 
   test("Get should not allow map to observe null on the read side (AnyVal)") {
@@ -80,7 +92,7 @@ class GetDBSuite extends munit.FunSuite {
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyVal)") {
     def x = sql"select null".query[Bar].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, Integer)))
+    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Integer)))
   }
 
   test("Get should error when reading an incorrect value") {

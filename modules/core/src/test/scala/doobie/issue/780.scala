@@ -7,6 +7,7 @@ package doobie.issue
 import doobie._
 
 class `780` extends munit.FunSuite {
+  import doobie.generic.auto._
 
   test("deriving instances should work correctly for Write from class scope") {
     class Foo[A: Write, B: Write] {

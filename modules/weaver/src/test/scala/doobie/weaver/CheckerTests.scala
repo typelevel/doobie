@@ -14,7 +14,7 @@ import cats.effect.kernel.Resource
 object CheckerTests extends IOSuite with IOChecker {
 
   override type Res = Transactor[IO]
-  override def sharedResource: Resource[IO,Res] = 
+  override def sharedResource: Resource[IO,Res] =
     Resource.pure(Transactor.fromDriverManager[IO](
       "org.h2.Driver",
       "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
@@ -22,7 +22,7 @@ object CheckerTests extends IOSuite with IOChecker {
     ))
 
   test("trivial") { implicit transactor =>
-    check(sql"select 1".query[Int]) 
+    check(sql"select 1".query[Int])
   }
 
   test("fail") { implicit transactor =>
@@ -34,7 +34,9 @@ object CheckerTests extends IOSuite with IOChecker {
   final case class Foo[F[_]](x: Int)
 
   test ("trivial case-class") { implicit transactor =>
-    check(sql"select 1".query[Foo[cats.Id]]) 
+    import doobie.generic.auto._
+
+    check(sql"select 1".query[Foo[cats.Id]])
   }
 
   test("Read should select correct columns when combined with `product`") { implicit transactor =>
@@ -51,6 +53,8 @@ object CheckerTests extends IOSuite with IOChecker {
   }
 
   test("Read should select correct columns for checking when combined with `ap`") { implicit transactor =>
+    import doobie.generic.auto._
+
     val readInt = Read[(Int, Int)]
     val readIntToInt: Read[Tuple2[Int, Int] => String] =
       Read[(String, String)].map(i => k => s"$i,$k")
