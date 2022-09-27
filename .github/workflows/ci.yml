@@ -37,21 +37,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download Java (temurin@8)
-        id: download-java-temurin-8
-        if: matrix.java == 'temurin@8'
+      - name: Download Java (temurin@11)
+        id: download-java-temurin-11
+        if: matrix.java == 'temurin@11'
         uses: typelevel/download-java@v1
         with:
           distribution: temurin
-          java-version: 8
+          java-version: 11
 
-      - name: Setup Java (temurin@8)
-        if: matrix.java == 'temurin@8'
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
         uses: actions/setup-java@v2
         with:
           distribution: jdkfile
-          java-version: 8
-          jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
+          java-version: 11
+          jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
 
       - name: Cache sbt
         uses: actions/cache@v2
@@ -78,11 +78,11 @@ jobs:
         run: sbt '++${{ matrix.scala }}' test
 
       - name: Check binary compatibility
-        if: matrix.java == 'temurin@8'
+        if: matrix.java == 'temurin@11'
         run: sbt '++${{ matrix.scala }}' mimaReportBinaryIssues
 
       - name: Generate API documentation
-        if: matrix.java == 'temurin@8'
+        if: matrix.java == 'temurin@11'
         run: sbt '++${{ matrix.scala }}' doc
 
       - name: Check Doc Site (2.13.8 only)
@@ -120,21 +120,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download Java (temurin@8)
-        id: download-java-temurin-8
-        if: matrix.java == 'temurin@8'
+      - name: Download Java (temurin@11)
+        id: download-java-temurin-11
+        if: matrix.java == 'temurin@11'
         uses: typelevel/download-java@v1
         with:
           distribution: temurin
-          java-version: 8
+          java-version: 11
 
-      - name: Setup Java (temurin@8)
-        if: matrix.java == 'temurin@8'
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
         uses: actions/setup-java@v2
         with:
           distribution: jdkfile
-          java-version: 8
-          jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
+          java-version: 11
+          jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
 
       - name: Cache sbt
         uses: actions/cache@v2
