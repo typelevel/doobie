@@ -7,7 +7,7 @@ lazy val catsEffectVersion    = "3.3.11"
 lazy val circeVersion         = "0.14.2"
 lazy val fs2Version           = "3.2.14"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
+lazy val hikariVersion        = "5.0.1"
 lazy val kindProjectorVersion = "0.11.2"
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.5.0"
@@ -21,7 +21,7 @@ lazy val specs2Version        = "4.15.0"
 lazy val scala212Version      = "2.12.15"
 lazy val scala213Version      = "2.13.8"
 lazy val scala30Version       = "3.1.1"
-lazy val slf4jVersion         = "1.7.36"
+lazy val slf4jVersion         = "2.0.2"
 lazy val weaverVersion        = "0.7.15"
 
 // Basic versioning and publishing stuff
@@ -326,8 +326,7 @@ lazy val hikari = project
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
     libraryDependencies ++= Seq(
-      //needs to be excluded, otherwise coursier may resolve slf4j-api 2 if > Java 11
-      "com.zaxxer"     % "HikariCP"   % hikariVersion exclude("org.slf4j", "slf4j-api"),
+      "com.zaxxer"     % "HikariCP"   % hikariVersion,
       "com.h2database" % "h2"         % h2Version      % "test",
       "org.slf4j"      % "slf4j-api"  % slf4jVersion,
       "org.slf4j"      % "slf4j-nop"  % slf4jVersion   % "test"
