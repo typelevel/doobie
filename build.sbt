@@ -83,6 +83,11 @@ lazy val commonSettings =
          |""".stripMargin
     )),
 
+
+    // Java options .. HikariDataSource has been compiled by a more recent version of the Java Runtime (class file version 55.0), this version of the Java Runtime only recognizes class file versions up to 52.0
+    /// https://stackoverflow.com/questions/9170832/list-of-java-class-file-format-major-version-numbers
+    javacOptions := Seq("-source", "11", "-target", "11"),
+
     // Scaladoc options
     Compile / doc / scalacOptions ++= Seq(
       "-groups",

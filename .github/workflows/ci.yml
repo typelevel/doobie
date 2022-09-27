@@ -29,7 +29,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.15, 2.13.8, 3.1.1]
-        java: [temurin@8]
+        java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -112,7 +112,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.8]
-        java: [temurin@8]
+        java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
