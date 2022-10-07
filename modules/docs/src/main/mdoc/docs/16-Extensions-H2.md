@@ -10,6 +10,26 @@ libraryDependencies += "org.tpolecat" %% "doobie-h2" % "$version$"
 
 This library pulls in H2 as a transitive dependency.
 
+There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:
+
+@@@ vars
+
+```scala
+libraryDependencies += "org.tpolecat" %% "doobie-h2-circe" % "$version$"
+```
+
+@@@
+
+Then, you will be able to import the implicits for dealing with JSON:
+
+@@@ vars
+
+```scala
+import doobie.h2.circe.json.implicits
+```
+
+@@@
+
 ### Array Types
 
 **doobie** supports H2 arrays of the following types:

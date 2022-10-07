@@ -177,7 +177,7 @@ trait GetInstances extends GetPlatform {
   import Predef._ // for array ops
 
   /** @group Instances */
-  implicit val FunctorPut: Functor[Get] =
+  implicit val FunctorGet: Functor[Get] =
     new Functor[Get] {
       def map[A, B](fa: Get[A])(f: A => B): Get[B] =
         fa.map(f)

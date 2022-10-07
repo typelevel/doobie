@@ -7,6 +7,7 @@ package doobie.postgres.free
 import cats.~>
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -62,6 +63,7 @@ object pgconnection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): F[A]
       def fromFuture[A](fut: PGConnectionIO[Future[A]]): F[A]
+      def performLogging(event: LogEvent): F[Unit]
 
       // PGConnection
       def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
@@ -69,6 +71,7 @@ object pgconnection { module =>
       def createArrayOf(a: String, b: AnyRef): F[SqlArray]
       def escapeIdentifier(a: String): F[String]
       def escapeLiteral(a: String): F[String]
+      def getAdaptiveFetch: F[Boolean]
       def getAutosave: F[AutoSave]
       def getBackendPID: F[Int]
       def getCopyAPI: F[PGCopyManager]
@@ -81,6 +84,7 @@ object pgconnection { module =>
       def getPreferQueryMode: F[PreferQueryMode]
       def getPrepareThreshold: F[Int]
       def getReplicationAPI: F[PGReplicationConnection]
+      def setAdaptiveFetch(a: Boolean): F[Unit]
       def setAutosave(a: AutoSave): F[Unit]
       def setDefaultFetchSize(a: Int): F[Unit]
       def setPrepareThreshold(a: Int): F[Unit]
@@ -127,6 +131,9 @@ object pgconnection { module =>
     case class FromFuture[A](fut: PGConnectionIO[Future[A]]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class PerformLogging(event: LogEvent) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
+    }
 
     // PGConnection-specific operations.
     final case class AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
@@ -143,6 +150,9 @@ object pgconnection { module =>
     }
     final case class EscapeLiteral(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.escapeLiteral(a)
+    }
+    case object GetAdaptiveFetch extends PGConnectionOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.getAdaptiveFetch
     }
     case object GetAutosave extends PGConnectionOp[AutoSave] {
       def visit[F[_]](v: Visitor[F]) = v.getAutosave
@@ -180,6 +190,9 @@ object pgconnection { module =>
     case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
       def visit[F[_]](v: Visitor[F]) = v.getReplicationAPI
     }
+    final case class SetAdaptiveFetch(a: Boolean) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setAdaptiveFetch(a)
+    }
     final case class SetAutosave(a: AutoSave) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setAutosave(a)
     }
@@ -212,6 +225,7 @@ object pgconnection { module =>
   val canceled = FF.liftF[PGConnectionOp, Unit](Canceled)
   def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) = FF.liftF[PGConnectionOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: PGConnectionIO[Future[A]]) = FF.liftF[PGConnectionOp, A](FromFuture(fut))
+  def performLogging(event: LogEvent) = FF.liftF[PGConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for PGConnection-specific operations.
   def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
@@ -219,6 +233,7 @@ object pgconnection { module =>
   def createArrayOf(a: String, b: AnyRef): PGConnectionIO[SqlArray] = FF.liftF(CreateArrayOf(a, b))
   def escapeIdentifier(a: String): PGConnectionIO[String] = FF.liftF(EscapeIdentifier(a))
   def escapeLiteral(a: String): PGConnectionIO[String] = FF.liftF(EscapeLiteral(a))
+  val getAdaptiveFetch: PGConnectionIO[Boolean] = FF.liftF(GetAdaptiveFetch)
   val getAutosave: PGConnectionIO[AutoSave] = FF.liftF(GetAutosave)
   val getBackendPID: PGConnectionIO[Int] = FF.liftF(GetBackendPID)
   val getCopyAPI: PGConnectionIO[PGCopyManager] = FF.liftF(GetCopyAPI)
@@ -231,6 +246,7 @@ object pgconnection { module =>
   val getPreferQueryMode: PGConnectionIO[PreferQueryMode] = FF.liftF(GetPreferQueryMode)
   val getPrepareThreshold: PGConnectionIO[Int] = FF.liftF(GetPrepareThreshold)
   val getReplicationAPI: PGConnectionIO[PGReplicationConnection] = FF.liftF(GetReplicationAPI)
+  def setAdaptiveFetch(a: Boolean): PGConnectionIO[Unit] = FF.liftF(SetAdaptiveFetch(a))
   def setAutosave(a: AutoSave): PGConnectionIO[Unit] = FF.liftF(SetAutosave(a))
   def setDefaultFetchSize(a: Int): PGConnectionIO[Unit] = FF.liftF(SetDefaultFetchSize(a))
   def setPrepareThreshold(a: Int): PGConnectionIO[Unit] = FF.liftF(SetPrepareThreshold(a))

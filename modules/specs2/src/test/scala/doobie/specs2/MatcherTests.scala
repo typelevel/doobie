@@ -24,11 +24,12 @@ trait MatcherChecks[M[_]] extends Specification
   }
 
   "malformed sql should fail" >> {
-    sql"not a valid sql".query[Int].must(not(typecheck))
+    sql"not a valid sql".update.must(not(typecheck))
   }
 
   "query with mismatched type should fail" >> {
-    sql"select 'foo'".query[Int].must(not(typecheck))
+    // explicit type on `typecheck` required for Scala 3
+    sql"select 'foo'".query[Int].must(not(typecheck[doobie.util.query.Query0[Int]]))
   }
 }
 

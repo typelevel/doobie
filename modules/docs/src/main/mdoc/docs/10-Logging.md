@@ -171,6 +171,53 @@ val jdkLogHandler: LogHandler = {
 }
 ```
 
+### Handle all `LogEvents`
+
+You can also set up your `Transactor` with a handler for all `LogEvent`s produced while using it. 
+
+As opposed to the `LogHandler` type described above, in this case we need an instance of a similar but effectful type `LogHandlerM`.
+
+Since this effect runs in your chosen output monad, you have the ability to interact with the corresponding runtime system.
+Hopefully this example conveys how this mechanism can be used for structured logging, tracing and so on.
+
+```scala mdoc
+import cats.effect.{IOLocal, Ref}
+
+def users = List.range(0, 4).map(n => s"user-$n")
+
+def transactorWithLogging(logHandlerM: LogHandlerM[IO]): Transactor[IO] =
+  Transactor.fromDriverManager[IO]
+    .withLogHandler(logHandlerM)( // thread through the logHandler here
+      "org.h2.Driver",
+      "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+      "sa", ""
+    )
+
+def program: IO[List[String]] =
+  for {
+    // define an IOLocal where we store the user which caused the query to be run  
+    currentUser <- IOLocal("")
+    // store all successful sql here, for all users
+    successLogsRef <- Ref[IO].of(List.empty[String])
+    xa = transactorWithLogging {
+      case Success(sql, _, _, _) =>
+        // retrieve current user, compute a log message, and store it
+        currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '$sql'" :: logs))
+      case _ => IO.unit
+    }
+    // run a bunch of queries
+    _ <- users.parTraverse(user =>
+      for {
+        _ <- currentUser.set(user)
+        _ <- sql"select 1".query[Int].unique.transact(xa)
+      } yield ()
+    )
+    // return computed log messages
+    logs <- successLogsRef.get
+  } yield logs
+
+program.unsafeRunSync().sorted
+```
 
 ### Caveats
 

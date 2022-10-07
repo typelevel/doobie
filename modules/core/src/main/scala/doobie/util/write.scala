@@ -60,7 +60,7 @@ object Write extends WritePlatform {
 
   def apply[A](implicit A: Write[A]): Write[A] = A
 
-  implicit val ReadContravariantSemigroupal: ContravariantSemigroupal[Write] =
+  implicit val WriteContravariantSemigroupal: ContravariantSemigroupal[Write] =
     new ContravariantSemigroupal[Write] {
       def contramap[A, B](fa: Write[A])(f: B => A) = fa.contramap(f)
       def product[A, B](fa: Write[A], fb: Write[B]) = fa.product(fb)

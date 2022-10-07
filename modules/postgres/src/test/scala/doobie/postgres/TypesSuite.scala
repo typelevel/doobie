@@ -205,6 +205,26 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut("polygon", new PGpolygon(Array(new PGpoint(1, 2), new PGpoint(3, 4))))
   skip("line", "doc says \"not fully implemented\"")
 
+  // test postgis geography mappings
+  {
+    def createPoint(lat: Double, lon: Double): Point = {
+      val p = new Point(lon, lat)
+      p.setSrid(4326)
+
+      p
+    }
+
+    import doobie.postgres.pgisgeographyimplicits._
+    val point1 = createPoint(1, 2)
+    val point2 = createPoint(1, 3)
+    val lineString = new LineString(Array[Point](point1, point2))
+    lineString.setSrid(4326)
+
+    // test geography points
+    testInOut("GEOGRAPHY(POINT)", point1)
+    testInOut("GEOGRAPHY(LINESTRING)", lineString)
+  }
+
   // 8.9 Network Address Types
   testInOut("inet", InetAddress.getByName("123.45.67.8"))
   skip("inet", "no suitable JDK type")

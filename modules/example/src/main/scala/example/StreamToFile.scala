@@ -8,9 +8,8 @@ import cats.effect.{ IO, IOApp }
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._
-import fs2.text
-import fs2.io.file.Files
-import java.nio.file.Paths
+import fs2.io.file.{Files, Path}
+import fs2.text.utf8
 
 
 object StreamToFile extends IOApp.Simple {
@@ -25,9 +24,9 @@ object StreamToFile extends IOApp.Simple {
         .stream
         .map { case (n, p) => show"$n, $p" }
         .intersperse("\n")
-        .through(text.utf8Encode)
+        .through(utf8.encode)
         .transact(xa)
-        .through(Files[IO].writeAll(Paths.get("/tmp/out.txt")))
+        .through(Files[IO].writeAll(Path("/tmp/out.txt")))
         .compile
         .drain
 

@@ -27,7 +27,7 @@ trait JavaTimeInstances extends MetaConstructors {
   implicit val JavaTimeOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
     Basic.one[java.time.OffsetDateTime](
       JT.Timestamp,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Date, JT.Time),
+      List(JT.Time),
       _.getObject(_, classOf[java.time.OffsetDateTime]), _.setObject(_, _), _.updateObject(_, _))
 
   /**
@@ -51,7 +51,7 @@ trait JavaTimeInstances extends MetaConstructors {
   implicit val JavaTimeLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
     Basic.one[java.time.LocalDateTime](
       JT.Timestamp,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Date, JT.Time),
+      Nil,
       _.getObject(_, classOf[java.time.LocalDateTime]), _.setObject(_, _), _.updateObject(_, _))
 
   /**
@@ -60,7 +60,7 @@ trait JavaTimeInstances extends MetaConstructors {
   implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
     Basic.one[java.time.LocalDate](
       JT.Date,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Timestamp),
+      List(JT.Timestamp),
       _.getObject(_, classOf[java.time.LocalDate]), _.setObject(_, _), _.updateObject(_, _))
 
   /**
@@ -69,7 +69,7 @@ trait JavaTimeInstances extends MetaConstructors {
   implicit val JavaTimeLocalTimeMeta: Meta[java.time.LocalTime] =
     Basic.one[java.time.LocalTime](
       JT.Time,
-      List(JT.Char, JT.VarChar, JT.LongVarChar, JT.Timestamp),
+      Nil,
       _.getObject(_, classOf[java.time.LocalTime]), _.setObject(_, _), _.updateObject(_, _))
 
 }

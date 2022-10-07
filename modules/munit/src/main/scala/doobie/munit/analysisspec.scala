@@ -5,6 +5,7 @@
 package doobie.munit
 
 import cats.effect.{IO, Async}
+import doobie.munit.analysisspec.Checker.ErrorItems
 import doobie.syntax.connectionio._
 import doobie.util.query.{Query0, Query}
 import doobie.util.testing._
@@ -51,12 +52,17 @@ object analysisspec {
       val report = U.unsafeRunSync(analyze(args).transact(transactor))
       if (!report.succeeded) {
         fail(
-          formatReport(args, report, colors)
+          message = formatReport(args, report, colors)
             .padLeft("  ")
-            .toString
+            .toString,
+          cause = ErrorItems(report.items.filter(_.error.isDefined))
         )
       }
     }
+  }
+
+  object Checker {
+    case class ErrorItems(errors: List[AnalysisReport.Item]) extends Exception
   }
 
   /** Implementation of Checker[IO] */

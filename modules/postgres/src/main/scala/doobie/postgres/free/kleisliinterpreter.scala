@@ -10,6 +10,7 @@ import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
 import doobie.WeakAsync
+import doobie.util.log.{LogEvent, LogHandlerM}
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -18,13 +19,21 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
+import java.lang.Class
+import java.lang.String
+import java.sql.{ Array => SqlArray }
+import java.util.Map
 import org.postgresql.PGConnection
+import org.postgresql.PGNotification
+import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.jdbc.AutoSave
+import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
+import org.postgresql.replication.PGReplicationConnection
 import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
@@ -36,19 +45,12 @@ import doobie.postgres.free.largeobjectmanager.{ LargeObjectManagerIO, LargeObje
 import doobie.postgres.free.pgconnection.{ PGConnectionIO, PGConnectionOp }
 
 object KleisliInterpreter {
-
-  def apply[M[_]](
-    implicit am: WeakAsync[M]
-  ): KleisliInterpreter[M] =
-    new KleisliInterpreter[M] {
-      val asyncM = am
-    }
+  def apply[M[_]: WeakAsync](logHandler: LogHandlerM[M]): KleisliInterpreter[M] =
+    new KleisliInterpreter[M](logHandler)
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-trait KleisliInterpreter[M[_]] { outer =>
-
-  implicit val asyncM: WeakAsync[M]
+class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: WeakAsync[M]) { outer =>
   import WeakAsync._
 
   // The 6 interpreters, with definitions below. These can be overridden to customize behavior.
@@ -118,7 +120,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGCopyIn]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
+
     // for operations using CopyInIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]) = outer.forceR(this)(fa)(fb)
@@ -152,7 +156,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGCopyManager]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
+
     // for operations using CopyManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]) = outer.forceR(this)(fa)(fb)
@@ -186,7 +192,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGCopyOut]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
+
     // for operations using CopyOutIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]) = outer.forceR(this)(fa)(fb)
@@ -218,7 +226,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[LargeObject]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
+
     // for operations using LargeObjectIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]) = outer.forceR(this)(fa)(fb)
@@ -261,7 +271,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[LargeObjectManager]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
+
     // for operations using LargeObjectManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectManagerIO[A])(f: Throwable => LargeObjectManagerIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]) = outer.forceR(this)(fa)(fb)
@@ -295,7 +307,9 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def delay[A](thunk: => A) = outer.delay(thunk)
     override def suspend[A](hint: Sync.Type)(thunk: => A) = outer.suspend(hint)(thunk)
     override def canceled = outer.canceled[PGConnection]
-    
+
+    override def performLogging(event: LogEvent) = Kleisli(_ => logHandler.run(event))
+
     // for operations using PGConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]) = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]) = outer.forceR(this)(fa)(fb)
@@ -310,6 +324,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))
     override def escapeIdentifier(a: String) = primitive(_.escapeIdentifier(a))
     override def escapeLiteral(a: String) = primitive(_.escapeLiteral(a))
+    override def getAdaptiveFetch = primitive(_.getAdaptiveFetch)
     override def getAutosave = primitive(_.getAutosave)
     override def getBackendPID = primitive(_.getBackendPID)
     override def getCopyAPI = primitive(_.getCopyAPI)
@@ -322,6 +337,7 @@ trait KleisliInterpreter[M[_]] { outer =>
     override def getPreferQueryMode = primitive(_.getPreferQueryMode)
     override def getPrepareThreshold = primitive(_.getPrepareThreshold)
     override def getReplicationAPI = primitive(_.getReplicationAPI)
+    override def setAdaptiveFetch(a: Boolean) = primitive(_.setAdaptiveFetch(a))
     override def setAutosave(a: AutoSave) = primitive(_.setAutosave(a))
     override def setDefaultFetchSize(a: Int) = primitive(_.setDefaultFetchSize(a))
     override def setPrepareThreshold(a: Int) = primitive(_.setPrepareThreshold(a))

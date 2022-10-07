@@ -21,4 +21,7 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
     util.Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
   }
 
+  test("derives") {
+    case class Foo(a: String, b: Int) derives util.Write
+  }
 }

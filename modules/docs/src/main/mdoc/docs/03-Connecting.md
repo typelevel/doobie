@@ -39,12 +39,14 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
+  "org.postgresql.Driver",     // JDBC driver classname
+  "jdbc:postgresql:world",     // Connect URL
   "postgres",                  // user
   ""                           // password
 )
 ```
+
+Please consult your JDBC driver's documentation for the driver class name and connection URL.
 
 ```scala mdoc:invisible
 implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
@@ -135,7 +137,7 @@ import cats.data.Kleisli
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO].ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO](LogHandlerM.noop).ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
 val io3 = IO(null: java.sql.Connection) >>= kleisli.run
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection
@@ -149,13 +151,4 @@ There is a bit more going on when calling `transact` (we add commit/rollback han
 
 #### Using Your Own Target Monad
 
-As mentioned earlier, you can use any monad `M[_]` given `cats.effect.Async[M]`. For example, here we use [Monix](https://monix.io/) `Task`.
-```
-import monix.eval.Task
-
-val mxa = Transactor.fromDriverManager[Task](
-  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
-)
-
-sql"select 42".query[Int].unique.transact(mxa)
-```
+As mentioned earlier, you can use any monad `M[_]` given `cats.effect.Async[M]`.
