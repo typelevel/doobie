@@ -115,7 +115,7 @@ object fragments {
     comma(NonEmptyList(f1, f2 :: fs.toList))
 
   /** Returns `f1, f2, ... fn`. */
-  def comma[F[_]: Reducible](fs: F[Fragment]): Fragment =
+  def comma[F[_]: Foldable](fs: F[Fragment]): Fragment =
     fs.intercalate(fr",")
 
   /** Returns `ORDER BY f1, f2, ... fn`. */
