@@ -5,7 +5,6 @@
 package doobie
 package util
 
-import cats.data.NonEmptyList
 import cats.syntax.all._
 import cats.{Foldable, Reducible}
 import doobie.implicits._
