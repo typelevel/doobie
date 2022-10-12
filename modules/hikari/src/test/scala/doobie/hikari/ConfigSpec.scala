@@ -13,11 +13,16 @@ class ConfigSpec extends munit.FunSuite {
 
     import cats.effect.unsafe.implicits.global
 
-    val actual = Config.makeHikariConfig[IO](Config(jdbcUrl = Some("jdbcUrl"), poolName = Some("poolName"))).unsafeRunSync()
-    val expected = new HikariConfig()
-    expected.setJdbcUrl("jdbcUrl") // mandatory argument
-    expected.setPoolName("poolName") // otherwise the pool name is generated
-    expected.validate()
+    val actual = Config.makeHikariConfig[IO](Config("jdbcUrl", poolName = Some("poolName"))).unsafeRunSync()
+    val expected = {
+      val c = new HikariConfig()
+      c.setJdbcUrl("jdbcUrl") // mandatory argument
+      c.setPoolName("poolName") // otherwise the pool name is generated
+      c.validate()
+      c
+    }
+
+    assertEquals(actual.getJdbcUrl, expected.getJdbcUrl)
 
     assertEquals(actual.getCatalog, expected.getCatalog)
     assertEquals(actual.getConnectionTimeout, expected.getConnectionTimeout)
@@ -40,7 +45,6 @@ class ConfigSpec extends munit.FunSuite {
     assertEquals(actual.getDriverClassName, expected.getDriverClassName)
     assertEquals(actual.getInitializationFailTimeout, expected.getInitializationFailTimeout)
     assertEquals(actual.isIsolateInternalQueries, expected.isIsolateInternalQueries)
-    assertEquals(actual.getJdbcUrl, expected.getJdbcUrl)
     assertEquals(actual.isReadOnly, expected.isReadOnly)
     assertEquals(actual.isRegisterMbeans, expected.isRegisterMbeans)
     assertEquals(actual.getSchema, expected.getSchema)
