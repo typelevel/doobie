@@ -26,24 +26,18 @@ object HikariTransactor {
   ): HikariTransactor[M] =
     Transactor.fromDataSource[M](hikariDataSource, connectEC)
 
-  private def createDataSourceResource[M[_]: Sync](factory: => HikariDataSource): Resource[M, HikariDataSource] = {
-    val alloc = Sync[M].delay(factory)
-    val free = (ds: HikariDataSource) => Sync[M].delay(ds.close())
-    Resource.make(alloc)(free)
-  }
-
   /** Resource yielding an unconfigured `HikariTransactor`. */
   def initial[M[_]: Async](
     connectEC: ExecutionContext
   ): Resource[M, HikariTransactor[M]] = {
-    createDataSourceResource(new HikariDataSource)
+    Resource.fromAutoCloseable(Sync[M].delay(new HikariDataSource))
       .map(Transactor.fromDataSource[M](_, connectEC))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
-   * Unless you have a good reason, consider using `fromConfigAutoEc` which creates the `connectEC` for you.
+   * Unless you have a good reason, consider using `fromConfig` which creates the `connectEC` for you.
    */
-  def fromConfig[M[_]: Async](
+  def fromConfigCustomEc[M[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
     dataSource: Option[DataSource] = None,
@@ -75,7 +69,7 @@ object HikariTransactor {
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * The `connectEC` is created automatically, with the same size as the Hikari pool.
    */
-  def fromConfigAutoEc[M[_]: Async](
+  def fromConfig[M[_]: Async](
       config: Config,
       dataSource: Option[DataSource] = None,
       dataSourceProperties: Option[Properties] = None,
@@ -109,25 +103,28 @@ object HikariTransactor {
   def fromHikariConfig[M[_]: Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext
-  ): Resource[M, HikariTransactor[M]] = {
-    createDataSourceResource(new HikariDataSource(hikariConfig))
-      .map(Transactor.fromDataSource[M](_, connectEC))
-  }
+  ): Resource[M, HikariTransactor[M]] = Resource
+    .fromAutoCloseable(Sync[M].delay(new HikariDataSource(hikariConfig)))
+    .map(Transactor.fromDataSource[M](_, connectEC))
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
    * The `connectEC` is created automatically, with the same size as the Hikari pool.
    */
   def fromHikariConfig[M[_]: Async](hikariConfig: HikariConfig): Resource[M, HikariTransactor[M]] =
   for {
-    _ <- Sync[M].delay(hikariConfig.validate()).toResource // to populate unset fields with default values, like `maximumPoolSize`
-    // Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
+    // to populate unset fields with default values, like `maximumPoolSize`
+    _ <- Sync[M].delay(hikariConfig.validate()).toResource
+    // Note that the number of JDBC connections is usually limited by the underlying JDBC pool.
+    // You may therefore want to limit your connection pool to the same size as the underlying JDBC pool
+    // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
     connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- createDataSourceResource(new HikariDataSource(hikariConfig))
-      .map(Transactor.fromDataSource[M](_, connectEC))
+    result <- fromHikariConfig(hikariConfig, connectEC)
   } yield result
 
-  /** Resource yielding a new `HikariTransactor` configured with the given info. */
+  /** Resource yielding a new `HikariTransactor` configured with the given info.
+   * Consider using `fromConfig` for better configurability.
+   */
   def newHikariTransactor[M[_]: Async](
     driverClassName: String,
     url:             String,

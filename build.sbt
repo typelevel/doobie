@@ -5,12 +5,12 @@ import sbt.dsl.LinterLevel.Ignore
 lazy val catsVersion          = "2.7.0"
 lazy val catsEffectVersion    = "3.3.11"
 lazy val circeVersion         = "0.14.2"
-lazy val fs2Version           = "3.2.12"
+lazy val fs2Version           = "3.2.14"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val postGisVersion       = "2.5.1"
-lazy val postgresVersion      = "42.3.5"
+lazy val postgresVersion      = "42.5.0"
 lazy val refinedVersion       = "0.9.28"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.10"
@@ -63,14 +63,11 @@ lazy val compilerFlags = Seq(
   Test / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
-  libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1"
-  )
 )
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
-  licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT")))
+  licenses := Seq(License.MIT)
 )
 
 lazy val commonSettings =
@@ -107,48 +104,7 @@ lazy val commonSettings =
 
     // For some reason tests started hanginging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
-
-    // We occasionally use snapshots.
-    resolvers +=
-      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-
-    // Add some more source directories
-    Compile / unmanagedSourceDirectories ++= {
-      val sourceDir = (Compile / sourceDirectory).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3, _))  => Seq(sourceDir / "scala-3")
-        case Some((2, _))  => Seq(sourceDir / "scala-2")
-        case _             => Seq()
-      }
-    },
-
-    // Also for test
-    Test / unmanagedSourceDirectories ++= {
-      val sourceDir = (Test / sourceDirectory).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3, _))  => Seq(sourceDir / "scala-3")
-        case Some((2, _))  => Seq(sourceDir / "scala-2")
-        case _             => Seq()
-      }
-    },
-
-    // dottydoc really doesn't work at all right now
-    Compile / doc / sources := {
-      val old = (Compile / doc / sources).value
-      if (tlIsScala3.value)
-        Seq()
-      else
-        old
-    },
-
   )
-
-lazy val noDottySettings = Seq(
-  (publish / skip)    := (publish / skip).value || tlIsScala3.value,
-  (Compile / sources) := { if (tlIsScala3.value) Seq() else (Compile / sources).value },
-  (Test    / sources) := { if (tlIsScala3.value) Seq() else (Test    / sources).value },
-  libraryDependencies := libraryDependencies.value.filterNot(_ => tlIsScala3.value),
-)
 
 lazy val doobieSettings = buildSettings ++ commonSettings
 
@@ -389,7 +345,6 @@ lazy val specs2 = project
     description := "Specs2 support for doobie.",
     libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
   )
-  .settings(noDottySettings)
 
 lazy val scalatest = project
   .in(file("modules/scalatest"))
@@ -471,12 +426,15 @@ lazy val docs = project
     paradoxTheme       := Some(builtinParadoxTheme("generic")),
     version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     paradoxProperties ++= Map(
-      "scala-versions"           -> (core / crossScalaVersions).value.map(CrossVersion.partialVersion).flatten.map(_._2).mkString("2.", "/", ""),
+      "scala-versions"           -> {
+        val crossVersions = (core / crossScalaVersions).value.flatMap(CrossVersion.partialVersion)
+        val scala2Versions = crossVersions.filter(_._1 == 2).map(_._2).mkString("2.", "/", "") // 2.12/13
+        val scala3 = crossVersions.find(_._1 == 3).map(_ => "3") // 3
+        List(Some(scala2Versions), scala3).flatten.filter(_.nonEmpty).mkString(" and ") // 2.12/13 and 3
+      },
       "org"                      -> organization.value,
-      "scala.binary.version"     -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-      "core-dep"                 -> s"${(core / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "scala.binary.version"     -> CrossVersion.binaryScalaVersion(scalaVersion.value),
       "version"                  -> version.value,
-      "scaladoc.doobie.base_url" -> s"https://static.javadoc.io/org.tpolecat/doobie-core_2.12/${version.value}",
       "catsVersion"              -> catsVersion,
       "fs2Version"               -> fs2Version,
       "shapelessVersion"         -> shapelessVersion,
@@ -485,12 +443,10 @@ lazy val docs = project
       "scalaVersion"             -> scalaVersion.value,
     ),
 
-    mdocIn := (baseDirectory.value) / "src" / "main" / "mdoc",
+    mdocIn := baseDirectory.value / "src" / "main" / "mdoc",
     Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
-
   )
-  .settings(noDottySettings)
 
 
 lazy val refined = project

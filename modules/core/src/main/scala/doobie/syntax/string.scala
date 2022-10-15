@@ -12,7 +12,7 @@ import doobie.util.fragment.{Elem, Fragment}
 import doobie.util.pos.Pos
 
 /**
- * String interpolator for SQL literals. An expression of the form `sql".. $a ... $b ..."` with
+ * String interpolator for SQL literals. An expression of the form `sql".. \$a ... \$b ..."` with
  * interpolated values of type `A` and `B` (which must have instances of `Put`)
  * yields a value of type `[[Fragment]]`.
  */
