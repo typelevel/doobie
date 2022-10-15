@@ -72,7 +72,7 @@ jobs:
         run: sbt '++${{ matrix.scala }}' headerCheckAll
 
       - name: Check that workflows are up to date
-        run: sbt '++${{ matrix.scala }}' 'project /' githubWorkflowCheck
+        run: sbt githubWorkflowCheck
 
       - name: Test
         run: sbt '++${{ matrix.scala }}' test
