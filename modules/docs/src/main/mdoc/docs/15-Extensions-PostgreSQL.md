@@ -86,7 +86,7 @@ To ensure **doobie** performs the conversion correctly between Java 8 time types
 The correct combination of date/time types should be used:
 
 - `TIMESTAMP` maps to `java.time.LocalDateTime`
-- `TIMESTAMPZ` maps to `java.time.Instant`, `java.time.ZonedDateTime` or `java.time.OffsetDateTime`
+- `TIMESTAMPTZ` maps to `java.time.Instant`, `java.time.ZonedDateTime` or `java.time.OffsetDateTime`
 - `DATE` maps to `java.time.LocalDate`
 - `TIME` maps to `java.time.LocalTime`
 
