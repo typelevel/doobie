@@ -49,7 +49,7 @@ object AnalysisTest {
     """.query[PGcircle]
   }
 
-  def update(code: String, name: Int): Update0 =
+  def update(name: String, code: String): Update0 =
     sql"""
       UPDATE COUNTRY SET NAME = $name WHERE CODE = $code
     """.update

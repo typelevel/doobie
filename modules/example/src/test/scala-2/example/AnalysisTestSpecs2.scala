@@ -22,6 +22,6 @@ class AnalysisTestSpecs2 extends Specification with IOChecker {
   // check(AnalysisTest.arrayTest2)
   check(AnalysisTest.pointTest)
   // check(AnalysisTest.pointTest2)
-  // check(AnalysisTest.update("foo", 42))
+  checkOutput(AnalysisTest.update("foo", "bkah"))
   check(AnalysisTest.update2)
 }
