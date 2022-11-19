@@ -76,15 +76,19 @@ import doobie.postgres.implicits._
 
 ### Java 8 Time Types (JSR310)
 
-An explicit import is required to bring mappings for `java.time.Instant` / `java.time.LocalDate`
+An explicit import is required to bring in mappings for `java.time.OffsetDateTime` / `java.time.Instant` / `java.time.ZonedDateTime` / `java.time.LocalDateTime` / `java.time.LocalDate` / `java.time.LocalTime`
 
 ```scala mdoc:silent
-// Provides mappings for java.time.Instant
-import doobie.implicits.legacy.instant._ 
-
-// Provides mappings for java.time.LocalDate
-import doobie.implicits.legacy.localdate._
+import doobie.postgres.implicits._
 ```
+
+To ensure **doobie** performs the conversion correctly between Java 8 time types and PostgreSQL Date/Time types when handling timezones or the lack thereof.
+The correct combination of date/time types should be used:
+
+- `TIMESTAMP` maps to `java.time.LocalDateTime`
+- `TIMESTAMPTZ` maps to `java.time.Instant`, `java.time.ZonedDateTime` or `java.time.OffsetDateTime`
+- `DATE` maps to `java.time.LocalDate`
+- `TIME` maps to `java.time.LocalTime`
 
 ### Array Types
 
