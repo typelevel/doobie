@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 2.13.8, 3.1.1]
+        scala: [2.12.15, 2.13.10, 3.1.1]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -86,7 +86,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' doc
 
       - name: Check Doc Site (2.13.8 only)
-        if: matrix.scala == '2.13.8'
+        if: matrix.scala == '2.13.10'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
@@ -111,7 +111,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.8]
+        scala: [2.13.10]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
