@@ -4,11 +4,13 @@
 
 package doobie.util.arbitraries
 
-import java.sql.{Date, Time, Timestamp}
-
-import org.scalacheck.{Arbitrary, Gen}
+import java.sql.{Time, Timestamp, Date}
+import org.scalacheck.{Gen, Arbitrary}
 import org.scalacheck.Arbitrary.arbitrary
 
+import scala.annotation.nowarn
+
+@nowarn("msg=.*deprecated.*")
 object SQLArbitraries {
 
   implicit val arbitraryTime: Arbitrary[Time] = Arbitrary {

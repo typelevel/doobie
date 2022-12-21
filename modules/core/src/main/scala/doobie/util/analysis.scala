@@ -20,9 +20,28 @@ object analysis {
 
   /** Metadata for the JDBC end of a column/parameter mapping. */
   final case class ColumnMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String)
+  object ColumnMeta {
+    def apply(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String): ColumnMeta = {
+      new ColumnMeta(tweakJdbcType(jdbcType, vendorTypeName), vendorTypeName, nullability, name)
+    }
+  }
 
   /** Metadata for the JDBC end of a column/parameter mapping. */
   final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode)
+  object ParameterMeta {
+    def apply(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode): ParameterMeta = {
+      new ParameterMeta(tweakJdbcType(jdbcType, vendorTypeName), vendorTypeName, nullability, mode)
+    }
+  }
+
+  private def tweakJdbcType(jdbcType: JdbcType, vendorTypeName: String) = jdbcType match {
+    // the Postgres driver does not return *WithTimezone types but they are pretty much required for proper analysis
+    // https://github.com/pgjdbc/pgjdbc/issues/2485
+    // https://github.com/pgjdbc/pgjdbc/issues/1766
+    case JdbcType.Time if vendorTypeName.compareToIgnoreCase("timetz") == 0 => JdbcType.TimeWithTimezone
+    case JdbcType.Timestamp if vendorTypeName.compareToIgnoreCase("timestamptz") == 0 => JdbcType.TimestampWithTimezone
+    case t => t
+  }
 
   sealed trait AlignmentError extends Product with Serializable {
     def tag: String
