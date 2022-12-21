@@ -8,7 +8,7 @@ import doobie.Meta
 import doobie.enumerated.{JdbcType => JT}
 import doobie.util.meta.MetaConstructors
 
-import java.time.{OffsetDateTime, ZoneOffset} // Using database JDBC driver native support
+import java.time.{OffsetDateTime, ZoneOffset}
 
 /**
  * Instances for JSR-310 date time types.
@@ -19,57 +19,39 @@ import java.time.{OffsetDateTime, ZoneOffset} // Using database JDBC driver nati
 trait JavaTimeInstances extends MetaConstructors {
 
   /**
-   * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
-   * When writing to the database, the same instant is preserved if your target column is of type TIMESTAMPTZ
-   * (The JDBC driver works out the timezone conversion for you). Note that since offset information is not stored in
-   * the database column, retrieving the same value will yield the same instant in time, but with offset = 0 (UTC)
+   * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ).
+   *
+   * Allows `TimeWithTimezone` and `Timestamp` reluctantly. See comment in the driver:
+   * https://github.com/pgjdbc/pgjdbc/blob/REL42.4.1/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L645
    */
-  implicit val JavaTimeOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
-    Basic.one[java.time.OffsetDateTime](
+  implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
+    Basic.oneObject(
       JT.TimestampWithTimezone,
       List(JT.Timestamp, JT.TimeWithTimezone),
-      _.getObject(_, classOf[java.time.OffsetDateTime]), _.setObject(_, _), _.updateObject(_, _))
+      classOf[java.time.OffsetDateTime]
+    )
 
   /**
    * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
    */
-  implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
-    JavaTimeOffsetDateTimeMeta.timap(_.toInstant)(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
+  implicit val JavaInstantMeta: Meta[java.time.Instant] =
+    JavaOffsetDateTimeMeta.timap(_.toInstant)(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
 
   /**
-   * This type should map to TIMESTAMP
+   * Allows `Timestamp`:
+   * https://github.com/pgjdbc/pgjdbc/blob/REL42.4.1/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L732
    */
-  implicit val JavaTimeLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
-    Basic.one[java.time.LocalDateTime](
-      JT.Timestamp,
-      Nil,
-      _.getObject(_, classOf[java.time.LocalDateTime]), _.setObject(_, _), _.updateObject(_, _))
-
-  /**
-   * This type should map to DATE
-   */
-  implicit val JavaTimeLocalDateMeta: Meta[java.time.LocalDate] =
-    Basic.one[java.time.LocalDate](
+  implicit val JavaLocalDateMeta: Meta[java.time.LocalDate] =
+    Basic.oneObject(
       JT.Date,
       List(JT.Timestamp),
-      _.getObject(_, classOf[java.time.LocalDate]), _.setObject(_, _), _.updateObject(_, _))
+      classOf[java.time.LocalDate]
+    )
 
-  /**
-   * This type should map to TIME
-   */
-  implicit val JavaTimeLocalTimeMeta: Meta[java.time.LocalTime] =
-    Basic.one[java.time.LocalTime](
-      JT.Time,
-      Nil,
-      _.getObject(_, classOf[java.time.LocalTime]), _.setObject(_, _), _.updateObject(_, _))
+  implicit val JavaLocalTimeMeta: Meta[java.time.LocalTime] = Meta.JavaLocalTimeMeta
 
-  /**
-   * This type should map to TIME WITH TIMEZONE (TIMETZ)
-   */
-  implicit val JavaTimeOffsetTimeMeta: Meta[java.time.OffsetTime] =
-    Basic.one[java.time.OffsetTime](
-      JT.TimeWithTimezone,
-      Nil,
-      _.getObject(_, classOf[java.time.OffsetTime]), _.setObject(_, _), _.updateObject(_, _))
+  implicit val JavaLocalDateTimeMeta: Meta[java.time.LocalDateTime] = Meta.JavaLocalDateTimeMeta
+
+  implicit val JavaOffsetTimeMeta: Meta[java.time.OffsetTime] = Meta.JavaOffsetTimeMeta
 
 }
