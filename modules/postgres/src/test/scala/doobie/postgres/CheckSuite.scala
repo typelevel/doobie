@@ -10,7 +10,7 @@ import doobie.implicits._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.util.analysis.{ColumnTypeError, ColumnTypeWarning, ParameterTypeError}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime}
 
 class CheckSuite extends munit.FunSuite {
 
@@ -32,11 +32,11 @@ class CheckSuite extends munit.FunSuite {
     successRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[OffsetDateTime](t, "TIMESTAMPTZ")
 
-    successReadUnfortunately[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
-    successWriteUnfortunately[OffsetDateTime](t, "TIMESTAMP")
+    warnRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
+    errorWrite[OffsetDateTime](t, "TIMESTAMP")
 
     failedRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
-    _warnRead[OffsetDateTime](sql"SELECT '03:21' :: TIME") // driver cannot read but TIME and TIMETZ are returned as the same JDBC type
+    failedRead[OffsetDateTime](sql"SELECT '03:21' :: TIME")
     warnRead[OffsetDateTime](sql"SELECT '03:21' :: TIMETZ")
     failedRead[OffsetDateTime](sql"SELECT '2019-02-13' :: DATE")
 
@@ -54,11 +54,11 @@ class CheckSuite extends munit.FunSuite {
     successRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[Instant](t, "TIMESTAMPTZ")
 
-    successReadUnfortunately[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
-    successWriteUnfortunately[Instant](t, "TIMESTAMP")
+    warnRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
+    errorWrite[Instant](t, "TIMESTAMP")
 
     failedRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
-    _warnRead[Instant](sql"SELECT '03:21' :: TIME") // driver cannot read but TIME and TIMETZ are returned as the same JDBC type
+    failedRead[Instant](sql"SELECT '03:21' :: TIME")
     warnRead[Instant](sql"SELECT '03:21' :: TIMETZ")
     failedRead[Instant](sql"SELECT '2019-02-13' :: DATE")
 
@@ -76,8 +76,8 @@ class CheckSuite extends munit.FunSuite {
     successRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TIMESTAMP")
     successWrite[LocalDateTime](t, "TIMESTAMP")
 
-    successReadUnfortunately[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TIMESTAMPTZ")
-    successWriteUnfortunately[LocalDateTime](t, "TIMESTAMPTZ")
+    failedRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TIMESTAMPTZ")
+    errorWrite[LocalDateTime](t, "TIMESTAMPTZ")
 
     failedRead[LocalDateTime](sql"SELECT '2019-02-13T22:03:21.051' :: TEXT")
     failedRead[LocalDateTime](sql"SELECT '03:21' :: TIME")
@@ -99,7 +99,7 @@ class CheckSuite extends munit.FunSuite {
     successWrite[LocalDate](t, "DATE")
 
     warnRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
-    _warnRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")  // driver cannot read but TIMESTAMP and TIMESTAMPTZ are returned as the same JDBC type
+    failedRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
     failedRead[LocalDate](sql"SELECT '2015-02-23' :: TEXT")
     failedRead[LocalDate](sql"SELECT '03:21' :: TIME")
     failedRead[LocalDate](sql"SELECT '03:21' :: TIMETZ")
@@ -121,13 +121,33 @@ class CheckSuite extends munit.FunSuite {
     failedRead[LocalTime](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
     failedRead[LocalTime](sql"SELECT '2015-02-23' :: TEXT")
     failedRead[LocalTime](sql"SELECT '2015-02-23' :: DATE")
+    failedRead[LocalTime](sql"SELECT '23:13' :: TIMETZ")
 
     errorWrite[LocalTime](t, "TEXT")
-    successWriteUnfortunately[LocalTime](t, "TIMETZ")
+    errorWrite[LocalTime](t, "TIMETZ")
     errorWrite[LocalTime](t, "DATE")
 
     failedRead[LocalTime](sql"SELECT '123' :: BYTEA")
     errorWrite[LocalTime](t, "BYTEA")
+  }
+
+  test("OffsetTime Read and Write typechecks") {
+    val t = OffsetTime.parse("23:13-01:00")
+    successRead[OffsetTime](sql"SELECT '23:13' :: TIMETZ")
+    successWrite[OffsetTime](t, "TIMETZ")
+
+    failedRead[OffsetTime](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
+    failedRead[OffsetTime](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
+    failedRead[OffsetTime](sql"SELECT '2015-02-23' :: TEXT")
+    failedRead[OffsetTime](sql"SELECT '2015-02-23' :: DATE")
+    failedRead[OffsetTime](sql"SELECT '23:13' :: TIME")
+
+    errorWrite[OffsetTime](t, "TEXT")
+    errorWrite[OffsetTime](t, "TIME")
+    errorWrite[OffsetTime](t, "DATE")
+
+    failedRead[OffsetTime](sql"SELECT '123' :: BYTEA")
+    errorWrite[OffsetTime](t, "BYTEA")
   }
 
   private def successRead[A: Read](frag: Fragment): Unit = {
@@ -145,16 +165,12 @@ class CheckSuite extends munit.FunSuite {
   }
 
   private def warnRead[A: Read](frag: Fragment): Unit = {
-    _warnRead[A](frag)
-
-    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
-    assert(result.isRight)
-  }
-
-  private def _warnRead[A: Read](frag: Fragment): Unit = {
     val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
     val errorClasses = analysisResult.columnAlignmentErrors.map(_.getClass)
     assertEquals(errorClasses, List(classOf[ColumnTypeWarning]))
+
+    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
+    assert(result.isRight)
   }
 
   private def failedRead[A: Read](frag: Fragment): Unit = {
@@ -171,14 +187,6 @@ class CheckSuite extends munit.FunSuite {
     val analysisResult = frag.update.analysis.transact(xa).unsafeRunSync()
     val errorClasses = analysisResult.parameterAlignmentErrors.map(_.getClass)
     assertEquals(errorClasses, List(classOf[ParameterTypeError]))
-  }
-
-  private def successWriteUnfortunately[A: Put](value: A, dbType: String): Unit = successWrite(value, dbType)
-
-  // Some DB types really shouldn't type check but driver is too lenient
-  private def successReadUnfortunately[A: Read](frag: Fragment): Unit = {
-    val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
-    assertEquals(analysisResult.columnAlignmentErrors, Nil)
   }
 
 }
