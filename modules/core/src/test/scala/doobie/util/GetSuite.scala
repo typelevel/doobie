@@ -5,8 +5,11 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
-import doobie.enumerated.JdbcType.{ Array => _, _ }
+import doobie._
+import doobie.implicits._
+import doobie.enumerated.JdbcType.{Array => _, _}
+
+import scala.annotation.nowarn
 
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
@@ -30,7 +33,7 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     compileErrors("Get[Z]")
     compileErrors("Get[(Int, Int)]")
     compileErrors("Get[S.type]")
-  }
+  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
 
 }
 

@@ -302,11 +302,7 @@ object transactor  {
         private def logHandler(implicit A: Applicative[M]): LogHandlerM[M] = maybeLogHandler.getOrElse(LogHandlerM.noop)
 
         def apply[A <: DataSource](dataSource: A, connectEC: ExecutionContext)(implicit ev: Async[M]): Transactor.Aux[M, A] = {
-          val connect = (dataSource: A) => {
-            val acquire = ev.evalOn(ev.delay(dataSource.getConnection()), connectEC)
-            def release(c: Connection) = ev.blocking(c.close())
-            Resource.make(acquire)(release)(ev)
-          }
+          val connect = (dataSource: A) => Resource.fromAutoCloseable(ev.evalOn(ev.delay(dataSource.getConnection()), connectEC))
           val interp  = KleisliInterpreter[M](logHandler).ConnectionInterpreter
           Transactor(dataSource, connect, interp, Strategy.default)
         }
@@ -358,11 +354,7 @@ object transactor  {
       )(implicit ev: Async[M]): Transactor.Aux[M, Unit] =
         Transactor(
           (),
-          _ => {
-            val acquire = ev.blocking{ Class.forName(driver); conn() }
-            def release(c: Connection) = ev.blocking{ c.close() }
-            Resource.make(acquire)(release)(ev)
-          },
+          _ => Resource.fromAutoCloseable(ev.blocking{ Class.forName(driver); conn() }),
           KleisliInterpreter[M](logHandler).ConnectionInterpreter,
           strategy
         )

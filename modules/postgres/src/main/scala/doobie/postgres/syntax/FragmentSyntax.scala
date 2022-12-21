@@ -13,7 +13,6 @@ import doobie.implicits._
 import doobie.postgres._
 import doobie.postgres.implicits._
 import fs2._
-import fs2.text._
 
 import java.io.StringReader
 import fs2.text.utf8.encode

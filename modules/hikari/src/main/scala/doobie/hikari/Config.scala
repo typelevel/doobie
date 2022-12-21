@@ -21,13 +21,14 @@ import scala.concurrent.duration.Duration
   * which in turn is used to create `doobie.hikari.HikariTransactor`.
   * See the method `HikariTransactor.fromConfigAutoEc` */
 final case class Config(
+  jdbcUrl: String,
   catalog: Option[String] = None,
   connectionTimeout: Duration = Duration(30, TimeUnit.SECONDS),
   idleTimeout: Duration = Duration(10, TimeUnit.MINUTES),
   leakDetectionThreshold: Duration = Duration.Zero,
-  maximumPoolSize: Option[Int] = Some(10),
+  maximumPoolSize: Int = 10,
   maxLifetime: Duration = Duration(30, TimeUnit.MINUTES),
-  minimumIdle: Option[Int] = Some(10),
+  minimumIdle: Int = 10,
   password: Option[String] = None,
   poolName: Option[String] = None,
   username: Option[String] = None,
@@ -41,7 +42,6 @@ final case class Config(
   driverClassName: Option[String] = None,
   initializationFailTimeout: Duration = Duration(1, TimeUnit.MILLISECONDS),
   isolateInternalQueries: Boolean = false,
-  jdbcUrl: Option[String] = None,
   readOnly: Boolean = false,
   registerMbeans: Boolean = false,
   schema: Option[String] = None,
@@ -63,13 +63,15 @@ object Config {
     F.delay {
       val c = new HikariConfig()
 
+      c.setJdbcUrl(config.jdbcUrl)
+
       config.catalog.foreach(c.setCatalog)
       c.setConnectionTimeout(config.connectionTimeout.toMillis)
       c.setIdleTimeout(config.idleTimeout.toMillis)
       c.setLeakDetectionThreshold(config.leakDetectionThreshold.toMillis)
-      config.maximumPoolSize.foreach(c.setMaximumPoolSize)
+      c.setMaximumPoolSize(config.maximumPoolSize)
       c.setMaxLifetime(config.maxLifetime.toMillis)
-      config.minimumIdle.foreach(c.setMinimumIdle)
+      c.setMinimumIdle(config.minimumIdle)
       config.password.foreach(c.setPassword)
       config.poolName.foreach(c.setPoolName)
       config.username.foreach(c.setUsername)
@@ -84,7 +86,6 @@ object Config {
       config.driverClassName.foreach(c.setDriverClassName)
       c.setInitializationFailTimeout(config.initializationFailTimeout.toMillis)
       c.setIsolateInternalQueries(config.isolateInternalQueries)
-      config.jdbcUrl.foreach(c.setJdbcUrl)
       c.setReadOnly(config.readOnly)
       c.setRegisterMbeans(config.registerMbeans)
       config.schema.foreach(c.setSchema)

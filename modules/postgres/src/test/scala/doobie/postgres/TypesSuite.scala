@@ -6,10 +6,8 @@ package doobie.postgres
 
 import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
-import java.time.{LocalDate, ZoneOffset}
-import java.time.temporal.ChronoField.NANO_OF_SECOND
+import java.time.ZoneOffset
 import java.util.UUID
-
 import cats.effect.IO
 import doobie._
 import doobie.implicits._
@@ -17,10 +15,9 @@ import doobie.implicits.javasql._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
-import doobie.util.arbitraries.SQLArbitraries._
+import doobie.postgres.util.arbitraries.SQLArbitraries._
+import doobie.postgres.util.arbitraries.TimeArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
-import doobie.util.arbitraries.TimeArbitraries
-import doobie.util.arbitraries.TimeArbitraries._
 import org.postgis._
 import org.postgresql.geometric._
 import org.postgresql.util._
@@ -28,9 +25,12 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
+import scala.annotation.nowarn
+
 
 // Establish that we can write and read various types.
 
+@nowarn("msg=.*Stream in package scala is deprecated.*")
 class TypesSuite extends munit.ScalaCheckSuite {
 
   import cats.effect.unsafe.implicits.global
@@ -42,7 +42,7 @@ class TypesSuite extends munit.ScalaCheckSuite {
   )
 
   def inOut[A: Get : Put](col: String, a: A): ConnectionIO[A] = for {
-      _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
+      _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col NOT NULL)", None).run
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
 
@@ -53,22 +53,17 @@ class TypesSuite extends munit.ScalaCheckSuite {
     } yield a0
 
   def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll { (x: A) => assertEquals(inOut(col, x).transact(xa).attempt.unsafeRunSync(), Right(x)) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll { (x: A) => assertEquals(inOutOpt[A](col, Some(x)).transact(xa).attempt.unsafeRunSync(), Right(Some(x))) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
-    }
+    testInOutWithCustomGen(col, arbitrary.arbitrary)
+  }
+
+  def testInOutTweakExpected[A](col: String)(f: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
+    testInOutWithCustomGen(col, arbitrary.arbitrary, f)
   }
 
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
       assertEquals(inOut(col, a).transact(xa).attempt.unsafeRunSync(), Right(a))
     }
-
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
       assertEquals(inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync(), Right(Some(a)))
     }
@@ -77,42 +72,12 @@ class TypesSuite extends munit.ScalaCheckSuite {
     }
   }
 
-  def testInOutWithCustomTransform[A](col: String)(t: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
+  def testInOutWithCustomGen[A](col: String, gen: Gen[A], expected: A => A = identity[A](_))(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll { (x: A) => assertEquals(inOut(col, t(x)).transact(xa).attempt.unsafeRunSync(), Right(t(x))) }
+      forAll(gen) { (t: A) => assertEquals(inOut(col, t).transact(xa).attempt.unsafeRunSync(), Right(expected(t))) }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll { (x: A) => assertEquals(inOutOpt[A](col, Some(t(x))).transact(xa).attempt.unsafeRunSync(), Right(Some(t(x)))) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
-    }
-  }
-
-  def testInOutWithCustomTransformAndMatch[A, B](col: String)(tr: A => A)(mtch: A => B)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll { (x: A) => assertEquals(inOut(col, tr(x)).transact(xa).attempt.unsafeRunSync().map(mtch), Right(tr(x)).map(mtch)) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll { (x: A) => assertEquals(inOutOpt[A](col, Some(tr(x))).transact(xa).attempt.unsafeRunSync().map(_.map(mtch)), Right(Some(tr(x))).map(_.map(mtch))) }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
-    }
-  }
-
-  def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) = {
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll(gen) { (t: A) =>
-        t match {
-          case x: java.sql.Time => println(s"TIME: ${x.toString}")
-          case _ =>
-        }
-        assertEquals(inOut(col, t).transact(xa).attempt.unsafeRunSync(), Right(t))
-      }
-    }
-    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll(gen) { (t: A) => assertEquals(inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(t))) }
+      forAll(gen) { (t: A) => assertEquals(inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(expected(t)))) }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
       assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
@@ -151,32 +116,20 @@ class TypesSuite extends munit.ScalaCheckSuite {
       timestamp
       The allowed range of p is from 0 to 6 for the timestamp and interval types.
    */
-  testInOutWithCustomTransform[java.sql.Timestamp]("timestamptz") { ts => ts.setNanos(0); ts }
-  testInOutWithCustomTransform[java.time.Instant]("timestamptz")(_.`with`(NANO_OF_SECOND, 0))
-  testInOutWithCustomTransform[java.time.OffsetDateTime]("timestamptz")(
-    _.`with`(NANO_OF_SECOND, 0)
-      .withOffsetSameInstant(ZoneOffset.UTC)
-  )
-  testInOutWithCustomTransform[java.time.ZonedDateTime]("timestamptz")(
-    _.`with`(NANO_OF_SECOND, 0)
-      .withZoneSameInstant(ZoneOffset.UTC)
-  )
+  testInOut[java.sql.Timestamp]("timestamptz")
+  testInOut[java.time.Instant]("timestamptz")
+  testInOutTweakExpected[java.time.OffsetDateTime]("timestamptz")(_.withOffsetSameInstant(ZoneOffset.UTC)) // +148488-07-03T02:38:17Z != +148488-07-03T00:00-02:38:17
 
   /*
     local date & time (not an instant in time)
    */
-  testInOutWithCustomTransform[java.time.LocalDateTime]("timestamp")(_.withNano(0))
+  testInOut[java.time.LocalDateTime]("timestamp")
 
-  // Can only test "positive" years (AD) because Postgres JDBC driver incorrectly uses java.sql.Date#toLocalDate()
-  // which doesn't handle negative values
-  // https://github.com/pgjdbc/pgjdbc/blob/4595a5ae430ba5ee5463280d04c261d999813d0f/pgjdbc/src/main/java/org/postgresql/jdbc/PgResultSet.java#L3648
-  testInOutWithCustomGen[java.time.LocalDate]("date", TimeArbitraries.localDateAdOnlyGen)
-  testInOut[java.time.LocalDate]("date", LocalDate.of(1, 1, 1))(JavaTimeLocalDateMeta.get, JavaTimeLocalDateMeta.put)
-  //  testInOut[java.time.LocalDate]("date", LocalDate.of(-500, 1, 1))(JavaTimeLocalDateMeta.get, JavaTimeLocalDateMeta.put)
   testInOut[java.sql.Date]("date")
+  testInOut[java.time.LocalDate]("date")
 
   testInOut[java.sql.Time]("time")
-  testInOutWithCustomTransform[java.time.LocalTime]("time")(_.`with`(NANO_OF_SECOND, 0))
+  testInOut[java.time.LocalTime]("time")
 
   skip("time with time zone")
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
@@ -274,20 +227,20 @@ class TypesSuite extends munit.ScalaCheckSuite {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble).iterator
-  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next, rnd.next)).iterator
-  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator
+  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble()).iterator
+  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next(), rnd.next())).iterator
+  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
   lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
-    lazy val p = pts.next;
-    Array(p, pts.next, pts.next, pts.next, p)
+    lazy val p = pts.next();
+    Array(p, pts.next(), pts.next(), pts.next(), p)
   })).iterator
-  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next)).iterator
+  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next())).iterator
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator
-  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator
+  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next(), pts.next(), pts.next())).iterator
+  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next(), pls.next(), pls.next())).iterator
+  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next(), lss.next(), lss.next())).iterator
+  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
 
   // All these types map to `geometry`
   def testInOutGeom[A <: Geometry : Meta](a: A) =
