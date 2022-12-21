@@ -12,7 +12,7 @@ class YoloSuite extends munit.FunSuite {
 
   // Kind of a bogus test; just checking for compilation
   test("YOLO checks should compile for Query, Query0, Update, Update0") {
-    lazy val dontRun = {
+    lazy val _ = {
       val y = new Yolo[IO](null); import y._
       (null : Query0[Int]).check
       (null : Query[Int, Int]).check
