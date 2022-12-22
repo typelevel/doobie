@@ -8,6 +8,8 @@ package util
 import shapeless._
 import shapeless.record._
 
+import scala.annotation.nowarn
+
 trait ReadSuitePlatform { self: munit.FunSuite =>
 
   test("Read should exist for shapeless record types") {
@@ -15,8 +17,8 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
     type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
     util.Read[A]
     util.Read[(A, A)]
-  }
-
+  }: @nowarn("msg=.*DL is never used.*")
+  
   case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
   test("Read should exist for some fancy types") {

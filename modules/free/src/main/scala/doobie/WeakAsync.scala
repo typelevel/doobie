@@ -43,7 +43,7 @@ object WeakAsync {
     * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization.
     * Leaking it from it's resource scope will lead to erorrs at runtime. */
   def liftK[F[_], G[_]](implicit F: Async[F], G: WeakAsync[G]): Resource[F, F ~> G] =
-    Dispatcher[F].map(dispatcher =>
+    Dispatcher.parallel[F].map(dispatcher =>
       new(F ~> G) {
         def apply[T](fa: F[T]) = {
           G.delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { 

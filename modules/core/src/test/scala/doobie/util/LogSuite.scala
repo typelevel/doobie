@@ -17,7 +17,7 @@ class LogSuite extends munit.FunSuite {
   val ioLocal: IOLocal[LogEvent] =
     IOLocal[LogEvent](null).unsafeRunSync()
 
-  val xa = Transactor.fromDriverManager[IO].withLogHandler(ioLocal.set)(
+  val xa = Transactor.fromDriverManager[IO].withLogHandler(ioLocal.set(_))(
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa", ""
