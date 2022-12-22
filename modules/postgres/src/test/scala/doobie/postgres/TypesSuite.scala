@@ -8,7 +8,6 @@ import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
 import java.time.ZoneOffset
 import java.util.UUID
-
 import cats.effect.IO
 import doobie._
 import doobie.implicits._
@@ -26,9 +25,12 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
+import scala.annotation.nowarn
+
 
 // Establish that we can write and read various types.
 
+@nowarn("msg=.*Stream in package scala is deprecated.*")
 class TypesSuite extends munit.ScalaCheckSuite {
 
   import cats.effect.unsafe.implicits.global
@@ -117,7 +119,6 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut[java.sql.Timestamp]("timestamptz")
   testInOut[java.time.Instant]("timestamptz")
   testInOutTweakExpected[java.time.OffsetDateTime]("timestamptz")(_.withOffsetSameInstant(ZoneOffset.UTC)) // +148488-07-03T02:38:17Z != +148488-07-03T00:00-02:38:17
-  testInOutTweakExpected[java.time.ZonedDateTime]("timestamptz")(_.withZoneSameInstant(ZoneOffset.UTC))
 
   /*
     local date & time (not an instant in time)
@@ -226,20 +227,20 @@ class TypesSuite extends munit.ScalaCheckSuite {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble).iterator
-  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next, rnd.next)).iterator
-  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next, pts.next, pts.next))).iterator
+  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble()).iterator
+  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next(), rnd.next())).iterator
+  lazy val lss: Iterator[LineString] = Stream.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
   lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
-    lazy val p = pts.next;
-    Array(p, pts.next, pts.next, pts.next, p)
+    lazy val p = pts.next();
+    Array(p, pts.next(), pts.next(), pts.next(), p)
   })).iterator
-  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next)).iterator
+  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next())).iterator
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next, pts.next, pts.next)).iterator
-  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next, pls.next, pls.next)).iterator
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next, lss.next, lss.next)).iterator
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next, lrs.next, lrs.next)).iterator
+  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next(), pts.next(), pts.next())).iterator
+  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next(), pls.next(), pls.next())).iterator
+  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next(), lss.next(), lss.next())).iterator
+  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
 
   // All these types map to `geometry`
   def testInOutGeom[A <: Geometry : Meta](a: A) =

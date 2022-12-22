@@ -7,6 +7,8 @@ package doobie.util
 import cats.effect.IO
 import doobie._
 
+import scala.annotation.nowarn
+
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class X(x: Int)
   case class Q(x: String)
@@ -40,6 +42,6 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
     compileErrors("Put[Z]")
     compileErrors("Put[(Int, Int)]")
     compileErrors("Put[S.type]")
-  }
+  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
 
 }

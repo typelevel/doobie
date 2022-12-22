@@ -17,6 +17,7 @@ import org.scalacheck.Prop.forAll
 class TextSuite extends munit.ScalaCheckSuite {
 
   import cats.effect.unsafe.implicits.global
+  import TextSuite._
 
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -51,21 +52,6 @@ class TextSuite extends munit.ScalaCheckSuite {
 
   val selectAll: ConnectionIO[List[Row]] =
     sql"SELECT a, b, c, d, e, f, g, h, i, j, k FROM test ORDER BY id ASC".query[Row].to[List]
-
-  // A test type to insert, all optional so we can check NULL
-  final case class Row(
-    a: Option[String],
-    b: Option[Short],
-    c: Option[Int],
-    d: Option[Long],
-    e: Option[Float],
-    f: Option[Double],
-    g: Option[BigDecimal],
-    h: Option[Boolean],
-    i: Option[List[Byte]],
-    j: Option[List[String]],
-    k: Option[List[Int]]
-  )
 
   // filter chars pg can't cope with
   def filter(s: String): String =
@@ -114,5 +100,23 @@ class TextSuite extends munit.ScalaCheckSuite {
       assertEquals(rs, rsʹ)
     }
   }
+
+}
+
+object TextSuite {
+  // A test type to insert, all optional so we can check NULL
+  final case class Row(
+    a: Option[String],
+    b: Option[Short],
+    c: Option[Int],
+    d: Option[Long],
+    e: Option[Float],
+    f: Option[Double],
+    g: Option[BigDecimal],
+    h: Option[Boolean],
+    i: Option[List[Byte]],
+    j: Option[List[String]],
+    k: Option[List[Int]]
+  )
 
 }
