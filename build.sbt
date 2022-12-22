@@ -112,7 +112,7 @@ lazy val doobie = project.in(file("."))
   .enablePlugins(NoPublishPlugin)
   .settings(doobieSettings)
   .aggregate(
-//    bench,
+    bench,
     core,
     docs,
     example,
@@ -390,13 +390,13 @@ lazy val weaver = project
     )
   )
 
-//lazy val bench = project
-//  .in(file("modules/bench"))
-//  .enablePlugins(NoPublishPlugin)
-//  .enablePlugins(AutomateHeaderPlugin)
-//  .enablePlugins(JmhPlugin)
-//  .dependsOn(core, postgres)
-//  .settings(doobieSettings)
+lazy val bench = project
+  .in(file("modules/bench"))
+  .enablePlugins(NoPublishPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(JmhPlugin)
+  .dependsOn(core, postgres)
+  .settings(doobieSettings)
 
 lazy val docs = project
   .in(file("modules/docs"))
