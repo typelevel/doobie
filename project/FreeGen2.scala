@@ -13,7 +13,7 @@ object FreeGen2 {
 
   lazy val freeGen2Settings = Seq(
     freeGen2Classes := Nil,
-    freeGen2Dir     := (sourceManaged in Compile).value,
+    freeGen2Dir     := (Compile / sourceManaged ).value,
     freeGen2Package := "doobie.free",
     freeGen2Renames := Map(classOf[java.sql.Array] -> "SqlArray"),
     freeGen2        :=

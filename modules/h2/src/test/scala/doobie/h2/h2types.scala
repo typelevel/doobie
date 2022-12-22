@@ -15,7 +15,7 @@ import doobie.util.arbitraries.StringArbitraries._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import doobie.implicits.javasql._
-import doobie.implicits.javatime.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
+import doobie.implicits.javatimedrivernative.{JavaTimeInstantMeta => NewJavaTimeInstantMeta, _}
 import doobie.implicits.legacy.instant.{JavaTimeInstantMeta => LegacyJavaTimeInstantMeta}
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
