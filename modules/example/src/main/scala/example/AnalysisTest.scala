@@ -48,13 +48,19 @@ object AnalysisTest {
       SELECT '(1, 2)'::point test
     """.query[PGcircle]
   }
+  
+  def update: Update[(String, String)] = {
+    Update[(String, String)](
+      "UPDATE COUNTRY SET NAME = ? WHERE CODE = ?"
+    )
+  }
 
-  def update(name: String, code: String): Update0 =
+  def update0_1(name: String, code: String): Update0 =
     sql"""
       UPDATE COUNTRY SET NAME = $name WHERE CODE = $code
     """.update
 
-  val update2 =
+  val update0_2: Update0 =
     sql"""
       UPDATE COUNTRY SET NAME = 'foo' WHERE CODE = 'bkah'
     """.update
