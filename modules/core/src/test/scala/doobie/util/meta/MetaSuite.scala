@@ -5,11 +5,15 @@
 package doobie.util.meta
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import doobie.util.{Get, Put}
+
+import scala.annotation.nowarn
 
 case class Foo(str: String)
 
+@nowarn("msg=.*local method foo.*")
 class MetaSuite extends munit.FunSuite {
 
   test("Meta should exist for primitive types") {

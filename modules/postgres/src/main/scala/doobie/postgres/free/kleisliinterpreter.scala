@@ -19,21 +19,13 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
-import java.lang.Class
-import java.lang.String
-import java.sql.{ Array => SqlArray }
-import java.util.Map
 import org.postgresql.PGConnection
-import org.postgresql.PGNotification
-import org.postgresql.copy.{ CopyDual => PGCopyDual }
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.jdbc.AutoSave
-import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
-import org.postgresql.replication.PGReplicationConnection
 import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
