@@ -62,10 +62,11 @@ def biggerThan(minPop: Short) =
     where population > $minPop
   """.query[Country]
 
-def update(oldName: String, newName: String) =
+val update: Update0 =
   sql"""
-    update country set name = $newName where name = $oldName
+    update country set name = "new" where name = "old"
   """.update
+
 ```
 
 ### The Specs2 Package
@@ -84,8 +85,8 @@ class AnalysisTestSpec extends Specification with doobie.specs2.IOChecker {
   )
 
   check(trivial)
-  check(biggerThan(0))
-  check(update("", ""))
+  checkOutput(biggerThan(0))
+  check(update)
 
 }
 ```
@@ -116,8 +117,8 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
   )
 
   test("trivial")    { check(trivial)        }
-  test("biggerThan") { check(biggerThan(0))  }
-  test("update")     { check(update("", "")) }
+  test("biggerThan") { checkOutput(biggerThan(0))  }
+  test("update")     { check(update) }
 
 }
 ```
@@ -145,8 +146,8 @@ class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
   )
 
   test("trivial")    { check(trivial)        }
-  test("biggerThan") { check(biggerThan(0))  }
-  test("update")     { check(update("", "")) }
+  test("biggerThan") { checkOutput(biggerThan(0))  }
+  test("update")     { check(update) }
 
 }
 ```
@@ -170,8 +171,8 @@ object AnalysisTestSuite extends IOSuite with IOChecker {
     ))
 
   test("trivial")    { implicit transactor => check(trivial)        }
-  test("biggerThan") { implicit transactor => check(biggerThan(0))  }
-  test("update")     { implicit transactor => check(update("", "")) }
+  test("biggerThan") { implicit transactor => checkOutput(biggerThan(0))  }
+  test("update")     { implicit transactor => check(update) }
 
 }
 ```

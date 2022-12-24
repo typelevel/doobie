@@ -23,6 +23,6 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
   test("pointTest")     { check(AnalysisTest.pointTest) }
 //test("pointTest2")    { check(AnalysisTest.pointTest2) }
 //test("update")        { check(AnalysisTest.update("foo", 42)) }
-  test("update2")       { check(AnalysisTest.update2) }
+  test("update2")       { check(AnalysisTest.update0_2) }
 
 }
