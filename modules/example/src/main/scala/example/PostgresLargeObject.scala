@@ -18,7 +18,7 @@ import java.io.File
 object PostgresLargeObject extends IOApp.Simple {
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
   )
 
   val prog: LargeObjectManagerIO[Long] =

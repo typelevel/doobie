@@ -24,7 +24,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // driver classname
   "jdbc:postgresql:world",     // connect URL (driver-specific)
   "postgres",                  // user
-  ""                           // password
+  "password"                   // password
 )
 ```
 
@@ -81,7 +81,7 @@ import org.specs2.mutable.Specification
 class AnalysisTestSpec extends Specification with doobie.specs2.IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
   )
 
   check(trivial)
@@ -113,7 +113,7 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
   override val colors = doobie.util.Colors.None // just for docs
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
   )
 
   test("trivial")    { check(trivial)        }
@@ -142,7 +142,7 @@ class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
   override val colors = doobie.util.Colors.None // just for docs
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
   )
 
   test("trivial")    { check(trivial)        }
@@ -167,7 +167,7 @@ object AnalysisTestSuite extends IOSuite with IOChecker {
   override type Res = Transactor[IO]
   override def sharedResource: Resource[IO,Res] = 
     Resource.pure(Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
     ))
 
   test("trivial")    { implicit transactor => check(trivial)        }

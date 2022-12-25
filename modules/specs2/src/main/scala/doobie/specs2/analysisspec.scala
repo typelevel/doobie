@@ -22,11 +22,7 @@ import org.tpolecat.typename._
  * class AnalysisTestSpec extends Specification with AnalysisSpec {
  *
  *   // The transactor to use for the tests.
- *   val transactor = Transactor.fromDriverManager[IO](
- *     "org.postgresql.Driver",
- *     "jdbc:postgresql:world",
- *     "postgres", ""
- *   )
+ *   val transactor = Transactor.fromDriverManager[IO](...)
  *
  *   // Now just mention the queries. Arguments are not used.
  *   check(MyDaoModule.findByNameAndAge(null, 0))

@@ -16,7 +16,7 @@ class PGJsonSuite extends munit.FunSuite {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "password"
   )
 
   def inOut[A: Write: Read](col: String, a: A) =

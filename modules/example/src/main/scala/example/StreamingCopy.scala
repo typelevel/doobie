@@ -141,7 +141,7 @@ object StreamingCopy extends IOApp.Simple {
 
   // A postges transactor for our source. We assume the WORLD database is set up already.
   val pg = addLogging("Postgres")(Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
   ))
 
   // An h2 transactor for our sink.
