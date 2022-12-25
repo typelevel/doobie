@@ -85,6 +85,17 @@ trait MetaConstructors {
         Put.Basic.one(jdbcType, put, update)
       )
 
+    def oneObject[A: TypeName](
+      jdbcType: JdbcType,
+      jdbcSourceSecondary: List[JdbcType],
+      clazz: Class[A]
+    ): Meta[A] = one(
+      jdbcType = jdbcType,
+      jdbcSourceSecondary = jdbcSourceSecondary,
+      _.getObject(_, clazz),
+      _.setObject(_, _),
+      _.updateObject(_, _)
+    )
   }
 
   /**
