@@ -4,12 +4,19 @@
 
 package doobie.util
 
-import fs2.Stream
+import fs2._
 
 /** Additional functions for manipulating `Stream` values. */
 object stream {
 
   /** Stream constructor for effectful source of chunks. */
-  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Stream[F, T] =
-    Stream.repeatEval(fa).takeWhile(_.nonEmpty).flatMap(Stream.emits(_))
+  def repeatEvalChunks[F[_], T](fa: F[Seq[T]]): Stream[F, T] = {
+    def go: Pull[F, T, Unit] =
+      Pull.eval(fa).flatMap { seq =>
+        if (seq.isEmpty) Pull.done
+        else Pull.output(Chunk.seq(seq)) >> go
+      }
+
+    go.stream
+  }
 }

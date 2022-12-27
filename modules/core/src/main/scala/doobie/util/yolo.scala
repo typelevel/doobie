@@ -34,8 +34,7 @@ object yolo {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
         q.stream
-         .map(_.toString)
-         .evalMap(out(_, colors))
+         .foreach(s => out(s.toString, colors))
          .compile
          .drain
          .transact(xa)(ev)
@@ -90,7 +89,7 @@ object yolo {
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)(ev)
+        pa.foreach(a => out(a.toString, colors)).compile.drain.transact(xa)(ev)
     }
 
     private def checkImpl(args: AnalysisArgs, colors: Colors): M[Unit] =

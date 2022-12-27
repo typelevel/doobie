@@ -57,7 +57,7 @@ class FragmentOps(f: Fragment) {
           case (copyIn, _) =>
             PHC.embed(copyIn, PFCI.cancelCopy)
         }.flatMap { copyIn =>
-          byteStream.chunks.evalMap(bytes =>
+          byteStream.chunks.foreach(bytes =>
             PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
           )
         }.compile.drain
