@@ -266,7 +266,7 @@ lazy val postgres = project
       import doobie._, doobie.implicits._
       import doobie.postgres._, doobie.postgres.implicits._
       implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
-      val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+      val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password")
       val yolo = xa.yolo
       import yolo._
       import org.postgis._

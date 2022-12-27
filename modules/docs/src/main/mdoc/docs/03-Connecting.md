@@ -42,7 +42,7 @@ val xa = Transactor.fromDriverManager[IO](
   "org.postgresql.Driver",     // JDBC driver classname
   "jdbc:postgresql:world",     // Connect URL
   "postgres",                  // user
-  ""                           // password
+  "password"                   // password
 )
 ```
 

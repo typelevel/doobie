@@ -5,7 +5,7 @@
 package doobie.postgres
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxApplicativeId
+import cats.syntax.applicative.catsSyntaxApplicativeId
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -22,7 +22,7 @@ class Issue1512 extends CatsEffectSuite {
   val datasource: DataSource = {
     val ds = new PGSimpleDataSource
     ds.setUser("postgres")
-    ds.setPassword("")
+    ds.setPassword("password")
     ds
   }
   val xa: Transactor[IO] =
