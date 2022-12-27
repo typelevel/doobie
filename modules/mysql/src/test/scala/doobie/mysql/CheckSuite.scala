@@ -16,49 +16,57 @@ class CheckSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
   import MySQLTestTransactor.xa
 
-  test("OffsetDateTime Read typechecks") {
-    successRead[Option[OffsetDateTime]](sql"SELECT CAST('2019-02-13 22:03:21.051' AS DATETIME)")
+  // note selecting from a table because a value cannot be cast to a timestamp
+  // and casting returns a nullable column
 
-    warnRead[Option[OffsetDateTime]](sql"SELECT '2019-02-13 22:03:21.051'")
-    warnRead[Option[OffsetDateTime]](sql"SELECT CAST('03:21' AS TIME)")
-    warnRead[Option[OffsetDateTime]](sql"SELECT CAST('2019-02-13' AS DATE)")
-    failedRead[Option[OffsetDateTime]](sql"SELECT 123")
+  test("OffsetDateTime Read typechecks") {
+    successRead[OffsetDateTime](sql"SELECT c_timestamp FROM test LIMIT 1")
+
+    warnRead[OffsetDateTime](sql"SELECT '2019-02-13 22:03:21.051'")
+    warnRead[OffsetDateTime](sql"SELECT c_date FROM test LIMIT 1")
+    warnRead[OffsetDateTime](sql"SELECT c_time FROM test LIMIT 1")
+    warnRead[OffsetDateTime](sql"SELECT c_datetime FROM test LIMIT 1")
+    failedRead[OffsetDateTime](sql"SELECT c_integer FROM test LIMIT 1")
   }
 
   test("LocalDateTime Read typechecks") {
-    successRead[Option[LocalDateTime]](sql"SELECT CAST('2019-02-13 22:03:21.051' AS DATETIME)")
+    successRead[LocalDateTime](sql"SELECT c_datetime FROM test LIMIT 1")
 
-    warnRead[Option[LocalDateTime]](sql"SELECT '2019-02-13 22:03:21.051'")
-    warnRead[Option[LocalDateTime]](sql"SELECT CAST('03:21' AS TIME)")
-    warnRead[Option[LocalDateTime]](sql"SELECT CAST('2019-02-13' AS DATE)")
-    failedRead[Option[LocalDateTime]](sql"SELECT 123")
+    warnRead[LocalDateTime](sql"SELECT '2019-02-13 22:03:21.051'")
+    warnRead[LocalDateTime](sql"SELECT c_date FROM test LIMIT 1")
+    warnRead[LocalDateTime](sql"SELECT c_time FROM test LIMIT 1")
+    warnRead[LocalDateTime](sql"SELECT c_timestamp FROM test LIMIT 1")
+    failedRead[LocalDateTime](sql"SELECT 123")
   }
 
   test("LocalDate Read typechecks") {
-    successRead[Option[LocalDate]](sql"SELECT CAST('2015-02-23' AS DATE)")
+    successRead[LocalDate](sql"SELECT c_date FROM test LIMIT 1")
 
-    warnRead[Option[LocalDate]](sql"SELECT CAST('2019-02-13 22:03:21.051' AS DATETIME)")
-    warnRead[Option[LocalDate]](sql"SELECT CAST('03:21' AS TIME)")
-    warnRead[Option[LocalDate]](sql"SELECT '2015-02-23'")
-    failedRead[Option[LocalDate]](sql"SELECT 123")
+    warnRead[LocalDate](sql"SELECT '2019-02-13'")
+    warnRead[LocalDate](sql"SELECT c_time FROM test LIMIT 1")
+    warnRead[LocalDate](sql"SELECT c_datetime FROM test LIMIT 1")
+    warnRead[LocalDate](sql"SELECT c_timestamp FROM test LIMIT 1")
+    failedRead[LocalDate](sql"SELECT 123")
   }
 
   test("LocalTime Read typechecks") {
-    successRead[Option[LocalTime]](sql"SELECT CAST('03:21' AS TIME)")
+    successRead[LocalTime](sql"SELECT c_time FROM test LIMIT 1")
 
-    warnRead[Option[LocalTime]](sql"SELECT CAST('2019-02-13 22:03:21.051' AS DATETIME)")
-    warnRead[Option[LocalTime]](sql"SELECT CAST('2015-02-23' AS DATE)")
-    failedRead[Option[LocalTime]](sql"SELECT '03:21'")
-    failedRead[Option[LocalTime]](sql"SELECT 123")
+    warnRead[LocalTime](sql"SELECT c_date FROM test LIMIT 1")
+    warnRead[LocalTime](sql"SELECT c_datetime FROM test LIMIT 1")
+    warnRead[LocalTime](sql"SELECT c_timestamp FROM test LIMIT 1")
+    warnRead[LocalTime](sql"SELECT '22:03:21'")
+    failedRead[LocalTime](sql"SELECT 123")
   }
 
   test("OffsetTime Read typechecks") {
-    successRead[Option[OffsetTime]](sql"SELECT CAST('2019-02-13 22:03:21.051' AS DATETIME)")
+    successRead[OffsetTime](sql"SELECT c_timestamp FROM test LIMIT 1")
 
-    warnRead[Option[OffsetTime]](sql"SELECT CAST('03:21' AS TIME)")
-    warnRead[Option[OffsetTime]](sql"SELECT CAST('2015-02-23' AS DATE)")
-    failedRead[Option[OffsetTime]](sql"SELECT '03:21'")
-    failedRead[Option[OffsetTime]](sql"SELECT 123")
+    warnRead[OffsetTime](sql"SELECT '22:03:21'")
+    warnRead[OffsetTime](sql"SELECT c_date FROM test LIMIT 1")
+    warnRead[OffsetTime](sql"SELECT c_time FROM test LIMIT 1")
+    warnRead[OffsetTime](sql"SELECT c_datetime FROM test LIMIT 1")
+    failedRead[OffsetTime](sql"SELECT 123")
   }
 
   private def successRead[A: Read](frag: Fragment): Unit = {

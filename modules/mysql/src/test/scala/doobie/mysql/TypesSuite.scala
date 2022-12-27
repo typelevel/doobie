@@ -13,7 +13,6 @@ import doobie.mysql.implicits._
 import doobie.mysql.util.arbitraries.SQLArbitraries._
 import doobie.mysql.util.arbitraries.TimeArbitraries._
 import org.scalacheck.Arbitrary
-import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
 class TypesSuite extends munit.ScalaCheckSuite {
@@ -33,15 +32,17 @@ class TypesSuite extends munit.ScalaCheckSuite {
       a0 <- Query0[Option[A]](s"SELECT value FROM test", None).unique
     } yield a0
 
-  def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
-    testInOutWithCustomGen(col, arbitrary.arbitrary)
+  private def testInOut[A](col: String)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]): Unit = {
+    testInOutCustomize(col )
   }
 
-  def testInOutNormalize[A](col: String)(f: A => A)(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]) = {
-    testInOutWithCustomGen(col, arbitrary.arbitrary, skipNone = false, f)
-  }
+  private def testInOutCustomize[A](
+    col: String,
+    skipNone: Boolean = false,
+    expected: A => A = identity[A](_)
+  )(implicit m: Get[A], p: Put[A], arbitrary: Arbitrary[A]): Unit = {
+    val gen = arbitrary.arbitrary
 
-  def testInOutWithCustomGen[A](col: String, gen: Gen[A], skipNone: Boolean = false, expected: A => A = identity[A](_))(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
       forAll(gen) { (t: A) =>
         val actual = inOut(col, t).transact(xa).attempt.unsafeRunSync()
@@ -61,19 +62,19 @@ class TypesSuite extends munit.ScalaCheckSuite {
     }
   }
 
-  def skip(col: String, msg: String = "not yet implemented") =
-    test(s"Mapping for $col ($msg)".ignore) {}
+
+  testInOutCustomize[java.time.OffsetDateTime](
+    "timestamp(6)",
+    skipNone = true, // returns the current timestamp, lol
+    _.withOffsetSameInstant(ZoneOffset.UTC)
+  )
+  testInOutCustomize[java.time.Instant](
+    "timestamp(6)",
+    skipNone = true, // returns the current timestamp, lol
+  )
 
   testInOut[java.sql.Timestamp]("datetime(6)")
-  testInOutNormalize[java.time.OffsetDateTime]("datetime(6)")(_.withOffsetSameInstant(ZoneOffset.UTC))
-  testInOut[java.time.Instant]("datetime(6)")
-
   testInOut[java.time.LocalDateTime]("datetime(6)")
-  testInOutWithCustomGen[java.time.LocalDateTime](
-    "timestamp(6)",
-    arbitraryLocalDateTimeTimestamp.arbitrary,
-    skipNone = true // returns the current timestamp, lol
-  )
 
   testInOut[java.sql.Date]("date")
   testInOut[java.time.LocalDate]("date")

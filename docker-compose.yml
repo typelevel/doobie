@@ -11,7 +11,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./init/:/docker-entrypoint-initdb.d/
+      - ./init/postgres/:/docker-entrypoint-initdb.d/
 
   mysql:
     image: mysql:5.7-debian
@@ -20,3 +20,5 @@ services:
       MYSQL_DATABASE: world
     ports:
       - 3306:3306
+    volumes:
+      - ./init/mysql/:/docker-entrypoint-initdb.d/
