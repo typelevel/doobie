@@ -4,18 +4,11 @@
 
 package doobie.postgres
 
-import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie.implicits._
 
 class ManyRowsSuite extends munit.FunSuite {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   test("select should take consistent memory") {
     val q = sql"""select a.name, b.name from city a, city b""".query[(String, String)]

@@ -13,7 +13,7 @@ import java.time.{OffsetDateTime, ZoneOffset} // Using database JDBC driver nati
 /**
  * Instances for JSR-310 date time types.
  *
- * Implementation is based on https://jdbc.postgresql.org/documentation/head/8-date-time.html, using
+ * Implementation is based on https://jdbc.postgresql.org/documentation/head/java8-date-time.html, using
  * native support for Postgres JDBC driver.
  */
 trait JavaTimeInstances extends MetaConstructors {
@@ -26,8 +26,8 @@ trait JavaTimeInstances extends MetaConstructors {
    */
   implicit val JavaTimeOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
     Basic.one[java.time.OffsetDateTime](
-      JT.Timestamp,
-      List(JT.Time),
+      JT.TimestampWithTimezone,
+      List(JT.Timestamp, JT.TimeWithTimezone),
       _.getObject(_, classOf[java.time.OffsetDateTime]), _.setObject(_, _), _.updateObject(_, _))
 
   /**
@@ -35,15 +35,6 @@ trait JavaTimeInstances extends MetaConstructors {
    */
   implicit val JavaTimeInstantMeta: Meta[java.time.Instant] =
     JavaTimeOffsetDateTimeMeta.timap(_.toInstant)(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
-
-  /**
-   * This type should map to TIMESTAMP WITH TIMEZONE (TIMESTAMPTZ)
-   * When writing to the database, the same instant is preserved if your target column is of type TIMESTAMPTZ
-   * (The JDBC driver works out the timezone conversion for you). Note that since zone information is not stored in
-   * the database column, retrieving the same value will yield the same instant in time, but in UTC.
-   */
-  implicit val JavaTimeZonedDateTimeMeta: Meta[java.time.ZonedDateTime] =
-    JavaTimeOffsetDateTimeMeta.timap(_.atZoneSameInstant(ZoneOffset.UTC))(_.toOffsetDateTime)
 
   /**
    * This type should map to TIMESTAMP
@@ -71,5 +62,14 @@ trait JavaTimeInstances extends MetaConstructors {
       JT.Time,
       Nil,
       _.getObject(_, classOf[java.time.LocalTime]), _.setObject(_, _), _.updateObject(_, _))
+
+  /**
+   * This type should map to TIME WITH TIMEZONE (TIMETZ)
+   */
+  implicit val JavaTimeOffsetTimeMeta: Meta[java.time.OffsetTime] =
+    Basic.one[java.time.OffsetTime](
+      JT.TimeWithTimezone,
+      Nil,
+      _.getObject(_, classOf[java.time.OffsetTime]), _.setObject(_, _), _.updateObject(_, _))
 
 }

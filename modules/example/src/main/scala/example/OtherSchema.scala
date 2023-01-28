@@ -57,7 +57,7 @@ object OtherSchema extends IOApp.Simple {
 
     // Some setup
     val xa = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
     )
     val y  = xa.yolo
     import y._

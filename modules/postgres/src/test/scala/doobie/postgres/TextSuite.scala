@@ -6,23 +6,18 @@ package doobie.postgres
 
 import cats.effect.IO
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
 
-
 class TextSuite extends munit.ScalaCheckSuite {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
+  import TextSuite._
 
   implicit val byteListInstance: Text[List[Byte]] =
     Text[Array[Byte]].contramap(_.toArray)
@@ -51,21 +46,6 @@ class TextSuite extends munit.ScalaCheckSuite {
 
   val selectAll: ConnectionIO[List[Row]] =
     sql"SELECT a, b, c, d, e, f, g, h, i, j, k FROM test ORDER BY id ASC".query[Row].to[List]
-
-  // A test type to insert, all optional so we can check NULL
-  final case class Row(
-    a: Option[String],
-    b: Option[Short],
-    c: Option[Int],
-    d: Option[Long],
-    e: Option[Float],
-    f: Option[Double],
-    g: Option[BigDecimal],
-    h: Option[Boolean],
-    i: Option[List[Byte]],
-    j: Option[List[String]],
-    k: Option[List[Int]]
-  )
 
   // filter chars pg can't cope with
   def filter(s: String): String =
@@ -100,19 +80,37 @@ class TextSuite extends munit.ScalaCheckSuite {
     }
   }
 
-  test("correctly insert batches of rows via Stream") { 
+  test("correctly insert batches of rows via Stream") {
     forAll(genRows) { rs =>
       val rsʹ = (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
       assertEquals(rs, rsʹ)
     }
   }
 
-  test("correctly insert batches of rows via Stream in IO") { 
+  test("correctly insert batches of rows via Stream in IO") {
     forAll(genRows) { rs =>
       val inner = (rows: Stream[ConnectionIO, Row]) => Stream.eval(create *> insert.copyIn(rows, 100) *> selectAll)
       val rsʹ = Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.unsafeRunSync()
       assertEquals(rs, rsʹ)
     }
   }
+
+}
+
+object TextSuite {
+  // A test type to insert, all optional so we can check NULL
+  final case class Row(
+    a: Option[String],
+    b: Option[Short],
+    c: Option[Int],
+    d: Option[Long],
+    e: Option[Float],
+    f: Option[Double],
+    g: Option[BigDecimal],
+    h: Option[Boolean],
+    i: Option[List[Byte]],
+    j: Option[List[String]],
+    k: Option[List[Int]]
+  )
 
 }

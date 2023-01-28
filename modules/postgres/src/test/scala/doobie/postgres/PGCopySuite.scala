@@ -4,20 +4,14 @@
 
 package doobie.postgres
 
-import cats.effect.{ IO, Sync }
-import doobie._, doobie.implicits._
+import cats.effect.Sync
+import doobie._
+import doobie.implicits._
 import java.io.ByteArrayOutputStream
 
-
 class PGCopySuite extends munit.FunSuite {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   test("copy out should read csv in utf-8 and match expectations") {
 
