@@ -6,20 +6,14 @@ package doobie.postgres
 
 import cats.effect.{ IO, Sync }
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import org.postgresql.PGNotification
 
-
 class NotifySuite extends munit.FunSuite {
-
   import FC.{commit, delay}
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   // Listen on the given channel, notify on another connection
   def listen[A](channel: String, notify: ConnectionIO[A]): IO[List[PGNotification]] =

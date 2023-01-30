@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations._
 object shared {
 
   @State(Scope.Benchmark)
-  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
+  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password")
 }
 
 class bench {
@@ -23,7 +23,7 @@ class bench {
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.While"))
   def jdbcBench(n: Int): Int = {
     Class.forName("org.postgresql.Driver")
-    val co = DriverManager.getConnection("jdbc:postgresql:world", "postgres", "")
+    val co = DriverManager.getConnection("jdbc:postgresql:world", "postgres", "password")
     try {
       co.setAutoCommit(false)
       val ps = co.prepareStatement("select a.name, b.name, co.name from country a, country b, country co limit ?")

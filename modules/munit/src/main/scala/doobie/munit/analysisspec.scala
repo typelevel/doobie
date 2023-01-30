@@ -19,11 +19,7 @@ import munit.{Assertions, Location}
  * class ExampleSuite extends FunSuite with IOChecker {
  *
  *   // The transactor to use for the tests.
- *   val transactor = Transactor.fromDriverManager[IO](
- *     "org.postgresql.Driver",
- *     "jdbc:postgresql:world",
- *     "postgres", ""
- *   )
+ *   val transactor = Transactor.fromDriverManager[IO](...)
  *
  *   // Now just mention the queries. Arguments are not used.
  *   test("findByNameAndAge") { check(MyDaoModule.findByNameAndAge(null, 0)) }
