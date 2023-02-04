@@ -23,7 +23,7 @@ object HiUsage extends IOApp.Simple {
   // Program entry point
   def run: IO[Unit] = {
     val db = Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
     )
     example.transact(db)
   }

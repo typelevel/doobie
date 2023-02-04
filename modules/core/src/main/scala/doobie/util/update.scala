@@ -89,6 +89,13 @@ object update {
       HC.prepareUpdateAnalysis[A](sql)
 
     /**
+     * Program to construct an analysis of this query's SQL statement and result set column types.
+     * @group Diagnostics
+     */
+    def outputAnalysis: ConnectionIO[Analysis] =
+      HC.prepareUpdateAnalysis0(sql)
+
+    /**
       * Program to construct an inspection of the query. Given arguments `a`, calls `f` with the SQL
       * representation of the query and a statement with all arguments set. Returns the result
       * of the `ConnectionIO` program constructed.
@@ -176,6 +183,7 @@ object update {
         val pos = u.pos
         def toFragment: Fragment = u.toFragment(a)
         def analysis = u.analysis
+        def outputAnalysis = u.outputAnalysis
         def run = u.run(a)
         def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int) =
           u.withGeneratedKeysWithChunkSize[K](columns: _*)(a, chunkSize)
@@ -239,6 +247,12 @@ object update {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis]
+
+    /**
+     * Program to construct an analysis of this query's SQL statement and result set column types.
+     * @group Diagnostics
+     */
+    def outputAnalysis: ConnectionIO[Analysis]
 
     /**
       * Program to construct an inspection of the query. Calls `f` with the SQL

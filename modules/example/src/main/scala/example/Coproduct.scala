@@ -97,7 +97,7 @@ object Coproduct extends IOApp.Simple {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "password"
   )
 
   // Exec it!

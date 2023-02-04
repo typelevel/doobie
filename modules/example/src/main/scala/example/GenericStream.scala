@@ -73,7 +73,7 @@ object GenericStream extends IOApp {
 
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
   )
 
   def run(args: List[String]): IO[ExitCode] =
