@@ -41,7 +41,7 @@ object CallableStatementExample extends IOApp.Simple {
 
   val xa: Transactor[IO] =
     Transactor.fromDriverManager[IO](
-      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+      "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
     )
 
   def run: IO[Unit] =

@@ -28,7 +28,7 @@ class TransactorSuite extends munit.FunSuite {
   class ConnectionTracker {
     var connections = List.empty[java.sql.Connection]
 
-    def track[F[_]: Async](xa: Transactor[F]) = {
+    def track[F[_]](xa: Transactor[F]) = {
       def withA(t: doobie.util.transactor.Transactor[F]): Transactor.Aux[F, t.A] = {
         Transactor.connect.modify(t, f => a => {
           f(a).map { conn =>
