@@ -6,24 +6,18 @@ package doobie.postgres
 
 import cats.effect.IO
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie._
+import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
 
-
 class TextSuite extends munit.ScalaCheckSuite {
-
   import cats.effect.unsafe.implicits.global
+  import PostgresTestTransactor.xa
   import TextSuite._
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
 
   implicit val byteListInstance: Text[List[Byte]] =
     Text[Array[Byte]].contramap(_.toArray)
@@ -86,14 +80,14 @@ class TextSuite extends munit.ScalaCheckSuite {
     }
   }
 
-  test("correctly insert batches of rows via Stream") { 
+  test("correctly insert batches of rows via Stream") {
     forAll(genRows) { rs =>
       val rsʹ = (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
       assertEquals(rs, rsʹ)
     }
   }
 
-  test("correctly insert batches of rows via Stream in IO") { 
+  test("correctly insert batches of rows via Stream in IO") {
     forAll(genRows) { rs =>
       val inner = (rows: Stream[ConnectionIO, Row]) => Stream.eval(create *> insert.copyIn(rows, 100) *> selectAll)
       val rsʹ = Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.unsafeRunSync()

@@ -8,7 +8,6 @@ import java.math.{BigDecimal => JBigDecimal}
 import java.net.InetAddress
 import java.time.ZoneOffset
 import java.util.UUID
-import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import doobie.implicits.javasql._
@@ -27,19 +26,11 @@ import org.scalacheck.Prop.forAll
 
 import scala.annotation.nowarn
 
-
 // Establish that we can write and read various types.
-
 @nowarn("msg=.*Stream in package scala is deprecated.*")
 class TypesSuite extends munit.ScalaCheckSuite {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   def inOut[A: Get : Put](col: String, a: A): ConnectionIO[A] = for {
       _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col NOT NULL)", None).run

@@ -4,22 +4,14 @@
 
 package doobie.postgres
 
-import cats.effect.IO
 import cats.syntax.all._
-import doobie._, doobie.implicits._
+import doobie.implicits._
 import doobie.postgres.implicits._
 import java.io.{File, FileInputStream, FileOutputStream}
 
-
 class LOSuite extends munit.FunSuite with FileEquality {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   // A big file. Contents are irrelevant.
   val in = new File("init/test-db.sql")

@@ -4,7 +4,6 @@
 
 package doobie.postgres
 
-import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import doobie.postgres.enums._
@@ -13,14 +12,8 @@ import doobie.util.analysis.{ColumnTypeError, ColumnTypeWarning, ParameterTypeEr
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime}
 
 class CheckSuite extends munit.FunSuite {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   test("pgEnumString Read and Write typechecks") {
     successRead[MyEnum](sql"select 'foo' :: myenum")

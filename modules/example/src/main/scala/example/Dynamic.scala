@@ -19,7 +19,7 @@ object Dynamic extends IOApp.Simple {
   val xa = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
     "jdbc:postgresql:world",
-    "postgres", ""
+    "postgres", "password"
   )
 
   // Entry point. Run a query and print the results out.
