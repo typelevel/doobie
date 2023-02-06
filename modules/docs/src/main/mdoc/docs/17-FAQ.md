@@ -219,4 +219,4 @@ If your JDBC driver supports the java.time types you're using natively, use `imp
 
 References:
 
-- [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/head/8-date-time.html)
+- [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/query/#using-java-8-date-and-time-classes)
