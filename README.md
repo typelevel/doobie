@@ -8,3 +8,8 @@
 **doobie** is a pure functional JDBC layer for Scala.
 
 Please proceed to the [**microsite**](https://tpolecat.github.io/doobie/) for more information.
+
+## Reporting a bug or need help?
+
+Use [doobie_quick_start](https://github.com/jatcwang/doobie_quick_start)
+which should make it easy to reproduce your issue!
