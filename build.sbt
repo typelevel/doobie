@@ -182,7 +182,7 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => tlIsScala3.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "1.0.0",
+      "org.tpolecat"   %% "typename"  % "1.1.0",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
