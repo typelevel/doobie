@@ -22,7 +22,7 @@ lazy val scala212Version      = "2.12.17"
 lazy val scala213Version      = "2.13.10"
 lazy val scala3Version       = "3.2.2"
 lazy val slf4jVersion         = "1.7.36"
-lazy val weaverVersion        = "0.8.2"
+lazy val weaverVersion        = "0.8.3"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
@@ -182,7 +182,7 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => tlIsScala3.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "1.0.0",
+      "org.tpolecat"   %% "typename"  % "1.1.0",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
