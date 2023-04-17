@@ -192,6 +192,38 @@ object Config {
     transactionIsolation
   )
 
+  @nowarn
+  def fromProduct(p: Product): Config = p.productArity match {
+    case 25 =>
+      Config(
+        p.productElement(0).asInstanceOf[String],
+        p.productElement(1).asInstanceOf[Option[String]],
+        p.productElement(2).asInstanceOf[Duration],
+        p.productElement(3).asInstanceOf[Duration],
+        p.productElement(4).asInstanceOf[Duration],
+        p.productElement(5).asInstanceOf[Int],
+        p.productElement(6).asInstanceOf[Duration],
+        p.productElement(7).asInstanceOf[Int],
+        p.productElement(8).asInstanceOf[Option[String]],
+        p.productElement(9).asInstanceOf[Option[String]],
+        p.productElement(10).asInstanceOf[Option[String]],
+        p.productElement(11).asInstanceOf[Duration],
+        p.productElement(12).asInstanceOf[Boolean],
+        p.productElement(13).asInstanceOf[Boolean],
+        p.productElement(14).asInstanceOf[Option[String]],
+        p.productElement(15).asInstanceOf[Option[String]],
+        p.productElement(16).asInstanceOf[Option[String]],
+        p.productElement(17).asInstanceOf[Option[String]],
+        p.productElement(18).asInstanceOf[Option[String]],
+        p.productElement(19).asInstanceOf[Duration],
+        p.productElement(20).asInstanceOf[Boolean],
+        p.productElement(21).asInstanceOf[Boolean],
+        p.productElement(22).asInstanceOf[Boolean],
+        p.productElement(23).asInstanceOf[Option[String]],
+        p.productElement(24).asInstanceOf[Option[TransactionIsolation]],
+      )
+  }
+
   @nowarn("msg=never used")
   private def unapply(c: Config): Any = this
 }
