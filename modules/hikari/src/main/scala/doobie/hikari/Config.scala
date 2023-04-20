@@ -21,7 +21,10 @@ import scala.concurrent.duration.Duration
   * Helps with creating `com.zaxxer.hikari.HikariConfig`,
   * which in turn is used to create `doobie.hikari.HikariTransactor`.
   * See the method `HikariTransactor.fromConfigAutoEc` */
-// Whenever you add a new field, add it to `copy` and create a new `apply` to maintain backward compatibility.
+// Whenever you add a new field to maintain backward compatibility:
+//  * add the field to `copy`
+//  * create a new `apply`
+//  * add a new case to `fromProduct`
 //
 // The default values in the constructor are not actually applied (defaults from `apply` are).
 // But they still need to be present to enable tools like PureConfig.
