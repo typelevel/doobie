@@ -28,8 +28,8 @@ Then, you will be able to import the implicits for dealing with JSON:
 @@@ vars
 
 ```scala
-import doobie.postgres.circe.json.implicits
-import doobie.postgres.circe.jsonb.implicits
+import doobie.postgres.circe.json.implicits._
+import doobie.postgres.circe.jsonb.implicits._
 
 ```
 
