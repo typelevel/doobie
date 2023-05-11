@@ -36,9 +36,6 @@ object query {
     protected implicit val write: Write[A]
     protected implicit val read: Read[B]
 
-    // LogHandler is protected for now.
-    protected val logHandler: LogHandler
-
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
@@ -48,7 +45,6 @@ object query {
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
         for {
-          _ <- FPS.delay(logHandler.unsafeRun(e))
           _ <- FPS.performLogging(e)
         } yield ()
 
@@ -87,6 +83,9 @@ object query {
     /** Convert this Query to a `Fragment`. */
     def toFragment(a: A): Fragment =
       write.toFragment(a, sql)
+
+    /** Label to be used during logging */
+    val label: String
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
@@ -193,7 +192,7 @@ object query {
         val read  = outer.read.map(f)
         def sql = outer.sql
         def pos = outer.pos
-        val logHandler = outer.logHandler
+        val label = outer.label
       }
 
     /** @group Transformations */
@@ -203,7 +202,7 @@ object query {
         val read  = outer.read
         def sql = outer.sql
         def pos = outer.pos
-        val logHandler = outer.logHandler
+        val label = outer.label
       }
 
     /**
@@ -240,13 +239,13 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
+    def apply[A, B](sql0: String, pos0: Option[Pos] = None, label0: String = "unlabeled")(implicit A: Write[A], B: Read[B]): Query[A, B] =
       new Query[A, B] {
         val write = A
         val read = B
         val sql = sql0
         val pos = pos0
-        val logHandler = logHandler0
+        val label = label0
       }
 
     /** @group Typeclass Instances */
@@ -391,8 +390,8 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
-       Query[Unit, A](sql, pos, logHandler).toQuery0(())
+    def apply[A: Read](sql: String, pos: Option[Pos] = None, label: String = "unlabeled"): Query0[A] =
+       Query[Unit, A](sql, pos, label).toQuery0(())
 
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =

@@ -39,9 +39,6 @@ object update {
     // Contravariant coyoneda trick for A
     protected implicit val write: Write[A]
 
-    // LogHandler is protected for now.
-    protected val logHandler: LogHandler
-
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
@@ -51,7 +48,6 @@ object update {
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
         for {
-          _ <- FPS.delay(logHandler.unsafeRun(e))
           _ <- FPS.performLogging(e)
         } yield ()
 
@@ -80,6 +76,9 @@ object update {
     /** Convert this Update to a `Fragment`. */
     def toFragment(a: A): Fragment =
       write.toFragment(a, sql)
+
+    /** Label to be used during logging */
+    val label: String
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
@@ -170,7 +169,7 @@ object update {
         val write = u.write.contramap(f)
         val sql = u.sql
         val pos = u.pos
-        val logHandler = u.logHandler
+        val label = u.label
       }
 
     /**
@@ -204,12 +203,12 @@ object update {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql0: String, pos0: Option[Pos] = None)(
-      implicit W: Write[A], logHandler0: LogHandler = LogHandler.nop
+      implicit W: Write[A], label0: String = "unlabeled"
     ): Update[A] =
       new Update[A] {
         val write = W
         val sql = sql0
-        val logHandler = logHandler0
+        val label = label0
         val pos = pos0
       }
 
