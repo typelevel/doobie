@@ -58,12 +58,12 @@ object query {
         tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
           for {
             t1 <- now
-            _ <- log(ExecFailure(sql, args, diff(t1, t0), e))
+            _ <- log(ExecFailure(sql, args, label, diff(t1, t0), e))
           } yield ()
         }
         (t1, et, t2) = tuple
-        t <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) }
-        _  <- log(Success(sql, args, diff(t1, t0), diff(t2, t1)))
+        t <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, label, diff(t1, t0), diff(t2, t1), e)) }
+        _  <- log(Success(sql, args, label, diff(t1, t0), diff(t2, t1)))
       } yield t
     }
 

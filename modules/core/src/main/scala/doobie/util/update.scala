@@ -55,8 +55,8 @@ object update {
         t0 <- now
         en <- FPS.executeUpdate.attempt
         t1 <- now
-        n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, diff(t1, t0), e)) }
-        _  <- log(Success(sql, args, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
+        n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, label, diff(t1, t0), e)) }
+        _  <- log(Success(sql, args, label, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
       } yield n
     }
 

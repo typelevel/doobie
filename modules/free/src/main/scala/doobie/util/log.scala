@@ -27,11 +27,13 @@ object log {
     /** The query arguments. */
     def args: List[Any]
 
+    def label: String
+
   }
 
-  /** @group Events */ final case class Success          (sql: String, args: List[Any], exec: FD, processing: FD                    ) extends LogEvent
-  /** @group Events */ final case class ProcessingFailure(sql: String, args: List[Any], exec: FD, processing: FD, failure: Throwable) extends LogEvent
-  /** @group Events */ final case class ExecFailure      (sql: String, args: List[Any], exec: FD,                 failure: Throwable) extends LogEvent
+  /** @group Events */ final case class Success          (sql: String, args: List[Any], label: String, exec: FD, processing: FD                    ) extends LogEvent
+  /** @group Events */ final case class ProcessingFailure(sql: String, args: List[Any], label: String, exec: FD, processing: FD, failure: Throwable) extends LogEvent
+  /** @group Events */ final case class ExecFailure      (sql: String, args: List[Any], label: String, exec: FD,                 failure: Throwable) extends LogEvent
 
   /**
    * A sink for `LogEvent`s.
@@ -61,31 +63,34 @@ object log {
       val jdkLogger = Logger.getLogger(getClass.getName)
       LogHandler {
 
-        case Success(s, a, e1, e2) =>
+        case Success(s, a, l, e1, e2) =>
           jdkLogger.info(s"""Successful Statement Execution:
             |
             |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
             |
             | arguments = [${a.mkString(", ")}]
+            | label     = $l
             |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (${(e1 + e2).toMillis.toString} ms total)
           """.stripMargin)
 
-        case ProcessingFailure(s, a, e1, e2, t) =>
+        case ProcessingFailure(s, a, l, e1, e2, t) =>
           jdkLogger.severe(s"""Failed Resultset Processing:
             |
             |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
             |
             | arguments = [${a.mkString(", ")}]
+            | label     = $l
             |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (failed) (${(e1 + e2).toMillis.toString} ms total)
             |   failure = ${t.getMessage}
           """.stripMargin)
 
-        case ExecFailure(s, a, e1, t) =>
+        case ExecFailure(s, a, l, e1, t) =>
           jdkLogger.severe(s"""Failed Statement Execution:
             |
             |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
             |
             | arguments = [${a.mkString(", ")}]
+            | label     = $l
             |   elapsed = ${e1.toMillis.toString} ms exec (failed)
             |   failure = ${t.getMessage}
           """.stripMargin)
