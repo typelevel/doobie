@@ -203,7 +203,7 @@ object update {
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql0: String, pos0: Option[Pos] = None)(
-      implicit W: Write[A], label0: String = "unlabeled"
+      implicit W: Write[A], label0: String = unlabeled
     ): Update[A] =
       new Update[A] {
         val write = W

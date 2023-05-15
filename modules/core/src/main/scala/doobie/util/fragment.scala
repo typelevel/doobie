@@ -95,7 +95,7 @@ object fragment {
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def query[B: Read]: Query0[B] =
-      queryWithLabel("unlabeled")
+      queryWithLabel(unlabeled)
 
     /**
      * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
@@ -107,7 +107,7 @@ object fragment {
     /** Construct an [[Update0]] from this fragment. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def update: Update0 =
-      updateWithLabel("unlabeled")
+      updateWithLabel(unlabeled)
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLabel(label: String): Update0 =
