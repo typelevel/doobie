@@ -55,6 +55,7 @@ object largeobject { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
       def fromFuture[A](fut: LargeObjectIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // LargeObject
@@ -119,6 +120,9 @@ object largeobject { module =>
     }
     case class FromFuture[A](fut: LargeObjectIO[Future[A]]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -205,6 +209,7 @@ object largeobject { module =>
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: LargeObjectIO[Future[A]]) = FF.liftF[LargeObjectOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]) = FF.liftF[LargeObjectOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[LargeObjectOp, Unit](PerformLogging(event))
 
   // Smart constructors for LargeObject-specific operations.
@@ -247,6 +252,7 @@ object largeobject { module =>
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: LargeObjectIO[Future[A]]): LargeObjectIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): LargeObjectIO[A] = module.fromFutureCancelable(fut)
     }
 }
 

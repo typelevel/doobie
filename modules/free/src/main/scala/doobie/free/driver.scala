@@ -58,6 +58,7 @@ object driver { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): F[A]
       def fromFuture[A](fut: DriverIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: DriverIO[(Future[A], DriverIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // Driver
@@ -111,6 +112,9 @@ object driver { module =>
     case class FromFuture[A](fut: DriverIO[Future[A]]) extends DriverOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class FromFutureCancelable[A](fut: DriverIO[(Future[A], DriverIO[Unit])]) extends DriverOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    }
     case class PerformLogging(event: LogEvent) extends DriverOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
@@ -160,6 +164,7 @@ object driver { module =>
   val canceled = FF.liftF[DriverOp, Unit](Canceled)
   def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = FF.liftF[DriverOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: DriverIO[Future[A]]) = FF.liftF[DriverOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: DriverIO[(Future[A], DriverIO[Unit])]) = FF.liftF[DriverOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[DriverOp, Unit](PerformLogging(event))
 
   // Smart constructors for Driver-specific operations.
@@ -190,6 +195,7 @@ object driver { module =>
       override def canceled: DriverIO[Unit] = module.canceled
       override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): DriverIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: DriverIO[Future[A]]): DriverIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: DriverIO[(Future[A], DriverIO[Unit])]): DriverIO[A] = module.fromFutureCancelable(fut)
     }
 }
 

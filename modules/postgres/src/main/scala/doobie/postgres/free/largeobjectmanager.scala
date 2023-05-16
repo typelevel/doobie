@@ -54,6 +54,7 @@ object largeobjectmanager { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): F[A]
       def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // LargeObjectManager
@@ -109,6 +110,9 @@ object largeobjectmanager { module =>
     }
     case class FromFuture[A](fut: LargeObjectManagerIO[Future[A]]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]) extends LargeObjectManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -168,6 +172,7 @@ object largeobjectmanager { module =>
   val canceled = FF.liftF[LargeObjectManagerOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]) = FF.liftF[LargeObjectManagerOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]) = FF.liftF[LargeObjectManagerOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]) = FF.liftF[LargeObjectManagerOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[LargeObjectManagerOp, Unit](PerformLogging(event))
 
   // Smart constructors for LargeObjectManager-specific operations.
@@ -201,6 +206,7 @@ object largeobjectmanager { module =>
       override def canceled: LargeObjectManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]): LargeObjectManagerIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]): LargeObjectManagerIO[A] = module.fromFutureCancelable(fut)
     }
 }
 

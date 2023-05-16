@@ -71,6 +71,7 @@ object sqloutput { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): F[A]
       def fromFuture[A](fut: SQLOutputIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // SQLOutput
@@ -144,6 +145,9 @@ object sqloutput { module =>
     }
     case class FromFuture[A](fut: SQLOutputIO[Future[A]]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -257,6 +261,7 @@ object sqloutput { module =>
   val canceled = FF.liftF[SQLOutputOp, Unit](Canceled)
   def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]) = FF.liftF[SQLOutputOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: SQLOutputIO[Future[A]]) = FF.liftF[SQLOutputOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]) = FF.liftF[SQLOutputOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[SQLOutputOp, Unit](PerformLogging(event))
 
   // Smart constructors for SQLOutput-specific operations.
@@ -308,6 +313,7 @@ object sqloutput { module =>
       override def canceled: SQLOutputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): SQLOutputIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: SQLOutputIO[Future[A]]): SQLOutputIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]): SQLOutputIO[A] = module.fromFutureCancelable(fut)
     }
 }
 

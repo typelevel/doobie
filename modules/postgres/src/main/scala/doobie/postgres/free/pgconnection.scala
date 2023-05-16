@@ -63,6 +63,7 @@ object pgconnection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): F[A]
       def fromFuture[A](fut: PGConnectionIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // PGConnection
@@ -130,6 +131,9 @@ object pgconnection { module =>
     }
     case class FromFuture[A](fut: PGConnectionIO[Future[A]]) extends PGConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]) extends PGConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -225,6 +229,7 @@ object pgconnection { module =>
   val canceled = FF.liftF[PGConnectionOp, Unit](Canceled)
   def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]) = FF.liftF[PGConnectionOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: PGConnectionIO[Future[A]]) = FF.liftF[PGConnectionOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]) = FF.liftF[PGConnectionOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[PGConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for PGConnection-specific operations.
@@ -270,6 +275,7 @@ object pgconnection { module =>
       override def canceled: PGConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): PGConnectionIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: PGConnectionIO[Future[A]]): PGConnectionIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]): PGConnectionIO[A] = module.fromFutureCancelable(fut)
     }
 }
 
