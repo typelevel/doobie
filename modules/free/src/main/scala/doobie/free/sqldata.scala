@@ -174,7 +174,6 @@ object sqldata { module =>
       override def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): SQLDataIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: SQLDataIO[Future[A]]): SQLDataIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: SQLDataIO[(Future[A], SQLDataIO[Unit])]): SQLDataIO[A] = module.fromFutureCancelable(fut)
-
     }
 }
 

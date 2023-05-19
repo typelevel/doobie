@@ -91,7 +91,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     asyncM.fromFuture(fut.foldMap(interpreter).run(j))
   )
   def fromFutureCancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, (Future[A], Free[G, Unit])]): Kleisli[M, J, A] = Kleisli(j =>
-    asyncM.fromFutureCancelable(fut.map{case (f, g) => (f, g.foldMap(interpreter).run(j))}.foldMap(interpreter).run(j))
+    asyncM.fromFutureCancelable(fut.map { case (f, g) => (f, g.foldMap(interpreter).run(j)) }.foldMap(interpreter).run(j))
   )
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
     e match {

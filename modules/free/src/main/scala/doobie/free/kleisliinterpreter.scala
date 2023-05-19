@@ -126,7 +126,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     asyncM.fromFuture(fut.foldMap(interpreter).run(j))
   )
   def fromFutureCancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, (Future[A], Free[G, Unit])]): Kleisli[M, J, A] = Kleisli(j =>
-    asyncM.fromFutureCancelable(fut.map{case (f, g) => (f, g.foldMap(interpreter).run(j))}.foldMap(interpreter).run(j))
+    asyncM.fromFutureCancelable(fut.map { case (f, g) => (f, g.foldMap(interpreter).run(j)) }.foldMap(interpreter).run(j))
   )
   def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
     e match {
@@ -286,7 +286,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def poll[A](poll: Any, fa: DatabaseMetaDataIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]) = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: DatabaseMetaDataIO[Future[A]]) = outer.fromFuture(this)(fut)
-    override def fromFutureCancelable[A](fut: DatabaseMetaDataIO[(Future[A], DatabaseMetaDataIO[Unit])]): Kleisli[M, DatabaseMetaData, A] = outer.fromFutureCancelable(this)(fut)
+    override def fromFutureCancelable[A](fut: DatabaseMetaDataIO[(Future[A], DatabaseMetaDataIO[Unit])]) = outer.fromFutureCancelable(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def allProceduresAreCallable = primitive(_.allProceduresAreCallable)
@@ -491,7 +491,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def poll[A](poll: Any, fa: DriverIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]) = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: DriverIO[Future[A]]) = outer.fromFuture(this)(fut)
-    override def fromFutureCancelable[A](fut: DriverIO[(Future[A], DriverIO[Unit])]): Kleisli[M, Driver, A] = outer.fromFutureCancelable(this)(fut)
+    override def fromFutureCancelable[A](fut: DriverIO[(Future[A], DriverIO[Unit])]) = outer.fromFutureCancelable(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def acceptsURL(a: String) = primitive(_.acceptsURL(a))
@@ -641,7 +641,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def poll[A](poll: Any, fa: SQLOutputIO[A]) = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]) = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: SQLOutputIO[Future[A]]) = outer.fromFuture(this)(fut)
-    override def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]): Kleisli[M, SQLOutput, A] = outer.fromFutureCancelable(this)(fut)
+    override def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]) = outer.fromFutureCancelable(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
     override def writeArray(a: SqlArray) = primitive(_.writeArray(a))
