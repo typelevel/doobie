@@ -13,8 +13,7 @@ import scala.concurrent.duration.FiniteDuration
 
 trait WeakAsync[F[_]] extends Sync[F] {
   def fromFuture[A](fut: F[Future[A]]): F[A]
-  def fromFutureCancelable[A](fut: F[(Future[A], F[Unit])]): F[A] =
-    fromFuture(map(fut)(_._1)) // default impl for backwards compat; implementors should override
+  def fromFutureCancelable[A](fut: F[(Future[A], F[Unit])]): F[A]
 }
 
 object WeakAsync {
