@@ -55,6 +55,7 @@ object blob { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]): F[A]
       def fromFuture[A](fut: BlobIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: BlobIO[(Future[A], BlobIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // Blob
@@ -111,6 +112,9 @@ object blob { module =>
     }
     case class FromFuture[A](fut: BlobIO[Future[A]]) extends BlobOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: BlobIO[(Future[A], BlobIO[Unit])]) extends BlobOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends BlobOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -173,6 +177,7 @@ object blob { module =>
   val canceled = FF.liftF[BlobOp, Unit](Canceled)
   def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]) = FF.liftF[BlobOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: BlobIO[Future[A]]) = FF.liftF[BlobOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: BlobIO[(Future[A], BlobIO[Unit])]) = FF.liftF[BlobOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[BlobOp, Unit](PerformLogging(event))
 
   // Smart constructors for Blob-specific operations.
@@ -207,6 +212,7 @@ object blob { module =>
       override def canceled: BlobIO[Unit] = module.canceled
       override def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]): BlobIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: BlobIO[Future[A]]): BlobIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: BlobIO[(Future[A], BlobIO[Unit])]): BlobIO[A] = module.fromFutureCancelable(fut)
     }
 }
 

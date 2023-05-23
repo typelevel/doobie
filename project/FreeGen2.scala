@@ -258,6 +258,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def canceled: F[Unit]
     |      def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]): F[A]
     |      def fromFuture[A](fut: ${ioname}[Future[A]]): F[A]
+    |      def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]): F[A]
     |      def performLogging(event: LogEvent): F[Unit]
     |
     |      // $sname
@@ -305,6 +306,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    case class FromFuture[A](fut: ${ioname}[Future[A]]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     |    }
+    |    case class FromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) extends ${opname}[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    |    }
     |    case class PerformLogging(event: LogEvent) extends ${opname}[Unit] {
     |      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     |    }
@@ -334,6 +338,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  val canceled = FF.liftF[${opname}, Unit](Canceled)
     |  def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]) = FF.liftF[${opname}, A](OnCancel(fa, fin))
     |  def fromFuture[A](fut: ${ioname}[Future[A]]) = FF.liftF[${opname}, A](FromFuture(fut))
+    |  def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) = FF.liftF[${opname}, A](FromFutureCancelable(fut))
     |  def performLogging(event: LogEvent) = FF.liftF[${opname}, Unit](PerformLogging(event))
     |
     |  // Smart constructors for $oname-specific operations.
@@ -358,6 +363,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      override def canceled: ${ioname}[Unit] = module.canceled
     |      override def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]): ${ioname}[A] = module.onCancel(fa, fin)
     |      override def fromFuture[A](fut: ${ioname}[Future[A]]): ${ioname}[A] = module.fromFuture(fut)
+    |      override def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]): ${ioname}[A] = module.fromFutureCancelable(fut)
     |    }
     |}
     |""".trim.stripMargin
@@ -424,6 +430,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    override def poll[A](poll: Any, fa: ${ioname}[A]) = outer.poll(this)(poll, fa)
        |    override def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]) = outer.onCancel(this)(fa, fin)
        |    override def fromFuture[A](fut: ${ioname}[Future[A]]) = outer.fromFuture(this)(fut)
+       |    override def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) = outer.fromFutureCancelable(this)(fut)
        |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
@@ -511,6 +518,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  )
       |  def fromFuture[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, Future[A]]): Kleisli[M, J, A] = Kleisli(j =>
       |    asyncM.fromFuture(fut.foldMap(interpreter).run(j))
+      |  )
+      |  def fromFutureCancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, (Future[A], Free[G, Unit])]): Kleisli[M, J, A] = Kleisli(j =>
+      |    asyncM.fromFutureCancelable(fut.map { case (f, g) => (f, g.foldMap(interpreter).run(j)) }.foldMap(interpreter).run(j))
       |  )
       |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
       |    e match {

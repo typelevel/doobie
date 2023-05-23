@@ -3,7 +3,7 @@ import sbt.dsl.LinterLevel.Ignore
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.9.0"
-lazy val catsEffectVersion    = "3.4.10"
+lazy val catsEffectVersion    = "3.5.0"
 lazy val circeVersion         = "0.14.5"
 lazy val fs2Version           = "3.6.1"
 lazy val h2Version            = "1.4.200"
@@ -99,6 +99,7 @@ lazy val commonSettings =
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.4"  % Test,
       "org.typelevel"     %% "munit-cats-effect-3"     % "1.0.7" % Test,
+      "org.typelevel"     %% "cats-effect-testkit"     % catsEffectVersion % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 

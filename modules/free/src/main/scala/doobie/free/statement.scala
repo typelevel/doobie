@@ -58,6 +58,7 @@ object statement { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): F[A]
       def fromFuture[A](fut: StatementIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: StatementIO[(Future[A], StatementIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // Statement
@@ -155,6 +156,9 @@ object statement { module =>
     }
     case class FromFuture[A](fut: StatementIO[Future[A]]) extends StatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: StatementIO[(Future[A], StatementIO[Unit])]) extends StatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -340,6 +344,7 @@ object statement { module =>
   val canceled = FF.liftF[StatementOp, Unit](Canceled)
   def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]) = FF.liftF[StatementOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: StatementIO[Future[A]]) = FF.liftF[StatementOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: StatementIO[(Future[A], StatementIO[Unit])]) = FF.liftF[StatementOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[StatementOp, Unit](PerformLogging(event))
 
   // Smart constructors for Statement-specific operations.
@@ -415,6 +420,7 @@ object statement { module =>
       override def canceled: StatementIO[Unit] = module.canceled
       override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): StatementIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: StatementIO[Future[A]]): StatementIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: StatementIO[(Future[A], StatementIO[Unit])]): StatementIO[A] = module.fromFutureCancelable(fut)
     }
 }
 

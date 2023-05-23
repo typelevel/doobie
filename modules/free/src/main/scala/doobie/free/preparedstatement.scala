@@ -76,6 +76,7 @@ object preparedstatement { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
       def fromFuture[A](fut: PreparedStatementIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: PreparedStatementIO[(Future[A], PreparedStatementIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // PreparedStatement
@@ -230,6 +231,9 @@ object preparedstatement { module =>
     }
     case class FromFuture[A](fut: PreparedStatementIO[Future[A]]) extends PreparedStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: PreparedStatementIO[(Future[A], PreparedStatementIO[Unit])]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -586,6 +590,7 @@ object preparedstatement { module =>
   val canceled = FF.liftF[PreparedStatementOp, Unit](Canceled)
   def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: PreparedStatementIO[Future[A]]) = FF.liftF[PreparedStatementOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: PreparedStatementIO[(Future[A], PreparedStatementIO[Unit])]) = FF.liftF[PreparedStatementOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[PreparedStatementOp, Unit](PerformLogging(event))
 
   // Smart constructors for PreparedStatement-specific operations.
@@ -718,6 +723,7 @@ object preparedstatement { module =>
       override def canceled: PreparedStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): PreparedStatementIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: PreparedStatementIO[Future[A]]): PreparedStatementIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: PreparedStatementIO[(Future[A], PreparedStatementIO[Unit])]): PreparedStatementIO[A] = module.fromFutureCancelable(fut)
     }
 }
 
