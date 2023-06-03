@@ -36,71 +36,7 @@ object log {
   /** @group Events */ final case class ExecFailure      (sql: String, args: List[Any], label: String, exec: FD,                 failure: Throwable) extends LogEvent
 
   /**
-   * A sink for `LogEvent`s.
-   * @group Handlers
-   */
-  final case class LogHandler(unsafeRun: LogEvent => Unit)
-
-    /**
-   * Module of instances and constructors for `LogHandler`.
-   * @group Handlers
-   */
-  object LogHandler {
-
-    /**
-     * A do-nothing `LogHandler`.
-     * @group Constructors
-     */
-    val nop: LogHandler =
-      LogHandler(_ => ())
-
-    /**
-     * A LogHandler that writes a default format to a JDK Logger. This is provided for demonstration
-     * purposes and is not intended for production use.
-     * @group Constructors
-     */
-    val jdkLogHandler: LogHandler = {
-      val jdkLogger = Logger.getLogger(getClass.getName)
-      LogHandler {
-
-        case Success(s, a, l, e1, e2) =>
-          jdkLogger.info(s"""Successful Statement Execution:
-            |
-            |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
-            |
-            | arguments = [${a.mkString(", ")}]
-            | label     = $l
-            |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (${(e1 + e2).toMillis.toString} ms total)
-          """.stripMargin)
-
-        case ProcessingFailure(s, a, l, e1, e2, t) =>
-          jdkLogger.severe(s"""Failed Resultset Processing:
-            |
-            |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
-            |
-            | arguments = [${a.mkString(", ")}]
-            | label     = $l
-            |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (failed) (${(e1 + e2).toMillis.toString} ms total)
-            |   failure = ${t.getMessage}
-          """.stripMargin)
-
-        case ExecFailure(s, a, l, e1, t) =>
-          jdkLogger.severe(s"""Failed Statement Execution:
-            |
-            |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
-            |
-            | arguments = [${a.mkString(", ")}]
-            | label     = $l
-            |   elapsed = ${e1.toMillis.toString} ms exec (failed)
-            |   failure = ${t.getMessage}
-          """.stripMargin)
-
-      }
-    }
-  }
-
-  /**
-   * A sink for `LogEvent`s.
+   * Provides additional processing for Doobie `LogEvent`s.
    * @group Handlers
    */
   trait LogHandlerM[M[_]]{
@@ -112,18 +48,52 @@ object log {
    * @group Handlers
    */
   object LogHandlerM {
+    private val jdkLogger = Logger.getLogger(getClass.getName)
+    
     def noop[M[_]: Applicative]: LogHandlerM[M] =
       _ => Applicative[M].unit
-
-    def apply[M[_]: Sync](f: LogEvent => Unit): LogHandlerM[M] =
-      (logEvent: LogEvent) => Sync[M].delay(f(logEvent))
 
     /**
      * A LogHandler that writes a default format to a JDK Logger. This is provided for demonstration
      * purposes and is not intended for production use.
      * @group Constructors
      */
-    def jdkLogHandler[M[_]: Sync]: LogHandlerM[M] =
-      LogHandlerM[M](event => LogHandler.jdkLogHandler.unsafeRun(event))
+    def jdkLogHandler[M[_]: Sync]: LogHandlerM[M] = new LogHandlerM[M] {
+      override def run(logEvent: LogEvent): M[Unit] = Sync[M].delay(
+        logEvent match {
+          case Success(s, a, l, e1, e2) =>
+            jdkLogger.info(s"""Successful Statement Execution:
+              |
+              |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+              |
+              | arguments = [${a.mkString(", ")}]
+              | label     = $l
+              |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (${(e1 + e2).toMillis.toString} ms total)
+              """.stripMargin)
+
+            case ProcessingFailure(s, a, l, e1, e2, t) =>
+              jdkLogger.severe(s"""Failed Resultset Processing:
+                |
+                |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+                |
+                | arguments = [${a.mkString(", ")}]
+                | label     = $l
+                |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (failed) (${(e1 + e2).toMillis.toString} ms total)
+                |   failure = ${t.getMessage}
+                """.stripMargin)
+
+              case ExecFailure(s, a, l, e1, t) =>
+                jdkLogger.severe(s"""Failed Statement Execution:
+                  |
+                  |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+                  |
+                  | arguments = [${a.mkString(", ")}]
+                  | label     = $l
+                  |   elapsed = ${e1.toMillis.toString} ms exec (failed)
+                  |   failure = ${t.getMessage}
+                  """.stripMargin)
+        }
+      )
+    }
   }
 }
