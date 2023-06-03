@@ -239,7 +239,10 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A, B](sql0: String, pos0: Option[Pos] = None, label0: String = unlabeled)(implicit A: Write[A], B: Read[B]): Query[A, B] =
+    def apply[A, B](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(implicit A: Write[A], B: Read[B]): Query[A, B] = {
+      val sql0 = sql
+      val label0 = label
+      val pos0 = pos
       new Query[A, B] {
         val write = A
         val read = B
@@ -247,6 +250,7 @@ object query {
         val pos = pos0
         val label = label0
       }
+    }
 
     /** @group Typeclass Instances */
     implicit val queryProfunctor: Profunctor[Query] =

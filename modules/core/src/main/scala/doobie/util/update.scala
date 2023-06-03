@@ -202,15 +202,19 @@ object update {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A](sql0: String, pos0: Option[Pos] = None)(
-      implicit W: Write[A], label0: String = unlabeled
-    ): Update[A] =
+    def apply[A](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(
+      implicit W: Write[A]
+    ): Update[A] = {
+      val sql0 = sql
+      val label0 = label
+      val pos0 = pos
       new Update[A] {
         val write = W
         val sql = sql0
         val label = label0
         val pos = pos0
       }
+    }
 
     /**
      * Update is a contravariant functor.
