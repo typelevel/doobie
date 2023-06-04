@@ -19,6 +19,8 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
+import java.lang.Class
+import java.lang.String
 import org.postgresql.PGConnection
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.copy.{ CopyManager => PGCopyManager }

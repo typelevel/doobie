@@ -1,5 +1,7 @@
-import FreeGen2._
+import FreeGen2.*
 import sbt.dsl.LinterLevel.Ignore
+import scala.annotation.nowarn
+import scala.sys.process.*
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.9.0"
@@ -43,7 +45,11 @@ ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   ),
 )
 ThisBuild / githubWorkflowBuildPostamble ++= Seq(
-  WorkflowStep.Sbt(
+    WorkflowStep.Sbt(
+      commands = List("checkGitNoUncommittedChanges"),
+      name = Some(s"Check there are no uncommitted changes in git (to catch generated files that weren't committed)"),
+    ),
+    WorkflowStep.Sbt(
     commands = List("docs/makeSite"),
     name = Some(s"Check Doc Site ($scala213Version only)"),
     cond = Some(s"matrix.scala == '$scala213Version'"),
@@ -112,6 +118,14 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .enablePlugins(NoPublishPlugin)
   .settings(doobieSettings)
+  .settings(
+    checkGitNoUncommittedChanges := {
+      val gitDiffOutput = "git diff".!!
+      if (gitDiffOutput.nonEmpty) {
+        throw new Error(s"There are uncommitted changes in git. Perhaps some generated file from FreeGen2 were not committed?\n$gitDiffOutput")
+      }
+    }
+  )
   .aggregate(
     bench,
     core,
@@ -168,7 +182,17 @@ lazy val free = project
         classOf[java.sql.CallableStatement],
         classOf[java.sql.ResultSet]
       )
-    }
+    },
+    freeGen2KleisliInterpreterImportExcludes := Set(
+      classOf[java.io.OutputStream],
+      classOf[java.io.Writer],
+      classOf[java.sql.DriverPropertyInfo],
+      classOf[java.sql.ParameterMetaData],
+      classOf[java.sql.ResultSetMetaData],
+      classOf[java.sql.RowIdLifetime],
+      classOf[java.sql.SQLWarning],
+      classOf[java.util.logging.Logger]
+    )
   )
 
 
@@ -261,8 +285,16 @@ lazy val postgres = project
       classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
       classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
       classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
+    ): @nowarn("msg=.*deprecated.*"),
+    freeGen2KleisliInterpreterImportExcludes := Set(
+      classOf[java.sql.Array],
+      classOf[java.util.Map[_, _]],
+      classOf[org.postgresql.PGNotification],
+      classOf[org.postgresql.copy.CopyDual],
+      classOf[org.postgresql.jdbc.PreferQueryMode],
+      classOf[org.postgresql.replication.PGReplicationConnection],
     ),
-    initialCommands := """
+      initialCommands := """
       import cats._, cats.data._, cats.implicits._, cats.effect._
       import doobie._, doobie.implicits._
       import doobie.postgres._, doobie.postgres.implicits._
@@ -463,3 +495,5 @@ lazy val refined = project
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )
+
+lazy val checkGitNoUncommittedChanges = taskKey[Unit]("Check git working tree is clean (no uncommitted changes) due to generated code not being committed")

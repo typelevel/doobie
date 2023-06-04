@@ -85,6 +85,9 @@ jobs:
         if: matrix.java == 'temurin@11' && matrix.os == 'ubuntu-latest'
         run: sbt '++ ${{ matrix.scala }}' doc
 
+      - name: Check there are no uncommitted changes in git (to catch generated files that weren't committed)
+        run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
+
       - name: Check Doc Site (2.13.10 only)
         if: matrix.scala == '2.13.10'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite

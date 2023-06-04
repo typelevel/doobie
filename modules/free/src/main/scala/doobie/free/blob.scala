@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -16,6 +16,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
 
+// This file is Auto-generated using FreeGen2.scala
 object blob { module =>
 
   // Algebra of operations for Blob. Each accepts a visitor as an alternative to pattern-matching.
@@ -214,5 +215,16 @@ object blob { module =>
       override def fromFuture[A](fut: BlobIO[Future[A]]): BlobIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: BlobIO[(Future[A], BlobIO[Unit])]): BlobIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidBlobIO[A : Monoid]: Monoid[BlobIO[A]] = new Monoid[BlobIO[A]] {
+    override def empty: BlobIO[A] = Applicative[BlobIO].pure(Monoid[A].empty)
+    override def combine(x: BlobIO[A], y: BlobIO[A]): BlobIO[A] =
+      Applicative[BlobIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupBlobIO[A : Semigroup]: Semigroup[BlobIO[A]] = new Semigroup[BlobIO[A]] {
+    override def combine(x: BlobIO[A], y: BlobIO[A]): BlobIO[A] =
+      Applicative[BlobIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

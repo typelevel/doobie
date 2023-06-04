@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -14,6 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
+// This file is Auto-generated using FreeGen2.scala
 object copyout { module =>
 
   // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternative to pattern-matching.
@@ -197,5 +198,16 @@ object copyout { module =>
       override def fromFuture[A](fut: CopyOutIO[Future[A]]): CopyOutIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: CopyOutIO[(Future[A], CopyOutIO[Unit])]): CopyOutIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCopyOutIO[A : Monoid]: Monoid[CopyOutIO[A]] = new Monoid[CopyOutIO[A]] {
+    override def empty: CopyOutIO[A] = Applicative[CopyOutIO].pure(Monoid[A].empty)
+    override def combine(x: CopyOutIO[A], y: CopyOutIO[A]): CopyOutIO[A] =
+      Applicative[CopyOutIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCopyOutIO[A : Semigroup]: Semigroup[CopyOutIO[A]] = new Semigroup[CopyOutIO[A]] {
+    override def combine(x: CopyOutIO[A], y: CopyOutIO[A]): CopyOutIO[A] =
+      Applicative[CopyOutIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

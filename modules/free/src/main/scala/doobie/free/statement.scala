@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -19,6 +19,7 @@ import java.sql.ResultSet
 import java.sql.SQLWarning
 import java.sql.Statement
 
+// This file is Auto-generated using FreeGen2.scala
 object statement { module =>
 
   // Algebra of operations for Statement. Each accepts a visitor as an alternative to pattern-matching.
@@ -68,6 +69,9 @@ object statement { module =>
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def closeOnCompletion: F[Unit]
+      def enquoteIdentifier(a: String, b: Boolean): F[String]
+      def enquoteLiteral(a: String): F[String]
+      def enquoteNCharLiteral(a: String): F[String]
       def execute(a: String): F[Boolean]
       def execute(a: String, b: Array[Int]): F[Boolean]
       def execute(a: String, b: Array[String]): F[Boolean]
@@ -103,6 +107,7 @@ object statement { module =>
       def isCloseOnCompletion: F[Boolean]
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
+      def isSimpleIdentifier(a: String): F[Boolean]
       def isWrapperFor(a: Class[_]): F[Boolean]
       def setCursorName(a: String): F[Unit]
       def setEscapeProcessing(a: Boolean): F[Unit]
@@ -182,6 +187,15 @@ object statement { module =>
     }
     case object CloseOnCompletion extends StatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
+    }
+    final case class EnquoteIdentifier(a: String, b: Boolean) extends StatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteIdentifier(a, b)
+    }
+    final case class EnquoteLiteral(a: String) extends StatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteLiteral(a)
+    }
+    final case class EnquoteNCharLiteral(a: String) extends StatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteNCharLiteral(a)
     }
     final case class Execute(a: String) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute(a)
@@ -288,6 +302,9 @@ object statement { module =>
     case object IsPoolable extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
     }
+    final case class IsSimpleIdentifier(a: String) extends StatementOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
+    }
     final case class IsWrapperFor(a: Class[_]) extends StatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
@@ -354,6 +371,9 @@ object statement { module =>
   val clearWarnings: StatementIO[Unit] = FF.liftF(ClearWarnings)
   val close: StatementIO[Unit] = FF.liftF(Close)
   val closeOnCompletion: StatementIO[Unit] = FF.liftF(CloseOnCompletion)
+  def enquoteIdentifier(a: String, b: Boolean): StatementIO[String] = FF.liftF(EnquoteIdentifier(a, b))
+  def enquoteLiteral(a: String): StatementIO[String] = FF.liftF(EnquoteLiteral(a))
+  def enquoteNCharLiteral(a: String): StatementIO[String] = FF.liftF(EnquoteNCharLiteral(a))
   def execute(a: String): StatementIO[Boolean] = FF.liftF(Execute(a))
   def execute(a: String, b: Array[Int]): StatementIO[Boolean] = FF.liftF(Execute1(a, b))
   def execute(a: String, b: Array[String]): StatementIO[Boolean] = FF.liftF(Execute2(a, b))
@@ -389,6 +409,7 @@ object statement { module =>
   val isCloseOnCompletion: StatementIO[Boolean] = FF.liftF(IsCloseOnCompletion)
   val isClosed: StatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: StatementIO[Boolean] = FF.liftF(IsPoolable)
+  def isSimpleIdentifier(a: String): StatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
   def isWrapperFor(a: Class[_]): StatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def setCursorName(a: String): StatementIO[Unit] = FF.liftF(SetCursorName(a))
   def setEscapeProcessing(a: Boolean): StatementIO[Unit] = FF.liftF(SetEscapeProcessing(a))
@@ -422,5 +443,16 @@ object statement { module =>
       override def fromFuture[A](fut: StatementIO[Future[A]]): StatementIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: StatementIO[(Future[A], StatementIO[Unit])]): StatementIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidStatementIO[A : Monoid]: Monoid[StatementIO[A]] = new Monoid[StatementIO[A]] {
+    override def empty: StatementIO[A] = Applicative[StatementIO].pure(Monoid[A].empty)
+    override def combine(x: StatementIO[A], y: StatementIO[A]): StatementIO[A] =
+      Applicative[StatementIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupStatementIO[A : Semigroup]: Semigroup[StatementIO[A]] = new Semigroup[StatementIO[A]] {
+    override def combine(x: StatementIO[A], y: StatementIO[A]): StatementIO[A] =
+      Applicative[StatementIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 
