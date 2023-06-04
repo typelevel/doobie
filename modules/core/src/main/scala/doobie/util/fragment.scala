@@ -111,7 +111,7 @@ object fragment {
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLabel(label: String): Update0 =
-      Update[elems.type](sql, pos)(implicitly[Write[elems.type]], label).toUpdate0(elems)
+      Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
 
     override def toString =
       s"""Fragment("$sql")"""
