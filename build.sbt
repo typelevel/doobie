@@ -31,7 +31,7 @@ ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   WorkflowStep.Run(
     commands = List("docker-compose up -d"),
