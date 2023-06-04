@@ -95,11 +95,7 @@ select name, code from country where name like ?
 
 See the Scaladoc for details on this data type.
 
-### Advanced `LogEvent` handling
-
-#### Query labels
-
-When executing queries you can provide a String `label` value for the query you're making:
+Note that you can attach a String `label` when constructing a Query/Update object by calling `.queryWithLabel/.updateWithLabel` instead of `.query/.update`:
 
 ```
 sql"select name, code from country where name like $pattern"
@@ -109,10 +105,11 @@ sql"select name, code from country where name like $pattern"
     .unsafeRunSync()
 ```
 
-#### Using your effect system
+You can find the `label` in the LogEvent.
 
-Since this effect runs in your chosen output monad, you have the ability to interact with the corresponding runtime system.
-As an example of this capability, below we will use `IOLocal` to pass tracing information to the LogHandler
+### Passing additional context to your LogHandlerM
+
+You can use cats-effect's `IOLocal` to pass additional context to the LogHandlerM (e.g. tracing context), as the following example shows:
 
 ```scala mdoc
 import cats.effect.{IOLocal, Ref}
@@ -120,26 +117,21 @@ import doobie.util.log.Success
 
 def users = List.range(0, 4).map(n => s"user-$n")
 
-def transactorWithLogging(logHandlerM: LogHandlerM[IO]): Transactor[IO] =
-  Transactor.fromDriverManager[IO]
-    .withLogHandler(logHandlerM)( // thread through the logHandler here
-      "org.h2.Driver",
-      "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-      "sa", ""
-    )
-
 def program: IO[List[String]] =
   for {
     // define an IOLocal where we store the user which caused the query to be run  
     currentUser <- IOLocal("")
     // store all successful sql here, for all users
     successLogsRef <- Ref[IO].of(List.empty[String])
-    xa = transactorWithLogging {
-      case logEvent: Success =>
-        // retrieve current user, compute a log message, and store it
-        currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '${logEvent.sql}'" :: logs))
-      case _ => IO.unit
-    }
+    xa = Transactor.fromDriverManager[IO]
+      .withLogHandler(new LogHandlerM[IO] {
+        def run(logEvent: LogEvent): IO[Unit] =
+          currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '${logEvent.sql}'" :: logs))
+      })( // thread through the logHandler here
+        "org.h2.Driver",
+        "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+        "sa", ""
+      )
     // run a bunch of queries
     _ <- users.parTraverse(user =>
       for {
@@ -147,7 +139,7 @@ def program: IO[List[String]] =
         _ <- sql"select 1".query[Int].unique.transact(xa)
       } yield ()
     )
-    // return computed log messages
+    // return collected log messages
     logs <- successLogsRef.get
   } yield logs
 
