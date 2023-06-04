@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -19,6 +19,7 @@ import java.sql.DatabaseMetaData
 import java.sql.ResultSet
 import java.sql.RowIdLifetime
 
+// This file is Auto-generated using FreeGen2.scala
 object databasemetadata { module =>
 
   // Algebra of operations for DatabaseMetaData. Each accepts a visitor as an alternative to pattern-matching.
@@ -224,6 +225,7 @@ object databasemetadata { module =>
       def supportsSchemasInProcedureCalls: F[Boolean]
       def supportsSchemasInTableDefinitions: F[Boolean]
       def supportsSelectForUpdate: F[Boolean]
+      def supportsSharding: F[Boolean]
       def supportsStatementPooling: F[Boolean]
       def supportsStoredFunctionsUsingCallSyntax: F[Boolean]
       def supportsStoredProcedures: F[Boolean]
@@ -777,6 +779,9 @@ object databasemetadata { module =>
     case object SupportsSelectForUpdate extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsSelectForUpdate
     }
+    case object SupportsSharding extends DatabaseMetaDataOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.supportsSharding
+    }
     case object SupportsStatementPooling extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.supportsStatementPooling
     }
@@ -1014,6 +1019,7 @@ object databasemetadata { module =>
   val supportsSchemasInProcedureCalls: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSchemasInProcedureCalls)
   val supportsSchemasInTableDefinitions: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSchemasInTableDefinitions)
   val supportsSelectForUpdate: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSelectForUpdate)
+  val supportsSharding: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsSharding)
   val supportsStatementPooling: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsStatementPooling)
   val supportsStoredFunctionsUsingCallSyntax: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsStoredFunctionsUsingCallSyntax)
   val supportsStoredProcedures: DatabaseMetaDataIO[Boolean] = FF.liftF(SupportsStoredProcedures)
@@ -1052,5 +1058,16 @@ object databasemetadata { module =>
       override def fromFuture[A](fut: DatabaseMetaDataIO[Future[A]]): DatabaseMetaDataIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: DatabaseMetaDataIO[(Future[A], DatabaseMetaDataIO[Unit])]): DatabaseMetaDataIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidDatabaseMetaDataIO[A : Monoid]: Monoid[DatabaseMetaDataIO[A]] = new Monoid[DatabaseMetaDataIO[A]] {
+    override def empty: DatabaseMetaDataIO[A] = Applicative[DatabaseMetaDataIO].pure(Monoid[A].empty)
+    override def combine(x: DatabaseMetaDataIO[A], y: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] =
+      Applicative[DatabaseMetaDataIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupDatabaseMetaDataIO[A : Semigroup]: Semigroup[DatabaseMetaDataIO[A]] = new Semigroup[DatabaseMetaDataIO[A]] {
+    override def combine(x: DatabaseMetaDataIO[A], y: DatabaseMetaDataIO[A]): DatabaseMetaDataIO[A] =
+      Applicative[DatabaseMetaDataIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -19,6 +19,7 @@ import java.io.Writer
 import java.lang.String
 import java.sql.Clob
 
+// This file is Auto-generated using FreeGen2.scala
 object clob { module =>
 
   // Algebra of operations for Clob. Each accepts a visitor as an alternative to pattern-matching.
@@ -227,5 +228,16 @@ object clob { module =>
       override def fromFuture[A](fut: ClobIO[Future[A]]): ClobIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: ClobIO[(Future[A], ClobIO[Unit])]): ClobIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidClobIO[A : Monoid]: Monoid[ClobIO[A]] = new Monoid[ClobIO[A]] {
+    override def empty: ClobIO[A] = Applicative[ClobIO].pure(Monoid[A].empty)
+    override def combine(x: ClobIO[A], y: ClobIO[A]): ClobIO[A] =
+      Applicative[ClobIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupClobIO[A : Semigroup]: Semigroup[ClobIO[A]] = new Semigroup[ClobIO[A]] {
+    override def combine(x: ClobIO[A], y: ClobIO[A]): ClobIO[A] =
+      Applicative[ClobIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

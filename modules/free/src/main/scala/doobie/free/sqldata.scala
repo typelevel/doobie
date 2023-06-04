@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -17,6 +17,7 @@ import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
+// This file is Auto-generated using FreeGen2.scala
 object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternative to pattern-matching.
@@ -175,5 +176,16 @@ object sqldata { module =>
       override def fromFuture[A](fut: SQLDataIO[Future[A]]): SQLDataIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: SQLDataIO[(Future[A], SQLDataIO[Unit])]): SQLDataIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidSQLDataIO[A : Monoid]: Monoid[SQLDataIO[A]] = new Monoid[SQLDataIO[A]] {
+    override def empty: SQLDataIO[A] = Applicative[SQLDataIO].pure(Monoid[A].empty)
+    override def combine(x: SQLDataIO[A], y: SQLDataIO[A]): SQLDataIO[A] =
+      Applicative[SQLDataIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupSQLDataIO[A : Semigroup]: Semigroup[SQLDataIO[A]] = new Semigroup[SQLDataIO[A]] {
+    override def combine(x: SQLDataIO[A], y: SQLDataIO[A]): SQLDataIO[A] =
+      Applicative[SQLDataIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

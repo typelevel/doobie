@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -16,6 +16,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
 
+// This file is Auto-generated using FreeGen2.scala
 object largeobject { module =>
 
   // Algebra of operations for LargeObject. Each accepts a visitor as an alternative to pattern-matching.
@@ -254,5 +255,16 @@ object largeobject { module =>
       override def fromFuture[A](fut: LargeObjectIO[Future[A]]): LargeObjectIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): LargeObjectIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidLargeObjectIO[A : Monoid]: Monoid[LargeObjectIO[A]] = new Monoid[LargeObjectIO[A]] {
+    override def empty: LargeObjectIO[A] = Applicative[LargeObjectIO].pure(Monoid[A].empty)
+    override def combine(x: LargeObjectIO[A], y: LargeObjectIO[A]): LargeObjectIO[A] =
+      Applicative[LargeObjectIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupLargeObjectIO[A : Semigroup]: Semigroup[LargeObjectIO[A]] = new Semigroup[LargeObjectIO[A]] {
+    override def combine(x: LargeObjectIO[A], y: LargeObjectIO[A]): LargeObjectIO[A] =
+      Applicative[LargeObjectIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

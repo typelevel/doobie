@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -20,6 +20,7 @@ import java.lang.String
 import java.sql.Clob
 import java.sql.NClob
 
+// This file is Auto-generated using FreeGen2.scala
 object nclob { module =>
 
   // Algebra of operations for NClob. Each accepts a visitor as an alternative to pattern-matching.
@@ -228,5 +229,16 @@ object nclob { module =>
       override def fromFuture[A](fut: NClobIO[Future[A]]): NClobIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: NClobIO[(Future[A], NClobIO[Unit])]): NClobIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidNClobIO[A : Monoid]: Monoid[NClobIO[A]] = new Monoid[NClobIO[A]] {
+    override def empty: NClobIO[A] = Applicative[NClobIO].pure(Monoid[A].empty)
+    override def combine(x: NClobIO[A], y: NClobIO[A]): NClobIO[A] =
+      Applicative[NClobIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupNClobIO[A : Semigroup]: Semigroup[NClobIO[A]] = new Semigroup[NClobIO[A]] {
+    override def combine(x: NClobIO[A], y: NClobIO[A]): NClobIO[A] =
+      Applicative[NClobIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

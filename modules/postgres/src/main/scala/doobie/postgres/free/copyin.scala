@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.util.ByteStreamWriter
 
+// This file is Auto-generated using FreeGen2.scala
 object copyin { module =>
 
   // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternative to pattern-matching.
@@ -208,5 +209,16 @@ object copyin { module =>
       override def fromFuture[A](fut: CopyInIO[Future[A]]): CopyInIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: CopyInIO[(Future[A], CopyInIO[Unit])]): CopyInIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCopyInIO[A : Monoid]: Monoid[CopyInIO[A]] = new Monoid[CopyInIO[A]] {
+    override def empty: CopyInIO[A] = Applicative[CopyInIO].pure(Monoid[A].empty)
+    override def combine(x: CopyInIO[A], y: CopyInIO[A]): CopyInIO[A] =
+      Applicative[CopyInIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCopyInIO[A : Semigroup]: Semigroup[CopyInIO[A]] = new Semigroup[CopyInIO[A]] {
+    override def combine(x: CopyInIO[A], y: CopyInIO[A]): CopyInIO[A] =
+      Applicative[CopyInIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

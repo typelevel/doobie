@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -30,6 +30,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
+// This file is Auto-generated using FreeGen2.scala
 object sqlinput { module =>
 
   // Algebra of operations for SQLInput. Each accepts a visitor as an alternative to pattern-matching.
@@ -313,5 +314,16 @@ object sqlinput { module =>
       override def fromFuture[A](fut: SQLInputIO[Future[A]]): SQLInputIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: SQLInputIO[(Future[A], SQLInputIO[Unit])]): SQLInputIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidSQLInputIO[A : Monoid]: Monoid[SQLInputIO[A]] = new Monoid[SQLInputIO[A]] {
+    override def empty: SQLInputIO[A] = Applicative[SQLInputIO].pure(Monoid[A].empty)
+    override def combine(x: SQLInputIO[A], y: SQLInputIO[A]): SQLInputIO[A] =
+      Applicative[SQLInputIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupSQLInputIO[A : Semigroup]: Semigroup[SQLInputIO[A]] = new Semigroup[SQLInputIO[A]] {
+    override def combine(x: SQLInputIO[A], y: SQLInputIO[A]): SQLInputIO[A] =
+      Applicative[SQLInputIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

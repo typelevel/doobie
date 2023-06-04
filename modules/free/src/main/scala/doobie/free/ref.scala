@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -16,6 +16,7 @@ import java.lang.String
 import java.sql.Ref
 import java.util.Map
 
+// This file is Auto-generated using FreeGen2.scala
 object ref { module =>
 
   // Algebra of operations for Ref. Each accepts a visitor as an alternative to pattern-matching.
@@ -179,5 +180,16 @@ object ref { module =>
       override def fromFuture[A](fut: RefIO[Future[A]]): RefIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: RefIO[(Future[A], RefIO[Unit])]): RefIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidRefIO[A : Monoid]: Monoid[RefIO[A]] = new Monoid[RefIO[A]] {
+    override def empty: RefIO[A] = Applicative[RefIO].pure(Monoid[A].empty)
+    override def combine(x: RefIO[A], y: RefIO[A]): RefIO[A] =
+      Applicative[RefIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupRefIO[A : Semigroup]: Semigroup[RefIO[A]] = new Semigroup[RefIO[A]] {
+    override def combine(x: RefIO[A], y: RefIO[A]): RefIO[A] =
+      Applicative[RefIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

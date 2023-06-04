@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -24,6 +24,7 @@ import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
 import org.postgresql.replication.PGReplicationConnection
 
+// This file is Auto-generated using FreeGen2.scala
 object pgconnection { module =>
 
   // Algebra of operations for PGConnection. Each accepts a visitor as an alternative to pattern-matching.
@@ -277,5 +278,16 @@ object pgconnection { module =>
       override def fromFuture[A](fut: PGConnectionIO[Future[A]]): PGConnectionIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]): PGConnectionIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidPGConnectionIO[A : Monoid]: Monoid[PGConnectionIO[A]] = new Monoid[PGConnectionIO[A]] {
+    override def empty: PGConnectionIO[A] = Applicative[PGConnectionIO].pure(Monoid[A].empty)
+    override def combine(x: PGConnectionIO[A], y: PGConnectionIO[A]): PGConnectionIO[A] =
+      Applicative[PGConnectionIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupPGConnectionIO[A : Semigroup]: Semigroup[PGConnectionIO[A]] = new Semigroup[PGConnectionIO[A]] {
+    override def combine(x: PGConnectionIO[A], y: PGConnectionIO[A]): PGConnectionIO[A] =
+      Applicative[PGConnectionIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

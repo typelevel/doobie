@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -23,6 +23,7 @@ import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.util.ByteStreamWriter
 
+// This file is Auto-generated using FreeGen2.scala
 object copymanager { module =>
 
   // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternative to pattern-matching.
@@ -216,5 +217,16 @@ object copymanager { module =>
       override def fromFuture[A](fut: CopyManagerIO[Future[A]]): CopyManagerIO[A] = module.fromFuture(fut)
       override def fromFutureCancelable[A](fut: CopyManagerIO[(Future[A], CopyManagerIO[Unit])]): CopyManagerIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCopyManagerIO[A : Monoid]: Monoid[CopyManagerIO[A]] = new Monoid[CopyManagerIO[A]] {
+    override def empty: CopyManagerIO[A] = Applicative[CopyManagerIO].pure(Monoid[A].empty)
+    override def combine(x: CopyManagerIO[A], y: CopyManagerIO[A]): CopyManagerIO[A] =
+      Applicative[CopyManagerIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCopyManagerIO[A : Semigroup]: Semigroup[CopyManagerIO[A]] = new Semigroup[CopyManagerIO[A]] {
+    override def combine(x: CopyManagerIO[A], y: CopyManagerIO[A]): CopyManagerIO[A] =
+      Applicative[CopyManagerIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

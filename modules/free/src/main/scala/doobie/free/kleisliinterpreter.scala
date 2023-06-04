@@ -17,6 +17,8 @@ import scala.concurrent.duration.FiniteDuration
 // Types referenced in the JDBC API
 import java.io.InputStream
 import java.io.Reader
+import java.lang.Class
+import java.lang.String
 import java.math.BigDecimal
 import java.net.URL
 import java.sql.Blob
@@ -37,6 +39,7 @@ import java.sql.SQLOutput
 import java.sql.SQLType
 import java.sql.SQLXML
 import java.sql.Savepoint
+import java.sql.ShardingKey
 import java.sql.Statement
 import java.sql.Struct
 import java.sql.Time
@@ -451,6 +454,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def supportsSchemasInProcedureCalls = primitive(_.supportsSchemasInProcedureCalls)
     override def supportsSchemasInTableDefinitions = primitive(_.supportsSchemasInTableDefinitions)
     override def supportsSelectForUpdate = primitive(_.supportsSelectForUpdate)
+    override def supportsSharding = primitive(_.supportsSharding)
     override def supportsStatementPooling = primitive(_.supportsStatementPooling)
     override def supportsStoredFunctionsUsingCallSyntax = primitive(_.supportsStoredFunctionsUsingCallSyntax)
     override def supportsStoredProcedures = primitive(_.supportsStoredProcedures)
@@ -700,6 +704,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
 
     // domain-specific operations are implemented in terms of `primitive`
     override def abort(a: Executor) = primitive(_.abort(a))
+    override def beginRequest = primitive(_.beginRequest)
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def commit = primitive(_.commit)
@@ -712,6 +717,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def createStatement(a: Int, b: Int) = primitive(_.createStatement(a, b))
     override def createStatement(a: Int, b: Int, c: Int) = primitive(_.createStatement(a, b, c))
     override def createStruct(a: String, b: Array[AnyRef]) = primitive(_.createStruct(a, b))
+    override def endRequest = primitive(_.endRequest)
     override def getAutoCommit = primitive(_.getAutoCommit)
     override def getCatalog = primitive(_.getCatalog)
     override def getClientInfo = primitive(_.getClientInfo)
@@ -750,6 +756,10 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def setSavepoint = primitive(_.setSavepoint)
     override def setSavepoint(a: String) = primitive(_.setSavepoint(a))
     override def setSchema(a: String) = primitive(_.setSchema(a))
+    override def setShardingKey(a: ShardingKey) = primitive(_.setShardingKey(a))
+    override def setShardingKey(a: ShardingKey, b: ShardingKey) = primitive(_.setShardingKey(a, b))
+    override def setShardingKeyIfValid(a: ShardingKey, b: Int) = primitive(_.setShardingKeyIfValid(a, b))
+    override def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int) = primitive(_.setShardingKeyIfValid(a, b, c))
     override def setTransactionIsolation(a: Int) = primitive(_.setTransactionIsolation(a))
     override def setTypeMap(a: Map[String, Class[_]]) = primitive(_.setTypeMap(a))
     override def unwrap[T](a: Class[T]) = primitive(_.unwrap(a))
@@ -786,6 +796,9 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
     override def execute(a: String, b: Array[String]) = primitive(_.execute(a, b))
@@ -821,6 +834,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def setCursorName(a: String) = primitive(_.setCursorName(a))
     override def setEscapeProcessing(a: Boolean) = primitive(_.setEscapeProcessing(a))
@@ -867,6 +881,9 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute = primitive(_.execute)
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
@@ -908,6 +925,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def setArray(a: Int, b: SqlArray) = primitive(_.setArray(a, b))
     override def setAsciiStream(a: Int, b: InputStream) = primitive(_.setAsciiStream(a, b))
@@ -1003,6 +1021,9 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def clearWarnings = primitive(_.clearWarnings)
     override def close = primitive(_.close)
     override def closeOnCompletion = primitive(_.closeOnCompletion)
+    override def enquoteIdentifier(a: String, b: Boolean) = primitive(_.enquoteIdentifier(a, b))
+    override def enquoteLiteral(a: String) = primitive(_.enquoteLiteral(a))
+    override def enquoteNCharLiteral(a: String) = primitive(_.enquoteNCharLiteral(a))
     override def execute = primitive(_.execute)
     override def execute(a: String) = primitive(_.execute(a))
     override def execute(a: String, b: Array[Int]) = primitive(_.execute(a, b))
@@ -1104,6 +1125,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: 
     override def isCloseOnCompletion = primitive(_.isCloseOnCompletion)
     override def isClosed = primitive(_.isClosed)
     override def isPoolable = primitive(_.isPoolable)
+    override def isSimpleIdentifier(a: String) = primitive(_.isSimpleIdentifier(a))
     override def isWrapperFor(a: Class[_]) = primitive(_.isWrapperFor(a))
     override def registerOutParameter(a: Int, b: Int) = primitive(_.registerOutParameter(a, b))
     override def registerOutParameter(a: Int, b: Int, c: Int) = primitive(_.registerOutParameter(a, b, c))
