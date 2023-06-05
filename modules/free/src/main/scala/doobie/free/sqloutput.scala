@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -32,6 +32,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
+// This file is Auto-generated using FreeGen2.scala
 object sqloutput { module =>
 
   // Algebra of operations for SQLOutput. Each accepts a visitor as an alternative to pattern-matching.
@@ -71,6 +72,7 @@ object sqloutput { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): F[A]
       def fromFuture[A](fut: SQLOutputIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // SQLOutput
@@ -144,6 +146,9 @@ object sqloutput { module =>
     }
     case class FromFuture[A](fut: SQLOutputIO[Future[A]]) extends SQLOutputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]) extends SQLOutputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends SQLOutputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -257,6 +262,7 @@ object sqloutput { module =>
   val canceled = FF.liftF[SQLOutputOp, Unit](Canceled)
   def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]) = FF.liftF[SQLOutputOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: SQLOutputIO[Future[A]]) = FF.liftF[SQLOutputOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]) = FF.liftF[SQLOutputOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[SQLOutputOp, Unit](PerformLogging(event))
 
   // Smart constructors for SQLOutput-specific operations.
@@ -308,6 +314,18 @@ object sqloutput { module =>
       override def canceled: SQLOutputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): SQLOutputIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: SQLOutputIO[Future[A]]): SQLOutputIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: SQLOutputIO[(Future[A], SQLOutputIO[Unit])]): SQLOutputIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidSQLOutputIO[A : Monoid]: Monoid[SQLOutputIO[A]] = new Monoid[SQLOutputIO[A]] {
+    override def empty: SQLOutputIO[A] = Applicative[SQLOutputIO].pure(Monoid[A].empty)
+    override def combine(x: SQLOutputIO[A], y: SQLOutputIO[A]): SQLOutputIO[A] =
+      Applicative[SQLOutputIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupSQLOutputIO[A : Semigroup]: Semigroup[SQLOutputIO[A]] = new Semigroup[SQLOutputIO[A]] {
+    override def combine(x: SQLOutputIO[A], y: SQLOutputIO[A]): SQLOutputIO[A] =
+      Applicative[SQLOutputIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 
