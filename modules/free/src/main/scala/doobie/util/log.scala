@@ -39,7 +39,7 @@ object log {
    * Provides additional processing for Doobie `LogEvent`s.
    * @group Handlers
    */
-  trait LogHandlerM[M[_]]{
+  trait LogHandler[M[_]]{
     def run(logEvent: LogEvent): M[Unit]
   }
 
@@ -47,10 +47,10 @@ object log {
    * Module of instances and constructors for `LogHandler`.
    * @group Handlers
    */
-  object LogHandlerM {
+  object LogHandler {
     private val jdkLogger = Logger.getLogger(getClass.getName)
     
-    def noop[M[_]: Applicative]: LogHandlerM[M] =
+    def noop[M[_]: Applicative]: LogHandler[M] =
       _ => Applicative[M].unit
 
     /**
@@ -58,7 +58,7 @@ object log {
      * purposes and is not intended for production use.
      * @group Constructors
      */
-    def jdkLogHandler[M[_]: Sync]: LogHandlerM[M] = new LogHandlerM[M] {
+    def jdkLogHandler[M[_]: Sync]: LogHandler[M] = new LogHandler[M] {
       override def run(logEvent: LogEvent): M[Unit] = Sync[M].delay(
         logEvent match {
           case Success(s, a, l, e1, e2) =>

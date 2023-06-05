@@ -16,12 +16,12 @@ import cats.implicits._
 import cats.effect.unsafe.implicits.global
 ```
 
-Logging in doobie is done via a `LogHandlerM` instance that is setup when we create our `Transactor`.
+Logging in doobie is done via a `LogHandler` instance that is setup when we create our `Transactor`.
 
-The `LogHandlerM` interface looks like this:
+The `LogHandler` interface looks like this:
 
 ```scala
-trait LogHandlerM[M[_]]{
+trait LogHandler[M[_]]{
   def run(logEvent: LogEvent): M[Unit]
 }
 ```
@@ -29,10 +29,10 @@ trait LogHandlerM[M[_]]{
 The `run` method will be called for all queries executed via the Transactor.
 It will receive a LogEvent which it can handle it inside the `M` effect (e.g. `cats.effect.IO`).
 
-For example, let's construct a `LogHandlerM` that only prints out the SQL executed:
+For example, let's construct a `LogHandler` that only prints out the SQL executed:
 
 ```scala mdoc:silent
-val printSqlLogHandler: LogHandlerM[IO] = new LogHandlerM[IO] {
+val printSqlLogHandler: LogHandler[IO] = new LogHandler[IO] {
   def run(logEvent: LogEvent): IO[Unit] = 
     IO { 
       println(logEvent.sql)
@@ -107,9 +107,9 @@ sql"select name, code from country where name like $pattern"
 
 You can find the `label` in the LogEvent.
 
-### Passing additional context to your LogHandlerM
+### Passing additional context to your LogHandler
 
-You can use cats-effect's `IOLocal` to pass additional context to the LogHandlerM (e.g. tracing context), as the following example shows:
+You can use cats-effect's `IOLocal` to pass additional context to the LogHandler (e.g. tracing context), as the following example shows:
 
 ```scala mdoc
 import cats.effect.{IOLocal, Ref}
@@ -124,7 +124,7 @@ def program: IO[List[String]] =
     // store all successful sql here, for all users
     successLogsRef <- Ref[IO].of(List.empty[String])
     xa = Transactor.fromDriverManager[IO]
-      .withLogHandler(new LogHandlerM[IO] {
+      .withLogHandler(new LogHandler[IO] {
         def run(logEvent: LogEvent): IO[Unit] =
           currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '${logEvent.sql}'" :: logs))
       })( // thread through the logHandler here
@@ -150,6 +150,6 @@ program.unsafeRunSync().sorted
 
 Logging is not yet supported for streaming (`.stream` or YOLO mode's `.quick`).
 
-Note that the `LogHandlerM#run` invocation is part of your `ConnectionIO` program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.
+Note that the `LogHandler#run` invocation is part of your `ConnectionIO` program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.
 
 Further note that the handler is not transactional; anything your logger does stays done, even if the transaction is rolled back. This is only for diagnostics, not for business logic.
