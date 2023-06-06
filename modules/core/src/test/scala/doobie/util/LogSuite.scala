@@ -44,14 +44,14 @@ class LogSuite extends munit.FunSuite {
 
   test("[Query] implicit handler") {
     eventForCIO(sql"select 1".query[Int].unique) match {
-      case Success(_, _, _, _) => ()
+      case Success(_, _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
 
   test("[Query] explicit handler") {
     eventForCIO(sql"select 1".query[Int].unique) match {
-      case Success(_, _, _, _) => ()
+      case Success(_, _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -59,7 +59,7 @@ class LogSuite extends munit.FunSuite {
   test("[Query] zero-arg success") {
     val Sql = "select 1"
     eventForUniqueQuery(Sql) match {
-      case Success(Sql, Nil, _, _) => ()
+      case Success(Sql, Nil, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -75,7 +75,7 @@ class LogSuite extends munit.FunSuite {
   test("[Query] zero-arg processing failure") {
     val Sql = "select 1 where 1 = 2"
     eventForUniqueQuery(Sql) match {
-      case ProcessingFailure(Sql, Nil, _, _, _) => ()
+      case ProcessingFailure(Sql, Nil, _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -87,7 +87,7 @@ class LogSuite extends munit.FunSuite {
   test("[Update] implicit handler") {
     val cio = sql"drop table if exists barf".update.run
     eventForCIO(cio) match {
-      case Success(_, _, _, _) => ()
+      case Success(_, _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -95,7 +95,7 @@ class LogSuite extends munit.FunSuite {
   test("[Update] explicit handler") {
     val cio = sql"drop table if exists barf".update.run
     eventForCIO(cio) match {
-      case Success(_, _, _, _) => ()
+      case Success(_, _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -103,7 +103,7 @@ class LogSuite extends munit.FunSuite {
   test("[Update] zero-arg success") {
     val Sql = "update foo set bar = 42"
     eventForUniqueUpdate(Sql) match {
-      case Success(Sql, Nil, _, _) => ()
+      case Success(Sql, Nil, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
