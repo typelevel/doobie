@@ -39,9 +39,6 @@ object update {
     // Contravariant coyoneda trick for A
     protected implicit val write: Write[A]
 
-    // LogHandler is protected for now.
-    protected val logHandler: LogHandler
-
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
@@ -51,7 +48,6 @@ object update {
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
         for {
-          _ <- FPS.delay(logHandler.unsafeRun(e))
           _ <- FPS.performLogging(e)
         } yield ()
 
@@ -59,8 +55,8 @@ object update {
         t0 <- now
         en <- FPS.executeUpdate.attempt
         t1 <- now
-        n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, diff(t1, t0), e)) }
-        _  <- log(Success(sql, args, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
+        n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, label, diff(t1, t0), e)) }
+        _  <- log(Success(sql, args, label, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
       } yield n
     }
 
@@ -80,6 +76,9 @@ object update {
     /** Convert this Update to a `Fragment`. */
     def toFragment(a: A): Fragment =
       write.toFragment(a, sql)
+
+    /** Label to be used during logging */
+    val label: String
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
@@ -170,7 +169,7 @@ object update {
         val write = u.write.contramap(f)
         val sql = u.sql
         val pos = u.pos
-        val logHandler = u.logHandler
+        val label = u.label
       }
 
     /**
@@ -203,15 +202,19 @@ object update {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A](sql0: String, pos0: Option[Pos] = None)(
-      implicit W: Write[A], logHandler0: LogHandler = LogHandler.nop
-    ): Update[A] =
+    def apply[A](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(
+      implicit W: Write[A]
+    ): Update[A] = {
+      val sql0 = sql
+      val label0 = label
+      val pos0 = pos
       new Update[A] {
         val write = W
         val sql = sql0
-        val logHandler = logHandler0
+        val label = label0
         val pos = pos0
       }
+    }
 
     /**
      * Update is a contravariant functor.

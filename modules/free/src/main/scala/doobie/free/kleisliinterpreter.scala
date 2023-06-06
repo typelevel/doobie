@@ -10,7 +10,7 @@ import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
 import doobie.WeakAsync
-import doobie.util.log.{LogEvent, LogHandlerM}
+import doobie.util.log.{LogEvent, LogHandler}
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -67,12 +67,12 @@ import doobie.free.callablestatement.{ CallableStatementIO, CallableStatementOp 
 import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
-  def apply[M[_]: WeakAsync](logHandler: LogHandlerM[M]): KleisliInterpreter[M] =
+  def apply[M[_]: WeakAsync](logHandler: LogHandler[M]): KleisliInterpreter[M] =
     new KleisliInterpreter[M](logHandler)
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: WeakAsync[M]) { outer =>
+class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: WeakAsync[M]) { outer =>
   import WeakAsync._
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.

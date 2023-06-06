@@ -7,23 +7,23 @@ import scala.sys.process.*
 lazy val catsVersion          = "2.9.0"
 lazy val catsEffectVersion    = "3.5.0"
 lazy val circeVersion         = "0.14.5"
-lazy val fs2Version           = "3.6.1"
+lazy val fs2Version           = "3.7.0"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
+lazy val hikariVersion        = "5.0.1" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.6.0"
 lazy val refinedVersion       = "0.10.3"
 lazy val scalaCheckVersion    = "1.15.4"
-lazy val scalatestVersion     = "3.2.15"
+lazy val scalatestVersion     = "3.2.16"
 lazy val munitVersion         = "1.0.0-M7"
 lazy val shapelessVersion     = "2.3.10"
 lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.20.0"
 lazy val scala212Version      = "2.12.17"
 lazy val scala213Version      = "2.13.10"
-lazy val scala3Version       = "3.2.2"
-lazy val slf4jVersion         = "1.7.36"
+lazy val scala3Version       = "3.3.0"
+lazy val slf4jVersion         = "2.0.7"
 lazy val weaverVersion        = "0.8.3"
 
 // Basic versioning and publishing stuff
