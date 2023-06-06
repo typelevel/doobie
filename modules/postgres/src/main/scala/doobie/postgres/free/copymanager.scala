@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -23,6 +23,7 @@ import org.postgresql.copy.{ CopyManager => PGCopyManager }
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 import org.postgresql.util.ByteStreamWriter
 
+// This file is Auto-generated using FreeGen2.scala
 object copymanager { module =>
 
   // Algebra of operations for PGCopyManager. Each accepts a visitor as an alternative to pattern-matching.
@@ -62,6 +63,7 @@ object copymanager { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): F[A]
       def fromFuture[A](fut: CopyManagerIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: CopyManagerIO[(Future[A], CopyManagerIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // PGCopyManager
@@ -117,6 +119,9 @@ object copymanager { module =>
     }
     case class FromFuture[A](fut: CopyManagerIO[Future[A]]) extends CopyManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: CopyManagerIO[(Future[A], CopyManagerIO[Unit])]) extends CopyManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends CopyManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -176,6 +181,7 @@ object copymanager { module =>
   val canceled = FF.liftF[CopyManagerOp, Unit](Canceled)
   def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]) = FF.liftF[CopyManagerOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: CopyManagerIO[Future[A]]) = FF.liftF[CopyManagerOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: CopyManagerIO[(Future[A], CopyManagerIO[Unit])]) = FF.liftF[CopyManagerOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[CopyManagerOp, Unit](PerformLogging(event))
 
   // Smart constructors for CopyManager-specific operations.
@@ -209,6 +215,18 @@ object copymanager { module =>
       override def canceled: CopyManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): CopyManagerIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: CopyManagerIO[Future[A]]): CopyManagerIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: CopyManagerIO[(Future[A], CopyManagerIO[Unit])]): CopyManagerIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCopyManagerIO[A : Monoid]: Monoid[CopyManagerIO[A]] = new Monoid[CopyManagerIO[A]] {
+    override def empty: CopyManagerIO[A] = Applicative[CopyManagerIO].pure(Monoid[A].empty)
+    override def combine(x: CopyManagerIO[A], y: CopyManagerIO[A]): CopyManagerIO[A] =
+      Applicative[CopyManagerIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCopyManagerIO[A : Semigroup]: Semigroup[CopyManagerIO[A]] = new Semigroup[CopyManagerIO[A]] {
+    override def combine(x: CopyManagerIO[A], y: CopyManagerIO[A]): CopyManagerIO[A] =
+      Applicative[CopyManagerIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 
