@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -17,6 +17,7 @@ import java.sql.SQLData
 import java.sql.SQLInput
 import java.sql.SQLOutput
 
+// This file is Auto-generated using FreeGen2.scala
 object sqldata { module =>
 
   // Algebra of operations for SQLData. Each accepts a visitor as an alternative to pattern-matching.
@@ -56,6 +57,7 @@ object sqldata { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): F[A]
       def fromFuture[A](fut: SQLDataIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: SQLDataIO[(Future[A], SQLDataIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // SQLData
@@ -105,6 +107,9 @@ object sqldata { module =>
     case class FromFuture[A](fut: SQLDataIO[Future[A]]) extends SQLDataOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class FromFutureCancelable[A](fut: SQLDataIO[(Future[A], SQLDataIO[Unit])]) extends SQLDataOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    }
     case class PerformLogging(event: LogEvent) extends SQLDataOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
@@ -142,6 +147,7 @@ object sqldata { module =>
   val canceled = FF.liftF[SQLDataOp, Unit](Canceled)
   def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]) = FF.liftF[SQLDataOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: SQLDataIO[Future[A]]) = FF.liftF[SQLDataOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: SQLDataIO[(Future[A], SQLDataIO[Unit])]) = FF.liftF[SQLDataOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[SQLDataOp, Unit](PerformLogging(event))
 
   // Smart constructors for SQLData-specific operations.
@@ -168,6 +174,18 @@ object sqldata { module =>
       override def canceled: SQLDataIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): SQLDataIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: SQLDataIO[Future[A]]): SQLDataIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: SQLDataIO[(Future[A], SQLDataIO[Unit])]): SQLDataIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidSQLDataIO[A : Monoid]: Monoid[SQLDataIO[A]] = new Monoid[SQLDataIO[A]] {
+    override def empty: SQLDataIO[A] = Applicative[SQLDataIO].pure(Monoid[A].empty)
+    override def combine(x: SQLDataIO[A], y: SQLDataIO[A]): SQLDataIO[A] =
+      Applicative[SQLDataIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupSQLDataIO[A : Semigroup]: Semigroup[SQLDataIO[A]] = new Semigroup[SQLDataIO[A]] {
+    override def combine(x: SQLDataIO[A], y: SQLDataIO[A]): SQLDataIO[A] =
+      Applicative[SQLDataIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

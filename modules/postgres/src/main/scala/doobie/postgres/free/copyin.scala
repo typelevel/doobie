@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 import org.postgresql.copy.{ CopyIn => PGCopyIn }
 import org.postgresql.util.ByteStreamWriter
 
+// This file is Auto-generated using FreeGen2.scala
 object copyin { module =>
 
   // Algebra of operations for PGCopyIn. Each accepts a visitor as an alternative to pattern-matching.
@@ -54,6 +55,7 @@ object copyin { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): F[A]
       def fromFuture[A](fut: CopyInIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: CopyInIO[(Future[A], CopyInIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // PGCopyIn
@@ -109,6 +111,9 @@ object copyin { module =>
     }
     case class FromFuture[A](fut: CopyInIO[Future[A]]) extends CopyInOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: CopyInIO[(Future[A], CopyInIO[Unit])]) extends CopyInOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends CopyInOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -168,6 +173,7 @@ object copyin { module =>
   val canceled = FF.liftF[CopyInOp, Unit](Canceled)
   def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]) = FF.liftF[CopyInOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: CopyInIO[Future[A]]) = FF.liftF[CopyInOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: CopyInIO[(Future[A], CopyInIO[Unit])]) = FF.liftF[CopyInOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[CopyInOp, Unit](PerformLogging(event))
 
   // Smart constructors for CopyIn-specific operations.
@@ -201,6 +207,18 @@ object copyin { module =>
       override def canceled: CopyInIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): CopyInIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: CopyInIO[Future[A]]): CopyInIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: CopyInIO[(Future[A], CopyInIO[Unit])]): CopyInIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCopyInIO[A : Monoid]: Monoid[CopyInIO[A]] = new Monoid[CopyInIO[A]] {
+    override def empty: CopyInIO[A] = Applicative[CopyInIO].pure(Monoid[A].empty)
+    override def combine(x: CopyInIO[A], y: CopyInIO[A]): CopyInIO[A] =
+      Applicative[CopyInIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCopyInIO[A : Semigroup]: Semigroup[CopyInIO[A]] = new Semigroup[CopyInIO[A]] {
+    override def combine(x: CopyInIO[A], y: CopyInIO[A]): CopyInIO[A] =
+      Applicative[CopyInIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

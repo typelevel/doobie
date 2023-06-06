@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -30,6 +30,7 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 
+// This file is Auto-generated using FreeGen2.scala
 object sqlinput { module =>
 
   // Algebra of operations for SQLInput. Each accepts a visitor as an alternative to pattern-matching.
@@ -69,6 +70,7 @@ object sqlinput { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): F[A]
       def fromFuture[A](fut: SQLInputIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: SQLInputIO[(Future[A], SQLInputIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // SQLInput
@@ -142,6 +144,9 @@ object sqlinput { module =>
     }
     case class FromFuture[A](fut: SQLInputIO[Future[A]]) extends SQLInputOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: SQLInputIO[(Future[A], SQLInputIO[Unit])]) extends SQLInputOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends SQLInputOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -255,6 +260,7 @@ object sqlinput { module =>
   val canceled = FF.liftF[SQLInputOp, Unit](Canceled)
   def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]) = FF.liftF[SQLInputOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: SQLInputIO[Future[A]]) = FF.liftF[SQLInputOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: SQLInputIO[(Future[A], SQLInputIO[Unit])]) = FF.liftF[SQLInputOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[SQLInputOp, Unit](PerformLogging(event))
 
   // Smart constructors for SQLInput-specific operations.
@@ -306,6 +312,18 @@ object sqlinput { module =>
       override def canceled: SQLInputIO[Unit] = module.canceled
       override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): SQLInputIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: SQLInputIO[Future[A]]): SQLInputIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: SQLInputIO[(Future[A], SQLInputIO[Unit])]): SQLInputIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidSQLInputIO[A : Monoid]: Monoid[SQLInputIO[A]] = new Monoid[SQLInputIO[A]] {
+    override def empty: SQLInputIO[A] = Applicative[SQLInputIO].pure(Monoid[A].empty)
+    override def combine(x: SQLInputIO[A], y: SQLInputIO[A]): SQLInputIO[A] =
+      Applicative[SQLInputIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupSQLInputIO[A : Semigroup]: Semigroup[SQLInputIO[A]] = new Semigroup[SQLInputIO[A]] {
+    override def combine(x: SQLInputIO[A], y: SQLInputIO[A]): SQLInputIO[A] =
+      Applicative[SQLInputIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 
