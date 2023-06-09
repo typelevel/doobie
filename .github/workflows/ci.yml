@@ -88,7 +88,7 @@ jobs:
       - name: Check there are no uncommitted changes in git (to catch generated files that weren't committed)
         run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
 
-      - name: Check Doc Site (2.13.10 only)
+      - name: Check Doc Site (2.13.11 only)
         if: matrix.scala == '2.13.11'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
@@ -160,12 +160,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.10)
+      - name: Download target directories (2.13.11)
         uses: actions/download-artifact@v3
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.10
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.11
 
-      - name: Inflate target directories (2.13.10)
+      - name: Inflate target directories (2.13.11)
         run: |
           tar xf targets.tar
           rm targets.tar
