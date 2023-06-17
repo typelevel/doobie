@@ -14,9 +14,11 @@ class H2JsonSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:testdb",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:testdb",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   def inOut[A: Write: Read](col: String, a: A) =

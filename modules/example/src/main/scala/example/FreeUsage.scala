@@ -19,7 +19,7 @@ object FreeUsage extends IOApp.Simple {
 
   def run: IO[Unit] = {
     val db = Transactor.fromDriverManager[IO](
-      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
+      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "", logHandler = None
     )
     db.trans.apply(examples.void)
   }

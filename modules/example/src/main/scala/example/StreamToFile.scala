@@ -15,7 +15,7 @@ import fs2.text.utf8
 object StreamToFile extends IOApp.Simple {
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   )
 
   def run: IO[Unit] =

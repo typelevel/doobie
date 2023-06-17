@@ -20,7 +20,7 @@ object PostgresCopyInCsv extends IOApp.Simple {
   def putStrLn(s: String): IO[Unit] = IO(println(s))
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql://localhost/postgres", "postgres", "super-secret"
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql://localhost/postgres", user = "postgres", password = "super-secret", logHandler = None
   )
 
   val csv = """name,food

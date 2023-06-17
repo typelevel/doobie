@@ -44,12 +44,12 @@ val printSqlLogHandler: LogHandler[IO] = new LogHandler[IO] {
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO]
-  .withLogHandler(printSqlLogHandler)
   .apply(
-    "org.postgresql.Driver",     // driver classname
-    "jdbc:postgresql:world",     // connect URL (driver-specific)
-    "postgres",                  // user
-    "password"                   // password
+    driver = "org.postgresql.Driver",     // JDBC driver classname
+    url = "jdbc:postgresql:world",        // Connect URL - Driver specific
+    user = "postgres",                    // Database user name
+    password = "password",                // Database password
+    logHandler = Some(printSqlLogHandler) // Here we specify our log event handler
   )
 ```
 
@@ -123,14 +123,15 @@ def program: IO[List[String]] =
     currentUser <- IOLocal("")
     // store all successful sql here, for all users
     successLogsRef <- Ref[IO].of(List.empty[String])
-    xa = Transactor.fromDriverManager[IO]
-      .withLogHandler(new LogHandler[IO] {
-        def run(logEvent: LogEvent): IO[Unit] =
-          currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '${logEvent.sql}'" :: logs))
-      })( // thread through the logHandler here
-        "org.h2.Driver",
-        "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-        "sa", ""
+    xa = Transactor.fromDriverManager[IO](
+        driver = "org.h2.Driver",
+        url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+        user = "sa", 
+        password = "",
+        logHandler = Some(new LogHandler[IO] {
+          def run(logEvent: LogEvent): IO[Unit] =
+            currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '${logEvent.sql}'" :: logs))
+        })
       )
     // run a bunch of queries
     _ <- users.parTraverse(user =>

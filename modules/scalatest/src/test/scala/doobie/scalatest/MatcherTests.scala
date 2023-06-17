@@ -15,9 +15,11 @@ trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite
     with AnalysisMatchers[M] {
 
   lazy val transactor = Transactor.fromDriverManager[M](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   test("valid query should pass") {
