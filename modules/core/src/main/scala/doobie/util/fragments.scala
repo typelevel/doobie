@@ -53,6 +53,12 @@ object fragments {
     case None => fr"${true}"
   }
 
+  /** Returns `(f1 AND f2 AND ... fn)`, or `false` for empty `fs`. */
+  def andFallbackFalse[F[_]: Foldable](fs: F[Fragment]): Fragment = fs.toList.toNel match {
+    case Some(fs) => parentheses(fs.intercalate(fr"AND"))
+    case None => fr"${false}"
+  }
+
   /** Returns `(f1 AND f2 AND ... fn)` for all defined fragments. */
   def andOpt(fs: Option[Fragment]*): Fragment =
     and(fs.toList.unite)
@@ -61,10 +67,16 @@ object fragments {
   def or(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =
     or(f1 :: f2 :: fs.toList)
 
-  /** Returns `(f1 OR f2 OR ... fn)`, or `true` for empty `fs`. */
+  /** Returns `(f1 OR f2 OR ... fn)`, or `false` for empty `fs`. */
   def or[F[_]: Foldable](fs: F[Fragment]): Fragment = fs.toList.toNel match {
     case Some(fs) => parentheses(fs.intercalate(fr"OR"))
     case None => fr"${false}"
+  }
+
+  /** Returns `(f1 OR f2 OR ... fn)`, or `true` for empty `fs`. */
+  def orFallbackTrue[F[_]: Foldable](fs: F[Fragment]): Fragment = fs.toList.toNel match {
+    case Some(fs) => parentheses(fs.intercalate(fr"OR"))
+    case None => fr"${true}"
   }
 
   /** Returns `(f1 OR f2 OR ... fn)` for all defined fragments. */
