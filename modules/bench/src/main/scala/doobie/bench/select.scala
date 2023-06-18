@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations._
 object shared {
 
   @State(Scope.Benchmark)
-  val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password")
+  val xa = Transactor.fromDriverManager[IO](driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None)
 }
 
 class bench {

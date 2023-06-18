@@ -36,9 +36,11 @@ class MetaDBSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
 
   lazy val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   implicit def FooMeta: Meta[Foo] = Meta[String].tiemap(s => Either.cond(!s.isEmpty, Foo(s), "may not be empty"))(_.str)

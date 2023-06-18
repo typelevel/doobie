@@ -12,9 +12,11 @@ import org.scalatest._
 trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matchers with Checker[M] {
 
   lazy val transactor = Transactor.fromDriverManager[M](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   test("trivial") { check(sql"select 1".query[Int]) }

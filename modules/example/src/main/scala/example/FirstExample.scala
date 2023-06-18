@@ -67,7 +67,7 @@ object FirstExample extends IOApp.Simple {
   // Entry point.
   def run: IO[Unit] = {
     val db = Transactor.fromDriverManager[IO](
-      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
+      driver = "org.h2.Driver", url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", user = "sa", password = "", logHandler = None
     )
     for {
       a <- examples.transact(db).attempt

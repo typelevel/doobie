@@ -21,9 +21,11 @@ class `262` extends munit.FunSuite {
   }
 
   val baseXa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   // A transactor that uses our interpreter above

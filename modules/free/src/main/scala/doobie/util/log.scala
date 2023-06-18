@@ -50,8 +50,13 @@ object log {
   object LogHandler {
     private val jdkLogger = Logger.getLogger(getClass.getName)
     
-    def noop[M[_]: Applicative]: LogHandler[M] =
-      _ => Applicative[M].unit
+    /** A LogHandler that doesn't do anything */
+    def noop[M[_]: Applicative]: LogHandler[M] = {
+      new LogHandler[M] {
+        private val unit = Applicative[M].unit
+        override def run(logEvent: LogEvent): M[Unit] = unit
+      }
+    }
 
     /**
      * A LogHandler that writes a default format to a JDK Logger. This is provided for demonstration
