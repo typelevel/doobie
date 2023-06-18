@@ -22,7 +22,7 @@ object H2Transactor {
   ): Resource[M, H2Transactor[M]] = {
     val alloc = Async[M].delay(JdbcConnectionPool.create(url, user, pass))
     val free  = (ds: JdbcConnectionPool) => Async[M].delay(ds.dispose())
-    Resource.make(alloc)(free).map(Transactor.fromDataSource[M].withLogHandler(logHandler.getOrElse(LogHandler.noop))(_, connectEC))
+    Resource.make(alloc)(free).map(ds => Transactor.fromDataSource[M](ds, connectEC, logHandler))
   }
 
 }

@@ -12,9 +12,11 @@ import doobie.Transactor
 class IOAnalysisMatchersChecks extends Specification with IOAnalysisMatchers {
 
   lazy val transactor = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   "IOAnalysisMatchers should not crash during initialization" >> ok

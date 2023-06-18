@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext
 import cats.effect.unsafe.implicits.global
 
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
+  driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
 )
 
 case class Country(code: String, name: String, population: Long)
