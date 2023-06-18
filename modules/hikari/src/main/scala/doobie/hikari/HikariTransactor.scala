@@ -70,7 +70,7 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfigCustomEC(_, connectEC, logHandler))
+      .flatMap(fromHikariConfigCustomEc(_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
@@ -108,7 +108,7 @@ object HikariTransactor {
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
    * Unless you have a good reason, consider using [[fromHikariConfig]], it will be created automatically for you.
    */
-  def fromHikariConfigCustomEC[M[_]: Async](
+  def fromHikariConfigCustomEc[M[_]: Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
@@ -131,7 +131,7 @@ object HikariTransactor {
     // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
     connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- fromHikariConfigCustomEC(hikariConfig, connectEC, logHandler)
+    result <- fromHikariConfigCustomEc(hikariConfig, connectEC, logHandler)
   } yield result
 
   /** Resource yielding a new `HikariTransactor` configured with the given info.
