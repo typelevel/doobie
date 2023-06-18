@@ -123,6 +123,14 @@ class FragmentsSuite extends munit.FunSuite {
     assertEquals(andOpt(List.empty[Fragment]).map(_.query[Unit].sql), None)
   }
   
+  test("andFallbackTrue (empty)") {
+    assertEquals(andFallbackTrue(List.empty[Fragment]).query[Unit].sql, "TRUE ")
+  }
+
+  test("andFallbackTrue (many)") {
+    assertEquals(andFallbackTrue(fs).query[Unit].sql, "(? AND ? AND ? ) ")
+  }
+
   test("or (vararg 2)") {
     assertEquals(or(fs(0), fs(1)).query[Unit].sql, "(? OR ? ) ")
   }
@@ -161,6 +169,14 @@ class FragmentsSuite extends munit.FunSuite {
 
   test("orOpt (list empty)") {
     assertEquals(orOpt(List.empty[Fragment]).map(_.query[Unit].sql), None)
+  }
+
+  test("orFallbackFalse (empty)") {
+    assertEquals(orFallbackFalse(List.empty[Fragment]).query[Unit].sql, "FALSE ")
+  }
+
+  test("orFallbackFalse (many)") {
+    assertEquals(orFallbackFalse(fs).query[Unit].sql, "(? OR ? OR ? ) ")
   }
 
   test("whereAnd (varargs single)") {
