@@ -19,14 +19,14 @@ import scala.concurrent.ExecutionContext
 object HikariTransactor {
 
   /** Construct a `HikariTransactor` from an existing `HikariDatasource`. */
-  def apply[M[_]: Async] = new HikariTransactorPartiallyApplied[M]
+  def apply[M[_]] = new HikariTransactorPartiallyApplied[M]
   
-  class HikariTransactorPartiallyApplied[M[_]](implicit M: Async[M]) {
+  class HikariTransactorPartiallyApplied[M[_]] {
     def apply(
       hikariDataSource: HikariDataSource,
       connectEC: ExecutionContext,
       logHandler: Option[LogHandler[M]] = None
-    ): HikariTransactor[M] = {
+    )(implicit ev: Async[M]): HikariTransactor[M] = {
       Transactor.fromDataSource[M](hikariDataSource, connectEC, logHandler)
     }
   }
