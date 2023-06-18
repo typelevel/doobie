@@ -33,9 +33,9 @@ object fragments {
     case None => fr"$onEmpty"
   }
 
-//  /** Returns `(f NOT IN (fs0, fs1, ...))`. */
-//  def notIn[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
-//    notIn(f, fs0 :: fs1 :: fs.toList)
+  /** Returns `(f NOT IN (fs0, fs1, ...))`. */
+  def notIn[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
+    notIn(f, fs0 :: fs1 :: fs.toList)
 
   /** Returns `(f NOT IN (fs0, fs1, ...))`, or `true` for empty `fs` by default. */
   def notIn[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A], onEmpty: Boolean = true): Fragment = fs.toList.toNel match {
