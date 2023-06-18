@@ -21,12 +21,11 @@ object HikariTransactor {
   /** Construct a `HikariTransactor` from an existing `HikariDatasource`. */
   def apply[M[_]: Async] = new HikariTransactorPartiallyApplied[M]
   
-  // FIXME: simplify these classes?
   class HikariTransactorPartiallyApplied[M[_]](implicit M: Async[M]) {
     def apply(
       hikariDataSource: HikariDataSource,
       connectEC: ExecutionContext,
-      logHandler: Option[LogHandler[M]]
+      logHandler: Option[LogHandler[M]] = None
     ): HikariTransactor[M] = {
       Transactor.fromDataSource[M](hikariDataSource, connectEC, logHandler)
     }
@@ -35,7 +34,7 @@ object HikariTransactor {
   /** Resource yielding an unconfigured `HikariTransactor`. */
   def initial[M[_]: Async](
     connectEC: ExecutionContext,
-    logHandler: Option[LogHandler[M]]
+    logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] = {
     Resource.fromAutoCloseable(Sync[M].delay(new HikariDataSource))
       .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
@@ -47,7 +46,7 @@ object HikariTransactor {
   def fromConfigCustomEc[M[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
-    logHandler: Option[LogHandler[M]], // FIXME:  none
+    logHandler: Option[LogHandler[M]] = None, 
     dataSource: Option[DataSource] = None,
     dataSourceProperties: Option[Properties] = None,
     healthCheckProperties: Option[Properties] = None,
@@ -71,7 +70,7 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_, connectEC, logHandler))
+      .flatMap(fromHikariConfigCustomEC(_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
@@ -79,7 +78,7 @@ object HikariTransactor {
    */
   def fromConfig[M[_]: Async](
       config: Config,
-      logHandler: Option[LogHandler[M]],
+      logHandler: Option[LogHandler[M]] = None,
       dataSource: Option[DataSource] = None,
       dataSourceProperties: Option[Properties] = None,
       healthCheckProperties: Option[Properties] = None,
@@ -107,20 +106,23 @@ object HikariTransactor {
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
-   * Unless you have a good reason, consider using the overload without explicit `connectEC`, it will be created automatically for you.
+   * Unless you have a good reason, consider using [[fromHikariConfig]], it will be created automatically for you.
    */
-  def fromHikariConfig[M[_]: Async](
+  def fromHikariConfigCustomEC[M[_]: Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext,
-    logHandler: Option[LogHandler[M]]
+    logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] = Resource
     .fromAutoCloseable(Sync[M].delay(new HikariDataSource(hikariConfig)))
     .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
-   * The `connectEC` is created automatically, with the same size as the Hikari pool.
+   * The connection ExecutionContext (used for waiting for a connection from the connection pool) is created automatically, with the same size as the Hikari connection pool.
    */
-  def fromHikariConfig[M[_]: Async](hikariConfig: HikariConfig, logHandler: Option[LogHandler[M]]): Resource[M, HikariTransactor[M]] =
+  def fromHikariConfig[M[_]: Async](
+    hikariConfig: HikariConfig,
+    logHandler: Option[LogHandler[M]] = None
+  ): Resource[M, HikariTransactor[M]] =
   for {
     // to populate unset fields with default values, like `maximumPoolSize`
     _ <- Sync[M].delay(hikariConfig.validate()).toResource
@@ -129,7 +131,7 @@ object HikariTransactor {
     // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
     connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- fromHikariConfig(hikariConfig, connectEC, logHandler)
+    result <- fromHikariConfigCustomEC(hikariConfig, connectEC, logHandler)
   } yield result
 
   /** Resource yielding a new `HikariTransactor` configured with the given info.
