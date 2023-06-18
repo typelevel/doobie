@@ -66,6 +66,11 @@ object fragments {
     NonEmptyList.fromFoldable(fs).map(nel => and(nel, withParen))
   }
 
+  /** Similar to andOpt, but defaults to FALSE if passed an empty collection */
+  def andFallbackTrue[F[_] : Foldable](fs: F[Fragment]): Fragment = {
+    andOpt(fs).getOrElse(fr"TRUE")
+  }
+
   /** Returns `(f1 OR f2 OR ... fn)`. */
   def or(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =
     or(NonEmptyList(f1, f2 :: fs.toList))
@@ -84,8 +89,13 @@ object fragments {
   }
 
   /** Returns `(f1 OR f2 OR ... fn)`, or None if the collection is empty. */
-  def orOpt[F[_] : Foldable](fs: F[Fragment], withParen: Boolean = true): Option[Fragment] = {
+  def orOpt[F[_]: Foldable](fs: F[Fragment], withParen: Boolean = true): Option[Fragment] = {
     NonEmptyList.fromFoldable(fs).map(nel => or(nel, withParen))
+  }
+  
+  /** Similar to orOpt, but defaults to FALSE if passed an empty collection */
+  def orFallbackFalse[F[_]: Foldable](fs: F[Fragment]): Fragment = {
+    orOpt(fs).getOrElse(fr"FALSE")
   }
 
   /** Returns `WHERE f1 AND f2 AND ... fn`. */
