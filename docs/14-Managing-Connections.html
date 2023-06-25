@@ -6,6 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/14-Managing-Connections.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -31,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -174,34 +175,10 @@ import doobie.implicits._
   <li><code>rawExec</code> natural transformation equivalent to <code>exec</code> but one that does not use the provided <code>Strategy</code> to wrap the given program with additional operations.</li>
 </ul>
 <p>So summarizing, once you have a <code>Transactor[M]</code> you have a way of discharging <code>ConnectionIO</code> and replacing it with some effectful <code>M</code> like <code>IO</code>. In effect this turns a <strong>doobie</strong> program into a &ldquo;real&rdquo; program value that you can integrate with the rest of your application; all doobieness is left behind.</p>
-<h3><a href="#about-threading" name="about-threading" class="anchor"><span class="anchor-link"></span></a>About Threading</h3>
-<p>Starting with version 0.6.0 <strong>doobie</strong> provides an asynchronous API that delegates blocking operations to dedicated execution contexts <em>if you use the provided <code>Transactor</code> implementations</em>. To construct any of the provided <code>Transactor[M]</code>s (other than <code>DriverManagerTransactor</code>) you need</p>
-<ul>
-  <li><code>ContextShift[M]</code>, which provides a CPU-bound pool for <strong>non-blocking operations</strong>. If you use <code>IOApp</code> and interpret into <code>IO</code> the ContextShift will be backed by a fixed thread pool matching the numbers of your processors.</li>
-  <li>An <code>ExecutionContext</code> for <strong>awaiting connection</strong> to the database. Because there can be an unbounded number of connections awaiting database access this should be a <strong>bounded</strong> pool.</li>
-  <li>A <code>cats.effect.Blocker</code> for <strong>executing JDBC operations</strong>. Because your connection pool limits the number of active connections this should be an <strong>unbounded</strong> pool.</li>
-</ul>
-<p>The reason for having separate pools for awaiting connections and executing JDBC operations is liveness - we must avoid the situation where all the threads in the pool are blocked on acquiring a JDBC connection, meaning that no logical threads are able to make progress and release the connection they&rsquo;re currently holding.</p>
-<p>Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.</p>
+<h3><a href="#about-threading" name="about-threading" class="anchor"><span class="anchor-link"></span></a>About threading</h3>
+<p>Throughout our doobie program we will run both non-blocking CPU-bound tasks or blocking JDBC operations. Both of these will be handled by the Cats-Effect runtime.</p>
+<p>Requesting and waiting for a connection from the connection pool is a blocking operation too, but this has to be handled by the <code>connectEC</code> ExecutionContext. This ExecutionContext should be <strong>bounded</strong>, as we do not want to create hundreds and thousands of threads (one for each request) waiting for database connection when the database is busy. The maximum thread limit for <code>connectEC</code> should be the same as your underlying JDBC connection pool, since any more threads are guaranteed to be blocked. You probably won&rsquo;t need to create your own <code>connectEC</code> though because we can derive it from the configuration of the connection pool, such as when you use <code>HikariTransactor.fromHikariConfig</code>.</p>
 <p>Because these pools need to be shut down in order to exit cleanly it is typical to use <code>Resource</code> to manage their lifetimes. See below for examples.</p>
-<h3><a href="#using-the-jdbc-drivermanager" name="using-the-jdbc-drivermanager" class="anchor"><span class="anchor-link"></span></a>Using the JDBC DriverManager</h3>
-<p>JDBC provides a bare-bones connection provider via <code>DriverManager.getConnection</code>, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.</p>
-<p>However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the <code>DriverManager</code> is fine. Support in <strong>doobie</strong> is via <code>DriverManagerTransactor</code>. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the <code>DriverManager</code> static API).</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.util.ExecutionContexts
-
-// This is just for testing. Consider using cats.effect.IOApp instead of calling
-// unsafe methods directly.
-import cats.effect.unsafe.implicits.global
-
-// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an our synchronous EC. See the chapter on connection handling for more info.
-val xa = Transactor.fromDriverManager[IO](
-  &quot;org.postgresql.Driver&quot;,     // driver classname
-  &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
-  &quot;postgres&quot;,                  // user
-  &quot;&quot;                           // password
-)
-</code></pre>
 <h3><a href="#using-a-hikaricp-connection-pool" name="using-a-hikaricp-connection-pool" class="anchor"><span class="anchor-link"></span></a>Using a HikariCP Connection Pool</h3>
 <p>The <code>doobie-hikari</code> add-on provides a <code>Transactor</code> implementation backed by a <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a> connection pool. The connection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a <code>Resource</code>. A program that uses <code>HikariTransactor</code> will typically use <code>IOApp</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import cats.effect._
@@ -209,6 +186,7 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.hikari._
+import com.zaxxer.hikari.HikariConfig
 
 object HikariApp extends IOApp {
 
@@ -216,14 +194,16 @@ object HikariApp extends IOApp {
   // transaction EC. Everything will be closed and shut down cleanly after use.
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
-      ce &lt;- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      xa &lt;- HikariTransactor.newHikariTransactor[IO](
-              &quot;org.h2.Driver&quot;,                        // driver classname
-              &quot;jdbc:h2:mem:test;DB_CLOSE_DELAY=-1&quot;,   // connect URL
-              &quot;sa&quot;,                                   // username
-              &quot;&quot;,                                     // password
-              ce                                      // await connection here
-            )
+      hikariConfig &lt;- Resource.pure {
+        // For the full list of hikari configurations see https://github.com/brettwooldridge/HikariCP#gear-configuration-knobs-baby
+        val config = new HikariConfig()
+        config.setDriverClassName(&quot;org.h2.Driver&quot;)
+        config.setJdbcUrl(&quot;jdbc:h2:mem:test;DB_CLOSE_DELAY=-1&quot;)
+        config.setUsername(&quot;sa&quot;)
+        config.setPassword(&quot;&quot;)
+        config
+      }
+      xa &lt;- HikariTransactor.fromHikariConfig[IO](hikariConfig)
     } yield xa
 
 
@@ -243,6 +223,25 @@ object HikariApp extends IOApp {
 <p>And running this program gives us the desired result.</p>
 <pre class="prettyprint"><code class="language-scala">HikariApp.main(Array())
 </code></pre>
+<h3><a href="#using-the-jdbc-drivermanager" name="using-the-jdbc-drivermanager" class="anchor"><span class="anchor-link"></span></a>Using the JDBC DriverManager</h3>
+<p>JDBC provides a bare-bones connection provider via <code>DriverManager.getConnection</code>, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.</p>
+<p>However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the <code>DriverManager</code> is fine. Support in <strong>doobie</strong> is via <code>DriverManagerTransactor</code>. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the <code>DriverManager</code> static API).</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.util.ExecutionContexts
+
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
+
+// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
+// on an our synchronous EC. See the chapter on connection handling for more info.
+val xa = Transactor.fromDriverManager[IO](
+  driver = &quot;org.postgresql.Driver&quot;,  // JDBC driver classname
+  url = &quot;jdbc:postgresql:world&quot;,     // Connect URL - Driver specific
+  user = &quot;postgres&quot;,                 // Database user name
+  password = &quot;password&quot;,             // Database password
+  logHandler = None                  // Don&#39;t setup logging for now. See Logging page for how to log events in detail
+)
+</code></pre>
 <h3><a href="#using-an-existing-datasource" name="using-an-existing-datasource" class="anchor"><span class="anchor-link"></span></a>Using an existing DataSource</h3>
 <p>If your application exposes an existing <code>javax.sql.DataSource</code> you can use it directly by wrapping it in a <code>DataSourceTransactor</code>. You still need to provide execution contexts.</p>
 <pre class="prettyprint"><code class="language-scala">import javax.sql.DataSource
@@ -260,7 +259,7 @@ def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =
 
 // A Transactor[IO] wrapping the given `Connection`
 def transactor(c: Connection): Transactor[IO] =
-  Transactor.fromConnection[IO](c)
+  Transactor.fromConnection[IO](c, logHandler = None)
 </code></pre>
 <h3><a href="#customizing-transactors" name="customizing-transactors" class="anchor"><span class="anchor-link"></span></a>Customizing Transactors</h3>
 <p>If the default <code>Transactor</code> behavior don&rsquo;t meet your needs you can replace any member with one that does what you need. See the Scaladoc for <code>Transactor</code> and <code>Strategy</code> for details on the structure. Lenses are provided to make it straightforward to replace just the piece you&rsquo;re interested in. For example, to create a transactor that is the same as <code>xa</code> but always rolls back (for testing perhaps) you can say:</p>
@@ -272,7 +271,7 @@ def transactor(c: Connection): Transactor[IO] =
 val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/14-Managing-Connections.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -288,9 +287,9 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
   <li><a href="../docs/14-Managing-Connections.html#managing-connections" class="header">Managing Connections</a>
   <ul>
     <li><a href="../docs/14-Managing-Connections.html#about-transactors" class="header">About Transactors</a></li>
-    <li><a href="../docs/14-Managing-Connections.html#about-threading" class="header">About Threading</a></li>
-    <li><a href="../docs/14-Managing-Connections.html#using-the-jdbc-drivermanager" class="header">Using the JDBC DriverManager</a></li>
+    <li><a href="../docs/14-Managing-Connections.html#about-threading" class="header">About threading</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-a-hikaricp-connection-pool" class="header">Using a HikariCP Connection Pool</a></li>
+    <li><a href="../docs/14-Managing-Connections.html#using-the-jdbc-drivermanager" class="header">Using the JDBC DriverManager</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-an-existing-datasource" class="header">Using an existing DataSource</a></li>
     <li><a href="../docs/14-Managing-Connections.html#using-an-existing-jdbc-connection" class="header">Using an Existing JDBC Connection</a></li>
     <li><a href="../docs/14-Managing-Connections.html#customizing-transactors" class="header">Customizing Transactors</a></li>
@@ -336,7 +335,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2023</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -361,7 +360,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
 
 
 </html>

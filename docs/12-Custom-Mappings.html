@@ -6,6 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/12-Custom-Mappings.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -31,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -170,7 +171,7 @@ import org.postgresql.util.PGobject
 // error:
 // Cannot find or construct a Read instance for type:
 // 
-//   repl.MdocSession.App.LogEntry
+//   repl.MdocSession.MdocApp.LogEntry
 // 
 // This can happen for a few reasons, but the most common case is that a data
 // member somewhere within this type doesn&#39;t have a Get instance in scope. Here are
@@ -215,7 +216,7 @@ import org.postgresql.util.PGobject
   <li><code>Instant</code>, <code>LocalDate</code>, <code>LocalTime</code>, <code>LocalDateTime</code>, <code>OffsetTime</code>, <code>OffsetDateTime</code> and <code>ZonedDateTime</code> from the <code>java.time</code> package; and</li>
   <li>single-element case classes wrapping one of the above types.</li>
 </ul>
-<p>The <code>java.time</code> instances may require a separate import , dependent on your Database Driver . See the <a href="https://tpolecat.github.io/doobie/docs/18-FAQ.html#how-do-i-use-java-time-types-with-doobie-">doobie-faq</a> for details</p>
+<p>The <code>java.time</code> instances may require a separate import , dependent on your Database Driver . See the <a href="https://tpolecat.github.io/doobie/docs/17-FAQ.html#how-do-i-use-java-time-types-with-doobie-">doobie-faq</a> for details</p>
 <p>The above cases are defined by the JDBC specification. See later chapters on vendor-specific additions, which provide mappings for some non-standard types such as <code>UUID</code>s and network addresses.</p>
 <h4><a href="#deriving-get-and-put-from-existing-instances" name="deriving-get-and-put-from-existing-instances" class="anchor"><span class="anchor-link"></span></a>Deriving Get and Put from Existing Instances</h4>
 <p>If we don&rsquo;t have the <code>Get</code> or <code>Put</code> instance we need, we can often make one from an existing instance. Consider here a type <code>Nat</code> of natural numbers, along with a conversion to and from <code>Int</code>.</p>
@@ -324,15 +325,15 @@ implicit val jsonGet: Get[Json] =
 <p>Consider the <code>Point</code> class from Java AWT, which is logically a pair of <code>Int</code>s but is not a case class and is thus not eligible for automatic derivation of <code>Read</code> and <code>Write</code> instances. We can define these by hand by mapping to and from the Scala type <code>(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
 <pre class="prettyprint"><code class="language-scala">implicit val pointRead: Read[Point] =
   Read[(Int, Int)].map { case (x, y) =&gt; new Point(x, y) }
-// pointRead: Read[Point] = doobie.util.Read@3ec8314f
+// pointRead: Read[Point] = doobie.util.Read@38d560ee
 
 implicit val pointWrite: Write[Point] =
   Write[(Int, Int)].contramap(p =&gt; (p.x, p.y))
-// pointWrite: Write[Point] = doobie.util.Write@12666e0a
+// pointWrite: Write[Point] = doobie.util.Write@22c70f79
 </code></pre>
 <p>There is no equivalent to <code>Meta</code> for bidirectional column vector mappings.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/12-Custom-Mappings.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/12-Custom-Mappings.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -393,7 +394,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2023</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -418,7 +419,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
 
 
 </html>

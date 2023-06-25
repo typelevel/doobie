@@ -6,6 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/15-Extensions-PostgreSQL.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -31,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -143,15 +144,15 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-postgresql" name="extensions-for-postgresql" class="anchor"><span class="anchor-link"></span></a>Extensions for PostgreSQL</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC1&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC4&quot;
 </code></pre>
 <p>This library pulls in <a href="https://jdbc.postgresql.org">PostgreSQL JDBC Driver</a> as a transitive dependency.</p>
 <p>There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC1&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC4&quot;
 </code></pre>
 <p>Then, you will be able to import the implicits for dealing with JSON:</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.circe.json.implicits
-import doobie.postgres.circe.jsonb.implicits
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.circe.json.implicits._
+import doobie.postgres.circe.jsonb.implicits._
 
 </code></pre>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
@@ -171,10 +172,11 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  &quot;org.postgresql.Driver&quot;,     // driver classname
-  &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
-  &quot;postgres&quot;,                  // user
-  &quot;&quot;                           // password
+  driver = &quot;org.postgresql.Driver&quot;,  // JDBC driver classname
+  url = &quot;jdbc:postgresql:world&quot;,     // Connect URL - Driver specific
+  user = &quot;postgres&quot;,                 // Database user name
+  password = &quot;password&quot;,             // Database password
+  logHandler = None                  // Don&#39;t setup logging for now. See Logging page for how to log events in detail
 )
 </code></pre>
 <p><strong>doobie</strong> adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the <code>pgtypes</code> module.</p>
@@ -182,13 +184,16 @@ val xa = Transactor.fromDriverManager[IO](
 import doobie.postgres.implicits._
 </code></pre>
 <h3><a href="#java-8-time-types-jsr310-" name="java-8-time-types-jsr310-" class="anchor"><span class="anchor-link"></span></a>Java 8 Time Types (JSR310)</h3>
-<p>An explicit import is required to bring mappings for <code>java.time.Instant</code> / <code>java.time.LocalDate</code></p>
-<pre class="prettyprint"><code class="language-scala">// Provides mappings for java.time.Instant
-import doobie.implicits.legacy.instant._ 
-
-// Provides mappings for java.time.LocalDate
-import doobie.implicits.legacy.localdate._
+<p>An explicit import is required to bring in mappings for <code>java.time.OffsetDateTime</code> / <code>java.time.Instant</code> / <code>java.time.ZonedDateTime</code> / <code>java.time.LocalDateTime</code> / <code>java.time.LocalDate</code> / <code>java.time.LocalTime</code></p>
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.implicits._
 </code></pre>
+<p>To ensure <strong>doobie</strong> performs the conversion correctly between Java 8 time types and PostgreSQL Date/Time types when handling timezones or the lack thereof. The correct combination of date/time types should be used:</p>
+<ul>
+  <li><code>TIMESTAMP</code> maps to <code>java.time.LocalDateTime</code></li>
+  <li><code>TIMESTAMPTZ</code> maps to <code>java.time.Instant</code>, <code>java.time.ZonedDateTime</code> or <code>java.time.OffsetDateTime</code></li>
+  <li><code>DATE</code> maps to <code>java.time.LocalDate</code></li>
+  <li><code>TIME</code> maps to <code>java.time.LocalTime</code></li>
+</ul>
 <h3><a href="#array-types" name="array-types" class="anchor"><span class="anchor-link"></span></a>Array Types</h3>
 <p><strong>doobie</strong> supports single-dimensional arrays of the following types:</p>
 <ul>
@@ -286,6 +291,23 @@ import doobie.postgres.pgisimplicits._
   <li><code>MultiPoint</code></li>
   <li><code>Polygon</code></li>
   <li><code>Point</code></li>
+</ul>
+<p><a href="http://postgis.net/workshops/postgis-intro/geography.html">Geographic types</a> mappings are defined in a different object (<code>pgisgeographyimplicits</code>), to allow geometric types using geodetic coordinates.</p>
+<pre><code>import doobie.postgres.pgisgeographyimplicits._
+
+// or define the implicit conversion manually
+
+implicit val geographyPoint: Meta[Point] =
+  doobie.postgres.pgisgeographyimplicits.PointType
+</code></pre>
+<ul>
+  <li>Point</li>
+  <li>Polygon</li>
+  <li>MultiPoint</li>
+  <li>LineString</li>
+  <li>PointComposedGeom</li>
+  <li>MultiPolygon</li>
+  <li>MultiLineString</li>
 </ul>
 <h3><a href="#other-nonstandard-types" name="other-nonstandard-types" class="anchor"><span class="anchor-link"></span></a>Other Nonstandard Types</h3>
 <ul>
@@ -398,13 +420,13 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.014..1.926 rows=239 loops=1)
-// Planning Time: 0.223 ms
-// Execution Time: 3.974 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.004..0.027 rows=239 loops=1)
+// Planning Time: 0.111 ms
+// Execution Time: 0.056 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -475,7 +497,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2023</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -500,7 +522,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
 
 
 </html>

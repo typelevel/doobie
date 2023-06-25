@@ -6,6 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/10-Logging.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -31,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -144,27 +145,41 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <h2><a href="#logging" name="logging" class="anchor"><span class="anchor-link"></span></a>Logging</h2>
 <p>In this chapter we discuss how to log statement execution and timing.</p>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
-<p>Once again we will set up our REPL with a transactor.</p>
 <pre class="prettyprint"><code class="language-scala">import doobie._
 import doobie.implicits._
-import doobie.util.ExecutionContexts
-import cats._
-import cats.data._
+import doobie.util.log.LogEvent
 import cats.effect._
 import cats.implicits._
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
 import cats.effect.unsafe.implicits.global
-
-// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
+</code></pre>
+<p>Logging in doobie is done via a <code>LogHandler</code> instance that is setup when we create our <code>Transactor</code>.</p>
+<p>The <code>LogHandler</code> interface looks like this:</p>
+<pre class="prettyprint"><code class="language-scala">trait LogHandler[M[_]]{
+  def run(logEvent: LogEvent): M[Unit]
+}
+</code></pre>
+<p>The <code>run</code> method will be called for all queries executed via the Transactor. It will receive a LogEvent which it can handle it inside the <code>M</code> effect (e.g. <code>cats.effect.IO</code>).</p>
+<p>For example, let&rsquo;s construct a <code>LogHandler</code> that only prints out the SQL executed:</p>
+<pre class="prettyprint"><code class="language-scala">val printSqlLogHandler: LogHandler[IO] = new LogHandler[IO] {
+  def run(logEvent: LogEvent): IO[Unit] = 
+    IO { 
+      println(logEvent.sql)
+    }
+}
+</code></pre>
+<pre class="prettyprint"><code class="language-scala">// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
-val xa = Transactor.fromDriverManager[IO](
-  &quot;org.postgresql.Driver&quot;,     // driver classname
-  &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
-  &quot;postgres&quot;,                  // user
-  &quot;&quot;                           // password
-)
+val xa = Transactor.fromDriverManager[IO]
+  .apply(
+    driver = &quot;org.postgresql.Driver&quot;,     // JDBC driver classname
+    url = &quot;jdbc:postgresql:world&quot;,        // Connect URL - Driver specific
+    user = &quot;postgres&quot;,                    // Database user name
+    password = &quot;password&quot;,                // Database password
+    logHandler = Some(printSqlLogHandler) // Here we specify our log event handler
+  )
 </code></pre>
 <p>We&rsquo;re still playing with the <code>country</code> table, shown here for reference.</p>
 <pre class="prettyprint"><code class="language-sql">CREATE TABLE country (
@@ -175,59 +190,18 @@ val xa = Transactor.fromDriverManager[IO](
   -- more columns, but we won&#39;t use them here
 )
 </code></pre>
-<h3><a href="#basic-statement-logging" name="basic-statement-logging" class="anchor"><span class="anchor-link"></span></a>Basic Statement Logging</h3>
-<p>When we construct a <code>Query0</code> or <code>Update0</code> we can provide an optional <code>LogHandler</code> that will be given a <code>LogEvent</code> on completion and can perform an arbitrary side-effect to report the event as desired.</p>
-<p><strong>doobie</strong> provides an example <code>LogHandler</code> that writes a summary to a JDK logger, so let&rsquo;s try that one. Instead of calling <code>.query</code> let&rsquo;s call <code>.queryWithLogHandler</code>.</p>
-<pre class="prettyprint"><code class="language-scala">def byName(pat: String) = {
-  sql&quot;select name, code from country where name like $pat&quot;
-    .queryWithLogHandler[(String, String)](LogHandler.jdkLogHandler)
+<pre class="prettyprint"><code class="language-scala">val pattern = &quot;U%&quot;
+
+sql&quot;select name, code from country where name like $pattern&quot;
+    .query[(String, String)]
     .to[List]
     .transact(xa)
-}
+    .unsafeRunSync()
 </code></pre>
-<p>When we run our program we get our result as expected.</p>
-<pre class="prettyprint"><code class="language-scala">byName(&quot;U%&quot;).unsafeRunSync()
-// res0: List[(String, String)] = List(
-//   (&quot;United Arab Emirates&quot;, &quot;ARE&quot;),
-//   (&quot;United Kingdom&quot;, &quot;GBR&quot;),
-//   (&quot;Uganda&quot;, &quot;UGA&quot;),
-//   (&quot;Ukraine&quot;, &quot;UKR&quot;),
-//   (&quot;Uruguay&quot;, &quot;URY&quot;),
-//   (&quot;Uzbekistan&quot;, &quot;UZB&quot;),
-//   (&quot;United States&quot;, &quot;USA&quot;),
-//   (&quot;United States Minor Outlying Islands&quot;, &quot;UMI&quot;)
-// )
-</code></pre>
-<p>But now on standard out we see:</p>
-<pre><code>Jan 07, 2017 7:07:43 AM doobie.util.log$LogHandler$ $anonfun$jdkLogHandler$1
-INFO: Successful Statement Execution:
-
-  select name, code from country where name like ?
-
- arguments = [U%]
-   elapsed = 9 ms exec + 6 ms processing (15 ms total)
-</code></pre>
-<p>Let&rsquo;s break down what we&rsquo;re seeing:</p>
-<ul>
-  <li>We see the SQL string that is sent to the JDBC driver.</li>
-  <li>We see the argument list (in this case just the pattern <code>U%</code>).</li>
-  <li>We see elapsed time: it took 9ms for the first row to become available, then 6ms to process the rows, for a total of 15ms.</li>
-</ul>
-<h3><a href="#implicit-logging" name="implicit-logging" class="anchor"><span class="anchor-link"></span></a>Implicit Logging</h3>
-<p>If you wish to turn on logging generally, you can introduce an implicit <code>LogHandler</code> that will get picked up and used by the <code>.query/.update</code> operations.</p>
-<pre class="prettyprint"><code class="language-scala">implicit val han = LogHandler.jdkLogHandler
-
-def byName2(pat: String) = {
-  sql&quot;select name, code from country where name like $pat&quot;
-    .query[(String, String)] // handler will be picked up here
-    .to[List]
-    .transact(xa)
-}
+<p>By now in the standard output above we you can see this line printed out too (from <code>printSqlLogHandler</code>)</p>
+<pre><code>select name, code from country where name like ?
 </code></pre>
 <h3><a href="#writing-your-own-loghandler" name="writing-your-own-loghandler" class="anchor"><span class="anchor-link"></span></a>Writing Your Own <code>LogHandler</code></h3>
-<p>If you use the <code>jdkLogHandler</code> you will be warned that it&rsquo;s just an example, write your own! So let&rsquo;s do that. <code>LogHandler</code> is a very simple data type:</p>
-<pre class="prettyprint"><code class="language-scala">case class LogHandler(unsafeRun: LogEvent =&gt; Unit)
-</code></pre>
 <p><code>LogEvent</code> has three constructors, all of which provide the SQL string and argument list.</p>
 <ul>
   <li><code>Success</code> indicates successful execution and result processing, and provides timing information for both.</li>
@@ -235,61 +209,62 @@ def byName2(pat: String) = {
   <li><code>ProcessingFailure</code> indicates that execution was successful but resultset processing failed. This constructor provides timing information for both execution and (failed) processing, as well as the raised exception.</li>
 </ul>
 <p>See the Scaladoc for details on this data type.</p>
-<p>The simplest possible <code>LogHandler</code> does nothing at all, and this is what you get by default.</p>
-<pre class="prettyprint"><code class="language-scala">val nop = LogHandler(_ =&gt; ())
+<p>Note that you can attach a String <code>label</code> when constructing a Query/Update object by calling <code>.queryWithLabel/.updateWithLabel</code> instead of <code>.query/.update</code>:</p>
+<pre><code>sql&quot;select name, code from country where name like $pattern&quot;
+    .queryWithLabel[(String, String)](&quot;select_country_by_pattern&quot;)
+    .to[List]
+    .transact(xa)
+    .unsafeRunSync()
 </code></pre>
-<p>But that&rsquo;s not interesting. Let&rsquo;s at least print the event out.</p>
-<pre class="prettyprint"><code class="language-scala">val trivial = LogHandler(e =&gt; Console.println(&quot;*** &quot; + e))
-// trivial: LogHandler = LogHandler(unsafeRun = &lt;function1&gt;)
-sql&quot;select 42&quot;.queryWithLogHandler[Int](trivial).unique.transact(xa).unsafeRunSync()
-// res1: Int = 42
-</code></pre>
-<p>The <code>jdkLogHandler</code> implementation is straightforward. You might use it as a template to write a logger to suit your particular logging back-end.</p>
-<pre class="prettyprint"><code class="language-scala">import java.util.logging.Logger
-import doobie.util.log.{ Success, ProcessingFailure, ExecFailure }
+<p>You can find the <code>label</code> in the LogEvent.</p>
+<h3><a href="#passing-additional-context-to-your-loghandler" name="passing-additional-context-to-your-loghandler" class="anchor"><span class="anchor-link"></span></a>Passing additional context to your LogHandler</h3>
+<p>You can use cats-effect&rsquo;s <code>IOLocal</code> to pass additional context to the LogHandler (e.g. tracing context), as the following example shows:</p>
+<pre class="prettyprint"><code class="language-scala">import cats.effect.{IOLocal, Ref}
+import doobie.util.log.Success
 
-val jdkLogHandler: LogHandler = {
-  val jdkLogger = Logger.getLogger(getClass.getName)
-  LogHandler {
+def users = List.range(0, 4).map(n =&gt; s&quot;user-$n&quot;)
 
-    case Success(s, a, e1, e2) =&gt;
-      jdkLogger.info(s&quot;&quot;&quot;Successful Statement Execution:
-        |
-        |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString(&quot;\n  &quot;)}
-        |
-        | arguments = [${a.mkString(&quot;, &quot;)}]
-        |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (${(e1 + e2).toMillis} ms total)
-      &quot;&quot;&quot;.stripMargin)
+def program: IO[List[String]] =
+  for {
+    // define an IOLocal where we store the user which caused the query to be run  
+    currentUser &lt;- IOLocal(&quot;&quot;)
+    // store all successful sql here, for all users
+    successLogsRef &lt;- Ref[IO].of(List.empty[String])
+    xa = Transactor.fromDriverManager[IO](
+        driver = &quot;org.h2.Driver&quot;,
+        url = &quot;jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1&quot;,
+        user = &quot;sa&quot;, 
+        password = &quot;&quot;,
+        logHandler = Some(new LogHandler[IO] {
+          def run(logEvent: LogEvent): IO[Unit] =
+            currentUser.get.flatMap(user =&gt; successLogsRef.update(logs =&gt; s&quot;sql for user $user: &#39;${logEvent.sql}&#39;&quot; :: logs))
+        })
+      )
+    // run a bunch of queries
+    _ &lt;- users.parTraverse(user =&gt;
+      for {
+        _ &lt;- currentUser.set(user)
+        _ &lt;- sql&quot;select 1&quot;.query[Int].unique.transact(xa)
+      } yield ()
+    )
+    // return collected log messages
+    logs &lt;- successLogsRef.get
+  } yield logs
 
-    case ProcessingFailure(s, a, e1, e2, t) =&gt;
-      jdkLogger.severe(s&quot;&quot;&quot;Failed Resultset Processing:
-        |
-        |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString(&quot;\n  &quot;)}
-        |
-        | arguments = [${a.mkString(&quot;, &quot;)}]
-        |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (failed) (${(e1 + e2).toMillis} ms total)
-        |   failure = ${t.getMessage}
-      &quot;&quot;&quot;.stripMargin)
-
-    case ExecFailure(s, a, e1, t) =&gt;
-      jdkLogger.severe(s&quot;&quot;&quot;Failed Statement Execution:
-        |
-        |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString(&quot;\n  &quot;)}
-        |
-        | arguments = [${a.mkString(&quot;, &quot;)}]
-        |   elapsed = ${e1.toMillis} ms exec (failed)
-        |   failure = ${t.getMessage}
-      &quot;&quot;&quot;.stripMargin)
-
-  }
-}
+program.unsafeRunSync().sorted
+// res1: List[String] = List(
+//   &quot;sql for user user-0: &#39;select 1&#39;&quot;,
+//   &quot;sql for user user-1: &#39;select 1&#39;&quot;,
+//   &quot;sql for user user-2: &#39;select 1&#39;&quot;,
+//   &quot;sql for user user-3: &#39;select 1&#39;&quot;
+// )
 </code></pre>
 <h3><a href="#caveats" name="caveats" class="anchor"><span class="anchor-link"></span></a>Caveats</h3>
 <p>Logging is not yet supported for streaming (<code>.stream</code> or YOLO mode&rsquo;s <code>.quick</code>).</p>
-<p>Note that the <code>LogHandler</code> invocation is part of your <code>ConnectionIO</code> program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.</p>
+<p>Note that the <code>LogHandler#run</code> invocation is part of your <code>ConnectionIO</code> program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.</p>
 <p>Further note that the handler is not transactional; anything your logger does stays done, even if the transaction is rolled back. This is only for diagnostics, not for business logic.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/10-Logging.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/10-Logging.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -305,9 +280,8 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
   <li><a href="../docs/10-Logging.html#logging" class="header">Logging</a>
   <ul>
     <li><a href="../docs/10-Logging.html#setting-up" class="header">Setting Up</a></li>
-    <li><a href="../docs/10-Logging.html#basic-statement-logging" class="header">Basic Statement Logging</a></li>
-    <li><a href="../docs/10-Logging.html#implicit-logging" class="header">Implicit Logging</a></li>
     <li><a href="../docs/10-Logging.html#writing-your-own-loghandler" class="header">Writing Your Own <code>LogHandler</code></a></li>
+    <li><a href="../docs/10-Logging.html#passing-additional-context-to-your-loghandler" class="header">Passing additional context to your LogHandler</a></li>
     <li><a href="../docs/10-Logging.html#caveats" class="header">Caveats</a></li>
   </ul></li>
 </ul>
@@ -351,7 +325,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2023</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -376,7 +350,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
 
 
 </html>

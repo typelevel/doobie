@@ -6,6 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/07-Updating.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -31,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -89,7 +90,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC1
+1.0.0-RC4
 </div>
 </div>
 <div class="nav-toc">
@@ -160,10 +161,12 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  &quot;org.postgresql.Driver&quot;,     // driver classname
-  &quot;jdbc:postgresql:world&quot;,     // connect URL (driver-specific)
-  &quot;postgres&quot;,                  // user
-  &quot;&quot;                           // password
+  driver = &quot;org.postgresql.Driver&quot;,  // JDBC driver classname
+  url = &quot;jdbc:postgresql:world&quot;,     // Connect URL - Driver specific
+  user = &quot;postgres&quot;,                 // Database user name
+  password = &quot;password&quot;,             // Database password
+  logHandler = None                  // Don&#39;t setup logging for now. See Logging page for how to log events in detail
+
 )
 
 val y = xa.yolo
@@ -301,7 +304,7 @@ val data2 = List[PersonInfo](
 <pre class="prettyprint"><code class="language-scala">insertMany2(data2).quick.unsafeRunSync()
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/master/modules/docs/target/mdoc/docs/07-Updating.md">here</a>.
+The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/07-Updating.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -364,7 +367,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2023</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -389,7 +392,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC1', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
 
 
 </html>
