@@ -8,6 +8,9 @@ package util
 trait WriteSuitePlatform { self: munit.FunSuite =>
 
   case class Woozle(a: (String, Int), b: Int *: String *: EmptyTuple, c: Boolean)
+  
+  sealed trait NoPutInstanceForThis
+  case class CaseClassWithFieldWithoutPutInstance(a: String, b: NoPutInstanceForThis)
 
   test("Write should exist for some fancy types") {
     util.Write[Woozle]
@@ -19,6 +22,10 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
     util.Write[Option[Woozle]]
     util.Write[Option[(Woozle, String)]]
     util.Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
+  }
+
+  test("Write should not exist for case class with field without Put instance") {
+    util.Write[CaseClassWithFieldWithoutPutInstance]
   }
 
   test("derives") {

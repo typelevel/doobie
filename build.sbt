@@ -31,7 +31,7 @@ lazy val weaverVersion        = "0.8.3"
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshits on `main`
-ThisBuild / scalaVersion := scala213Version
+ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
