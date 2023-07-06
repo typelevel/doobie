@@ -10,7 +10,36 @@ import doobie.free.{ FPS, FRS, PreparedStatementIO, ResultSetIO }
 import java.sql.{ PreparedStatement, ResultSet }
 import doobie.util.fragment.Fragment
 import doobie.util.fragment.Elem
+import scala.annotation.implicitNotFound
 
+@implicitNotFound("""
+Cannot find or construct a Write instance for type:
+
+  ${A}
+
+This can happen for a few reasons, but the most common case is that a data
+member somewhere within this type doesn't have a Put instance in scope. Here are
+some debugging hints:
+
+- For Option types, ensure that a Write instance is in scope for the non-Option
+  version.
+- For types you expect to map to a single column ensure that a Put instance is
+  in scope.
+- For case classes, HLists, and shapeless records ensure that each element
+  has a Write instance in scope.
+- Lather, rinse, repeat, recursively until you find the problematic bit.
+
+You can check that an instance exists for Write in the REPL or in your code:
+
+  scala> Write[Foo]
+
+and similarly with Put:
+
+  scala> Put[Foo]
+
+And find the missing instance and construct it as needed. Refer to Chapter 12
+of the book of doobie for more information.
+""")
 final class Write[A](
   val puts: List[(Put[_], NullabilityKnown)],
   val toList: A => List[Any],
