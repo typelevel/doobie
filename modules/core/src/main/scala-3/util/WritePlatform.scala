@@ -13,7 +13,7 @@ trait WritePlatform:
     new Write(Nil, _ => Nil, (_, _, _) => (),(_, _, _) => ())
 
   // Inductive write for writable head and tail.
-  given [H, T <: Tuple](using H: => Write[H], T: => Write[T]): Write[H *: T] =
+  given [H, T <: Tuple](using H: Write[H], T: Write[T]): Write[H *: T] =
     new Write(
       H.puts ++ T.puts,
       { case h *: t => H.toList(h) ++ T.toList(t) },

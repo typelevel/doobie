@@ -5,9 +5,14 @@
 package doobie
 package util
 
+import Predef.augmentString
+
 trait ReadSuitePlatform { self: munit.FunSuite =>
 
   case class Woozle(a: (String, Int), b: Int *: String *: EmptyTuple, c: Boolean)
+  
+  sealed trait NoGetInstanceForThis
+  case class CaseClassWithFieldWithoutGetInstance(a: String, b: NoGetInstanceForThis)
 
   test("Read should exist for some fancy types") {
     util.Read[Woozle]
@@ -19,6 +24,19 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
     util.Read[Option[Woozle]]
     util.Read[Option[(Woozle, String)]]
     util.Read[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
+  }
+
+  test("Read should not exist for case class with field without Get instance") {
+    val compileError = compileErrors("util.Read[CaseClassWithFieldWithoutGetInstance]")
+    assert(
+      compileError.contains(
+        """Cannot find or construct a Read instance for type:
+          |
+          |  ReadSuitePlatform.this.CaseClassWithFieldWithoutGetInstance
+          |
+          |This can happen for a few reasons,""".stripMargin
+      )
+    )
   }
 
   test("derives") {
