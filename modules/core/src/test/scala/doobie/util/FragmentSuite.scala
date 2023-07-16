@@ -13,9 +13,11 @@ class FragmentSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:fragmentspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:fragmentspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   val a = 1

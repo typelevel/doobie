@@ -12,7 +12,7 @@ class `262` extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
 
   // an interpreter that returns null when we ask for statement metadata
-  object Interp extends KleisliInterpreter[IO](LogHandlerM.noop) {
+  object Interp extends KleisliInterpreter[IO](LogHandler.noop) {
     override lazy val PreparedStatementInterpreter =
       new PreparedStatementInterpreter {
         override def getMetaData = primitive(_ => null)
@@ -21,9 +21,11 @@ class `262` extends munit.FunSuite {
   }
 
   val baseXa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   // A transactor that uses our interpreter above

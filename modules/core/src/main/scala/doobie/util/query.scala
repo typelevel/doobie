@@ -36,9 +36,6 @@ object query {
     protected implicit val write: Write[A]
     protected implicit val read: Read[B]
 
-    // LogHandler is protected for now.
-    protected val logHandler: LogHandler
-
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
@@ -48,7 +45,6 @@ object query {
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
         for {
-          _ <- FPS.delay(logHandler.unsafeRun(e))
           _ <- FPS.performLogging(e)
         } yield ()
 
@@ -62,12 +58,12 @@ object query {
         tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
           for {
             t1 <- now
-            _ <- log(ExecFailure(sql, args, diff(t1, t0), e))
+            _ <- log(ExecFailure(sql, args, label, diff(t1, t0), e))
           } yield ()
         }
         (t1, et, t2) = tuple
-        t <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, diff(t1, t0), diff(t2, t1), e)) }
-        _  <- log(Success(sql, args, diff(t1, t0), diff(t2, t1)))
+        t <- et.liftTo[PreparedStatementIO].onError { case e => log(ProcessingFailure(sql, args, label, diff(t1, t0), diff(t2, t1), e)) }
+        _  <- log(Success(sql, args, label, diff(t1, t0), diff(t2, t1)))
       } yield t
     }
 
@@ -87,6 +83,9 @@ object query {
     /** Convert this Query to a `Fragment`. */
     def toFragment(a: A): Fragment =
       write.toFragment(a, sql)
+
+    /** Label to be used during logging */
+    val label: String
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
@@ -193,7 +192,7 @@ object query {
         val read  = outer.read.map(f)
         def sql = outer.sql
         def pos = outer.pos
-        val logHandler = outer.logHandler
+        val label = outer.label
       }
 
     /** @group Transformations */
@@ -203,7 +202,7 @@ object query {
         val read  = outer.read
         def sql = outer.sql
         def pos = outer.pos
-        val logHandler = outer.logHandler
+        val label = outer.label
       }
 
     /**
@@ -240,14 +239,18 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
+    def apply[A, B](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(implicit A: Write[A], B: Read[B]): Query[A, B] = {
+      val sql0 = sql
+      val label0 = label
+      val pos0 = pos
       new Query[A, B] {
         val write = A
         val read = B
         val sql = sql0
         val pos = pos0
-        val logHandler = logHandler0
+        val label = label0
       }
+    }
 
     /** @group Typeclass Instances */
     implicit val queryProfunctor: Profunctor[Query] =
@@ -391,8 +394,8 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A: Read](sql: String, pos: Option[Pos] = None, logHandler: LogHandler = LogHandler.nop): Query0[A] =
-       Query[Unit, A](sql, pos, logHandler).toQuery0(())
+    def apply[A: Read](sql: String, pos: Option[Pos] = None, label: String = unlabeled): Query0[A] =
+       Query[Unit, A](sql, pos, label).toQuery0(())
 
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =

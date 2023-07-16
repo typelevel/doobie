@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -14,6 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import org.postgresql.copy.{ CopyOut => PGCopyOut }
 
+// This file is Auto-generated using FreeGen2.scala
 object copyout { module =>
 
   // Algebra of operations for PGCopyOut. Each accepts a visitor as an alternative to pattern-matching.
@@ -53,6 +54,7 @@ object copyout { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): F[A]
       def fromFuture[A](fut: CopyOutIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: CopyOutIO[(Future[A], CopyOutIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // PGCopyOut
@@ -107,6 +109,9 @@ object copyout { module =>
     case class FromFuture[A](fut: CopyOutIO[Future[A]]) extends CopyOutOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class FromFutureCancelable[A](fut: CopyOutIO[(Future[A], CopyOutIO[Unit])]) extends CopyOutOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    }
     case class PerformLogging(event: LogEvent) extends CopyOutOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
@@ -159,6 +164,7 @@ object copyout { module =>
   val canceled = FF.liftF[CopyOutOp, Unit](Canceled)
   def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]) = FF.liftF[CopyOutOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: CopyOutIO[Future[A]]) = FF.liftF[CopyOutOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: CopyOutIO[(Future[A], CopyOutIO[Unit])]) = FF.liftF[CopyOutOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[CopyOutOp, Unit](PerformLogging(event))
 
   // Smart constructors for CopyOut-specific operations.
@@ -190,6 +196,18 @@ object copyout { module =>
       override def canceled: CopyOutIO[Unit] = module.canceled
       override def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): CopyOutIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: CopyOutIO[Future[A]]): CopyOutIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: CopyOutIO[(Future[A], CopyOutIO[Unit])]): CopyOutIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCopyOutIO[A : Monoid]: Monoid[CopyOutIO[A]] = new Monoid[CopyOutIO[A]] {
+    override def empty: CopyOutIO[A] = Applicative[CopyOutIO].pure(Monoid[A].empty)
+    override def combine(x: CopyOutIO[A], y: CopyOutIO[A]): CopyOutIO[A] =
+      Applicative[CopyOutIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCopyOutIO[A : Semigroup]: Semigroup[CopyOutIO[A]] = new Semigroup[CopyOutIO[A]] {
+    override def combine(x: CopyOutIO[A], y: CopyOutIO[A]): CopyOutIO[A] =
+      Applicative[CopyOutIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

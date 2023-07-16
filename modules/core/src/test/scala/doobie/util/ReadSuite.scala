@@ -20,9 +20,9 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",
+    user = "sa", password = "", logHandler = None
   )
 
   test("Read should exist for some fancy types") {

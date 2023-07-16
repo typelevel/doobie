@@ -13,7 +13,7 @@ import org.postgresql.geometric.PGpoint
 object PostgresPoint extends IOApp.Simple {
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   )
 
   // A custom Point type with a Meta instance xmapped from the PostgreSQL native type (which

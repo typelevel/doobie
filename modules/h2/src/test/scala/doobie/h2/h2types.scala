@@ -22,9 +22,11 @@ class h2typesspec extends munit.ScalaCheckSuite {
   import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:ch3;DB_CLOSE_DELAY=-1",
+    user = "sa",
+    password = "",
+    logHandler = None
   )
 
   def inOut[A: Put : Get](col: String, a: A): ConnectionIO[A] =
@@ -187,9 +189,9 @@ class h2typesspec extends munit.ScalaCheckSuite {
     assertEquals(a.alignmentErrors, Nil)
   }
 
-  test("Mapping for OffsetDateTime should warn query analysis for TIME WITH TIME ZONE") {
+  test("Mapping for OffsetDateTime should fail query analysis for TIME WITH TIME ZONE") {
     val a = analyzeTimeWithTimeZone[java.time.OffsetDateTime]
-    assertAnalyzeColumnWarning(a)
+    assertAnalyzeColumnError(a)
   }
 
   test("Mapping for OffsetDateTime should fail query analysis for TIMESTAMP") {

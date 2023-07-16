@@ -28,8 +28,8 @@ Then, you will be able to import the implicits for dealing with JSON:
 @@@ vars
 
 ```scala
-import doobie.postgres.circe.json.implicits
-import doobie.postgres.circe.jsonb.implicits
+import doobie.postgres.circe.json.implicits._
+import doobie.postgres.circe.jsonb.implicits._
 
 ```
 
@@ -56,10 +56,11 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
-  "postgres",                  // user
-  ""                           // password
+  driver = "org.postgresql.Driver",  // JDBC driver classname
+  url = "jdbc:postgresql:world",     // Connect URL - Driver specific
+  user = "postgres",                 // Database user name
+  password = "password",             // Database password
+  logHandler = None                  // Don't setup logging for now. See Logging page for how to log events in detail
 )
 ```
 

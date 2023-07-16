@@ -13,7 +13,7 @@ trait ReadPlatform:
     new Read[EmptyTuple](Nil, (_, _) => EmptyTuple)
 
   // Read for head and tail.
-  given [H, T <: Tuple](using H: => Read[H], T: => Read[T]): Read[H *: T] =
+  given [H, T <: Tuple](using H: Read[H], T: Read[T]): Read[H *: T] =
     new Read[H *: T](
       H.gets ++ T.gets,
       (rs, n) => H.unsafeGet(rs, n) *: T.unsafeGet(rs, n + H.length)

@@ -49,7 +49,7 @@ object PostgresNotify extends IOApp.Simple {
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   )
 
   /**

@@ -19,19 +19,25 @@ import scala.concurrent.ExecutionContext
 object HikariTransactor {
 
   /** Construct a `HikariTransactor` from an existing `HikariDatasource`. */
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply[M[_]: Async](
-    hikariDataSource : HikariDataSource,
-    connectEC:         ExecutionContext
-  ): HikariTransactor[M] =
-    Transactor.fromDataSource[M](hikariDataSource, connectEC)
-
+  def apply[M[_]] = new HikariTransactorPartiallyApplied[M]
+  
+  class HikariTransactorPartiallyApplied[M[_]] {
+    def apply(
+      hikariDataSource: HikariDataSource,
+      connectEC: ExecutionContext,
+      logHandler: Option[LogHandler[M]] = None
+    )(implicit ev: Async[M]): HikariTransactor[M] = {
+      Transactor.fromDataSource[M](hikariDataSource, connectEC, logHandler)
+    }
+  }
+  
   /** Resource yielding an unconfigured `HikariTransactor`. */
   def initial[M[_]: Async](
-    connectEC: ExecutionContext
+    connectEC: ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] = {
     Resource.fromAutoCloseable(Sync[M].delay(new HikariDataSource))
-      .map(Transactor.fromDataSource[M](_, connectEC))
+      .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
@@ -40,6 +46,7 @@ object HikariTransactor {
   def fromConfigCustomEc[M[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None, 
     dataSource: Option[DataSource] = None,
     dataSourceProperties: Option[Properties] = None,
     healthCheckProperties: Option[Properties] = None,
@@ -52,18 +59,18 @@ object HikariTransactor {
     Resource
       .liftK(
         Config.makeHikariConfig(
-          config,
-          dataSource,
-          dataSourceProperties,
-          healthCheckProperties,
-          healthCheckRegistry,
-          metricRegistry,
-          metricsTrackerFactory,
-          scheduledExecutor,
-          threadFactory
+          config = config,
+          dataSource = dataSource,
+          dataSourceProperties = dataSourceProperties,
+          healthCheckProperties = healthCheckProperties,
+          healthCheckRegistry = healthCheckRegistry,
+          metricRegistry = metricRegistry,
+          metricsTrackerFactory = metricsTrackerFactory,
+          scheduledExecutor = scheduledExecutor,
+          threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_, connectEC))
+      .flatMap(fromHikariConfigCustomEc(_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
@@ -71,6 +78,7 @@ object HikariTransactor {
    */
   def fromConfig[M[_]: Async](
       config: Config,
+      logHandler: Option[LogHandler[M]] = None,
       dataSource: Option[DataSource] = None,
       dataSourceProperties: Option[Properties] = None,
       healthCheckProperties: Option[Properties] = None,
@@ -83,34 +91,38 @@ object HikariTransactor {
     Resource
       .liftK(
         Config.makeHikariConfig(
-          config,
-          dataSource,
-          dataSourceProperties,
-          healthCheckProperties,
-          healthCheckRegistry,
-          metricRegistry,
-          metricsTrackerFactory,
-          scheduledExecutor,
-          threadFactory
+          config = config,
+          dataSource = dataSource,
+          dataSourceProperties = dataSourceProperties,
+          healthCheckProperties = healthCheckProperties,
+          healthCheckRegistry = healthCheckRegistry,
+          metricRegistry = metricRegistry,
+          metricsTrackerFactory = metricsTrackerFactory,
+          scheduledExecutor = scheduledExecutor,
+          threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_))
+      .flatMap(fromHikariConfig(_, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
-   * Unless you have a good reason, consider using the overload without explicit `connectEC`, it will be created automatically for you.
+   * Unless you have a good reason, consider using [[fromHikariConfig]], it will be created automatically for you.
+   */
+  def fromHikariConfigCustomEc[M[_]: Async](
+    hikariConfig: HikariConfig,
+    connectEC: ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None
+  ): Resource[M, HikariTransactor[M]] = Resource
+    .fromAutoCloseable(Sync[M].delay(new HikariDataSource(hikariConfig)))
+    .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
+
+  /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
+   * The connection ExecutionContext (used for waiting for a connection from the connection pool) is created automatically, with the same size as the Hikari connection pool.
    */
   def fromHikariConfig[M[_]: Async](
     hikariConfig: HikariConfig,
-    connectEC: ExecutionContext
-  ): Resource[M, HikariTransactor[M]] = Resource
-    .fromAutoCloseable(Sync[M].delay(new HikariDataSource(hikariConfig)))
-    .map(Transactor.fromDataSource[M](_, connectEC))
-
-  /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
-   * The `connectEC` is created automatically, with the same size as the Hikari pool.
-   */
-  def fromHikariConfig[M[_]: Async](hikariConfig: HikariConfig): Resource[M, HikariTransactor[M]] =
+    logHandler: Option[LogHandler[M]] = None
+  ): Resource[M, HikariTransactor[M]] =
   for {
     // to populate unset fields with default values, like `maximumPoolSize`
     _ <- Sync[M].delay(hikariConfig.validate()).toResource
@@ -119,7 +131,7 @@ object HikariTransactor {
     // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
     connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- fromHikariConfig(hikariConfig, connectEC)
+    result <- fromHikariConfigCustomEc(hikariConfig, connectEC, logHandler)
   } yield result
 
   /** Resource yielding a new `HikariTransactor` configured with the given info.
@@ -130,11 +142,12 @@ object HikariTransactor {
     url:             String,
     user:            String,
     pass:            String,
-    connectEC:       ExecutionContext
+    connectEC:       ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] =
     for {
       _ <- Resource.eval(Async[M].delay(Class.forName(driverClassName)))
-      t <- initial[M](connectEC)
+      t <- initial[M](connectEC, logHandler)
       _ <- Resource.eval {
             t.configure { ds =>
               Async[M].delay {

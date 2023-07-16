@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -16,6 +16,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
 
+// This file is Auto-generated using FreeGen2.scala
 object largeobject { module =>
 
   // Algebra of operations for LargeObject. Each accepts a visitor as an alternative to pattern-matching.
@@ -55,6 +56,7 @@ object largeobject { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
       def fromFuture[A](fut: LargeObjectIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // LargeObject
@@ -119,6 +121,9 @@ object largeobject { module =>
     }
     case class FromFuture[A](fut: LargeObjectIO[Future[A]]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -205,6 +210,7 @@ object largeobject { module =>
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: LargeObjectIO[Future[A]]) = FF.liftF[LargeObjectOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]) = FF.liftF[LargeObjectOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[LargeObjectOp, Unit](PerformLogging(event))
 
   // Smart constructors for LargeObject-specific operations.
@@ -247,6 +253,18 @@ object largeobject { module =>
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: LargeObjectIO[Future[A]]): LargeObjectIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): LargeObjectIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidLargeObjectIO[A : Monoid]: Monoid[LargeObjectIO[A]] = new Monoid[LargeObjectIO[A]] {
+    override def empty: LargeObjectIO[A] = Applicative[LargeObjectIO].pure(Monoid[A].empty)
+    override def combine(x: LargeObjectIO[A], y: LargeObjectIO[A]): LargeObjectIO[A] =
+      Applicative[LargeObjectIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupLargeObjectIO[A : Semigroup]: Semigroup[LargeObjectIO[A]] = new Semigroup[LargeObjectIO[A]] {
+    override def combine(x: LargeObjectIO[A], y: LargeObjectIO[A]): LargeObjectIO[A] =
+      Applicative[LargeObjectIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

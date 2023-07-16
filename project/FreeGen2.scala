@@ -9,6 +9,7 @@ object FreeGen2 {
   lazy val freeGen2Dir     = settingKey[File]("directory where free algebras go")
   lazy val freeGen2Package = settingKey[String]("package where free algebras go")
   lazy val freeGen2Renames = settingKey[Map[Class[_], String]]("map of imports that must be renamed")
+  lazy val freeGen2KleisliInterpreterImportExcludes = settingKey[Set[Class[_]]]("Imports to exclude for the generator kleisliinterpreter.scala file (to avoid unused import warning) ")
   lazy val freeGen2        = taskKey[Seq[File]]("generate free algebras")
 
   lazy val freeGen2Settings = Seq(
@@ -16,18 +17,27 @@ object FreeGen2 {
     freeGen2Dir     := (Compile / sourceManaged ).value,
     freeGen2Package := "doobie.free",
     freeGen2Renames := Map(classOf[java.sql.Array] -> "SqlArray"),
+    freeGen2KleisliInterpreterImportExcludes := Set.empty,
     freeGen2        :=
       new FreeGen2(
         freeGen2Classes.value,
         freeGen2Package.value,
         freeGen2Renames.value,
+        freeGen2KleisliInterpreterImportExcludes.value,
         state.value.log
-      ).gen(freeGen2Dir.value)
+      ).gen(freeGen2Dir.value),
+    Compile / compile := (Compile / compile).dependsOn(freeGen2).value
   )
 
 }
 
-class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], String], log: Logger) {
+class FreeGen2(
+  managed: List[Class[_]],
+  pkg: String,
+  renames: Map[Class[_], String],
+  kleisliImportExcludes: Set[Class[_]],
+  log: Logger
+) {
 
   // These Java classes will have non-Java names in our generated code
   val ClassBoolean  = classOf[Boolean]
@@ -176,7 +186,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
   // Ctor values for all methods in of A plus superclasses, interfaces, etc.
   def ctors[A](implicit ev: ClassTag[A]): List[Ctor] =
     methods(ev.runtimeClass).groupBy(_.getName).toList.flatMap { case (n, ms) =>
-      ms.toList.sortBy(_.getGenericParameterTypes.map(toScalaType).mkString(",")).zipWithIndex.map {
+      ms.sortBy(_.getGenericParameterTypes.map(toScalaType).mkString(",")).zipWithIndex.map {
         case (m, i) => Ctor(m, i)
       }
     }.sortBy(c => (c.mname, c.index))
@@ -190,12 +200,12 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
   }
 
   // All types referenced by all methods on A, superclasses, interfaces, etc.
-  def imports[A](implicit ev: ClassTag[A]): List[String] =
+  def imports[A](excludeImports: Set[Class[_]])(implicit ev: ClassTag[A]): List[String] =
     (renameImport(ev.runtimeClass) :: ctors.map(_.method).flatMap { m =>
       m.getReturnType :: m.getParameterTypes.toList
     }.map { t =>
       if (t.isArray) t.getComponentType else t
-    }.filterNot(t => t.isPrimitive || t == classOf[Object]).map { c =>
+    }.filterNot(t => t.isPrimitive || t == classOf[Object] || excludeImports.contains(t)).map { c =>
       renameImport(c)
     }).distinct.sorted
 
@@ -209,7 +219,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
    s"""
     |package $pkg
     |
-    |import cats.~>
+    |import cats.{~>, Applicative, Semigroup, Monoid}
     |import cats.effect.kernel.{ CancelScope, Poll, Sync }
     |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
     |import doobie.util.log.LogEvent
@@ -217,8 +227,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |import scala.concurrent.Future
     |import scala.concurrent.duration.FiniteDuration
     |
-    |${imports[A].mkString("\n")}
+    |${imports[A](excludeImports = Set.empty).mkString("\n")}
     |
+    |// This file is Auto-generated using FreeGen2.scala
     |object $mname { module =>
     |
     |  // Algebra of operations for $sname. Each accepts a visitor as an alternative to pattern-matching.
@@ -258,6 +269,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      def canceled: F[Unit]
     |      def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]): F[A]
     |      def fromFuture[A](fut: ${ioname}[Future[A]]): F[A]
+    |      def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]): F[A]
     |      def performLogging(event: LogEvent): F[Unit]
     |
     |      // $sname
@@ -305,6 +317,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |    case class FromFuture[A](fut: ${ioname}[Future[A]]) extends ${opname}[A] {
     |      def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     |    }
+    |    case class FromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) extends ${opname}[A] {
+    |      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    |    }
     |    case class PerformLogging(event: LogEvent) extends ${opname}[Unit] {
     |      def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     |    }
@@ -334,6 +349,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |  val canceled = FF.liftF[${opname}, Unit](Canceled)
     |  def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]) = FF.liftF[${opname}, A](OnCancel(fa, fin))
     |  def fromFuture[A](fut: ${ioname}[Future[A]]) = FF.liftF[${opname}, A](FromFuture(fut))
+    |  def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) = FF.liftF[${opname}, A](FromFutureCancelable(fut))
     |  def performLogging(event: LogEvent) = FF.liftF[${opname}, Unit](PerformLogging(event))
     |
     |  // Smart constructors for $oname-specific operations.
@@ -358,7 +374,19 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
     |      override def canceled: ${ioname}[Unit] = module.canceled
     |      override def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]): ${ioname}[A] = module.onCancel(fa, fin)
     |      override def fromFuture[A](fut: ${ioname}[Future[A]]): ${ioname}[A] = module.fromFuture(fut)
+    |      override def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]): ${ioname}[A] = module.fromFutureCancelable(fut)
     |    }
+    |    
+    |  implicit def Monoid$ioname[A : Monoid]: Monoid[$ioname[A]] = new Monoid[$ioname[A]] {
+    |    override def empty: $ioname[A] = Applicative[$ioname].pure(Monoid[A].empty)
+    |    override def combine(x: $ioname[A], y: $ioname[A]): $ioname[A] =
+    |      Applicative[$ioname].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+    |  }
+ 
+    |  implicit def Semigroup$ioname[A : Semigroup]: Semigroup[$ioname[A]] = new Semigroup[$ioname[A]] {
+    |    override def combine(x: $ioname[A], y: $ioname[A]): $ioname[A] =
+    |      Applicative[$ioname].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+    |  }  
     |}
     |""".trim.stripMargin
   }
@@ -424,6 +452,7 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
        |    override def poll[A](poll: Any, fa: ${ioname}[A]) = outer.poll(this)(poll, fa)
        |    override def onCancel[A](fa: ${ioname}[A], fin: ${ioname}[Unit]) = outer.onCancel(this)(fa, fin)
        |    override def fromFuture[A](fut: ${ioname}[Future[A]]) = outer.fromFuture(this)(fut)
+       |    override def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) = outer.fromFutureCancelable(this)(fut)
        |
        |    // domain-specific operations are implemented in terms of `primitive`
        |${ctors[A].map(_.kleisliImpl).mkString("\n")}
@@ -453,23 +482,23 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |import cats.effect.kernel.{ Poll, Sync }
       |import cats.free.Free
       |import doobie.WeakAsync
-      |import doobie.util.log.{LogEvent, LogHandlerM}
+      |import doobie.util.log.{LogEvent, LogHandler}
       |import scala.concurrent.Future
       |import scala.concurrent.duration.FiniteDuration
       |
       |// Types referenced in the JDBC API
-      |${managed.map(ClassTag(_)).flatMap(imports(_)).distinct.sorted.mkString("\n") }
+      |${managed.map(ClassTag(_)).flatMap(c => imports(kleisliImportExcludes)(c)).distinct.sorted.mkString("\n") }
       |
       |// Algebras and free monads thereof referenced by our interpreter.
       |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}
       |
       |object KleisliInterpreter {
-      |  def apply[M[_]: WeakAsync](logHandler: LogHandlerM[M]): KleisliInterpreter[M] =
+      |  def apply[M[_]: WeakAsync](logHandler: LogHandler[M]): KleisliInterpreter[M] =
       |    new KleisliInterpreter[M](logHandler)
       |}
       |
       |// Family of interpreters into Kleisli arrows for some monad M.
-      |class KleisliInterpreter[M[_]](logHandler: LogHandlerM[M])(implicit val asyncM: WeakAsync[M]) { outer =>
+      |class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: WeakAsync[M]) { outer =>
       |  import WeakAsync._
       |
       |  // The ${managed.length} interpreters, with definitions below. These can be overridden to customize behavior.
@@ -511,6 +540,9 @@ class FreeGen2(managed: List[Class[_]], pkg: String, renames: Map[Class[_], Stri
       |  )
       |  def fromFuture[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, Future[A]]): Kleisli[M, J, A] = Kleisli(j =>
       |    asyncM.fromFuture(fut.foldMap(interpreter).run(j))
+      |  )
+      |  def fromFutureCancelable[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fut: Free[G, (Future[A], Free[G, Unit])]): Kleisli[M, J, A] = Kleisli(j =>
+      |    asyncM.fromFutureCancelable(fut.map { case (f, g) => (f, g.foldMap(interpreter).run(j)) }.foldMap(interpreter).run(j))
       |  )
       |  def embed[J, A](e: Embedded[A]): Kleisli[M, J, A] =
       |    e match {

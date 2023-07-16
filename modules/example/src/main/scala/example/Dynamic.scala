@@ -17,9 +17,9 @@ object Dynamic extends IOApp.Simple {
   type Data    = List[List[Object]]
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
+    driver = "org.postgresql.Driver",
+    url = "jdbc:postgresql:world",
+    user = "postgres", password = "password", logHandler = None
   )
 
   // Entry point. Run a query and print the results out.

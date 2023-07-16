@@ -14,43 +14,23 @@ trait TimeMetaInstances { this: MetaConstructors =>
 
   /** @group Instances */
   implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
-    Basic.oneObject(
-      TimestampWithTimezone,
-      List(TimeWithTimezone),
-      classOf[java.time.OffsetDateTime]
-    )
+    Basic.oneObject(TimestampWithTimezone, Nil, classOf[java.time.OffsetDateTime])
 
   /** @group Instances */
   implicit val JavaLocalDateMeta: Meta[java.time.LocalDate] =
-    Basic.oneObject(
-      Date,
-      Nil,
-      classOf[java.time.LocalDate]
-    )
+    Basic.oneObject(Date, Nil, classOf[java.time.LocalDate])
 
   /** @group Instances */
   implicit val JavaLocalTimeMeta: Meta[java.time.LocalTime] =
-    Basic.oneObject(
-      Time,
-      Nil,
-      classOf[java.time.LocalTime]
-    )
+    Basic.oneObject(Time, Nil, classOf[java.time.LocalTime])
 
   /** @group Instances */
   implicit val JavaLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
-    Basic.oneObject(
-      Timestamp,
-      Nil,
-      classOf[java.time.LocalDateTime]
-    )
+    Basic.oneObject(Timestamp, Nil, classOf[java.time.LocalDateTime])
 
   /** @group Instances */
   implicit val JavaOffsetTimeMeta: Meta[java.time.OffsetTime] =
-    Basic.oneObject(
-      TimeWithTimezone,
-      Nil,
-      classOf[java.time.OffsetTime]
-    )
+    Basic.oneObject(TimeWithTimezone, Nil, classOf[java.time.OffsetTime])
 
   // extra instances not in the spec
 

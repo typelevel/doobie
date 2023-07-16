@@ -7,13 +7,13 @@ package doobie
 import cats.~>
 import cats.implicits._
 import cats.effect.kernel.{ Async, Poll, Resource, Sync }
-import cats.effect.implicits._
 import cats.effect.std.Dispatcher
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 trait WeakAsync[F[_]] extends Sync[F] {
   def fromFuture[A](fut: F[Future[A]]): F[A]
+  def fromFutureCancelable[A](fut: F[(Future[A], F[Unit])]): F[A]
 }
 
 object WeakAsync {
@@ -37,18 +37,18 @@ object WeakAsync {
       override def canceled: F[Unit] = F.canceled
       override def onCancel[A](fa: F[A], fin: F[Unit]): F[A] = F.onCancel(fa, fin)
       override def fromFuture[A](fut: F[Future[A]]): F[A] = F.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: F[(Future[A], F[Unit])]): F[A] = F.fromFutureCancelable(fut)
     }
 
   /** Create a natural transformation for lifting an `Async` effect `F` into a `WeakAsync` effect `G`
     * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization.
     * Leaking it from it's resource scope will lead to erorrs at runtime. */
   def liftK[F[_], G[_]](implicit F: Async[F], G: WeakAsync[G]): Resource[F, F ~> G] =
-    Dispatcher[F].map(dispatcher =>
+    Dispatcher.parallel[F].map(dispatcher =>
       new(F ~> G) {
-        def apply[T](fa: F[T]) = {
-          G.delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { 
-            case (running, cancel) =>
-              G.fromFuture(G.pure(running)).onCancel(G.fromFuture(G.delay(cancel())))
+        def apply[T](fa: F[T]) = G.fromFutureCancelable {
+          G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
+            (fut, G.fromFuture(G.delay(cancel())))
           }
         }
       }

@@ -5,9 +5,14 @@
 package doobie
 package util
 
+import Predef.augmentString
+
 trait WriteSuitePlatform { self: munit.FunSuite =>
 
   case class Woozle(a: (String, Int), b: Int *: String *: EmptyTuple, c: Boolean)
+  
+  sealed trait NoPutInstanceForThis
+  case class CaseClassWithFieldWithoutPutInstance(a: String, b: NoPutInstanceForThis)
 
   test("Write should exist for some fancy types") {
     util.Write[Woozle]
@@ -19,6 +24,19 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
     util.Write[Option[Woozle]]
     util.Write[Option[(Woozle, String)]]
     util.Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
+  }
+
+  test("Write should not exist for case class with field without Put instance") {
+    val compileError = compileErrors("util.Write[CaseClassWithFieldWithoutPutInstance]")
+    assert(
+      compileError.contains(
+        """Cannot find or construct a Write instance for type:
+          |
+          |  WriteSuitePlatform.this.CaseClassWithFieldWithoutPutInstance
+          |
+          |This can happen for a few reasons,""".stripMargin
+      )
+    )
   }
 
   test("derives") {
