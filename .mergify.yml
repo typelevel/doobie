@@ -79,6 +79,14 @@ pull_request_rules:
       add:
       - hikari
       remove: []
+- name: Label log4cats PRs
+  conditions:
+  - files~=^modules/log4cats/
+  actions:
+    label:
+      add:
+      - log4cats
+      remove: []
 - name: Label munit PRs
   conditions:
   - files~=^modules/munit/
