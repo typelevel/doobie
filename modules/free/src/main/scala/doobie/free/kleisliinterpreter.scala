@@ -727,7 +727,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def getNetworkTimeout = primitive(_.getNetworkTimeout)
     override def getSchema = primitive(_.getSchema)
     override def getTransactionIsolation = primitive(_.getTransactionIsolation)
-    override def getTypeMap = primitive(_.getTypeMap)
+    override def getTypeMap: Kleisli[M, java.sql.Connection, java.util.Map[String,Class[_]]] = primitive(_.getTypeMap)
     override def getWarnings = primitive(_.getWarnings)
     override def isClosed = primitive(_.isClosed)
     override def isReadOnly = primitive(_.isReadOnly)
