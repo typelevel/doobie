@@ -160,10 +160,14 @@ class FreeGen2(
       if (cargs.isEmpty) s"""|      def $mname: F[$ret] = sys.error("Not implemented: $mname")"""
       else s"""|      def $mname$ctparams(${cargs.mkString(", ")}): F[$ret] = sys.error("Not implemented: $mname$ctparams(${cparams.mkString(", ")})")"""
 
-    def kleisliImpl: String =
-      if (cargs.isEmpty) s"|    override def $mname = primitive(_.$mname)"
-      else s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args))"
-
+    def kleisliImpl(oname: String): String = (cargs, oname, mname) match {
+      case (List(), "Connection", "getTypeMap") => //https://github.com/tpolecat/doobie/issues/1889
+        s"|    override def $mname: Kleisli[M, java.sql.Connection, java.util.Map[String,Class[_]]] = primitive(_.$mname)"
+      case (List(), _, _) =>
+        s"|    override def $mname = primitive(_.$mname)"
+      case _ =>
+        s"|    override def $mname$ctparams(${cargs.mkString(", ")}) = primitive(_.$mname($args))"
+    }
   }
 
   // This class, plus any superclasses and interfaces, "all the way up"
@@ -455,7 +459,7 @@ class FreeGen2(
        |    override def fromFutureCancelable[A](fut: ${ioname}[(Future[A], ${ioname}[Unit])]) = outer.fromFutureCancelable(this)(fut)
        |
        |    // domain-specific operations are implemented in terms of `primitive`
-       |${ctors[A].map(_.kleisliImpl).mkString("\n")}
+       |${ctors[A].map(_.kleisliImpl(oname)).mkString("\n")}
        |
        |  }
        |""".trim.stripMargin
