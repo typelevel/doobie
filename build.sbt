@@ -7,10 +7,11 @@ import scala.sys.process.*
 lazy val catsVersion          = "2.9.0"
 lazy val catsEffectVersion    = "3.5.1"
 lazy val circeVersion         = "0.14.5"
-lazy val fs2Version           = "3.7.0"
+lazy val fs2Version           = "3.8.0"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "5.0.1" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
+lazy val log4catsVersion      = "2.6.0"
 lazy val postGisVersion       = "2.5.1"
 lazy val postgresVersion      = "42.6.0"
 lazy val refinedVersion       = "0.11.0"
@@ -137,6 +138,7 @@ lazy val doobie = project.in(file("."))
     h2,
     `h2-circe`,
     hikari,
+    log4cats,
     postgres,
     `postgres-circe`,
     refined,
@@ -239,6 +241,17 @@ lazy val core = project
             |""".stripMargin)
       Seq(outFile)
     }.taskValue
+  )
+
+lazy val log4cats = project
+  .in(file("modules/log4cats"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(
+    name := "doobie-log4cats",
+    description := "log4cats support for doobie.",
+    libraryDependencies += "org.typelevel" %% "log4cats-core" % log4catsVersion
   )
 
 lazy val example = project
