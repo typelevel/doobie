@@ -46,11 +46,16 @@ object WeakAsync {
   def liftK[F[_], G[_]](implicit F: Async[F], G: WeakAsync[G]): Resource[F, F ~> G] =
     Dispatcher.parallel[F].map(dispatcher =>
       new(F ~> G) {
-        def apply[T](fa: F[T]) = G.fromFutureCancelable {
-          G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
-            (fut, G.fromFuture(G.delay(cancel())))
+        def apply[T](fa: F[T]) = // first try to interpret directly into G, then fallback to the Dispatcher
+          F.syncStep[G, T](fa, Int.MaxValue).flatMap { // MaxValue b/c we assume G will implement ceding/fairness
+            case Left(fa) =>
+              G.fromFutureCancelable {
+                G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
+                  (fut, G.fromFuture(G.delay(cancel())))
+                }
+              }
+            case Right(a) => G.pure(a)
           }
-        }
       }
     )
 
