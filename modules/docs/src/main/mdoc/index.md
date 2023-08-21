@@ -103,6 +103,11 @@ Listed newest first. If you have given a presentation or have written a blog pos
 - [Typechecking SQL in Slick and doobie](http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html) by Richard Dallaway
 - [DB to JSON with a Microservice](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) by Da Terry - [code](https://bitbucket.org/da_terry/scalasyd-doobie-http4s)
 
+## Related tooling
+
+- [doobie-typesafe](https://arturaz.github.io/doobie-typesafe/) by Artūras Šlajus - a typesafe layer for doobie for typesafe table and column definitions.
+  [doobieroll](https://jatcwang.github.io/doobieroll/) by Jacob Wang - a collection of utilities to make working with Doobie / SQL even easier.
+
 ## Testing
 
 If you want to build and run the tests for yourself, you'll need a local postgresql database. The easiest way to do this is to run `docker-compose up` from the project root.
