@@ -6,6 +6,7 @@ package doobie
 
 import cats.~>
 import cats.implicits._
+import cats.effect.{ IO, LiftIO }
 import cats.effect.kernel.{ Async, Poll, Resource, Sync }
 import cats.effect.std.Dispatcher
 import scala.concurrent.Future
@@ -44,19 +45,25 @@ object WeakAsync {
     * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization.
     * Leaking it from it's resource scope will lead to erorrs at runtime. */
   def liftK[F[_], G[_]](implicit F: Async[F], G: WeakAsync[G]): Resource[F, F ~> G] =
-    Dispatcher.parallel[F].map(dispatcher =>
-      new(F ~> G) {
-        def apply[T](fa: F[T]) = // first try to interpret directly into G, then fallback to the Dispatcher
-          F.syncStep[G, T](fa, Int.MaxValue).flatMap { // MaxValue b/c we assume G will implement ceding/fairness
-            case Left(fa) =>
-              G.fromFutureCancelable {
-                G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
-                  (fut, G.fromFuture(G.delay(cancel())))
-                }
-              }
-            case Right(a) => G.pure(a)
+    Dispatcher.parallel[F].map(new Lifter(_))
+
+  /** Like [[liftK]] but specifically returns a [[LiftIO]] */
+  def liftIO[F[_]](implicit F: WeakAsync[F]): Resource[IO, LiftIO[F]] =
+    Dispatcher.parallel[IO].map(new Lifter(_) with LiftIO[F] {
+      def liftIO[A](ioa: IO[A]) = super[Lifter].apply(ioa)
+    })
+
+  private class Lifter[F[_], G[_]](dispatcher: Dispatcher[F])(implicit F: Async[F], G: WeakAsync[G]) extends (F ~> G) {
+    def apply[T](fa: F[T]) = // first try to interpret directly into G, then fallback to the Dispatcher
+      F.syncStep[G, T](fa, Int.MaxValue).flatMap { // MaxValue b/c we assume G will implement ceding/fairness
+        case Left(fa) =>
+          G.fromFutureCancelable {
+            G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
+              (fut, G.fromFuture(G.delay(cancel())))
+            }
           }
+        case Right(a) => G.pure(a)
       }
-    )
+  }
 
 }
