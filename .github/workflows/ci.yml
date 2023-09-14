@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.18, 2.13.11, 3.3.1]
+        scala: [2.12.18, 2.13.12, 3.3.1]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -89,7 +89,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
 
       - name: Check Doc Site (2.13.11 only)
-        if: matrix.scala == '2.13.11'
+        if: matrix.scala == '2.13.12'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
