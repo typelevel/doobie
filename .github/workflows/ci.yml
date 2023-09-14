@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.18, 2.13.12, 3.3.0]
+        scala: [2.12.18, 2.13.11, 3.3.0]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -88,8 +88,8 @@ jobs:
       - name: Check there are no uncommitted changes in git (to catch generated files that weren't committed)
         run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
 
-      - name: Check Doc Site (2.13.12 only)
-        if: matrix.scala == '2.13.12'
+      - name: Check Doc Site (2.13.11 only)
+        if: matrix.scala == '2.13.11'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
@@ -160,12 +160,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.12)
+      - name: Download target directories (2.13.11)
         uses: actions/download-artifact@v3
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.12
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.11
 
-      - name: Inflate target directories (2.13.12)
+      - name: Inflate target directories (2.13.11)
         run: |
           tar xf targets.tar
           rm targets.tar
