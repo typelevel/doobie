@@ -275,7 +275,7 @@ PostgreSQL supports server-side caching of prepared statements after a certain n
 - For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.postgres.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 - For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.postgres.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 
-See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93/server-prepare.html) for more information.
+See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/server-prepare) for more information.
 
 ### `LISTEN` and `NOTIFY`
 
