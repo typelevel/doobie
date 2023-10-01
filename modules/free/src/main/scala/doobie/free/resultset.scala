@@ -135,10 +135,10 @@ object resultset { module =>
       def getNString(a: String): F[String]
       def getObject(a: Int): F[AnyRef]
       def getObject[T](a: Int, b: Class[T]): F[T]
-      def getObject(a: Int, b: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: Int, b: java.util.Map[String, Class[_]]): F[AnyRef]
       def getObject(a: String): F[AnyRef]
       def getObject[T](a: String, b: Class[T]): F[T]
-      def getObject(a: String, b: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: String, b: java.util.Map[String, Class[_]]): F[AnyRef]
       def getRef(a: Int): F[Ref]
       def getRef(a: String): F[Ref]
       def getRow: F[Int]
@@ -487,7 +487,7 @@ object resultset { module =>
     final case class GetObject1[T](a: Int, b: Class[T]) extends ResultSetOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject2(a: Int, b: Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
+    final case class GetObject2(a: Int, b: java.util.Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     final case class GetObject3(a: String) extends ResultSetOp[AnyRef] {
@@ -496,7 +496,7 @@ object resultset { module =>
     final case class GetObject4[T](a: String, b: Class[T]) extends ResultSetOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject5(a: String, b: Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
+    final case class GetObject5(a: String, b: java.util.Map[String, Class[_]]) extends ResultSetOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     final case class GetRef(a: Int) extends ResultSetOp[Ref] {
@@ -977,10 +977,10 @@ object resultset { module =>
   def getNString(a: String): ResultSetIO[String] = FF.liftF(GetNString1(a))
   def getObject(a: Int): ResultSetIO[AnyRef] = FF.liftF(GetObject(a))
   def getObject[T](a: Int, b: Class[T]): ResultSetIO[T] = FF.liftF(GetObject1(a, b))
-  def getObject(a: Int, b: Map[String, Class[_]]): ResultSetIO[AnyRef] = FF.liftF(GetObject2(a, b))
+  def getObject(a: Int, b: java.util.Map[String, Class[_]]): ResultSetIO[AnyRef] = FF.liftF(GetObject2(a, b))
   def getObject(a: String): ResultSetIO[AnyRef] = FF.liftF(GetObject3(a))
   def getObject[T](a: String, b: Class[T]): ResultSetIO[T] = FF.liftF(GetObject4(a, b))
-  def getObject(a: String, b: Map[String, Class[_]]): ResultSetIO[AnyRef] = FF.liftF(GetObject5(a, b))
+  def getObject(a: String, b: java.util.Map[String, Class[_]]): ResultSetIO[AnyRef] = FF.liftF(GetObject5(a, b))
   def getRef(a: Int): ResultSetIO[Ref] = FF.liftF(GetRef(a))
   def getRef(a: String): ResultSetIO[Ref] = FF.liftF(GetRef1(a))
   val getRow: ResultSetIO[Int] = FF.liftF(GetRow)

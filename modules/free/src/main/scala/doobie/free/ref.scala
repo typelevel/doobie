@@ -62,7 +62,7 @@ object ref { module =>
       // Ref
       def getBaseTypeName: F[String]
       def getObject: F[AnyRef]
-      def getObject(a: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: java.util.Map[String, Class[_]]): F[AnyRef]
       def setObject(a: AnyRef): F[Unit]
 
     }
@@ -121,7 +121,7 @@ object ref { module =>
     case object GetObject extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject
     }
-    final case class GetObject1(a: Map[String, Class[_]]) extends RefOp[AnyRef] {
+    final case class GetObject1(a: java.util.Map[String, Class[_]]) extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
     final case class SetObject(a: AnyRef) extends RefOp[Unit] {
@@ -156,7 +156,7 @@ object ref { module =>
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
   val getObject: RefIO[AnyRef] = FF.liftF(GetObject)
-  def getObject(a: Map[String, Class[_]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
+  def getObject(a: java.util.Map[String, Class[_]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
   // Typeclass instances for RefIO
