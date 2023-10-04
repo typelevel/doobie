@@ -159,10 +159,10 @@ object callablestatement { module =>
       def getNString(a: String): F[String]
       def getObject(a: Int): F[AnyRef]
       def getObject[T](a: Int, b: Class[T]): F[T]
-      def getObject(a: Int, b: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: Int, b: java.util.Map[String, Class[_]]): F[AnyRef]
       def getObject(a: String): F[AnyRef]
       def getObject[T](a: String, b: Class[T]): F[T]
-      def getObject(a: String, b: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: String, b: java.util.Map[String, Class[_]]): F[AnyRef]
       def getParameterMetaData: F[ParameterMetaData]
       def getQueryTimeout: F[Int]
       def getRef(a: Int): F[Ref]
@@ -597,7 +597,7 @@ object callablestatement { module =>
     final case class GetObject1[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject2(a: Int, b: java.util.Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     final case class GetObject3(a: String) extends CallableStatementOp[AnyRef] {
@@ -606,7 +606,7 @@ object callablestatement { module =>
     final case class GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject5(a: String, b: java.util.Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
@@ -1169,10 +1169,10 @@ object callablestatement { module =>
   def getNString(a: String): CallableStatementIO[String] = FF.liftF(GetNString1(a))
   def getObject(a: Int): CallableStatementIO[AnyRef] = FF.liftF(GetObject(a))
   def getObject[T](a: Int, b: Class[T]): CallableStatementIO[T] = FF.liftF(GetObject1(a, b))
-  def getObject(a: Int, b: Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject2(a, b))
+  def getObject(a: Int, b: java.util.Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject2(a, b))
   def getObject(a: String): CallableStatementIO[AnyRef] = FF.liftF(GetObject3(a))
   def getObject[T](a: String, b: Class[T]): CallableStatementIO[T] = FF.liftF(GetObject4(a, b))
-  def getObject(a: String, b: Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject5(a, b))
+  def getObject(a: String, b: java.util.Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject5(a, b))
   val getParameterMetaData: CallableStatementIO[ParameterMetaData] = FF.liftF(GetParameterMetaData)
   val getQueryTimeout: CallableStatementIO[Int] = FF.liftF(GetQueryTimeout)
   def getRef(a: Int): CallableStatementIO[Ref] = FF.liftF(GetRef(a))

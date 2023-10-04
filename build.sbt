@@ -187,16 +187,6 @@ lazy val free = project
         classOf[java.sql.ResultSet]
       )
     },
-    freeGen2KleisliInterpreterImportExcludes := Set(
-      classOf[java.io.OutputStream],
-      classOf[java.io.Writer],
-      classOf[java.sql.DriverPropertyInfo],
-      classOf[java.sql.ParameterMetaData],
-      classOf[java.sql.ResultSetMetaData],
-      classOf[java.sql.RowIdLifetime],
-      classOf[java.sql.SQLWarning],
-      classOf[java.util.logging.Logger]
-    )
   )
 
 
@@ -284,7 +274,6 @@ lazy val postgres = project
     freeGen2Dir     := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
     freeGen2Classes := {
-      import java.sql._
       List[Class[_]](
         classOf[org.postgresql.copy.CopyIn],
         classOf[org.postgresql.copy.CopyManager],
@@ -299,15 +288,6 @@ lazy val postgres = project
       classOf[org.postgresql.copy.CopyIn]       -> "PGCopyIn",
       classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
       classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
-      classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
-    ): @nowarn("msg=.*deprecated.*"),
-    freeGen2KleisliInterpreterImportExcludes := Set(
-      classOf[java.sql.Array],
-      classOf[java.util.Map[_, _]],
-      classOf[org.postgresql.PGNotification],
-      classOf[org.postgresql.copy.CopyDual],
-      classOf[org.postgresql.jdbc.PreferQueryMode],
-      classOf[org.postgresql.replication.PGReplicationConnection],
     ),
       initialCommands := """
       import cats._, cats.data._, cats.implicits._, cats.effect._
