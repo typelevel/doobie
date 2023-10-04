@@ -54,7 +54,7 @@ object PostgresNotify extends IOApp.Simple {
 
   /**
     * Construct a stream of PGNotifications that prints to the console. Transform it to a
-    * runnable process using the transcactor above, and run it.
+    * runnable process using the transactor above, and run it.
     */
   def run: IO[Unit] =
     notificationStream("foo", 1.second)
