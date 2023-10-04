@@ -157,7 +157,7 @@ class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
 
 The `doobie-weaver` add-on provides a mix-in trait what we can add to any effectful test Suite. 
 The `check` function takes an implicit `Transactor[F]` parameter. Since Weaver has its own way 
-to manage shared resources, it is convenient to use that to allocate the transcator. 
+to manage shared resources, it is convenient to use that to allocate the transactor.
 
 ```scala mdoc:silent
 import _root_.weaver._
