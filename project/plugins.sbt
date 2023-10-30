@@ -10,5 +10,5 @@ addSbtPlugin("pl.project13.scala"        % "sbt-jmh"                 % "0.4.7")
 addSbtPlugin("de.heikoseeberger"         % "sbt-header"              % "5.10.0")
 addSbtPlugin("io.github.davidgregory084" % "sbt-tpolecat"            % "0.4.4")
 addSbtPlugin("org.scalameta"             % "sbt-mdoc"                % "2.5.2")
-
+addSbtPlugin("org.scalameta"             % "sbt-scalafmt"            % "2.5.2")
 addDependencyTreePlugin
