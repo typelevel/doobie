@@ -31,7 +31,7 @@ lazy val weaverVersion        = "0.8.3"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
-ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshits on `main`
+ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
 ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
@@ -112,7 +112,7 @@ lazy val commonSettings =
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
-    // For some reason tests started hanginging with docker-compose so let's disable parallelism.
+    // For some reason tests started hanging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
   )
 
