@@ -43,10 +43,10 @@ object HikariTransactor {
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * Unless you have a good reason, consider using `fromConfig` which creates the `connectEC` for you.
    */
-  def fromConfigCustomEc[M[_]: Async](
+  def fromConfigCustomEc[M[_]: Sync, N[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
-    logHandler: Option[LogHandler[M]] = None, 
+    logHandler: Option[LogHandler[N]] = None,
     dataSource: Option[DataSource] = None,
     dataSourceProperties: Option[Properties] = None,
     healthCheckProperties: Option[Properties] = None,
@@ -55,10 +55,10 @@ object HikariTransactor {
     metricsTrackerFactory: Option[MetricsTrackerFactory] = None,
     scheduledExecutor: Option[ScheduledExecutorService] = None,
     threadFactory: Option[ThreadFactory] = None,
-  ): Resource[M, HikariTransactor[M]] = {
+  ): Resource[M, HikariTransactor[N]] = {
     Resource
       .liftK(
-        Config.makeHikariConfig(
+        Config.makeHikariConfig[M](
           config = config,
           dataSource = dataSource,
           dataSourceProperties = dataSourceProperties,
@@ -70,15 +70,15 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfigCustomEc(_, connectEC, logHandler))
+      .flatMap(fromHikariConfigCustomEc[M, N](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * The `connectEC` is created automatically, with the same size as the Hikari pool.
    */
-  def fromConfig[M[_]: Async](
+  def fromConfig[M[_]: Sync, N[_]: Async](
       config: Config,
-      logHandler: Option[LogHandler[M]] = None,
+      logHandler: Option[LogHandler[N]] = None,
       dataSource: Option[DataSource] = None,
       dataSourceProperties: Option[Properties] = None,
       healthCheckProperties: Option[Properties] = None,
@@ -87,10 +87,10 @@ object HikariTransactor {
       metricsTrackerFactory: Option[MetricsTrackerFactory] = None,
       scheduledExecutor: Option[ScheduledExecutorService] = None,
       threadFactory: Option[ThreadFactory] = None,
-    ): Resource[M, HikariTransactor[M]] = {
+    ): Resource[M, HikariTransactor[N]] = {
     Resource
       .liftK(
-        Config.makeHikariConfig(
+        Config.makeHikariConfig[M](
           config = config,
           dataSource = dataSource,
           dataSourceProperties = dataSourceProperties,
@@ -102,27 +102,27 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_, logHandler))
+      .flatMap(fromHikariConfig[M, N](_, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
    * Unless you have a good reason, consider using [[fromHikariConfig]], it will be created automatically for you.
    */
-  def fromHikariConfigCustomEc[M[_]: Async](
+  def fromHikariConfigCustomEc[M[_]: Sync, N[_]: Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext,
-    logHandler: Option[LogHandler[M]] = None
-  ): Resource[M, HikariTransactor[M]] = Resource
+    logHandler: Option[LogHandler[N]] = None
+  ): Resource[M, HikariTransactor[N]] = Resource
     .fromAutoCloseable(Sync[M].delay(new HikariDataSource(hikariConfig)))
-    .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
+    .map(Transactor.fromDataSource[N](_, connectEC, logHandler))
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
    * The connection ExecutionContext (used for waiting for a connection from the connection pool) is created automatically, with the same size as the Hikari connection pool.
    */
-  def fromHikariConfig[M[_]: Async](
+  def fromHikariConfig[M[_]: Sync, N[_]: Async](
     hikariConfig: HikariConfig,
-    logHandler: Option[LogHandler[M]] = None
-  ): Resource[M, HikariTransactor[M]] =
+    logHandler: Option[LogHandler[N]] = None
+  ): Resource[M, HikariTransactor[N]] =
   for {
     // to populate unset fields with default values, like `maximumPoolSize`
     _ <- Sync[M].delay(hikariConfig.validate()).toResource
@@ -130,8 +130,8 @@ object HikariTransactor {
     // You may therefore want to limit your connection pool to the same size as the underlying JDBC pool
     // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
-    connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- fromHikariConfigCustomEc(hikariConfig, connectEC, logHandler)
+    connectEC <- ExecutionContexts.fixedThreadPool[M](hikariConfig.getMaximumPoolSize)
+    result <- fromHikariConfigCustomEc[M, N](hikariConfig, connectEC, logHandler)
   } yield result
 
   /** Resource yielding a new `HikariTransactor` configured with the given info.
