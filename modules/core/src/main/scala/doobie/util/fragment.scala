@@ -95,28 +95,35 @@ object fragment {
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def query[B: Read]: Query0[B] =
-      query(None)
-
-    private def query[B: Read](label: Option[String]): Query0[B] =
-      Query[elems.type, B](sql, pos, label).toQuery0(elems)
+      queryWithLabelOpt(None)
 
     /**
      * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
      * label.
      */
     def queryWithLabel[B](label: String)(implicit cb: Read[B]): Query0[B] =
-      query(Some(label))
-    private def update(label: Option[String]): Update0 =
-      Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
+      queryWithLabelOpt(Some(label))
+
+    /**
+     * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
+     * optional label.
+     */
+    def queryWithLabelOpt[B: Read](label: Option[String]): Query0[B] =
+      Query[elems.type, B](sql, pos, label).toQuery0(elems)
+
 
     /** Construct an [[Update0]] from this fragment. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def update: Update0 =
-      update(None)
+      updateWithLabelOpt(None)
 
-    /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
+    /** Construct an [[Update0]] from this fragment with the given label. */
     def updateWithLabel(label: String): Update0 =
-      update(Some(label))
+      updateWithLabelOpt(Some(label))
+
+    /** Construct an [[Update0]] from this fragment with the given optional label. */
+    def updateWithLabelOpt(label: Option[String]): Update0 =
+      Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
 
     override def toString =
       s"""Fragment("$sql")"""
