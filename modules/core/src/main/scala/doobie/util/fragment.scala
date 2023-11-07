@@ -95,23 +95,28 @@ object fragment {
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def query[B: Read]: Query0[B] =
-      queryWithLabel(unlabeled)
+      query(None)
+
+    private def query[B: Read](label: Option[String]): Query0[B] =
+      Query[elems.type, B](sql, pos, label).toQuery0(elems)
 
     /**
      * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
      * label.
      */
     def queryWithLabel[B](label: String)(implicit cb: Read[B]): Query0[B] =
-      Query[elems.type, B](sql, pos, label).toQuery0(elems)
+      query(Some(label))
+    private def update(label: Option[String]): Update0 =
+      Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
 
     /** Construct an [[Update0]] from this fragment. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def update: Update0 =
-      updateWithLabel(unlabeled)
+      update(None)
 
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLabel(label: String): Update0 =
-      Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
+      update(Some(label))
 
     override def toString =
       s"""Fragment("$sql")"""

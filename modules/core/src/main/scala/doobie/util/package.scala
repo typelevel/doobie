@@ -10,6 +10,4 @@ package object util {
   private[util] def void(a: Any*): Unit =
     (a, ())._2
 
-  private[util] def unlabeled: String = "unlabeled"
-
 }

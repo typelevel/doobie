@@ -78,7 +78,7 @@ object update {
       write.toFragment(a, sql)
 
     /** Label to be used during logging */
-    val label: String
+    val label: Option[String]
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter types.
@@ -202,7 +202,7 @@ object update {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(
+    def apply[A](sql: String, pos: Option[Pos] = None, label: Option[String] = None)(
       implicit W: Write[A]
     ): Update[A] = {
       val sql0 = sql

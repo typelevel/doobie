@@ -85,7 +85,7 @@ object query {
       write.toFragment(a, sql)
 
     /** Label to be used during logging */
-    val label: String
+    val label: Option[String]
 
     /**
      * Program to construct an analysis of this query's SQL statement and asserted parameter and
@@ -239,7 +239,7 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A, B](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(implicit A: Write[A], B: Read[B]): Query[A, B] = {
+    def apply[A, B](sql: String, pos: Option[Pos] = None, label: Option[String] = None)(implicit A: Write[A], B: Read[B]): Query[A, B] = {
       val sql0 = sql
       val label0 = label
       val pos0 = pos
@@ -394,7 +394,7 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A: Read](sql: String, pos: Option[Pos] = None, label: String = unlabeled): Query0[A] =
+    def apply[A: Read](sql: String, pos: Option[Pos] = None, label: Option[String] = None): Query0[A] =
        Query[Unit, A](sql, pos, label).toQuery0(())
 
     /** @group Typeclass Instances */
