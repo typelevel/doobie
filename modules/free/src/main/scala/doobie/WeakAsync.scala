@@ -58,8 +58,10 @@ object WeakAsync {
       F.syncStep[G, T](fa, Int.MaxValue).flatMap { // MaxValue b/c we assume G will implement ceding/fairness
         case Left(fa) =>
           G.fromFutureCancelable {
-            G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
-              (fut, G.fromFuture(G.delay(cancel())))
+            G.uncancelable { _ =>
+              G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
+                (fut, G.fromFuture(G.delay(cancel())))
+              }
             }
           }
         case Right(a) => G.pure(a)
