@@ -66,7 +66,7 @@ object fragments {
     NonEmptyList.fromFoldable(fs).map(nel => and(nel, withParen))
   }
 
-  /** Similar to andOpt, but defaults to FALSE if passed an empty collection */
+  /** Similar to andOpt, but defaults to TRUE if passed an empty collection */
   def andFallbackTrue[F[_] : Foldable](fs: F[Fragment]): Fragment = {
     andOpt(fs).getOrElse(fr"TRUE")
   }
