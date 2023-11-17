@@ -139,6 +139,7 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [FinDynamic](https://www.findynamic.com/en)
  - [Fivebox](https://fivebox.com/)
  - [HIFI](https://hi.fi)
+ - [Input Objects](https://inputobjects.eu)
  - [Intent HQ](https://intenthq.com)
  - [ITV](https://www.itv.com/)
  - [lences.io](https://lenses.io)
