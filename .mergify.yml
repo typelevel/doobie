@@ -143,3 +143,11 @@ pull_request_rules:
       add:
       - weaver
       remove: []
+- name: merge-when-ci-pass
+  conditions:
+  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 3, temurin@11)
+  - label=merge-on-build-success
+  actions:
+    merge: {}
