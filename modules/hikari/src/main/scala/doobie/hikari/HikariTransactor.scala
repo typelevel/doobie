@@ -75,6 +75,9 @@ object HikariTransactor {
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * The `connectEC` is created automatically, with the same size as the Hikari pool.
+   *
+   * @tparam M0 the effect to create a [[HikariTransactor]]
+   * @tparam M the effect under which the [[HikariTransactor]] runs
    */
   def fromConfig[M0[_]: Sync, M[_]: Async](
       config: Config,
