@@ -12,8 +12,8 @@ lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "5.1.0" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val log4catsVersion      = "2.6.0"
-lazy val postGisVersion       = "2.5.1"
-lazy val postgresVersion      = "42.7.0"
+lazy val postGisVersion       = "2023.1.0"
+lazy val postgresVersion      = "42.7.1"
 lazy val refinedVersion       = "0.11.0"
 lazy val scalaCheckVersion    = "1.15.4"
 lazy val scalatestVersion     = "3.2.17"
@@ -88,6 +88,9 @@ lazy val compilerFlags = Seq(
   Test / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
+//  scalacOptions ++= Seq(
+//    "-Xsource:3"
+//  )
 )
 
 lazy val buildSettings = Seq(
@@ -313,7 +316,7 @@ lazy val postgres = project
       val xa = Transactor.fromDriverManager[IO](driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", pass = "password", logHandler = None)
       val yolo = xa.yolo
       import yolo._
-      import org.postgis._
+      import net.postgis._
       import org.postgresql.util._
       import org.postgresql.geometric._
       """,

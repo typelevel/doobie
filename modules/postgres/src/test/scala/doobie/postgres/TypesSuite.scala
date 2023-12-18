@@ -17,7 +17,7 @@ import doobie.postgres.pgisimplicits._
 import doobie.postgres.util.arbitraries.SQLArbitraries._
 import doobie.postgres.util.arbitraries.TimeArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
-import org.postgis._
+import net.postgis.jdbc.geometry._
 import org.postgresql.geometric._
 import org.postgresql.util._
 import org.scalacheck.Arbitrary

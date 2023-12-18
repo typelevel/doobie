@@ -248,6 +248,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def close: Kleisli[M, LargeObject, Unit] = primitive(_.close)
     override def copy: Kleisli[M, LargeObject, LargeObject] = primitive(_.copy)
     override def getInputStream: Kleisli[M, LargeObject, InputStream] = primitive(_.getInputStream)
+    override def getInputStream(a: Int, b: Long) = primitive(_.getInputStream(a, b))
     override def getInputStream(a: Long) = primitive(_.getInputStream(a))
     override def getLongOID: Kleisli[M, LargeObject, Long] = primitive(_.getLongOID)
     override def getOutputStream: Kleisli[M, LargeObject, OutputStream] = primitive(_.getOutputStream)
@@ -264,6 +265,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def truncate64(a: Long) = primitive(_.truncate64(a))
     override def write(a: Array[Byte]) = primitive(_.write(a))
     override def write(a: Array[Byte], b: Int, c: Int) = primitive(_.write(a, b, c))
+    override def write(a: ByteStreamWriter) = primitive(_.write(a))
 
   }
 

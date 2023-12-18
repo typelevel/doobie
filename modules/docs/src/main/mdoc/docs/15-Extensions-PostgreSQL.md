@@ -188,7 +188,7 @@ It is expected that these will be mapped to application-specific types via `xmap
 
 ### PostGIS Types
 
-**doobie** provides mappings for the top-level PostGIS geometric types provided by the `org.postgis` driver extension.
+**doobie** provides mappings for the top-level PostGIS geometric types provided by the `net.postgis` driver extension.
 
 Mappings for postgis are provided in the `pgistypes` module. Doobie expects postgis dependency to be provided, so if you use this module you should add postgis as a dependency.
 
