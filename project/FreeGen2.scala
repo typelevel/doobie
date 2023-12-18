@@ -1,7 +1,11 @@
-import sbt._, Keys._
-import java.lang.reflect._
+import sbt.*
+import Keys.*
+
+import java.lang.reflect.*
 import scala.reflect.ClassTag
-import Predef._
+import Predef.*
+import org.typelevel.sbt.gha.GenerativeKeys.githubWorkflowBuild
+import org.typelevel.sbt.gha.GenerativePlugin.autoImport.WorkflowStep
 
 object FreeGen2 {
 
@@ -26,7 +30,6 @@ object FreeGen2 {
         freeGen2KleisliInterpreterImportExcludes.value,
         state.value.log
       ).gen(freeGen2Dir.value),
-    Compile / compile := (Compile / compile).dependsOn(freeGen2).value
   )
 
 }
