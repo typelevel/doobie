@@ -10,6 +10,7 @@ name: Continuous Integration
 on:
   pull_request:
     branches: ['**', '!update/**', '!pr/**']
+    types: [synchronize]
   push:
     branches: ['**', '!update/**', '!pr/**']
     tags: [v*]
