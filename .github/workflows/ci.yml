@@ -61,7 +61,7 @@ jobs:
         run: sbt githubWorkflowCheck
 
       - name: Test
-        run: sbt '++ ${{ matrix.scala }}' test
+        run: sbt '++ ${{ matrix.scala }}' freeGen2 test
 
       - name: Check binary compatibility
         if: matrix.java == 'temurin@11' && matrix.os == 'ubuntu-latest'

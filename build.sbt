@@ -47,6 +47,10 @@ ThisBuild / githubWorkflowBuildPreamble ++= Seq(
     name = Some("Check Headers"),
   ),
 )
+ThisBuild / githubWorkflowBuild := {
+  val current = (ThisBuild / githubWorkflowBuild).value
+  current.updated(0, WorkflowStep.Sbt(List("freeGen2", "test"), name = Some("Test")))
+}
 ThisBuild / githubWorkflowBuildPostamble ++= Seq(
     WorkflowStep.Sbt(
       commands = List("checkGitNoUncommittedChanges"),
