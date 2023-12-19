@@ -10,11 +10,11 @@ import doobie.util.shapeless.OrElse
 trait ReadPlatform:
 
   // Trivial Read for EmptyTuple
-  given MkRead[EmptyTuple] =
+  given readEmpty: MkRead[EmptyTuple] =
     new MkRead[EmptyTuple](Nil, (_, _) => EmptyTuple)
 
   // Read for head and tail.
-  given [H, T <: Tuple](
+  given readTuple[H, T <: Tuple](
     using H: Read[H] OrElse MkRead[H],
           T: => MkRead[T]
   ): MkRead[H *: T] = {
@@ -27,7 +27,7 @@ trait ReadPlatform:
   }
 
   // Generic Read for products.
-  given [P <: Product, A](
+  given derived[P <: Product, A](
     using m: Mirror.ProductOf[P],
           i: A =:= m.MirroredElemTypes,
           w: MkRead[A]
@@ -71,7 +71,7 @@ trait ReadPlatform:
   }
 
   // Generic Read for option of products.
-  given [P <: Product, A](
+  given readOptionProduct[P <: Product, A](
     using m: Mirror.ProductOf[P],
           i: A =:= m.MirroredElemTypes,
           w: MkRead[Option[A]]

@@ -10,11 +10,11 @@ import doobie.util.shapeless.OrElse
 trait WritePlatform:
 
   // Trivial write for empty tuple.
-  given MkWrite[EmptyTuple] =
+  given writeEmpty: MkWrite[EmptyTuple] =
     new MkWrite(Nil, _ => Nil, (_, _, _) => (),(_, _, _) => ())
 
   // Inductive write for writable head and tail.
-  given [H, T <: Tuple](
+  given writeTuple[H, T <: Tuple](
     using H: Write[H] OrElse MkWrite[H],
           T: => MkWrite[T]
   ): MkWrite[H *: T] = {
@@ -82,7 +82,7 @@ trait WritePlatform:
     )
 
   // Generic write for options of products.
-  given [P <: Product, A](
+  given writeOptionProduct[P <: Product, A](
     using m: Mirror.ProductOf[P],
           i: m.MirroredElemTypes =:= A,
           w: MkWrite[Option[A]]
