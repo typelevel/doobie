@@ -10,9 +10,9 @@ pull_request_rules:
   conditions:
   - author=scala-steward
   - body~=labels:.*early-semver-patch
-  - status-success=Build and Test (ubuntu-latest, 2.12.18, temurin@11)
-  - status-success=Build and Test (ubuntu-latest, 2.13.11, temurin@11)
-  - status-success=Build and Test (ubuntu-latest, 3.3.0, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 3, temurin@11)
   actions:
     merge: {}
 - name: Label bench PRs
@@ -79,6 +79,14 @@ pull_request_rules:
       add:
       - hikari
       remove: []
+- name: Label log4cats PRs
+  conditions:
+  - files~=^modules/log4cats/
+  actions:
+    label:
+      add:
+      - log4cats
+      remove: []
 - name: Label munit PRs
   conditions:
   - files~=^modules/munit/
@@ -135,3 +143,11 @@ pull_request_rules:
       add:
       - weaver
       remove: []
+- name: merge-when-ci-pass
+  conditions:
+  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@11)
+  - status-success=Build and Test (ubuntu-latest, 3, temurin@11)
+  - label=merge-on-build-success
+  actions:
+    merge: {}

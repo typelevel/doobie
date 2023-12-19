@@ -23,14 +23,14 @@ object fragments {
 
   /** Returns `(f IN (fs0, fs1, ...))`, or `false` for empty `fs`. */
   def in[F[_]: Reducible: Functor, A: util.Put](f: Fragment, fs: F[A]): Fragment = 
-    parentheses(f ++ fr"IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
+    parentheses(f ++ fr" IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
     
   def inOpt[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A]): Option[Fragment] =
     NonEmptyList.fromFoldable(fs).map(nel => in(f, nel))
 
   /** Returns `(f IN ((fs0-A, fs0-B), (fs1-A, fs1-B), ...))`, or `false` for empty `fs`. */
   def in[F[_]: Reducible: Functor, A: util.Put, B: util.Put](f: Fragment, fs: F[(A,B)]): Fragment =
-    parentheses(f ++ fr"IN" ++ parentheses(comma(fs.map { case (a,b) => fr0"($a,$b)" })))
+    parentheses(f ++ fr" IN" ++ parentheses(comma(fs.map { case (a,b) => fr0"($a,$b)" })))
 
   /** Returns `(f NOT IN (fs0, fs1, ...))`. */
   def notIn[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
@@ -38,7 +38,7 @@ object fragments {
 
   /** Returns `(f NOT IN (fs0, fs1, ...))`, or `true` for empty `fs`. */
   def notIn[F[_]: Reducible: Functor, A: util.Put](f: Fragment, fs: F[A]): Fragment = {
-    parentheses(f ++ fr"NOT IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
+    parentheses(f ++ fr" NOT IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
   }
   
   def notInOpt[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A]): Option[Fragment] = {
@@ -52,7 +52,7 @@ object fragments {
   /** Returns `(f1 AND f2 AND ... fn)` for a non-empty collection.
    *  @param withParen If this is false, does not wrap the resulting expression with parenthesis */
   def and[F[_]: Reducible](fs: F[Fragment], withParen: Boolean = true): Fragment = {
-    val expr = fs.nonEmptyIntercalate(fr"AND")
+    val expr = fs.nonEmptyIntercalate(fr" AND")
     if (withParen) parentheses(expr) else expr
   }
 
@@ -66,7 +66,7 @@ object fragments {
     NonEmptyList.fromFoldable(fs).map(nel => and(nel, withParen))
   }
 
-  /** Similar to andOpt, but defaults to FALSE if passed an empty collection */
+  /** Similar to andOpt, but defaults to TRUE if passed an empty collection */
   def andFallbackTrue[F[_] : Foldable](fs: F[Fragment]): Fragment = {
     andOpt(fs).getOrElse(fr"TRUE")
   }
@@ -79,7 +79,7 @@ object fragments {
    *
    * @param withParen If this is false, does not wrap the resulting expression with parenthesis */
   def or[F[_] : Reducible](fs: F[Fragment], withParen: Boolean = true): Fragment = {
-    val expr = fs.nonEmptyIntercalate(fr"OR")
+    val expr = fs.nonEmptyIntercalate(fr" OR")
     if (withParen) parentheses(expr) else expr
   }
 

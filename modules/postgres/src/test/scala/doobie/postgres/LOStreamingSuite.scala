@@ -18,7 +18,7 @@ class LOStreamingSuite extends munit.ScalaCheckSuite {
   def genFiniteStream[F[_], A: Arbitrary]: Gen[Stream[F, A]] =
     arbitrary[Vector[Vector[A]]].map { chunks =>
       chunks.map { chunk =>
-        Stream.chunk(Chunk.seq(chunk))
+        Stream.chunk(Chunk.from(chunk))
       }.foldLeft(Stream.empty.covaryAll[F, A])(_ ++ _)
     }
 

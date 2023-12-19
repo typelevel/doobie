@@ -182,7 +182,7 @@ It is expected that these will be mapped to application-specific types via `xmap
 
 ### PostGIS Types
 
-**doobie** provides mappings for the top-level PostGIS geometric types provided by the `org.postgis` driver extension.
+**doobie** provides mappings for the top-level PostGIS geometric types provided by the `net.postgis` driver extension.
 
 Mappings for postgis are provided in the `pgistypes` module. Doobie expects postgis dependency to be provided, so if you use this module you should add postgis as a dependency.
 
@@ -269,7 +269,7 @@ PostgreSQL supports server-side caching of prepared statements after a certain n
 - For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.postgres.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 - For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.postgres.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 
-See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93/server-prepare.html) for more information.
+See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/server-prepare) for more information.
 
 ### `LISTEN` and `NOTIFY`
 

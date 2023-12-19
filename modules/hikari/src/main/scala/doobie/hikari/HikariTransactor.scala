@@ -32,21 +32,21 @@ object HikariTransactor {
   }
   
   /** Resource yielding an unconfigured `HikariTransactor`. */
-  def initial[M[_]: Async](
+  def initial[M0[_]: Sync, M[_]: Async](
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
-  ): Resource[M, HikariTransactor[M]] = {
-    Resource.fromAutoCloseable(Sync[M].delay(new HikariDataSource))
+  ): Resource[M0, HikariTransactor[M]] = {
+    Resource.fromAutoCloseable(Sync[M0].delay(new HikariDataSource))
       .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * Unless you have a good reason, consider using `fromConfig` which creates the `connectEC` for you.
    */
-  def fromConfigCustomEc[M[_]: Async](
+  def fromConfigCustomEc[M0[_]: Sync, M[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
-    logHandler: Option[LogHandler[M]] = None, 
+    logHandler: Option[LogHandler[M]] = None,
     dataSource: Option[DataSource] = None,
     dataSourceProperties: Option[Properties] = None,
     healthCheckProperties: Option[Properties] = None,
@@ -55,10 +55,10 @@ object HikariTransactor {
     metricsTrackerFactory: Option[MetricsTrackerFactory] = None,
     scheduledExecutor: Option[ScheduledExecutorService] = None,
     threadFactory: Option[ThreadFactory] = None,
-  ): Resource[M, HikariTransactor[M]] = {
+  ): Resource[M0, HikariTransactor[M]] = {
     Resource
       .liftK(
-        Config.makeHikariConfig(
+        Config.makeHikariConfig[M0](
           config = config,
           dataSource = dataSource,
           dataSourceProperties = dataSourceProperties,
@@ -70,13 +70,16 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfigCustomEc(_, connectEC, logHandler))
+      .flatMap(fromHikariConfigCustomEc[M0, M](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * The `connectEC` is created automatically, with the same size as the Hikari pool.
+   *
+   * @tparam M0 the effect to create a [[HikariTransactor]]
+   * @tparam M the effect under which the [[HikariTransactor]] runs
    */
-  def fromConfig[M[_]: Async](
+  def fromConfig[M0[_]: Sync, M[_]: Async](
       config: Config,
       logHandler: Option[LogHandler[M]] = None,
       dataSource: Option[DataSource] = None,
@@ -87,10 +90,10 @@ object HikariTransactor {
       metricsTrackerFactory: Option[MetricsTrackerFactory] = None,
       scheduledExecutor: Option[ScheduledExecutorService] = None,
       threadFactory: Option[ThreadFactory] = None,
-    ): Resource[M, HikariTransactor[M]] = {
+    ): Resource[M0, HikariTransactor[M]] = {
     Resource
       .liftK(
-        Config.makeHikariConfig(
+        Config.makeHikariConfig[M0](
           config = config,
           dataSource = dataSource,
           dataSourceProperties = dataSourceProperties,
@@ -102,36 +105,36 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_, logHandler))
+      .flatMap(fromHikariConfig[M0, M](_, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
    * Unless you have a good reason, consider using [[fromHikariConfig]], it will be created automatically for you.
    */
-  def fromHikariConfigCustomEc[M[_]: Async](
+  def fromHikariConfigCustomEc[M0[_]: Sync, M[_]: Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
-  ): Resource[M, HikariTransactor[M]] = Resource
-    .fromAutoCloseable(Sync[M].delay(new HikariDataSource(hikariConfig)))
+  ): Resource[M0, HikariTransactor[M]] = Resource
+    .fromAutoCloseable(Sync[M0].delay(new HikariDataSource(hikariConfig)))
     .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
    * The connection ExecutionContext (used for waiting for a connection from the connection pool) is created automatically, with the same size as the Hikari connection pool.
    */
-  def fromHikariConfig[M[_]: Async](
+  def fromHikariConfig[M0[_]: Sync, M[_]: Async](
     hikariConfig: HikariConfig,
     logHandler: Option[LogHandler[M]] = None
-  ): Resource[M, HikariTransactor[M]] =
+  ): Resource[M0, HikariTransactor[M]] =
   for {
     // to populate unset fields with default values, like `maximumPoolSize`
-    _ <- Sync[M].delay(hikariConfig.validate()).toResource
+    _ <- Sync[M0].delay(hikariConfig.validate()).toResource
     // Note that the number of JDBC connections is usually limited by the underlying JDBC pool.
     // You may therefore want to limit your connection pool to the same size as the underlying JDBC pool
     // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
-    connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- fromHikariConfigCustomEc(hikariConfig, connectEC, logHandler)
+    connectEC <- ExecutionContexts.fixedThreadPool[M0](hikariConfig.getMaximumPoolSize)
+    result <- fromHikariConfigCustomEc[M0, M](hikariConfig, connectEC, logHandler)
   } yield result
 
   /** Resource yielding a new `HikariTransactor` configured with the given info.
@@ -146,11 +149,11 @@ object HikariTransactor {
     logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] =
     for {
-      _ <- Resource.eval(Async[M].delay(Class.forName(driverClassName)))
-      t <- initial[M](connectEC, logHandler)
-      _ <- Resource.eval {
+      _ <- Resource.eval(Sync[M].delay(Class.forName(driverClassName)))
+      t <- initial[M, M](connectEC, logHandler)
+      _ <- Resource.eval[M, Unit] {
             t.configure { ds =>
-              Async[M].delay {
+              Sync[M].delay[Unit] {
                 ds setJdbcUrl  url
                 ds setUsername user
                 ds setPassword pass

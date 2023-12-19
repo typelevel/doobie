@@ -82,7 +82,7 @@ object pgconnection { module =>
       def getNotifications: F[Array[PGNotification]]
       def getNotifications(a: Int): F[Array[PGNotification]]
       def getParameterStatus(a: String): F[String]
-      def getParameterStatuses: F[Map[String, String]]
+      def getParameterStatuses: F[java.util.Map[String, String]]
       def getPreferQueryMode: F[PreferQueryMode]
       def getPrepareThreshold: F[Int]
       def getReplicationAPI: F[PGReplicationConnection]
@@ -183,7 +183,7 @@ object pgconnection { module =>
     final case class GetParameterStatus(a: String) extends PGConnectionOp[String] {
       def visit[F[_]](v: Visitor[F]) = v.getParameterStatus(a)
     }
-    case object GetParameterStatuses extends PGConnectionOp[Map[String, String]] {
+    case object GetParameterStatuses extends PGConnectionOp[java.util.Map[String, String]] {
       def visit[F[_]](v: Visitor[F]) = v.getParameterStatuses
     }
     case object GetPreferQueryMode extends PGConnectionOp[PreferQueryMode] {
@@ -248,7 +248,7 @@ object pgconnection { module =>
   val getNotifications: PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications)
   def getNotifications(a: Int): PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications1(a))
   def getParameterStatus(a: String): PGConnectionIO[String] = FF.liftF(GetParameterStatus(a))
-  val getParameterStatuses: PGConnectionIO[Map[String, String]] = FF.liftF(GetParameterStatuses)
+  val getParameterStatuses: PGConnectionIO[java.util.Map[String, String]] = FF.liftF(GetParameterStatuses)
   val getPreferQueryMode: PGConnectionIO[PreferQueryMode] = FF.liftF(GetPreferQueryMode)
   val getPrepareThreshold: PGConnectionIO[Int] = FF.liftF(GetPrepareThreshold)
   val getReplicationAPI: PGConnectionIO[PGReplicationConnection] = FF.liftF(GetReplicationAPI)

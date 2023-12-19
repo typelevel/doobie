@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
+import org.postgresql.util.ByteStreamWriter
 
 // This file is Auto-generated using FreeGen2.scala
 object largeobject { module =>
@@ -63,6 +64,7 @@ object largeobject { module =>
       def close: F[Unit]
       def copy: F[LargeObject]
       def getInputStream: F[InputStream]
+      def getInputStream(a: Int, b: Long): F[InputStream]
       def getInputStream(a: Long): F[InputStream]
       def getLongOID: F[Long]
       def getOutputStream: F[OutputStream]
@@ -79,6 +81,7 @@ object largeobject { module =>
       def truncate64(a: Long): F[Unit]
       def write(a: Array[Byte]): F[Unit]
       def write(a: Array[Byte], b: Int, c: Int): F[Unit]
+      def write(a: ByteStreamWriter): F[Unit]
 
     }
 
@@ -139,7 +142,10 @@ object largeobject { module =>
     case object GetInputStream extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream
     }
-    final case class GetInputStream1(a: Long) extends LargeObjectOp[InputStream] {
+    final case class GetInputStream1(a: Int, b: Long) extends LargeObjectOp[InputStream] {
+      def visit[F[_]](v: Visitor[F]) = v.getInputStream(a, b)
+    }
+    final case class GetInputStream2(a: Long) extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream(a)
     }
     case object GetLongOID extends LargeObjectOp[Long] {
@@ -187,6 +193,9 @@ object largeobject { module =>
     final case class Write1(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.write(a, b, c)
     }
+    final case class Write2(a: ByteStreamWriter) extends LargeObjectOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.write(a)
+    }
 
   }
   import LargeObjectOp._
@@ -217,7 +226,8 @@ object largeobject { module =>
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
   val copy: LargeObjectIO[LargeObject] = FF.liftF(Copy)
   val getInputStream: LargeObjectIO[InputStream] = FF.liftF(GetInputStream)
-  def getInputStream(a: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream1(a))
+  def getInputStream(a: Int, b: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream1(a, b))
+  def getInputStream(a: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream2(a))
   val getLongOID: LargeObjectIO[Long] = FF.liftF(GetLongOID)
   val getOutputStream: LargeObjectIO[OutputStream] = FF.liftF(GetOutputStream)
   def read(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Int] = FF.liftF(Read(a, b, c))
@@ -233,6 +243,7 @@ object largeobject { module =>
   def truncate64(a: Long): LargeObjectIO[Unit] = FF.liftF(Truncate64(a))
   def write(a: Array[Byte]): LargeObjectIO[Unit] = FF.liftF(Write(a))
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] = FF.liftF(Write1(a, b, c))
+  def write(a: ByteStreamWriter): LargeObjectIO[Unit] = FF.liftF(Write2(a))
 
   // Typeclass instances for LargeObjectIO
   implicit val WeakAsyncLargeObjectIO: WeakAsync[LargeObjectIO] =
