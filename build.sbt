@@ -206,6 +206,12 @@ lazy val free = project
         classOf[java.sql.ResultSet]
       )
     },
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+      classOf[java.util.Map[_, _]],
+      classOf[java.sql.DriverPropertyInfo],
+      classOf[java.io.Writer],
+      classOf[java.io.OutputStream]
+    )
   )
 
 
