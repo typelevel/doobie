@@ -141,13 +141,13 @@ object StreamingCopy extends IOApp.Simple {
 
   // A postges transactor for our source. We assume the WORLD database is set up already.
   val pg = addLogging("Postgres")(Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   ))
 
   // An h2 transactor for our sink.
   val h2 = addLogging("H2") {
     val xa = Transactor.fromDriverManager[IO](
-      "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
+      driver = "org.h2.Driver", url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", user = "sa", password = "", logHandler = None
     )
     Transactor.before.modify(xa, _ *> ddl) // Run our DDL on every connection
   }

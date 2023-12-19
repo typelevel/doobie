@@ -4,7 +4,7 @@
 
 package example
 
-import cats.effect.IO 
+import cats.effect.IO
 import doobie._
 import doobie.specs2.analysisspec._
 import org.specs2.mutable.Specification
@@ -13,7 +13,7 @@ import org.specs2.mutable.Specification
 class AnalysisTestSpecs2 extends Specification with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   )
   // Commented tests fail!
   // check(AnalysisTest.speakerQuery(null, 0))
@@ -22,6 +22,7 @@ class AnalysisTestSpecs2 extends Specification with IOChecker {
   // check(AnalysisTest.arrayTest2)
   check(AnalysisTest.pointTest)
   // check(AnalysisTest.pointTest2)
-  // check(AnalysisTest.update("foo", 42))
-  check(AnalysisTest.update2)
+  checkOutput(AnalysisTest.update)
+  checkOutput(AnalysisTest.update0_1("foo", "bkah"))
+  check(AnalysisTest.update0_2)
 }

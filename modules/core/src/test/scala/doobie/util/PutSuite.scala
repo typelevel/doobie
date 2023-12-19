@@ -7,6 +7,8 @@ package doobie.util
 import cats.effect.IO
 import doobie._
 
+import scala.annotation.nowarn
+
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class X(x: Int)
   case class Q(x: String)
@@ -18,9 +20,11 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class Reg2(x: Int)
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   case class Foo(s: String)
@@ -54,6 +58,6 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
     compileErrors("Put[Z]")
     compileErrors("Put[(Int, Int)]")
     compileErrors("Put[S.type]")
-  }
+  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
 
 }

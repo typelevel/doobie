@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -15,7 +15,9 @@ import scala.concurrent.duration.FiniteDuration
 import java.io.InputStream
 import java.io.OutputStream
 import org.postgresql.largeobject.LargeObject
+import org.postgresql.util.ByteStreamWriter
 
+// This file is Auto-generated using FreeGen2.scala
 object largeobject { module =>
 
   // Algebra of operations for LargeObject. Each accepts a visitor as an alternative to pattern-matching.
@@ -55,12 +57,14 @@ object largeobject { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): F[A]
       def fromFuture[A](fut: LargeObjectIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // LargeObject
       def close: F[Unit]
       def copy: F[LargeObject]
       def getInputStream: F[InputStream]
+      def getInputStream(a: Int, b: Long): F[InputStream]
       def getInputStream(a: Long): F[InputStream]
       def getLongOID: F[Long]
       def getOutputStream: F[OutputStream]
@@ -77,6 +81,7 @@ object largeobject { module =>
       def truncate64(a: Long): F[Unit]
       def write(a: Array[Byte]): F[Unit]
       def write(a: Array[Byte], b: Int, c: Int): F[Unit]
+      def write(a: ByteStreamWriter): F[Unit]
 
     }
 
@@ -120,6 +125,9 @@ object largeobject { module =>
     case class FromFuture[A](fut: LargeObjectIO[Future[A]]) extends LargeObjectOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class FromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]) extends LargeObjectOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    }
     case class PerformLogging(event: LogEvent) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
@@ -134,7 +142,10 @@ object largeobject { module =>
     case object GetInputStream extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream
     }
-    final case class GetInputStream1(a: Long) extends LargeObjectOp[InputStream] {
+    final case class GetInputStream1(a: Int, b: Long) extends LargeObjectOp[InputStream] {
+      def visit[F[_]](v: Visitor[F]) = v.getInputStream(a, b)
+    }
+    final case class GetInputStream2(a: Long) extends LargeObjectOp[InputStream] {
       def visit[F[_]](v: Visitor[F]) = v.getInputStream(a)
     }
     case object GetLongOID extends LargeObjectOp[Long] {
@@ -182,6 +193,9 @@ object largeobject { module =>
     final case class Write1(a: Array[Byte], b: Int, c: Int) extends LargeObjectOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.write(a, b, c)
     }
+    final case class Write2(a: ByteStreamWriter) extends LargeObjectOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.write(a)
+    }
 
   }
   import LargeObjectOp._
@@ -205,13 +219,15 @@ object largeobject { module =>
   val canceled = FF.liftF[LargeObjectOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]) = FF.liftF[LargeObjectOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: LargeObjectIO[Future[A]]) = FF.liftF[LargeObjectOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]) = FF.liftF[LargeObjectOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[LargeObjectOp, Unit](PerformLogging(event))
 
   // Smart constructors for LargeObject-specific operations.
   val close: LargeObjectIO[Unit] = FF.liftF(Close)
   val copy: LargeObjectIO[LargeObject] = FF.liftF(Copy)
   val getInputStream: LargeObjectIO[InputStream] = FF.liftF(GetInputStream)
-  def getInputStream(a: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream1(a))
+  def getInputStream(a: Int, b: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream1(a, b))
+  def getInputStream(a: Long): LargeObjectIO[InputStream] = FF.liftF(GetInputStream2(a))
   val getLongOID: LargeObjectIO[Long] = FF.liftF(GetLongOID)
   val getOutputStream: LargeObjectIO[OutputStream] = FF.liftF(GetOutputStream)
   def read(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Int] = FF.liftF(Read(a, b, c))
@@ -227,6 +243,7 @@ object largeobject { module =>
   def truncate64(a: Long): LargeObjectIO[Unit] = FF.liftF(Truncate64(a))
   def write(a: Array[Byte]): LargeObjectIO[Unit] = FF.liftF(Write(a))
   def write(a: Array[Byte], b: Int, c: Int): LargeObjectIO[Unit] = FF.liftF(Write1(a, b, c))
+  def write(a: ByteStreamWriter): LargeObjectIO[Unit] = FF.liftF(Write2(a))
 
   // Typeclass instances for LargeObjectIO
   implicit val WeakAsyncLargeObjectIO: WeakAsync[LargeObjectIO] =
@@ -247,6 +264,18 @@ object largeobject { module =>
       override def canceled: LargeObjectIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): LargeObjectIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: LargeObjectIO[Future[A]]): LargeObjectIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: LargeObjectIO[(Future[A], LargeObjectIO[Unit])]): LargeObjectIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidLargeObjectIO[A : Monoid]: Monoid[LargeObjectIO[A]] = new Monoid[LargeObjectIO[A]] {
+    override def empty: LargeObjectIO[A] = Applicative[LargeObjectIO].pure(Monoid[A].empty)
+    override def combine(x: LargeObjectIO[A], y: LargeObjectIO[A]): LargeObjectIO[A] =
+      Applicative[LargeObjectIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupLargeObjectIO[A : Semigroup]: Semigroup[LargeObjectIO[A]] = new Semigroup[LargeObjectIO[A]] {
+    override def combine(x: LargeObjectIO[A], y: LargeObjectIO[A]): LargeObjectIO[A] =
+      Applicative[LargeObjectIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

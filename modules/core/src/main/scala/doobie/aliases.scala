@@ -20,8 +20,7 @@ trait Types {
   /** @group Type Aliases - Core */ type Update0                  = doobie.util.update.Update0
   /** @group Type Aliases - Core */ type SqlState                 = doobie.enumerated.SqlState
   /** @group Type Aliases - Core */ type Transactor[M[_]]         = doobie.util.transactor.Transactor[M]
-  /** @group Type Aliases - Core */ type LogHandler               = doobie.util.log.LogHandler
-  /** @group Type Aliases - Core */ type LogHandlerM[M[_]]        = doobie.util.log.LogHandlerM[M]
+  /** @group Type Aliases - Core */ type LogHandler[M[_]]        = doobie.util.log.LogHandler[M]
   /** @group Type Aliases - Core */ type Fragment                 = doobie.util.fragment.Fragment
   /** @group Type Aliases - Core */ type KleisliInterpreter[F[_]] = doobie.free.KleisliInterpreter[F]
   /** @group Type Aliases - Core */ type DataSourceTransactor[F[_]] = doobie.util.transactor.Transactor.Aux[F, javax.sql.DataSource]
@@ -40,8 +39,7 @@ trait Modules {
   /** @group Module Aliases - Core */ val  Update0            = doobie.util.update.Update0
   /** @group Module Aliases - Core */ val  SqlState           = doobie.enumerated.SqlState
   /** @group Module Aliases - Core */ val  Transactor         = doobie.util.transactor.Transactor
-  /** @group Module Aliases - Core */ val  LogHandler         = doobie.util.log.LogHandler
-  /** @group Module Aliases - Core */ val  LogHandlerM        = doobie.util.log.LogHandlerM
+  /** @group Module Aliases - Core */ val  LogHandler        = doobie.util.log.LogHandler
   /** @group Module Aliases - Core */ val  Fragment           = doobie.util.fragment.Fragment
   /** @group Module Aliases - Core */ val  KleisliInterpreter = doobie.free.KleisliInterpreter
   /** @group Module Aliases - Core */ val  Fragments          = doobie.util.fragments

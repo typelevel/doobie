@@ -13,9 +13,11 @@ import org.specs2.mutable.Specification
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
   lazy val transactor = Transactor.fromDriverManager[M](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   check(sql"select 1".query[Int])

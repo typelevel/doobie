@@ -8,6 +8,8 @@ import cats.effect.IO
 import doobie._
 import doobie.enumerated.JdbcType
 
+import scala.annotation.nowarn
+
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
   case class X(x: Int)
@@ -42,7 +44,7 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     compileErrors("Get[Z]")
     compileErrors("Get[(Int, Int)]")
     compileErrors("Get[S.type]")
-  }
+  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
 
 }
 
@@ -55,9 +57,11 @@ class GetDBSuite extends munit.FunSuite {
   import doobie.syntax.all._
 
   lazy val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   // Both of these will fail at runtime if called with a null value, we check that this is

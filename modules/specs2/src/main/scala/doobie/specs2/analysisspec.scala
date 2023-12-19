@@ -5,6 +5,7 @@
 package doobie.specs2
 
 import cats.effect.{ Async, IO }
+import doobie.{ Update, Update0 }
 import doobie.syntax.connectionio._
 import doobie.util.query.{ Query, Query0 }
 import doobie.util.testing._
@@ -21,11 +22,7 @@ import org.tpolecat.typename._
  * class AnalysisTestSpec extends Specification with AnalysisSpec {
  *
  *   // The transactor to use for the tests.
- *   val transactor = Transactor.fromDriverManager[IO](
- *     "org.postgresql.Driver",
- *     "jdbc:postgresql:world",
- *     "postgres", ""
- *   )
+ *   val transactor = Transactor.fromDriverManager[IO](...)
  *
  *   // Now just mention the queries. Arguments are not used.
  *   check(MyDaoModule.findByNameAndAge(null, 0))
@@ -46,9 +43,19 @@ object analysisspec {
         s"Query0[${typeName[A]}]", q.pos, q.sql, q.outputAnalysis
       ))
 
-    def checkOutput[A: TypeName, B: TypeName](q: Query[A, B]) =
+    def checkOutput[A: TypeName, B: TypeName](q: Query[A, B]): Fragments =
       checkImpl(AnalysisArgs(
         s"Query[${typeName[A]}, ${typeName[B]}]", q.pos, q.sql, q.outputAnalysis
+      ))
+
+    def checkOutput[A: TypeName](u: Update[A]): Fragments =
+      checkImpl(AnalysisArgs(
+        s"Update[${typeName[A]}]", u.pos, u.sql, u.analysis
+      ))
+
+    def checkOutput(u: Update0): Fragments =
+      checkImpl(AnalysisArgs(
+        "Update0", u.pos, u.sql, u.analysis
       ))
 
     private def checkImpl(args: AnalysisArgs): Fragments =

@@ -6,14 +6,15 @@ package doobie
 
 import cats.~>
 import cats.implicits._
+import cats.effect.{ IO, LiftIO }
 import cats.effect.kernel.{ Async, Poll, Resource, Sync }
-import cats.effect.implicits._
 import cats.effect.std.Dispatcher
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 trait WeakAsync[F[_]] extends Sync[F] {
   def fromFuture[A](fut: F[Future[A]]): F[A]
+  def fromFutureCancelable[A](fut: F[(Future[A], F[Unit])]): F[A]
 }
 
 object WeakAsync {
@@ -37,21 +38,34 @@ object WeakAsync {
       override def canceled: F[Unit] = F.canceled
       override def onCancel[A](fa: F[A], fin: F[Unit]): F[A] = F.onCancel(fa, fin)
       override def fromFuture[A](fut: F[Future[A]]): F[A] = F.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: F[(Future[A], F[Unit])]): F[A] = F.fromFutureCancelable(fut)
     }
 
   /** Create a natural transformation for lifting an `Async` effect `F` into a `WeakAsync` effect `G`
     * `cats.effect.std.Dispatcher` the trasformation is based on is stateful and requires finalization.
     * Leaking it from it's resource scope will lead to erorrs at runtime. */
   def liftK[F[_], G[_]](implicit F: Async[F], G: WeakAsync[G]): Resource[F, F ~> G] =
-    Dispatcher[F].map(dispatcher =>
-      new(F ~> G) {
-        def apply[T](fa: F[T]) = {
-          G.delay(dispatcher.unsafeToFutureCancelable(fa)).flatMap { 
-            case (running, cancel) =>
-              G.fromFuture(G.pure(running)).onCancel(G.fromFuture(G.delay(cancel())))
+    Dispatcher.parallel[F].map(new Lifter(_))
+
+  /** Like [[liftK]] but specifically returns a [[LiftIO]] */
+  def liftIO[F[_]](implicit F: WeakAsync[F]): Resource[IO, LiftIO[F]] =
+    Dispatcher.parallel[IO].map(new Lifter(_) with LiftIO[F] {
+      def liftIO[A](ioa: IO[A]) = super[Lifter].apply(ioa)
+    })
+
+  private class Lifter[F[_], G[_]](dispatcher: Dispatcher[F])(implicit F: Async[F], G: WeakAsync[G]) extends (F ~> G) {
+    def apply[T](fa: F[T]) = // first try to interpret directly into G, then fallback to the Dispatcher
+      F.syncStep[G, T](fa, Int.MaxValue).flatMap { // MaxValue b/c we assume G will implement ceding/fairness
+        case Left(fa) =>
+          G.fromFutureCancelable {
+            G.uncancelable { _ =>
+              G.delay(dispatcher.unsafeToFutureCancelable(fa)).map { case (fut, cancel) =>
+                (fut, G.fromFuture(G.delay(cancel())))
+              }
+            }
           }
-        }
+        case Right(a) => G.pure(a)
       }
-    )
+  }
 
 }

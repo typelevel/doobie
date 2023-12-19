@@ -4,14 +4,14 @@
 
 package doobie.free
 
-import cats.{Applicative, Monoid, Semigroup, ~>}
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+
 import java.lang.Class
 import java.lang.String
 import java.sql.Blob
@@ -24,13 +24,15 @@ import java.sql.PreparedStatement
 import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Savepoint
+import java.sql.ShardingKey
 import java.sql.Statement
 import java.sql.Struct
-import java.sql.{Array => SqlArray}
+import java.sql.{ Array => SqlArray }
 import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
 
+// This file is Auto-generated using FreeGen2.scala
 object connection { module =>
 
   // Algebra of operations for Connection. Each accepts a visitor as an alternative to pattern-matching.
@@ -70,10 +72,12 @@ object connection { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): F[A]
       def fromFuture[A](fut: ConnectionIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: ConnectionIO[(Future[A], ConnectionIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // Connection
       def abort(a: Executor): F[Unit]
+      def beginRequest: F[Unit]
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def commit: F[Unit]
@@ -86,6 +90,7 @@ object connection { module =>
       def createStatement(a: Int, b: Int): F[Statement]
       def createStatement(a: Int, b: Int, c: Int): F[Statement]
       def createStruct(a: String, b: Array[AnyRef]): F[Struct]
+      def endRequest: F[Unit]
       def getAutoCommit: F[Boolean]
       def getCatalog: F[String]
       def getClientInfo: F[Properties]
@@ -95,7 +100,7 @@ object connection { module =>
       def getNetworkTimeout: F[Int]
       def getSchema: F[String]
       def getTransactionIsolation: F[Int]
-      def getTypeMap: F[Map[String, Class[_]]]
+      def getTypeMap: F[java.util.Map[String, Class[_]]]
       def getWarnings: F[SQLWarning]
       def isClosed: F[Boolean]
       def isReadOnly: F[Boolean]
@@ -124,8 +129,12 @@ object connection { module =>
       def setSavepoint: F[Savepoint]
       def setSavepoint(a: String): F[Savepoint]
       def setSchema(a: String): F[Unit]
+      def setShardingKey(a: ShardingKey): F[Unit]
+      def setShardingKey(a: ShardingKey, b: ShardingKey): F[Unit]
+      def setShardingKeyIfValid(a: ShardingKey, b: Int): F[Boolean]
+      def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int): F[Boolean]
       def setTransactionIsolation(a: Int): F[Unit]
-      def setTypeMap(a: Map[String, Class[_]]): F[Unit]
+      def setTypeMap(a: java.util.Map[String, Class[_]]): F[Unit]
       def unwrap[T](a: Class[T]): F[T]
 
     }
@@ -170,6 +179,9 @@ object connection { module =>
     case class FromFuture[A](fut: ConnectionIO[Future[A]]) extends ConnectionOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class FromFutureCancelable[A](fut: ConnectionIO[(Future[A], ConnectionIO[Unit])]) extends ConnectionOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    }
     case class PerformLogging(event: LogEvent) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
@@ -177,6 +189,9 @@ object connection { module =>
     // Connection-specific operations.
     final case class Abort(a: Executor) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.abort(a)
+    }
+    case object BeginRequest extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.beginRequest
     }
     case object ClearWarnings extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.clearWarnings
@@ -214,6 +229,9 @@ object connection { module =>
     final case class CreateStruct(a: String, b: Array[AnyRef]) extends ConnectionOp[Struct] {
       def visit[F[_]](v: Visitor[F]) = v.createStruct(a, b)
     }
+    case object EndRequest extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.endRequest
+    }
     case object GetAutoCommit extends ConnectionOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.getAutoCommit
     }
@@ -241,7 +259,7 @@ object connection { module =>
     case object GetTransactionIsolation extends ConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getTransactionIsolation
     }
-    case object GetTypeMap extends ConnectionOp[Map[String, Class[_]]] {
+    case object GetTypeMap extends ConnectionOp[java.util.Map[String, Class[_]]] {
       def visit[F[_]](v: Visitor[F]) = v.getTypeMap
     }
     case object GetWarnings extends ConnectionOp[SQLWarning] {
@@ -328,10 +346,22 @@ object connection { module =>
     final case class SetSchema(a: String) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setSchema(a)
     }
+    final case class SetShardingKey(a: ShardingKey) extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setShardingKey(a)
+    }
+    final case class SetShardingKey1(a: ShardingKey, b: ShardingKey) extends ConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setShardingKey(a, b)
+    }
+    final case class SetShardingKeyIfValid(a: ShardingKey, b: Int) extends ConnectionOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.setShardingKeyIfValid(a, b)
+    }
+    final case class SetShardingKeyIfValid1(a: ShardingKey, b: ShardingKey, c: Int) extends ConnectionOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.setShardingKeyIfValid(a, b, c)
+    }
     final case class SetTransactionIsolation(a: Int) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTransactionIsolation(a)
     }
-    final case class SetTypeMap(a: Map[String, Class[_]]) extends ConnectionOp[Unit] {
+    final case class SetTypeMap(a: java.util.Map[String, Class[_]]) extends ConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setTypeMap(a)
     }
     final case class Unwrap[T](a: Class[T]) extends ConnectionOp[T] {
@@ -360,10 +390,12 @@ object connection { module =>
   val canceled = FF.liftF[ConnectionOp, Unit](Canceled)
   def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]) = FF.liftF[ConnectionOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: ConnectionIO[Future[A]]) = FF.liftF[ConnectionOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: ConnectionIO[(Future[A], ConnectionIO[Unit])]) = FF.liftF[ConnectionOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[ConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for Connection-specific operations.
   def abort(a: Executor): ConnectionIO[Unit] = FF.liftF(Abort(a))
+  val beginRequest: ConnectionIO[Unit] = FF.liftF(BeginRequest)
   val clearWarnings: ConnectionIO[Unit] = FF.liftF(ClearWarnings)
   val close: ConnectionIO[Unit] = FF.liftF(Close)
   val commit: ConnectionIO[Unit] = FF.liftF(Commit)
@@ -376,6 +408,7 @@ object connection { module =>
   def createStatement(a: Int, b: Int): ConnectionIO[Statement] = FF.liftF(CreateStatement1(a, b))
   def createStatement(a: Int, b: Int, c: Int): ConnectionIO[Statement] = FF.liftF(CreateStatement2(a, b, c))
   def createStruct(a: String, b: Array[AnyRef]): ConnectionIO[Struct] = FF.liftF(CreateStruct(a, b))
+  val endRequest: ConnectionIO[Unit] = FF.liftF(EndRequest)
   val getAutoCommit: ConnectionIO[Boolean] = FF.liftF(GetAutoCommit)
   val getCatalog: ConnectionIO[String] = FF.liftF(GetCatalog)
   val getClientInfo: ConnectionIO[Properties] = FF.liftF(GetClientInfo)
@@ -385,7 +418,7 @@ object connection { module =>
   val getNetworkTimeout: ConnectionIO[Int] = FF.liftF(GetNetworkTimeout)
   val getSchema: ConnectionIO[String] = FF.liftF(GetSchema)
   val getTransactionIsolation: ConnectionIO[Int] = FF.liftF(GetTransactionIsolation)
-  val getTypeMap: ConnectionIO[Map[String, Class[_]]] = FF.liftF(GetTypeMap)
+  val getTypeMap: ConnectionIO[java.util.Map[String, Class[_]]] = FF.liftF(GetTypeMap)
   val getWarnings: ConnectionIO[SQLWarning] = FF.liftF(GetWarnings)
   val isClosed: ConnectionIO[Boolean] = FF.liftF(IsClosed)
   val isReadOnly: ConnectionIO[Boolean] = FF.liftF(IsReadOnly)
@@ -414,8 +447,12 @@ object connection { module =>
   val setSavepoint: ConnectionIO[Savepoint] = FF.liftF(SetSavepoint)
   def setSavepoint(a: String): ConnectionIO[Savepoint] = FF.liftF(SetSavepoint1(a))
   def setSchema(a: String): ConnectionIO[Unit] = FF.liftF(SetSchema(a))
+  def setShardingKey(a: ShardingKey): ConnectionIO[Unit] = FF.liftF(SetShardingKey(a))
+  def setShardingKey(a: ShardingKey, b: ShardingKey): ConnectionIO[Unit] = FF.liftF(SetShardingKey1(a, b))
+  def setShardingKeyIfValid(a: ShardingKey, b: Int): ConnectionIO[Boolean] = FF.liftF(SetShardingKeyIfValid(a, b))
+  def setShardingKeyIfValid(a: ShardingKey, b: ShardingKey, c: Int): ConnectionIO[Boolean] = FF.liftF(SetShardingKeyIfValid1(a, b, c))
   def setTransactionIsolation(a: Int): ConnectionIO[Unit] = FF.liftF(SetTransactionIsolation(a))
-  def setTypeMap(a: Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
+  def setTypeMap(a: java.util.Map[String, Class[_]]): ConnectionIO[Unit] = FF.liftF(SetTypeMap(a))
   def unwrap[T](a: Class[T]): ConnectionIO[T] = FF.liftF(Unwrap(a))
 
   // Typeclass instances for ConnectionIO
@@ -437,17 +474,18 @@ object connection { module =>
       override def canceled: ConnectionIO[Unit] = module.canceled
       override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): ConnectionIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: ConnectionIO[Future[A]]): ConnectionIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: ConnectionIO[(Future[A], ConnectionIO[Unit])]): ConnectionIO[A] = module.fromFutureCancelable(fut)
     }
-
+    
   implicit def MonoidConnectionIO[A : Monoid]: Monoid[ConnectionIO[A]] = new Monoid[ConnectionIO[A]] {
     override def empty: ConnectionIO[A] = Applicative[ConnectionIO].pure(Monoid[A].empty)
     override def combine(x: ConnectionIO[A], y: ConnectionIO[A]): ConnectionIO[A] =
       Applicative[ConnectionIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
   }
-
+ 
   implicit def SemigroupConnectionIO[A : Semigroup]: Semigroup[ConnectionIO[A]] = new Semigroup[ConnectionIO[A]] {
     override def combine(x: ConnectionIO[A], y: ConnectionIO[A]): ConnectionIO[A] =
       Applicative[ConnectionIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
-  }
+  }  
 }
 

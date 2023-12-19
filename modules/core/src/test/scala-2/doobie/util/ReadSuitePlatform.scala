@@ -7,6 +7,8 @@ package doobie.util
 import shapeless._
 import shapeless.record._
 
+import scala.annotation.nowarn
+
 trait ReadSuitePlatform { self: munit.FunSuite =>
   import doobie.generic.auto._
 
@@ -15,7 +17,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
     type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
     Read[A]
     Read[(A, A)]
-  }
+  }: @nowarn("msg=.*DL is never used.*")
 
   case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 

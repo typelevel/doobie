@@ -15,7 +15,7 @@ trait ReadPlatform:
 
   // Read for head and tail.
   given [H, T <: Tuple](
-    using H: => Read[H] OrElse MkRead[H],
+    using H: Read[H] OrElse MkRead[H],
           T: => MkRead[T]
   ): MkRead[H *: T] = {
     val head = H.unify
@@ -43,7 +43,7 @@ trait ReadPlatform:
     new MkRead[Option[Unit]](Nil, (_, _) => Some(()))
 
   given cons1[H, T <: Tuple](
-    using H: => Read[Option[H]] OrElse MkRead[Option[H]],
+    using H: Read[Option[H]] OrElse MkRead[Option[H]],
           T: => MkRead[Option[T]],
   ): MkRead[Option[H *: T]] = {
     val head = H.unify
@@ -59,7 +59,7 @@ trait ReadPlatform:
   }
 
   given cons2[H, T <: Tuple](
-    using H: => Read[Option[H]] OrElse MkRead[Option[H]],
+    using H: Read[Option[H]] OrElse MkRead[Option[H]],
           T: => MkRead[Option[T]]
   ): MkRead[Option[Option[H] *: T]] = {
     val head = H.unify

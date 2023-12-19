@@ -19,33 +19,34 @@ import scala.concurrent.ExecutionContext
 object HikariTransactor {
 
   /** Construct a `HikariTransactor` from an existing `HikariDatasource`. */
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply[M[_]: Async](
-    hikariDataSource : HikariDataSource,
-    connectEC:         ExecutionContext
-  ): HikariTransactor[M] =
-    Transactor.fromDataSource[M](hikariDataSource, connectEC)
-
-  private def createDataSourceResource[M[_]: Sync](factory: => HikariDataSource): Resource[M, HikariDataSource] = {
-    val alloc = Sync[M].delay(factory)
-    val free = (ds: HikariDataSource) => Sync[M].delay(ds.close())
-    Resource.make(alloc)(free)
+  def apply[M[_]] = new HikariTransactorPartiallyApplied[M]
+  
+  class HikariTransactorPartiallyApplied[M[_]] {
+    def apply(
+      hikariDataSource: HikariDataSource,
+      connectEC: ExecutionContext,
+      logHandler: Option[LogHandler[M]] = None
+    )(implicit ev: Async[M]): HikariTransactor[M] = {
+      Transactor.fromDataSource[M](hikariDataSource, connectEC, logHandler)
+    }
   }
-
+  
   /** Resource yielding an unconfigured `HikariTransactor`. */
-  def initial[M[_]: Async](
-    connectEC: ExecutionContext
-  ): Resource[M, HikariTransactor[M]] = {
-    createDataSourceResource(new HikariDataSource)
-      .map(Transactor.fromDataSource[M](_, connectEC))
+  def initial[M0[_]: Sync, M[_]: Async](
+    connectEC: ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None
+  ): Resource[M0, HikariTransactor[M]] = {
+    Resource.fromAutoCloseable(Sync[M0].delay(new HikariDataSource))
+      .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
-   * Unless you have a good reason, consider using `fromConfigAutoEc` which creates the `connectEC` for you.
+   * Unless you have a good reason, consider using `fromConfig` which creates the `connectEC` for you.
    */
-  def fromConfig[M[_]: Async](
+  def fromConfigCustomEc[M0[_]: Sync, M[_]: Async](
     config: Config,
     connectEC: ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None,
     dataSource: Option[DataSource] = None,
     dataSourceProperties: Option[Properties] = None,
     healthCheckProperties: Option[Properties] = None,
@@ -54,29 +55,33 @@ object HikariTransactor {
     metricsTrackerFactory: Option[MetricsTrackerFactory] = None,
     scheduledExecutor: Option[ScheduledExecutorService] = None,
     threadFactory: Option[ThreadFactory] = None,
-  ): Resource[M, HikariTransactor[M]] = {
+  ): Resource[M0, HikariTransactor[M]] = {
     Resource
       .liftK(
-        Config.makeHikariConfig(
-          config,
-          dataSource,
-          dataSourceProperties,
-          healthCheckProperties,
-          healthCheckRegistry,
-          metricRegistry,
-          metricsTrackerFactory,
-          scheduledExecutor,
-          threadFactory
+        Config.makeHikariConfig[M0](
+          config = config,
+          dataSource = dataSource,
+          dataSourceProperties = dataSourceProperties,
+          healthCheckProperties = healthCheckProperties,
+          healthCheckRegistry = healthCheckRegistry,
+          metricRegistry = metricRegistry,
+          metricsTrackerFactory = metricsTrackerFactory,
+          scheduledExecutor = scheduledExecutor,
+          threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_, connectEC))
+      .flatMap(fromHikariConfigCustomEc[M0, M](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
    * The `connectEC` is created automatically, with the same size as the Hikari pool.
+   *
+   * @tparam M0 the effect to create a [[HikariTransactor]]
+   * @tparam M the effect under which the [[HikariTransactor]] runs
    */
-  def fromConfigAutoEc[M[_]: Async](
+  def fromConfig[M0[_]: Sync, M[_]: Async](
       config: Config,
+      logHandler: Option[LogHandler[M]] = None,
       dataSource: Option[DataSource] = None,
       dataSourceProperties: Option[Properties] = None,
       healthCheckProperties: Option[Properties] = None,
@@ -85,62 +90,70 @@ object HikariTransactor {
       metricsTrackerFactory: Option[MetricsTrackerFactory] = None,
       scheduledExecutor: Option[ScheduledExecutorService] = None,
       threadFactory: Option[ThreadFactory] = None,
-    ): Resource[M, HikariTransactor[M]] = {
+    ): Resource[M0, HikariTransactor[M]] = {
     Resource
       .liftK(
-        Config.makeHikariConfig(
-          config,
-          dataSource,
-          dataSourceProperties,
-          healthCheckProperties,
-          healthCheckRegistry,
-          metricRegistry,
-          metricsTrackerFactory,
-          scheduledExecutor,
-          threadFactory
+        Config.makeHikariConfig[M0](
+          config = config,
+          dataSource = dataSource,
+          dataSourceProperties = dataSourceProperties,
+          healthCheckProperties = healthCheckProperties,
+          healthCheckRegistry = healthCheckRegistry,
+          metricRegistry = metricRegistry,
+          metricsTrackerFactory = metricsTrackerFactory,
+          scheduledExecutor = scheduledExecutor,
+          threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfig(_))
+      .flatMap(fromHikariConfig[M0, M](_, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
-   * Unless you have a good reason, consider using the overload without explicit `connectEC`, it will be created automatically for you.
+   * Unless you have a good reason, consider using [[fromHikariConfig]], it will be created automatically for you.
    */
-  def fromHikariConfig[M[_]: Async](
+  def fromHikariConfigCustomEc[M0[_]: Sync, M[_]: Async](
     hikariConfig: HikariConfig,
-    connectEC: ExecutionContext
-  ): Resource[M, HikariTransactor[M]] = {
-    createDataSourceResource(new HikariDataSource(hikariConfig))
-      .map(Transactor.fromDataSource[M](_, connectEC))
-  }
+    connectEC: ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None
+  ): Resource[M0, HikariTransactor[M]] = Resource
+    .fromAutoCloseable(Sync[M0].delay(new HikariDataSource(hikariConfig)))
+    .map(Transactor.fromDataSource[M](_, connectEC, logHandler))
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
-   * The `connectEC` is created automatically, with the same size as the Hikari pool.
+   * The connection ExecutionContext (used for waiting for a connection from the connection pool) is created automatically, with the same size as the Hikari connection pool.
    */
-  def fromHikariConfig[M[_]: Async](hikariConfig: HikariConfig): Resource[M, HikariTransactor[M]] =
+  def fromHikariConfig[M0[_]: Sync, M[_]: Async](
+    hikariConfig: HikariConfig,
+    logHandler: Option[LogHandler[M]] = None
+  ): Resource[M0, HikariTransactor[M]] =
   for {
-    _ <- Sync[M].delay(hikariConfig.validate()).toResource // to populate unset fields with default values, like `maximumPoolSize`
-    // Also note that the number of JDBC connections is usually limited by the underlying JDBC pool. You may therefore want to limit your connection pool to the same size as the underlying JDBC pool as any additional threads are guaranteed to be blocked.
+    // to populate unset fields with default values, like `maximumPoolSize`
+    _ <- Sync[M0].delay(hikariConfig.validate()).toResource
+    // Note that the number of JDBC connections is usually limited by the underlying JDBC pool.
+    // You may therefore want to limit your connection pool to the same size as the underlying JDBC pool
+    // as any additional threads are guaranteed to be blocked.
     // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
-    connectEC <- ExecutionContexts.fixedThreadPool(hikariConfig.getMaximumPoolSize)
-    result <- createDataSourceResource(new HikariDataSource(hikariConfig))
-      .map(Transactor.fromDataSource[M](_, connectEC))
+    connectEC <- ExecutionContexts.fixedThreadPool[M0](hikariConfig.getMaximumPoolSize)
+    result <- fromHikariConfigCustomEc[M0, M](hikariConfig, connectEC, logHandler)
   } yield result
 
-  /** Resource yielding a new `HikariTransactor` configured with the given info. */
+  /** Resource yielding a new `HikariTransactor` configured with the given info.
+   * Consider using `fromConfig` for better configurability.
+   */
   def newHikariTransactor[M[_]: Async](
     driverClassName: String,
     url:             String,
     user:            String,
     pass:            String,
-    connectEC:       ExecutionContext
+    connectEC:       ExecutionContext,
+    logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] =
     for {
-      _ <- Resource.eval(Async[M].delay(Class.forName(driverClassName)))
-      t <- initial[M](connectEC)
-      _ <- Resource.eval {
+      _ <- Resource.eval(Sync[M].delay(Class.forName(driverClassName)))
+      t <- initial[M, M](connectEC, logHandler)
+      _ <- Resource.eval[M, Unit] {
             t.configure { ds =>
-              Async[M].delay {
+              Sync[M].delay[Unit] {
                 ds setJdbcUrl  url
                 ds setUsername user
                 ds setPassword pass

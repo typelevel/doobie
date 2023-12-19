@@ -15,7 +15,7 @@ trait WritePlatform:
 
   // Inductive write for writable head and tail.
   given [H, T <: Tuple](
-    using H: => Write[H] OrElse MkWrite[H],
+    using H: Write[H] OrElse MkWrite[H],
           T: => MkWrite[T]
   ): MkWrite[H *: T] = {
     val head = H.unify
@@ -66,7 +66,7 @@ trait WritePlatform:
 
   // Write[Option[H]], Write[Option[T]] implies Write[Option[Option[H] *: T]]
   given cons2[H, T <: Tuple](
-    using H: => Write[Option[H]] OrElse MkWrite[Option[H]],
+    using H: Write[Option[H]] OrElse MkWrite[Option[H]],
           T: => MkWrite[Option[T]]
   ): MkWrite[Option[Option[H] *: T]] =
     val head = H.unify

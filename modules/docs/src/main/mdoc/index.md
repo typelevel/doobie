@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext
 import cats.effect.unsafe.implicits.global
 
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", ""
+  driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
 )
 
 case class Country(code: String, name: String, population: Long)
@@ -103,6 +103,11 @@ Listed newest first. If you have given a presentation or have written a blog pos
 - [Typechecking SQL in Slick and doobie](http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html) by Richard Dallaway
 - [DB to JSON with a Microservice](http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/) by Da Terry - [code](https://bitbucket.org/da_terry/scalasyd-doobie-http4s)
 
+## Related tooling
+
+- [doobie-typesafe](https://arturaz.github.io/doobie-typesafe/) by Artūras Šlajus - a typesafe layer for doobie for typesafe table and column definitions.
+  [doobieroll](https://jatcwang.github.io/doobieroll/) by Jacob Wang - a collection of utilities to make working with Doobie / SQL even easier.
+
 ## Testing
 
 If you want to build and run the tests for yourself, you'll need a local postgresql database. The easiest way to do this is to run `docker-compose up` from the project root.
@@ -134,6 +139,8 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [FinDynamic](https://www.findynamic.com/en)
  - [Fivebox](https://fivebox.com/)
  - [HIFI](https://hi.fi)
+ - [Input Objects](https://inputobjects.eu)
+ - [Intent HQ](https://intenthq.com)
  - [ITV](https://www.itv.com/)
  - [lences.io](https://lenses.io)
  - [Medidata](https://www.medidata.com/)

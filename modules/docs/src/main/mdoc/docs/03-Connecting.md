@@ -39,10 +39,11 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // JDBC driver classname
-  "jdbc:postgresql:world",     // Connect URL
-  "postgres",                  // user
-  ""                           // password
+  driver = "org.postgresql.Driver",  // JDBC driver classname
+  url = "jdbc:postgresql:world",     // Connect URL
+  user = "postgres",                 // Database user name
+  password = "password",             // Database password
+  logHandler = None                  // Don't setup logging for now. See Logging page for how to log events in detail
 )
 ```
 
@@ -137,7 +138,7 @@ import cats.data.Kleisli
 import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
-val interpreter = KleisliInterpreter[IO](LogHandlerM.noop).ConnectionInterpreter
+val interpreter = KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
 val kleisli = program1.foldMap(interpreter)
 val io3 = IO(null: java.sql.Connection) >>= kleisli.run
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection

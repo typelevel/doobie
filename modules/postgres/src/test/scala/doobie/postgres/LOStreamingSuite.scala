@@ -4,28 +4,21 @@
 
 package doobie.postgres
 
+import doobie._
+import doobie.implicits._
 import fs2.{Chunk, Stream, Pure}
-import cats.effect._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
-import doobie._, doobie.implicits._
-
 
 class LOStreamingSuite extends munit.ScalaCheckSuite {
-
   import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", ""
-  )
+  import PostgresTestTransactor.xa
 
   def genFiniteStream[F[_], A: Arbitrary]: Gen[Stream[F, A]] =
     arbitrary[Vector[Vector[A]]].map { chunks =>
       chunks.map { chunk =>
-        Stream.chunk(Chunk.seq(chunk))
+        Stream.chunk(Chunk.from(chunk))
       }.foldLeft(Stream.empty.covaryAll[F, A])(_ ++ _)
     }
 

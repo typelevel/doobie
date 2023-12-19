@@ -4,7 +4,11 @@
 
 package doobie.util
 
-import shapeless._, shapeless.record._
+import shapeless._
+import shapeless.record._
+
+import scala.annotation.nowarn
+
 
 trait WriteSuitePlatform { self: munit.FunSuite =>
   import doobie.generic.auto._
@@ -14,7 +18,7 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
     type A  = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
     Write[A]
     Write[(A, A)]
-  }
+  }: @nowarn("msg=.*DL is never used.*")
 
   case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 

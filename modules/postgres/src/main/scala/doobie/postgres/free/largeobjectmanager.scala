@@ -4,7 +4,7 @@
 
 package doobie.postgres.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 import org.postgresql.largeobject.LargeObject
 import org.postgresql.largeobject.LargeObjectManager
 
+// This file is Auto-generated using FreeGen2.scala
 object largeobjectmanager { module =>
 
   // Algebra of operations for LargeObjectManager. Each accepts a visitor as an alternative to pattern-matching.
@@ -54,6 +55,7 @@ object largeobjectmanager { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): F[A]
       def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // LargeObjectManager
@@ -109,6 +111,9 @@ object largeobjectmanager { module =>
     }
     case class FromFuture[A](fut: LargeObjectManagerIO[Future[A]]) extends LargeObjectManagerOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
+    }
+    case class FromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]) extends LargeObjectManagerOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
     }
     case class PerformLogging(event: LogEvent) extends LargeObjectManagerOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
@@ -168,6 +173,7 @@ object largeobjectmanager { module =>
   val canceled = FF.liftF[LargeObjectManagerOp, Unit](Canceled)
   def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]) = FF.liftF[LargeObjectManagerOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]) = FF.liftF[LargeObjectManagerOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]) = FF.liftF[LargeObjectManagerOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[LargeObjectManagerOp, Unit](PerformLogging(event))
 
   // Smart constructors for LargeObjectManager-specific operations.
@@ -201,6 +207,18 @@ object largeobjectmanager { module =>
       override def canceled: LargeObjectManagerIO[Unit] = module.canceled
       override def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): LargeObjectManagerIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]): LargeObjectManagerIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: LargeObjectManagerIO[(Future[A], LargeObjectManagerIO[Unit])]): LargeObjectManagerIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidLargeObjectManagerIO[A : Monoid]: Monoid[LargeObjectManagerIO[A]] = new Monoid[LargeObjectManagerIO[A]] {
+    override def empty: LargeObjectManagerIO[A] = Applicative[LargeObjectManagerIO].pure(Monoid[A].empty)
+    override def combine(x: LargeObjectManagerIO[A], y: LargeObjectManagerIO[A]): LargeObjectManagerIO[A] =
+      Applicative[LargeObjectManagerIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupLargeObjectManagerIO[A : Semigroup]: Semigroup[LargeObjectManagerIO[A]] = new Semigroup[LargeObjectManagerIO[A]] {
+    override def combine(x: LargeObjectManagerIO[A], y: LargeObjectManagerIO[A]): LargeObjectManagerIO[A] =
+      Applicative[LargeObjectManagerIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

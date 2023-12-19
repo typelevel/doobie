@@ -6,8 +6,8 @@ package doobie.postgres
 
 import doobie._
 import doobie.util.invariant._
-
-import org.postgis._
+import net.postgis.jdbc.{PGbox2d, PGbox3d, PGgeometry}
+import net.postgis.jdbc.geometry._
 
 import scala.reflect.ClassTag
 import org.tpolecat.typename._

@@ -13,25 +13,24 @@ import doobie.syntax.string._
 import doobie.util.Read
 import doobie.util.transactor.Transactor
 import munit._
-import scala.concurrent.ExecutionContext
 
 trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
 
   lazy val transactor = Transactor.fromDriverManager[M](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   test("trivial") { check(sql"select 1".query[Int]) }
   test("fail".fail) { check(sql"select 1".query[String]) }
 
-  final case class Foo[F[_]](x: Int)
-
   test ("trivial case-class") {
     import doobie.generic.auto._
 
-    check(sql"select 1".query[Foo[cats.Id]])
+    check(sql"select 1".query[CheckerChecks.Foo[cats.Id]])
   }
 
   test("Read should select correct columns when combined with `product`") {
@@ -59,6 +58,10 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
     check(sql"SELECT '1', '2', 3, 4".query(combined))
   }
 
+}
+
+object CheckerChecks {
+  final case class Foo[F[_]](x: Int)
 }
 
 class IOCheckerCheck extends CheckerChecks[IO] with IOChecker {

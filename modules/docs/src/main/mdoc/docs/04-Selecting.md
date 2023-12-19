@@ -1,6 +1,6 @@
 ## Selecting Data
 
-In this chapter will write some some programs to read from the database, mapping rows to Scala types on the way. We also introduce YOLO mode for experimenting with **doobie** in the REPL.
+In this chapter we will write some some programs to read from the database, mapping rows to Scala types on the way. We also introduce YOLO mode for experimenting with **doobie** in the REPL.
 
 ### Setting Up
 
@@ -23,10 +23,11 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
-  "postgres",                  // user
-  ""                          // password
+  driver = "org.postgresql.Driver",  // JDBC driver classname
+  url = "jdbc:postgresql:world",     // Connect URL
+  user = "postgres",                 // Database user name
+  password = "password",             // Database password
+  logHandler = None                  // Don't setup logging for now. See Logging page for how to log events in detail
 )
 ```
 
