@@ -35,10 +35,14 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     Read[(Int, (Int, String))]
   }
 
-  test("Read is not auto derived without an import") {
-    compileErrors("Read[(Int, Int)]")
-    compileErrors("Read[(Int, Int, String)]")
-    compileErrors("Read[(Int, (Int, String))]")
+  test("Read is not auto derived for case classes without importing auto derive import") {
+    assert(compileErrors("Read[LenStr1]").contains("Cannot find or construct"))
+  }
+
+  test("Read is not auto derived for tuples without an import") {
+    assert(compileErrors("Read[(Int, Int)]").contains("Cannot find or construct"))
+    assert(compileErrors("Read[(Int, Int, String)]").contains("Cannot find or construct"))
+    assert(compileErrors("Read[(Int, (Int, String))]").contains("Cannot find or construct"))
   }
 
   test("Read can be manually derived") {
@@ -116,5 +120,5 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
     assertEquals(o, List((1, (2, 3))))
   }
-
+  
 }

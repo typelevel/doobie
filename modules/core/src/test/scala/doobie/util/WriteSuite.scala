@@ -25,10 +25,14 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
     Write[(Int, (Int, String))]
   }
 
-  test("Write is not auto derived without an import") {
-    compileErrors("Write[(Int, Int)]")
-    compileErrors("Write[(Int, Int, String)]")
-    compileErrors("Write[(Int, (Int, String))]")
+  test("Write is not auto derived for tuples without an import") {
+    assert(compileErrors("Write[(Int, Int)]").contains("Cannot find or construct"))
+    assert(compileErrors("Write[(Int, Int, String)]").contains("Cannot find or construct"))
+    assert(compileErrors("Write[(Int, (Int, String))]").contains("Cannot find or construct"))
+  }
+  
+  test("Write is not auto derived for case classes") {
+    assert(compileErrors("Write[LenStr1]").contains("Cannot find or construct"))
   }
 
   test("Write can be manually derived") {

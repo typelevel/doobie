@@ -30,7 +30,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   }
 
   test("Read should not exist for case class with field without Get instance") {
-    val compileError = compileErrors("util.Read[CaseClassWithFieldWithoutGetInstance]")
+    val compileError = compileErrors("Read[CaseClassWithFieldWithoutGetInstance]")
     assert(
       compileError.contains(
         """Cannot find or construct a Read instance for type:

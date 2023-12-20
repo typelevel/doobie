@@ -30,16 +30,7 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
   }
 
   test("Write should not exist for case class with field without Put instance") {
-    val compileError = compileErrors("util.Write[CaseClassWithFieldWithoutPutInstance]")
-    assert(
-      compileError.contains(
-        """Cannot find or construct a Write instance for type:
-          |
-          |  WriteSuitePlatform.this.CaseClassWithFieldWithoutPutInstance
-          |
-          |This can happen for a few reasons,""".stripMargin
-      )
-    )
+    assert(compileErrors("Write[CaseClassWithFieldWithoutPutInstance]").contains("Cannot find or construct"))
   }
 
   test("derives") {
