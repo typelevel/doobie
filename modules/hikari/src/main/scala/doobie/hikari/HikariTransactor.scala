@@ -35,14 +35,14 @@ object HikariTransactor {
   def initial[M[_] : Async](
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
-  ): Resource[M, HikariTransactor[M]] = initialSeparateEffect[M, M](connectEC, logHandler)
+  ): Resource[M, HikariTransactor[M]] = initialWithResEffect[M, M](connectEC, logHandler)
 
   /** Similar to [[initial]], but with a separate effect for the construction of the Transactor
    *
    * @tparam M0 the effect to construct the [[HikariTransactor]] in
    * @tparam M  the effect under which the [[HikariTransactor]] runs
    */
-  def initialSeparateEffect[M0[_] : Sync, M[_] : Async](
+  def initialWithResEffect[M0[_] : Sync, M[_] : Async](
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
   ): Resource[M0, HikariTransactor[M]] = {
@@ -66,7 +66,7 @@ object HikariTransactor {
     scheduledExecutor: Option[ScheduledExecutorService] = None,
     threadFactory: Option[ThreadFactory] = None,
   ): Resource[M, HikariTransactor[M]] = {
-    fromConfigCustomEcSeparateEffect[M, M](
+    fromConfigCustomEcWithResEffect[M, M](
       config = config,
       connectEC = connectEC,
       logHandler = logHandler,
@@ -86,7 +86,7 @@ object HikariTransactor {
    * @tparam M0 the effect to construct the [[HikariTransactor]] in
    * @tparam M  the effect under which the [[HikariTransactor]] runs
    */
-  def fromConfigCustomEcSeparateEffect[M0[_] : Sync, M[_] : Async](
+  def fromConfigCustomEcWithResEffect[M0[_] : Sync, M[_] : Async](
     config: Config,
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None,
@@ -113,7 +113,7 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfigCustomEcSeparateEffect[M0, M](_, connectEC, logHandler))
+      .flatMap(fromHikariConfigCustomEcWithResEffect[M0, M](_, connectEC, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given Config.
@@ -133,7 +133,7 @@ object HikariTransactor {
     scheduledExecutor: Option[ScheduledExecutorService] = None,
     threadFactory: Option[ThreadFactory] = None,
   ): Resource[M, HikariTransactor[M]] = {
-    fromConfigSeparateEffect[M, M](
+    fromConfigWithResEffect[M, M](
       config = config,
       logHandler = logHandler,
       dataSource = dataSource,
@@ -152,7 +152,7 @@ object HikariTransactor {
    * @tparam M0 the effect to construct the [[HikariTransactor]] in
    * @tparam M  the effect under which the [[HikariTransactor]] runs
    */
-  def fromConfigSeparateEffect[M0[_] : Sync, M[_] : Async](
+  def fromConfigWithResEffect[M0[_] : Sync, M[_] : Async](
     config: Config,
     logHandler: Option[LogHandler[M]] = None,
     dataSource: Option[DataSource] = None,
@@ -178,7 +178,7 @@ object HikariTransactor {
           threadFactory = threadFactory
         )
       )
-      .flatMap(fromHikariConfigSeparateEffect[M0, M](_, logHandler))
+      .flatMap(fromHikariConfigWithResEffect[M0, M](_, logHandler))
   }
 
   /** Resource yielding a new `HikariTransactor` configured with the given HikariConfig.
@@ -189,14 +189,14 @@ object HikariTransactor {
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] =
-    fromHikariConfigCustomEcSeparateEffect[M, M](hikariConfig, connectEC, logHandler)
+    fromHikariConfigCustomEcWithResEffect[M, M](hikariConfig, connectEC, logHandler)
 
   /** Similar to [[fromHikariConfigCustomEc]], but with a separate effect for the construction of the Transactor
    *
    * @tparam M0 the effect to construct the [[HikariTransactor]] in
    * @tparam M  the effect under which the [[HikariTransactor]] runs
    */
-  def fromHikariConfigCustomEcSeparateEffect[M0[_] : Sync, M[_] : Async](
+  def fromHikariConfigCustomEcWithResEffect[M0[_] : Sync, M[_] : Async](
     hikariConfig: HikariConfig,
     connectEC: ExecutionContext,
     logHandler: Option[LogHandler[M]] = None
@@ -211,14 +211,14 @@ object HikariTransactor {
     hikariConfig: HikariConfig,
     logHandler: Option[LogHandler[M]] = None
   ): Resource[M, HikariTransactor[M]] =
-    fromHikariConfigSeparateEffect[M, M](hikariConfig, logHandler)
+    fromHikariConfigWithResEffect[M, M](hikariConfig, logHandler)
 
   /** Similar to [[fromHikariConfig]], but with a separate effect for the construction of the Transactor
    *
    * @tparam M0 the effect to construct the [[HikariTransactor]] in
    * @tparam M  the effect under which the [[HikariTransactor]] runs
    */
-  def fromHikariConfigSeparateEffect[M0[_] : Sync, M[_] : Async](
+  def fromHikariConfigWithResEffect[M0[_] : Sync, M[_] : Async](
     hikariConfig: HikariConfig,
     logHandler: Option[LogHandler[M]] = None
   ): Resource[M0, HikariTransactor[M]] =
@@ -230,7 +230,7 @@ object HikariTransactor {
       // as any additional threads are guaranteed to be blocked.
       // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
       connectEC <- ExecutionContexts.fixedThreadPool[M0](hikariConfig.getMaximumPoolSize)
-      result <- fromHikariConfigCustomEcSeparateEffect[M0, M](hikariConfig, connectEC, logHandler)
+      result <- fromHikariConfigCustomEcWithResEffect[M0, M](hikariConfig, connectEC, logHandler)
     } yield result
 
   /** Resource yielding a new `HikariTransactor` configured with the given info.
