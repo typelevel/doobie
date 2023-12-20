@@ -27,13 +27,11 @@ class LogSuite extends munit.FunSuite {
   def eventForCIO[A](cio: ConnectionIO[A]): LogEvent =
     cio.transact(xa).attempt.flatMap(_ => ioLocal.get).unsafeRunSync()
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def eventForUniqueQuery[A: Write](sql: String, arg: A = ()): LogEvent = {
+  def eventForUniqueQuery[A: Write](sql: String, arg: A): LogEvent = {
     eventForCIO(Query[A, Unit](sql, None).unique(arg))
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def eventForUniqueUpdate[A: Write](sql: String, arg: A = ()): LogEvent = {
+  def eventForUniqueUpdate[A: Write](sql: String, arg: A): LogEvent = {
     val cio = sql"create table if not exists foo (bar integer)".update.run *>
       Update[A](sql, None).run(arg)
     eventForCIO(cio)
@@ -59,7 +57,7 @@ class LogSuite extends munit.FunSuite {
 
   test("[Query] zero-arg success") {
     val Sql = "select 1"
-    eventForUniqueQuery(Sql) match {
+    eventForUniqueQuery(Sql, ()) match {
       case Success(Sql, Nil, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
@@ -75,7 +73,7 @@ class LogSuite extends munit.FunSuite {
 
   test("[Query] zero-arg processing failure") {
     val Sql = "select 1 where 1 = 2"
-    eventForUniqueQuery(Sql) match {
+    eventForUniqueQuery(Sql, ()) match {
       case ProcessingFailure(Sql, Nil, _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
@@ -103,7 +101,7 @@ class LogSuite extends munit.FunSuite {
 
   test("[Update] zero-arg success") {
     val Sql = "update foo set bar = 42"
-    eventForUniqueUpdate(Sql) match {
+    eventForUniqueUpdate(Sql, ()) match {
       case Success(Sql, Nil, _, _, _) => ()
       case a => fail(s"no match: $a")
     }

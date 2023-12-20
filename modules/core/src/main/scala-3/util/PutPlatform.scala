@@ -13,5 +13,7 @@ trait PutPlatform:
     using m: Mirror.ProductOf[P],
           i: m.MirroredElemTypes =:= (A *: EmptyTuple),
           p: Put[A]
-  ): Put[P] =
-    p.contramap(p => i(Tuple.fromProductTyped(p)).head)
+  ): MkPut[P] = {
+    val put: Put[P] = p.contramap(p => i(Tuple.fromProductTyped(p)).head)
+    MkPut.lift(put)
+  }

@@ -12,9 +12,16 @@ object GetSuitePlatform {
 trait GetSuitePlatform { self: munit.FunSuite =>
   import GetSuitePlatform._
 
-  test("Get should be derived for unary products (AnyVal)") {
+  test("Get can be auto derived for unary products (AnyVal)") {
+    import doobie.generic.auto._
+
     Get[Y]
     Get[P]
+  }
+
+  test("Get can be explicitly derived for unary products (AnyVal)") {
+    Get.derived[Y]
+    Get.derived[P]
   }
 
 }

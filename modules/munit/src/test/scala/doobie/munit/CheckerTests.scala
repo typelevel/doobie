@@ -27,7 +27,11 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
   test("trivial") { check(sql"select 1".query[Int]) }
   test("fail".fail) { check(sql"select 1".query[String]) }
 
-  test ("trivial case-class"){ check(sql"select 1".query[CheckerChecks.Foo[cats.Id]]) }
+  test ("trivial case-class") {
+    import doobie.generic.auto._
+
+    check(sql"select 1".query[CheckerChecks.Foo[cats.Id]])
+  }
 
   test("Read should select correct columns when combined with `product`") {
     import cats.syntax.all._
@@ -43,6 +47,8 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
   }
 
   test("Read should select correct columns for checking when combined with `ap`") {
+    import doobie.generic.auto._
+
     val readInt = Read[(Int, Int)]
     val readIntToInt: Read[Tuple2[Int, Int] => String] =
       Read[(String, String)].map(i => k => s"$i,$k")
