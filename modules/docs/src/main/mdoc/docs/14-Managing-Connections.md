@@ -74,7 +74,7 @@ object HikariApp extends IOApp {
         config.setPassword("")
         config
       }
-      xa <- HikariTransactor.fromHikariConfig[IO, IO](hikariConfig)
+      xa <- HikariTransactor.fromHikariConfig[IO](hikariConfig)
     } yield xa
 
 
