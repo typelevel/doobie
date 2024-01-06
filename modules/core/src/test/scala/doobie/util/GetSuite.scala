@@ -10,6 +10,7 @@ import doobie.enumerated.JdbcType
 
 import scala.annotation.nowarn
 
+@nowarn("msg=.*pure expression does nothing in statement position.*")
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
   case class X(x: Int)
@@ -44,7 +45,7 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     compileErrors("Get[Z]")
     compileErrors("Get[(Int, Int)]")
     compileErrors("Get[S.type]")
-  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
+  }
 
 }
 

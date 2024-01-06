@@ -28,7 +28,6 @@ import java.sql.ShardingKey
 import java.sql.Statement
 import java.sql.Struct
 import java.sql.{ Array => SqlArray }
-import java.util.Map
 import java.util.Properties
 import java.util.concurrent.Executor
 

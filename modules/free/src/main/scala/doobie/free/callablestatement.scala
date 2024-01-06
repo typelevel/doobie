@@ -36,7 +36,6 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 import java.util.Calendar
-import java.util.Map
 
 // This file is Auto-generated using FreeGen2.scala
 object callablestatement { module =>
