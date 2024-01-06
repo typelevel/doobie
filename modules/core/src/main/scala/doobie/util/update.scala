@@ -4,16 +4,17 @@
 
 package doobie.util
 
-import cats._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.*
+import cats.syntax.all.*
+import doobie.{ConnectionIO, FPS, Fragment, HC, HPS, PreparedStatementIO}
+import doobie.implicits.*
 import doobie.util.analysis.Analysis
-import doobie.util.log.{ Success, ExecFailure, LogEvent }
+import doobie.util.log.{ExecFailure, LogEvent, Success}
 import doobie.util.pos.Pos
 import fs2.Stream
+
 import scala.Predef.longWrapper
-import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
+import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
 
 /** Module defining updates parameterized by input type. */
 object update {

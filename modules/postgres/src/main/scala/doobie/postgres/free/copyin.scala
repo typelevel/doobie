@@ -32,7 +32,7 @@ object copyin { module =>
     // Given a PGCopyIn we can embed a CopyInIO program in any algebra that understands embedding.
     implicit val CopyInOpEmbeddable: Embeddable[CopyInOp, PGCopyIn] =
       new Embeddable[CopyInOp, PGCopyIn] {
-        def embed[A](j: PGCopyIn, fa: FF[CopyInOp, A]) = Embedded.CopyIn(j, fa)
+        def embed[A](j: PGCopyIn, fa: FF[CopyInOp, A]): Embedded[A] = Embedded.CopyIn(j, fa)
       }
 
     // Interface for a natural transformation CopyInOp ~> F encoded via the visitor pattern.
@@ -192,8 +192,8 @@ object copyin { module =>
   implicit val WeakAsyncCopyInIO: WeakAsync[CopyInIO] =
     new WeakAsync[CopyInIO] {
       val monad = FF.catsFreeMonadForFree[CopyInOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CopyInIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyInIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyInIO[Either[A, B]]): CopyInIO[B] = monad.tailRecM(a)(f)

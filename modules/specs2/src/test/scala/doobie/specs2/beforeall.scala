@@ -22,7 +22,7 @@ class beforeall extends Specification with IOChecker with BeforeAll {
 
   val targetQ = sql"select value from some_table".query[String]
 
-  val transactor = Transactor.fromDriverManager[IO](
+  val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:beforeall;DB_CLOSE_DELAY=-1",
     user = "sa", 

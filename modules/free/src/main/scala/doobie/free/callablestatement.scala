@@ -55,7 +55,7 @@ object callablestatement { module =>
     // Given a CallableStatement we can embed a CallableStatementIO program in any algebra that understands embedding.
     implicit val CallableStatementOpEmbeddable: Embeddable[CallableStatementOp, CallableStatement] =
       new Embeddable[CallableStatementOp, CallableStatement] {
-        def embed[A](j: CallableStatement, fa: FF[CallableStatementOp, A]) = Embedded.CallableStatement(j, fa)
+        def embed[A](j: CallableStatement, fa: FF[CallableStatementOp, A]): Embedded[A] = Embedded.CallableStatement(j, fa)
       }
 
     // Interface for a natural transformation CallableStatementOp ~> F encoded via the visitor pattern.
@@ -1330,8 +1330,8 @@ object callablestatement { module =>
   implicit val WeakAsyncCallableStatementIO: WeakAsync[CallableStatementIO] =
     new WeakAsync[CallableStatementIO] {
       val monad = FF.catsFreeMonadForFree[CallableStatementOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CallableStatementIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CallableStatementIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CallableStatementIO[A])(f: A => CallableStatementIO[B]): CallableStatementIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CallableStatementIO[Either[A, B]]): CallableStatementIO[B] = monad.tailRecM(a)(f)

@@ -32,7 +32,7 @@ object largeobjectmanager { module =>
     // Given a LargeObjectManager we can embed a LargeObjectManagerIO program in any algebra that understands embedding.
     implicit val LargeObjectManagerOpEmbeddable: Embeddable[LargeObjectManagerOp, LargeObjectManager] =
       new Embeddable[LargeObjectManagerOp, LargeObjectManager] {
-        def embed[A](j: LargeObjectManager, fa: FF[LargeObjectManagerOp, A]) = Embedded.LargeObjectManager(j, fa)
+        def embed[A](j: LargeObjectManager, fa: FF[LargeObjectManagerOp, A]): Embedded[A] = Embedded.LargeObjectManager(j, fa)
       }
 
     // Interface for a natural transformation LargeObjectManagerOp ~> F encoded via the visitor pattern.
@@ -192,8 +192,8 @@ object largeobjectmanager { module =>
   implicit val WeakAsyncLargeObjectManagerIO: WeakAsync[LargeObjectManagerIO] =
     new WeakAsync[LargeObjectManagerIO] {
       val monad = FF.catsFreeMonadForFree[LargeObjectManagerOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[LargeObjectManagerIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): LargeObjectManagerIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: LargeObjectManagerIO[A])(f: A => LargeObjectManagerIO[B]): LargeObjectManagerIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => LargeObjectManagerIO[Either[A, B]]): LargeObjectManagerIO[B] = monad.tailRecM(a)(f)

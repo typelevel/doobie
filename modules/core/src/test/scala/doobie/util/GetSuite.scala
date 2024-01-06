@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie._
+import doobie.Transactor
 import doobie.enumerated.JdbcType
 
 import scala.annotation.nowarn
@@ -31,8 +31,8 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
   }
 
   test("Get is not auto derived without an import") {
-    compileErrors("Get[X]")
-    compileErrors("Get[Q]")
+    compileErrors("Get[X]"): Unit
+    compileErrors("Get[Q]"): Unit
   }
 
   test("Get can be manually derived for unary products") {

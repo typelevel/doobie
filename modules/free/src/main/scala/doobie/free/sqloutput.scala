@@ -49,7 +49,7 @@ object sqloutput { module =>
     // Given a SQLOutput we can embed a SQLOutputIO program in any algebra that understands embedding.
     implicit val SQLOutputOpEmbeddable: Embeddable[SQLOutputOp, SQLOutput] =
       new Embeddable[SQLOutputOp, SQLOutput] {
-        def embed[A](j: SQLOutput, fa: FF[SQLOutputOp, A]) = Embedded.SQLOutput(j, fa)
+        def embed[A](j: SQLOutput, fa: FF[SQLOutputOp, A]): Embedded[A] = Embedded.SQLOutput(j, fa)
       }
 
     // Interface for a natural transformation SQLOutputOp ~> F encoded via the visitor pattern.
@@ -299,8 +299,8 @@ object sqloutput { module =>
   implicit val WeakAsyncSQLOutputIO: WeakAsync[SQLOutputIO] =
     new WeakAsync[SQLOutputIO] {
       val monad = FF.catsFreeMonadForFree[SQLOutputOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[SQLOutputIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): SQLOutputIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: SQLOutputIO[A])(f: A => SQLOutputIO[B]): SQLOutputIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => SQLOutputIO[Either[A, B]]): SQLOutputIO[B] = monad.tailRecM(a)(f)

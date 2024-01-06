@@ -53,7 +53,7 @@ object resultset { module =>
     // Given a ResultSet we can embed a ResultSetIO program in any algebra that understands embedding.
     implicit val ResultSetOpEmbeddable: Embeddable[ResultSetOp, ResultSet] =
       new Embeddable[ResultSetOp, ResultSet] {
-        def embed[A](j: ResultSet, fa: FF[ResultSetOp, A]) = Embedded.ResultSet(j, fa)
+        def embed[A](j: ResultSet, fa: FF[ResultSetOp, A]): Embedded[A] = Embedded.ResultSet(j, fa)
       }
 
     // Interface for a natural transformation ResultSetOp ~> F encoded via the visitor pattern.
@@ -1118,8 +1118,8 @@ object resultset { module =>
   implicit val WeakAsyncResultSetIO: WeakAsync[ResultSetIO] =
     new WeakAsync[ResultSetIO] {
       val monad = FF.catsFreeMonadForFree[ResultSetOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[ResultSetIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): ResultSetIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ResultSetIO[A])(f: A => ResultSetIO[B]): ResultSetIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => ResultSetIO[Either[A, B]]): ResultSetIO[B] = monad.tailRecM(a)(f)

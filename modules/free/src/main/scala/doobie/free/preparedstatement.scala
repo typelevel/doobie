@@ -54,7 +54,7 @@ object preparedstatement { module =>
     // Given a PreparedStatement we can embed a PreparedStatementIO program in any algebra that understands embedding.
     implicit val PreparedStatementOpEmbeddable: Embeddable[PreparedStatementOp, PreparedStatement] =
       new Embeddable[PreparedStatementOp, PreparedStatement] {
-        def embed[A](j: PreparedStatement, fa: FF[PreparedStatementOp, A]) = Embedded.PreparedStatement(j, fa)
+        def embed[A](j: PreparedStatement, fa: FF[PreparedStatementOp, A]): Embedded[A] = Embedded.PreparedStatement(j, fa)
       }
 
     // Interface for a natural transformation PreparedStatementOp ~> F encoded via the visitor pattern.
@@ -729,8 +729,8 @@ object preparedstatement { module =>
   implicit val WeakAsyncPreparedStatementIO: WeakAsync[PreparedStatementIO] =
     new WeakAsync[PreparedStatementIO] {
       val monad = FF.catsFreeMonadForFree[PreparedStatementOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[PreparedStatementIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): PreparedStatementIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: PreparedStatementIO[A])(f: A => PreparedStatementIO[B]): PreparedStatementIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => PreparedStatementIO[Either[A, B]]): PreparedStatementIO[B] = monad.tailRecM(a)(f)

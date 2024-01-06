@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 
 class AnalysisTestSpecs2 extends Specification with IOChecker {
 
-  val transactor = Transactor.fromDriverManager[IO](
+  val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   )
   // Commented tests fail!

@@ -37,7 +37,7 @@ object nclob { module =>
     // Given a NClob we can embed a NClobIO program in any algebra that understands embedding.
     implicit val NClobOpEmbeddable: Embeddable[NClobOp, NClob] =
       new Embeddable[NClobOp, NClob] {
-        def embed[A](j: NClob, fa: FF[NClobOp, A]) = Embedded.NClob(j, fa)
+        def embed[A](j: NClob, fa: FF[NClobOp, A]): Embedded[A] = Embedded.NClob(j, fa)
       }
 
     // Interface for a natural transformation NClobOp ~> F encoded via the visitor pattern.
@@ -212,8 +212,8 @@ object nclob { module =>
   implicit val WeakAsyncNClobIO: WeakAsync[NClobIO] =
     new WeakAsync[NClobIO] {
       val monad = FF.catsFreeMonadForFree[NClobOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[NClobIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): NClobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => NClobIO[Either[A, B]]): NClobIO[B] = monad.tailRecM(a)(f)

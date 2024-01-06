@@ -4,20 +4,21 @@
 
 package doobie.util
 
-import cats._
+import cats.*
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-import cats.syntax.all._
-import cats.effect.kernel.syntax.monadCancel._
-import doobie._
-import doobie.implicits._
+import cats.syntax.all.*
+import cats.effect.kernel.syntax.monadCancel.*
+import doobie.{ConnectionIO, FPS, FRS, Fragment, HC, HPS, HRS, PreparedStatementIO, ResultSetIO}
+import doobie.implicits.*
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
-import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
+import doobie.util.log.{ExecFailure, LogEvent, ProcessingFailure, Success}
 import doobie.util.pos.Pos
 import fs2.Stream
+
 import scala.Predef.longWrapper
-import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
+import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
 import scala.collection.immutable.Map
 import doobie.util.MultiVersionTypeSupport.=:=
 

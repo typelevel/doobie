@@ -259,7 +259,7 @@ class FreeGen2(
     |    // Given a $sname we can embed a ${ioname} program in any algebra that understands embedding.
     |    implicit val ${opname}Embeddable: Embeddable[${opname}, ${sname}] =
     |      new Embeddable[${opname}, ${sname}] {
-    |        def embed[A](j: ${sname}, fa: FF[${opname}, A]) = Embedded.${oname}(j, fa)
+    |        def embed[A](j: ${sname}, fa: FF[${opname}, A]): Embedded[A] = Embedded.${oname}(j, fa)
     |      }
     |
     |    // Interface for a natural transformation ${opname} ~> F encoded via the visitor pattern.
@@ -372,8 +372,8 @@ class FreeGen2(
     |  implicit val WeakAsync${ioname}: WeakAsync[${ioname}] =
     |    new WeakAsync[${ioname}] {
     |      val monad = FF.catsFreeMonadForFree[${opname}]
-    |      override val applicative = monad
-    |      override val rootCancelScope = CancelScope.Cancelable
+    |      override val applicative: Applicative[$ioname] = monad
+    |      override val rootCancelScope: CancelScope = CancelScope.Cancelable
     |      override def pure[A](x: A): ${ioname}[A] = monad.pure(x)
     |      override def flatMap[A, B](fa: ${ioname}[A])(f: A => ${ioname}[B]): ${ioname}[B] = monad.flatMap(fa)(f)
     |      override def tailRecM[A, B](a: A)(f: A => ${ioname}[Either[A, B]]): ${ioname}[B] = monad.tailRecM(a)(f)

@@ -36,7 +36,7 @@ object driver { module =>
     // Given a Driver we can embed a DriverIO program in any algebra that understands embedding.
     implicit val DriverOpEmbeddable: Embeddable[DriverOp, Driver] =
       new Embeddable[DriverOp, Driver] {
-        def embed[A](j: Driver, fa: FF[DriverOp, A]) = Embedded.Driver(j, fa)
+        def embed[A](j: Driver, fa: FF[DriverOp, A]): Embedded[A] = Embedded.Driver(j, fa)
       }
 
     // Interface for a natural transformation DriverOp ~> F encoded via the visitor pattern.
@@ -181,8 +181,8 @@ object driver { module =>
   implicit val WeakAsyncDriverIO: WeakAsync[DriverIO] =
     new WeakAsync[DriverIO] {
       val monad = FF.catsFreeMonadForFree[DriverOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[DriverIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): DriverIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = monad.tailRecM(a)(f)

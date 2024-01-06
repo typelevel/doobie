@@ -4,15 +4,16 @@
 
 package doobie.util
 
-import cats._
+import cats.*
 import cats.data.Chain
-import cats.syntax.all._
-
-import doobie._, doobie.implicits._
-import doobie.enumerated.Nullability._
+import cats.syntax.all.*
+import doobie.{ConnectionIO, HC, PreparedStatementIO, Query, Query0, Update, Update0}
+import doobie.implicits.*
+import doobie.enumerated.Nullability.*
 import doobie.util.pos.Pos
-import java.sql.{ PreparedStatement, ResultSet }
-import scala.Predef.{ augmentString, implicitly }
+
+import java.sql.{PreparedStatement, ResultSet}
+import scala.Predef.{augmentString, implicitly}
 
 /** Module defining the `Fragment` data type. */
 object fragment {

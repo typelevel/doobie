@@ -4,10 +4,10 @@
 
 package doobie.util
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.{IO, IOLocal}
-import doobie._
-import doobie.implicits._
+import doobie.{ConnectionIO, Query, Update, Transactor}
+import doobie.implicits.*
 import doobie.util.log.{LogEvent, ProcessingFailure, Success}
 
 class LogSuite extends munit.FunSuite {

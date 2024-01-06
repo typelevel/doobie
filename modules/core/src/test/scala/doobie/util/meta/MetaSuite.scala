@@ -5,7 +5,7 @@
 package doobie.util.meta
 
 import cats.effect.IO
-import doobie._
+import doobie.Transactor
 import doobie.util.{Get, Put}
 
 import scala.annotation.nowarn

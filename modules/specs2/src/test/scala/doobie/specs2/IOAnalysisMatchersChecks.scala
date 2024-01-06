@@ -11,7 +11,7 @@ import doobie.Transactor
 
 class IOAnalysisMatchersChecks extends Specification with IOAnalysisMatchers {
 
-  lazy val transactor = Transactor.fromDriverManager[IO](
+  lazy val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     user = "sa", 

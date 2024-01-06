@@ -31,7 +31,7 @@ object copyout { module =>
     // Given a PGCopyOut we can embed a CopyOutIO program in any algebra that understands embedding.
     implicit val CopyOutOpEmbeddable: Embeddable[CopyOutOp, PGCopyOut] =
       new Embeddable[CopyOutOp, PGCopyOut] {
-        def embed[A](j: PGCopyOut, fa: FF[CopyOutOp, A]) = Embedded.CopyOut(j, fa)
+        def embed[A](j: PGCopyOut, fa: FF[CopyOutOp, A]): Embedded[A] = Embedded.CopyOut(j, fa)
       }
 
     // Interface for a natural transformation CopyOutOp ~> F encoded via the visitor pattern.
@@ -181,8 +181,8 @@ object copyout { module =>
   implicit val WeakAsyncCopyOutIO: WeakAsync[CopyOutIO] =
     new WeakAsync[CopyOutIO] {
       val monad = FF.catsFreeMonadForFree[CopyOutOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CopyOutIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyOutIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = monad.tailRecM(a)(f)

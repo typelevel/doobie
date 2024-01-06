@@ -4,8 +4,11 @@
 
 package doobie.util
 
-import cats.effect.{ IO }
-import doobie._, doobie.implicits._
+import cats.effect.IO
+import doobie.Transactor
+import doobie.enumerated.SqlState
+import doobie.implicits.*
+
 import java.sql.SQLException
 
 class CatchSqlSuite extends munit.FunSuite {

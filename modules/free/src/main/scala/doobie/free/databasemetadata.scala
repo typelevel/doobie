@@ -36,7 +36,7 @@ object databasemetadata { module =>
     // Given a DatabaseMetaData we can embed a DatabaseMetaDataIO program in any algebra that understands embedding.
     implicit val DatabaseMetaDataOpEmbeddable: Embeddable[DatabaseMetaDataOp, DatabaseMetaData] =
       new Embeddable[DatabaseMetaDataOp, DatabaseMetaData] {
-        def embed[A](j: DatabaseMetaData, fa: FF[DatabaseMetaDataOp, A]) = Embedded.DatabaseMetaData(j, fa)
+        def embed[A](j: DatabaseMetaData, fa: FF[DatabaseMetaDataOp, A]): Embedded[A] = Embedded.DatabaseMetaData(j, fa)
       }
 
     // Interface for a natural transformation DatabaseMetaDataOp ~> F encoded via the visitor pattern.
@@ -1041,8 +1041,8 @@ object databasemetadata { module =>
   implicit val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
     new WeakAsync[DatabaseMetaDataIO] {
       val monad = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[DatabaseMetaDataIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): DatabaseMetaDataIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => DatabaseMetaDataIO[Either[A, B]]): DatabaseMetaDataIO[B] = monad.tailRecM(a)(f)

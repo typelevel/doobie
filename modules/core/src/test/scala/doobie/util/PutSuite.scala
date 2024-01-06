@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie._
+import doobie.Transactor
 
 import scala.annotation.nowarn
 
@@ -43,8 +43,8 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
   }
 
   test("Put is not auto derived without an import") {
-    compileErrors("Put[X]")
-    compileErrors("Put[Q]")
+    compileErrors("Put[X]"): Unit
+    compileErrors("Put[Q]"): Unit
   }
 
   test("Put can be manually derived for unary products") {

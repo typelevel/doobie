@@ -12,7 +12,7 @@ import org.specs2.mutable.Specification
 
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
-  lazy val transactor = Transactor.fromDriverManager[M](
+  lazy val transactor: Transactor[M] = Transactor.fromDriverManager[M](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     user = "sa", 

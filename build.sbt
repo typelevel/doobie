@@ -88,9 +88,12 @@ lazy val compilerFlags = Seq(
   Test / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
-//  scalacOptions ++= Seq(
-//    "-Xsource:3"
-//  )
+  scalacOptions ++= (if (scalaVersion.value != scala3Version) 
+    Seq(
+      "-Xsource:3",
+      "-Wconf:msg=package object inheritance.*:silent"
+    ) 
+    else Seq.empty)
 )
 
 lazy val buildSettings = Seq(

@@ -5,13 +5,14 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
-import doobie._, doobie.implicits._
+import cats.syntax.all.*
+import doobie.{Fragment, Fragments, Transactor}
+import doobie.implicits.*
 import cats.effect.IO
 
 
 class FragmentsSuite extends munit.FunSuite {
-  import Fragments._
+  import doobie.Fragments._
   import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](

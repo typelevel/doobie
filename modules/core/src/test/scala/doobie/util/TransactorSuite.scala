@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.effect.{ Async, IO }
-import doobie._, doobie.implicits._
+import doobie.Transactor, doobie.implicits._
 
 
 class TransactorSuite extends munit.FunSuite {

@@ -5,10 +5,10 @@
 package doobie.specs2
 
 import cats.effect.{ Async, IO }
-import cats.instances.list._
-import cats.syntax.foldable._
-import doobie.syntax.connectionio._
-import doobie.util.pretty._
+import cats.instances.list.*
+import cats.syntax.foldable.*
+import doobie.syntax.connectionio.*
+import doobie.util.pretty.*
 import doobie.util.testing.{
   AnalysisReport,
   Analyzable,

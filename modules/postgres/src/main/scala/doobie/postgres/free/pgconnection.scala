@@ -41,7 +41,7 @@ object pgconnection { module =>
     // Given a PGConnection we can embed a PGConnectionIO program in any algebra that understands embedding.
     implicit val PGConnectionOpEmbeddable: Embeddable[PGConnectionOp, PGConnection] =
       new Embeddable[PGConnectionOp, PGConnection] {
-        def embed[A](j: PGConnection, fa: FF[PGConnectionOp, A]) = Embedded.PGConnection(j, fa)
+        def embed[A](j: PGConnection, fa: FF[PGConnectionOp, A]): Embedded[A] = Embedded.PGConnection(j, fa)
       }
 
     // Interface for a natural transformation PGConnectionOp ~> F encoded via the visitor pattern.
@@ -261,8 +261,8 @@ object pgconnection { module =>
   implicit val WeakAsyncPGConnectionIO: WeakAsync[PGConnectionIO] =
     new WeakAsync[PGConnectionIO] {
       val monad = FF.catsFreeMonadForFree[PGConnectionOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[PGConnectionIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): PGConnectionIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = monad.tailRecM(a)(f)

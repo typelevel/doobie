@@ -5,14 +5,14 @@
 package doobie.util
 
 import doobie.enumerated.Nullability
-import doobie.enumerated.Nullability._
+import doobie.enumerated.Nullability.*
 import doobie.enumerated.ParameterMode
 import doobie.enumerated.JdbcType
-import doobie.util.pretty._
+import doobie.util.pretty.*
 
-import scala.Predef._ // TODO: minimize
+import scala.Predef.* // TODO: minimize
 
-import cats.implicits._
+import cats.implicits.*
 import cats.data.Ior
 
 /** Module defining a type for analyzing the type alignment of prepared statements. */
@@ -62,7 +62,7 @@ object analysis {
     }
   }
 
-  final case class ParameterTypeError(index: Int, put: Put[_], n: NullabilityKnown, jdbcType: JdbcType, vendorTypeName: String) extends AlignmentError {
+  final case class ParameterTypeError(index: Int, put: Put[?], n: NullabilityKnown, jdbcType: JdbcType, vendorTypeName: String) extends AlignmentError {
     override val tag = "P"
     override def msg =
       s"""|${typeName(put.typeStack.last, n)} is not coercible to ${jdbcType.show.toUpperCase}
@@ -71,7 +71,7 @@ object analysis {
           |Expected schema type was ${put.jdbcTargets.head.show.toUpperCase}.""".stripMargin.linesIterator.mkString(" ")
   }
 
-  final case class ColumnMisalignment(index: Int, alignment: Either[(Get[_], NullabilityKnown), ColumnMeta]) extends AlignmentError {
+  final case class ColumnMisalignment(index: Int, alignment: Either[(Get[?], NullabilityKnown), ColumnMeta]) extends AlignmentError {
     override val tag = "C"
     override def msg = this match {
       case ColumnMisalignment(_, Left((get, n))) =>
@@ -96,7 +96,7 @@ object analysis {
     }
   }
 
-  final case class ColumnTypeError(index: Int, get: Get[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
+  final case class ColumnTypeError(index: Int, get: Get[?], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
     override val tag = "C"
     override def msg =
       s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
@@ -109,7 +109,7 @@ object analysis {
           |""".stripMargin.linesIterator.mkString(" ")
   }
 
-  final case class ColumnTypeWarning(index: Int, get: Get[_], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
+  final case class ColumnTypeWarning(index: Int, get: Get[?], n: NullabilityKnown, schema: ColumnMeta) extends AlignmentError {
     override val tag = "C"
     override def msg =
       s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is ostensibly
@@ -123,8 +123,8 @@ object analysis {
   /** Compatibility analysis for the given statement and aligned mappings. */
   final case class Analysis(
     sql:                String,
-    parameterAlignment: List[(Put[_], NullabilityKnown) Ior ParameterMeta],
-    columnAlignment:    List[(Get[_], NullabilityKnown) Ior ColumnMeta]) {
+    parameterAlignment: List[(Put[?], NullabilityKnown) Ior ParameterMeta],
+    columnAlignment:    List[(Get[?], NullabilityKnown) Ior ColumnMeta]) {
 
     def parameterMisalignments: List[ParameterMisalignment] =
       parameterAlignment.zipWithIndex.collect {
@@ -191,7 +191,7 @@ object analysis {
 
     /** Description of each parameter, paird with its errors. */
     lazy val columnDescriptions: List[(String, List[AlignmentError])] = {
-      import pretty._
+      import pretty.*
       val cols: Block =
         columnAlignment.zipWithIndex.map {
           case (Ior.Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i)  => List(f"C${i+1}%02d", m, j2.show.toUpperCase, show"(${s2.toString})", formatNullability(n2), " → ", typeName(j1.typeStack.last, n1))

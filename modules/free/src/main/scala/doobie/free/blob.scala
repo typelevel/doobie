@@ -33,7 +33,7 @@ object blob { module =>
     // Given a Blob we can embed a BlobIO program in any algebra that understands embedding.
     implicit val BlobOpEmbeddable: Embeddable[BlobOp, Blob] =
       new Embeddable[BlobOp, Blob] {
-        def embed[A](j: Blob, fa: FF[BlobOp, A]) = Embedded.Blob(j, fa)
+        def embed[A](j: Blob, fa: FF[BlobOp, A]): Embedded[A] = Embedded.Blob(j, fa)
       }
 
     // Interface for a natural transformation BlobOp ~> F encoded via the visitor pattern.
@@ -198,8 +198,8 @@ object blob { module =>
   implicit val WeakAsyncBlobIO: WeakAsync[BlobIO] =
     new WeakAsync[BlobIO] {
       val monad = FF.catsFreeMonadForFree[BlobOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[BlobIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): BlobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = monad.tailRecM(a)(f)

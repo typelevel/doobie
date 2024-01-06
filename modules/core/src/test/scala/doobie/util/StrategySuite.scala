@@ -4,9 +4,13 @@
 
 package doobie.util
 
+import cats.data.Kleisli
 import cats.effect.IO
-import cats.syntax.apply._
-import doobie._, doobie.implicits._
+import cats.syntax.apply.*
+import doobie.*
+import doobie.implicits.*
+
+import java.sql.{Connection, PreparedStatement, ResultSet}
 
 class StrategySuite extends munit.FunSuite {
 
@@ -39,20 +43,20 @@ class StrategySuite extends munit.FunSuite {
       var close: Option[Unit] = None
     }
 
-    override lazy val ConnectionInterpreter = new ConnectionInterpreter {
-      override val close = delay(Connection.close = Some(())) *> super.close
-      override val rollback = delay(Connection.rollback = Some(())) *> super.rollback
-      override val commit = delay(Connection.commit = Some(())) *> super.commit
-      override def setAutoCommit(b: Boolean) = delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
-      override def getTypeMap = super.getTypeMap.asInstanceOf // No idea. Type error on Java 8 if we don't do this.
+    override lazy val ConnectionInterpreter: ConnectionInterpreter = new ConnectionInterpreter {
+      override val close: Kleisli[IO, Connection, Unit] = delay(Connection.close = Some(())) *> super.close
+      override val rollback: Kleisli[IO, Connection, Unit] = delay(Connection.rollback = Some(())) *> super.rollback
+      override val commit: Kleisli[IO, Connection, Unit] = delay(Connection.commit = Some(())) *> super.commit
+      override def setAutoCommit(b: Boolean): Kleisli[IO, Connection, Unit] = delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
+      override def getTypeMap: Kleisli[IO, Connection, java.util.Map[String, Class[_]]] = super.getTypeMap
     }
 
-    override lazy val PreparedStatementInterpreter = new PreparedStatementInterpreter {
-      override val close = delay(PreparedStatement.close = Some(())) *> super.close
+    override lazy val PreparedStatementInterpreter: PreparedStatementInterpreter = new PreparedStatementInterpreter {
+      override val close: Kleisli[IO, PreparedStatement, Unit] = delay(PreparedStatement.close = Some(())) *> super.close
     }
 
-    override lazy val ResultSetInterpreter = new ResultSetInterpreter {
-      override val close = delay(ResultSet.close = Some(())) *> super.close
+    override lazy val ResultSetInterpreter: ResultSetInterpreter = new ResultSetInterpreter {
+      override val close: Kleisli[IO, ResultSet, Unit] = delay(ResultSet.close = Some(())) *> super.close
     }
 
   }
