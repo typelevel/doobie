@@ -13,6 +13,7 @@ object FreeGen2 {
   lazy val freeGen2Dir = settingKey[File]("directory where free algebras go")
   lazy val freeGen2Package = settingKey[String]("package where free algebras go")
   lazy val freeGen2Renames = settingKey[Map[Class[_], String]]("map of imports that must be renamed")
+  lazy val freeGen2AllImportExcludes = settingKey[Set[Class[_]]]("Imports to exclude for the generator for all generaated files")
   lazy val freeGen2KleisliInterpreterImportExcludes = settingKey[Set[Class[_]]]("Imports to exclude for the generator kleisliinterpreter.scala file (to avoid unused import warning) ")
   lazy val freeGen2 = taskKey[Seq[File]]("generate free algebras")
 
@@ -22,11 +23,13 @@ object FreeGen2 {
     freeGen2Package := "doobie.free",
     freeGen2Renames := Map(classOf[java.sql.Array] -> "SqlArray"),
     freeGen2KleisliInterpreterImportExcludes := Set.empty,
+    freeGen2AllImportExcludes := Set.empty,
     freeGen2 :=
       new FreeGen2(
         freeGen2Classes.value,
         freeGen2Package.value,
         freeGen2Renames.value,
+        freeGen2AllImportExcludes.value,
         freeGen2KleisliInterpreterImportExcludes.value,
         state.value.log
       ).gen(freeGen2Dir.value),
@@ -38,6 +41,7 @@ class FreeGen2(
   managed: List[Class[_]],
   pkg: String,
   renames: Map[Class[_], String],
+  allImportExcludes: Set[Class[_]],
   kleisliImportExcludes: Set[Class[_]],
   log: Logger
 ) {
@@ -240,7 +244,7 @@ class FreeGen2(
     |import scala.concurrent.Future
     |import scala.concurrent.duration.FiniteDuration
     |
-    |${imports[A](excludeImports = Set.empty).mkString("\n")}
+    |${imports[A](excludeImports = allImportExcludes).mkString("\n")}
     |
     |// This file is Auto-generated using FreeGen2.scala
     |object $mname { module =>
@@ -505,7 +509,7 @@ class FreeGen2(
        |import scala.concurrent.duration.FiniteDuration
        |
        |// Types referenced in the JDBC API
-       |${managed.map(ClassTag(_)).flatMap(c => imports(kleisliImportExcludes)(c)).distinct.sorted.mkString("\n")}
+       |${managed.map(ClassTag(_)).flatMap(c => imports(kleisliImportExcludes ++ allImportExcludes)(c)).distinct.sorted.mkString("\n")}
        |
        |// Algebras and free monads thereof referenced by our interpreter.
        |${managed.map(_.getSimpleName).map(c => s"import ${pkg}.${c.toLowerCase}.{ ${c}IO, ${c}Op }").mkString("\n")}

@@ -15,7 +15,6 @@ import scala.concurrent.duration.FiniteDuration
 import java.lang.Class
 import java.lang.String
 import java.sql.{ Array => SqlArray }
-import java.util.Map
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
 import org.postgresql.copy.{ CopyManager => PGCopyManager }
