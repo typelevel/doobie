@@ -1,7 +1,7 @@
-import FreeGen2.*
+import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
 import scala.annotation.nowarn
-import scala.sys.process.*
+import scala.sys.process._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.10.0"
@@ -206,6 +206,14 @@ lazy val free = project
         classOf[java.sql.ResultSet]
       )
     },
+    freeGen2AllImportExcludes := Set[Class[_]](
+      classOf[java.util.Map[_, _]],
+    ),
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+      classOf[java.sql.DriverPropertyInfo],
+      classOf[java.io.Writer],
+      classOf[java.io.OutputStream]
+    )
   )
 
 
@@ -307,6 +315,13 @@ lazy val postgres = project
       classOf[org.postgresql.copy.CopyIn]       -> "PGCopyIn",
       classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
       classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
+    ),
+    freeGen2AllImportExcludes := Set[Class[_]](
+      classOf[java.util.Map[_, _]],
+    ),
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+      classOf[java.sql.Array],
+      classOf[org.postgresql.copy.CopyDual]
     ),
       initialCommands := """
       import cats._, cats.data._, cats.implicits._, cats.effect._

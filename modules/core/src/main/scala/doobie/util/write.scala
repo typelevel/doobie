@@ -40,7 +40,7 @@ and similarly with Put:
 And find the missing instance and construct it as needed. Refer to Chapter 12
 of the book of doobie for more information.
 """)
-final class Write[A](
+sealed abstract class Write[A](
   val puts: List[(Put[_], NullabilityKnown)],
   val toList: A => List[Any],
   val unsafeSet: (PreparedStatement, Int, A) => Unit,
@@ -56,20 +56,20 @@ final class Write[A](
     FRS.raw(unsafeUpdate(_, n, a))
 
   def contramap[B](f: B => A): Write[B] =
-    new Write(
+    new Write[B](
       puts,
       b => toList(f(b)),
       (ps, n, a) => unsafeSet(ps, n, f(a)),
       (rs, n, a) => unsafeUpdate(rs, n, f(a))
-    )
+    ) {}
 
   def product[B](fb: Write[B]): Write[(A, B)] =
-    new Write(
+    new Write[(A, B)](
       puts ++ fb.puts,
       { case (a, b) => toList(a) ++ fb.toList(b) },
       { case (ps, n, (a, b)) => unsafeSet(ps, n, a); fb.unsafeSet(ps, n + length, b) },
       { case (rs, n, (a, b)) => unsafeUpdate(rs, n, a); fb.unsafeUpdate(rs, n + length, b) }
-    )
+    ) {}
 
   /**
    * Given a value of type `A` and an appropriately parameterized SQL string we can construct a
@@ -85,9 +85,22 @@ final class Write[A](
 
 }
 
-object Write extends WritePlatform {
+object Write {
+
+  def apply[A](
+    puts: List[(Put[_], NullabilityKnown)],
+    toList: A => List[Any],
+    unsafeSet: (PreparedStatement, Int, A) => Unit,
+    unsafeUpdate: (ResultSet, Int, A) => Unit
+  ): Write[A] = new Write(puts, toList, unsafeSet, unsafeUpdate) {}
 
   def apply[A](implicit A: Write[A]): Write[A] = A
+
+  def derived[A](implicit ev: MkWrite[A]): Write[A] = ev
+
+  trait Auto {
+    implicit def deriveWrite[A](implicit ev: MkWrite[A]): Write[A] = ev
+  }
 
   implicit val WriteContravariantSemigroupal: ContravariantSemigroupal[Write] =
     new ContravariantSemigroupal[Write] {
@@ -96,22 +109,34 @@ object Write extends WritePlatform {
     }
 
   implicit val unitComposite: Write[Unit] =
-    new Write(Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
+    new Write[Unit](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ()) {}
 
   implicit def fromPut[A](implicit P: Put[A]): Write[A] =
-    new Write(
+    new Write[A](
       List((P, NoNulls)),
       a => List(a),
       (ps, n, a) => P.unsafeSetNonNullable(ps, n, a),
       (rs, n, a) => P.unsafeUpdateNonNullable(rs, n, a)
-    )
+    ) {}
 
   implicit def fromPutOption[A](implicit P: Put[A]): Write[Option[A]] =
-    new Write(
+    new Write[Option[A]](
       List((P, Nullable)),
       a => List(a),
       (ps, n, a) => P.unsafeSetNullable(ps, n, a),
       (rs, n, a) => P.unsafeUpdateNullable(rs, n, a)
-    )
+    ) {}
 
+}
+
+final class MkWrite[A](
+  override val puts: List[(Put[_], NullabilityKnown)],
+  override val toList: A => List[Any],
+  override val unsafeSet: (PreparedStatement, Int, A) => Unit,
+  override val unsafeUpdate: (ResultSet, Int, A) => Unit
+) extends Write[A](puts, toList, unsafeSet, unsafeUpdate)
+object MkWrite extends WritePlatform {
+
+  def lift[A](w: Write[A]): MkWrite[A] =
+    new MkWrite[A](w.puts, w.toList, w.unsafeSet, w.unsafeUpdate)
 }

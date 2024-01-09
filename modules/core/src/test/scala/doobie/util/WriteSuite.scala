@@ -2,8 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
-package util
+package doobie.util
+
+import doobie.util.meta.Meta
 
 class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
@@ -16,36 +17,60 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write should exist for some fancy types") {
-    util.Write[Int]
-    util.Write[(Int, Int)]
-    util.Write[(Int, Int, String)]
-    util.Write[(Int, (Int, String))]
+    import doobie.generic.auto._
+
+    Write[Int]
+    Write[(Int, Int)]
+    Write[(Int, Int, String)]
+    Write[(Int, (Int, String))]
+  }
+
+  test("Write is not auto derived for tuples without an import") {
+    assert(compileErrors("Write[(Int, Int)]").contains("Cannot find or construct"))
+    assert(compileErrors("Write[(Int, Int, String)]").contains("Cannot find or construct"))
+    assert(compileErrors("Write[(Int, (Int, String))]").contains("Cannot find or construct"))
+  }
+  
+  test("Write is not auto derived for case classes") {
+    assert(compileErrors("Write[LenStr1]").contains("Cannot find or construct"))
+  }
+
+  test("Write can be manually derived") {
+    Write.derived[LenStr1]
   }
 
   test("Write should exist for Unit") {
-    util.Write[Unit]
-    assertEquals(util.Write[(Int, Unit)].length, 1)
+    import doobie.generic.auto._
+
+    Write[Unit]
+    assertEquals(Write[(Int, Unit)].length, 1)
   }
 
   test("Write should exist for option of some fancy types") {
-    util.Write[Option[Int]]
-    util.Write[Option[(Int, Int)]]
-    util.Write[Option[(Int, Int, String)]]
-    util.Write[Option[(Int, (Int, String))]]
-    util.Write[Option[(Int, Option[(Int, String)])]]
+    import doobie.generic.auto._
+
+    Write[Option[Int]]
+    Write[Option[(Int, Int)]]
+    Write[Option[(Int, Int, String)]]
+    Write[Option[(Int, (Int, String))]]
+    Write[Option[(Int, Option[(Int, String)])]]
   }
 
   test("Write should exist for option of Unit") {
-    util.Write[Option[Unit]]
-    assertEquals(util.Write[Option[(Int, Unit)]].length, 1)
+    import doobie.generic.auto._
+
+    Write[Option[Unit]]
+    assertEquals(Write[Option[(Int, Unit)]].length, 1)
   }
 
   test("Write should select multi-column instance by default") {
-    assertEquals(util.Write[LenStr1].length, 2)
+    import doobie.generic.auto._
+
+    assertEquals(Write[LenStr1].length, 2)
   }
 
   test("Write should select 1-column instance when available") {
-    assertEquals(util.Write[LenStr2].length, 1)
+    assertEquals(Write[LenStr2].length, 1)
   }
 
 }

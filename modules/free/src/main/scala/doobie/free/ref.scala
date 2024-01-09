@@ -14,7 +14,6 @@ import scala.concurrent.duration.FiniteDuration
 
 import java.lang.String
 import java.sql.Ref
-import java.util.Map
 
 // This file is Auto-generated using FreeGen2.scala
 object ref { module =>
