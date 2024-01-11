@@ -135,16 +135,16 @@ object analysis {
       }
 
     def columnTypeErrors: List[ColumnTypeError] =
-      columnAlignment_.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !(j.jdbcSources.toList ++ j.fold(_.jdbcSourceSecondary.toList, _ => Nil)).contains_(p.jdbcType) =>
+      columnAlignment.zipWithIndex.collect {
+        case (Ior.Both((j, n1), p), n) if !(j.jdbcSources.toList ++ j.jdbcSourceSecondary).contains_(p.jdbcType) =>
           ColumnTypeError(n + 1, j, n1, p)
-        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType === JdbcType.Other) && !j.fold(_ => None, a => Some(a.schemaTypes.head)).contains_(p.vendorTypeName) =>
+        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType === JdbcType.Other) && !j.schemaTypes.headOption.contains_(p.vendorTypeName) =>
           ColumnTypeError(n + 1, j, n1, p)
       }
 
     def columnTypeWarnings: List[ColumnTypeWarning] =
-      columnAlignment_.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if j.fold(_.jdbcSourceSecondary.toList, _ => Nil).contains_(p.jdbcType) =>
+      columnAlignment.zipWithIndex.collect {
+        case (Ior.Both((j, n1), p), n) if j.jdbcSourceSecondary.contains_(p.jdbcType) =>
           ColumnTypeWarning(n + 1, j, n1, p)
       }
 

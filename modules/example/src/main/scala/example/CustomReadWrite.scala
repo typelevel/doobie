@@ -7,7 +7,6 @@ package example
  import doobie._, doobie.implicits._
 
  import java.sql.Date
- import doobie.implicits.javasql._
 
  object CustomReadWrite {
 

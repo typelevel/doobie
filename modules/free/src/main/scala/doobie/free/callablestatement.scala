@@ -4,7 +4,7 @@
 
 package doobie.free
 
-import cats.~>
+import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free => FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
@@ -36,8 +36,8 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.sql.{ Array => SqlArray }
 import java.util.Calendar
-import java.util.Map
 
+// This file is Auto-generated using FreeGen2.scala
 object callablestatement { module =>
 
   // Algebra of operations for CallableStatement. Each accepts a visitor as an alternative to pattern-matching.
@@ -77,6 +77,7 @@ object callablestatement { module =>
       def canceled: F[Unit]
       def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): F[A]
       def fromFuture[A](fut: CallableStatementIO[Future[A]]): F[A]
+      def fromFutureCancelable[A](fut: CallableStatementIO[(Future[A], CallableStatementIO[Unit])]): F[A]
       def performLogging(event: LogEvent): F[Unit]
 
       // CallableStatement
@@ -88,6 +89,9 @@ object callablestatement { module =>
       def clearWarnings: F[Unit]
       def close: F[Unit]
       def closeOnCompletion: F[Unit]
+      def enquoteIdentifier(a: String, b: Boolean): F[String]
+      def enquoteLiteral(a: String): F[String]
+      def enquoteNCharLiteral(a: String): F[String]
       def execute: F[Boolean]
       def execute(a: String): F[Boolean]
       def execute(a: String, b: Array[Int]): F[Boolean]
@@ -154,10 +158,10 @@ object callablestatement { module =>
       def getNString(a: String): F[String]
       def getObject(a: Int): F[AnyRef]
       def getObject[T](a: Int, b: Class[T]): F[T]
-      def getObject(a: Int, b: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: Int, b: java.util.Map[String, Class[_]]): F[AnyRef]
       def getObject(a: String): F[AnyRef]
       def getObject[T](a: String, b: Class[T]): F[T]
-      def getObject(a: String, b: Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: String, b: java.util.Map[String, Class[_]]): F[AnyRef]
       def getParameterMetaData: F[ParameterMetaData]
       def getQueryTimeout: F[Int]
       def getRef(a: Int): F[Ref]
@@ -189,6 +193,7 @@ object callablestatement { module =>
       def isCloseOnCompletion: F[Boolean]
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
+      def isSimpleIdentifier(a: String): F[Boolean]
       def isWrapperFor(a: Class[_]): F[Boolean]
       def registerOutParameter(a: Int, b: Int): F[Unit]
       def registerOutParameter(a: Int, b: Int, c: Int): F[Unit]
@@ -352,6 +357,9 @@ object callablestatement { module =>
     case class FromFuture[A](fut: CallableStatementIO[Future[A]]) extends CallableStatementOp[A] {
       def visit[F[_]](v: Visitor[F]) = v.fromFuture(fut)
     }
+    case class FromFutureCancelable[A](fut: CallableStatementIO[(Future[A], CallableStatementIO[Unit])]) extends CallableStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.fromFutureCancelable(fut)
+    }
     case class PerformLogging(event: LogEvent) extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
     }
@@ -380,6 +388,15 @@ object callablestatement { module =>
     }
     case object CloseOnCompletion extends CallableStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.closeOnCompletion
+    }
+    final case class EnquoteIdentifier(a: String, b: Boolean) extends CallableStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteIdentifier(a, b)
+    }
+    final case class EnquoteLiteral(a: String) extends CallableStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteLiteral(a)
+    }
+    final case class EnquoteNCharLiteral(a: String) extends CallableStatementOp[String] {
+      def visit[F[_]](v: Visitor[F]) = v.enquoteNCharLiteral(a)
     }
     case object Execute extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.execute
@@ -579,7 +596,7 @@ object callablestatement { module =>
     final case class GetObject1[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject2(a: Int, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject2(a: Int, b: java.util.Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     final case class GetObject3(a: String) extends CallableStatementOp[AnyRef] {
@@ -588,7 +605,7 @@ object callablestatement { module =>
     final case class GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject5(a: String, b: Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject5(a: String, b: java.util.Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
@@ -683,6 +700,9 @@ object callablestatement { module =>
     }
     case object IsPoolable extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isPoolable
+    }
+    final case class IsSimpleIdentifier(a: String) extends CallableStatementOp[Boolean] {
+      def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
     }
     final case class IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
@@ -1067,6 +1087,7 @@ object callablestatement { module =>
   val canceled = FF.liftF[CallableStatementOp, Unit](Canceled)
   def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]) = FF.liftF[CallableStatementOp, A](OnCancel(fa, fin))
   def fromFuture[A](fut: CallableStatementIO[Future[A]]) = FF.liftF[CallableStatementOp, A](FromFuture(fut))
+  def fromFutureCancelable[A](fut: CallableStatementIO[(Future[A], CallableStatementIO[Unit])]) = FF.liftF[CallableStatementOp, A](FromFutureCancelable(fut))
   def performLogging(event: LogEvent) = FF.liftF[CallableStatementOp, Unit](PerformLogging(event))
 
   // Smart constructors for CallableStatement-specific operations.
@@ -1078,6 +1099,9 @@ object callablestatement { module =>
   val clearWarnings: CallableStatementIO[Unit] = FF.liftF(ClearWarnings)
   val close: CallableStatementIO[Unit] = FF.liftF(Close)
   val closeOnCompletion: CallableStatementIO[Unit] = FF.liftF(CloseOnCompletion)
+  def enquoteIdentifier(a: String, b: Boolean): CallableStatementIO[String] = FF.liftF(EnquoteIdentifier(a, b))
+  def enquoteLiteral(a: String): CallableStatementIO[String] = FF.liftF(EnquoteLiteral(a))
+  def enquoteNCharLiteral(a: String): CallableStatementIO[String] = FF.liftF(EnquoteNCharLiteral(a))
   val execute: CallableStatementIO[Boolean] = FF.liftF(Execute)
   def execute(a: String): CallableStatementIO[Boolean] = FF.liftF(Execute1(a))
   def execute(a: String, b: Array[Int]): CallableStatementIO[Boolean] = FF.liftF(Execute2(a, b))
@@ -1144,10 +1168,10 @@ object callablestatement { module =>
   def getNString(a: String): CallableStatementIO[String] = FF.liftF(GetNString1(a))
   def getObject(a: Int): CallableStatementIO[AnyRef] = FF.liftF(GetObject(a))
   def getObject[T](a: Int, b: Class[T]): CallableStatementIO[T] = FF.liftF(GetObject1(a, b))
-  def getObject(a: Int, b: Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject2(a, b))
+  def getObject(a: Int, b: java.util.Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject2(a, b))
   def getObject(a: String): CallableStatementIO[AnyRef] = FF.liftF(GetObject3(a))
   def getObject[T](a: String, b: Class[T]): CallableStatementIO[T] = FF.liftF(GetObject4(a, b))
-  def getObject(a: String, b: Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject5(a, b))
+  def getObject(a: String, b: java.util.Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject5(a, b))
   val getParameterMetaData: CallableStatementIO[ParameterMetaData] = FF.liftF(GetParameterMetaData)
   val getQueryTimeout: CallableStatementIO[Int] = FF.liftF(GetQueryTimeout)
   def getRef(a: Int): CallableStatementIO[Ref] = FF.liftF(GetRef(a))
@@ -1179,6 +1203,7 @@ object callablestatement { module =>
   val isCloseOnCompletion: CallableStatementIO[Boolean] = FF.liftF(IsCloseOnCompletion)
   val isClosed: CallableStatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: CallableStatementIO[Boolean] = FF.liftF(IsPoolable)
+  def isSimpleIdentifier(a: String): CallableStatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
   def isWrapperFor(a: Class[_]): CallableStatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def registerOutParameter(a: Int, b: Int): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter(a, b))
   def registerOutParameter(a: Int, b: Int, c: Int): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter1(a, b, c))
@@ -1319,6 +1344,18 @@ object callablestatement { module =>
       override def canceled: CallableStatementIO[Unit] = module.canceled
       override def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): CallableStatementIO[A] = module.onCancel(fa, fin)
       override def fromFuture[A](fut: CallableStatementIO[Future[A]]): CallableStatementIO[A] = module.fromFuture(fut)
+      override def fromFutureCancelable[A](fut: CallableStatementIO[(Future[A], CallableStatementIO[Unit])]): CallableStatementIO[A] = module.fromFutureCancelable(fut)
     }
+    
+  implicit def MonoidCallableStatementIO[A : Monoid]: Monoid[CallableStatementIO[A]] = new Monoid[CallableStatementIO[A]] {
+    override def empty: CallableStatementIO[A] = Applicative[CallableStatementIO].pure(Monoid[A].empty)
+    override def combine(x: CallableStatementIO[A], y: CallableStatementIO[A]): CallableStatementIO[A] =
+      Applicative[CallableStatementIO].product(x, y).map { case (x, y) => Monoid[A].combine(x, y) }
+  }
+ 
+  implicit def SemigroupCallableStatementIO[A : Semigroup]: Semigroup[CallableStatementIO[A]] = new Semigroup[CallableStatementIO[A]] {
+    override def combine(x: CallableStatementIO[A], y: CallableStatementIO[A]): CallableStatementIO[A] =
+      Applicative[CallableStatementIO].product(x, y).map { case (x, y) => Semigroup[A].combine(x, y) }
+  }  
 }
 

@@ -38,6 +38,8 @@ final class Meta[A](val get: Get[A], val put: Put[A]) {
 /** Module of constructors and instances for `Meta`. */
 object Meta extends MetaConstructors
                with MetaInstances
+               with SqlMetaInstances
+               with TimeMetaInstances
 {
 
   /** Summon the `Meta` instance if possible. */
@@ -249,11 +251,5 @@ trait MetaInstances { this: MetaConstructors =>
   /** @group Instances */
   implicit val ScalaBigDecimalMeta: Meta[BigDecimal] =
     BigDecimalMeta.imap(BigDecimal.apply)(_.bigDecimal)
-
-  import doobie.implicits.javasql.DateMeta
-
-  /** @group Instances */
-  implicit val JavaUtilDateMeta: Meta[java.util.Date] =
-    DateMeta.imap[java.util.Date](a => a)(d => new java.sql.Date(d.getTime))
 
 }

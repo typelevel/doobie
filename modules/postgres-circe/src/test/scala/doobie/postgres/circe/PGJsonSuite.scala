@@ -14,9 +14,9 @@ class PGJsonSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", "password"
+    driver = "org.postgresql.Driver",
+    url = "jdbc:postgresql:world",
+    user = "postgres", password = "password", logHandler = None
   )
 
   def inOut[A: Write: Read](col: String, a: A) =

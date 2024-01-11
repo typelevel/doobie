@@ -9,6 +9,7 @@ import doobie._
 
 import scala.annotation.nowarn
 
+@nowarn("msg=.*pure expression does nothing in statement position.*")
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class X(x: Int)
   case class Q(x: String)
@@ -20,9 +21,11 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class Reg2(x: Int)
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   case class Foo(s: String)
@@ -33,15 +36,29 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
     Put[String]
   }
 
-  test("Put should be derived for unary products") {
+  test("Put should be auto derived for unary products") {
+    import doobie.generic.auto._
+
     Put[X]
     Put[Q]
   }
 
+  test("Put is not auto derived without an import") {
+    compileErrors("Put[X]")
+    compileErrors("Put[Q]")
+  }
+
+  test("Put can be manually derived for unary products") {
+    Put.derived[X]
+    Put.derived[Q]
+  }
+
   test("Put should not be derived for non-unary products") {
+    import doobie.generic.auto._
+
     compileErrors("Put[Z]")
     compileErrors("Put[(Int, Int)]")
     compileErrors("Put[S.type]")
-  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
+  }
 
 }

@@ -6,11 +6,11 @@ package doobie.util
 
 import cats.effect.IO
 import doobie._
-import doobie.implicits._
-import doobie.enumerated.JdbcType.{Array => _, _}
+import doobie.enumerated.JdbcType
 
 import scala.annotation.nowarn
 
+@nowarn("msg=.*pure expression does nothing in statement position.*")
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
   case class X(x: Int)
@@ -24,16 +24,28 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     Get[String]
   }
 
-  test("Get should be derived for unary products") {
+  test("Get should be auto derived for unary products") {
+    import doobie.generic.auto._
+
     Get[X]
     Get[Q]
+  }
+
+  test("Get is not auto derived without an import") {
+    compileErrors("Get[X]")
+    compileErrors("Get[Q]")
+  }
+
+  test("Get can be manually derived for unary products") {
+    Get.derived[X]
+    Get.derived[Q]
   }
 
   test("Get should not be derived for non-unary products") {
     compileErrors("Get[Z]")
     compileErrors("Get[(Int, Int)]")
     compileErrors("Get[S.type]")
-  }: @nowarn("msg=.*pure expression does nothing in statement position.*")
+  }
 
 }
 
@@ -42,13 +54,15 @@ final case class Bar(n: Int)
 
 
 class GetDBSuite extends munit.FunSuite {
-
   import cats.effect.unsafe.implicits.global
+  import doobie.syntax.all._
 
   lazy val xa = Transactor.fromDriverManager[IO](
-    "org.h2.Driver",
-    "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    "sa", ""
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa", 
+    password = "", 
+    logHandler = None
   )
 
   // Both of these will fail at runtime if called with a null value, we check that this is
@@ -68,7 +82,7 @@ class GetDBSuite extends munit.FunSuite {
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyRef)") {
     def x = sql"select null".query[Foo].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, Char)))
+    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
   }
 
   test("Get should not allow map to observe null on the read side (AnyVal)") {
@@ -83,7 +97,7 @@ class GetDBSuite extends munit.FunSuite {
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyVal)") {
     def x = sql"select null".query[Bar].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, Integer)))
+    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Integer)))
   }
 
   test("Get should error when reading an incorrect value") {

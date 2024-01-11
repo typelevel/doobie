@@ -7,12 +7,13 @@ package doobie.util
 import doobie.util.log.{ Success, ProcessingFailure }
 
 trait LogSuitePlatform { self: LogSuite =>
+  import doobie.generic.auto._
 
   test("[Query] n-arg success") {
     val Sql = "select 1 where ? = ?"
     val Arg = 1 *: 1 *: EmptyTuple
     eventForUniqueQuery(Sql, Arg) match {
-      case Success(Sql, List(1, 1), _, _) => ()
+      case Success(Sql, List(1, 1), _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -21,7 +22,7 @@ trait LogSuitePlatform { self: LogSuite =>
     val Sql = "select 1 where ? = ?"
     val Arg = 1 *: 2 *: EmptyTuple
     eventForUniqueQuery(Sql, Arg) match {
-      case ProcessingFailure(Sql, List(1, 2), _, _, _) => ()
+      case ProcessingFailure(Sql, List(1, 2), _, _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }
@@ -30,7 +31,7 @@ trait LogSuitePlatform { self: LogSuite =>
     val Sql = "update foo set bar = ?"
     val Arg = 42 *: EmptyTuple
     eventForUniqueUpdate(Sql, Arg) match {
-      case Success(Sql, List(42), _, _) => ()
+      case Success(Sql, List(42), _, _, _) => ()
       case a => fail(s"no match: $a")
     }
   }

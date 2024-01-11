@@ -28,8 +28,8 @@ Then, you will be able to import the implicits for dealing with JSON:
 @@@ vars
 
 ```scala
-import doobie.postgres.circe.json.implicits
-import doobie.postgres.circe.jsonb.implicits
+import doobie.postgres.circe.json.implicits._
+import doobie.postgres.circe.jsonb.implicits._
 
 ```
 
@@ -56,10 +56,11 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager and executes blocking operations
 // on an our synchronous EC. See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
-  "postgres",                  // user
-  "password"                   // password
+  driver = "org.postgresql.Driver",  // JDBC driver classname
+  url = "jdbc:postgresql:world",     // Connect URL - Driver specific
+  user = "postgres",                 // Database user name
+  password = "password",             // Database password
+  logHandler = None                  // Don't setup logging for now. See Logging page for how to log events in detail
 )
 ```
 
@@ -76,17 +77,11 @@ import doobie.postgres.implicits._
 
 ### Java 8 Time Types (JSR310)
 
-An explicit import is required to bring in mappings for `java.time.OffsetDateTime` / `java.time.Instant` / `java.time.ZonedDateTime` / `java.time.LocalDateTime` / `java.time.LocalDate` / `java.time.LocalTime`
-
-```scala mdoc:silent
-import doobie.postgres.implicits._
-```
-
 To ensure **doobie** performs the conversion correctly between Java 8 time types and PostgreSQL Date/Time types when handling timezones or the lack thereof.
 The correct combination of date/time types should be used:
 
 - `TIMESTAMP` maps to `java.time.LocalDateTime`
-- `TIMESTAMPTZ` maps to `java.time.Instant`, `java.time.ZonedDateTime` or `java.time.OffsetDateTime`
+- `TIMESTAMPTZ` maps to `java.time.Instant` or `java.time.OffsetDateTime`
 - `DATE` maps to `java.time.LocalDate`
 - `TIME` maps to `java.time.LocalTime`
 
@@ -187,7 +182,7 @@ It is expected that these will be mapped to application-specific types via `xmap
 
 ### PostGIS Types
 
-**doobie** provides mappings for the top-level PostGIS geometric types provided by the `org.postgis` driver extension.
+**doobie** provides mappings for the top-level PostGIS geometric types provided by the `net.postgis` driver extension.
 
 Mappings for postgis are provided in the `pgistypes` module. Doobie expects postgis dependency to be provided, so if you use this module you should add postgis as a dependency.
 
@@ -274,7 +269,7 @@ PostgreSQL supports server-side caching of prepared statements after a certain n
 - For a given `Connection` you can set and query the prepare threshold with the `ConnectionIO` constructors `doobie.postgres.hi.connection.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 - For a specific `PreparedStatement` you can set and query the prepare threshold with the `PreparedStatementIO` constructors `doobie.postgres.hi.preparedstatement.pgSetPrepareThreshold` and `pgGetPrepareThreshold`.
 
-See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/93/server-prepare.html) for more information.
+See the [JDBC driver documentation](https://jdbc.postgresql.org/documentation/server-prepare) for more information.
 
 ### `LISTEN` and `NOTIFY`
 

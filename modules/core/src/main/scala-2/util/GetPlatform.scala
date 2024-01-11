@@ -16,9 +16,10 @@ trait GetPlatform {
               C: IsHCons.Aux[L, H, T],
               H: Lazy[Get[H]],
               E: (H :: HNil) =:= L
-  ): Get[A] = {
+  ): MkGet[A] = {
     void(C) // C drives inference but is not used directly
-    H.value.tmap[A](h => G.from(h :: HNil))
+    val get = H.value.tmap[A](h => G.from(h :: HNil))
+    MkGet.lift(get)
   }
 
 }

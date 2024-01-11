@@ -8,3 +8,19 @@
 **doobie** is a pure functional JDBC layer for Scala.
 
 Please proceed to the [**microsite**](https://tpolecat.github.io/doobie/) for more information.
+
+## Reporting a bug or need help?
+
+Use [doobie_quick_start](https://github.com/jatcwang/doobie_quick_start)
+which should make it easy to reproduce your issue!
+
+# Community
+
+You can find our community on 
+
+* [Github discussion](https://github.com/tpolecat/doobie/discussions),
+* [Typelevel Discord](https://discord.com/channels/632277896739946517/632727524434247691) (#doobie channel)
+
+People are expected to follow the
+[Scala Code of Conduct](https://www.scala-lang.org/conduct/) when
+discussing Doobie on GitHub, Discord, or other venues.

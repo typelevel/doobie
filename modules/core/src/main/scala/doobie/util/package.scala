@@ -7,6 +7,8 @@ package doobie
 /** Collection of modules for typeclasses and other helpful bits. */
 package object util {
 
+  val unlabeled: String = "unlabeled"
+  
   private[util] def void(a: Any*): Unit =
     (a, ())._2
 

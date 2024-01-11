@@ -43,35 +43,9 @@ Both of these will be handled by the Cats-Effect runtime.
 Requesting and waiting for a connection from the connection pool is a blocking operation too, but this has to be handled by the `connectEC` ExecutionContext.
 This ExecutionContext should be **bounded**, as we do not want to create hundreds and thousands of threads (one for each request) waiting for database connection when the database is busy.
 The maximum thread limit for `connectEC` should be the same as your underlying JDBC connection pool, since any more threads are guaranteed to be blocked.
+You probably won't need to create your own `connectEC` though because we can derive it from the configuration of the connection pool, such as when you use `HikariTransactor.fromHikariConfig`.
 
 Because these pools need to be shut down in order to exit cleanly it is typical to use `Resource` to manage their lifetimes. See below for examples.
-
-### Using the JDBC DriverManager
-
-JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.
-
-However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is fine. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
-
-```scala mdoc:silent
-import doobie.util.ExecutionContexts
-
-// This is just for testing. Consider using cats.effect.IOApp instead of calling
-// unsafe methods directly.
-import cats.effect.unsafe.implicits.global
-
-// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
-// on an our synchronous EC. See the chapter on connection handling for more info.
-val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
-  "postgres",                  // user
-  "password"                   // password
-)
-```
-
-```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
-```
 
 ### Using a HikariCP Connection Pool
 
@@ -83,6 +57,7 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.hikari._
+import com.zaxxer.hikari.HikariConfig
 
 object HikariApp extends IOApp {
 
@@ -90,14 +65,16 @@ object HikariApp extends IOApp {
   // transaction EC. Everything will be closed and shut down cleanly after use.
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
-      ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      xa <- HikariTransactor.newHikariTransactor[IO](
-              "org.h2.Driver",                        // driver classname
-              "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",   // connect URL
-              "sa",                                   // username
-              "",                                     // password
-              ce                                      // await connection here
-            )
+      hikariConfig <- Resource.pure {
+        // For the full list of hikari configurations see https://github.com/brettwooldridge/HikariCP#gear-configuration-knobs-baby
+        val config = new HikariConfig()
+        config.setDriverClassName("org.h2.Driver")
+        config.setJdbcUrl("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
+        config.setUsername("sa")
+        config.setPassword("")
+        config
+      }
+      xa <- HikariTransactor.fromHikariConfig[IO](hikariConfig)
     } yield xa
 
 
@@ -119,6 +96,34 @@ And running this program gives us the desired result.
 
 ```scala mdoc:silent
 HikariApp.main(Array())
+```
+
+### Using the JDBC DriverManager
+
+JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.
+
+However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is fine. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
+
+```scala mdoc:silent
+import doobie.util.ExecutionContexts
+
+// This is just for testing. Consider using cats.effect.IOApp instead of calling
+// unsafe methods directly.
+import cats.effect.unsafe.implicits.global
+
+// A transactor that gets connections from java.sql.DriverManager and executes blocking operations
+// on an our synchronous EC. See the chapter on connection handling for more info.
+val xa = Transactor.fromDriverManager[IO](
+  driver = "org.postgresql.Driver",  // JDBC driver classname
+  url = "jdbc:postgresql:world",     // Connect URL - Driver specific
+  user = "postgres",                 // Database user name
+  password = "password",             // Database password
+  logHandler = None                  // Don't setup logging for now. See Logging page for how to log events in detail
+)
+```
+
+```scala mdoc:invisible
+implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 ```
 
 ### Using an existing DataSource
@@ -147,7 +152,7 @@ import java.sql.Connection
 
 // A Transactor[IO] wrapping the given `Connection`
 def transactor(c: Connection): Transactor[IO] =
-  Transactor.fromConnection[IO](c)
+  Transactor.fromConnection[IO](c, logHandler = None)
 ```
 
 ### Customizing Transactors

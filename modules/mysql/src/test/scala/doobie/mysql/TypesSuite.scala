@@ -8,7 +8,6 @@ import java.time.ZoneOffset
 
 import doobie._
 import doobie.implicits._
-import doobie.implicits.javasql._
 import doobie.mysql.implicits._
 import doobie.mysql.util.arbitraries.SQLArbitraries._
 import doobie.mysql.util.arbitraries.TimeArbitraries._

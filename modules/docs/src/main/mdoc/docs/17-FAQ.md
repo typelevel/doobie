@@ -22,10 +22,11 @@ import cats.effect.unsafe.implicits.global
 // A transactor that gets connections from java.sql.DriverManager.
 // See the chapter on connection handling for more info.
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver",     // driver classname
-  "jdbc:postgresql:world",     // connect URL (driver-specific)
-  "postgres",                  // user
-  "password",                  // password
+  driver = "org.postgresql.Driver",  // JDBC driver classname
+  url = "jdbc:postgresql:world",     // Connect URL - Driver specific
+  user = "postgres",                 // Database user name
+  password = "password",             // Database password
+  logHandler = None                  // Don't setup logging for now. See Logging page for how to log events in detail
 )
 ```
 
@@ -201,22 +202,3 @@ implicit val nesMeta: Meta[NonEmptyString] = {
   distinct.string("nes").imap(NonEmptyString.apply)(_.value)
 }
 ```
-
-## How do I use `java.time` types with Doobie?
-
-This depends on whether the underlying JDBC driver you're using supports `java.time.*` types natively.
-("native support" means that you can hand the driver e.g. a value of java.time.Instant and it will know how to convert
-that to a value on-the-wire that the actual database can understand)
-
-If you're using PostgreSQL, you can import that instances via `import doobie.postgres.implicits._`
-
-If your JDBC driver supports the java.time types you're using natively, use `import doobie.implicits.javatimedrivernative._`.
-
-| Database driver                  | java.time.Instant                   | java.time.LocalDate                   |
-| ---                              | ---                                 | ---                                   |
-| Postgres (org.postgresql.Driver) | `doobie.postgres.implicits._`       | `doobie.postgres.implicits._`         |
-| MySQL (com.mysql.jdbc.Driver)    | `doobie.implicits.legacy.instant._` | `doobie.implicits.legacy.localdate._` |
-
-References:
-
-- [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/head/8-date-time.html)

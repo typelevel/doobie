@@ -7,8 +7,7 @@ package doobie.postgres
 import doobie._
 import doobie.implicits._
 import doobie.postgres.enums._
-import doobie.postgres.implicits._
-import doobie.util.analysis.{ColumnTypeError, ColumnTypeWarning, ParameterTypeError}
+import doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime}
 
 class CheckSuite extends munit.FunSuite {
@@ -25,12 +24,12 @@ class CheckSuite extends munit.FunSuite {
     successRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[OffsetDateTime](t, "TIMESTAMPTZ")
 
-    warnRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
+    failedRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
     errorWrite[OffsetDateTime](t, "TIMESTAMP")
 
     failedRead[OffsetDateTime](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
     failedRead[OffsetDateTime](sql"SELECT '03:21' :: TIME")
-    warnRead[OffsetDateTime](sql"SELECT '03:21' :: TIMETZ")
+    failedRead[OffsetDateTime](sql"SELECT '03:21' :: TIMETZ")
     failedRead[OffsetDateTime](sql"SELECT '2019-02-13' :: DATE")
 
     errorWrite[OffsetDateTime](t, "TEXT")
@@ -47,12 +46,12 @@ class CheckSuite extends munit.FunSuite {
     successRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMPTZ")
     successWrite[Instant](t, "TIMESTAMPTZ")
 
-    warnRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
+    failedRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TIMESTAMP")
     errorWrite[Instant](t, "TIMESTAMP")
 
     failedRead[Instant](sql"SELECT '2019-02-13T22:03:21.000' :: TEXT")
     failedRead[Instant](sql"SELECT '03:21' :: TIME")
-    warnRead[Instant](sql"SELECT '03:21' :: TIMETZ")
+    failedRead[Instant](sql"SELECT '03:21' :: TIMETZ")
     failedRead[Instant](sql"SELECT '2019-02-13' :: DATE")
 
     errorWrite[Instant](t, "TEXT")
@@ -91,7 +90,7 @@ class CheckSuite extends munit.FunSuite {
     successRead[LocalDate](sql"SELECT '2015-02-23' :: DATE")
     successWrite[LocalDate](t, "DATE")
 
-    warnRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
+    failedRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000' :: TIMESTAMP")
     failedRead[LocalDate](sql"SELECT '2015-02-23T01:23:13.000Z' :: TIMESTAMPTZ")
     failedRead[LocalDate](sql"SELECT '2015-02-23' :: TEXT")
     failedRead[LocalDate](sql"SELECT '03:21' :: TIME")
@@ -157,22 +156,10 @@ class CheckSuite extends munit.FunSuite {
     assertEquals(analysisResult.parameterAlignmentErrors, Nil)
   }
 
-  private def warnRead[A: Read](frag: Fragment): Unit = {
-    val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
-    val errorClasses = analysisResult.columnAlignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ColumnTypeWarning]))
-
-    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
-    assert(result.isRight)
-  }
-
   private def failedRead[A: Read](frag: Fragment): Unit = {
     val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
     val errorClasses = analysisResult.columnAlignmentErrors.map(_.getClass)
     assertEquals(errorClasses, List(classOf[ColumnTypeError]))
-
-    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
-    assert(result.isLeft)
   }
 
   private def errorWrite[A: Put](value: A, dbType: String): Unit = {

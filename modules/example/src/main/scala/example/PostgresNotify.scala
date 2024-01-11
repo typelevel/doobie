@@ -49,12 +49,12 @@ object PostgresNotify extends IOApp.Simple {
 
   /** A transactor that knows how to connect to a PostgreSQL database. */
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password"
+    driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
   )
 
   /**
     * Construct a stream of PGNotifications that prints to the console. Transform it to a
-    * runnable process using the transcactor above, and run it.
+    * runnable process using the transactor above, and run it.
     */
   def run: IO[Unit] =
     notificationStream("foo", 1.second)

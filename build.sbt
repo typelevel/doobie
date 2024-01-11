@@ -1,38 +1,43 @@
 import FreeGen2._
 import sbt.dsl.LinterLevel.Ignore
+import scala.annotation.nowarn
+import scala.sys.process._
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion          = "2.9.0"
-lazy val catsEffectVersion    = "3.4.3"
-lazy val circeVersion         = "0.14.3"
-lazy val fs2Version           = "3.4.0"
+lazy val catsVersion          = "2.10.0"
+lazy val catsEffectVersion    = "3.5.2"
+lazy val circeVersion         = "0.14.6"
+lazy val fs2Version           = "3.9.3"
 lazy val h2Version            = "1.4.200"
-lazy val hikariVersion        = "4.0.3" // N.B. Hikari v4 introduces a breaking change via slf4j v2
+lazy val hikariVersion        = "5.1.0" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val mysqlVersion         = "8.0.31"
-lazy val postGisVersion       = "2.5.1"
-lazy val postgresVersion      = "42.5.1"
-lazy val refinedVersion       = "0.10.1"
+lazy val log4catsVersion      = "2.6.0"
+lazy val postGisVersion       = "2023.1.0"
+lazy val postgresVersion      = "42.7.1"
+lazy val refinedVersion       = "0.11.0"
 lazy val scalaCheckVersion    = "1.15.4"
-lazy val scalatestVersion     = "3.2.14"
-lazy val munitVersion         = "1.0.0-M7"
-lazy val shapelessVersion     = "2.3.9"
+lazy val scalatestVersion     = "3.2.17"
+lazy val munitVersion         = "1.0.0-M10"
+lazy val shapelessVersion     = "2.3.10"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.19.0"
-lazy val scala212Version      = "2.12.17"
-lazy val scala213Version      = "2.13.10"
-lazy val scala3Version       = "3.2.1"
+lazy val specs2Version        = "4.20.3"
+lazy val scala212Version      = "2.12.18"
+lazy val scala213Version      = "2.13.12"
+lazy val scala3Version       = "3.3.1"
+// scala-steward:off
 lazy val slf4jVersion         = "1.7.36"
-lazy val weaverVersion        = "0.7.15"
+// scala-steward:on
+lazy val weaverVersion        = "0.8.3"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
-ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshits on `main`
-ThisBuild / scalaVersion := scala213Version
+ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
+ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   WorkflowStep.Run(
     commands = List("docker-compose up -d"),
@@ -43,13 +48,33 @@ ThisBuild / githubWorkflowBuildPreamble ++= Seq(
     name = Some("Check Headers"),
   ),
 )
+ThisBuild / githubWorkflowBuild := {
+  val current = (ThisBuild / githubWorkflowBuild).value
+  current.updated(0, WorkflowStep.Sbt(List("freeGen2", "test"), name = Some("Test")))
+}
 ThisBuild / githubWorkflowBuildPostamble ++= Seq(
-  WorkflowStep.Sbt(
+    WorkflowStep.Sbt(
+      commands = List("checkGitNoUncommittedChanges"),
+      name = Some(s"Check there are no uncommitted changes in git (to catch generated files that weren't committed)"),
+    ),
+    WorkflowStep.Sbt(
     commands = List("docs/makeSite"),
     name = Some(s"Check Doc Site ($scala213Version only)"),
     cond = Some(s"matrix.scala == '$scala213Version'"),
   )
 )
+
+ThisBuild / mergifyPrRules += MergifyPrRule(name = "merge-when-ci-pass", conditions = githubWorkflowGeneratedCI.value.flatMap {
+  case job if mergifyRequiredJobs.value.contains(job.id) =>
+    val buildSuccesses = for {
+      os <- job.oses
+      scalaVer <- job.scalas
+      javaSpec <- job.javas
+    } yield MergifyCondition.Custom(s"status-success=${job.name} ($os, $scalaVer, ${javaSpec.render})")
+    buildSuccesses :+ MergifyCondition.Custom("label=merge-on-build-success")
+  case _ => Nil
+}.toList, actions = List(MergifyAction.Merge()))
+
 
 // This is used in a couple places. Might be nice to separate these things out.
 lazy val postgisDep = "net.postgis" % "postgis-jdbc" % postGisVersion
@@ -64,6 +89,9 @@ lazy val compilerFlags = Seq(
   Test / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
+//  scalacOptions ++= Seq(
+//    "-Xsource:3"
+//  )
 )
 
 lazy val buildSettings = Seq(
@@ -100,10 +128,11 @@ lazy val commonSettings =
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "scalacheck-effect-munit" % "1.0.4"  % Test,
       "org.typelevel"     %% "munit-cats-effect-3"     % "1.0.7" % Test,
+      "org.typelevel"     %% "cats-effect-testkit"     % catsEffectVersion % Test,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
 
-    // For some reason tests started hanginging with docker-compose so let's disable parallelism.
+    // For some reason tests started hanging with docker-compose so let's disable parallelism.
     Test / parallelExecution := false,
   )
 
@@ -112,6 +141,14 @@ lazy val doobieSettings = buildSettings ++ commonSettings
 lazy val doobie = project.in(file("."))
   .enablePlugins(NoPublishPlugin)
   .settings(doobieSettings)
+  .settings(
+    checkGitNoUncommittedChanges := {
+      val gitDiffOutput = "git diff".!!
+      if (gitDiffOutput.nonEmpty) {
+        throw new Error(s"There are uncommitted changes in git. Perhaps some generated file from FreeGen2 were not committed?\n$gitDiffOutput")
+      }
+    }
+  )
   .aggregate(
     bench,
     core,
@@ -122,6 +159,7 @@ lazy val doobie = project.in(file("."))
     `h2-circe`,
     hikari,
     mysql,
+    log4cats,
     postgres,
     `postgres-circe`,
     refined,
@@ -169,7 +207,15 @@ lazy val free = project
         classOf[java.sql.CallableStatement],
         classOf[java.sql.ResultSet]
       )
-    }
+    },
+    freeGen2AllImportExcludes := Set[Class[_]](
+      classOf[java.util.Map[_, _]],
+    ),
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+      classOf[java.sql.DriverPropertyInfo],
+      classOf[java.io.Writer],
+      classOf[java.io.OutputStream]
+    )
   )
 
 
@@ -184,7 +230,7 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.chuusai"    %% "shapeless" % shapelessVersion,
     ).filterNot(_ => tlIsScala3.value) ++ Seq(
-      "org.tpolecat"   %% "typename"  % "1.0.0",
+      "org.tpolecat"   %% "typename"  % "1.1.0",
       "com.h2database" %  "h2"        % h2Version % "test",
     ),
     scalacOptions += "-Yno-predef",
@@ -214,6 +260,17 @@ lazy val core = project
             |""".stripMargin)
       Seq(outFile)
     }.taskValue
+  )
+
+lazy val log4cats = project
+  .in(file("modules/log4cats"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(
+    name := "doobie-log4cats",
+    description := "log4cats support for doobie.",
+    libraryDependencies += "org.typelevel" %% "log4cats-core" % log4catsVersion
   )
 
 lazy val example = project
@@ -258,7 +315,6 @@ lazy val postgres = project
     freeGen2Dir     := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
     freeGen2Classes := {
-      import java.sql._
       List[Class[_]](
         classOf[org.postgresql.copy.CopyIn],
         classOf[org.postgresql.copy.CopyManager],
@@ -273,17 +329,23 @@ lazy val postgres = project
       classOf[org.postgresql.copy.CopyIn]       -> "PGCopyIn",
       classOf[org.postgresql.copy.CopyManager]  -> "PGCopyManager",
       classOf[org.postgresql.copy.CopyOut]      -> "PGCopyOut",
-      classOf[org.postgresql.fastpath.Fastpath] -> "PGFastpath"
     ),
-    initialCommands := """
+    freeGen2AllImportExcludes := Set[Class[_]](
+      classOf[java.util.Map[_, _]],
+    ),
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+      classOf[java.sql.Array],
+      classOf[org.postgresql.copy.CopyDual]
+    ),
+      initialCommands := """
       import cats._, cats.data._, cats.implicits._, cats.effect._
       import doobie._, doobie.implicits._
       import doobie.postgres._, doobie.postgres.implicits._
       implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
-      val xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "password")
+      val xa = Transactor.fromDriverManager[IO](driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", pass = "password", logHandler = None)
       val yolo = xa.yolo
       import yolo._
-      import org.postgis._
+      import net.postgis._
       import org.postgresql.util._
       import org.postgresql.geometric._
       """,
@@ -476,3 +538,5 @@ lazy val refined = project
       "com.h2database" %  "h2"      % h2Version       % "test"
     )
   )
+
+lazy val checkGitNoUncommittedChanges = taskKey[Unit]("Check git working tree is clean (no uncommitted changes) due to generated code not being committed")

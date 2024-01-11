@@ -88,16 +88,16 @@ object Coproduct extends IOApp.Simple {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, *] = {
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](LogHandlerM.noop).ConnectionInterpreter
+    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
   }
 
   // Our interpreted program
   val iprog: Kleisli[IO, Connection, Unit] = prog[Cop].foldMap(interp)
 
   val xa = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:world",
-    "postgres", "password"
+    driver = "org.postgresql.Driver",
+    url = "jdbc:postgresql:world",
+    user = "postgres", password = "password", logHandler = None
   )
 
   // Exec it!

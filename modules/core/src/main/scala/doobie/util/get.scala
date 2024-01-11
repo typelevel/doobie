@@ -17,10 +17,10 @@ import doobie.util.meta.Meta
 sealed abstract class Get[A](
   val typeStack: NonEmptyList[Option[String]],
   val jdbcSources: NonEmptyList[JdbcType],
+  val jdbcSourceSecondary: List[JdbcType],
+  val schemaTypes: List[String],
   val get: Coyoneda[(ResultSet, Int) => *, A]
 ) {
-
-  protected def mapImpl[B](f: A => B, typ: Option[String]): Get[B]
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   final def unsafeGetNonNullable(rs: ResultSet, n: Int): A = {
@@ -50,6 +50,15 @@ sealed abstract class Get[A](
   final def tmap[B](f: A => B)(implicit ev: TypeName[B]): Get[B] =
     mapImpl(f, Some(ev.value))
 
+  private def mapImpl[B](f: A => B, typ: Option[String]): Get[B] =
+    new Get[B](
+      typeStack = typ :: typeStack,
+      jdbcSources = jdbcSources,
+      jdbcSourceSecondary = jdbcSourceSecondary,
+      schemaTypes = schemaTypes,
+      get = get.map(f)
+    ) {}
+
   /**
     * Equivalent to `tmap`, but allows the conversion to fail with an error message.
     */
@@ -62,81 +71,82 @@ sealed abstract class Get[A](
       }
     }
 
-  def fold[B](f: Get.Basic[A] => B, g: Get.Advanced[A] => B): B
-
-
 }
 
 object Get extends GetInstances {
 
   def apply[A](implicit ev: Get[A]): ev.type = ev
 
-  /** Get instance for a basic JDBC type. */
-  final case class Basic[A](
-    override val typeStack: NonEmptyList[Option[String]],
-    override val jdbcSources: NonEmptyList[JdbcType],
-             val jdbcSourceSecondary: List[JdbcType],
-    override val get: Coyoneda[(ResultSet, Int) => *, A]
-  ) extends Get[A](typeStack, jdbcSources, get) {
+  def derived[A](implicit ev: MkGet[A]): Get[A] = ev
 
-    protected def mapImpl[B](f: A => B, typ: Option[String]): Get[B] =
-      copy(get = get.map(f), typeStack = typ :: typeStack)
-
-    def fold[B](f: Get.Basic[A] => B, g: Get.Advanced[A] => B): B =
-      f(this)
-
+  trait Auto {
+    implicit def deriveGet[A](implicit ev: MkGet[A]): Get[A] = ev
   }
+
+  /** Get instance for a basic JDBC type. */
   object Basic {
+
+    def apply[A](
+      typeStack: NonEmptyList[Option[String]],
+      jdbcSources: NonEmptyList[JdbcType],
+      jdbcSourceSecondary: List[JdbcType],
+      get: Coyoneda[(ResultSet, Int) => *, A]
+    ): Get[A] = new Get[A](
+      typeStack,
+      jdbcSources = jdbcSources,
+      jdbcSourceSecondary = jdbcSourceSecondary,
+      schemaTypes = Nil,
+      get
+    ) {}
 
     def many[A](
       jdbcSources: NonEmptyList[JdbcType],
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A
-    )(implicit ev: TypeName[A]): Basic[A] =
+    )(implicit ev: TypeName[A]): Get[A] =
       Basic(NonEmptyList.of(Some(ev.value)), jdbcSources, jdbcSourceSecondary, Coyoneda.lift(get))
 
     def one[A: TypeName](
       jdbcSources: JdbcType,
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A
-    ): Basic[A] =
+    ): Get[A] =
       many(NonEmptyList.of(jdbcSources), jdbcSourceSecondary, get)
 
   }
 
   /** Get instance for an advanced JDBC type. */
-  final case class Advanced[A](
-    override val typeStack: NonEmptyList[Option[String]],
-    override val jdbcSources: NonEmptyList[JdbcType],
-             val schemaTypes: NonEmptyList[String],
-    override val get: Coyoneda[(ResultSet, Int) => *, A]
-  ) extends Get[A](typeStack, jdbcSources, get) {
-
-    protected def mapImpl[B](f: A => B, typ: Option[String]): Get[B] =
-      copy(get = get.map(f), typeStack = typ :: typeStack)
-
-    def fold[B](f: Get.Basic[A] => B, g: Get.Advanced[A] => B): B =
-      g(this)
-
-  }
   object Advanced {
+
+    def apply[A](
+      typeStack: NonEmptyList[Option[String]],
+      jdbcSources: NonEmptyList[JdbcType],
+      schemaTypes: NonEmptyList[String],
+      get: Coyoneda[(ResultSet, Int) => *, A]
+    ): Get[A] = new Get[A](
+      typeStack,
+      jdbcSources = jdbcSources,
+      jdbcSourceSecondary = Nil,
+      schemaTypes = schemaTypes.toList,
+      get
+    ) {}
 
     def many[A](
       jdbcSources: NonEmptyList[JdbcType],
       schemaTypes: NonEmptyList[String],
       get: (ResultSet, Int) => A
-    )(implicit ev: TypeName[A]): Advanced[A] =
+    )(implicit ev: TypeName[A]): Get[A] =
       Advanced(NonEmptyList.of(Some(ev.value)), jdbcSources, schemaTypes, Coyoneda.lift(get))
 
     def one[A](
       jdbcSource: JdbcType,
       schemaTypes: NonEmptyList[String],
       get: (ResultSet, Int) => A
-    )(implicit ev: TypeName[A]): Advanced[A] =
+    )(implicit ev: TypeName[A]): Get[A] =
       Advanced(NonEmptyList.of(Some(ev.value)), NonEmptyList.of(jdbcSource), schemaTypes, Coyoneda.lift(get))
 
     @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
-    def array[A >: Null <: AnyRef](schemaTypes: NonEmptyList[String]): Advanced[Array[A]] =
+    def array[A >: Null <: AnyRef](schemaTypes: NonEmptyList[String]): Get[Array[A]] =
       one(JdbcType.Array, schemaTypes, (r, n) => {
           val a = r.getArray(n)
           (if (a == null) null else a.getArray).asInstanceOf[Array[A]]
@@ -146,7 +156,7 @@ object Get extends GetInstances {
     @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
     def other[A >: Null <: AnyRef: TypeName](schemaTypes: NonEmptyList[String])(
       implicit A: ClassTag[A]
-    ): Advanced[A] =
+    ): Get[A] =
       many(
         NonEmptyList.of(JdbcType.Other, JdbcType.JavaObject),
         schemaTypes,
@@ -173,7 +183,7 @@ object Get extends GetInstances {
 
 }
 
-trait GetInstances extends GetPlatform {
+trait GetInstances {
   import Predef._ // for array ops
 
   /** @group Instances */
@@ -191,4 +201,17 @@ trait GetInstances extends GetPlatform {
   implicit def ArrayTypeAsVectorGet[A](implicit ev: Get[Array[A]]): Get[Vector[A]] =
     ev.tmap(_.toVector)
 
+}
+
+sealed abstract class MkGet[A](
+  override val typeStack: NonEmptyList[Option[String]],
+  override val jdbcSources: NonEmptyList[JdbcType],
+  override val jdbcSourceSecondary: List[JdbcType],
+  override val schemaTypes: List[String],
+  override val get: Coyoneda[(ResultSet, Int) => *, A]
+) extends Get[A](typeStack, jdbcSources, jdbcSourceSecondary, schemaTypes, get)
+object MkGet extends GetPlatform {
+
+  def lift[A](g: Get[A]): MkGet[A] =
+    new MkGet[A](g.typeStack, g.jdbcSources, g.jdbcSourceSecondary, g.schemaTypes, g.get) {}
 }

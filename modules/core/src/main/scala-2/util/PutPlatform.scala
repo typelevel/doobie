@@ -16,9 +16,10 @@ trait PutPlatform {
               C: IsHCons.Aux[L, H, T],
               H: Lazy[Put[H]],
               E: (H :: HNil) =:= L
-  ): Put[A] = {
+  ): MkPut[A] = {
     void(E) // E is a necessary constraint but isn't used directly
-    H.value.contramap[A](a => G.to(a).head)
+    val put = H.value.contramap[A](a => G.to(a).head)
+    MkPut.lift(put)
   }
 
 }
