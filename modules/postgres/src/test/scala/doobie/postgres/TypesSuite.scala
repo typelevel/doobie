@@ -10,7 +10,6 @@ import java.time.ZoneOffset
 import java.util.UUID
 import doobie._
 import doobie.implicits._
-import doobie.implicits.javasql._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
@@ -122,8 +121,11 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut[java.sql.Time]("time")
   testInOut[java.time.LocalTime]("time")
 
-  skip("time with time zone")
+  testInOut[java.time.OffsetTime]("time with time zone")
+
   testInOut("interval", new PGInterval(1, 2, 3, 4, 5, 6.7))
+
+  testInOut[java.time.ZoneId]("text")
 
   // 8.6 Boolean Type
   testInOut[Boolean]("boolean")

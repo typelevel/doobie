@@ -79,11 +79,4 @@ object TimeArbitraries {
     } yield dateTime.atOffset(offset)
   }
 
-  implicit val arbitraryZonedDateTime: Arbitrary[ZonedDateTime] = Arbitrary {
-    for {
-      dateTime <- arbitraryLocalDateTime.arbitrary
-      zone <- arbitraryZoneOffset.arbitrary
-    } yield ZonedDateTime.of(dateTime, zone)
-  }
-
 }

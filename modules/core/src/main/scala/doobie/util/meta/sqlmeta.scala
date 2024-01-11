@@ -6,12 +6,6 @@ package doobie.util.meta
 
 import doobie.enumerated.JdbcType._
 
-trait SqlMeta {
-
-  object javasql extends MetaConstructors with SqlMetaInstances
-
-}
-
 trait SqlMetaInstances { this: MetaConstructors =>
 
   /** @group Instances */
@@ -34,5 +28,9 @@ trait SqlMetaInstances { this: MetaConstructors =>
       Timestamp,
       List(Char, VarChar, LongVarChar, Date, Time),
       _.getTimestamp(_), _.setTimestamp(_, _), _.updateTimestamp(_, _))
+
+  /** @group Instances */
+  implicit val JavaUtilDateMeta: Meta[java.util.Date] =
+    DateMeta.imap[java.util.Date](a => a)(d => new java.sql.Date(d.getTime))
 
 }

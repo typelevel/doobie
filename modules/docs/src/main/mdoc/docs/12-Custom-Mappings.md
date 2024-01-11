@@ -53,7 +53,7 @@ Instances are provided for the following Scala types:
 - `Boolean`, `String`, and `Array[Byte]`;
 - `Date`, `Time`, and `Timestamp` from the `java.sql` package;
 - `Date` from the `java.util` package;
-- `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime` and `ZonedDateTime` from the `java.time` package; and
+- `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime` and `OffsetDateTime` from the `java.time` package; and
 - single-element case classes wrapping one of the above types.
 
 The `java.time` instances may require a separate import , dependent on your Database Driver . See the [doobie-faq](https://tpolecat.github.io/doobie/docs/17-FAQ.html#how-do-i-use-java-time-types-with-doobie-) for details

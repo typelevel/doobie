@@ -21,10 +21,7 @@ package object doobie
   object implicits
     extends free.Instances
        with generic.AutoDerivation
-       with syntax.AllSyntax
-       with util.meta.SqlMeta
-       with util.meta.TimeMeta
-       with util.meta.LegacyMeta {
+       with syntax.AllSyntax {
 
     // re-export these instances so `Meta` takes priority, must be in the object
     implicit def metaProjectionGet[A](implicit m: Meta[A]): Get[A] = Get.metaProjection
