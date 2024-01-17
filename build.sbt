@@ -5,7 +5,7 @@ import scala.sys.process._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.10.0"
-lazy val catsEffectVersion    = "3.5.2"
+lazy val catsEffectVersion    = "3.5.3"
 lazy val circeVersion         = "0.14.6"
 lazy val fs2Version           = "3.9.3"
 lazy val h2Version            = "1.4.200"
