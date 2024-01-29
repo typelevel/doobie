@@ -1,4 +1,4 @@
-addSbtPlugin("com.lightbend.paradox"     % "sbt-paradox"             % "0.10.5")
+addSbtPlugin("com.lightbend.paradox"     % "sbt-paradox"             % "0.10.6")
 addSbtPlugin("com.typesafe.sbt"          % "sbt-site"                % "1.4.1")
 addSbtPlugin("com.github.sbt"          % "sbt-ghpages"             % "0.7.0")
 addSbtPlugin("org.typelevel"             % "sbt-typelevel-ci-release" % "0.6.5")
