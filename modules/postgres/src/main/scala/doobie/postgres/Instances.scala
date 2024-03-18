@@ -6,6 +6,8 @@ package doobie.postgres
 
 import doobie.enumerated.JdbcType
 import doobie._
+import doobie.postgres.types.Range
+import doobie.postgres.types.Range._
 import doobie.util.invariant._
 
 import java.util.{ UUID, Map => JMap }
@@ -18,6 +20,9 @@ import scala.reflect.ClassTag
 
 import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import org.tpolecat.typename._
+
+import java.sql.{Date, Timestamp}
+import java.time.{LocalDate, LocalDateTime, OffsetDateTime}
 
 trait Instances {
 
@@ -57,6 +62,28 @@ trait Instances {
       o.setValue(a.getHostAddress)
       o
     } .orNull
+  )
+
+  // Range Types
+  implicit val IntRangeType: Meta[Range[Int]]                           = rangeMeta("int4range")
+  implicit val LongRangeType: Meta[Range[Long]]                         = rangeMeta("int8range")
+  implicit val FloatRangeType: Meta[Range[Float]]                       = rangeMeta("numrange")
+  implicit val DoubleRangeType: Meta[Range[Double]]                     = rangeMeta("numrange")
+  implicit val BigDecimalRangeType: Meta[Range[BigDecimal]]             = rangeMeta("numrange")
+  implicit val DateRangeType: Meta[Range[Date]]                         = rangeMeta("daterange")
+  implicit val LocalDateRangeType: Meta[Range[LocalDate]]               = rangeMeta("daterange")
+  implicit val TimestampRangeType: Meta[Range[Timestamp]]               = rangeMeta("tsrange")
+  implicit val LocalDateTimeRangeType: Meta[Range[LocalDateTime]]       = rangeMeta("tsrange")
+  implicit val OffsetDateTimeTimeRangeType: Meta[Range[OffsetDateTime]] = rangeMeta("tsrange")
+
+  private def rangeMeta[T](sqlRangeType: String)(implicit TV: ToValueConverter[T], FV: FromValueConverter[T]): Meta[Range[T]] = Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
+    o => Range.parse(o.getValue).toOption.orNull)(
+    a => Option(a).map { a =>
+      val o = new PGobject
+      o.setType(sqlRangeType)
+      o.setValue(Range.stringify(a))
+      o
+    }.orNull
   )
 
   // java.sql.Array::getArray returns an Object that may be of primitive type or of boxed type,
