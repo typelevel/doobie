@@ -27,20 +27,20 @@ object PostgresRange extends IOApp.Simple {
   private val tstzrangeQuery = sql"select '[2024-01-01 00:00:00+00,2024-02-02 00:00:00+00)'::tstzrange".query[Range[OffsetDateTime]]
 
   // Custom range
-  implicit val ByteRangeBoundEncoder: RangeBoundEncoder[Byte] = _.toString
-  implicit val ByteRangeBoundDecoder: RangeBoundDecoder[Byte] = java.lang.Byte.parseByte
-  implicit val ByteRangeMeta: Meta[Range[Byte]] = rangeMeta[Byte]("int4range")
+  implicit val byteBoundEncoder: RangeBoundEncoder[Byte] = _.toString
+  implicit val byteBoundDecoder: RangeBoundDecoder[Byte] = java.lang.Byte.parseByte
+  implicit val byteRangeMeta: Meta[Range[Byte]]          = rangeMeta[Byte]("int4range")
 
-  private val int4rangewWithByteBoundsQuery = sql"select '[-128, 127)'::int4range".query[Range[Byte]]
+  private val int4rangeWithByteBoundsQuery = sql"select '[-128, 127)'::int4range".query[Range[Byte]]
 
   def run: IO[Unit] =
     for {
-      _ <- int4rangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                // List(Range(Some(10),Some(20),[_,_)))
-      _ <- int8rangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                // List(Range(Some(10),Some(20),[_,_)))
-      _ <- numrangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                 // List(Range(Some(10.1),Some(20.2),[_,_)))
-      _ <- daterangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                // List(Range(Some(2024-01-01),Some(2024-02-02),[_,_)))
-      _ <- tsrangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                  // List(Range(Some(2024-01-01T00:00),Some(2024-02-02T00:00),[_,_)))
-      _ <- tstzrangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                // List(Range(Some(2024-01-01T02:00+02:00),Some(2024-02-02T02:00+02:00),[_,_)))
-      _ <- int4rangewWithByteBoundsQuery.to[List].transact(xa).flatTap(a => IO(println(a))) // List(Range(Some(-128),Some(127),[_,_)))
+      _ <- int4rangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))               // List(Range(Some(10),Some(20),[_,_)))
+      _ <- int8rangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))               // List(Range(Some(10),Some(20),[_,_)))
+      _ <- numrangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                // List(Range(Some(10.1),Some(20.2),[_,_)))
+      _ <- daterangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))               // List(Range(Some(2024-01-01),Some(2024-02-02),[_,_)))
+      _ <- tsrangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))                 // List(Range(Some(2024-01-01T00:00),Some(2024-02-02T00:00),[_,_)))
+      _ <- tstzrangeQuery.to[List].transact(xa).flatTap(a => IO(println(a)))               // List(Range(Some(2024-01-01T02:00+02:00),Some(2024-02-02T02:00+02:00),[_,_)))
+      _ <- int4rangeWithByteBoundsQuery.to[List].transact(xa).flatTap(a => IO(println(a))) // List(Range(Some(-128),Some(127),[_,_)))
     } yield ()
 }

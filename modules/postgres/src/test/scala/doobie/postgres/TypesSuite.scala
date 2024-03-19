@@ -227,9 +227,9 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, `(_,_)`))
 
   // Custom byte range
-  implicit val ByteRangeBoundEncoder: RangeBoundEncoder[Byte] = _.toString
-  implicit val ByteRangeBoundDecoder: RangeBoundDecoder[Byte] = java.lang.Byte.valueOf(_)
-  implicit val ByteRangeMeta: Meta[Range[Byte]]               = rangeMeta[Byte]("int4range")
+  implicit val byteBoundEncoder: RangeBoundEncoder[Byte] = _.toString
+  implicit val byteBoundDecoder: RangeBoundDecoder[Byte] = java.lang.Byte.valueOf(_)
+  implicit val byteRangeMeta: Meta[Range[Byte]]          = rangeMeta[Byte]("int4range")
 
   testInOut[Range[Byte]]("int4range", Range(-128, 127))
 

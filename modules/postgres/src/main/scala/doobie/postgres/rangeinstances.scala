@@ -15,44 +15,44 @@ import java.time.{LocalDate, LocalDateTime, OffsetDateTime}
 
 trait RangeInstances {
 
-  implicit val IntRangeBoundEncoder: RangeBoundEncoder[Int]               = _.toString
-  implicit val LongRangeBoundEncoder: RangeBoundEncoder[Long]             = _.toString
-  implicit val FloatRangeBoundEncoder: RangeBoundEncoder[Float]           = _.toString
-  implicit val DoubleRangeBoundEncoder: RangeBoundEncoder[Double]         = _.toString
-  implicit val BigDecimalRangeBoundEncoder: RangeBoundEncoder[BigDecimal] = _.toString
+  implicit val intBoundEncoder: RangeBoundEncoder[Int]               = _.toString
+  implicit val longBoundEncoder: RangeBoundEncoder[Long]             = _.toString
+  implicit val floatBoundEncoder: RangeBoundEncoder[Float]           = _.toString
+  implicit val doubleBoundEncoder: RangeBoundEncoder[Double]         = _.toString
+  implicit val bigDecimalBoundEncoder: RangeBoundEncoder[BigDecimal] = _.toString
 
-  implicit val LocalDateRangeBoundEncoder: RangeBoundEncoder[LocalDate] =
+  implicit val localDateBoundEncoder: RangeBoundEncoder[LocalDate] =
     toEndless[LocalDate](LocalDate.MAX, LocalDate.MIN, _.format(DateTimeFormatter.ISO_LOCAL_DATE))
 
-  implicit val LocalDateTimeRangeBoundEncoder: RangeBoundEncoder[LocalDateTime] =
+  implicit val localDateTimeBoundEncoder: RangeBoundEncoder[LocalDateTime] =
     toEndless[LocalDateTime](LocalDateTime.MAX, LocalDateTime.MIN, _.format(date2DateTimeFormatter))
 
-  implicit val OffsetDateTimeRangeBoundEncoder: RangeBoundEncoder[OffsetDateTime] =
+  implicit val offsetDateTimeBoundEncoder: RangeBoundEncoder[OffsetDateTime] =
     toEndless[OffsetDateTime](OffsetDateTime.MAX, OffsetDateTime.MIN, _.format(date2TzDateTimeFormatter))
 
-  implicit val IntRangeBoundDecoder: RangeBoundDecoder[Int]               = java.lang.Integer.valueOf(_)
-  implicit val LongRangeBoundDecoder: RangeBoundDecoder[Long]             = java.lang.Long.valueOf(_)
-  implicit val FloatRangeBoundDecoder: RangeBoundDecoder[Float]           = java.lang.Float.valueOf(_)
-  implicit val DoubleRangeBoundDecoder: RangeBoundDecoder[Double]         = java.lang.Double.valueOf(_)
-  implicit val BigDecimalRangeBoundDecoder: RangeBoundDecoder[BigDecimal] = BigDecimal(_)
+  implicit val intBoundDecoder: RangeBoundDecoder[Int]               = java.lang.Integer.valueOf(_)
+  implicit val longBoundDecoder: RangeBoundDecoder[Long]             = java.lang.Long.valueOf(_)
+  implicit val floatBoundDecoder: RangeBoundDecoder[Float]           = java.lang.Float.valueOf(_)
+  implicit val doubleBoundDecoder: RangeBoundDecoder[Double]         = java.lang.Double.valueOf(_)
+  implicit val bigDecimalBoundDecoder: RangeBoundDecoder[BigDecimal] = BigDecimal(_)
 
-  implicit val LocalDateRangeBoundDecoder: RangeBoundDecoder[LocalDate] =
+  implicit val localDateBoundDecoder: RangeBoundDecoder[LocalDate] =
     fromEndless(LocalDate.MAX, LocalDate.MIN, LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
 
-  implicit val LocalDateTimeRangeBoundDecoder: RangeBoundDecoder[LocalDateTime] =
+  implicit val localDateTimeBoundDecoder: RangeBoundDecoder[LocalDateTime] =
     fromEndless(LocalDateTime.MAX, LocalDateTime.MIN, LocalDateTime.parse(_, date2DateTimeFormatter))
 
-  implicit val OffsetDateTimeRangeBoundDecoder: RangeBoundDecoder[OffsetDateTime] =
+  implicit val offsetDateTimeBoundDecoder: RangeBoundDecoder[OffsetDateTime] =
     fromEndless(OffsetDateTime.MAX, OffsetDateTime.MIN, OffsetDateTime.parse(_, date2TzDateTimeFormatter))
 
-  implicit val IntRangeMeta: Meta[Range[Int]]                       = rangeMeta("int4range")
-  implicit val LongRangeMeta: Meta[Range[Long]]                     = rangeMeta("int8range")
-  implicit val FloatRangeMeta: Meta[Range[Float]]                   = rangeMeta("numrange")
-  implicit val DoubleRangeMeta: Meta[Range[Double]]                 = rangeMeta("numrange")
-  implicit val BigDecimalRangeMeta: Meta[Range[BigDecimal]]         = rangeMeta("numrange")
-  implicit val LocalDateRangeMeta: Meta[Range[LocalDate]]           = rangeMeta("daterange")
-  implicit val LocalDateTimeRangeMeta: Meta[Range[LocalDateTime]]   = rangeMeta("tsrange")
-  implicit val OffsetDateTimeRangeMeta: Meta[Range[OffsetDateTime]] = rangeMeta("tstzrange")
+  implicit val intRangeMeta: Meta[Range[Int]]                       = rangeMeta("int4range")
+  implicit val longRangeMeta: Meta[Range[Long]]                     = rangeMeta("int8range")
+  implicit val floatRangeMeta: Meta[Range[Float]]                   = rangeMeta("numrange")
+  implicit val doubleRangeMeta: Meta[Range[Double]]                 = rangeMeta("numrange")
+  implicit val bigDecimalRangeMeta: Meta[Range[BigDecimal]]         = rangeMeta("numrange")
+  implicit val localDateRangeMeta: Meta[Range[LocalDate]]           = rangeMeta("daterange")
+  implicit val localDateTimeRangeMeta: Meta[Range[LocalDateTime]]   = rangeMeta("tsrange")
+  implicit val offsetDateTimeRangeMeta: Meta[Range[OffsetDateTime]] = rangeMeta("tstzrange")
 
   def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]] =
     Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
