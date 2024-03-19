@@ -74,17 +74,18 @@ trait Instances {
   implicit val LocalDateRangeType: Meta[Range[LocalDate]]               = rangeMeta("daterange")
   implicit val TimestampRangeType: Meta[Range[Timestamp]]               = rangeMeta("tsrange")
   implicit val LocalDateTimeRangeType: Meta[Range[LocalDateTime]]       = rangeMeta("tsrange")
-  implicit val OffsetDateTimeTimeRangeType: Meta[Range[OffsetDateTime]] = rangeMeta("tsrange")
+  implicit val OffsetDateTimeRangeType: Meta[Range[OffsetDateTime]]     = rangeMeta("tstzrange")
 
-  private def rangeMeta[T](sqlRangeType: String)(implicit TV: ToValueConverter[T], FV: FromValueConverter[T]): Meta[Range[T]] = Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
-    o => Range.parse(o.getValue).toOption.orNull)(
-    a => Option(a).map { a =>
-      val o = new PGobject
-      o.setType(sqlRangeType)
-      o.setValue(Range.stringify(a))
-      o
-    }.orNull
-  )
+  private def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]] =
+    Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
+      o => Range.decode[T](o.getValue).toOption.orNull)(
+      a => Option(a).map { a =>
+        val o = new PGobject
+        o.setType(sqlRangeType)
+        o.setValue(Range.encode[T](a))
+        o
+      }.orNull
+    )
 
   // java.sql.Array::getArray returns an Object that may be of primitive type or of boxed type,
   // depending on the driver, so we can't really abstract over it. Also there's no telling what
