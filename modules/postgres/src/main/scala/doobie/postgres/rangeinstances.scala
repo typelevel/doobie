@@ -54,6 +54,17 @@ trait RangeInstances {
   implicit val LocalDateTimeRangeMeta: Meta[Range[LocalDateTime]]   = rangeMeta("tsrange")
   implicit val OffsetDateTimeRangeMeta: Meta[Range[OffsetDateTime]] = rangeMeta("tstzrange")
 
+  def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]] =
+    Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
+      o => Range.decode[T](o.getValue).toOption.orNull)(
+      a => Option(a).map { a =>
+        val o = new PGobject
+        o.setType(sqlRangeType)
+        o.setValue(Range.encode[T](a))
+        o
+      }.orNull
+    )
+
   private val date2DateTimeFormatter =
     new DateTimeFormatterBuilder()
       .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
@@ -71,17 +82,6 @@ trait RangeInstances {
       .optionalEnd()
       .appendOffset("+HH:mm", "+00")
       .toFormatter()
-
-  private def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]] =
-    Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
-      o => Range.decode[T](o.getValue).toOption.orNull)(
-      a => Option(a).map { a =>
-        val o = new PGobject
-        o.setType(sqlRangeType)
-        o.setValue(Range.encode[T](a))
-        o
-      }.orNull
-    )
 
   private def toEndless[T](max: T, min: T, encode: RangeBoundEncoder[T]): RangeBoundEncoder[T] = {
     case `max`  => "infinity"

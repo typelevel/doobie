@@ -260,12 +260,31 @@ Also the `Edge` allows for determining the bounds when data is fetched from the 
 
 > In the text form of a range, an inclusive lower bound is represented by '[' while an exclusive lower bound is represented by '('. Likewise, an inclusive upper bound is represented by ']', while an exclusive upper bound is represented by ')'.
 
+
 Note: the [range types](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES) mappings are defined in a different object (`rangeimplicits`). To enable it you must import them explicitly:
 
 ```scala mdoc:silent
 import doobie.postgres.rangeimplicits._
 ```
 
+To customize existing or create for example new implementation of `Range[Byte]` you can use public method declared in the following package `doobie.postgres.rangeimplicits`:
+
+```scala mdoc:silent
+def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]]
+```
+
+The main requirements is to need to implement the `RangeBoundDecoder[Byte]` end `RangeBoundEncoder[Byte]` which are essentially:
+
+```scala mdoc:silent
+  type RangeBoundDecoder[T] = String => T
+  type RangeBoundEncoder[T] = T => String
+```
+
+So for `Range[Byte]` the bounds encoder and decoder will look like:
+```scala mdoc:silent
+  implicit val ByteRangeBoundEncoder: RangeBoundEncoder[Byte] = _.toString
+  implicit val ByteRangeBoundDecoder: RangeBoundDecoder[Byte] = _.toByte
+```
 ### Other Nonstandard Types
 
 - The `uuid` schema type is supported and maps to `java.util.UUID`.
