@@ -15,20 +15,20 @@ import java.time.{LocalDate, LocalDateTime, OffsetDateTime}
 
 trait RangeInstances {
 
-  implicit val IntRangeBoundEncoder: RangeBoundEncoder[Int]                       = _.toString
-  implicit val LongRangeBoundEncoder: RangeBoundEncoder[Long]                     = _.toString
-  implicit val FloatRangeBoundEncoder: RangeBoundEncoder[Float]                   = _.toString
-  implicit val DoubleRangeBoundEncoder: RangeBoundEncoder[Double]                 = _.toString
-  implicit val BigDecimalRangeBoundEncoder: RangeBoundEncoder[BigDecimal]         = _.toString
+  implicit val IntRangeBoundEncoder: RangeBoundEncoder[Int]               = _.toString
+  implicit val LongRangeBoundEncoder: RangeBoundEncoder[Long]             = _.toString
+  implicit val FloatRangeBoundEncoder: RangeBoundEncoder[Float]           = _.toString
+  implicit val DoubleRangeBoundEncoder: RangeBoundEncoder[Double]         = _.toString
+  implicit val BigDecimalRangeBoundEncoder: RangeBoundEncoder[BigDecimal] = _.toString
 
   implicit val LocalDateRangeBoundEncoder: RangeBoundEncoder[LocalDate] =
-  toEndless[LocalDate](LocalDate.MAX, LocalDate.MIN, _.format(DateTimeFormatter.ISO_LOCAL_DATE))
+    toEndless[LocalDate](LocalDate.MAX, LocalDate.MIN, _.format(DateTimeFormatter.ISO_LOCAL_DATE))
 
   implicit val LocalDateTimeRangeBoundEncoder: RangeBoundEncoder[LocalDateTime] =
-  toEndless[LocalDateTime](LocalDateTime.MAX, LocalDateTime.MIN, _.format(date2DateTimeFormatter))
+    toEndless[LocalDateTime](LocalDateTime.MAX, LocalDateTime.MIN, _.format(date2DateTimeFormatter))
 
   implicit val OffsetDateTimeRangeBoundEncoder: RangeBoundEncoder[OffsetDateTime] =
-  toEndless[OffsetDateTime](OffsetDateTime.MAX, OffsetDateTime.MIN, _.format(date2TzDateTimeFormatter))
+    toEndless[OffsetDateTime](OffsetDateTime.MAX, OffsetDateTime.MIN, _.format(date2TzDateTimeFormatter))
 
   implicit val IntRangeBoundDecoder: RangeBoundDecoder[Int]               = _.toInt
   implicit val LongRangeBoundDecoder: RangeBoundDecoder[Long]             = _.toLong
@@ -37,13 +37,13 @@ trait RangeInstances {
   implicit val BigDecimalRangeBoundDecoder: RangeBoundDecoder[BigDecimal] = BigDecimal(_)
 
   implicit val LocalDateRangeBoundDecoder: RangeBoundDecoder[LocalDate] =
-  fromEndless(LocalDate.MAX, LocalDate.MIN, LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
+    fromEndless(LocalDate.MAX, LocalDate.MIN, LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
 
   implicit val LocalDateTimeRangeBoundDecoder: RangeBoundDecoder[LocalDateTime] =
-  fromEndless(LocalDateTime.MAX, LocalDateTime.MIN, LocalDateTime.parse(_, date2DateTimeFormatter))
+    fromEndless(LocalDateTime.MAX, LocalDateTime.MIN, LocalDateTime.parse(_, date2DateTimeFormatter))
 
   implicit val OffsetDateTimeRangeBoundDecoder: RangeBoundDecoder[OffsetDateTime] =
-  fromEndless(OffsetDateTime.MAX, OffsetDateTime.MIN, OffsetDateTime.parse(_, date2TzDateTimeFormatter))
+    fromEndless(OffsetDateTime.MAX, OffsetDateTime.MIN, OffsetDateTime.parse(_, date2TzDateTimeFormatter))
 
   implicit val IntRangeMeta: Meta[Range[Int]]                       = rangeMeta("int4range")
   implicit val LongRangeMeta: Meta[Range[Long]]                     = rangeMeta("int8range")
@@ -55,17 +55,17 @@ trait RangeInstances {
   implicit val OffsetDateTimeRangeMeta: Meta[Range[OffsetDateTime]] = rangeMeta("tstzrange")
 
   private val date2DateTimeFormatter =
-  new DateTimeFormatterBuilder()
-    .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-    .optionalStart()
-    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-    .optionalEnd()
-    .toFormatter()
+    new DateTimeFormatterBuilder()
+      .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+      .optionalStart()
+      .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
+      .optionalEnd()
+      .toFormatter()
 
 
   private val date2TzDateTimeFormatter =
-  new DateTimeFormatterBuilder()
-    .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    new DateTimeFormatterBuilder()
+      .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
       .optionalStart()
       .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
       .optionalEnd()
@@ -83,14 +83,15 @@ trait RangeInstances {
       }.orNull
     )
 
-  private def toEndless[T](max: T, min: T, decode: RangeBoundEncoder[T]): RangeBoundEncoder[T] = {
-    case `max` => "infinity"
-    case `min` => "-infinity"
-    case finite => decode(finite)
+  private def toEndless[T](max: T, min: T, encode: RangeBoundEncoder[T]): RangeBoundEncoder[T] = {
+    case `max`  => "infinity"
+    case `min`  => "-infinity"
+    case finite => encode(finite)
   }
+
   private def fromEndless[T](max: T, min: T, decode: RangeBoundDecoder[T]): RangeBoundDecoder[T] = {
-    case "infinity" => max
+    case "infinity"  => max
     case "-infinity" => min
-    case finite => decode(finite)
+    case finite      => decode(finite)
   }
 }
