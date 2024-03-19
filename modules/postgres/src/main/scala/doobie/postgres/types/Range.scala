@@ -39,39 +39,42 @@ object Range {
   type RangeBoundEncoder[T] = T => String
 
   def apply[T](start: T, end: T, edge: Edge = `[_,_)`): Range[T] = Range(Some(start), Some(end), edge)
+  def empty[T] : Range[T] = Range[T](None, None, Edge.`empty`)
 
   def encode[T](range: Range[T])(implicit E: RangeBoundEncoder[T]): String = {
-    val conv: Option[T] => String = o =>
+
+    val encodeBound: Option[T] => String = o =>
       o.map(E).getOrElse(Monoid[String].empty)
 
     range.edge match {
-      case `empty` => "empty"
-      case `[_,_)` => s"[${conv(range.lowerBound)},${conv(range.upperBound)})"
-      case `(_,_]` => s"(${conv(range.lowerBound)},${conv(range.upperBound)}]"
-      case `(_,_)` => s"(${conv(range.lowerBound)},${conv(range.upperBound)})"
-      case `[_,_]` => s"[${conv(range.lowerBound)},${conv(range.upperBound)}]"
+      case Edge.`empty` => "empty"
+      case `[_,_)` => s"[${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)})"
+      case `(_,_]` => s"(${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)}]"
+      case `(_,_)` => s"(${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)})"
+      case `[_,_]` => s"[${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)}]"
     }
   }
 
   def decode[T](range: String)(implicit D: RangeBoundDecoder[T]): Either[InvalidValue[String, Range[T]], Range[T]] = {
-    def conv(start: String, end: String, edge: Edge): Either[InvalidValue[String, Range[T]], Range[T]] = {
-      val conv: String => Either[InvalidValue[String, Range[T]], Option[T]] = s =>
+
+    def decodeRange(start: String, end: String, edge: Edge): Either[InvalidValue[String, Range[T]], Range[T]] = {
+      val decodeBound: String => Either[InvalidValue[String, Range[T]], Option[T]] = s =>
         Try(Option(s).filter(_.nonEmpty).map(D))
           .toEither
           .leftMap { error => InvalidValue(value = range, reason = Option(error.getMessage).getOrElse("unknown reason")) }
 
       for {
-        start <- conv(start)
-        end   <- conv(end)
+        start <- decodeBound(start)
+        end   <- decodeBound(end)
       } yield Range[T](start, end, edge)
     }
 
     range match {
-      case `[_,_)Range`(start, end) => conv(start, end, `[_,_)`)
-      case `(_,_]Range`(start, end) => conv(start, end, `(_,_]`)
-      case `(_,_)Range`(start, end) => conv(start, end, `(_,_)`)
-      case `[_,_]Range`(start, end) => conv(start, end, `[_,_]`)
-      case "empty"                  => Right(Range[T](None, None, `empty`))
+      case `[_,_)Range`(start, end) => decodeRange(start, end, `[_,_)`)
+      case `(_,_]Range`(start, end) => decodeRange(start, end, `(_,_]`)
+      case `(_,_)Range`(start, end) => decodeRange(start, end, `(_,_)`)
+      case `[_,_]Range`(start, end) => decodeRange(start, end, `[_,_]`)
+      case "empty"                  => Right(Range.empty[T])
       case _                        => Left(InvalidValue(value = range, reason = "the value does not conform to the range type"))
     }
   }
