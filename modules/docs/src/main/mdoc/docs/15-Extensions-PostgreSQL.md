@@ -232,20 +232,20 @@ implicit val geographyPoint: Meta[Point] =
 
 ### Range types
 
-The following range types are supported, and map to **doobie** case class:
+The following range types are supported, and map to **doobie** generic class:
 
-- the `int4range` schema type maps to `Range[scala.Int]`
-- the `int8range` schema type maps to `Range[scala.Long]`
-- the `numrange` schema type maps to `Range[scala.Float]` | `Range[scala.Double]` | `Range[scala.BigDecimal]`
+- the `int4range` schema type maps to `Range[Int]`
+- the `int8range` schema type maps to `Range[Long]`
+- the `numrange`  schema type maps to `Range[Float]` | `Range[Double]` | `Range[BigDecimal]`
 - the `daterange` schema type maps to `Range[java.time.LocalDate]`
-- the `tsrange` schema type maps to `Range[java.time.LocalDateTime]`
+- the `tsrange`   schema type maps to `Range[java.time.LocalDateTime]`
 - the `tstzrange` schema type maps to `Range[java.time.OffsetDateTime]`
 
 ```scala mdoc:silent
 case class Range[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge)
 ```
 
-To control the inclusive and exclusive bounds according to the **PostgreSQL** specification you need to use a special enum - `Edge` when creating a `Range`
+To control the inclusive and exclusive bounds according to the [PostgreSQL](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES-INCLUSIVITY) specification you need to use a special `Edge` enumeration when creating a `Range`:
 
 ```scala mdoc:silent
 object Edge {
@@ -256,7 +256,6 @@ object Edge {
   case object `empty` extends Edge
 }
 ```
-Also the `Edge` allows for determining the bounds when data is fetched from the database.
 
 > In the text form of a range, an inclusive lower bound is represented by '[' while an exclusive lower bound is represented by '('. Likewise, an inclusive upper bound is represented by ']', while an exclusive upper bound is represented by ')'.
 
@@ -267,7 +266,7 @@ Note: the [range types](https://www.postgresql.org/docs/current/rangetypes.html#
 import doobie.postgres.rangeimplicits._
 ```
 
-To customize existing or create for example new implementation of `Range[Byte]` you can use public method declared in the following package `doobie.postgres.rangeimplicits`:
+To create for example custom implementation of `Range[Byte]` you can use the public method which declared in the following package `doobie.postgres.rangeimplicits`:
 
 ```scala mdoc:silent
 def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]]
@@ -276,14 +275,14 @@ def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: Rang
 The main requirements is to need to implement the `RangeBoundDecoder[Byte]` end `RangeBoundEncoder[Byte]` which are essentially:
 
 ```scala mdoc:silent
-  type RangeBoundDecoder[T] = String => T
-  type RangeBoundEncoder[T] = T => String
+type RangeBoundDecoder[T] = String => T
+type RangeBoundEncoder[T] = T => String
 ```
 
 So for `Range[Byte]` the bounds encoder and decoder will look like:
 ```scala mdoc:silent
-  implicit val ByteRangeBoundEncoder: RangeBoundEncoder[Byte] = _.toString
-  implicit val ByteRangeBoundDecoder: RangeBoundDecoder[Byte] = _.toByte
+implicit val ByteRangeBoundEncoder: RangeBoundEncoder[Byte] = _.toString
+implicit val ByteRangeBoundDecoder: RangeBoundDecoder[Byte] = _.toByte
 ```
 ### Other Nonstandard Types
 

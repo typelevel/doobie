@@ -16,6 +16,7 @@ import doobie.postgres.pgisimplicits._
 import doobie.postgres.rangeimplicits._
 import doobie.postgres.types.Range
 import doobie.postgres.types.Range.Edge._
+import doobie.postgres.types.Range.{RangeBoundDecoder, RangeBoundEncoder}
 import doobie.postgres.util.arbitraries.SQLArbitraries._
 import doobie.postgres.util.arbitraries.TimeArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
@@ -225,7 +226,12 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut[Range[LocalDateTime]]("tsrange", Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, `(_,_)`))
   testInOut[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, `(_,_)`))
 
-  skip("custom")
+  // Custom byte range
+  implicit val ByteRangeBoundEncoder: RangeBoundEncoder[Byte] = _.toString
+  implicit val ByteRangeBoundDecoder: RangeBoundDecoder[Byte] = java.lang.Byte.valueOf(_)
+  implicit val ByteRangeMeta: Meta[Range[Byte]]               = rangeMeta[Byte]("int4range")
+
+  testInOut[Range[Byte]]("int4range", Range(-128, 127))
 
   // PostGIS geometry types
 

@@ -30,10 +30,10 @@ trait RangeInstances {
   implicit val OffsetDateTimeRangeBoundEncoder: RangeBoundEncoder[OffsetDateTime] =
     toEndless[OffsetDateTime](OffsetDateTime.MAX, OffsetDateTime.MIN, _.format(date2TzDateTimeFormatter))
 
-  implicit val IntRangeBoundDecoder: RangeBoundDecoder[Int]               = _.toInt
-  implicit val LongRangeBoundDecoder: RangeBoundDecoder[Long]             = _.toLong
-  implicit val FloatRangeBoundDecoder: RangeBoundDecoder[Float]           = _.toFloat
-  implicit val DoubleRangeBoundDecoder: RangeBoundDecoder[Double]         = _.toDouble
+  implicit val IntRangeBoundDecoder: RangeBoundDecoder[Int]               = java.lang.Integer.valueOf(_)
+  implicit val LongRangeBoundDecoder: RangeBoundDecoder[Long]             = java.lang.Long.valueOf(_)
+  implicit val FloatRangeBoundDecoder: RangeBoundDecoder[Float]           = java.lang.Float.valueOf(_)
+  implicit val DoubleRangeBoundDecoder: RangeBoundDecoder[Double]         = java.lang.Double.valueOf(_)
   implicit val BigDecimalRangeBoundDecoder: RangeBoundDecoder[BigDecimal] = BigDecimal(_)
 
   implicit val LocalDateRangeBoundDecoder: RangeBoundDecoder[LocalDate] =
