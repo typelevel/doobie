@@ -6,14 +6,10 @@ package doobie.postgres.types
 
 import cats.Monoid
 import cats.implicits.toBifunctorOps
-import doobie.postgres.types.Range.{Edge, RangeBoundDecoder, RangeBoundEncoder}
+import doobie.postgres.types.Range.Edge
 import doobie.postgres.types.Range.Edge._
 import doobie.util.invariant.InvalidValue
 
-import java.sql.{Date, Timestamp}
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.temporal.ChronoField
-import java.time.{LocalDate, LocalDateTime, OffsetDateTime}
 import scala.util.Try
 
 /*
@@ -28,7 +24,7 @@ import scala.util.Try
 */
 case class Range[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge)
 
-object Range extends RangeInstances {
+object Range {
   sealed trait Edge
 
   object Edge {
@@ -84,59 +80,4 @@ object Range extends RangeInstances {
   private val `(_,_]Range` = """\("?([^,"]*)"?,[ ]*"?([^,"]*)"?\]""".r // (_,_]
   private val `(_,_)Range` = """\("?([^,"]*)"?,[ ]*"?([^,"]*)"?\)""".r // (_,_)
   private val `[_,_]Range` = """\["?([^,"]*)"?,[ ]*"?([^,"]*)"?\]""".r // [_,_]
-}
-
-sealed trait RangeInstances {
-
-  private val date2DateTimeFormatter =
-    new DateTimeFormatterBuilder()
-      .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-      .optionalStart()
-      .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-      .optionalEnd()
-      .toFormatter()
-
-
-  private val date2TzDateTimeFormatter =
-    new DateTimeFormatterBuilder()
-      .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-      .optionalStart()
-      .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-      .optionalEnd()
-      .appendOffset("+HH:mm", "+00")
-      .toFormatter()
-
-  implicit val IntRangeBoundEncoder: RangeBoundEncoder[Int]                       = _.toString
-  implicit val LongRangeBoundEncoder: RangeBoundEncoder[Long]                     = _.toString
-  implicit val FloatRangeBoundEncoder: RangeBoundEncoder[Float]                   = _.toString
-  implicit val DoubleRangeBoundEncoder: RangeBoundEncoder[Double]                 = _.toString
-  implicit val BigDecimalRangeBoundEncoder: RangeBoundEncoder[BigDecimal]         = _.toString
-  implicit val DateRangeBoundEncoder: RangeBoundEncoder[Date]                     = _.toString
-  implicit val TimestampRangeBoundEncoder: RangeBoundEncoder[Timestamp]           = _.toString
-  implicit val LocalDateRangeBoundEncoder: RangeBoundEncoder[LocalDate]           = _.format(DateTimeFormatter.ISO_LOCAL_DATE)
-  implicit val LocalDateTimeRangeBoundEncoder: RangeBoundEncoder[LocalDateTime]   = _.format(date2DateTimeFormatter)
-  implicit val OffsetDateTimeRangeBoundEncoder: RangeBoundEncoder[OffsetDateTime] = _.format(date2TzDateTimeFormatter)
-
-  implicit val IntRangeBoundDecoder: RangeBoundDecoder[Int]               = _.toInt
-  implicit val LongRangeBoundDecoder: RangeBoundDecoder[Long]             = _.toLong
-  implicit val FloatRangeBoundDecoder: RangeBoundDecoder[Float]           = _.toFloat
-  implicit val DoubleRangeBoundDecoder: RangeBoundDecoder[Double]         = _.toDouble
-  implicit val BigDecimalRangeBoundDecoder: RangeBoundDecoder[BigDecimal] = BigDecimal(_)
-  implicit val DateRangeBoundDecoder: RangeBoundDecoder[Date]             = Date.valueOf
-  implicit val TimestampRangeBoundDecoder: RangeBoundDecoder[Timestamp]   = Timestamp.valueOf
-
-  implicit val LocalDateRangeBoundDecoder: RangeBoundDecoder[LocalDate]   =
-    fromEndless(LocalDate.MAX, LocalDate.MIN, LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
-
-  implicit val LocalDateTimeRangeBoundDecoder: RangeBoundDecoder[LocalDateTime] =
-    fromEndless(LocalDateTime.MAX, LocalDateTime.MIN, LocalDateTime.parse(_, date2DateTimeFormatter))
-
-  implicit val OffsetDateTimeRangeBoundDecoder: RangeBoundDecoder[OffsetDateTime] =
-    fromEndless(OffsetDateTime.MAX, OffsetDateTime.MIN, OffsetDateTime.parse(_, date2TzDateTimeFormatter))
-
-  private def fromEndless[T](max: T, min: T, decode: RangeBoundDecoder[T]): RangeBoundDecoder[T] = {
-    case "infinity" => max
-    case "-infinity" => min
-    case finite => decode(finite)
-  }
 }

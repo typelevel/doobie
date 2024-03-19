@@ -13,6 +13,7 @@ import doobie.implicits._
 import doobie.postgres.enums._
 import doobie.postgres.implicits._
 import doobie.postgres.pgisimplicits._
+import doobie.postgres.rangeimplicits._
 import doobie.postgres.types.Range
 import doobie.postgres.types.Range.Edge._
 import doobie.postgres.util.arbitraries.SQLArbitraries._
@@ -25,7 +26,6 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
-import java.sql.{Date, Timestamp}
 import scala.annotation.nowarn
 
 // Establish that we can write and read various types.
@@ -221,11 +221,9 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOut[Range[Float]]("numrange", Range(111.111, 222.222))
   testInOut[Range[Double]]("numrange", Range(111.111, 222.222))
   testInOut[Range[BigDecimal]]("numrange", Range(111.111, 222.222, `(_,_)`))
-  testInOut[Range[Timestamp]]("tsrange", Range(Timestamp.valueOf(LocalDateTime.now.minusDays(10)), Timestamp.valueOf(LocalDateTime.now), `(_,_)`))
+  testInOut[Range[LocalDate]]("daterange", Range(LocalDate.now.minusDays(10), LocalDate.now, `[_,_)`))
   testInOut[Range[LocalDateTime]]("tsrange", Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, `(_,_)`))
   testInOut[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, `(_,_)`))
-  testInOut[Range[LocalDate]]("daterange", Range(LocalDate.now.minusDays(10), LocalDate.now, `[_,_)`))
-  testInOut[Range[Date]]("daterange", Range(Date.valueOf(LocalDate.now.minusDays(10)), Date.valueOf(LocalDate.now), `[_,_)`))
 
   skip("custom")
 
