@@ -230,6 +230,41 @@ implicit val geographyPoint: Meta[Point] =
 - MultiPolygon
 - MultiLineString
 
+### Range types
+
+The following range types are supported, and map to **doobie** case class:
+
+- the `int4range` schema type maps to `Range[scala.Int]`
+- the `int8range` schema type maps to `Range[scala.Long]`
+- the `numrange` schema type maps to `Range[scala.Float]` | `Range[scala.Double]` | `Range[scala.BigDecimal]`
+- the `daterange` schema type maps to `Range[java.time.LocalDate]`
+- the `tsrange` schema type maps to `Range[java.time.LocalDateTime]`
+- the `tstzrange` schema type maps to `Range[java.time.OffsetDateTime]`
+
+```scala mdoc:silent
+case class Range[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge)
+```
+
+To control the inclusive and exclusive bounds according to the **PostgreSQL** specification you need to use a special enum - `Edge` when creating a `Range`
+
+```scala mdoc:silent
+object Edge {
+  case object `(_,_)` extends Edge
+  case object `(_,_]` extends Edge
+  case object `[_,_)` extends Edge
+  case object `[_,_]` extends Edge
+  case object `empty` extends Edge
+}
+```
+Also the `Edge` allows for determining the bounds when data is fetched from the database.
+
+> In the text form of a range, an inclusive lower bound is represented by '[' while an exclusive lower bound is represented by '('. Likewise, an inclusive upper bound is represented by ']', while an exclusive upper bound is represented by ')'.
+
+Note: the [range types](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES) mappings are defined in a different object (`rangeimplicits`). To enable it you must import them explicitly:
+
+```scala mdoc:silent
+import doobie.postgres.rangeimplicits._
+```
 
 ### Other Nonstandard Types
 
