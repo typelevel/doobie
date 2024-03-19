@@ -212,30 +212,20 @@ class TypesSuite extends munit.ScalaCheckSuite {
   skip("structs")
 
   // 8.17 Range Types
-  testInOut[Range[Long]]("int8range", Range[Long](111, 222))
-  testInOut[Range[Float]]("numrange", Range[Float](111.111, 222.222))
-  testInOut[Range[Double]]("numrange", Range[Double](111.111, 222.222))
-  testInOut[Range[BigDecimal]]("numrange", Range[BigDecimal](111.111, 222.222, `(_,_)`))
-  testInOut[Range[Timestamp]]("tsrange", Range[Timestamp](Timestamp.valueOf(LocalDateTime.now.minusDays(10)), Timestamp.valueOf(LocalDateTime.now), `(_,_)`))
-  testInOut[Range[LocalDateTime]]("tsrange", Range[LocalDateTime](LocalDateTime.now.minusDays(10), LocalDateTime.now, `(_,_)`))
-  testInOut[Range[OffsetDateTime]]("tstzrange", Range[OffsetDateTime](OffsetDateTime.now.minusDays(10), OffsetDateTime.now, `(_,_)`))
-  testInOut[Range[LocalDate]]("daterange", Range[LocalDate](LocalDate.now.minusDays(10), LocalDate.now, `[_,_)`))
-  testInOut[Range[Date]]("daterange", Range[Date](Date.valueOf(LocalDate.now.minusDays(10)), Date.valueOf(LocalDate.now), `[_,_)`))
-
-  testInOut[Range[Int]]("int4range", Range[Int](11, 22))
-  testInOutWithCustomGen[Range[Int]]("int4range", Range[Int](11, 22, `(_,_)`), _ => Range[Int](12, 22, `[_,_)`))
-  testInOutWithCustomGen[Range[Int]]("int4range", Range[Int](11, 22, `[_,_)`), _ => Range[Int](11, 22, `[_,_)`))
-  testInOutWithCustomGen[Range[Int]]("int4range", Range[Int](11, 22, `(_,_]`), _ => Range[Int](12, 23, `[_,_)`))
-  testInOutWithCustomGen[Range[Int]]("int4range", Range[Int](11, 22, `[_,_]`), _ => Range[Int](11, 23, `[_,_)`))
-  testInOutWithCustomGen[Range[LocalDate]](
-    "daterange",
-    Range[LocalDate](LocalDate.now.minusDays(10), LocalDate.now, `(_,_)`),
-    _ => Range[LocalDate](LocalDate.now.minusDays(9), LocalDate.now, `[_,_)`))
-
-  testInOutWithCustomGen[Range[Date]](
-    "daterange",
-    Range[Date](Date.valueOf(LocalDate.now.minusDays(10)), Date.valueOf(LocalDate.now), `(_,_)`),
-    _=> Range[Date](Date.valueOf(LocalDate.now.minusDays(9)), Date.valueOf(LocalDate.now), `[_,_)`))
+  testInOutWithCustomGen[Range[Int]]("int4range", Range(11, 22, `(_,_)`), _ => Range(12, 22, `[_,_)`))
+  testInOutWithCustomGen[Range[Int]]("int4range", Range(11, 22, `[_,_)`), _ => Range(11, 22, `[_,_)`))
+  testInOutWithCustomGen[Range[Int]]("int4range", Range(11, 22, `(_,_]`), _ => Range(12, 23, `[_,_)`))
+  testInOutWithCustomGen[Range[Int]]("int4range", Range(11, 22, `[_,_]`), _ => Range(11, 23, `[_,_)`))
+  testInOut[Range[Int]]("int4range", Range(11, 22))
+  testInOut[Range[Long]]("int8range", Range(111, 222))
+  testInOut[Range[Float]]("numrange", Range(111.111, 222.222))
+  testInOut[Range[Double]]("numrange", Range(111.111, 222.222))
+  testInOut[Range[BigDecimal]]("numrange", Range(111.111, 222.222, `(_,_)`))
+  testInOut[Range[Timestamp]]("tsrange", Range(Timestamp.valueOf(LocalDateTime.now.minusDays(10)), Timestamp.valueOf(LocalDateTime.now), `(_,_)`))
+  testInOut[Range[LocalDateTime]]("tsrange", Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, `(_,_)`))
+  testInOut[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, `(_,_)`))
+  testInOut[Range[LocalDate]]("daterange", Range(LocalDate.now.minusDays(10), LocalDate.now, `[_,_)`))
+  testInOut[Range[Date]]("daterange", Range(Date.valueOf(LocalDate.now.minusDays(10)), Date.valueOf(LocalDate.now), `[_,_)`))
 
   skip("custom")
 
