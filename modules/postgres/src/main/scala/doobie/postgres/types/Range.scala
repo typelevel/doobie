@@ -22,42 +22,47 @@ import scala.util.Try
   [lower-bound,upper-bound]
   empty
 */
-case class Range[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge)
+sealed trait Range[+T]
+
+case object EmptyRange extends Range[Nothing]
+
+case class NonEmptyRange[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge) extends Range[T]
 
 object Range {
   sealed trait Edge
 
   object Edge {
-    case object `(_,_)` extends Edge
-    case object `(_,_]` extends Edge
-    case object `[_,_)` extends Edge
-    case object `[_,_]` extends Edge
-    case object `empty` extends Edge
+    case object ExclExcl extends Edge
+    case object ExclIncl extends Edge
+    case object InclExcl extends Edge
+    case object InclIncl extends Edge
   }
 
-  type RangeBoundDecoder[T] = String => T
-  type RangeBoundEncoder[T] = T => String
 
-  def apply[T](start: T, end: T, edge: Edge = `[_,_)`): Range[T] = Range(Some(start), Some(end), edge)
-  def empty[T] : Range[T] = Range[T](None, None, Edge.`empty`)
+  def empty[T]: Range[T] = EmptyRange
 
-  def encode[T](range: Range[T])(implicit E: RangeBoundEncoder[T]): String = {
+  def apply[T](start: T, end: T, edge: Edge = InclExcl): Range[T] = NonEmptyRange(Some(start), Some(end), edge)
+
+  def encode[T](range: Range[T])(E: T => String): String = {
 
     val encodeBound: Option[T] => String = o =>
       o.map(E).getOrElse(Monoid[String].empty)
 
-    range.edge match {
-      case Edge.`empty` => "empty"
-      case `[_,_)` => s"[${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)})"
-      case `(_,_]` => s"(${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)}]"
-      case `(_,_)` => s"(${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)})"
-      case `[_,_]` => s"[${encodeBound(range.lowerBound)},${encodeBound(range.upperBound)}]"
+    range match {
+      case NonEmptyRange(lowerBound, upperBound, edge) => edge match {
+          case InclExcl => s"[${encodeBound(lowerBound)},${encodeBound(upperBound)})"
+          case ExclIncl => s"(${encodeBound(lowerBound)},${encodeBound(upperBound)}]"
+          case ExclExcl => s"(${encodeBound(lowerBound)},${encodeBound(upperBound)})"
+          case InclIncl => s"[${encodeBound(lowerBound)},${encodeBound(upperBound)}]"
+        }
+
+      case EmptyRange => EmptyRangeStr
     }
   }
 
-  def decode[T](range: String)(implicit D: RangeBoundDecoder[T]): Either[InvalidValue[String, Range[T]], Range[T]] = {
+  def decode[T](range: String)(D: String => T): Either[InvalidValue[String, Range[T]], Range[T]] = {
 
-    def decodeRange(start: String, end: String, edge: Edge): Either[InvalidValue[String, Range[T]], Range[T]] = {
+    def decodeRange(start: String, end: String, edge: Edge) = {
       val decodeBound: String => Either[InvalidValue[String, Range[T]], Option[T]] = s =>
         Try(Option(s).filter(_.nonEmpty).map(D))
           .toEither
@@ -66,21 +71,22 @@ object Range {
       for {
         start <- decodeBound(start)
         end   <- decodeBound(end)
-      } yield Range[T](start, end, edge)
+      } yield NonEmptyRange[T](start, end, edge)
     }
 
     range match {
-      case `[_,_)Range`(start, end) => decodeRange(start, end, `[_,_)`)
-      case `(_,_]Range`(start, end) => decodeRange(start, end, `(_,_]`)
-      case `(_,_)Range`(start, end) => decodeRange(start, end, `(_,_)`)
-      case `[_,_]Range`(start, end) => decodeRange(start, end, `[_,_]`)
-      case "empty"                  => Right(Range.empty[T])
-      case _                        => Left(InvalidValue(value = range, reason = "the value does not conform to the range type"))
+      case InclExclRange(start, end) => decodeRange(start, end, InclExcl)
+      case ExclInclRange(start, end) => decodeRange(start, end, ExclIncl)
+      case ExclExclRange(start, end) => decodeRange(start, end, ExclExcl)
+      case InclInclRange(start, end) => decodeRange(start, end, InclIncl)
+      case EmptyRangeStr             => Right(Range.empty)
+      case _                         => Left(InvalidValue(value = range, reason = "the value does not conform to the range type"))
     }
   }
 
-  private val `[_,_)Range` = """\["?([^,"]*)"?,[ ]*"?([^,"]*)"?\)""".r // [_,_)
-  private val `(_,_]Range` = """\("?([^,"]*)"?,[ ]*"?([^,"]*)"?\]""".r // (_,_]
-  private val `(_,_)Range` = """\("?([^,"]*)"?,[ ]*"?([^,"]*)"?\)""".r // (_,_)
-  private val `[_,_]Range` = """\["?([^,"]*)"?,[ ]*"?([^,"]*)"?\]""".r // [_,_]
+  private val EmptyRangeStr = "empty"
+  private val InclExclRange = """\["?([^,"]*)"?,[ ]*"?([^,"]*)"?\)""".r // [_,_)
+  private val ExclInclRange = """\("?([^,"]*)"?,[ ]*"?([^,"]*)"?\]""".r // (_,_]
+  private val ExclExclRange = """\("?([^,"]*)"?,[ ]*"?([^,"]*)"?\)""".r // (_,_)
+  private val InclInclRange = """\["?([^,"]*)"?,[ ]*"?([^,"]*)"?\]""".r // [_,_]
 }

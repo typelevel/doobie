@@ -6,7 +6,6 @@ package doobie.postgres
 
 import doobie.Meta
 import doobie.postgres.types.Range
-import doobie.postgres.types.Range._
 import org.postgresql.util.PGobject
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
@@ -14,56 +13,6 @@ import java.time.temporal.ChronoField
 import java.time.{LocalDate, LocalDateTime, OffsetDateTime}
 
 trait RangeInstances {
-
-  implicit val intBoundEncoder: RangeBoundEncoder[Int]               = _.toString
-  implicit val longBoundEncoder: RangeBoundEncoder[Long]             = _.toString
-  implicit val floatBoundEncoder: RangeBoundEncoder[Float]           = _.toString
-  implicit val doubleBoundEncoder: RangeBoundEncoder[Double]         = _.toString
-  implicit val bigDecimalBoundEncoder: RangeBoundEncoder[BigDecimal] = _.toString
-
-  implicit val localDateBoundEncoder: RangeBoundEncoder[LocalDate] =
-    toEndless[LocalDate](LocalDate.MAX, LocalDate.MIN, _.format(DateTimeFormatter.ISO_LOCAL_DATE))
-
-  implicit val localDateTimeBoundEncoder: RangeBoundEncoder[LocalDateTime] =
-    toEndless[LocalDateTime](LocalDateTime.MAX, LocalDateTime.MIN, _.format(date2DateTimeFormatter))
-
-  implicit val offsetDateTimeBoundEncoder: RangeBoundEncoder[OffsetDateTime] =
-    toEndless[OffsetDateTime](OffsetDateTime.MAX, OffsetDateTime.MIN, _.format(date2TzDateTimeFormatter))
-
-  implicit val intBoundDecoder: RangeBoundDecoder[Int]               = java.lang.Integer.valueOf(_)
-  implicit val longBoundDecoder: RangeBoundDecoder[Long]             = java.lang.Long.valueOf(_)
-  implicit val floatBoundDecoder: RangeBoundDecoder[Float]           = java.lang.Float.valueOf(_)
-  implicit val doubleBoundDecoder: RangeBoundDecoder[Double]         = java.lang.Double.valueOf(_)
-  implicit val bigDecimalBoundDecoder: RangeBoundDecoder[BigDecimal] = BigDecimal(_)
-
-  implicit val localDateBoundDecoder: RangeBoundDecoder[LocalDate] =
-    fromEndless(LocalDate.MAX, LocalDate.MIN, LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
-
-  implicit val localDateTimeBoundDecoder: RangeBoundDecoder[LocalDateTime] =
-    fromEndless(LocalDateTime.MAX, LocalDateTime.MIN, LocalDateTime.parse(_, date2DateTimeFormatter))
-
-  implicit val offsetDateTimeBoundDecoder: RangeBoundDecoder[OffsetDateTime] =
-    fromEndless(OffsetDateTime.MAX, OffsetDateTime.MIN, OffsetDateTime.parse(_, date2TzDateTimeFormatter))
-
-  implicit val intRangeMeta: Meta[Range[Int]]                       = rangeMeta("int4range")
-  implicit val longRangeMeta: Meta[Range[Long]]                     = rangeMeta("int8range")
-  implicit val floatRangeMeta: Meta[Range[Float]]                   = rangeMeta("numrange")
-  implicit val doubleRangeMeta: Meta[Range[Double]]                 = rangeMeta("numrange")
-  implicit val bigDecimalRangeMeta: Meta[Range[BigDecimal]]         = rangeMeta("numrange")
-  implicit val localDateRangeMeta: Meta[Range[LocalDate]]           = rangeMeta("daterange")
-  implicit val localDateTimeRangeMeta: Meta[Range[LocalDateTime]]   = rangeMeta("tsrange")
-  implicit val offsetDateTimeRangeMeta: Meta[Range[OffsetDateTime]] = rangeMeta("tstzrange")
-
-  def rangeMeta[T](sqlRangeType: String)(implicit D: RangeBoundDecoder[T], E: RangeBoundEncoder[T]): Meta[Range[T]] =
-    Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
-      o => Range.decode[T](o.getValue).toOption.orNull)(
-      a => Option(a).map { a =>
-        val o = new PGobject
-        o.setType(sqlRangeType)
-        o.setValue(Range.encode[T](a))
-        o
-      }.orNull
-    )
 
   private val date2DateTimeFormatter =
     new DateTimeFormatterBuilder()
@@ -83,15 +32,42 @@ trait RangeInstances {
       .appendOffset("+HH:mm", "+00")
       .toFormatter()
 
-  private def toEndless[T](max: T, min: T, encode: RangeBoundEncoder[T]): RangeBoundEncoder[T] = {
-    case `max`  => "infinity"
+  implicit val Int4RangeType: Meta[Range[Int]]       = rangeMeta("int4range")(_.toString, java.lang.Integer.parseInt)
+  implicit val Int8RangeType: Meta[Range[Long]]      = rangeMeta("int8range")(_.toString, java.lang.Long.parseLong)
+  implicit val NumRangeType: Meta[Range[BigDecimal]] = rangeMeta("numrange")(_.toString, BigDecimal.exact)
+
+  implicit val DateRangeType: Meta[Range[LocalDate]]      = rangeMeta("daterange")(
+    encode = toEndless[LocalDate](LocalDate.MIN, LocalDate.MAX, _.format(DateTimeFormatter.ISO_LOCAL_DATE)),
+    decode = fromEndless(LocalDate.MIN, LocalDate.MAX, LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE)))
+
+  implicit val TsRangeType: Meta[Range[LocalDateTime]]    = rangeMeta("tsrange")(
+    encode = toEndless[LocalDateTime](LocalDateTime.MIN, LocalDateTime.MAX, _.format(date2DateTimeFormatter)),
+    decode = fromEndless(LocalDateTime.MIN, LocalDateTime.MAX, LocalDateTime.parse(_, date2DateTimeFormatter)))
+
+  implicit val TstzRangeType: Meta[Range[OffsetDateTime]] = rangeMeta("tstzrange")(
+    encode = toEndless[OffsetDateTime](OffsetDateTime.MIN, OffsetDateTime.MAX, _.format(date2TzDateTimeFormatter)),
+    decode = fromEndless(OffsetDateTime.MIN, OffsetDateTime.MAX, OffsetDateTime.parse(_, date2TzDateTimeFormatter)))
+
+  def rangeMeta[T](sqlRangeType: String)(encode: T => String, decode: String => T): Meta[Range[T]] =
+    Meta.Advanced.other[PGobject](sqlRangeType).timap[Range[T]](
+      o => Range.decode[T](o.getValue)(decode).toOption.orNull)(
+      a => Option(a).map { a =>
+        val o = new PGobject
+        o.setType(sqlRangeType)
+        o.setValue(Range.encode[T](a)(encode))
+        o
+      }.orNull
+    )
+
+  private def toEndless[T](min: T, max: T, encode: T => String): T => String = {
     case `min`  => "-infinity"
+    case `max`  => "infinity"
     case finite => encode(finite)
   }
 
-  private def fromEndless[T](max: T, min: T, decode: RangeBoundDecoder[T]): RangeBoundDecoder[T] = {
-    case "infinity"  => max
+  private def fromEndless[T](min: T, max: T, decode: String => T): String => T = {
     case "-infinity" => min
+    case "infinity"  => max
     case finite      => decode(finite)
   }
 }
