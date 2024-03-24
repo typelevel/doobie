@@ -5,9 +5,9 @@ import scala.sys.process._
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion          = "2.10.0"
-lazy val catsEffectVersion    = "3.5.2"
+lazy val catsEffectVersion    = "3.5.4"
 lazy val circeVersion         = "0.14.6"
-lazy val fs2Version           = "3.9.3"
+lazy val fs2Version           = "3.9.4"
 lazy val h2Version            = "1.4.200"
 lazy val hikariVersion        = "5.1.0" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
@@ -15,20 +15,20 @@ lazy val mysqlVersion         = "8.0.31"
 lazy val log4catsVersion      = "2.6.0"
 lazy val postGisVersion       = "2023.1.0"
 lazy val postgresVersion      = "42.7.1"
-lazy val refinedVersion       = "0.11.0"
+lazy val refinedVersion       = "0.11.1"
 lazy val scalaCheckVersion    = "1.15.4"
-lazy val scalatestVersion     = "3.2.17"
-lazy val munitVersion         = "1.0.0-M10"
+lazy val scalatestVersion     = "3.2.18"
+lazy val munitVersion         = "1.0.0-M11"
 lazy val shapelessVersion     = "2.3.10"
 lazy val silencerVersion      = "1.7.1"
-lazy val specs2Version        = "4.20.3"
-lazy val scala212Version      = "2.12.18"
-lazy val scala213Version      = "2.13.12"
-lazy val scala3Version       = "3.3.1"
+lazy val specs2Version        = "4.20.5"
+lazy val scala212Version      = "2.12.19"
+lazy val scala213Version      = "2.13.13"
+lazy val scala3Version       = "3.3.3"
 // scala-steward:off
 lazy val slf4jVersion         = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion        = "0.8.3"
+lazy val weaverVersion        = "0.8.4"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
@@ -121,7 +121,7 @@ lazy val commonSettings =
 
     // Kind Projector (Scala 2 only)
     libraryDependencies ++= Seq(
-      compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
+      compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
     ).filterNot(_ => tlIsScala3.value),
 
     // MUnit
