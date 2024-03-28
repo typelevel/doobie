@@ -98,6 +98,8 @@ And running this program gives us the desired result.
 HikariApp.main(Array())
 ```
 
+A runnable example with Hikari + Postgres can be found [here](https://github.com/tpolecat/doobie/blob/main/modules/example/src/main/scala/example/HikariExample.scala)
+
 ### Using the JDBC DriverManager
 
 JDBC provides a bare-bones connection provider via `DriverManager.getConnection`, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.
