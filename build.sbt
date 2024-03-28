@@ -23,7 +23,7 @@ lazy val silencerVersion      = "1.7.1"
 lazy val specs2Version        = "4.20.5"
 lazy val scala212Version      = "2.12.19"
 lazy val scala213Version      = "2.13.13"
-lazy val scala3Version       = "3.3.3"
+lazy val scala3Version       = "3.4.1"
 // scala-steward:off
 lazy val slf4jVersion         = "1.7.36"
 // scala-steward:on
