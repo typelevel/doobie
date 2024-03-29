@@ -55,6 +55,7 @@ class FreeGen2(
   val ClassFloat = classOf[Float]
   val ClassDouble = classOf[Double]
   val ClassObject = classOf[Object]
+  val ClassChar = classOf[Char]
   val ClassVoid = Void.TYPE
 
   def tparams(t: Type): List[String] =
@@ -85,6 +86,7 @@ class FreeGen2(
       case ClassFloat => "Float"
       case ClassDouble => "Double"
       case ClassObject => "AnyRef"
+      case ClassChar => "Char"
       case x: Class[_] =>
         if (x.isArray) {
           s"Array[${toScalaType(x.getComponentType)}]"
