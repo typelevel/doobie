@@ -81,10 +81,10 @@ object analysis {
     override val tag = "C"
     override def msg =
       s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
-          |coercible to ${typeName(get.typeStack.last, n)} according to the JDBC specification or any defined
+          |coercible to ${typeName(get.typeStack.last, n)} (${get.vendorTypeNames.mkString(",")}) according to the JDBC specification or any defined
           |mapping.
           |Fix this by changing the schema type to
-          |${get.jdbcSources.toList.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
+          |${get.jdbcSources.toList.map(_.show.toUpperCase).mkString(" or ") }; or the
           |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
           |type.
           |""".stripMargin.linesIterator.mkString(" ")
@@ -109,37 +109,40 @@ object analysis {
     columnAlignment:    List[(Get[_], NullabilityKnown) Ior ColumnMeta]
   ) {
 
-    private val parameterAlignment_ = parameterAlignment.map(_.map { m =>
-      m.copy(jdbcType = tweakMetaJdbcType(driver, m.jdbcType, vendorTypeName = m.vendorTypeName))
-    })
-    private val columnAlignment_ = columnAlignment.map(_.map { m =>
-      m.copy(jdbcType = tweakMetaJdbcType(driver, m.jdbcType, vendorTypeName = m.vendorTypeName))
-    })
-
     def parameterMisalignments: List[ParameterMisalignment] =
-      parameterAlignment_.zipWithIndex.collect {
+      parameterAlignment.zipWithIndex.collect {
         case (Ior.Left(_), n) => ParameterMisalignment(n + 1, None)
         case (Ior.Right(p), n) => ParameterMisalignment(n + 1, Some(p))
       }
+      
+    private def hasParameterTypeErrors[A](put: Put[A], paramMeta: ParameterMeta): Boolean = {
+      val jdbcTypeMatches = put.jdbcTargets.contains_(paramMeta.jdbcType)
+      val vendorTypeMatches = put.vendorTypeNames.isEmpty || put.vendorTypeNames.contains_(paramMeta.vendorTypeName)
+      
+      !jdbcTypeMatches || !vendorTypeMatches
+    }
 
     def parameterTypeErrors: List[ParameterTypeError] =
-      parameterAlignment_.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !j.jdbcTargets.contains_(p.jdbcType) =>
-          ParameterTypeError(n + 1, j, n1, p.jdbcType, p.vendorTypeName)
+      parameterAlignment.zipWithIndex.collect {
+        case (Ior.Both((put, n1), paramMeta), n) if hasParameterTypeErrors(put, paramMeta)=>
+          ParameterTypeError(n + 1, put, n1, paramMeta.jdbcType, paramMeta.vendorTypeName)
       }
 
     def columnMisalignments: List[ColumnMisalignment] =
-      columnAlignment_.zipWithIndex.collect {
+      columnAlignment.zipWithIndex.collect {
         case (Ior.Left(j), n) => ColumnMisalignment(n + 1, Left(j))
         case (Ior.Right(p), n) => ColumnMisalignment(n + 1, Right(p))
       }
-
+      
+    private def hasColumnTypeError[A](get: Get[A], columnMeta: ColumnMeta): Boolean = {
+      val jdbcTypeMatches = (get.jdbcSources.toList ++ get.jdbcSourceSecondary).contains_(columnMeta.jdbcType)
+      val vendorTypeMatches = get.vendorTypeNames.isEmpty || get.vendorTypeNames.contains_(columnMeta.vendorTypeName)
+      !jdbcTypeMatches || !vendorTypeMatches
+    }
     def columnTypeErrors: List[ColumnTypeError] =
       columnAlignment.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !(j.jdbcSources.toList ++ j.jdbcSourceSecondary).contains_(p.jdbcType) =>
-          ColumnTypeError(n + 1, j, n1, p)
-        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType === JdbcType.Other) && !j.schemaTypes.headOption.contains_(p.vendorTypeName) =>
-          ColumnTypeError(n + 1, j, n1, p)
+        case (Ior.Both((get, n1), p), n) if hasColumnTypeError(get, p) =>
+          ColumnTypeError(n + 1, get, n1, p)
       }
 
     def columnTypeWarnings: List[ColumnTypeWarning] =
@@ -149,7 +152,7 @@ object analysis {
       }
 
     def nullabilityMisalignments: List[NullabilityMisalignment] =
-      columnAlignment_.zipWithIndex.collect {
+      columnAlignment.zipWithIndex.collect {
         // We can't do anything helpful with NoNulls .. it means "might not be nullable"
         // case (Ior.Both((st, Nullable), ColumnMeta(_, _, NoNulls, col)), n) => NullabilityMisalignment(n + 1, col, st, NoNulls, Nullable)
         case (Ior.Both((st, NoNulls), ColumnMeta(_, _, Nullable, col)), n) => NullabilityMisalignment(n + 1, col, st.typeStack.last, Nullable, NoNulls)
@@ -169,7 +172,7 @@ object analysis {
     /** Description of each parameter, paired with its errors. */
     lazy val paramDescriptions: List[(String, List[AlignmentError])] = {
       val params: Block =
-        parameterAlignment_.zipWithIndex.map {
+        parameterAlignment.zipWithIndex.map {
           case (Ior.Both((j1, n1), ParameterMeta(j2, s2, _, _)), i)  => List(f"P${i+1}%02d", show"${typeName(j1.typeStack.last, n1)}", " → ", j2.show.toUpperCase, show"($s2)")
           case (Ior.Left((j1, n1)),                              i)  => List(f"P${i+1}%02d", show"${typeName(j1.typeStack.last, n1)}", " → ", "", "")
           case (Ior.Right(          ParameterMeta(j2, s2, _, _)), i) => List(f"P${i+1}%02d", "",                     " → ", j2.show.toUpperCase, show"($s2)")
@@ -183,7 +186,7 @@ object analysis {
     lazy val columnDescriptions: List[(String, List[AlignmentError])] = {
       import pretty._
       val cols: Block =
-        columnAlignment_.zipWithIndex.map {
+        columnAlignment.zipWithIndex.map {
           case (Ior.Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i)  => List(f"C${i+1}%02d", m, j2.show.toUpperCase, show"(${s2.toString})", formatNullability(n2), " → ", typeName(j1.typeStack.last, n1))
           case (Ior.Left((j1, n1)),                            i)  => List(f"C${i+1}%02d", "",          "", "",                       "",                    " → ", typeName(j1.typeStack.last, n1))
           case (Ior.Right(          ColumnMeta(j2, s2, n2, m)), i) => List(f"C${i+1}%02d", m, j2.show.toUpperCase, show"(${s2.toString})", formatNullability(n2), " → ", "")
@@ -214,21 +217,4 @@ object analysis {
       case Nullable        => "NULL"
       case NullableUnknown => "NULL?"
     }
-
-  private val MySQLDriverName = "MySQL Connector/J"
-
-  // tweaks to the types returned by JDBC to improve analysis
-  private def tweakMetaJdbcType(driver: String, jdbcType: JdbcType, vendorTypeName: String) = jdbcType match {
-    // the Postgres driver does not return *WithTimezone JDBC types for *tz column types
-    // https://github.com/pgjdbc/pgjdbc/issues/2485
-    // https://github.com/pgjdbc/pgjdbc/issues/1766
-    case JdbcType.Time if vendorTypeName.compareToIgnoreCase("timetz") == 0 => JdbcType.TimeWithTimezone
-    case JdbcType.Timestamp if vendorTypeName.compareToIgnoreCase("timestamptz") == 0 => JdbcType.TimestampWithTimezone
-
-    // MySQL timestamp columns are returned as Timestamp
-    case JdbcType.Timestamp
-      if vendorTypeName.compareToIgnoreCase("timestamp") == 0 && driver == MySQLDriverName => JdbcType.TimestampWithTimezone
-
-    case t => t
-  }
 }

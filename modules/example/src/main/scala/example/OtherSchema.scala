@@ -24,22 +24,23 @@ import org.postgresql.util._
 object OtherSchema extends IOApp.Simple {
 
   // Ok this mapping goes via String when reading and PGObject when writing, and it understands
-  // when the type is reported as OTHER (schemaType).
-  def wackyPostgresMapping(schemaName: String): Meta[String] =
+  // when the JDBC type is reported as OTHER and uses the venderTypeName for setting parameters 
+  // and typechecking.
+  def wackyPostgresMapping(venderTypeName: String): Meta[String] =
     Meta.Advanced.many[String](
       NonEmptyList.of(JdbcType.Other, JdbcType.VarChar),
-      NonEmptyList.of(schemaName),
+      NonEmptyList.of(venderTypeName),
       (rs, n) => rs.getString(n),
       (ps, n, a) => {
         val o = new PGobject
         o.setValue(a.toString)
-        o.setType(schemaName)
+        o.setType(venderTypeName)
         ps.setObject(n, o)
       },
       (rs, n, a) => {
         val o = new PGobject
         o.setValue(a.toString)
-        o.setType(schemaName)
+        o.setType(venderTypeName)
         rs.updateObject(n, o)
       }
     )
