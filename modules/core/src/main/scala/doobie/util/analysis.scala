@@ -20,28 +20,9 @@ object analysis {
 
   /** Metadata for the JDBC end of a column/parameter mapping. */
   final case class ColumnMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String)
-  object ColumnMeta {
-    def apply(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, name: String): ColumnMeta = {
-      new ColumnMeta(tweakJdbcType(jdbcType, vendorTypeName), vendorTypeName, nullability, name)
-    }
-  }
 
   /** Metadata for the JDBC end of a column/parameter mapping. */
   final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode)
-  object ParameterMeta {
-    def apply(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode): ParameterMeta = {
-      new ParameterMeta(tweakJdbcType(jdbcType, vendorTypeName), vendorTypeName, nullability, mode)
-    }
-  }
-
-  private def tweakJdbcType(jdbcType: JdbcType, vendorTypeName: String) = jdbcType match {
-    // the Postgres driver does not return *WithTimezone types but they are pretty much required for proper analysis
-    // https://github.com/pgjdbc/pgjdbc/issues/2485
-    // https://github.com/pgjdbc/pgjdbc/issues/1766
-    case JdbcType.Time if vendorTypeName.compareToIgnoreCase("timetz") == 0 => JdbcType.TimeWithTimezone
-    case JdbcType.Timestamp if vendorTypeName.compareToIgnoreCase("timestamptz") == 0 => JdbcType.TimestampWithTimezone
-    case t => t
-  }
 
   sealed trait AlignmentError extends Product with Serializable {
     def tag: String
@@ -100,10 +81,10 @@ object analysis {
     override val tag = "C"
     override def msg =
       s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
-          |coercible to ${typeName(get.typeStack.last, n)} according to the JDBC specification or any defined
+          |coercible to ${typeName(get.typeStack.last, n)} (${get.vendorTypeNames.mkString(",")}) according to the JDBC specification or any defined
           |mapping.
           |Fix this by changing the schema type to
-          |${get.jdbcSources.toList.map(_.show.toUpperCase).toList.mkString(" or ") }; or the
+          |${get.jdbcSources.toList.map(_.show.toUpperCase).mkString(" or ") }; or the
           |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
           |type.
           |""".stripMargin.linesIterator.mkString(" ")
@@ -122,20 +103,29 @@ object analysis {
 
   /** Compatibility analysis for the given statement and aligned mappings. */
   final case class Analysis(
+    driver:             String,
     sql:                String,
     parameterAlignment: List[(Put[_], NullabilityKnown) Ior ParameterMeta],
-    columnAlignment:    List[(Get[_], NullabilityKnown) Ior ColumnMeta]) {
+    columnAlignment:    List[(Get[_], NullabilityKnown) Ior ColumnMeta]
+  ) {
 
     def parameterMisalignments: List[ParameterMisalignment] =
       parameterAlignment.zipWithIndex.collect {
         case (Ior.Left(_), n) => ParameterMisalignment(n + 1, None)
         case (Ior.Right(p), n) => ParameterMisalignment(n + 1, Some(p))
       }
+      
+    private def hasParameterTypeErrors[A](put: Put[A], paramMeta: ParameterMeta): Boolean = {
+      val jdbcTypeMatches = put.jdbcTargets.contains_(paramMeta.jdbcType)
+      val vendorTypeMatches = put.vendorTypeNames.isEmpty || put.vendorTypeNames.contains_(paramMeta.vendorTypeName)
+      
+      !jdbcTypeMatches || !vendorTypeMatches
+    }
 
     def parameterTypeErrors: List[ParameterTypeError] =
       parameterAlignment.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !j.jdbcTargets.contains_(p.jdbcType) =>
-          ParameterTypeError(n + 1, j, n1, p.jdbcType, p.vendorTypeName)
+        case (Ior.Both((put, n1), paramMeta), n) if hasParameterTypeErrors(put, paramMeta)=>
+          ParameterTypeError(n + 1, put, n1, paramMeta.jdbcType, paramMeta.vendorTypeName)
       }
 
     def columnMisalignments: List[ColumnMisalignment] =
@@ -143,13 +133,16 @@ object analysis {
         case (Ior.Left(j), n) => ColumnMisalignment(n + 1, Left(j))
         case (Ior.Right(p), n) => ColumnMisalignment(n + 1, Right(p))
       }
-
+      
+    private def hasColumnTypeError[A](get: Get[A], columnMeta: ColumnMeta): Boolean = {
+      val jdbcTypeMatches = (get.jdbcSources.toList ++ get.jdbcSourceSecondary).contains_(columnMeta.jdbcType)
+      val vendorTypeMatches = get.vendorTypeNames.isEmpty || get.vendorTypeNames.contains_(columnMeta.vendorTypeName)
+      !jdbcTypeMatches || !vendorTypeMatches
+    }
     def columnTypeErrors: List[ColumnTypeError] =
       columnAlignment.zipWithIndex.collect {
-        case (Ior.Both((j, n1), p), n) if !(j.jdbcSources.toList ++ j.jdbcSourceSecondary).contains_(p.jdbcType) =>
-          ColumnTypeError(n + 1, j, n1, p)
-        case (Ior.Both((j, n1), p), n) if (p.jdbcType === JdbcType.JavaObject || p.jdbcType === JdbcType.Other) && !j.schemaTypes.headOption.contains_(p.vendorTypeName) =>
-          ColumnTypeError(n + 1, j, n1, p)
+        case (Ior.Both((get, n1), p), n) if hasColumnTypeError(get, p) =>
+          ColumnTypeError(n + 1, get, n1, p)
       }
 
     def columnTypeWarnings: List[ColumnTypeWarning] =
@@ -224,6 +217,4 @@ object analysis {
       case Nullable        => "NULL"
       case NullableUnknown => "NULL?"
     }
-
-
 }

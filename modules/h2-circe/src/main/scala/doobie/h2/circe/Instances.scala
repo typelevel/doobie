@@ -5,7 +5,6 @@
 package doobie.h2.circe
 
 import cats.Show
-import cats.data.NonEmptyList
 import cats.syntax.all._
 import doobie.enumerated.JdbcType
 import io.circe._
@@ -21,22 +20,26 @@ object Instances {
 
   trait JsonInstances {
     implicit val jsonPut: Put[Json] =
-      Put.Advanced.one[Array[Byte]](
-        JdbcType.VarChar,
-        NonEmptyList.of("JSON"),
-        (ps, n, a) => ps.setObject(n, a),
-        (rs, n, a) => rs.updateObject(n, a)
+      Put.Basic.one[Array[Byte]](
+        jdbcTarget = JdbcType.VarChar,
+        put = (ps, n, a) => ps.setBytes(n, a),
+        update = (rs, n, a) => rs.updateBytes(n, a),
+        checkedVendorType = Some("VARCHAR")
       )
         .tcontramap { a =>
           a.noSpaces.getBytes(UTF_8)
         }
 
     implicit val jsonGet: Get[Json] =
-      Get.Advanced.other[Array[Byte]](
-        NonEmptyList.of("JSON")
-      ).temap(a =>
-        parse(a.show).leftMap(_.show)
+      Get.Basic.one[Array[Byte]](
+        jdbcSources = JdbcType.Other,
+        jdbcSourceSecondary = List.empty,
+        get = (rs, n) => rs.getBytes(n),
+        checkedVendorType = Some("JSON")
       )
+        .temap(a =>
+          parse(a.show).leftMap(_.show)
+        )
 
     def h2EncoderPutT[A: Encoder]: Put[A] =
       Put[Json].tcontramap(_.asJson)

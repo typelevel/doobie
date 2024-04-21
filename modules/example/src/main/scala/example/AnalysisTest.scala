@@ -30,12 +30,7 @@ object AnalysisTest {
   val arrayTest =
     sql"""
       SELECT ARRAY[1, 2, NULL] test
-    """.query[Option[List[String]]]
-
-  val arrayTest2 =
-    sql"""
-      SELECT ARRAY[1, 2, NULL] test
-    """.query[String]
+    """.query[Option[List[Option[Int]]]]
 
   val pointTest =
     sql"""

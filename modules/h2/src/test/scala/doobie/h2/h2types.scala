@@ -10,7 +10,7 @@ import cats.effect.IO
 import doobie._
 import doobie.implicits._
 import doobie.h2.implicits._
-import doobie.util.analysis.{Analysis, ColumnTypeError, ColumnTypeWarning}
+import doobie.util.analysis.{Analysis, ColumnTypeError}
 import doobie.util.arbitraries.SQLArbitraries._
 import doobie.util.arbitraries.StringArbitraries._
 import org.scalacheck.Prop.forAll
@@ -207,10 +207,6 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   private def analyze[R](q: Query0[R]) = q.analysis.transact(xa).unsafeRunSync()
 
-  private def assertAnalyzeColumnWarning(result: Analysis): Unit = {
-    val errorClasses = result.alignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ColumnTypeWarning]))
-  }
   private def assertAnalyzeColumnError(result: Analysis): Unit = {
     val errorClasses = result.alignmentErrors.map(_.getClass)
     assertEquals(errorClasses, List(classOf[ColumnTypeError]))
