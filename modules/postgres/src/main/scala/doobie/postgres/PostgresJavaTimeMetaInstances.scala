@@ -2,46 +2,51 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util.meta
+package doobie.postgres
 
 import doobie.enumerated.JdbcType._
+import doobie.util.meta.Meta
 import doobie.util.meta.MetaConstructors.Basic
 
 /**
- * Basic instances for Java time classes that follow the JDBC specification.
- * These instances lack more precise type checking (by checking against the 
- * vendor type name for columns and parameters) so this should only be used if
- * you're not using one of the databases which doobie has more precise
- * Meta instances for. (e.g. PostgreSQL / MySQL)
+ * Instances for Java time classes that follow the JDBC specification.
  */
-trait TimeMetaInstances {
+trait PostgresJavaTimeMetaInstances {
   import Predef.classOf
 
   /** @group Instances */
   implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
     Basic.oneObject(
       jdbcType = Timestamp,
-      checkedVendorType = None,
+      checkedVendorType = Some("timestamptz"),
       clazz = classOf[java.time.OffsetDateTime],
     )
 
   /** @group Instances */
   implicit val JavaLocalDateMeta: Meta[java.time.LocalDate] =
-    Basic.oneObject(jdbcType = Date, checkedVendorType = None, clazz = classOf[java.time.LocalDate])
+    Basic.oneObject(Date, None, classOf[java.time.LocalDate])
 
   /** @group Instances */
   implicit val JavaLocalTimeMeta: Meta[java.time.LocalTime] =
-    Basic.oneObject(jdbcType = Time, checkedVendorType = None, clazz = classOf[java.time.LocalTime])
+    Basic.oneObject(Time, Some("time"), classOf[java.time.LocalTime])
 
   /** @group Instances */
   implicit val JavaLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
-    Basic.oneObject(jdbcType = Timestamp, checkedVendorType = None, clazz = classOf[java.time.LocalDateTime])
+    Basic.oneObject(Timestamp, Some("timestamp"), classOf[java.time.LocalDateTime])
+
+  /** @group Instances */
+  implicit val JavaOffsetTimeMeta: Meta[java.time.OffsetTime] =
+    Basic.oneObject(
+      Time,
+      Some("timetz"),
+      classOf[java.time.OffsetTime]
+    )
 
   // extra instances not in the spec
 
   /** @group Instances */
   implicit val JavaInstantMeta: Meta[java.time.Instant] =
-    JavaOffsetDateTimeMeta.imap(_.toInstant)(_.atOffset(java.time.ZoneOffset.UTC))
+    JavaOffsetDateTimeMeta.timap(_.toInstant)(_.atOffset(java.time.ZoneOffset.UTC))
 
   /** @group Instances */
   implicit val JavaTimeZoneId: Meta[java.time.ZoneId] = {

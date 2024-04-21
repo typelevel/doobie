@@ -19,7 +19,6 @@ class AnalysisTestSpecs2 extends Specification with IOChecker {
   // check(AnalysisTest.speakerQuery(null, 0))
   check(AnalysisTest.speakerQuery2)
   check(AnalysisTest.arrayTest)
-  // check(AnalysisTest.arrayTest2)
   check(AnalysisTest.pointTest)
   // check(AnalysisTest.pointTest2)
   checkOutput(AnalysisTest.update)
