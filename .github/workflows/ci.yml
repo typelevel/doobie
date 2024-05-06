@@ -75,7 +75,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
 
       - name: Check Doc Site (2.13.13 only)
-        if: matrix.scala == '2.13.13'
+        if: matrix.scala == '2.13.14'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
