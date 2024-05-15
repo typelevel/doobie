@@ -5,20 +5,12 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie.util.meta.Meta
+import doobie.util.TestTypes._
 import doobie.util.transactor.Transactor
 
 class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
   import cats.effect.unsafe.implicits.global
-
-  case class LenStr1(n: Int, s: String)
-
-  case class LenStr2(n: Int, s: String)
-  object LenStr2 {
-    implicit val LenStrMeta: Meta[LenStr2] =
-      Meta[String].timap(s => LenStr2(s.length, s))(_.s)
-  }
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -37,6 +29,11 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
   test("Read is not auto derived for case classes without importing auto derive import") {
     assert(compileErrors("Read[LenStr1]").contains("Cannot find or construct"))
+  }
+
+  test("Read should not be derivable for case objects") {
+    assert(compileErrors("Read[CaseObj.type]").contains("Cannot find or construct"))
+    assert(compileErrors("Read[Option[CaseObj.type]]").contains("Cannot find or construct"))
   }
 
   test("Read is not auto derived for tuples without an import") {
@@ -64,6 +61,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     Read[Option[(Int, Int, String)]]
     Read[Option[(Int, (Int, String))]]
     Read[Option[(Int, Option[(Int, String)])]]
+    Read[ComplexCaseClass]
   }
 
   test("Read should exist for option of Unit") {
@@ -92,6 +90,41 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     val p = readInt.product(readString)
 
     assertEquals(p.gets, (readInt.gets ++ readString.gets))
+  }
+  
+  /*
+  FIXME: test cases
+  
+  case class with nested Option case class field
+   */
+  
+  test("Read should read correct columns for instances with Option (None)") {
+    import doobie.implicits._
+    
+    val frag = sql"SELECT 1, NULL, 3, NULL"
+    val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
+    val o1 = q1.transact(xa).unsafeRunSync()
+    // This result doesn't seem ideal, because we should know that Int isn't
+    // nullable, so the correct result is Some((1, None, 3, None))
+    // But with how things are wired at the moment this isn't possible
+    assertEquals(o1, List(None))
+    
+    val q2 = frag.query[Option[(Int, Int, Int, Int)]].to[List]
+    val o2 = q2.transact(xa).unsafeRunSync()
+    assertEquals(o2, List(None))
+  }
+
+  test("Read should read correct columns for instances with Option (Some)") {
+    import doobie.implicits._
+
+    val frag = sql"SELECT 1, 2, 3, 4"
+    val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
+    val o1 = q1.transact(xa).unsafeRunSync()
+    assertEquals(o1, List(Some((1, Some(2), 3, Some(4)))))
+
+    val q2 = frag.query[Option[(Int, Int, Int, Int)]].to[List]
+    val o2 = q2.transact(xa).unsafeRunSync()
+    assertEquals(o2, List(Some((1,2,3,4))))
   }
 
   test("Read should select correct columns when combined with `ap`") {

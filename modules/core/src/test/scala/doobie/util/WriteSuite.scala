@@ -4,17 +4,19 @@
 
 package doobie.util
 
-import doobie.util.meta.Meta
+import doobie.Transactor
+import doobie.Update
+import doobie.util.TestTypes._
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 
 class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
-  case class LenStr1(n: Int, s: String)
-
-  case class LenStr2(n: Int, s: String)
-  object LenStr2 {
-    implicit val LenStrMeta: Meta[LenStr2] =
-      Meta[String].timap(s => LenStr2(s.length, s))(_.s)
-  }
+  val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",
+    user = "sa", password = "", logHandler = None
+  )
 
   test("Write should exist for some fancy types") {
     import doobie.generic.auto._
@@ -23,6 +25,7 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
     Write[(Int, Int)]
     Write[(Int, Int, String)]
     Write[(Int, (Int, String))]
+    Write[ComplexCaseClass]
   }
 
   test("Write is not auto derived for tuples without an import") {
@@ -33,6 +36,11 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   
   test("Write is not auto derived for case classes") {
     assert(compileErrors("Write[LenStr1]").contains("Cannot find or construct"))
+  }
+
+  test("Write should not be derivable for case objects") {
+    assert(compileErrors("Write[CaseObj.type]").contains("Cannot find or construct"))
+    assert(compileErrors("Write[Option[CaseObj.type]]").contains("Cannot find or construct"))
   }
 
   test("Write can be manually derived") {
@@ -72,5 +80,30 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   test("Write should select 1-column instance when available") {
     assertEquals(Write[LenStr2].length, 1)
   }
+  
+  test("Write should correct set parameters for Option instances ") {
+    import doobie.implicits._
+    (for {
+      _ <- sql"create temp table t1 (a int, b int)".update.run
+      _ <- Update[Option[(Int, Int)]]("insert into t1 (a, b) values (?, ?)").run(Some((1, 2)))
+      _ <- Update[Option[(Option[Int], Int)]]("insert into t1 (a, b) values (?, ?)").run(Some((None, 4)))
+      _ <- Update[Option[(Int, Option[Int])]]("insert into t1 (a, b) values (?, ?)").run(Some((5, None)))
+      _ <- Update[Option[(Option[Int], Int)]]("insert into t1 (a, b) values (?, ?)").run(None)
+      _ <- Update[Option[(Int, Option[Int])]]("insert into t1 (a, b) values (?, ?)").run(None)
+      res <- sql"select a, b from t1 order by a asc nulls last".query[(Option[Int], Option[Int])].to[List]
+    } yield {
+      assertEquals(res, List(
+        (Some(1), Some(2)),
+        (Some(5), None),
+        (None, Some(4)),
+        (None, None),
+        (None, None),
+      ))
+    })
+      .transact(xa)
+      .unsafeRunSync()
+  }
+  
+  
 
 }

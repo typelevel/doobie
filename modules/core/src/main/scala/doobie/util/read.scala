@@ -81,7 +81,10 @@ object Read {
     }
 
   implicit val unit: Read[Unit] =
-    new Read(Nil, (_, _) => ()) {}
+    Read(Nil, (_, _) => ())
+
+  implicit val optionUnit: Read[Option[Unit]] =
+    Read(Nil, (_, _) => Some(()))
 
   implicit def fromGet[A](implicit ev: Get[A]): Read[A] =
     new Read(List((ev, NoNulls)), ev.unsafeGetNonNullable) {}

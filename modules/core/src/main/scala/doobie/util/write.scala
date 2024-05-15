@@ -6,10 +6,12 @@ package doobie.util
 
 import cats.ContravariantSemigroupal
 import doobie.enumerated.Nullability._
-import doobie.free.{ FPS, FRS, PreparedStatementIO, ResultSetIO }
-import java.sql.{ PreparedStatement, ResultSet }
+import doobie.free.{FPS, FRS, PreparedStatementIO, ResultSetIO}
+
+import java.sql.{PreparedStatement, ResultSet}
 import doobie.util.fragment.Fragment
 import doobie.util.fragment.Elem
+
 import scala.annotation.implicitNotFound
 
 @implicitNotFound("""
@@ -108,8 +110,20 @@ object Write {
       def product[A, B](fa: Write[A], fb: Write[B]) = fa.product(fb)
     }
 
+  private def doNothing[P, A](p: P, i: Int, a: A): Unit = {
+    void(p, i, a)
+  }
+  
+  private def empty[A](a: A): List[Any] = {
+    void(a)
+    List.empty
+  }
+
   implicit val unitComposite: Write[Unit] =
-    new Write[Unit](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ()) {}
+    Write[Unit](Nil, empty _, doNothing _, doNothing _)
+    
+  implicit val optionUnit: Write[Option[Unit]] =
+    Write[Option[Unit]](Nil, empty _, doNothing _, doNothing _)
 
   implicit def fromPut[A](implicit P: Put[A]): Write[A] =
     new Write[A](
