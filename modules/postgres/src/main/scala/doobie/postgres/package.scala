@@ -4,8 +4,6 @@
 
 package doobie
 
-import doobie.postgres.PostgresJavaTimeMetaInstances
-
 package object postgres
   extends postgres.free.Types
      with postgres.free.Modules

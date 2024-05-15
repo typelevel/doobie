@@ -18,7 +18,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
     Read[A]
     Read[(A, A)]
   }: @nowarn("msg=.*DL is never used.*")
-
+  
   case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
   test("Read should exist for some fancy types") {
