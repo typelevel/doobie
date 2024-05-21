@@ -5,32 +5,37 @@
 package doobie.util.meta
 
 import doobie.enumerated.JdbcType._
+import doobie.util.meta.MetaConstructors.Basic
 
 /**
- * Instances for Java time classes that follow the JDBC specification.
+ * Basic instances for Java time classes that follow the JDBC specification.
+ * These instances lack more precise type checking (by checking against the 
+ * vendor type name for columns and parameters) so this should only be used if
+ * you're not using one of the databases which doobie has more precise
+ * Meta instances for. (e.g. PostgreSQL / MySQL)
  */
-trait TimeMetaInstances { this: MetaConstructors =>
+trait TimeMetaInstances {
   import Predef.classOf
 
   /** @group Instances */
   implicit val JavaOffsetDateTimeMeta: Meta[java.time.OffsetDateTime] =
-    Basic.oneObject(TimestampWithTimezone, Nil, classOf[java.time.OffsetDateTime])
+    Basic.oneObject(
+      jdbcType = Timestamp,
+      checkedVendorType = None,
+      clazz = classOf[java.time.OffsetDateTime],
+    )
 
   /** @group Instances */
   implicit val JavaLocalDateMeta: Meta[java.time.LocalDate] =
-    Basic.oneObject(Date, Nil, classOf[java.time.LocalDate])
+    Basic.oneObject(jdbcType = Date, checkedVendorType = None, clazz = classOf[java.time.LocalDate])
 
   /** @group Instances */
   implicit val JavaLocalTimeMeta: Meta[java.time.LocalTime] =
-    Basic.oneObject(Time, Nil, classOf[java.time.LocalTime])
+    Basic.oneObject(jdbcType = Time, checkedVendorType = None, clazz = classOf[java.time.LocalTime])
 
   /** @group Instances */
   implicit val JavaLocalDateTimeMeta: Meta[java.time.LocalDateTime] =
-    Basic.oneObject(Timestamp, Nil, classOf[java.time.LocalDateTime])
-
-  /** @group Instances */
-  implicit val JavaOffsetTimeMeta: Meta[java.time.OffsetTime] =
-    Basic.oneObject(TimeWithTimezone, Nil, classOf[java.time.OffsetTime])
+    Basic.oneObject(jdbcType = Timestamp, checkedVendorType = None, clazz = classOf[java.time.LocalDateTime])
 
   // extra instances not in the spec
 

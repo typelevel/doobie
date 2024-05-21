@@ -9,18 +9,47 @@ import doobie.util.shapeless.OrElse
 
 trait WritePlatform:
 
-  // Trivial write for empty tuple.
-  given writeEmpty: MkWrite[EmptyTuple] =
-    new MkWrite(Nil, _ => Nil, (_, _, _) => (),(_, _, _) => ())
+  // Derivation for product types (i.e. case class)
+  given derived[P <: Product, A](
+    using m: Mirror.ProductOf[P],
+    i: m.MirroredElemTypes =:= A,
+    w: MkWrite[A]
+  ): MkWrite[P] = {
+    val write: Write[P] = w.contramap(p => i(Tuple.fromProductTyped(p)))
+    MkWrite.lift(write)
+  }
 
-  // Inductive write for writable head and tail.
-  given writeTuple[H, T <: Tuple](
+  // Derivation for optional product types
+  given derivedOption[P <: Product, A](
+    using m: Mirror.ProductOf[P],
+    i: m.MirroredElemTypes =:= A,
+    w: MkWrite[Option[A]]
+  ): MkWrite[Option[P]] = {
+    val write: Write[Option[P]] = w.contramap(op => op.map(p => i(Tuple.fromProductTyped(p))))
+    MkWrite.lift(write)
+  }
+
+  // Derivation base case for product types (1-element)
+  given productBase[H](
     using H: Write[H] OrElse MkWrite[H],
-          T: => MkWrite[T]
+  ): MkWrite[H *: EmptyTuple] = {
+    val head = H.unify
+    MkWrite(
+      head.puts, 
+      { case h *: t => head.toList(h) },
+      { case (ps, n, h *: t) => head.unsafeSet(ps, n, h)},
+      { case (rs, n, h *: t) => head.unsafeUpdate(rs, n, h)}
+    )
+  }
+
+  // Derivation inductive case for product types 
+  given product[H, T <: Tuple](
+    using H: Write[H] OrElse MkWrite[H],
+          T: MkWrite[T]
   ): MkWrite[H *: T] = {
     val head = H.unify
 
-    new MkWrite(
+    MkWrite(
       head.puts ++ T.puts,
       { case h *: t => head.toList(h) ++ T.toList(t) },
       { case (ps, n, h *: t) => head.unsafeSet(ps, n, h); T.unsafeSet(ps, n + head.length, t) },
@@ -28,65 +57,64 @@ trait WritePlatform:
     )
   }
 
-  // Generic write for products.
-  given derived[P <: Product, A](
-    using m: Mirror.ProductOf[P],
-          i: m.MirroredElemTypes =:= A,
-          w: MkWrite[A]
-  ): MkWrite[P] = {
-    val write: Write[P] = w.contramap(p => i(Tuple.fromProductTyped(p)))
-    MkWrite.lift(write)
+  // Derivation base case for Option of product types (1-element)
+  given optProductBase[H](
+    using H: Write[Option[H]] OrElse MkWrite[Option[H]],
+  ): MkWrite[Option[H *: EmptyTuple]] = {
+    val head = H.unify
+    
+    MkWrite[Option[H *: EmptyTuple]](
+      head.puts,
+      i => head.toList(i.map {case h *: EmptyTuple => h}),
+      (ps, n, i) => head.unsafeSet(ps, n, i.map { case h *: EmptyTuple => h}),
+      (rs, n, i) => head.unsafeUpdate(rs, n, i.map{ case h *: EmptyTuple => h})
+    )
   }
 
-  // Trivial write for option of empty tuple.
-  given woe: MkWrite[Option[EmptyTuple]] =
-    new MkWrite[Option[EmptyTuple]](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
-
-  // Trivial write for option of Unit.
-  given wou: MkWrite[Option[Unit]] =
-    new MkWrite[Option[Unit]](Nil, _ => Nil, (_, _, _) => (), (_, _, _) => ())
-
   // Write[Option[H]], Write[Option[T]] implies Write[Option[H *: T]]
-  given cons1[H, T <: Tuple](
-    using H: => Write[Option[H]] OrElse MkWrite[Option[H]],
-          T: => MkWrite[Option[T]],
-          // N: H <:!< Option[_],
+  given optProduct[H, T <: Tuple](
+    using H: Write[Option[H]] OrElse MkWrite[Option[H]],
+          T: MkWrite[Option[T]],
   ): MkWrite[Option[H *: T]] =
     val head = H.unify
 
     def split[A](i: Option[H *: T])(f: (Option[H], Option[T]) => A): A =
       i.fold(f(None, None)) { case h *: t => f(Some(h), Some(t)) }
 
-    new MkWrite(
+    MkWrite(
       head.puts ++ T.puts,
       split(_) { (h, t) => head.toList(h) ++ T.toList(t) },
       (ps, n, i) => split(i) { (h, t) => head.unsafeSet(ps, n, h); T.unsafeSet(ps, n + head.length, t) },
       (rs, n, i) => split(i) { (h, t) => head.unsafeUpdate(rs, n, h); T.unsafeUpdate(rs, n + head.length, t) }
     )
 
-  // Write[Option[H]], Write[Option[T]] implies Write[Option[Option[H] *: T]]
-  given cons2[H, T <: Tuple](
+  // Derivation base case for Option of product types (where the head element is Option)
+  given optProductOptBase[H](
     using H: Write[Option[H]] OrElse MkWrite[Option[H]],
-          T: => MkWrite[Option[T]]
+  ): MkWrite[Option[Option[H] *: EmptyTuple]] = {
+    val head = H.unify
+    
+    MkWrite[Option[Option[H] *: EmptyTuple]](
+      head.puts,
+      i => head.toList(i.flatMap { case ho *: EmptyTuple => ho }),
+      (ps, n, i) => head.unsafeSet(ps, n, i.flatMap{ case ho *: EmptyTuple => ho}),
+      (rs, n, i) => head.unsafeUpdate(rs, n, i.flatMap{ case ho *: EmptyTuple => ho}) 
+    )
+  }
+
+  // Write[Option[H]], Write[Option[T]] implies Write[Option[Option[H] *: T]]
+  given optProductOpt[H, T <: Tuple](
+    using H: Write[Option[H]] OrElse MkWrite[Option[H]],
+          T: MkWrite[Option[T]]
   ): MkWrite[Option[Option[H] *: T]] =
     val head = H.unify
 
     def split[A](i: Option[Option[H] *: T])(f: (Option[H], Option[T]) => A): A =
       i.fold(f(None, None)) { case oh *: t => f(oh, Some(t)) }
 
-    new MkWrite(
+    MkWrite(
       head.puts ++ T.puts,
       split(_) { (h, t) => head.toList(h) ++ T.toList(t) },
       (ps, n, i) => split(i) { (h, t) => head.unsafeSet(ps, n, h); T.unsafeSet(ps, n + head.length, t) },
       (rs, n, i) => split(i) { (h, t) => head.unsafeUpdate(rs, n, h); T.unsafeUpdate(rs, n + head.length, t) }
     )
-
-  // Generic write for options of products.
-  given writeOptionProduct[P <: Product, A](
-    using m: Mirror.ProductOf[P],
-          i: m.MirroredElemTypes =:= A,
-          w: MkWrite[Option[A]]
-  ): MkWrite[Option[P]] = {
-    val write: Write[Option[P]] = w.contramap(op => op.map(p => i(Tuple.fromProductTyped(p))))
-    MkWrite.lift(write)
-  }

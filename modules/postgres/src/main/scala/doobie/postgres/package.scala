@@ -15,6 +15,7 @@ package object postgres
        with syntax.ToPostgresMonadErrorOps
        with syntax.ToFragmentOps
        with syntax.ToPostgresExplainOps
+       with PostgresJavaTimeMetaInstances
 
   object rangeimplicits
     extends RangeInstances

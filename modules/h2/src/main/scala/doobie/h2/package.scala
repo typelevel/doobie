@@ -13,5 +13,6 @@ package object h2 {
   object implicits
     extends Instances
        with syntax.ToH2TransactorOps
+       with H2JavaTimeMetaInstances
 
 }

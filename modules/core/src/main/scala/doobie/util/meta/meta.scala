@@ -39,7 +39,6 @@ final class Meta[A](val get: Get[A], val put: Put[A]) {
 object Meta extends MetaConstructors
                with MetaInstances
                with SqlMetaInstances
-               with TimeMetaInstances
 {
 
   /** Summon the `Meta` instance if possible. */
@@ -68,11 +67,12 @@ trait MetaConstructors {
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A,
       put: (PreparedStatement, Int, A) => Unit,
-      update: (ResultSet, Int, A) => Unit
+      update: (ResultSet, Int, A) => Unit,
+      checkedVendorType: Option[String] = None,
     ): Meta[A] =
       new Meta(
-        Get.Basic.many(jdbcSource, jdbcSourceSecondary, get),
-        Put.Basic.many(jdbcTarget, put, update)
+        Get.Basic.many(jdbcSource, jdbcSourceSecondary, get, checkedVendorType),
+        Put.Basic.many(jdbcTarget, put, update, checkedVendorType)
       )
 
     def one[A: TypeName](
@@ -80,24 +80,27 @@ trait MetaConstructors {
       jdbcSourceSecondary: List[JdbcType],
       get: (ResultSet, Int) => A,
       put: (PreparedStatement, Int, A) => Unit,
-      update: (ResultSet, Int, A) => Unit
+      update: (ResultSet, Int, A) => Unit,
+      checkedVendorType: Option[String] = None,
     ): Meta[A] =
       new Meta(
-        Get.Basic.one(jdbcType, jdbcSourceSecondary, get),
-        Put.Basic.one(jdbcType, put, update)
+        Get.Basic.one(jdbcType, jdbcSourceSecondary, get, checkedVendorType),
+        Put.Basic.one(jdbcType, put, update, checkedVendorType)
       )
 
     def oneObject[A: TypeName](
       jdbcType: JdbcType,
-      jdbcSourceSecondary: List[JdbcType],
-      clazz: Class[A]
-    ): Meta[A] = one(
-      jdbcType = jdbcType,
-      jdbcSourceSecondary = jdbcSourceSecondary,
-      _.getObject(_, clazz),
-      _.setObject(_, _),
-      _.updateObject(_, _)
-    )
+      checkedVendorType: Option[String],
+      clazz: Class[A],
+    ): Meta[A] =
+      one(
+        jdbcType = jdbcType,
+        jdbcSourceSecondary = Nil,
+        get = _.getObject(_, clazz),
+        put = _.setObject(_, _),
+        update = _.updateObject(_, _),
+        checkedVendorType = checkedVendorType,
+      )
   }
 
   /**
@@ -108,26 +111,26 @@ trait MetaConstructors {
 
     def many[A: TypeName](
       jdbcTypes: NonEmptyList[JdbcType],
-      schemaTypes: NonEmptyList[String],
+      vendorTypeNames: NonEmptyList[String],
       get: (ResultSet, Int) => A,
       put: (PreparedStatement, Int, A) => Unit,
-      update: (ResultSet, Int, A) => Unit
+      update: (ResultSet, Int, A) => Unit,
     ): Meta[A] =
       new Meta(
-        Get.Advanced.many(jdbcTypes, schemaTypes, get),
-        Put.Advanced.many(jdbcTypes, schemaTypes, put, update)
+        Get.Advanced.many(jdbcTypes, vendorTypeNames, get),
+        Put.Advanced.many(jdbcTypes, vendorTypeNames, put, update)
       )
 
     def one[A: TypeName](
       jdbcTypes: JdbcType,
-      schemaTypes: NonEmptyList[String],
+      vendorTypeNames: NonEmptyList[String],
       get: (ResultSet, Int) => A,
       put: (PreparedStatement, Int, A) => Unit,
-      update: (ResultSet, Int, A) => Unit
+      update: (ResultSet, Int, A) => Unit,
     ): Meta[A] =
       new Meta(
-        Get.Advanced.one(jdbcTypes, schemaTypes, get),
-        Put.Advanced.one(jdbcTypes, schemaTypes, put, update)
+        Get.Advanced.one(jdbcTypes, vendorTypeNames, get),
+        Put.Advanced.one(jdbcTypes, vendorTypeNames, put, update)
       )
 
     def array[A >: Null <: AnyRef](
@@ -153,8 +156,11 @@ trait MetaConstructors {
 
 }
 
-trait MetaInstances { this: MetaConstructors =>
+object MetaConstructors extends MetaConstructors
+
+trait MetaInstances {
   import doobie.enumerated.JdbcType.{Boolean => JdbcBoolean, _}
+  import doobie.util.meta.MetaConstructors.Basic
 
   /** @group Instances */
   implicit val GetPutInvariant: Invariant[Meta] =

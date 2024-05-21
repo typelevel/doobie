@@ -14,7 +14,7 @@ import cats.data.NonEmptyList.{ of => NonEmptyListOf }
 import doobie.util.meta.Meta
 
 trait Instances {
-
+  
   implicit val UuidType: Meta[UUID] =
     Meta.Advanced.many[UUID](
       NonEmptyListOf(JdbcType.Binary),
