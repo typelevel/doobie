@@ -17,6 +17,9 @@ package object postgres
        with syntax.ToPostgresExplainOps
        with PostgresJavaTimeMetaInstances
 
+  object rangeimplicits
+    extends RangeInstances
+
   object pgisimplicits
     extends PgisInstances
 
