@@ -223,8 +223,8 @@ class TypesSuite extends munit.ScalaCheckSuite {
   testInOutWithCustomGen[Range[Int]]("int4range", Range(11, 22, ExclIncl), _ => Range(12, 23, InclExcl))
   testInOutWithCustomGen[Range[Int]]("int4range", Range(11, 22, InclIncl), _ => Range(11, 23, InclExcl))
   testInOut[Range[Int]]("int4range", Range(11, 22))
-  testInOut[Range[Long]]("int8range", Range(111, 222))
-  testInOut[Range[BigDecimal]]("numrange", Range(111.111, 222.222, ExclExcl))
+  testInOut[Range[Long]]("int8range", Range[Long](111, 222))
+  testInOut[Range[BigDecimal]]("numrange", Range[BigDecimal](111.111, 222.222, ExclExcl))
   testInOut[Range[LocalDate]]("daterange", Range(LocalDate.now.minusDays(10), LocalDate.now, InclExcl))
   testInOut[Range[LocalDateTime]]("tsrange", Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, ExclExcl))
   testInOut[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, ExclExcl))
@@ -234,7 +234,7 @@ class TypesSuite extends munit.ScalaCheckSuite {
   // Custom byte range
   implicit val byteRangeMeta: Meta[Range[Byte]] = rangeMeta[Byte]("int4range")(_.toString, java.lang.Byte.parseByte)
 
-  testInOut[Range[Byte]]("int4range", Range(-128, 127))
+  testInOut[Range[Byte]]("int4range", Range[Byte](-128, 127))
 
   // PostGIS geometry types
 
