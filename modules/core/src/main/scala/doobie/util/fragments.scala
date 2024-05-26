@@ -52,7 +52,7 @@ object fragments {
   /** Returns `(f1 AND f2 AND ... fn)` for a non-empty collection.
    *  @param withParen If this is false, does not wrap the resulting expression with parenthesis */
   def and[F[_]: Reducible](fs: F[Fragment], withParen: Boolean = true): Fragment = {
-    val expr = fs.nonEmptyIntercalate(fr" AND")
+    val expr = fs.reduceLeftTo(f => parentheses0(f))((f1, f2) => f1 ++ fr0" AND " ++ parentheses0(f2))
     if (withParen) parentheses(expr) else expr
   }
 
@@ -79,7 +79,7 @@ object fragments {
    *
    * @param withParen If this is false, does not wrap the resulting expression with parenthesis */
   def or[F[_] : Reducible](fs: F[Fragment], withParen: Boolean = true): Fragment = {
-    val expr = fs.nonEmptyIntercalate(fr" OR")
+    val expr = fs.reduceLeftTo(f => parentheses0(f))((f1, f2) => f1 ++ fr0" OR " ++ parentheses0(f2))
     if (withParen) parentheses(expr) else expr
   }
 
@@ -148,8 +148,11 @@ object fragments {
   def set[F[_]: Reducible](fs: F[Fragment]): Fragment =
     fr"SET" ++ comma(fs)
 
-  /** Returns `(f)`. */
+  /** Returns `(f) `. */
   def parentheses(f: Fragment): Fragment = fr0"(" ++ f ++ fr")"
+
+  /** Returns `(f)`. */
+  def parentheses0(f: Fragment): Fragment = fr0"(" ++ f ++ fr0")"
 
   /** Returns `?,?,...,?` for the values in `a`. */
   def values[A](a: A)(implicit w: util.Write[A]): Fragment =
