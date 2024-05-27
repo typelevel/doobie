@@ -28,7 +28,7 @@ import scala.concurrent.duration.Duration
 //
 // The default values in the constructor are not actually applied (defaults from `apply` are).
 // But they still need to be present to enable tools like PureConfig.
-@nowarn("msg=never used")
+@nowarn("msg=(never used|unused)")
 final case class Config private (
   jdbcUrl: String,
   catalog: Option[String] = None,
@@ -56,7 +56,7 @@ final case class Config private (
   schema: Option[String] = None,
   transactionIsolation: Option[TransactionIsolation] = None,
 ){
-  @nowarn("msg=never used")
+  @nowarn("msg=(never used|unused)")
   private def copy(
     jdbcUrl: String,
     catalog: Option[String],
@@ -227,6 +227,6 @@ object Config {
       )
   }
 
-  @nowarn("msg=never used")
+  @nowarn("msg=(never used|unused)")
   private def unapply(c: Config): Any = this
 }
