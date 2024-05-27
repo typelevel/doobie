@@ -16,6 +16,18 @@ After that, in SBT you can run `test` to run tests, and `makeSite` to build the 
 If you're editing code generation related code, you should reload the SBT project and then run the `freeGen2` SBT task
 before compiling or running tests.
 
+## Caveats when working on the code
+
+## Avoiding internal cyclic module dependencies
+
+For end users, doobie provides the aliases for high and low level APIs
+such as `doobie.hi.HC`, `doobie.free.FPS`. 
+Due to how the module depends on one another, internally in doobie we cannot use
+these aliases because it'll lead to cyclic module dependencies and cause runtime errors.
+
+We recommend instead to use alias the imports like `doobie.hi.{connection => IHC}`
+(`I` prefix stands for Internal and helps to avoid accidentally using e.g. `doobie.hi.HC`)
+
 # Publishing
 
 ### Snapshots

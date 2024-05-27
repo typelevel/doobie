@@ -24,11 +24,12 @@ Some patterns of composition are so common and generic that they can be provided
 
 This book largely focuses on these common interactions, but also explains their representation at lower levels in case you wish to do something other than what you get for free.
 
-### Low and High
+### Low and High level APIs
 
 **doobie** provides two APIs intended for different audiences.
 
 The **low-level API** in `doobie.free` provides a direct 1:1 mapping to the underlying JDBC API, giving library implementors a pure functional wrapper for the full JDBC 4.0 API. This API provides no resource safety, `NULL` checking, or type mapping; and it directly exposes lifetime-managed JDBC objects; programs written at this level have desirable compositional properties but still require a great deal of care.
+For example, `doobie.free.FC` contains the low-level API for JDBC `Connection`, and `doobie.free.FPS` contains the low-level API for `PreparedStatement`. (The "F" in the alias stands for "Free")
 
 The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-level API) provides a safe subset of the JDBC API. Programs written with this API have no access to the underlying JDBC objects and cannot leak references. Features of this API include:
 
@@ -41,3 +42,4 @@ The **high-level API** in `doobie.hi` (implemented entirely in terms of the low-
 - Typesafe string interpolator for SQL literals.
 
 The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the `doobie.hi` API can use constructors from `doobie.free` to implement advanced or vendor-specific behavior directly, without translation or lifting.
+Some examples of high-level APIs are `doobie.hi.HC` for JDBC `Connection` as well as `doobie.hi.HPS` for `PreparedStatement`. (The "H" in the alias stands for "High")
