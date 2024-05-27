@@ -84,15 +84,15 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("and (vararg 2)") {
-    assertEquals(and(fs(0), fs(1)).query[Unit].sql, "(? AND ?) ")
+    assertEquals(and(fs(0), fs(1)).query[Unit].sql, "((?) AND (?)) ")
   }
 
   test("and (Reducible 1)") {
-    assertEquals(and(nel1).query[Unit].sql, "(?) ")
+    assertEquals(and(nel1).query[Unit].sql, "((?)) ")
   }
 
   test("and (Reducible many)") {
-    assertEquals(and(nel).query[Unit].sql, "(? AND ? AND ?) ")
+    assertEquals(and(nel).query[Unit].sql, "((?) AND (?) AND (?)) ")
   }
 
   test("andOpt (vararg many none)") {
@@ -100,11 +100,11 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("andOpt (vararg 1 Some)") {
-    assertEquals(andOpt(noneF, someF).map(_.query[Unit].sql), Some("(?) "))
+    assertEquals(andOpt(noneF, someF).map(_.query[Unit].sql), Some("((?)) "))
   }
 
   test("andOpt (vararg 2 Some)") {
-    assertEquals(andOpt(someF, someF).map(_.query[Unit].sql), Some("(? AND ?) "))
+    assertEquals(andOpt(someF, someF).map(_.query[Unit].sql), Some("((?) AND (?)) "))
   }
 
   test("andOpt (Foldable empty)") {
@@ -112,11 +112,11 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("andOpt (Foldable 1)") {
-    assertEquals(andOpt(nel.take(1)).map(_.query[Unit].sql), Some("(?) "))
+    assertEquals(andOpt(nel.take(1)).map(_.query[Unit].sql), Some("((?)) "))
   }
 
   test("andOpt (Foldable many)") {
-    assertEquals(andOpt(nel.toList).map(_.query[Unit].sql), Some("(? AND ? AND ?) "))
+    assertEquals(andOpt(nel.toList).map(_.query[Unit].sql), Some("((?) AND (?) AND (?)) "))
   }
 
   test("andOpt (list empty)") {
@@ -128,19 +128,19 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("andFallbackTrue (many)") {
-    assertEquals(andFallbackTrue(fs).query[Unit].sql, "(? AND ? AND ?) ")
+    assertEquals(andFallbackTrue(fs).query[Unit].sql, "((?) AND (?) AND (?)) ")
   }
 
   test("or (vararg 2)") {
-    assertEquals(or(fs(0), fs(1)).query[Unit].sql, "(? OR ?) ")
+    assertEquals(or(fs(0), fs(1)).query[Unit].sql, "((?) OR (?)) ")
   }
 
   test("or (Reducible 1)") {
-    assertEquals(or(nel1).query[Unit].sql, "(?) ")
+    assertEquals(or(nel1).query[Unit].sql, "((?)) ")
   }
 
   test("or (Reducible many)") {
-    assertEquals(or(nel).query[Unit].sql, "(? OR ? OR ?) ")
+    assertEquals(or(nel).query[Unit].sql, "((?) OR (?) OR (?)) ")
   }
 
   test("orOpt (vararg many none)") {
@@ -148,11 +148,11 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("orOpt (vararg 1 Some)") {
-    assertEquals(orOpt(noneF, someF).map(_.query[Unit].sql), Some("(?) "))
+    assertEquals(orOpt(noneF, someF).map(_.query[Unit].sql), Some("((?)) "))
   }
 
   test("orOpt (vararg 2 Some)") {
-    assertEquals(orOpt(someF, someF).map(_.query[Unit].sql), Some("(? OR ?) "))
+    assertEquals(orOpt(someF, someF).map(_.query[Unit].sql), Some("((?) OR (?)) "))
   }
 
   test("orOpt (Foldable empty)") {
@@ -160,11 +160,11 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("orOpt (Foldable 1)") {
-    assertEquals(orOpt(nel.take(1)).map(_.query[Unit].sql), Some("(?) "))
+    assertEquals(orOpt(nel.take(1)).map(_.query[Unit].sql), Some("((?)) "))
   }
 
   test("orOpt (Foldable many)") {
-    assertEquals(orOpt(nel.toList).map(_.query[Unit].sql), Some("(? OR ? OR ?) "))
+    assertEquals(orOpt(nel.toList).map(_.query[Unit].sql), Some("((?) OR (?) OR (?)) "))
   }
 
   test("orOpt (list empty)") {
@@ -176,31 +176,31 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("orFallbackFalse (many)") {
-    assertEquals(orFallbackFalse(fs).query[Unit].sql, "(? OR ? OR ?) ")
+    assertEquals(orFallbackFalse(fs).query[Unit].sql, "((?) OR (?) OR (?)) ")
   }
 
   test("whereAnd (varargs single)") {
-    assertEquals(whereAnd(fs(0)).query[Unit].sql, "WHERE ?")
+    assertEquals(whereAnd(fs(0)).query[Unit].sql, "WHERE (?)")
   }
 
   test("whereAnd (varargs many)") {
-    assertEquals(whereAnd(fs(0), fs(0), fs(0)).query[Unit].sql, "WHERE ? AND ? AND ?")
+    assertEquals(whereAnd(fs(0), fs(0), fs(0)).query[Unit].sql, "WHERE (?) AND (?) AND (?)")
   }
   
   test("whereAnd (Reducible 1)") {
-    assertEquals(whereAnd(nel1).query[Unit].sql, "WHERE ?")
+    assertEquals(whereAnd(nel1).query[Unit].sql, "WHERE (?)")
   }
   
   test("whereAnd (Reducible many)") {
-    assertEquals(whereAnd(nel).query[Unit].sql, "WHERE ? AND ? AND ?")
+    assertEquals(whereAnd(nel).query[Unit].sql, "WHERE (?) AND (?) AND (?)")
   }
 
   test("whereAndOpt (varargs many Some)") {
-    assertEquals(whereAndOpt(someF, someF).query[Unit].sql, "WHERE ? AND ?")
+    assertEquals(whereAndOpt(someF, someF).query[Unit].sql, "WHERE (?) AND (?)")
   }
 
   test("whereAndOpt (varargs 1 Some)") {
-    assertEquals(whereAndOpt(ofs(0)).query[Unit].sql, "WHERE ?")
+    assertEquals(whereAndOpt(ofs(0)).query[Unit].sql, "WHERE (?)")
   }
 
   test("whereAndOpt (varargs all none)") {
@@ -212,31 +212,31 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("whereAndOpt (Foldable many)") {
-    assertEquals(whereAndOpt(fs).query[Unit].sql, "WHERE ? AND ? AND ?")
+    assertEquals(whereAndOpt(fs).query[Unit].sql, "WHERE (?) AND (?) AND (?)")
   }
 
   test("whereOr (varargs single)") {
-    assertEquals(whereOr(fs(0)).query[Unit].sql, "WHERE ?")
+    assertEquals(whereOr(fs(0)).query[Unit].sql, "WHERE (?)")
   }
 
   test("whereOr (varargs many)") {
-    assertEquals(whereOr(fs(0), fs(0), fs(0)).query[Unit].sql, "WHERE ? OR ? OR ?")
+    assertEquals(whereOr(fs(0), fs(0), fs(0)).query[Unit].sql, "WHERE (?) OR (?) OR (?)")
   }
 
   test("whereOr (Reducible 1)") {
-    assertEquals(whereOr(nel1).query[Unit].sql, "WHERE ?")
+    assertEquals(whereOr(nel1).query[Unit].sql, "WHERE (?)")
   }
 
   test("whereOr (Reducible many)") {
-    assertEquals(whereOr(nel).query[Unit].sql, "WHERE ? OR ? OR ?")
+    assertEquals(whereOr(nel).query[Unit].sql, "WHERE (?) OR (?) OR (?)")
   }
 
   test("whereOrOpt (varargs many Some)") {
-    assertEquals(whereOrOpt(someF, someF).query[Unit].sql, "WHERE ? OR ?")
+    assertEquals(whereOrOpt(someF, someF).query[Unit].sql, "WHERE (?) OR (?)")
   }
 
   test("whereOrOpt (varargs 1 Some)") {
-    assertEquals(whereOrOpt(ofs(0)).query[Unit].sql, "WHERE ?")
+    assertEquals(whereOrOpt(ofs(0)).query[Unit].sql, "WHERE (?)")
   }
 
   test("whereOrOpt (varargs all none)") {
@@ -248,7 +248,7 @@ class FragmentsSuite extends munit.FunSuite {
   }
 
   test("whereOrOpt (Foldable many)") {
-    assertEquals(whereOrOpt(fs).query[Unit].sql, "WHERE ? OR ? OR ?")
+    assertEquals(whereOrOpt(fs).query[Unit].sql, "WHERE (?) OR (?) OR (?)")
   }
   
   test("orderBy (varargs 1)") {
@@ -284,7 +284,7 @@ class FragmentsSuite extends munit.FunSuite {
   }
   
   test("Usage test: whereAndOpt") {
-    assertEquals(whereAndOpt(Some(sql"hi"), orOpt(List.empty[Fragment]), orOpt(List(sql"a", sql"b"))).query[Unit].sql, "WHERE hi AND (a OR b) ")
+    assertEquals(whereAndOpt(Some(sql"hi"), orOpt(List.empty[Fragment]), orOpt(List(sql"a", sql"b"))).query[Unit].sql, "WHERE (hi) AND (((a) OR (b)) )")
   }
 
   case class Person(name: String, age: Int)
