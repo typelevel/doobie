@@ -5,9 +5,9 @@
 package doobie.postgres.hi
 
 trait Modules {
-  lazy val PHPC  = pgconnection
-  lazy val PHC   = connection
-  lazy val PHLO  = largeobject
-  lazy val PHLOM = largeobjectmanager
-  lazy val PHLOS = lostreaming
+  val PHPC  = pgconnection
+  val PHC   = connection
+  val PHLO  = largeobject
+  val PHLOM = largeobjectmanager
+  val PHLOS = lostreaming
 }
