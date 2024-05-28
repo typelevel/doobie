@@ -10,37 +10,39 @@ import cats.free.Free
 import org.postgresql.{ PGConnection, PGNotification }
 import doobie._, doobie.implicits._
 import doobie.postgres.free.{ Embeddable, KleisliInterpreter }
+import doobie.postgres.free.{pgconnection => IPFPC}
+import doobie.postgres.hi.{pgconnection => IPHPC}
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {
 
   // An intepreter for lifting PGConnectionIO into ConnectionIO
-  val defaultInterpreter: PFPC.PGConnectionOp ~> Kleisli[ConnectionIO, PGConnection, *] =
+  val defaultInterpreter: IPFPC.PGConnectionOp ~> Kleisli[ConnectionIO, PGConnection, *] =
     KleisliInterpreter[ConnectionIO](LogHandler.noop).PGConnectionInterpreter
 
   val pgGetBackendPID: ConnectionIO[Int] =
-    pgGetConnection(PFPC.getBackendPID)
+    pgGetConnection(IPFPC.getBackendPID)
 
   def pgGetConnection[A](k: PGConnectionIO[A]): ConnectionIO[A] =
     FC.unwrap(classOf[PGConnection]).flatMap(k.foldMap(defaultInterpreter).run)
 
   def embed[F[_], J, B](j: J, op: Free[F, B])(implicit ev: Embeddable[F, J]): ConnectionIO[B] =
-    pgGetConnection(PFPC.embed(j, op))
+    pgGetConnection(IPFPC.embed(j, op))
 
   def pgGetCopyAPI[A](k: CopyManagerIO[A]): ConnectionIO[A] =
-    pgGetConnection(PHPC.getCopyAPI(k))
+    pgGetConnection(IPHPC.getCopyAPI(k))
 
   def pgGetLargeObjectAPI[A](k: LargeObjectManagerIO[A]): ConnectionIO[A] =
-    pgGetConnection(PHPC.getLargeObjectAPI(k))
+    pgGetConnection(IPHPC.getLargeObjectAPI(k))
 
   val pgGetNotifications: ConnectionIO[List[PGNotification]] =
-    pgGetConnection(PHPC.getNotifications)
+    pgGetConnection(IPHPC.getNotifications)
 
   val pgGetPrepareThreshold: ConnectionIO[Int] =
-    pgGetConnection(PHPC.getPrepareThreshold)
+    pgGetConnection(IPHPC.getPrepareThreshold)
 
   def pgSetPrepareThreshold(threshold: Int): ConnectionIO[Unit] =
-    pgGetConnection(PHPC.setPrepareThreshold(threshold))
+    pgGetConnection(IPHPC.setPrepareThreshold(threshold))
 
   /**
    * Construct a program that notifies on the given channel. Note that the channel is NOT sanitized;

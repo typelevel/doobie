@@ -11,6 +11,8 @@ import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres._
+import doobie.postgres.hi.{connection => IPHC}
+import doobie.postgres.free.{copymanager => IPFCM, copyin => IPFCI}
 import fs2._
 
 import java.io.StringReader
@@ -29,7 +31,7 @@ class FragmentOps(f: Fragment) {
     // TODO: stream this rather than constructing the string in memory.
     if (fa.isEmpty) 0L.pure[ConnectionIO] else {
       val data = foldToString(fa)
-      PHC.pgGetCopyAPI(PFCM.copyIn(f.query[Unit].sql, new StringReader(data)))
+      IPHC.pgGetCopyAPI(IPFCM.copyIn(f.query[Unit].sql, new StringReader(data)))
     }
   }
 
@@ -50,14 +52,14 @@ class FragmentOps(f: Fragment) {
     // we need to run that in the finalizer of the `bracket`, and the result from that is ignored.
     Ref.of[ConnectionIO, Long](-1L).flatMap { numRowsRef =>
       val copyAll: ConnectionIO[Unit] =
-        Stream.bracketCase(PHC.pgGetCopyAPI(PFCM.copyIn(f.query[Unit].sql))){
+        Stream.bracketCase(IPHC.pgGetCopyAPI(IPFCM.copyIn(f.query[Unit].sql))){
           case (copyIn, Resource.ExitCase.Succeeded) =>
-            PHC.embed(copyIn, PFCI.endCopy).flatMap(numRowsRef.set)
+            IPHC.embed(copyIn, IPFCI.endCopy).flatMap(numRowsRef.set)
           case (copyIn, _) =>
-            PHC.embed(copyIn, PFCI.cancelCopy)
+            IPHC.embed(copyIn, IPFCI.cancelCopy)
         }.flatMap { copyIn =>
           byteStream.chunks.evalMap(bytes =>
-            PHC.embed(copyIn, PFCI.writeToCopy(bytes.toArray, 0, bytes.size))
+            IPHC.embed(copyIn, IPFCI.writeToCopy(bytes.toArray, 0, bytes.size))
           )
         }.compile.drain
 
