@@ -11,6 +11,7 @@ import doobie.implicits._
 import doobie.util.lens._
 import doobie.util.log.LogHandler
 import doobie.util.yolo.Yolo
+import doobie.free.{connection => IFC}
 import cats.{Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, MonadCancelThrow, Resource}
@@ -42,7 +43,7 @@ object transactor  {
     always: ConnectionIO[Unit]
   ) {
     val resource: Resource[ConnectionIO, Unit] = for {
-      _ <- Resource.make(doobie.FC.unit)(_ => always)
+      _ <- Resource.make(IFC.unit)(_ => always)
       _ <- Resource.makeCase(before) { case (_, exitCase) =>
         exitCase match {
           case ExitCase.Succeeded => after

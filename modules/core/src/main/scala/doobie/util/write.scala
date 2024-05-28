@@ -6,11 +6,15 @@ package doobie.util
 
 import cats.ContravariantSemigroupal
 import doobie.enumerated.Nullability._
-import doobie.free.{FPS, FRS, PreparedStatementIO, ResultSetIO}
+import doobie.free.{PreparedStatementIO, ResultSetIO}
 
 import java.sql.{PreparedStatement, ResultSet}
 import doobie.util.fragment.Fragment
 import doobie.util.fragment.Elem
+import doobie.free.{
+  preparedstatement => IFPS,
+  resultset => IFRS
+}
 
 import scala.annotation.implicitNotFound
 
@@ -52,10 +56,10 @@ sealed abstract class Write[A](
   lazy val length = puts.length
 
   def set(n: Int, a: A): PreparedStatementIO[Unit] =
-    FPS.raw(unsafeSet(_, n, a))
+    IFPS.raw(unsafeSet(_, n, a))
 
   def update(n: Int, a: A): ResultSetIO[Unit] =
-    FRS.raw(unsafeUpdate(_, n, a))
+    IFRS.raw(unsafeUpdate(_, n, a))
 
   def contramap[B](f: B => A): Write[B] =
     new Write[B](

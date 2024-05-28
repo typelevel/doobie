@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import doobie.Meta
+import doobie.util.meta.Meta
 import doobie.postgres.types.Range
 import org.postgresql.util.PGobject
 

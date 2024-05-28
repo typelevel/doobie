@@ -11,6 +11,11 @@ import doobie.implicits._
 import doobie.util.analysis.Analysis
 import doobie.util.log.{ Success, ExecFailure, LogEvent }
 import doobie.util.pos.Pos
+import doobie.free.{preparedstatement => IFPS}
+import doobie.hi.{
+  connection => IHC,
+  preparedstatement => IHPS,
+}
 import fs2.Stream
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
@@ -40,7 +45,7 @@ object update {
     protected implicit val write: Write[A]
 
     private val now: PreparedStatementIO[Long] =
-      FPS.delay(System.nanoTime)
+      IFPS.delay(System.nanoTime)
 
     // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
     private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
@@ -48,12 +53,12 @@ object update {
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
         for {
-          _ <- FPS.performLogging(e)
+          _ <- IFPS.performLogging(e)
         } yield ()
 
       for {
         t0 <- now
-        en <- FPS.executeUpdate.attempt
+        en <- IFPS.executeUpdate.attempt
         t1 <- now
         n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, label, diff(t1, t0), e)) }
         _  <- log(Success(sql, args, label, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
@@ -85,14 +90,14 @@ object update {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis] =
-      HC.prepareUpdateAnalysis[A](sql)
+      IHC.prepareUpdateAnalysis[A](sql)
 
     /**
      * Program to construct an analysis of this query's SQL statement and result set column types.
      * @group Diagnostics
      */
     def outputAnalysis: ConnectionIO[Analysis] =
-      HC.prepareUpdateAnalysis0(sql)
+      IHC.prepareUpdateAnalysis0(sql)
 
     /**
       * Program to construct an inspection of the query. Given arguments `a`, calls `f` with the SQL
@@ -102,7 +107,7 @@ object update {
       * @group Diagnostics
       */
     def inspect[R](a: A)(f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
-      f(sql, HPS.set(a))
+      f(sql, IHPS.set(a))
 
     /**
      * Construct a program to execute the update and yield a count of affected rows, given the
@@ -110,7 +115,7 @@ object update {
      * @group Execution
      */
     def run(a: A): ConnectionIO[Int] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeUpdate(a))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeUpdate(a))
 
     /**
      * Program to execute a batch update and yield a count of affected rows. Note that failed
@@ -119,7 +124,7 @@ object update {
      * @group Execution
      */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
-      HC.prepareStatement(sql)(HPS.addBatchesAndExecute(fa))
+      IHC.prepareStatement(sql)(IHPS.addBatchesAndExecute(fa))
 
     /**
      * Construct a stream that performs a batch update as with `updateMany`, yielding generated
@@ -130,7 +135,7 @@ object update {
     def updateManyWithGeneratedKeys[K](columns: String*): UpdateManyWithGeneratedKeysPartiallyApplied[A, K] =
       new UpdateManyWithGeneratedKeysPartiallyApplied[A, K] {
         def withChunkSize[F[_]](as: F[A], chunkSize: Int)(implicit F: Foldable[F], K: Read[K]): Stream[ConnectionIO, K] =
-          HC.updateManyWithGeneratedKeys[List,A,K](columns.toList)(sql, FPS.unit, as.toList, chunkSize)
+          IHC.updateManyWithGeneratedKeys[List,A,K](columns.toList)(sql, IFPS.unit, as.toList, chunkSize)
       }
 
     /**
@@ -149,7 +154,7 @@ object update {
      * @group Execution
      */
     def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(a: A, chunkSize: Int): Stream[ConnectionIO, K] =
-      HC.updateWithGeneratedKeys[K](columns.toList)(sql, HPS.set(a), chunkSize)
+      IHC.updateWithGeneratedKeys[K](columns.toList)(sql, IHPS.set(a), chunkSize)
 
     /**
      * Construct a program that performs the update, yielding a single set of generated keys of
@@ -158,7 +163,7 @@ object update {
      * @group Execution
      */
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
-      HC.prepareStatementS(sql, columns.toList)(HPS.set(a) *> HPS.executeUpdateWithUniqueGeneratedKeys)
+      IHC.prepareStatementS(sql, columns.toList)(IHPS.set(a) *> IHPS.executeUpdateWithUniqueGeneratedKeys)
 
     /**
      * Update is a contravariant functor.
