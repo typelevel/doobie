@@ -118,9 +118,11 @@ object update {
       IHC.prepareStatement(sql)(IHPS.set(a) *> executeUpdate(a))
 
     /**
-     * Program to execute a batch update and yield a count of affected rows. Note that failed
-     * updates are not reported (see https://github.com/tpolecat/doobie/issues/706). This API is
-     * likely to change.
+     * Add many sets of parameters and execute as a batch update, returning total rows updated. Note
+     * that when an error occurred while executing the batch, your JDBC driver may decide to continue executing the 
+     * rest of the batch instead of raising a `BatchUpdateException`. 
+     * Please refer to your JDBC driver's documentation for its exact behaviour.
+     * See [[https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Statement.html#executeBatch()]] for more information 
      * @group Execution
      */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
