@@ -5,10 +5,13 @@
 package doobie.util
 
 import cats._
-import doobie.free.{ FRS, ResultSetIO }
+import doobie.free.{ ResultSetIO }
 import doobie.enumerated.Nullability._
 import java.sql.ResultSet
 import scala.annotation.implicitNotFound
+import doobie.free.{
+  resultset => IFRS 
+}
 
 @implicitNotFound("""
 Cannot find or construct a Read instance for type:
@@ -54,7 +57,7 @@ sealed abstract class Read[A](
     new Read(ff.gets ++ gets, (rs, n) => ff.unsafeGet(rs, n)(unsafeGet(rs, n + ff.length))) {}
 
   def get(n: Int): ResultSetIO[A] =
-    FRS.raw(unsafeGet(_, n))
+    IFRS.raw(unsafeGet(_, n))
 
 }
 

@@ -25,34 +25,34 @@ trait Types {
 }
 
 trait Modules {
-  /** @group Module Aliases - Free API */ lazy val FB   = blob
-  /** @group Module Aliases - Free API */ lazy val FCS  = callablestatement
-  /** @group Module Aliases - Free API */ lazy val FCL  = clob
-  /** @group Module Aliases - Free API */ lazy val FC   = connection
-  /** @group Module Aliases - Free API */ lazy val FDMD = databasemetadata
-  /** @group Module Aliases - Free API */ lazy val FD   = driver
-  /** @group Module Aliases - Free API */ lazy val FNCL = nclob
-  /** @group Module Aliases - Free API */ lazy val FPS  = preparedstatement
-  /** @group Module Aliases - Free API */ lazy val FREF = ref
-  /** @group Module Aliases - Free API */ lazy val FRS  = resultset
-  /** @group Module Aliases - Free API */ lazy val FSD  = sqldata
-  /** @group Module Aliases - Free API */ lazy val FSI  = sqlinput
-  /** @group Module Aliases - Free API */ lazy val FSO  = sqloutput
-  /** @group Module Aliases - Free API */ lazy val FS   = statement
+  /** @group Module Aliases - Free API */ val FB   = blob
+  /** @group Module Aliases - Free API */ val FCS  = callablestatement
+  /** @group Module Aliases - Free API */ val FCL  = clob
+  /** @group Module Aliases - Free API */ val FC   = connection
+  /** @group Module Aliases - Free API */ val FDMD = databasemetadata
+  /** @group Module Aliases - Free API */ val FD   = driver
+  /** @group Module Aliases - Free API */ val FNCL = nclob
+  /** @group Module Aliases - Free API */ val FPS  = preparedstatement
+  /** @group Module Aliases - Free API */ val FREF = ref
+  /** @group Module Aliases - Free API */ val FRS  = resultset
+  /** @group Module Aliases - Free API */ val FSD  = sqldata
+  /** @group Module Aliases - Free API */ val FSI  = sqlinput
+  /** @group Module Aliases - Free API */ val FSO  = sqloutput
+  /** @group Module Aliases - Free API */ val FS   = statement
 }
 
 trait Instances  {
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncBlobIO: WeakAsync[BlobIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncBlobIO: WeakAsync[BlobIO] =
     blob.WeakAsyncBlobIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncCallableStatementIO: WeakAsync[CallableStatementIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncCallableStatementIO: WeakAsync[CallableStatementIO] =
     callablestatement.WeakAsyncCallableStatementIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncClobIO: WeakAsync[ClobIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncClobIO: WeakAsync[ClobIO] =
     clob.WeakAsyncClobIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
     connection.WeakAsyncConnectionIO
 
   /** @group Typeclass Instances */  implicit def MonoidConnectionIO[A: Monoid]: Monoid[ConnectionIO[A]] =
@@ -61,34 +61,34 @@ trait Instances  {
   /** @group Typeclass Instances */  implicit def SemigroupConnectionIO[A: Semigroup]: Semigroup[ConnectionIO[A]] =
     connection.SemigroupConnectionIO[A]
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
     databasemetadata.WeakAsyncDatabaseMetaDataIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncDriverIO: WeakAsync[DriverIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncDriverIO: WeakAsync[DriverIO] =
     driver.WeakAsyncDriverIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncNClobIO: WeakAsync[NClobIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncNClobIO: WeakAsync[NClobIO] =
     nclob.WeakAsyncNClobIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncPreparedStatementIO: WeakAsync[PreparedStatementIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncPreparedStatementIO: WeakAsync[PreparedStatementIO] =
     preparedstatement.WeakAsyncPreparedStatementIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncRefIO: WeakAsync[RefIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncRefIO: WeakAsync[RefIO] =
     ref.WeakAsyncRefIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncResultSetIO: WeakAsync[ResultSetIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncResultSetIO: WeakAsync[ResultSetIO] =
     resultset.WeakAsyncResultSetIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncSQLDataIO: WeakAsync[SQLDataIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncSQLDataIO: WeakAsync[SQLDataIO] =
     sqldata.WeakAsyncSQLDataIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncSQLInputIO: WeakAsync[SQLInputIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncSQLInputIO: WeakAsync[SQLInputIO] =
     sqlinput.WeakAsyncSQLInputIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncSQLOutputIO: WeakAsync[SQLOutputIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncSQLOutputIO: WeakAsync[SQLOutputIO] =
     sqloutput.WeakAsyncSQLOutputIO
 
-  /** @group Typeclass Instances */  implicit lazy val WeakAsyncStatementIO: WeakAsync[StatementIO] =
+  /** @group Typeclass Instances */  implicit val WeakAsyncStatementIO: WeakAsync[StatementIO] =
     statement.WeakAsyncStatementIO
 
 }

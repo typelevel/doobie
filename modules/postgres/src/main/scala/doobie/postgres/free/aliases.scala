@@ -16,32 +16,32 @@ trait Types {
 }
 
 trait Modules {
-  lazy val PFCI  = copyin
-  lazy val PFCM  = copymanager
-  lazy val PFCO  = copyout
-  lazy val PFLO  = largeobject
-  lazy val PFLOM = largeobjectmanager
-  lazy val PFPC  = pgconnection
+  val PFCI  = copyin
+  val PFCM  = copymanager
+  val PFCO  = copyout
+  val PFLO  = largeobject
+  val PFLOM = largeobjectmanager
+  val PFPC  = pgconnection
 }
 
 trait Instances {
 
-  implicit lazy val WeakAsyncCopyInIO: WeakAsync[copyin.CopyInIO] =
+  implicit val WeakAsyncCopyInIO: WeakAsync[copyin.CopyInIO] =
     copyin.WeakAsyncCopyInIO
 
-  implicit lazy val WeakAsyncCopyManagerIO: WeakAsync[copymanager.CopyManagerIO] =
+  implicit val WeakAsyncCopyManagerIO: WeakAsync[copymanager.CopyManagerIO] =
     copymanager.WeakAsyncCopyManagerIO
 
-  implicit lazy val WeakAsyncCopyOutIO: WeakAsync[copyout.CopyOutIO] =
+  implicit val WeakAsyncCopyOutIO: WeakAsync[copyout.CopyOutIO] =
     copyout.WeakAsyncCopyOutIO
 
-  implicit lazy val WeakAsyncLargeObjectIO: WeakAsync[largeobject.LargeObjectIO] =
+  implicit val WeakAsyncLargeObjectIO: WeakAsync[largeobject.LargeObjectIO] =
     largeobject.WeakAsyncLargeObjectIO
 
-  implicit lazy val WeakAsyncLargeObjectManagerIO: WeakAsync[largeobjectmanager.LargeObjectManagerIO] =
+  implicit val WeakAsyncLargeObjectManagerIO: WeakAsync[largeobjectmanager.LargeObjectManagerIO] =
     largeobjectmanager.WeakAsyncLargeObjectManagerIO
 
-  implicit lazy val WeakAsyncPGConnectionIO: WeakAsync[pgconnection.PGConnectionIO] =
+  implicit val WeakAsyncPGConnectionIO: WeakAsync[pgconnection.PGConnectionIO] =
     pgconnection.WeakAsyncPGConnectionIO
 
 }

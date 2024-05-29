@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import doobie.Meta
+import doobie.util.meta.Meta
 
 object TestTypes {
   case class LenStr1(n: Int, s: String)

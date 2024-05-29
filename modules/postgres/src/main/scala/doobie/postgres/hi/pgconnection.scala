@@ -5,28 +5,29 @@
 package doobie.postgres.hi
 
 import org.postgresql.PGNotification
+import doobie.postgres.free.{pgconnection => IPFPC}
 
 object pgconnection {
 
   val getBackendPID: PGConnectionIO[Int] =
-    PFPC.getBackendPID
+    IPFPC.getBackendPID
 
   def getCopyAPI[A](k: CopyManagerIO[A]): PGConnectionIO[A] =
-    PFPC.getCopyAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
+    IPFPC.getCopyAPI.flatMap(s => IPFPC.embed(s, k)) // N.B. no need to close()
 
   def getLargeObjectAPI[A](k: LargeObjectManagerIO[A]): PGConnectionIO[A] =
-    PFPC.getLargeObjectAPI.flatMap(s => PFPC.embed(s, k)) // N.B. no need to close()
+    IPFPC.getLargeObjectAPI.flatMap(s => IPFPC.embed(s, k)) // N.B. no need to close()
 
   val getNotifications: PGConnectionIO[List[PGNotification]] =
-    PFPC.getNotifications map {
+    IPFPC.getNotifications map {
       case null => Nil
       case ns   => ns.toList
     }
 
   val getPrepareThreshold: PGConnectionIO[Int] =
-    PFPC.getPrepareThreshold
+    IPFPC.getPrepareThreshold
 
   def setPrepareThreshold(threshold: Int): PGConnectionIO[Unit] =
-    PFPC.setPrepareThreshold(threshold)
+    IPFPC.setPrepareThreshold(threshold)
 
 }

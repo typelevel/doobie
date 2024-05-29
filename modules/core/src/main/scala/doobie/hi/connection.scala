@@ -22,6 +22,15 @@ import doobie.util.stream.repeatEvalChunks
 import doobie.util.{ Get, Put, Read, Write }
 import fs2.Stream
 import fs2.Stream.{ eval, bracket }
+import doobie.hi.{preparedstatement => IHPS}
+import doobie.free.{
+  preparedstatement => IFPS, 
+  connection => IFC,
+  resultset => IFRS, 
+  databasemetadata => IFDMD,
+  statement => IFS,
+  callablestatement => IFCS
+}
 
 import java.sql.{ Savepoint, PreparedStatement, ResultSet }
 import scala.collection.immutable.Map
@@ -36,7 +45,7 @@ object connection {
 
   /** @group Lifting */
   def delay[A](a: => A): ConnectionIO[A] =
-    FC.delay(a)
+    IFC.delay(a)
 
   private def liftStream[A: Read](
     chunkSize: Int,
@@ -46,18 +55,18 @@ object connection {
 
     def prepared(ps: PreparedStatement): Stream[ConnectionIO, PreparedStatement] =
       eval[ConnectionIO, PreparedStatement] {
-        val fs = FPS.setFetchSize(chunkSize)
-        FC.embed(ps, fs *> prep).map(_ => ps)
+        val fs = IFPS.setFetchSize(chunkSize)
+        IFC.embed(ps, fs *> prep).map(_ => ps)
       }
 
     def unrolled(rs: ResultSet): Stream[ConnectionIO, A] =
-      repeatEvalChunks(FC.embed(rs, resultset.getNextChunk[A](chunkSize)))
+      repeatEvalChunks(IFC.embed(rs, resultset.getNextChunk[A](chunkSize)))
 
     val preparedStatement: Stream[ConnectionIO, PreparedStatement] =
-      bracket(create)(FC.embed(_, FPS.close)).flatMap(prepared)
+      bracket(create)(IFC.embed(_, IFPS.close)).flatMap(prepared)
 
     def results(ps: PreparedStatement): Stream[ConnectionIO, A] =
-      bracket(FC.embed(ps, exec))(FC.embed(_, FRS.close)).flatMap(unrolled)
+      bracket(IFC.embed(ps, exec))(IFC.embed(_, IFRS.close)).flatMap(unrolled)
 
     preparedStatement.flatMap(results)
 
@@ -69,7 +78,7 @@ object connection {
    * @group Prepared Statements
    */
   def stream[A: Read](sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
-    liftStream(chunkSize, FC.prepareStatement(sql), prep, FPS.executeQuery)
+    liftStream(chunkSize, IFC.prepareStatement(sql), prep, IFPS.executeQuery)
 
   /**
    * Construct a prepared update statement with the given return columns (and readable destination
@@ -79,31 +88,31 @@ object connection {
    * @group Prepared Statements
    */
   def updateWithGeneratedKeys[A: Read](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], chunkSize: Int): Stream[ConnectionIO, A] =
-    liftStream(chunkSize, FC.prepareStatement(sql, cols.toArray), prep, FPS.executeUpdate *> FPS.getGeneratedKeys)
+    liftStream(chunkSize, IFC.prepareStatement(sql, cols.toArray), prep, IFPS.executeUpdate *> IFPS.getGeneratedKeys)
 
   /** @group Prepared Statements */
   def updateManyWithGeneratedKeys[F[_]: Foldable, A: Write, B: Read](cols: List[String])(sql: String, prep: PreparedStatementIO[Unit], fa: F[A], chunkSize: Int): Stream[ConnectionIO, B] =
-    liftStream[B](chunkSize, FC.prepareStatement(sql, cols.toArray), prep, HPS.addBatchesAndExecute(fa) *> FPS.getGeneratedKeys)
+    liftStream[B](chunkSize, IFC.prepareStatement(sql, cols.toArray), prep, IHPS.addBatchesAndExecute(fa) *> IFPS.getGeneratedKeys)
 
   /** @group Transaction Control */
   val commit: ConnectionIO[Unit] =
-    FC.commit
+    IFC.commit
 
   /**
    * Construct an analysis for the provided `sql` query, given writable parameter type `A` and
    * readable resultset row type `B`.
    */
   def prepareQueryAnalysis[A: Write, B: Read](sql: String): ConnectionIO[Analysis] =
-    prepareAnalysis(sql, HPS.getParameterMappings[A], HPS.getColumnMappings[B])
+    prepareAnalysis(sql, IHPS.getParameterMappings[A], IHPS.getColumnMappings[B])
 
   def prepareQueryAnalysis0[B: Read](sql: String): ConnectionIO[Analysis] =
-    prepareAnalysis(sql, FPS.pure(Nil), HPS.getColumnMappings[B])
+    prepareAnalysis(sql, IFPS.pure(Nil), IHPS.getColumnMappings[B])
 
   def prepareUpdateAnalysis[A: Write](sql: String): ConnectionIO[Analysis] =
-    prepareAnalysis(sql, HPS.getParameterMappings[A], FPS.pure(Nil))
+    prepareAnalysis(sql, IHPS.getParameterMappings[A], IFPS.pure(Nil))
 
   def prepareUpdateAnalysis0(sql: String): ConnectionIO[Analysis] =
-    prepareAnalysis(sql, FPS.pure(Nil), FPS.pure(Nil))
+    prepareAnalysis(sql, IFPS.pure(Nil), IFPS.pure(Nil))
 
   private def prepareAnalysis(
     sql: String,
@@ -113,7 +122,7 @@ object connection {
     val mappings = prepareStatement(sql) {
       (params, columns).tupled
     }
-    (HC.getMetaData(FDMD.getDriverName), mappings).mapN { case (driver, (p, c)) =>
+    (getMetaData(IFDMD.getDriverName), mappings).mapN { case (driver, (p, c)) =>
       Analysis(driver, sql, p, c)
     }
   }
@@ -121,103 +130,103 @@ object connection {
 
   /** @group Statements */
   def createStatement[A](k: StatementIO[A]): ConnectionIO[A] =
-    FC.createStatement.bracket(s => FC.embed(s, k))(s => FC.embed(s, FS.close))
+    IFC.createStatement.bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFS.close))
 
   /** @group Statements */
   def createStatement[A](rst: ResultSetType, rsc: ResultSetConcurrency)(k: StatementIO[A]): ConnectionIO[A] =
-    FC.createStatement(rst.toInt, rsc.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FS.close))
+    IFC.createStatement(rst.toInt, rsc.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFS.close))
 
   /** @group Statements */
   def createStatement[A](rst: ResultSetType, rsc: ResultSetConcurrency, rsh: Holdability)(k: StatementIO[A]): ConnectionIO[A] =
-    FC.createStatement(rst.toInt, rsc.toInt, rsh.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FS.close))
+    IFC.createStatement(rst.toInt, rsc.toInt, rsh.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFS.close))
 
   /** @group Connection Properties */
   val getCatalog: ConnectionIO[String] =
-    FC.getCatalog
+    IFC.getCatalog
 
   /** @group Connection Properties */
   def getClientInfo(key: String): ConnectionIO[Option[String]] =
-    FC.getClientInfo(key).map(Option(_))
+    IFC.getClientInfo(key).map(Option(_))
 
   /** @group Connection Properties */
   val getClientInfo: ConnectionIO[Map[String, String]] =
-    FC.getClientInfo.map(propertiesToScala)
+    IFC.getClientInfo.map(propertiesToScala)
 
   /** @group Connection Properties */
   val getHoldability: ConnectionIO[Holdability] =
-    FC.getHoldability.flatMap(Holdability.fromIntF[ConnectionIO])
+    IFC.getHoldability.flatMap(Holdability.fromIntF[ConnectionIO])
 
   /** @group Connection Properties */
   def getMetaData[A](k: DatabaseMetaDataIO[A]): ConnectionIO[A] =
-    FC.getMetaData.flatMap(s => FC.embed(s, k))
+    IFC.getMetaData.flatMap(s => IFC.embed(s, k))
 
   /** @group Transaction Control */
   val getTransactionIsolation: ConnectionIO[TransactionIsolation] =
-    FC.getTransactionIsolation.flatMap(TransactionIsolation.fromIntF[ConnectionIO])
+    IFC.getTransactionIsolation.flatMap(TransactionIsolation.fromIntF[ConnectionIO])
 
   /** @group Connection Properties */
   val isReadOnly: ConnectionIO[Boolean] =
-    FC.isReadOnly
+    IFC.isReadOnly
 
   /** @group Callable Statements */
   def prepareCall[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency)(k: CallableStatementIO[A]): ConnectionIO[A] =
-    FC.prepareCall(sql, rst.toInt, rsc.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FCS.close))
+    IFC.prepareCall(sql, rst.toInt, rsc.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFCS.close))
 
   /** @group Callable Statements */
   def prepareCall[A](sql: String)(k: CallableStatementIO[A]): ConnectionIO[A] =
-    FC.prepareCall(sql).bracket(s => FC.embed(s, k))(s => FC.embed(s, FCS.close))
+    IFC.prepareCall(sql).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFCS.close))
 
   /** @group Callable Statements */
   def prepareCall[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency, rsh: Holdability)(k: CallableStatementIO[A]): ConnectionIO[A] =
-    FC.prepareCall(sql, rst.toInt, rsc.toInt, rsh.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FCS.close))
+    IFC.prepareCall(sql, rst.toInt, rsc.toInt, rsh.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFCS.close))
 
   /** @group Prepared Statements */
   def prepareStatement[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    FC.prepareStatement(sql, rst.toInt, rsc.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FPS.close))
+    IFC.prepareStatement(sql, rst.toInt, rsc.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFPS.close))
 
   /** @group Prepared Statements */
   def prepareStatement[A](sql: String)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    FC.prepareStatement(sql).bracket(s => FC.embed(s, k))(s => FC.embed(s, FPS.close))
+    IFC.prepareStatement(sql).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFPS.close))
 
   /** @group Prepared Statements */
   def prepareStatement[A](sql: String, rst: ResultSetType, rsc: ResultSetConcurrency, rsh: Holdability)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    FC.prepareStatement(sql, rst.toInt, rsc.toInt, rsh.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FPS.close))
+    IFC.prepareStatement(sql, rst.toInt, rsc.toInt, rsh.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFPS.close))
 
   /** @group Prepared Statements */
   def prepareStatement[A](sql: String, agk: AutoGeneratedKeys)(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    FC.prepareStatement(sql, agk.toInt).bracket(s => FC.embed(s, k))(s => FC.embed(s, FPS.close))
+    IFC.prepareStatement(sql, agk.toInt).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFPS.close))
 
   /** @group Prepared Statements */
   def prepareStatementI[A](sql: String, columnIndexes: List[Int])(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    FC.prepareStatement(sql, columnIndexes.toArray).bracket(s => FC.embed(s, k))(s => FC.embed(s, FPS.close))
+    IFC.prepareStatement(sql, columnIndexes.toArray).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFPS.close))
 
   /** @group Prepared Statements */
   def prepareStatementS[A](sql: String, columnNames: List[String])(k: PreparedStatementIO[A]): ConnectionIO[A] =
-    FC.prepareStatement(sql, columnNames.toArray).bracket(s => FC.embed(s, k))(s => FC.embed(s, FPS.close))
+    IFC.prepareStatement(sql, columnNames.toArray).bracket(s => IFC.embed(s, k))(s => IFC.embed(s, IFPS.close))
 
   /** @group Transaction Control */
   def releaseSavepoint(sp: Savepoint): ConnectionIO[Unit] =
-    FC.releaseSavepoint(sp)
+    IFC.releaseSavepoint(sp)
 
   /** @group Transaction Control */
   def rollback(sp: Savepoint): ConnectionIO[Unit] =
-    FC.rollback(sp)
+    IFC.rollback(sp)
 
   /** @group Transaction Control */
   val rollback: ConnectionIO[Unit] =
-    FC.rollback
+    IFC.rollback
 
   /** @group Connection Properties */
   def setCatalog(catalog: String): ConnectionIO[Unit] =
-    FC.setCatalog(catalog)
+    IFC.setCatalog(catalog)
 
   /** @group Connection Properties */
   def setClientInfo(key: String, value: String): ConnectionIO[Unit] =
-    FC.setClientInfo(key, value)
+    IFC.setClientInfo(key, value)
 
   /** @group Connection Properties */
   def setClientInfo(info: Map[String, String]): ConnectionIO[Unit] =
-    FC.setClientInfo {
+    IFC.setClientInfo {
       // Java 11 overloads the `putAll` method with Map[*,*] along with the existing Map[Obj,Obj]
       val ps = new java.util.Properties
       info.foreach { case (k, v) =>
@@ -228,29 +237,29 @@ object connection {
 
   /** @group Connection Properties */
   def setHoldability(h: Holdability): ConnectionIO[Unit] =
-    FC.setHoldability(h.toInt)
+    IFC.setHoldability(h.toInt)
 
   /** @group Connection Properties */
   def setReadOnly(readOnly: Boolean): ConnectionIO[Unit] =
-    FC.setReadOnly(readOnly)
+    IFC.setReadOnly(readOnly)
 
   /** @group Transaction Control */
   val setSavepoint: ConnectionIO[Savepoint] =
-    FC.setSavepoint
+    IFC.setSavepoint
 
   /** @group Transaction Control */
   def setSavepoint(name: String): ConnectionIO[Savepoint] =
-    FC.setSavepoint(name)
+    IFC.setSavepoint(name)
 
   /** @group Transaction Control */
   def setTransactionIsolation(ti: TransactionIsolation): ConnectionIO[Unit] =
-    FC.setTransactionIsolation(ti.toInt)
+    IFC.setTransactionIsolation(ti.toInt)
 
   // /**
   //  * Compute a map from native type to closest-matching JDBC type.
   //  * @group MetaData
   //  */
   // val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
-  //   getMetaData(FDMD.getTypeInfo.flatMap(FDMD.embed(_, HRS.list[(String, JdbcType)].map(_.toMap))))
+  //   getMetaData(IFDMD.getTypeInfo.flatMap(IFDMD.embed(_, HRS.list[(String, JdbcType)].map(_.toMap))))
   // }
 }

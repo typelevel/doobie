@@ -14,6 +14,9 @@ import doobie.util.{ Read, Write }
 import doobie.util.compat.FactoryCompat
 import doobie.util.invariant._
 import doobie.util.stream.repeatEvalChunks
+import doobie.free.{
+  resultset => IFRS
+}
 
 import fs2.Stream
 
@@ -32,35 +35,35 @@ object resultset {
    * @group Constructors (Lifting)
    */
   def delay[A](a: => A): ResultSetIO[A] =
-    FRS.delay(a)
+    IFRS.delay(a)
 
   /** @group Cursor Control */
   def absolute(row: Int): ResultSetIO[Boolean] =
-    FRS.absolute(row)
+    IFRS.absolute(row)
 
   /** @group Cursor Control */
   val afterLast: ResultSetIO[Unit] =
-    FRS.afterLast
+    IFRS.afterLast
 
   /** @group Cursor Control */
   val beforeFirst: ResultSetIO[Unit] =
-    FRS.beforeFirst
+    IFRS.beforeFirst
 
   /** @group Updating */
   val cancelRowUpdates: ResultSetIO[Unit] =
-    FRS.cancelRowUpdates
+    IFRS.cancelRowUpdates
 
   /** @group Warnings */
   val clearWarnings: ResultSetIO[Unit] =
-    FRS.clearWarnings
+    IFRS.clearWarnings
 
   /** @group Updating */
   val deleteRow: ResultSetIO[Unit] =
-    FRS.deleteRow
+    IFRS.deleteRow
 
   /** @group Cursor Control */
   val first: ResultSetIO[Boolean] =
-    FRS.first
+    IFRS.first
 
   /**
    * Read a value of type `A` starting at column `n`.
@@ -84,7 +87,7 @@ object resultset {
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def build[F[_], A](implicit F: FactoryCompat[A, F[A]], A: Read[A]): ResultSetIO[F[A]] =
-    FRS.raw { rs =>
+    IFRS.raw { rs =>
       val b = F.newBuilder
       while (rs.next)
         b += A.unsafeGet(rs, 1)
@@ -97,7 +100,7 @@ object resultset {
    * @group Results
    */
   def buildPair[F[_, _], A, B](implicit F: FactoryCompat[(A, B), F[A, B]], A: Read[(A, B)]): ResultSetIO[F[A, B]] =
-    FRS.raw { rs =>
+    IFRS.raw { rs =>
       val b = F.newBuilder
       while (rs.next)
         b += A.unsafeGet(rs, 1)
@@ -113,7 +116,7 @@ object resultset {
    */
   @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def buildMap[F[_], A, B](f: A => B)(implicit F: FactoryCompat[B, F[B]], A: Read[A]): ResultSetIO[F[B]] =
-    FRS.raw { rs =>
+    IFRS.raw { rs =>
       val b = F.newBuilder
       while (rs.next)
         b += f(A.unsafeGet(rs, 1))
@@ -185,7 +188,7 @@ object resultset {
    */
   @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def getNextChunkV[A](chunkSize: Int)(implicit A: Read[A]): ResultSetIO[Vector[A]] =
-    FRS.raw { rs =>
+    IFRS.raw { rs =>
       var n = chunkSize
       val b = Vector.newBuilder[A]
       while (n > 0 && rs.next) {
@@ -202,9 +205,9 @@ object resultset {
    */
   def getUnique[A: Read]: ResultSetIO[A] =
     (getNext[A], next).tupled.flatMap {
-      case (Some(a), false) => FRS.delay(a)
-      case (Some(_), true)  => FRS.raiseError(UnexpectedContinuation)
-      case (None, _)        => FRS.raiseError(UnexpectedEnd)
+      case (Some(a), false) => IFRS.delay(a)
+      case (Some(_), true)  => IFRS.raiseError(UnexpectedContinuation)
+      case (None, _)        => IFRS.raiseError(UnexpectedEnd)
     }
 
   /**
@@ -214,9 +217,9 @@ object resultset {
    */
   def getOption[A: Read]: ResultSetIO[Option[A]] =
     (getNext[A], next).tupled.flatMap {
-      case (a @ Some(_), false) => FRS.delay(a)
-      case (Some(_), true)      => FRS.raiseError(UnexpectedContinuation)
-      case (None, _)            => FRS.delay(None)
+      case (a @ Some(_), false) => IFRS.delay(a)
+      case (Some(_), true)      => IFRS.raiseError(UnexpectedContinuation)
+      case (None, _)            => IFRS.delay(None)
     }
 
   /**
@@ -226,8 +229,8 @@ object resultset {
     */
   def nel[A: Read]: ResultSetIO[NonEmptyList[A]] =
     (getNext[A], list).tupled.flatMap {
-      case (Some(a), as) => FRS.delay(NonEmptyList(a, as))
-      case (None, _)     => FRS.raiseError(UnexpectedEnd)
+      case (Some(a), as) => IFRS.delay(NonEmptyList(a, as))
+      case (None, _)     => IFRS.raiseError(UnexpectedEnd)
     }
 
   /**
@@ -240,94 +243,94 @@ object resultset {
 
   /** @group Properties */
   val getFetchDirection: ResultSetIO[FetchDirection] =
-    FRS.getFetchDirection.flatMap(FetchDirection.fromIntF[ResultSetIO])
+    IFRS.getFetchDirection.flatMap(FetchDirection.fromIntF[ResultSetIO])
 
   /** @group Properties */
   val getFetchSize: ResultSetIO[Int] =
-    FRS.getFetchSize
+    IFRS.getFetchSize
 
   /** @group Properties */
   val getHoldability: ResultSetIO[Holdability] =
-    FRS.getHoldability.flatMap(Holdability.fromIntF[ResultSetIO])
+    IFRS.getHoldability.flatMap(Holdability.fromIntF[ResultSetIO])
 
   /** @group Properties */
   val getMetaData: ResultSetIO[ResultSetMetaData] =
-    FRS.getMetaData
+    IFRS.getMetaData
 
   /** @group Cursor Control */
   val getRow: ResultSetIO[Int] =
-    FRS.getRow
+    IFRS.getRow
 
   /** @group Warnings */
   val getWarnings: ResultSetIO[Option[SQLWarning]] =
-    FRS.getWarnings.map(Option(_))
+    IFRS.getWarnings.map(Option(_))
 
   /** @group Updating */
   val insertRow: ResultSetIO[Unit] =
-    FRS.insertRow
+    IFRS.insertRow
 
   /** @group Cursor Control */
   val isAfterLast: ResultSetIO[Boolean] =
-    FRS.isAfterLast
+    IFRS.isAfterLast
 
   /** @group Cursor Control */
   val isBeforeFirst: ResultSetIO[Boolean] =
-    FRS.isBeforeFirst
+    IFRS.isBeforeFirst
 
   /** @group Cursor Control */
   val isFirst: ResultSetIO[Boolean] =
-    FRS.isFirst
+    IFRS.isFirst
 
   /** @group Cursor Control */
   val isLast: ResultSetIO[Boolean] =
-    FRS.isLast
+    IFRS.isLast
 
   /** @group Cursor Control */
   val last: ResultSetIO[Boolean] =
-    FRS.last
+    IFRS.last
 
   /** @group Cursor Control */
   val moveToCurrentRow: ResultSetIO[Unit] =
-    FRS.moveToCurrentRow
+    IFRS.moveToCurrentRow
 
   /** @group Cursor Control */
   val moveToInsertRow: ResultSetIO[Unit] =
-    FRS.moveToInsertRow
+    IFRS.moveToInsertRow
 
   /** @group Cursor Control */
   val next: ResultSetIO[Boolean] =
-    FRS.next
+    IFRS.next
 
   /** @group Cursor Control */
   val previous: ResultSetIO[Boolean] =
-    FRS.previous
+    IFRS.previous
 
   /** @group Cursor Control */
   val refreshRow: ResultSetIO[Unit] =
-    FRS.refreshRow
+    IFRS.refreshRow
 
   /** @group Cursor Control */
   def relative(n: Int): ResultSetIO[Boolean] =
-    FRS.relative(n)
+    IFRS.relative(n)
 
   /** @group Cursor Control */
   val rowDeleted: ResultSetIO[Boolean] =
-    FRS.rowDeleted
+    IFRS.rowDeleted
 
   /** @group Cursor Control */
   val rowInserted: ResultSetIO[Boolean] =
-    FRS.rowInserted
+    IFRS.rowInserted
 
   /** @group Cursor Control */
   val rowUpdated: ResultSetIO[Boolean] =
-    FRS.rowUpdated
+    IFRS.rowUpdated
 
   /** @group Properties */
   def setFetchDirection(fd: FetchDirection): ResultSetIO[Unit] =
-    FRS.setFetchDirection(fd.toInt)
+    IFRS.setFetchDirection(fd.toInt)
 
   /** @group Properties */
   def setFetchSize(n: Int): ResultSetIO[Unit] =
-    FRS.setFetchSize(n)
+    IFRS.setFetchSize(n)
 
 }

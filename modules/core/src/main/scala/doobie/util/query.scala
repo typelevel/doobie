@@ -15,6 +15,16 @@ import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
 import doobie.util.log.{ LogEvent, ExecFailure, ProcessingFailure, Success }
 import doobie.util.pos.Pos
+import doobie.free.{
+  preparedstatement => IFPS,
+  resultset => IFRS,
+}
+import doobie.hi.{
+  connection => IHC,
+  preparedstatement => IHPS,
+  resultset => IHRS
+}
+
 import fs2.Stream
 import scala.Predef.longWrapper
 import scala.concurrent.duration.{ FiniteDuration, NANOSECONDS }
@@ -37,24 +47,24 @@ object query {
     protected implicit val read: Read[B]
 
     private val now: PreparedStatementIO[Long] =
-      FPS.delay(System.nanoTime)
+      IFPS.delay(System.nanoTime)
 
-    // Equivalent to HPS.executeQuery(k) but with logging
+    // Equivalent to IHPS.executeQuery(k) but with logging
     private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
       val args = write.toList(a)
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
         for {
-          _ <- FPS.performLogging(e)
+          _ <- IFPS.performLogging(e)
         } yield ()
 
       for {
         t0 <- now
-        eet <- FPS.executeQuery.flatMap(rs => (for {
+        eet <- IFPS.executeQuery.flatMap(rs => (for {
           t1 <- now
-          et <- FPS.embed(rs, k).attempt
+          et <- IFPS.embed(rs, k).attempt
           t2 <- now
-        } yield (t1, et, t2)).guarantee(FPS.embed(rs, FRS.close))).attempt
+        } yield (t1, et, t2)).guarantee(IFPS.embed(rs, IFRS.close))).attempt
         tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
           for {
             t1 <- now
@@ -93,14 +103,14 @@ object query {
      * @group Diagnostics
      */
     def analysis: ConnectionIO[Analysis] =
-      HC.prepareQueryAnalysis[A, B](sql)
+      IHC.prepareQueryAnalysis[A, B](sql)
 
     /**
      * Program to construct an analysis of this query's SQL statement and result set column types.
      * @group Diagnostics
      */
     def outputAnalysis: ConnectionIO[Analysis] =
-      HC.prepareQueryAnalysis0[B](sql)
+      IHC.prepareQueryAnalysis0[B](sql)
 
     /**
      * Program to construct an inspection of the query. Given arguments `a`, calls `f` with the SQL
@@ -110,7 +120,7 @@ object query {
      * @group Diagnostics
      */
     def inspect[R](a: A)(f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
-      f(sql, HPS.set(a))
+      f(sql, IHPS.set(a))
 
     /**
      * Apply the argument `a` to construct a `Stream` with the given chunking factor, with
@@ -119,7 +129,7 @@ object query {
      * @group Results
      */
     def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      HC.stream[B](sql, HPS.set(a), chunkSize)
+      IHC.stream[B](sql, IHPS.set(a), chunkSize)
 
     /**
      * Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with
@@ -137,7 +147,7 @@ object query {
      * @group Results
      */
     def to[F[_]](a: A)(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.build[F,B]))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.build[F,B]))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -147,7 +157,7 @@ object query {
      * @group Results
      */
     def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.buildPair[Map, K, V](f, read.map(ev))))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.buildPair[Map, K, V](f, read.map(ev))))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -156,7 +166,7 @@ object query {
      * @group Results
      */
     def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.accumulate[F, B]))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.accumulate[F, B]))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -165,7 +175,7 @@ object query {
      * @group Results
      */
     def unique(a: A): ConnectionIO[B] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.getUnique[B]))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.getUnique[B]))
 
     /**
      * Apply the argument `a` to construct a program in
@@ -174,7 +184,7 @@ object query {
      * @group Results
      */
     def option(a: A): ConnectionIO[Option[B]] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.getOption[B]))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.getOption[B]))
 
     /**
       * Apply the argument `a` to construct a program in
@@ -183,7 +193,7 @@ object query {
       * @group Results
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
-      HC.prepareStatement(sql)(HPS.set(a) *> executeQuery(a, HRS.nel[B]))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.nel[B]))
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =

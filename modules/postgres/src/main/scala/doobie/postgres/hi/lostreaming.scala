@@ -7,6 +7,8 @@ package doobie.postgres.hi
 import cats.syntax.functor._
 import doobie.ConnectionIO
 import doobie.implicits._
+import doobie.postgres.free.{largeobjectmanager => IIPFLOM, largeobject => IPFLO}
+import doobie.postgres.hi.{connection => IPHC}
 import fs2.Stream
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject
@@ -25,17 +27,17 @@ object lostreaming {
       .flatMap(lo => fs2.io.readInputStream(getInputStream(lo), chunkSize))
 
   private val createLO: ConnectionIO[Long] =
-    PHC.pgGetLargeObjectAPI(PFLOM.createLO)
+    IPHC.pgGetLargeObjectAPI(IIPFLOM.createLO)
 
   private def openLO(oid: Long): ConnectionIO[LargeObject] =
-    PHC.pgGetLargeObjectAPI(PFLOM.open(oid))
+    IPHC.pgGetLargeObjectAPI(IIPFLOM.open(oid))
 
   private def closeLO(lo: LargeObject): ConnectionIO[Unit] =
-    PHC.pgGetLargeObjectAPI(PFLOM.embed(lo, PFLO.close))
+    IPHC.pgGetLargeObjectAPI(IIPFLOM.embed(lo, IPFLO.close))
 
   private def getOutputStream(lo: LargeObject): ConnectionIO[OutputStream] =
-    PHC.pgGetLargeObjectAPI(PFLOM.embed(lo, PFLO.getOutputStream))
+    IPHC.pgGetLargeObjectAPI(IIPFLOM.embed(lo, IPFLO.getOutputStream))
 
   private def getInputStream(lo: LargeObject): ConnectionIO[InputStream] =
-    PHC.pgGetLargeObjectAPI(PFLOM.embed(lo, PFLO.getInputStream))
+    IPHC.pgGetLargeObjectAPI(IIPFLOM.embed(lo, IPFLO.getInputStream))
 }

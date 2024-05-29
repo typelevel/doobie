@@ -11,6 +11,7 @@ import cats.syntax.all._
 import doobie._, doobie.implicits._
 import doobie.enumerated.Nullability._
 import doobie.util.pos.Pos
+import doobie.hi.{connection => IHC}
 import java.sql.{ PreparedStatement, ResultSet }
 import scala.Predef.{ augmentString, implicitly }
 
@@ -79,7 +80,7 @@ object fragment {
      * further handling delegated to the provided program.
      */
     def execWith[B](fa: PreparedStatementIO[B]): ConnectionIO[B] =
-      HC.prepareStatement(sql)(write.set(1, elems) *> fa)
+      IHC.prepareStatement(sql)(write.set(1, elems) *> fa)
 
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =
