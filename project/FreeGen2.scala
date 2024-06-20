@@ -245,6 +245,9 @@ class FreeGen2(
     val ioname = s"${oname}IO"
     val mname = oname.toLowerCase
     s"""
+    |
+    |// format: off
+    |
     |package $pkg
     |
     |import cats.{~>, Applicative, Semigroup, Monoid}
@@ -433,6 +436,9 @@ class FreeGen2(
   // The Embedded definition for all modules.
   def embeds: String =
     s"""
+       |
+       |// format: off
+       |
        |package $pkg
        |
        |import cats.free.Free
@@ -516,6 +522,9 @@ class FreeGen2(
         .mkString("\n      ")
 
     s"""
+       |
+       |// format: off
+       |
        |package $pkg
        |
        |// Library imports
