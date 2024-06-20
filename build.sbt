@@ -1,6 +1,4 @@
 import FreeGen2._
-import sbt.dsl.LinterLevel.Ignore
-import scala.annotation.nowarn
 import scala.sys.process._
 
 // Library versions all in one place, for convenience and sanity.
@@ -33,6 +31,7 @@ lazy val weaverVersion = "0.8.4"
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
+ThisBuild / tlCiScalafmtCheck := true
 ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
@@ -50,7 +49,13 @@ ThisBuild / githubWorkflowBuildPreamble ++= Seq(
 )
 ThisBuild / githubWorkflowBuild := {
   val current = (ThisBuild / githubWorkflowBuild).value
-  current.updated(0, WorkflowStep.Sbt(List("freeGen2", "test"), name = Some("Test")))
+  current.map {
+    // Assume step "Test" exists.
+    // Prepend command "freeGen2" to the command list of that step.
+    case testStep: WorkflowStep.Sbt if testStep.name.contains("Test") =>
+      WorkflowStep.Sbt("freeGen2" :: testStep.commands, name = Some("Test"))
+    case other => other
+  }
 }
 ThisBuild / githubWorkflowBuildPostamble ++= Seq(
   WorkflowStep.Sbt(
@@ -195,7 +200,6 @@ lazy val free = project
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
-      import java.sql._
       List[Class[_]](
         classOf[java.sql.NClob],
         classOf[java.sql.Blob],
