@@ -48,7 +48,7 @@ object update {
       IFPS.delay(System.nanoTime)
 
     // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
-    private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
+    private def executeUpdate[T](a: A)(update: PreparedStatementIO[T]): PreparedStatementIO[T] = {
       val args = write.toList(a)
       def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
       def log(e: LogEvent): PreparedStatementIO[Unit] =
@@ -58,7 +58,7 @@ object update {
 
       for {
         t0 <- now
-        en <- IFPS.executeUpdate.attempt
+        en <- update.attempt
         t1 <- now
         n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, label, diff(t1, t0), e)) }
         _  <- log(Success(sql, args, label, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
@@ -115,7 +115,7 @@ object update {
      * @group Execution
      */
     def run(a: A): ConnectionIO[Int] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeUpdate(a))
+      IHC.prepareStatement(sql)(IHPS.set(a) *> executeUpdate(a)(IFPS.executeUpdate))
 
     /**
      * Add many sets of parameters and execute as a batch update, returning total rows updated. Note
@@ -165,7 +165,7 @@ object update {
      * @group Execution
      */
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
-      IHC.prepareStatementS(sql, columns.toList)(IHPS.set(a) *> IHPS.executeUpdateWithUniqueGeneratedKeys)
+      IHC.prepareStatementS(sql, columns.toList)(IHPS.set(a) *> executeUpdate(a)(IHPS.executeUpdateWithUniqueGeneratedKeys))
 
     /**
      * Update is a contravariant functor.

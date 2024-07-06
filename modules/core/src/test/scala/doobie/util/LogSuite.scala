@@ -115,4 +115,16 @@ class LogSuite extends munit.FunSuite {
     ()
   }
 
+  test("[Update] withUniqueGeneratedKeys") {
+    val cio = for {
+        _  <- sql"create table if not exists foo (bar integer)".update.run
+        ins <- sql"insert into foo values (123)".updateWithLabel("test").withUniqueGeneratedKeys[Int]("bar")
+      } yield ins
+
+    eventForCIO(cio) match {
+      case Success(_, _, label, _, _) => assertEquals(label, "test")
+      case a => fail(s"no match: $a")
+    }
+  }
+
 }
