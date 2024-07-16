@@ -222,11 +222,21 @@ p.take(5).compile.toVector.unsafeRunSync().foreach(println)
 The `sql` interpolator is sugar for constructors defined in the `doobie.hi.connection` module, aliased as `HC` if you use the standard imports. Using these constructors directly, the above program would look like this:
 
 ```scala mdoc
+import doobie.hi.HC
+import doobie.free.{FC, FPS}
+import doobie.util.log.{LoggingInfo, Parameters}
 
+val sql = "select code, name, population, gnp from country"
 val proc = HC.stream[(Code, Country2)](
-  "select code, name, population, gnp from country", // statement
-  ().pure[PreparedStatementIO],                      // prep (none)
-  512                                                // chunk size
+  create = FC.prepareStatement(sql), // Create prepared statement
+  prep = FPS.unit,                   // prepare steps (none)
+  exec = FPS.executeQuery,           // execute the query
+  chunkSize = 512,                   // chunk size
+  loggingInfo = LoggingInfo(
+    sql = sql,
+    params = Parameters.NonBatch(List.empty), // No parameters
+    label = "unlabeled"
+  )
 )
 
 proc.take(5)        // Stream[ConnectionIO, (Code, Country2)]

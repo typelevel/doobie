@@ -32,7 +32,7 @@ lazy val weaverVersion = "0.8.4"
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
 ThisBuild / tlCiScalafmtCheck := true
-ThisBuild / scalaVersion := scala3Version
+ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tlSonatypeUseLegacyHost := false
@@ -239,7 +239,9 @@ lazy val core = project
       "com.chuusai" %% "shapeless" % shapelessVersion
     ).filterNot(_ => tlIsScala3.value) ++ Seq(
       "org.tpolecat" %% "typename" % "1.1.0",
-      "com.h2database" % "h2" % h2Version % "test"
+      "com.h2database" % "h2" % h2Version % "test",
+      "org.postgresql" % "postgresql" % postgresVersion % "test",
+      "org.mockito" % "mockito-core" % "5.12.0" % Test
     ),
     scalacOptions += "-Yno-predef",
     Compile / unmanagedSourceDirectories += {

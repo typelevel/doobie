@@ -8,7 +8,7 @@ import cats.syntax.all._
 import doobie.postgres.implicits._
 import java.io.{File, OutputStream, InputStream}
 import doobie.postgres.free.{largeobjectmanager => IPFLOM, largeobject => IPFLO}
-import doobie.postgres.hi.{largeobjectmanager => IPHLOM, largeobject => IPHLO}
+import doobie.postgres.hi.{largeobject => IPHLO}
 
 object largeobjectmanager {
 
@@ -40,8 +40,8 @@ object largeobjectmanager {
     open(oid)(IPHLO.copyToFile(blockSize, file))
 
   def createLOFromStream(blockSize: Int, is: InputStream): LargeObjectManagerIO[Long] =
-    IPHLOM.createLO >>= { oid =>
-      IPHLOM.open(oid)(IPHLO.copyFromStream(blockSize, is)).as(oid)
+    createLO >>= { oid =>
+      open(oid)(IPHLO.copyFromStream(blockSize, is)).as(oid)
     }
 
   def createStreamFromLO(blockSize: Int, oid: Long, os: OutputStream): LargeObjectManagerIO[Unit] =

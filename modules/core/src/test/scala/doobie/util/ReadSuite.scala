@@ -95,8 +95,6 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   /*
-  FIXME: test cases
-
   case class with nested Option case class field
    */
 

@@ -7,20 +7,16 @@ package doobie.util
 import cats._
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-import cats.syntax.all._
-import cats.effect.kernel.syntax.monadCancel._
 import doobie._
-import doobie.implicits._
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
-import doobie.util.log.{LogEvent, ExecFailure, ProcessingFailure, Success}
+import doobie.util.log.{Parameters, LoggingInfo}
 import doobie.util.pos.Pos
-import doobie.free.{preparedstatement => IFPS, resultset => IFRS}
+import doobie.free.{preparedstatement => IFPS, connection => IFC}
 import doobie.hi.{connection => IHC, preparedstatement => IHPS, resultset => IHRS}
 
 import fs2.Stream
-import scala.Predef.longWrapper
-import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
+
 import scala.collection.immutable.Map
 import doobie.util.MultiVersionTypeSupport.=:=
 
@@ -37,40 +33,6 @@ object query {
 
     protected implicit val write: Write[A]
     protected implicit val read: Read[B]
-
-    private val now: PreparedStatementIO[Long] =
-      IFPS.delay(System.nanoTime)
-
-    // Equivalent to IHPS.executeQuery(k) but with logging
-    private def executeQuery[T](a: A, k: ResultSetIO[T]): PreparedStatementIO[T] = {
-      val args = write.toList(a)
-      def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
-      def log(e: LogEvent): PreparedStatementIO[Unit] =
-        for {
-          _ <- IFPS.performLogging(e)
-        } yield ()
-
-      for {
-        t0 <- now
-        eet <- IFPS.executeQuery.flatMap(rs =>
-          (for {
-            t1 <- now
-            et <- IFPS.embed(rs, k).attempt
-            t2 <- now
-          } yield (t1, et, t2)).guarantee(IFPS.embed(rs, IFRS.close))).attempt
-        tuple <- eet.liftTo[PreparedStatementIO].onError { case e =>
-          for {
-            t1 <- now
-            _ <- log(ExecFailure(sql, args, label, diff(t1, t0), e))
-          } yield ()
-        }
-        (t1, et, t2) = tuple
-        t <- et.liftTo[PreparedStatementIO].onError { case e =>
-          log(ProcessingFailure(sql, args, label, diff(t1, t0), diff(t2, t1), e))
-        }
-        _ <- log(Success(sql, args, label, diff(t1, t0), diff(t2, t1)))
-      } yield t
-    }
 
     /** The SQL string.
       * @group Diagnostics
@@ -115,7 +77,17 @@ object query {
       * @group Results
       */
     def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
-      IHC.stream[B](sql, IHPS.set(a), chunkSize)
+      IHC.stream(
+        create = IFC.prepareStatement(sql),
+        prep = IHPS.set(a),
+        exec = IFPS.executeQuery,
+        chunkSize = chunkSize,
+        loggingInfo = LoggingInfo(
+          sql = sql,
+          params = Parameters.NonBatch(Write[A].toList(a)),
+          label = label
+        )
+      )
 
     /** Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with effect type
       * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
@@ -128,8 +100,9 @@ object query {
       * an `F[B]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
       * @group Results
       */
-    def to[F[_]](a: A)(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.build[F, B]))
+    def to[F[_]](a: A)(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] = {
+      toConnectionIO(a, IHRS.build[F, B])
+    }
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
@@ -137,28 +110,31 @@ object query {
       * @group Results
       */
     def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.buildPair[Map, K, V](f, read.map(ev))))
+      toConnectionIO(
+        a,
+        IHRS.buildPair[Map, K, V](f, read.map(ev))
+      )
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `F[B]` accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
       * @group Results
       */
     def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.accumulate[F, B]))
+      toConnectionIO(a, IHRS.accumulate[F, B])
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * a unique `B` and raising an exception if the resultset does not have exactly one row. See also `option`.
       * @group Results
       */
     def unique(a: A): ConnectionIO[B] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.getUnique[B]))
+      toConnectionIO(a, IHRS.getUnique[B])
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an optional `B` and raising an exception if the resultset has more than one row. See also `unique`.
       * @group Results
       */
     def option(a: A): ConnectionIO[Option[B]] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.getOption[B]))
+      toConnectionIO(a, IHRS.getOption[B])
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `NonEmptyList[B]` and raising an exception if the resultset does not have at least one row. See also
@@ -166,7 +142,24 @@ object query {
       * @group Results
       */
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeQuery(a, IHRS.nel[B]))
+      toConnectionIO(a, IHRS.nel[B])
+
+    private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] = {
+      IHC.executeWithResultSet(
+        create = IFC.prepareStatement(sql),
+        prep = IHPS.set(a),
+        exec = IFPS.executeQuery,
+        process = rsio,
+        loggingInfo = mkLoggingInfo(a)
+      )
+    }
+
+    private def mkLoggingInfo(a: A): LoggingInfo =
+      LoggingInfo(
+        sql = sql,
+        params = Parameters.NonBatch(write.toList(a)),
+        label = label
+      )
 
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
