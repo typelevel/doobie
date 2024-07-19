@@ -141,17 +141,33 @@ populationIn(100_000_000 to 300_000_000, NonEmptyList.of("USA", "BRA", "PAK", "G
 In the previous chapter's *Diving Deeper* we saw how a query constructed with the `sql` interpolator is just sugar for the `stream` constructor defined in the `doobie.hi.connection` module (aliased as `HC`). Here we see that the second parameter, a `PreparedStatementIO` program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.
 
 ```scala mdoc:silent
+import doobie.hi.{HC, HPS}
+import doobie.free.{FC, FPS}
+import doobie.util.log.{LoggingInfo, Parameters}
 import fs2.Stream
 
-val q = """
+val q =
+  """
   select code, name, population, gnp
   from country
   where population > ?
   and   population < ?
   """
 
-def proc(range: Range): Stream[ConnectionIO, Country] =
-  HC.stream[Country](q, HPS.set((range.min, range.max)), 512)
+def proc(range: Range): Stream[ConnectionIO, Country] = {
+  val params = (range.min, range.max)
+  HC.stream[Country](
+    create = FC.prepareStatement(q),
+    prep = HPS.set(params),
+    exec = FPS.executeQuery,
+    chunkSize = 512,
+    loggingInfo = LoggingInfo(
+      sql = q,
+      params = Parameters.NonBatch(Write[(Int, Int)].toList(params)),
+      label = "fetch_country_in_population_range"
+    )
+  )
+}
 ```
 
 Which produces the same output.

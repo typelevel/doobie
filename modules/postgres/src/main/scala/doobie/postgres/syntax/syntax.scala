@@ -645,7 +645,7 @@ class PostgresExplainQuery0Ops(self: Query0[_]) {
     */
   def explain: ConnectionIO[List[String]] =
     self.inspect { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
 
   /** Construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query
@@ -654,7 +654,7 @@ class PostgresExplainQuery0Ops(self: Query0[_]) {
     */
   def explainAnalyze: ConnectionIO[List[String]] =
     self.inspect { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
 }
 
@@ -665,7 +665,7 @@ class PostgresExplainQueryOps[A](self: Query[A, _]) {
     */
   def explain(a: A): ConnectionIO[List[String]] = {
     self.inspect(a) { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
   }
 
@@ -675,7 +675,7 @@ class PostgresExplainQueryOps[A](self: Query[A, _]) {
     */
   def explainAnalyze(a: A): ConnectionIO[List[String]] =
     self.inspect(a) { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
 }
 
@@ -686,7 +686,7 @@ class PostgresExplainUpdate0Ops(self: Update0) {
     */
   def explain: ConnectionIO[List[String]] =
     self.inspect { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
 
   /** Construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query
@@ -695,7 +695,7 @@ class PostgresExplainUpdate0Ops(self: Update0) {
     */
   def explainAnalyze: ConnectionIO[List[String]] =
     self.inspect { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
 }
 
@@ -706,7 +706,7 @@ class PostgresExplainUpdateOps[A](self: Update[A]) {
     */
   def explain(a: A): ConnectionIO[List[String]] = {
     self.inspect(a) { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
   }
 
@@ -716,7 +716,7 @@ class PostgresExplainUpdateOps[A](self: Update[A]) {
     */
   def explainAnalyze(a: A): ConnectionIO[List[String]] =
     self.inspect(a) { (sql, prepare) =>
-      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQuery(HRS.build[List, String]))
+      HC.prepareStatement(s"EXPLAIN ANALYZE $sql")(prepare *> HPS.executeQueryUnlogged(HRS.build[List, String]))
     }
 }
 

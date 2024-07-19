@@ -14,24 +14,19 @@ import doobie.enumerated.Nullability.NullabilityKnown
 import doobie.enumerated.FetchDirection
 import doobie.enumerated.ResultSetConcurrency
 import doobie.enumerated.ResultSetType
-
 import doobie.util.{Read, Write}
 import doobie.util.analysis._
 import doobie.util.stream.repeatEvalChunks
 import doobie.free.{preparedstatement => IFPS, resultset => IFRS}
-
 import doobie.syntax.align._
 
 import java.sql.{ParameterMetaData, ResultSetMetaData, SQLWarning}
-
 import scala.Predef.{intArrayOps, intWrapper}
-
 import cats.Foldable
-import cats.syntax.all._
+import cats.implicits._
+import cats.effect.syntax.monadCancel._
 import cats.data.Ior
-import cats.effect.kernel.syntax.monadCancel._
 import fs2.Stream
-import fs2.Stream.bracket
 
 /** Module of high-level constructors for `PreparedStatementIO` actions. Batching operations are not provided; see the
   * `statement` module for this functionality.
@@ -47,7 +42,7 @@ object preparedstatement {
 
   /** @group Execution */
   def stream[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
-    bracket(IFPS.executeQuery)(IFPS.embed(_, IFRS.close)).flatMap(unrolled[A](_, chunkSize))
+    Stream.bracket(IFPS.executeQuery)(IFPS.embed(_, IFRS.close)).flatMap(unrolled[A](_, chunkSize))
 
   /** Non-strict unit for capturing effects.
     * @group Constructors (Lifting)
@@ -60,6 +55,7 @@ object preparedstatement {
     IFPS.executeBatch.map(_.toIndexedSeq.toList) // intArrayOps does not have `toList` in 2.13
 
   /** @group Batching */
+  @deprecated("Use doobie.FPS.addBatch instead", "1.0.0-RC6")
   val addBatch: PreparedStatementIO[Unit] =
     IFPS.addBatch
 
@@ -71,32 +67,73 @@ object preparedstatement {
     * information
     * @group Batching
     */
+  @deprecated(
+    "Consider using doobie.HC.execute{With/Without}ResultSet" +
+      "for logging support, or switch to addBatchesAndExecuteUnlogged instead",
+    "1.0.0-RC6")
   def addBatchesAndExecute[F[_]: Foldable, A: Write](fa: F[A]): PreparedStatementIO[Int] =
+    addBatchesAndExecuteUnlogged(fa)
+
+  /** Add many sets of parameters and execute as a batch update, returning total rows updated. Note that when an error
+    * occurred while executing the batch, your JDBC driver may decide to continue executing the rest of the batch
+    * instead of raising a `BatchUpdateException`. Please refer to your JDBC driver's documentation for its exact
+    * behaviour. See
+    * [[https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Statement.html#executeBatch()]] for more
+    * information
+    * @group Batching
+    */
+  def addBatchesAndExecuteUnlogged[F[_]: Foldable, A: Write](fa: F[A]): PreparedStatementIO[Int] =
     fa.toList
-      .foldRight(executeBatch)((a, b) => set(a) *> addBatch *> b)
+      .foldRight(IFPS.executeBatch)((a, b) => set(a) *> IFPS.addBatch *> b)
       .map(_.foldLeft(0)((acc, n) => acc + (n max 0))) // treat negatives (failures) as no rows updated
 
   /** Add many sets of parameters.
     * @group Batching
     */
   def addBatches[F[_]: Foldable, A: Write](fa: F[A]): PreparedStatementIO[Unit] =
-    fa.toList.foldRight(().pure[PreparedStatementIO])((a, b) => set(a) *> addBatch *> b)
+    fa.toList.foldRight(().pure[PreparedStatementIO])((a, b) => set(a) *> IFPS.addBatch *> b)
 
   /** @group Execution */
+  @deprecated(
+    "Consider using doobie.HC.execute{With/Without}ResultSet" +
+      "for logging support, or switch to addBatchesAndExecuteUnlogged instead",
+    "1.0.0-RC6")
   def executeQuery[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
+    executeQueryUnlogged(k)
+
+  def executeQueryUnlogged[A](k: ResultSetIO[A]): PreparedStatementIO[A] =
     IFPS.executeQuery.bracket(s => IFPS.embed(s, k))(s => IFPS.embed(s, IFRS.close))
 
   /** @group Execution */
+  @deprecated("Use doobie.FPS.executeUpdate instead", "1.0.0-RC6")
   val executeUpdate: PreparedStatementIO[Int] =
     IFPS.executeUpdate
 
   /** @group Execution */
+  @deprecated(
+    "Consider using doobie.HC.executeWithoutResultSet" +
+      "for logging support, or switch to executeUpdateWithUniqueGeneratedKeysUnlogged instead",
+    "1.0.0-RC6"
+  )
   def executeUpdateWithUniqueGeneratedKeys[A: Read]: PreparedStatementIO[A] =
-    executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
+    executeUpdateWithUniqueGeneratedKeysUnlogged
+
+  def executeUpdateWithUniqueGeneratedKeysUnlogged[A: Read]: PreparedStatementIO[A] =
+    IFPS.executeUpdate.flatMap(_ => getUniqueGeneratedKeys[A])
 
   /** @group Execution */
+  @deprecated(
+    "Consider using doobie.HC.stream" +
+      "for logging support, or switch to executeUpdateWithUniqueGeneratedKeysUnlogged instead",
+    "1.0.0-RC6"
+  )
   def executeUpdateWithGeneratedKeys[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
-    bracket(IFPS.executeUpdate *> IFPS.getGeneratedKeys)(IFPS.embed(_, IFRS.close)).flatMap(unrolled[A](_, chunkSize))
+    executeUpdateWithGeneratedKeysUnlogged(chunkSize)
+
+  def executeUpdateWithGeneratedKeysUnlogged[A: Read](chunkSize: Int): Stream[PreparedStatementIO, A] =
+    Stream.bracket(IFPS.executeUpdate *> IFPS.getGeneratedKeys)(IFPS.embed(_, IFRS.close)).flatMap(unrolled[A](
+      _,
+      chunkSize))
 
   /** Compute the column `JdbcMeta` list for this `PreparedStatement`.
     * @group Metadata

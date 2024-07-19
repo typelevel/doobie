@@ -15,41 +15,52 @@ import org.typelevel.log4cats._
   */
 class Log4CatsDebuggingLogHandler[F[_]](logger: MessageLogger[F]) extends LogHandler[F] {
   override def run(logEvent: LogEvent): F[Unit] = logEvent match {
-    case Success(s, a, l, e1, e2) =>
+    case Success(s, a, l, e1, e2) => {
+      val paramsStr = a match {
+        case nonBatch: Parameters.NonBatch => s"[${nonBatch.paramsAsList.mkString(", ")}]"
+        case _: Parameters.Batch           => "<batch arguments not rendered>"
+      }
       logger.info(
         s"""Successful Statement Execution:
            |
            |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
            |
-           | arguments = [${a.mkString(", ")}]
+           | arguments = $paramsStr
            | label     = $l
            |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (${(e1 + e2).toMillis
             .toString} ms total)
         """.stripMargin)
+    }
 
-    case ProcessingFailure(s, a, l, e1, e2, t) =>
+    case ProcessingFailure(s, a, l, e1, e2, t) => {
+      val paramsStr = a.allParams.map(thisArgs => thisArgs.mkString("(", ", ", ")"))
+        .mkString("[", ", ", "]")
       logger.warn(
         s"""Failed Resultset Processing:
            |
            |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
            |
-           | arguments = [${a.mkString(", ")}]
+           | parameters = $paramsStr
            | label     = $l
-           |   elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (failed) (${(e1 + e2)
+           | elapsed = ${e1.toMillis.toString} ms exec + ${e2.toMillis.toString} ms processing (failed) (${(e1 + e2)
             .toMillis.toString} ms total)
            |   failure = ${t.getMessage}
         """.stripMargin)
+    }
 
-    case ExecFailure(s, a, l, e1, t) =>
+    case ExecFailure(s, a, l, e1, t) => {
+      val paramsStr = a.allParams.map(thisArgs => thisArgs.mkString("(", ", ", ")"))
+        .mkString("[", ", ", "]")
       logger.error(
         s"""Failed Statement Execution:
            |
            |  ${s.linesIterator.dropWhile(_.trim.isEmpty).mkString("\n  ")}
            |
-           | arguments = [${a.mkString(", ")}]
+           | parameters = $paramsStr
            | label     = $l
-           |   elapsed = ${e1.toMillis.toString} ms exec (failed)
-           |   failure = ${t.getMessage}
+           | elapsed = ${e1.toMillis.toString} ms exec (failed)
+           | failure = ${t.getMessage}
         """.stripMargin)
+    }
   }
 }

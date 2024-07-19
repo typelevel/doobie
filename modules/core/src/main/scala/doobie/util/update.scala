@@ -9,13 +9,13 @@ import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.util.analysis.Analysis
-import doobie.util.log.{Success, ExecFailure, LogEvent}
 import doobie.util.pos.Pos
-import doobie.free.{preparedstatement => IFPS}
-import doobie.hi.{connection => IHC, preparedstatement => IHPS}
+import doobie.free.{connection => IFC, preparedstatement => IFPS}
+import doobie.hi.{connection => IHC, preparedstatement => IHPS, resultset => IHRS}
+import doobie.util.log.{Parameters, LoggingInfo}
 import fs2.Stream
-import scala.Predef.longWrapper
-import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
+
+import scala.Predef.genericArrayOps
 
 /** Module defining updates parameterized by input type. */
 object update {
@@ -37,27 +37,6 @@ object update {
 
     // Contravariant coyoneda trick for A
     protected implicit val write: Write[A]
-
-    private val now: PreparedStatementIO[Long] =
-      IFPS.delay(System.nanoTime)
-
-    // Equivalent to HPS.executeUpdate(k) but with logging if logHandler is defined
-    private def executeUpdate[T](a: A): PreparedStatementIO[Int] = {
-      val args = write.toList(a)
-      def diff(a: Long, b: Long) = FiniteDuration((a - b).abs, NANOSECONDS)
-      def log(e: LogEvent): PreparedStatementIO[Unit] =
-        for {
-          _ <- IFPS.performLogging(e)
-        } yield ()
-
-      for {
-        t0 <- now
-        en <- IFPS.executeUpdate.attempt
-        t1 <- now
-        n <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, label, diff(t1, t0), e)) }
-        _ <- log(Success(sql, args, label, diff(t1, t0), FiniteDuration(0L, NANOSECONDS)))
-      } yield n
-    }
 
     /** The SQL string.
       * @group Diagnostics
@@ -100,8 +79,18 @@ object update {
     /** Construct a program to execute the update and yield a count of affected rows, given the writable argument `a`.
       * @group Execution
       */
-    def run(a: A): ConnectionIO[Int] =
-      IHC.prepareStatement(sql)(IHPS.set(a) *> executeUpdate(a))
+    def run(a: A): ConnectionIO[Int] = {
+      IHC.executeWithoutResultSet(
+        IFC.prepareStatement(sql),
+        IHPS.set(a),
+        IFPS.executeUpdate,
+        LoggingInfo(
+          sql,
+          Parameters.NonBatch(write.toList(a)),
+          label
+        )
+      )
+    }
 
     /** Add many sets of parameters and execute as a batch update, returning total rows updated. Note that when an error
       * occurred while executing the batch, your JDBC driver may decide to continue executing the rest of the batch
@@ -112,7 +101,16 @@ object update {
       * @group Execution
       */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
-      IHC.prepareStatement(sql)(IHPS.addBatchesAndExecute(fa))
+      IHC.executeWithoutResultSet(
+        create = IFC.prepareStatement(sql),
+        prep = fa.foldMap(a => IHPS.set(a) *> IFPS.addBatch),
+        exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + (n.max(0)))),
+        loggingInfo = LoggingInfo(
+          sql,
+          Parameters.Batch(() => fa.toList.map(write.toList)),
+          label
+        )
+      )
 
     /** Construct a stream that performs a batch update as with `updateMany`, yielding generated keys of readable type
       * `K`, identified by the specified columns. Note that not all drivers support generated keys, and some support
@@ -125,7 +123,17 @@ object update {
             F: Foldable[F],
             K: Read[K]
         ): Stream[ConnectionIO, K] =
-          IHC.updateManyWithGeneratedKeys[List, A, K](columns.toList)(sql, IFPS.unit, as.toList, chunkSize)
+          IHC.stream(
+            create = IFC.prepareStatement(sql, columns.toArray),
+            prep = IHPS.addBatches(as),
+            exec = IFPS.executeBatch *> IFPS.getGeneratedKeys,
+            chunkSize = chunkSize,
+            loggingInfo = LoggingInfo(
+              sql,
+              Parameters.Batch(() => as.toList.map(Write[A].toList)),
+              label
+            )
+          )
       }
 
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
@@ -142,7 +150,17 @@ object update {
       * @group Execution
       */
     def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(a: A, chunkSize: Int): Stream[ConnectionIO, K] =
-      IHC.updateWithGeneratedKeys[K](columns.toList)(sql, IHPS.set(a), chunkSize)
+      IHC.stream(
+        create = IFC.prepareStatement(sql, columns.toArray),
+        prep = IHPS.set(a),
+        exec = IFPS.executeUpdate *> IFPS.getGeneratedKeys,
+        chunkSize = chunkSize,
+        loggingInfo = LoggingInfo(
+          sql = sql,
+          params = Parameters.NonBatch(Write[A].toList(a)),
+          label = label
+        )
+      )
 
     /** Construct a program that performs the update, yielding a single set of generated keys of readable type `K`,
       * identified by the specified columns, given a writable argument `a`. Note that not all drivers support generated
@@ -150,7 +168,17 @@ object update {
       * @group Execution
       */
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
-      IHC.prepareStatementS(sql, columns.toList)(IHPS.set(a) *> IHPS.executeUpdateWithUniqueGeneratedKeys)
+      IHC.executeWithResultSet(
+        create = IFC.prepareStatement(sql, columns.toArray),
+        prep = IHPS.set(a),
+        exec = IFPS.executeUpdate *> IFPS.getGeneratedKeys,
+        process = IHRS.getUnique,
+        loggingInfo = LoggingInfo(
+          sql,
+          Parameters.NonBatch(write.toList(a)),
+          label
+        )
+      )
 
     /** Update is a contravariant functor.
       * @group Transformations

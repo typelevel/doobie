@@ -42,7 +42,7 @@ object Dynamic extends IOApp.Simple {
     for {
       md <- HPS.getMetaData // lots of useful info here
       cols = (1 to md.getColumnCount).toList
-      data <- HPS.executeQuery(readAll(cols))
+      data <- HPS.executeQueryUnlogged(readAll(cols))
     } yield (cols.map(md.getColumnName), data)
 
   // Read the specified columns from the resultset.

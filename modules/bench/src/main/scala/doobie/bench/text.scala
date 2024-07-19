@@ -26,7 +26,7 @@ class text {
 
   def naive(n: Int): ConnectionIO[Int] =
     ddl *> HC.prepareStatement("insert into bench_person (name, age) values (?, ?)")(
-      people(n).foldRight(HPS.executeBatch)((p, k) => HPS.set(p) *> HPS.addBatch *> k)
+      people(n).foldRight(HPS.executeBatch)((p, k) => HPS.set(p) *> FPS.addBatch *> k)
     ).map(_.combineAll)
 
   def optimized(n: Int): ConnectionIO[Int] =

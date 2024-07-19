@@ -12,4 +12,5 @@ package object util {
   private[util] def void(a: Any*): Unit = {
     val _ = a
   }
+
 }
