@@ -76,7 +76,7 @@ class FreeGen2(
       case t: WildcardType =>
         t.getUpperBounds.toList.filterNot(_ == classOf[Object]) match {
           case (c: Class[_]) :: Nil => s"_ <: ${c.getName}"
-          case Nil                  => "_"
+          case Nil                  => "?"
           case cs                   => sys.error("unhandled upper bounds: " + cs.toList)
         }
       case t: TypeVariable[_] => t.toString
@@ -220,7 +220,7 @@ class FreeGen2(
     val origName = c.getSimpleName
     renames.get(c) match {
       case None          => s"import ${c.getName}"
-      case Some(renamed) => s"import ${c.getPackage.getName}.{ $origName => $renamed }"
+      case Some(renamed) => s"import ${c.getPackage.getName}.{ $origName as $renamed }"
     }
   }
 
@@ -252,7 +252,7 @@ class FreeGen2(
     |
     |import cats.{~>, Applicative, Semigroup, Monoid}
     |import cats.effect.kernel.{ CancelScope, Poll, Sync }
-    |import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+    |import cats.free.{ Free as FF } // alias because some algebras have an op called Free
     |import doobie.util.log.LogEvent
     |import doobie.WeakAsync
     |import scala.concurrent.Future
@@ -359,7 +359,7 @@ class FreeGen2(
     |    ${ctors[A].map(_.ctor(opname)).mkString("\n    ")}
     |
     |  }
-    |  import ${opname}._
+    |  import ${opname}.*
     |
     |  // Smart constructors for operations common to all algebras.
     |  val unit: ${ioname}[Unit] = FF.pure[${opname}, Unit](())

@@ -194,7 +194,6 @@ object Config {
     transactionIsolation = transactionIsolation
   )
 
-  @nowarn
   def fromProduct(p: Product): Config = p.productArity match {
     case 25 =>
       Config(
