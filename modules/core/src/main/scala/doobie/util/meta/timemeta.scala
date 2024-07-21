@@ -4,7 +4,7 @@
 
 package doobie.util.meta
 
-import doobie.enumerated.JdbcType._
+import doobie.enumerated.JdbcType.*
 import doobie.util.meta.MetaConstructors.Basic
 
 /** Basic instances for Java time classes that follow the JDBC specification. These instances lack more precise type

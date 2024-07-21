@@ -6,7 +6,7 @@ package doobie.util
 
 import cats.Monoid
 import scala.annotation.tailrec
-import scala.Predef._
+import scala.Predef.*
 
 /** Some functions for pretty-printing. */
 object pretty {

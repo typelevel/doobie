@@ -4,10 +4,10 @@
 
 package doobie.util
 
-import java.{util => ju}
+import java.{util as ju}
 import scala.collection.mutable
 import scala.collection.immutable.Map
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 package object compat {
   type =:=[From, To] = scala.=:=[From, To]

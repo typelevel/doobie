@@ -5,7 +5,7 @@
 package doobie
 
 import cats.~>
-import cats.implicits._
+import cats.implicits.*
 import cats.effect.{IO, LiftIO}
 import cats.effect.kernel.{Async, Poll, Resource, Sync}
 import cats.effect.std.Dispatcher

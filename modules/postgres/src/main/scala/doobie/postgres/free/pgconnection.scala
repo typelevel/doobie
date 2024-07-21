@@ -8,7 +8,7 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -16,10 +16,10 @@ import scala.concurrent.duration.FiniteDuration
 
 import java.lang.Class
 import java.lang.String
-import java.sql.{ Array => SqlArray }
+import java.sql.{ Array as SqlArray }
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
-import org.postgresql.copy.{ CopyManager => PGCopyManager }
+import org.postgresql.copy.{ CopyManager as PGCopyManager }
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
@@ -69,7 +69,7 @@ object pgconnection { module =>
       def performLogging(event: LogEvent): F[Unit]
 
       // PGConnection
-      def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): F[Unit]
+      def addDataType(a: String, b: Class[? <: org.postgresql.util.PGobject]): F[Unit]
       def alterUserPassword(a: String, b: Array[Char], c: String): F[Unit]
       def cancelQuery: F[Unit]
       def createArrayOf(a: String, b: AnyRef): F[SqlArray]
@@ -143,7 +143,7 @@ object pgconnection { module =>
     }
 
     // PGConnection-specific operations.
-    final case class AddDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
+    final case class AddDataType(a: String, b: Class[? <: org.postgresql.util.PGobject]) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.addDataType(a, b)
     }
     final case class AlterUserPassword(a: String, b: Array[Char], c: String) extends PGConnectionOp[Unit] {
@@ -214,7 +214,7 @@ object pgconnection { module =>
     }
 
   }
-  import PGConnectionOp._
+  import PGConnectionOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: PGConnectionIO[Unit] = FF.pure[PGConnectionOp, Unit](())
@@ -239,7 +239,7 @@ object pgconnection { module =>
   def performLogging(event: LogEvent) = FF.liftF[PGConnectionOp, Unit](PerformLogging(event))
 
   // Smart constructors for PGConnection-specific operations.
-  def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
+  def addDataType(a: String, b: Class[? <: org.postgresql.util.PGobject]): PGConnectionIO[Unit] = FF.liftF(AddDataType(a, b))
   def alterUserPassword(a: String, b: Array[Char], c: String): PGConnectionIO[Unit] = FF.liftF(AlterUserPassword(a, b, c))
   val cancelQuery: PGConnectionIO[Unit] = FF.liftF(CancelQuery)
   def createArrayOf(a: String, b: AnyRef): PGConnectionIO[SqlArray] = FF.liftF(CreateArrayOf(a, b))

@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -171,7 +171,7 @@ object nclob { module =>
     }
 
   }
-  import NClobOp._
+  import NClobOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: NClobIO[Unit] = FF.pure[NClobOp, Unit](())

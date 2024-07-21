@@ -15,16 +15,16 @@ import doobie.enumerated.FetchDirection
 import doobie.enumerated.ResultSetConcurrency
 import doobie.enumerated.ResultSetType
 import doobie.util.{Read, Write}
-import doobie.util.analysis._
+import doobie.util.analysis.*
 import doobie.util.stream.repeatEvalChunks
-import doobie.free.{preparedstatement => IFPS, resultset => IFRS}
-import doobie.syntax.align._
+import doobie.free.{preparedstatement as IFPS, resultset as IFRS}
+import doobie.syntax.align.*
 
 import java.sql.{ParameterMetaData, ResultSetMetaData, SQLWarning}
 import scala.Predef.{intArrayOps, intWrapper}
 import cats.Foldable
-import cats.implicits._
-import cats.effect.syntax.monadCancel._
+import cats.implicits.*
+import cats.effect.syntax.monadCancel.*
 import cats.data.Ior
 import fs2.Stream
 
@@ -34,7 +34,7 @@ import fs2.Stream
   */
 
 object preparedstatement {
-  import implicits._
+  import implicits.*
 
   // fs2 handler, not public
   private def unrolled[A: Read](rs: java.sql.ResultSet, chunkSize: Int): Stream[PreparedStatementIO, A] =
@@ -158,8 +158,10 @@ object preparedstatement {
     * by a `Write` instance.
     * @group Metadata
     */
-  def getColumnMappings[A](implicit A: Read[A]): PreparedStatementIO[List[(Get[_], NullabilityKnown) Ior ColumnMeta]] =
-    getColumnJdbcMeta.map(m => A.gets align m)
+  def getColumnMappings[A](implicit
+      A: Read[A]
+  ): PreparedStatementIO[List[(Get[?], NullabilityKnown) `Ior` ColumnMeta]] =
+    getColumnJdbcMeta.map(m => A.gets `align` m)
 
   /** @group Properties */
   val getFetchDirection: PreparedStatementIO[FetchDirection] =
@@ -200,8 +202,8 @@ object preparedstatement {
     */
   def getParameterMappings[A](implicit
       A: Write[A]
-  ): PreparedStatementIO[List[(Put[_], NullabilityKnown) Ior ParameterMeta]] =
-    getParameterJdbcMeta.map(m => A.puts align m)
+  ): PreparedStatementIO[List[(Put[?], NullabilityKnown) `Ior` ParameterMeta]] =
+    getParameterJdbcMeta.map(m => A.puts `align` m)
 
   /** @group Properties */
   val getMaxFieldSize: PreparedStatementIO[Int] =

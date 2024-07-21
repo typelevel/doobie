@@ -6,10 +6,10 @@
 package example
 
 import cats.Show
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.{IO, IOApp}
 import fs2.Stream
-import doobie._, doobie.implicits._
+import doobie.*, doobie.implicits.*
 
 // Example lifted from slick
 object FirstExample extends IOApp.Simple {

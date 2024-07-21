@@ -33,9 +33,9 @@ object fragment {
     // Unfortunately we need to produce a Write for our list of elems, which is a bit of a grunt
     // but straightforward nonetheless. And it's stacksafe!
     private implicit lazy val write: Write[elems.type] = {
-      import Elem._
+      import Elem.*
 
-      val puts: List[(Put[_], NullabilityKnown)] =
+      val puts: List[(Put[?], NullabilityKnown)] =
         elems.map {
           case Arg(_, p) => (p, NoNulls)
           case Opt(_, p) => (p, Nullable)

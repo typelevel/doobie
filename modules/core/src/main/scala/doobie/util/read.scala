@@ -4,12 +4,12 @@
 
 package doobie.util
 
-import cats._
+import cats.*
 import doobie.free.{ResultSetIO}
-import doobie.enumerated.Nullability._
+import doobie.enumerated.Nullability.*
 import java.sql.ResultSet
 import scala.annotation.implicitNotFound
-import doobie.free.{resultset => IFRS}
+import doobie.free.{resultset as IFRS}
 
 @implicitNotFound("""
 Cannot find or construct a Read instance for type:
@@ -42,7 +42,7 @@ And find the missing instance and construct it as needed. Refer to Chapter 12
 of the book of doobie for more information.
 """)
 sealed abstract class Read[A](
-    val gets: List[(Get[_], NullabilityKnown)],
+    val gets: List[(Get[?], NullabilityKnown)],
     val unsafeGet: (ResultSet, Int) => A
 ) {
 
@@ -62,7 +62,7 @@ sealed abstract class Read[A](
 object Read {
 
   def apply[A](
-      gets: List[(Get[_], NullabilityKnown)],
+      gets: List[(Get[?], NullabilityKnown)],
       unsafeGet: (ResultSet, Int) => A
   ): Read[A] = new Read(gets, unsafeGet) {}
 
@@ -96,7 +96,7 @@ object Read {
 }
 
 final class MkRead[A](
-    override val gets: List[(Get[_], NullabilityKnown)],
+    override val gets: List[(Get[?], NullabilityKnown)],
     override val unsafeGet: (ResultSet, Int) => A
 ) extends Read[A](gets, unsafeGet)
 object MkRead extends ReadPlatform {

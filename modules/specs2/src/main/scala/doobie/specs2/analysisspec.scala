@@ -6,14 +6,14 @@ package doobie.specs2
 
 import cats.effect.{Async, IO}
 import doobie.{Update, Update0}
-import doobie.syntax.connectionio._
+import doobie.syntax.connectionio.*
 import doobie.util.query.{Query, Query0}
-import doobie.util.testing._
+import doobie.util.testing.*
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.specs2.specification.create.{FormattingFragments => Format}
-import org.specs2.specification.dsl.Online._
-import org.tpolecat.typename._
+import org.specs2.specification.create.{FormattingFragments as Format}
+import org.specs2.specification.dsl.Online.*
+import org.tpolecat.typename.*
 
 /** Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
   * {{{

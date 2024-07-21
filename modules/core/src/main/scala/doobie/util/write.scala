@@ -5,13 +5,13 @@
 package doobie.util
 
 import cats.ContravariantSemigroupal
-import doobie.enumerated.Nullability._
+import doobie.enumerated.Nullability.*
 import doobie.free.{PreparedStatementIO, ResultSetIO}
 
 import java.sql.{PreparedStatement, ResultSet}
 import doobie.util.fragment.Fragment
 import doobie.util.fragment.Elem
-import doobie.free.{preparedstatement => IFPS, resultset => IFRS}
+import doobie.free.{preparedstatement as IFPS, resultset as IFRS}
 
 import scala.annotation.implicitNotFound
 
@@ -44,7 +44,7 @@ And find the missing instance and construct it as needed. Refer to Chapter 12
 of the book of doobie for more information.
 """)
 sealed abstract class Write[A](
-    val puts: List[(Put[_], NullabilityKnown)],
+    val puts: List[(Put[?], NullabilityKnown)],
     val toList: A => List[Any],
     val unsafeSet: (PreparedStatement, Int, A) => Unit,
     val unsafeUpdate: (ResultSet, Int, A) => Unit
@@ -90,7 +90,7 @@ sealed abstract class Write[A](
 object Write {
 
   def apply[A](
-      puts: List[(Put[_], NullabilityKnown)],
+      puts: List[(Put[?], NullabilityKnown)],
       toList: A => List[Any],
       unsafeSet: (PreparedStatement, Int, A) => Unit,
       unsafeUpdate: (ResultSet, Int, A) => Unit
@@ -144,7 +144,7 @@ object Write {
 }
 
 final class MkWrite[A](
-    override val puts: List[(Put[_], NullabilityKnown)],
+    override val puts: List[(Put[?], NullabilityKnown)],
     override val toList: A => List[Any],
     override val unsafeSet: (PreparedStatement, Int, A) => Unit,
     override val unsafeUpdate: (ResultSet, Int, A) => Unit

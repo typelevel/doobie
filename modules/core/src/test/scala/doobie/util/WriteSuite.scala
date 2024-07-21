@@ -6,7 +6,7 @@ package doobie.util
 
 import doobie.Transactor
 import doobie.Update
-import doobie.util.TestTypes._
+import doobie.util.TestTypes.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import doobie.testutils.VoidExtensions
@@ -22,7 +22,7 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   )
 
   test("Write should exist for some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Write[Int].void
     Write[(Int, Int)].void
@@ -51,14 +51,14 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write should exist for Unit") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Write[Unit].void
     assertEquals(Write[(Int, Unit)].length, 1)
   }
 
   test("Write should exist for option of some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Write[Option[Int]].void
     Write[Option[(Int, Int)]].void
@@ -68,14 +68,14 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write should exist for option of Unit") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Write[Option[Unit]].void
     assertEquals(Write[Option[(Int, Unit)]].length, 1)
   }
 
   test("Write should select multi-column instance by default") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     assertEquals(Write[LenStr1].length, 2)
   }
@@ -85,7 +85,7 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write should correct set parameters for Option instances ") {
-    import doobie.implicits._
+    import doobie.implicits.*
     (for {
       _ <- sql"create temp table t1 (a int, b int)".update.run
       _ <- Update[Option[(Int, Int)]]("insert into t1 (a, b) values (?, ?)").run(Some((1, 2)))

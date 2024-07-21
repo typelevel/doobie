@@ -4,8 +4,8 @@
 
 package doobie.postgres
 
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import fs2.{Chunk, Stream, Pure}
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary

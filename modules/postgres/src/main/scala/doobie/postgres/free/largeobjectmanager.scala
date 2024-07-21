@@ -8,7 +8,7 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -154,7 +154,7 @@ object largeobjectmanager { module =>
     }
 
   }
-  import LargeObjectManagerOp._
+  import LargeObjectManagerOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: LargeObjectManagerIO[Unit] = FF.pure[LargeObjectManagerOp, Unit](())

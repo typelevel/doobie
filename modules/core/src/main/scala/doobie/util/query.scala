@@ -359,7 +359,7 @@ object query {
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =
       new Functor[Query0] {
-        def map[A, B](fa: Query0[A])(f: A => B) = fa map f
+        def map[A, B](fa: Query0[A])(f: A => B) = fa `map` f
       }
 
   }

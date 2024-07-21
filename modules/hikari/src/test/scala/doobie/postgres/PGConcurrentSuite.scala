@@ -8,11 +8,11 @@ import java.util.concurrent.Executors
 
 import cats.effect.IO
 import com.zaxxer.hikari.HikariDataSource
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class PGConcurrentSuite extends munit.FunSuite {
 
@@ -25,11 +25,11 @@ class PGConcurrentSuite extends munit.FunSuite {
     Class.forName("org.postgresql.Driver")
     val dataSource = new HikariDataSource
 
-    dataSource setJdbcUrl "jdbc:postgresql://localhost:5432/postgres"
-    dataSource setUsername "postgres"
-    dataSource setPassword "password"
-    dataSource setMaximumPoolSize 10
-    dataSource setConnectionTimeout 2000
+    dataSource `setJdbcUrl` "jdbc:postgresql://localhost:5432/postgres"
+    dataSource `setUsername` "postgres"
+    dataSource `setPassword` "password"
+    dataSource `setMaximumPoolSize` 10
+    dataSource `setConnectionTimeout` 2000
     dataSource
   }
 

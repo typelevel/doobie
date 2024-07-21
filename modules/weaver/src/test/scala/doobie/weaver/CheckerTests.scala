@@ -5,10 +5,10 @@
 package doobie.weaver
 
 import cats.effect.IO
-import doobie.syntax.string._
+import doobie.syntax.string.*
 import doobie.util.Read
 import doobie.util.transactor.Transactor
-import weaver._
+import weaver.*
 import cats.effect.kernel.Resource
 
 object CheckerTests extends IOSuite with IOChecker {
@@ -35,14 +35,14 @@ object CheckerTests extends IOSuite with IOChecker {
   final case class Foo[F[_]](x: Int)
 
   test("trivial case-class") { implicit transactor =>
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     check(sql"select 1".query[Foo[cats.Id]])
   }
 
   test("Read should select correct columns when combined with `product`") { implicit transactor =>
-    import cats.syntax.all._
-    import doobie.implicits._
+    import cats.syntax.all.*
+    import doobie.implicits.*
 
     val ri = Read[Int]
     val rs = Read[String]
@@ -50,11 +50,11 @@ object CheckerTests extends IOSuite with IOChecker {
     // tupled use product under the hood
     val combined: Read[(Int, String)] = (ri, rs).tupled
 
-    check(sql"SELECT 1, '2'".query(combined))
+    check(sql"SELECT 1, '2'".query(using combined))
   }
 
   test("Read should select correct columns for checking when combined with `ap`") { implicit transactor =>
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     val readInt = Read[(Int, Int)]
     val readIntToInt: Read[Tuple2[Int, Int] => String] =
@@ -62,7 +62,7 @@ object CheckerTests extends IOSuite with IOChecker {
 
     val combined: Read[String] = readInt.ap(readIntToInt)
 
-    check(sql"SELECT '1', '2', 3, 4".query(combined))
+    check(sql"SELECT '1', '2', 3, 4".query(using combined))
   }
 
 }

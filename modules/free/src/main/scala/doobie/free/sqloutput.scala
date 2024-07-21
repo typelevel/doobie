@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -32,7 +32,7 @@ import java.sql.SQLXML
 import java.sql.Struct
 import java.sql.Time
 import java.sql.Timestamp
-import java.sql.{ Array => SqlArray }
+import java.sql.{ Array as SqlArray }
 
 // This file is Auto-generated using FreeGen2.scala
 object sqloutput { module =>
@@ -243,7 +243,7 @@ object sqloutput { module =>
     }
 
   }
-  import SQLOutputOp._
+  import SQLOutputOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: SQLOutputIO[Unit] = FF.pure[SQLOutputOp, Unit](())

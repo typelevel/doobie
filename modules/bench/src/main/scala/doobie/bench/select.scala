@@ -5,9 +5,9 @@
 package doobie.bench
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie.*, doobie.implicits.*
 import java.sql.DriverManager
-import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.annotations.*
 
 object shared {
 
@@ -21,7 +21,7 @@ object shared {
 }
 
 class bench {
-  import shared._
+  import shared.*
   import cats.effect.unsafe.implicits.global
 
   // Baseline hand-written JDBC code

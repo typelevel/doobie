@@ -5,8 +5,8 @@
 package doobie.scalatest
 
 import cats.effect.{Async, IO}
-import doobie.syntax.connectionio._
-import doobie.util.testing._
+import doobie.syntax.connectionio.*
+import doobie.util.testing.*
 import org.scalatest.matchers.{Matcher, MatchResult, LazyArg}
 import org.scalatest.matchers.dsl.MatcherFactory2
 import scala.reflect.ClassTag

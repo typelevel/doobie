@@ -5,8 +5,8 @@
 package doobie.h2.circe
 
 import cats.effect.IO
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import io.circe.{Decoder, Encoder, Json}
 
 class H2JsonSuite extends munit.FunSuite {
@@ -41,20 +41,20 @@ class H2JsonSuite extends munit.FunSuite {
   }
 
   {
-    import doobie.h2.circe.json.implicits._
+    import doobie.h2.circe.json.implicits.*
     testInOut("json", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
 
   // Explicit Type Checks
 
   test("json should check ok for read") {
-    import doobie.h2.circe.json.implicits._
+    import doobie.h2.circe.json.implicits.*
 
     val a = sql"SELECT '{}' FORMAT JSON".query[Json].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.columnTypeErrors, Nil)
   }
   test("json should check ok for write") {
-    import doobie.h2.circe.json.implicits._
+    import doobie.h2.circe.json.implicits.*
 
     val a = sql"SELECT ${Json.obj()} FORMAT JSON".query[Json].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.parameterTypeErrors, Nil)
@@ -63,7 +63,7 @@ class H2JsonSuite extends munit.FunSuite {
   // Encoder / Decoders
   private case class Foo(x: Json)
   private object Foo {
-    import doobie.h2.circe.json.implicits._
+    import doobie.h2.circe.json.implicits.*
     implicit val fooEncoder: Encoder[Foo] = Encoder[Json].contramap(_.x)
     implicit val fooDecoder: Decoder[Foo] = Decoder[Json].map(Foo(_))
     implicit val fooGet: Get[Foo] = h2DecoderGetT[Foo]

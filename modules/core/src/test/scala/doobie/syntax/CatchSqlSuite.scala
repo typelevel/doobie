@@ -4,8 +4,8 @@
 
 package doobie.syntax
 
-import cats.syntax.all._
-import doobie._, doobie.implicits._
+import cats.syntax.all.*
+import doobie.*, doobie.implicits.*
 
 class CatchSqlSuite extends munit.FunSuite {
 

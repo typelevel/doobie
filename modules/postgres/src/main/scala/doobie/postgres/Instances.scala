@@ -5,19 +5,19 @@
 package doobie.postgres
 
 import doobie.enumerated.JdbcType
-import doobie._
-import doobie.util.invariant._
+import doobie.*
+import doobie.util.invariant.*
 
-import java.util.{UUID, Map => JMap}
+import java.util.{UUID, Map as JMap}
 import java.net.InetAddress
 
-import org.postgresql.util._
-import org.postgresql.geometric._
+import org.postgresql.util.*
+import org.postgresql.geometric.*
 
 import scala.reflect.ClassTag
 
-import cats.data.NonEmptyList.{of => NonEmptyListOf}
-import org.tpolecat.typename._
+import cats.data.NonEmptyList.{of as NonEmptyListOf}
+import org.tpolecat.typename.*
 
 trait Instances {
 
@@ -83,7 +83,7 @@ trait Instances {
       arrayType: String,
       arrayTypeT: String*
   ): (Meta[Array[A]], Meta[Array[Option[A]]]) = {
-    val raw = Meta.Advanced.array[A](elemType, arrayType, arrayTypeT: _*)
+    val raw = Meta.Advanced.array[A](elemType, arrayType, arrayTypeT*)
     // Ensure `a`, which may be null, which is ok, contains no null elements.
     def checkNull[B >: Null](a: Array[B], e: Exception): Array[B] =
       if (a == null) null else if (a.exists(_ == null)) throw e else a

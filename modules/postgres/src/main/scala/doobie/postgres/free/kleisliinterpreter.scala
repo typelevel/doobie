@@ -25,9 +25,9 @@ import java.lang.Class
 import java.lang.String
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
-import org.postgresql.copy.{ CopyIn => PGCopyIn }
-import org.postgresql.copy.{ CopyManager => PGCopyManager }
-import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.copy.{ CopyIn as PGCopyIn }
+import org.postgresql.copy.{ CopyManager as PGCopyManager }
+import org.postgresql.copy.{ CopyOut as PGCopyOut }
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
@@ -328,7 +328,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def fromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]): Kleisli[M, PGConnection, A] = outer.fromFutureCancelable(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
-    override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
+    override def addDataType(a: String, b: Class[? <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
     override def alterUserPassword(a: String, b: Array[Char], c: String) = primitive(_.alterUserPassword(a, b, c))
     override def cancelQuery: Kleisli[M, PGConnection, Unit] = primitive(_.cancelQuery)
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))

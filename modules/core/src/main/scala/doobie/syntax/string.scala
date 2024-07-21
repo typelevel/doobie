@@ -4,7 +4,7 @@
 
 package doobie.syntax
 
-import cats.syntax.all._
+import cats.syntax.all.*
 
 import doobie.syntax.SqlInterpolator.SingleFragment
 import doobie.util.{Put, Write}
@@ -16,7 +16,7 @@ import doobie.util.pos.Pos
   */
 final class SqlInterpolator(private val sc: StringContext) extends AnyVal {
 
-  private def mkFragment(parts: List[SingleFragment[_]], token: Boolean, pos: Pos): Fragment = {
+  private def mkFragment(parts: List[SingleFragment[?]], token: Boolean, pos: Pos): Fragment = {
     val last = if (token) Fragment(" ", Nil, None) else Fragment.empty
 
     sc.parts.toList
@@ -31,15 +31,15 @@ final class SqlInterpolator(private val sc: StringContext) extends AnyVal {
     * concatenate fragments because you don't need to think about intervening whitespace. If you do not want this
     * behavior, use `fr0`.
     */
-  def fr(a: SingleFragment[_]*)(implicit pos: Pos) = mkFragment(a.toList, true, pos)
+  def fr(a: SingleFragment[?]*)(implicit pos: Pos) = mkFragment(a.toList, true, pos)
 
   /** Alternative name for the `fr0` interpolator. */
-  def sql(a: SingleFragment[_]*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
+  def sql(a: SingleFragment[?]*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
 
   /** Interpolator for a statement fragment that can contain interpolated values. Unlike `fr` no attempt is made to be
     * helpful with respect to whitespace.
     */
-  def fr0(a: SingleFragment[_]*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
+  def fr0(a: SingleFragment[?]*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
 
 }
 

@@ -4,15 +4,15 @@
 
 package doobie.weaver
 
-import weaver._
-import weaver.Expectations.Helpers._
-import doobie.util.testing._
-import doobie.syntax.connectionio._
+import weaver.*
+import weaver.Expectations.Helpers.*
+import doobie.util.testing.*
+import doobie.syntax.connectionio.*
 import cats.effect.kernel.Sync
-import cats.syntax.all._
+import cats.syntax.all.*
 import doobie.util.Colors
-import doobie._
-import org.tpolecat.typename._
+import doobie.*
+import org.tpolecat.typename.*
 
 /** Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.
   *

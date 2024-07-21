@@ -35,7 +35,7 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
   }
 
   test("Put should be auto derived for unary products") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Put[X].void
     Put[Q].void

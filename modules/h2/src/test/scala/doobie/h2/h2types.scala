@@ -7,12 +7,12 @@ package doobie.h2
 import java.util.UUID
 
 import cats.effect.IO
-import doobie._
-import doobie.implicits._
-import doobie.h2.implicits._
+import doobie.*
+import doobie.implicits.*
+import doobie.h2.implicits.*
 import doobie.util.analysis.{Analysis, ColumnTypeError}
-import doobie.util.arbitraries.SQLArbitraries._
-import doobie.util.arbitraries.StringArbitraries._
+import doobie.util.arbitraries.SQLArbitraries.*
+import doobie.util.arbitraries.StringArbitraries.*
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 

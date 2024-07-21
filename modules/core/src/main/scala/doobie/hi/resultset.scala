@@ -6,15 +6,15 @@ package doobie.hi
 
 import cats.{Alternative, Monad}
 import cats.data.NonEmptyList
-import cats.syntax.all._
+import cats.syntax.all.*
 
 import doobie.enumerated.Holdability
 import doobie.enumerated.FetchDirection
 import doobie.util.{Read, Write}
 import doobie.util.compat.FactoryCompat
-import doobie.util.invariant._
+import doobie.util.invariant.*
 import doobie.util.stream.repeatEvalChunks
-import doobie.free.{resultset => IFRS}
+import doobie.free.{resultset as IFRS}
 
 import fs2.Stream
 
@@ -25,7 +25,7 @@ import java.sql.{ResultSetMetaData, SQLWarning}
   */
 
 object resultset {
-  import implicits._
+  import implicits.*
 
   /** Non-strict unit for capturing effects.
     * @group Constructors (Lifting)

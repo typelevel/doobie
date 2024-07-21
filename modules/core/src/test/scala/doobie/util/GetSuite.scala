@@ -23,7 +23,7 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
   }
 
   test("Get should be auto derived for unary products") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Get[X].void
     Get[Q].void
@@ -52,7 +52,7 @@ final case class Bar(n: Int)
 
 class GetDBSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
-  import doobie.syntax.all._
+  import doobie.syntax.all.*
 
   lazy val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",

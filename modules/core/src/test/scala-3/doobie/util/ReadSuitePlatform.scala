@@ -15,7 +15,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   case class CaseClassWithFieldWithoutGetInstance(a: String, b: NoGetInstanceForThis)
 
   test("Read should exist for some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Read[Woozle].void
     Read[(Woozle, String)].void
@@ -23,7 +23,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   }
 
   test("Read should exist for option of some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Read[Option[Woozle]].void
     Read[Option[(Woozle, String)]].void

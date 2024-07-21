@@ -12,7 +12,7 @@ trait PutSuitePlatform { self: munit.FunSuite =>
   test("Put should be derived for unary products (AnyVal)".ignore) {}
 
   test("Put should not be derived for non-unary products") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
     import doobie.testutils.TestClasses.{CCIntString, PlainObj}
 
     assertContains(compileErrors("Put[CCIntString]"), "No given instance")

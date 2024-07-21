@@ -33,7 +33,7 @@ trait ReadPlatform:
 
   // Derivation base case for product types (1-element)
   given productBase[H](
-      using H: Read[H] OrElse MkRead[H]
+      using H: Read[H] `OrElse` MkRead[H]
   ): MkRead[H *: EmptyTuple] = {
     val head = H.unify
     new MkRead(
@@ -45,7 +45,7 @@ trait ReadPlatform:
   // Read for head and tail.
   given product[H, T <: Tuple](
       using
-      H: Read[H] OrElse MkRead[H],
+      H: Read[H] `OrElse` MkRead[H],
       T: MkRead[T]
   ): MkRead[H *: T] = {
     val head = H.unify
@@ -57,7 +57,7 @@ trait ReadPlatform:
   }
 
   given optProductBase[H](
-      using H: Read[Option[H]] OrElse MkRead[Option[H]]
+      using H: Read[Option[H]] `OrElse` MkRead[Option[H]]
   ): MkRead[Option[H *: EmptyTuple]] = {
     val head = H.unify
     MkRead[Option[H *: EmptyTuple]](
@@ -68,7 +68,7 @@ trait ReadPlatform:
 
   given optProduct[H, T <: Tuple](
       using
-      H: Read[Option[H]] OrElse MkRead[Option[H]],
+      H: Read[Option[H]] `OrElse` MkRead[Option[H]],
       T: MkRead[Option[T]]
   ): MkRead[Option[H *: T]] = {
     val head = H.unify
@@ -84,7 +84,7 @@ trait ReadPlatform:
   }
 
   given optProductOptBase[H](
-      using H: Read[Option[H]] OrElse MkRead[Option[H]]
+      using H: Read[Option[H]] `OrElse` MkRead[Option[H]]
   ): MkRead[Option[Option[H] *: EmptyTuple]] = {
     val head = H.unify
 
@@ -96,7 +96,7 @@ trait ReadPlatform:
 
   given optProductOpt[H, T <: Tuple](
       using
-      H: Read[Option[H]] OrElse MkRead[Option[H]],
+      H: Read[Option[H]] `OrElse` MkRead[Option[H]],
       T: MkRead[Option[T]]
   ): MkRead[Option[Option[H] *: T]] = {
     val head = H.unify

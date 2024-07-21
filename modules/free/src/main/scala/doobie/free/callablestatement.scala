@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -36,7 +36,7 @@ import java.sql.SQLWarning
 import java.sql.SQLXML
 import java.sql.Time
 import java.sql.Timestamp
-import java.sql.{ Array => SqlArray }
+import java.sql.{ Array as SqlArray }
 import java.util.Calendar
 
 // This file is Auto-generated using FreeGen2.scala
@@ -160,10 +160,10 @@ object callablestatement { module =>
       def getNString(a: String): F[String]
       def getObject(a: Int): F[AnyRef]
       def getObject[T](a: Int, b: Class[T]): F[T]
-      def getObject(a: Int, b: java.util.Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: Int, b: java.util.Map[String, Class[?]]): F[AnyRef]
       def getObject(a: String): F[AnyRef]
       def getObject[T](a: String, b: Class[T]): F[T]
-      def getObject(a: String, b: java.util.Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: String, b: java.util.Map[String, Class[?]]): F[AnyRef]
       def getParameterMetaData: F[ParameterMetaData]
       def getQueryTimeout: F[Int]
       def getRef(a: Int): F[Ref]
@@ -196,7 +196,7 @@ object callablestatement { module =>
       def isClosed: F[Boolean]
       def isPoolable: F[Boolean]
       def isSimpleIdentifier(a: String): F[Boolean]
-      def isWrapperFor(a: Class[_]): F[Boolean]
+      def isWrapperFor(a: Class[?]): F[Boolean]
       def registerOutParameter(a: Int, b: Int): F[Unit]
       def registerOutParameter(a: Int, b: Int, c: Int): F[Unit]
       def registerOutParameter(a: Int, b: Int, c: String): F[Unit]
@@ -598,7 +598,7 @@ object callablestatement { module =>
     final case class GetObject1[T](a: Int, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject2(a: Int, b: java.util.Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject2(a: Int, b: java.util.Map[String, Class[?]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     final case class GetObject3(a: String) extends CallableStatementOp[AnyRef] {
@@ -607,7 +607,7 @@ object callablestatement { module =>
     final case class GetObject4[T](a: String, b: Class[T]) extends CallableStatementOp[T] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
-    final case class GetObject5(a: String, b: java.util.Map[String, Class[_]]) extends CallableStatementOp[AnyRef] {
+    final case class GetObject5(a: String, b: java.util.Map[String, Class[?]]) extends CallableStatementOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a, b)
     }
     case object GetParameterMetaData extends CallableStatementOp[ParameterMetaData] {
@@ -706,7 +706,7 @@ object callablestatement { module =>
     final case class IsSimpleIdentifier(a: String) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isSimpleIdentifier(a)
     }
-    final case class IsWrapperFor(a: Class[_]) extends CallableStatementOp[Boolean] {
+    final case class IsWrapperFor(a: Class[?]) extends CallableStatementOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
     final case class RegisterOutParameter(a: Int, b: Int) extends CallableStatementOp[Unit] {
@@ -1068,7 +1068,7 @@ object callablestatement { module =>
     }
 
   }
-  import CallableStatementOp._
+  import CallableStatementOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: CallableStatementIO[Unit] = FF.pure[CallableStatementOp, Unit](())
@@ -1170,10 +1170,10 @@ object callablestatement { module =>
   def getNString(a: String): CallableStatementIO[String] = FF.liftF(GetNString1(a))
   def getObject(a: Int): CallableStatementIO[AnyRef] = FF.liftF(GetObject(a))
   def getObject[T](a: Int, b: Class[T]): CallableStatementIO[T] = FF.liftF(GetObject1(a, b))
-  def getObject(a: Int, b: java.util.Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject2(a, b))
+  def getObject(a: Int, b: java.util.Map[String, Class[?]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject2(a, b))
   def getObject(a: String): CallableStatementIO[AnyRef] = FF.liftF(GetObject3(a))
   def getObject[T](a: String, b: Class[T]): CallableStatementIO[T] = FF.liftF(GetObject4(a, b))
-  def getObject(a: String, b: java.util.Map[String, Class[_]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject5(a, b))
+  def getObject(a: String, b: java.util.Map[String, Class[?]]): CallableStatementIO[AnyRef] = FF.liftF(GetObject5(a, b))
   val getParameterMetaData: CallableStatementIO[ParameterMetaData] = FF.liftF(GetParameterMetaData)
   val getQueryTimeout: CallableStatementIO[Int] = FF.liftF(GetQueryTimeout)
   def getRef(a: Int): CallableStatementIO[Ref] = FF.liftF(GetRef(a))
@@ -1206,7 +1206,7 @@ object callablestatement { module =>
   val isClosed: CallableStatementIO[Boolean] = FF.liftF(IsClosed)
   val isPoolable: CallableStatementIO[Boolean] = FF.liftF(IsPoolable)
   def isSimpleIdentifier(a: String): CallableStatementIO[Boolean] = FF.liftF(IsSimpleIdentifier(a))
-  def isWrapperFor(a: Class[_]): CallableStatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
+  def isWrapperFor(a: Class[?]): CallableStatementIO[Boolean] = FF.liftF(IsWrapperFor(a))
   def registerOutParameter(a: Int, b: Int): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter(a, b))
   def registerOutParameter(a: Int, b: Int, c: Int): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter1(a, b, c))
   def registerOutParameter(a: Int, b: Int, c: String): CallableStatementIO[Unit] = FF.liftF(RegisterOutParameter2(a, b, c))

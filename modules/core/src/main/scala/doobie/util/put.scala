@@ -9,9 +9,9 @@ import cats.free.ContravariantCoyoneda
 import cats.data.NonEmptyList
 import doobie.enumerated.JdbcType
 import java.sql.{PreparedStatement, ResultSet}
-import org.tpolecat.typename._
+import org.tpolecat.typename.*
 import doobie.util.meta.Meta
-import cats.syntax.foldable._
+import cats.syntax.foldable.*
 
 import scala.reflect.ClassTag
 

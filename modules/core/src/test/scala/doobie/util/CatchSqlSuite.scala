@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.effect.{IO}
-import doobie._, doobie.implicits._
+import doobie.*, doobie.implicits.*
 import java.sql.SQLException
 
 class CatchSqlSuite extends munit.FunSuite {

@@ -4,10 +4,10 @@
 
 package doobie.postgres
 
-import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
-import doobie.postgres.enums._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
+import doobie.postgres.enums.*
 import doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime}
 

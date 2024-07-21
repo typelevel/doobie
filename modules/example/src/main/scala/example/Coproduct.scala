@@ -9,11 +9,11 @@ import java.sql.Connection
 import cats.data.{EitherK, Kleisli}
 import cats.effect.{IO, IOApp}
 import cats.free.Free
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.{InjectK, ~>}
-import doobie._
+import doobie.*
 import doobie.free.connection.ConnectionOp
-import doobie.implicits._
+import doobie.implicits.*
 import scala.io.StdIn
 
 object Coproduct extends IOApp.Simple {
@@ -72,8 +72,8 @@ object Coproduct extends IOApp.Simple {
 
   // A program
   def prog[F[_]](implicit ev1: ConsoleOps[F], ev2: ConnectionOps[F]): Free[F, Unit] = {
-    import ev1._
-    import ev2._
+    import ev1.*
+    import ev2.*
     for {
       _ <- printLn("Enter a pattern:")
       pat <- readLn
@@ -88,7 +88,7 @@ object Coproduct extends IOApp.Simple {
   // Our interpreter must be parameterized over a connection so we can add transaction boundaries
   // before and after.
   val interp: Cop ~> Kleisli[IO, Connection, *] = {
-    consoleInterp.liftK[Connection] or KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
+    consoleInterp.liftK[Connection] `or` KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
   }
 
   // Our interpreted program

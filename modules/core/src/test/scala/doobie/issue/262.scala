@@ -5,7 +5,7 @@
 package doobie.issue
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie.*, doobie.implicits.*
 
 class `262` extends munit.FunSuite {
 

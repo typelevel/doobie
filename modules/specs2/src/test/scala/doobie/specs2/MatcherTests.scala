@@ -23,7 +23,7 @@ trait MatcherChecks[M[_]] extends Specification
   )
 
   ("valid query should pass" >> {
-    sql"select 1".query[Int] must typecheck
+    sql"select 1".query[Int] `must` typecheck
   }).void
 
   ("malformed sql should fail" >> {

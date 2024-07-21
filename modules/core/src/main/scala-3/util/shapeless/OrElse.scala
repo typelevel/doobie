@@ -42,9 +42,9 @@ final class Secondary[+B](value: => B) extends OrElse[Nothing, B] {
 }
 
 object OrElse extends OrElse0 {
-  implicit def primary[A, B](implicit a: A): A OrElse B = new Primary(a)
+  implicit def primary[A, B](implicit a: A): A `OrElse` B = new Primary(a)
 }
 
 private[shapeless] abstract class OrElse0 {
-  implicit def secondary[A, B](implicit b: => B): A OrElse B = new Secondary(b)
+  implicit def secondary[A, B](implicit b: => B): A `OrElse` B = new Secondary(b)
 }

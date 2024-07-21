@@ -3,7 +3,7 @@
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
-import cats.syntax.show._
+import cats.syntax.show.*
 
 /** Module for source positions. */
 object pos {

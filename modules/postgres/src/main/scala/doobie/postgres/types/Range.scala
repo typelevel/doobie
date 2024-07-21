@@ -7,7 +7,7 @@ package doobie.postgres.types
 import cats.Monoid
 import cats.implicits.toBifunctorOps
 import doobie.postgres.types.Range.Edge
-import doobie.postgres.types.Range.Edge._
+import doobie.postgres.types.Range.Edge.*
 import doobie.util.invariant.InvalidValue
 
 import scala.util.Try

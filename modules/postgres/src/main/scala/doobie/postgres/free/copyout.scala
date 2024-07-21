@@ -8,13 +8,13 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.copy.{ CopyOut as PGCopyOut }
 
 // This file is Auto-generated using FreeGen2.scala
 object copyout { module =>
@@ -145,7 +145,7 @@ object copyout { module =>
     }
 
   }
-  import CopyOutOp._
+  import CopyOutOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: CopyOutIO[Unit] = FF.pure[CopyOutOp, Unit](())

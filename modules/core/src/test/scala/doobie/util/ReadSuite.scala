@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie.util.TestTypes._
+import doobie.util.TestTypes.*
 import doobie.util.transactor.Transactor
 import doobie.testutils.VoidExtensions
 
@@ -22,7 +22,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   )
 
   test("Read should exist for some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Read[Int].void
     Read[(Int, Int)].void
@@ -50,14 +50,14 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test("Read should exist for Unit") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Read[Unit]
     assertEquals(Read[(Int, Unit)].length, 1)
   }
 
   test("Read should exist for option of some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Read[Option[Int]].void
     Read[Option[(Int, Int)]].void
@@ -68,14 +68,14 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test("Read should exist for option of Unit") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Read[Option[Unit]].void
     assertEquals(Read[Option[(Int, Unit)]].length, 1).void
   }
 
   test("Read should select multi-column instance by default") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     assertEquals(Read[LenStr1].length, 2).void
   }
@@ -85,7 +85,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test(".product should product the correct ordering of gets") {
-    import cats.syntax.all._
+    import cats.syntax.all.*
 
     val readInt = Read[Int]
     val readString = Read[String]
@@ -100,7 +100,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
    */
 
   test("Read should read correct columns for instances with Option (None)") {
-    import doobie.implicits._
+    import doobie.implicits.*
 
     val frag = sql"SELECT 1, NULL, 3, NULL"
     val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
@@ -116,7 +116,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test("Read should read correct columns for instances with Option (Some)") {
-    import doobie.implicits._
+    import doobie.implicits.*
 
     val frag = sql"SELECT 1, 2, 3, 4"
     val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
@@ -129,14 +129,14 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test("Read should select correct columns when combined with `ap`") {
-    import cats.syntax.all._
-    import doobie.implicits._
+    import cats.syntax.all.*
+    import doobie.implicits.*
 
     val r = Read[Int]
 
     val c = (r, r, r, r, r).tupled
 
-    val q = sql"SELECT 1, 2, 3, 4, 5".query(c).to[List]
+    val q = sql"SELECT 1, 2, 3, 4, 5".query(using c).to[List]
 
     val o = q.transact(xa).unsafeRunSync()
 
@@ -144,12 +144,12 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test("Read should select correct columns when combined with `product`") {
-    import cats.syntax.all._
-    import doobie.implicits._
+    import cats.syntax.all.*
+    import doobie.implicits.*
 
     val r = Read[Int].product(Read[Int].product(Read[Int]))
 
-    val q = sql"SELECT 1, 2, 3".query(r).to[List]
+    val q = sql"SELECT 1, 2, 3".query(using r).to[List]
     val o = q.transact(xa).unsafeRunSync()
 
     assertEquals(o, List((1, (2, 3))))

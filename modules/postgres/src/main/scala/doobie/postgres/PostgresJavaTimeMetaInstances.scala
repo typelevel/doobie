@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import doobie.enumerated.JdbcType._
+import doobie.enumerated.JdbcType.*
 import doobie.util.meta.Meta
 import doobie.util.meta.MetaConstructors.Basic
 

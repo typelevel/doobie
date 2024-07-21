@@ -4,13 +4,13 @@
 
 package doobie.enumerated
 
-import doobie.util.invariant._
+import doobie.util.invariant.*
 
-import java.sql.ParameterMetaData._
+import java.sql.ParameterMetaData.*
 
 import cats.ApplicativeError
 import cats.kernel.Eq
-import cats.kernel.instances.int._
+import cats.kernel.instances.int.*
 
 /** @group Types */
 sealed abstract class ParameterMode(val toInt: Int) extends Product with Serializable

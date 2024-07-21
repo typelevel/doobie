@@ -6,11 +6,11 @@ package doobie.mysql
 
 import java.time.ZoneOffset
 
-import doobie._
-import doobie.implicits._
-import doobie.mysql.implicits._
-import doobie.mysql.util.arbitraries.SQLArbitraries._
-import doobie.mysql.util.arbitraries.TimeArbitraries._
+import doobie.*
+import doobie.implicits.*
+import doobie.mysql.implicits.*
+import doobie.mysql.util.arbitraries.SQLArbitraries.*
+import doobie.mysql.util.arbitraries.TimeArbitraries.*
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.forAll
 

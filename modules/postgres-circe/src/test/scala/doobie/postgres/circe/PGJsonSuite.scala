@@ -5,8 +5,8 @@
 package doobie.postgres.circe
 
 import cats.effect.IO
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import io.circe.{Decoder, Encoder, Json}
 
 class PGJsonSuite extends munit.FunSuite {
@@ -41,37 +41,37 @@ class PGJsonSuite extends munit.FunSuite {
   }
 
   {
-    import doobie.postgres.circe.json.implicits._
+    import doobie.postgres.circe.json.implicits.*
     testInOut("json", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
 
   {
-    import doobie.postgres.circe.jsonb.implicits._
+    import doobie.postgres.circe.jsonb.implicits.*
     testInOut("jsonb", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
 
   // Explicit Type Checks
 
   test("json should check ok for read") {
-    import doobie.postgres.circe.json.implicits._
+    import doobie.postgres.circe.json.implicits.*
 
     val a = sql"select '{}' :: json".query[Json].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.columnTypeErrors, Nil)
   }
   test("json should check ok for write") {
-    import doobie.postgres.circe.json.implicits._
+    import doobie.postgres.circe.json.implicits.*
     val a = sql"select ${Json.obj()} :: json".query[Json].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.parameterTypeErrors, Nil)
   }
 
   test("jsonb should check ok for read") {
-    import doobie.postgres.circe.jsonb.implicits._
+    import doobie.postgres.circe.jsonb.implicits.*
     val a = sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.columnTypeErrors, Nil)
   }
 
   test("jsonb should check ok for write") {
-    import doobie.postgres.circe.jsonb.implicits._
+    import doobie.postgres.circe.jsonb.implicits.*
     val a = sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync()
     assertEquals(a.parameterTypeErrors, Nil)
   }
@@ -79,7 +79,7 @@ class PGJsonSuite extends munit.FunSuite {
   // Encoder / Decoders
   private case class Foo(x: Json)
   private object Foo {
-    import doobie.postgres.circe.json.implicits._
+    import doobie.postgres.circe.json.implicits.*
     implicit val fooEncoder: Encoder[Foo] = Encoder[Json].contramap(_.x)
     implicit val fooDecoder: Decoder[Foo] = Decoder[Json].map(Foo(_))
     implicit val fooGet: Get[Foo] = pgDecoderGetT[Foo]

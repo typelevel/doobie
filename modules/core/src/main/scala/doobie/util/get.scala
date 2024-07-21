@@ -11,7 +11,7 @@ import doobie.enumerated.JdbcType
 import doobie.util.invariant.{InvalidObjectMapping, InvalidValue, NonNullableColumnRead}
 import java.sql.ResultSet
 import scala.reflect.ClassTag
-import org.tpolecat.typename._
+import org.tpolecat.typename.*
 import doobie.util.meta.Meta
 
 /** @param typeStack
@@ -197,7 +197,7 @@ object Get extends GetInstances {
 }
 
 trait GetInstances {
-  import Predef._ // for array ops
+  import Predef.* // for array ops
 
   /** @group Instances */
   implicit val FunctorGet: Functor[Get] =

@@ -5,8 +5,8 @@
 package doobie.postgres
 
 import cats.effect.Sync
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import java.io.ByteArrayOutputStream
 
 class PGCopySuite extends munit.FunSuite {

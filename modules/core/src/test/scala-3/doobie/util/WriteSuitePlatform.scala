@@ -15,7 +15,7 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
   case class CaseClassWithFieldWithoutPutInstance(a: String, b: NoPutInstanceForThis)
 
   test("Write should exist for some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Write[Woozle].void
     Write[(Woozle, String)].void
@@ -23,7 +23,7 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
   }
 
   test("Write should exist for option of some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     Write[Option[Woozle]].void
     Write[Option[(Woozle, String)]].void

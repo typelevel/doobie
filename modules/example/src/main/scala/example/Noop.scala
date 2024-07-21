@@ -4,10 +4,10 @@
 
 package example
 
-import cats._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.*
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
 
 /** Example interpreter that fails if it encounters any constructors. This lets you run `ConnectionIO` programs that
   * rely only on pure values, for example.

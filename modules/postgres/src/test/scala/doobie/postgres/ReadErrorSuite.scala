@@ -4,11 +4,11 @@
 
 package doobie.postgres
 
-import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
-import doobie.postgres.enums._
-import doobie.util.invariant._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
+import doobie.postgres.enums.*
+import doobie.util.invariant.*
 
 class ReadErrorSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global

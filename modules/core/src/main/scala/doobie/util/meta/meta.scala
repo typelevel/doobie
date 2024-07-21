@@ -11,7 +11,7 @@ import doobie.enumerated.JdbcType
 import doobie.util.{Get, Put}
 
 import scala.reflect.ClassTag
-import org.tpolecat.typename._
+import org.tpolecat.typename.*
 
 /** Convenience for introducing a symmetric `Get`/`Put` pair into implicit scope, and for deriving new symmetric pairs.
   * It's important to understand that `Meta` should never be demanded by user methods; instead demand both `Get` and
@@ -155,7 +155,7 @@ trait MetaConstructors {
 object MetaConstructors extends MetaConstructors
 
 trait MetaInstances {
-  import doobie.enumerated.JdbcType.{Boolean => JdbcBoolean, _}
+  import doobie.enumerated.JdbcType.{Boolean as JdbcBoolean, *}
   import doobie.util.meta.MetaConstructors.Basic
 
   /** @group Instances */

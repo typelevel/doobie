@@ -5,9 +5,9 @@
 package doobie.scalatest
 
 import cats.effect.IO
-import doobie.syntax.string._
+import doobie.syntax.string.*
 import doobie.util.transactor.Transactor
-import org.scalatest._
+import org.scalatest.*
 
 trait CheckerChecks[M[_]] extends funsuite.AnyFunSuite with matchers.should.Matchers with Checker[M] {
 

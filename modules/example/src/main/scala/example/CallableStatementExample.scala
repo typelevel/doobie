@@ -5,12 +5,12 @@
 package example
 
 import cats.effect.{IO, IOApp}
-import cats.effect.syntax.monadCancel._
-import cats.syntax.all._
-import doobie._
+import cats.effect.syntax.monadCancel.*
+import cats.syntax.all.*
+import doobie.*
 import doobie.enumerated.JdbcType.Other
 import doobie.free.connection.ConnectionIO
-import doobie.implicits._
+import doobie.implicits.*
 import doobie.util.transactor.Transactor
 
 object CallableStatementExample extends IOApp.Simple {

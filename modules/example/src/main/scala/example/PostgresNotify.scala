@@ -5,15 +5,15 @@
 // relies on streaming, so no cats for now
 package example
 
-import cats.effect._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
-import doobie.postgres._
-import org.postgresql._
+import cats.effect.*
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.*
+import org.postgresql.*
 import fs2.{Stream, Pipe}
-import fs2.Stream._
-import scala.concurrent.duration._
+import fs2.Stream.*
+import scala.concurrent.duration.*
 
 /** Example exposing PostgreSQL NOTIFY as a Process[ConnectionIO, PGNotification]. This will likely be provided as a
   * standard service in doobie-postgres in a future version. To play with this program, run it and then in another

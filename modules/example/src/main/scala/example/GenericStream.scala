@@ -5,9 +5,9 @@
 package example
 
 import cats.effect.{IO, IOApp, ExitCode}
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
 import fs2.Stream
 import fs2.Stream.{eval, bracket}
 import java.sql.{PreparedStatement, ResultSet}

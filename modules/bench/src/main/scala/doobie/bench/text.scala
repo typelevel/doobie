@@ -4,17 +4,17 @@
 
 package doobie.bench
 
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
-import fs2._
-import org.openjdk.jmh.annotations._
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
+import fs2.*
+import org.openjdk.jmh.annotations.*
 
 final case class Person(name: String, age: Int)
 
 class text {
-  import shared._
+  import shared.*
   import cats.effect.unsafe.implicits.global
 
   def people(n: Int): List[Person] =

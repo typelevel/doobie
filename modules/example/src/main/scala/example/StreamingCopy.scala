@@ -7,11 +7,11 @@ package example
 import java.sql.Connection
 import scala.util.control.NonFatal
 
-import cats.data._
-import cats.effect._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.data.*
+import cats.effect.*
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
 import fs2.Stream
 
 /** Example of resource-safe transactional database-to-database copy with fs2. If you induce failures on either side (by
@@ -59,7 +59,7 @@ object StreamingCopy extends IOApp.Simple {
     def mkStream(c: Connection): Stream[F, C] = {
 
       // Now we can interpret a ConnectionIO into a Stream of F via the sink interpreter.
-      def evalS(f: ConnectionIO[_]): Stream[F, Nothing] =
+      def evalS(f: ConnectionIO[?]): Stream[F, Nothing] =
         Stream.eval(interpS(f)(c)).drain
 
       // And can thus lift all the sink operations into Stream of F
@@ -88,7 +88,7 @@ object StreamingCopy extends IOApp.Simple {
 
   /** Derive a new transactor that logs stuff. */
   def addLogging[F[_], A](name: String)(xa: Transactor[F]): Transactor[F] = {
-    import Transactor._ // bring the lenses into scope
+    import Transactor.* // bring the lenses into scope
     val update: State[Transactor[F], Unit] =
       for {
         _ <- before %= printBefore(name, "before - setting up the connection")
