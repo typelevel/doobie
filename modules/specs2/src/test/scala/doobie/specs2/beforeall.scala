@@ -5,8 +5,9 @@
 package doobie.specs2
 
 import cats.effect.IO
-import doobie.syntax.connectionio._
-import doobie.syntax.string._
+import doobie.syntax.connectionio.*
+import doobie.syntax.string.*
+import doobie.testutils.VoidExtensions
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
@@ -22,7 +23,7 @@ class beforeall extends Specification with IOChecker with BeforeAll {
 
   val targetQ = sql"select value from some_table".query[String]
 
-  val transactor = Transactor.fromDriverManager[IO](
+  val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:beforeall;DB_CLOSE_DELAY=-1",
     user = "sa",
@@ -31,11 +32,11 @@ class beforeall extends Specification with IOChecker with BeforeAll {
   )
 
   // The test itself
-  check(targetQ)
+  check(targetQ).void
 
   // A hook for database initialization
   def beforeAll() = {
-    initQ.run
+    val _ = initQ.run
       .transact(transactor)
       .unsafeRunSync()
     ()

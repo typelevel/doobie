@@ -6,6 +6,7 @@ package doobie.util
 
 import shapeless._
 import shapeless.record._
+import doobie.testutils.VoidExtensions
 
 import scala.annotation.nowarn
 
@@ -15,22 +16,22 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
   test("Write should exist for shapeless record types") {
     type DL = (Double, Long)
     type A = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
-    Write[A]
-    Write[(A, A)]
+    Write[A].void
+    Write[(A, A)].void
   }: @nowarn("msg=.*DL is never used.*")
 
   case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
   test("Write should exist for some fancy types") {
-    Write[Woozle]
-    Write[(Woozle, String)]
-    Write[(Int, Woozle :: Woozle :: String :: HNil)]
+    Write[Woozle].void
+    Write[(Woozle, String)].void
+    Write[(Int, Woozle :: Woozle :: String :: HNil)].void
   }
 
   test("Write should exist for option of some fancy types") {
-    Write[Option[Woozle]]
-    Write[Option[(Woozle, String)]]
-    Write[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
+    Write[Option[Woozle]].void
+    Write[Option[(Woozle, String)]].void
+    Write[Option[(Int, Woozle :: Woozle :: String :: HNil)]].void
   }
 
 }

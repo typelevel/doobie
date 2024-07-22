@@ -9,6 +9,7 @@ import doobie.Update
 import doobie.util.TestTypes._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import doobie.testutils.VoidExtensions
 
 class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
@@ -23,11 +24,11 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   test("Write should exist for some fancy types") {
     import doobie.generic.auto._
 
-    Write[Int]
-    Write[(Int, Int)]
-    Write[(Int, Int, String)]
-    Write[(Int, (Int, String))]
-    Write[ComplexCaseClass]
+    Write[Int].void
+    Write[(Int, Int)].void
+    Write[(Int, Int, String)].void
+    Write[(Int, (Int, String))].void
+    Write[ComplexCaseClass].void
   }
 
   test("Write is not auto derived for tuples without an import") {
@@ -46,30 +47,30 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write can be manually derived") {
-    Write.derived[LenStr1]
+    Write.derived[LenStr1].void
   }
 
   test("Write should exist for Unit") {
     import doobie.generic.auto._
 
-    Write[Unit]
+    Write[Unit].void
     assertEquals(Write[(Int, Unit)].length, 1)
   }
 
   test("Write should exist for option of some fancy types") {
     import doobie.generic.auto._
 
-    Write[Option[Int]]
-    Write[Option[(Int, Int)]]
-    Write[Option[(Int, Int, String)]]
-    Write[Option[(Int, (Int, String))]]
-    Write[Option[(Int, Option[(Int, String)])]]
+    Write[Option[Int]].void
+    Write[Option[(Int, Int)]].void
+    Write[Option[(Int, Int, String)]].void
+    Write[Option[(Int, (Int, String))]].void
+    Write[Option[(Int, Option[(Int, String)])]].void
   }
 
   test("Write should exist for option of Unit") {
     import doobie.generic.auto._
 
-    Write[Option[Unit]]
+    Write[Option[Unit]].void
     assertEquals(Write[Option[(Int, Unit)]].length, 1)
   }
 

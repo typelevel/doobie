@@ -4,8 +4,9 @@
 
 package doobie.util
 
-import shapeless._
-import shapeless.record._
+import doobie.testutils.VoidExtensions
+import shapeless.*
+import shapeless.record.*
 
 import scala.annotation.nowarn
 
@@ -15,22 +16,22 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   test("Read should exist for shapeless record types") {
     type DL = (Double, Long) // used below
     type A = Record.`'foo -> Int, 'bar -> String, 'baz -> DL, 'quz -> Woozle`.T
-    Read[A]
-    Read[(A, A)]
+    Read[A].void
+    Read[(A, A)].void
   }: @nowarn("msg=.*DL is never used.*")
 
   case class Woozle(a: (String, Int), b: Int :: String :: HNil, c: Boolean)
 
   test("Read should exist for some fancy types") {
-    Read[Woozle]
-    Read[(Woozle, String)]
-    Read[(Int, Woozle :: Woozle :: String :: HNil)]
+    Read[Woozle].void
+    Read[(Woozle, String)].void
+    Read[(Int, Woozle :: Woozle :: String :: HNil)].void
   }
 
   test("Read should exist for option of some fancy types") {
-    Read[Option[Woozle]]
-    Read[Option[(Woozle, String)]]
-    Read[Option[(Int, Woozle :: Woozle :: String :: HNil)]]
+    Read[Option[Woozle]].void
+    Read[Option[(Woozle, String)]].void
+    Read[Option[(Int, Woozle :: Woozle :: String :: HNil)]].void
   }
 
 }

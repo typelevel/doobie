@@ -34,7 +34,7 @@ object ref { module =>
     // Given a Ref we can embed a RefIO program in any algebra that understands embedding.
     implicit val RefOpEmbeddable: Embeddable[RefOp, Ref] =
       new Embeddable[RefOp, Ref] {
-        def embed[A](j: Ref, fa: FF[RefOp, A]) = Embedded.Ref(j, fa)
+        def embed[A](j: Ref, fa: FF[RefOp, A]): Embedded.Ref[A] = Embedded.Ref(j, fa)
       }
 
     // Interface for a natural transformation RefOp ~> F encoded via the visitor pattern.
@@ -164,8 +164,8 @@ object ref { module =>
   implicit val WeakAsyncRefIO: WeakAsync[RefIO] =
     new WeakAsync[RefIO] {
       val monad = FF.catsFreeMonadForFree[RefOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[RefIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): RefIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = monad.tailRecM(a)(f)

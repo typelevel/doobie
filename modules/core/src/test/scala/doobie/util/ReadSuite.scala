@@ -7,6 +7,7 @@ package doobie.util
 import cats.effect.IO
 import doobie.util.TestTypes._
 import doobie.util.transactor.Transactor
+import doobie.testutils.VoidExtensions
 
 class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
@@ -23,10 +24,10 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   test("Read should exist for some fancy types") {
     import doobie.generic.auto._
 
-    Read[Int]
-    Read[(Int, Int)]
-    Read[(Int, Int, String)]
-    Read[(Int, (Int, String))]
+    Read[Int].void
+    Read[(Int, Int)].void
+    Read[(Int, Int, String)].void
+    Read[(Int, (Int, String))].void
   }
 
   test("Read is not auto derived for case classes without importing auto derive import") {
@@ -58,29 +59,29 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   test("Read should exist for option of some fancy types") {
     import doobie.generic.auto._
 
-    Read[Option[Int]]
-    Read[Option[(Int, Int)]]
-    Read[Option[(Int, Int, String)]]
-    Read[Option[(Int, (Int, String))]]
-    Read[Option[(Int, Option[(Int, String)])]]
-    Read[ComplexCaseClass]
+    Read[Option[Int]].void
+    Read[Option[(Int, Int)]].void
+    Read[Option[(Int, Int, String)]].void
+    Read[Option[(Int, (Int, String))]].void
+    Read[Option[(Int, Option[(Int, String)])]].void
+    Read[ComplexCaseClass].void
   }
 
   test("Read should exist for option of Unit") {
     import doobie.generic.auto._
 
-    Read[Option[Unit]]
-    assertEquals(Read[Option[(Int, Unit)]].length, 1)
+    Read[Option[Unit]].void
+    assertEquals(Read[Option[(Int, Unit)]].length, 1).void
   }
 
   test("Read should select multi-column instance by default") {
     import doobie.generic.auto._
 
-    assertEquals(Read[LenStr1].length, 2)
+    assertEquals(Read[LenStr1].length, 2).void
   }
 
   test("Read should select 1-column instance when available") {
-    assertEquals(Read[LenStr2].length, 1)
+    assertEquals(Read[LenStr2].length, 1).void
   }
 
   test(".product should product the correct ordering of gets") {

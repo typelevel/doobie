@@ -50,7 +50,7 @@ object connection { module =>
     // Given a Connection we can embed a ConnectionIO program in any algebra that understands embedding.
     implicit val ConnectionOpEmbeddable: Embeddable[ConnectionOp, Connection] =
       new Embeddable[ConnectionOp, Connection] {
-        def embed[A](j: Connection, fa: FF[ConnectionOp, A]) = Embedded.Connection(j, fa)
+        def embed[A](j: Connection, fa: FF[ConnectionOp, A]): Embedded.Connection[A] = Embedded.Connection(j, fa)
       }
 
     // Interface for a natural transformation ConnectionOp ~> F encoded via the visitor pattern.
@@ -460,8 +460,8 @@ object connection { module =>
   implicit val WeakAsyncConnectionIO: WeakAsync[ConnectionIO] =
     new WeakAsync[ConnectionIO] {
       val monad = FF.catsFreeMonadForFree[ConnectionOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[ConnectionIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): ConnectionIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ConnectionIO[A])(f: A => ConnectionIO[B]): ConnectionIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => ConnectionIO[Either[A, B]]): ConnectionIO[B] = monad.tailRecM(a)(f)

@@ -6,13 +6,14 @@ package doobie.specs2
 
 import cats.Id
 import cats.effect.IO
-import doobie.syntax.string._
+import doobie.syntax.string.*
+import doobie.testutils.VoidExtensions
 import doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 
 trait CheckerChecks[M[_]] extends Specification with Checker[M] {
 
-  lazy val transactor = Transactor.fromDriverManager[M](
+  lazy val transactor: Transactor[M] = Transactor.fromDriverManager[M](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     user = "sa",
@@ -20,14 +21,14 @@ trait CheckerChecks[M[_]] extends Specification with Checker[M] {
     logHandler = None
   )
 
-  check(sql"select 1".query[Int])
+  check(sql"select 1".query[Int]).void
 
   // Abstract type parameters should be handled correctly
   {
     import doobie.generic.auto._
 
     final case class Foo[F[_]](x: Int)
-    check(sql"select 1".query[Foo[Id]])
+    check(sql"select 1".query[Foo[Id]]).void
   }
 }
 

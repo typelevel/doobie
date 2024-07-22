@@ -50,7 +50,6 @@ object KleisliInterpreter {
 
 // Family of interpreters into Kleisli arrows for some monad M.
 class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: WeakAsync[M]) { outer =>
-  import WeakAsync._
 
   // The 6 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val CopyInInterpreter: CopyInOp ~> Kleisli[M, PGCopyIn, *] = new CopyInInterpreter { }

@@ -38,7 +38,7 @@ object clob { module =>
     // Given a Clob we can embed a ClobIO program in any algebra that understands embedding.
     implicit val ClobOpEmbeddable: Embeddable[ClobOp, Clob] =
       new Embeddable[ClobOp, Clob] {
-        def embed[A](j: Clob, fa: FF[ClobOp, A]) = Embedded.Clob(j, fa)
+        def embed[A](j: Clob, fa: FF[ClobOp, A]): Embedded.Clob[A] = Embedded.Clob(j, fa)
       }
 
     // Interface for a natural transformation ClobOp ~> F encoded via the visitor pattern.
@@ -213,8 +213,8 @@ object clob { module =>
   implicit val WeakAsyncClobIO: WeakAsync[ClobIO] =
     new WeakAsync[ClobIO] {
       val monad = FF.catsFreeMonadForFree[ClobOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[ClobIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): ClobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: ClobIO[A])(f: A => ClobIO[B]): ClobIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => ClobIO[Either[A, B]]): ClobIO[B] = monad.tailRecM(a)(f)

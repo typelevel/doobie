@@ -5,6 +5,7 @@
 package doobie.util
 
 import Predef.augmentString
+import doobie.testutils.*
 
 trait WriteSuitePlatform { self: munit.FunSuite =>
 
@@ -16,17 +17,17 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
   test("Write should exist for some fancy types") {
     import doobie.generic.auto._
 
-    Write[Woozle]
-    Write[(Woozle, String)]
-    Write[(Int, Woozle *: Woozle *: String *: EmptyTuple)]
+    Write[Woozle].void
+    Write[(Woozle, String)].void
+    Write[(Int, Woozle *: Woozle *: String *: EmptyTuple)].void
   }
 
   test("Write should exist for option of some fancy types") {
     import doobie.generic.auto._
 
-    Write[Option[Woozle]]
-    Write[Option[(Woozle, String)]]
-    Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
+    Write[Option[Woozle]].void
+    Write[Option[(Woozle, String)]].void
+    Write[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]].void
   }
 
   test("Write should not exist for case class with field without Put instance") {
@@ -35,5 +36,6 @@ trait WriteSuitePlatform { self: munit.FunSuite =>
 
   test("derives") {
     case class Foo(a: String, b: Int) derives Write
+    val _ = Foo("", 1)
   }
 }

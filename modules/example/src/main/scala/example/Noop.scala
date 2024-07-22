@@ -16,7 +16,7 @@ object Noop {
 
   def noop[S[_]]: S ~> Either[String, *] =
     new (S ~> Either[String, *]) {
-      def apply[A](c: S[A]) = Left(s"Can't interpret $c")
+      def apply[A](c: S[A]): Either[String, Nothing] = Left(s"Can't interpret $c")
     }
 
   val prog1: ConnectionIO[Int] =

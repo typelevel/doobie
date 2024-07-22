@@ -38,7 +38,7 @@ object statement { module =>
     // Given a Statement we can embed a StatementIO program in any algebra that understands embedding.
     implicit val StatementOpEmbeddable: Embeddable[StatementOp, Statement] =
       new Embeddable[StatementOp, Statement] {
-        def embed[A](j: Statement, fa: FF[StatementOp, A]) = Embedded.Statement(j, fa)
+        def embed[A](j: Statement, fa: FF[StatementOp, A]): Embedded.Statement[A] = Embedded.Statement(j, fa)
       }
 
     // Interface for a natural transformation StatementOp ~> F encoded via the visitor pattern.
@@ -428,8 +428,8 @@ object statement { module =>
   implicit val WeakAsyncStatementIO: WeakAsync[StatementIO] =
     new WeakAsync[StatementIO] {
       val monad = FF.catsFreeMonadForFree[StatementOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[StatementIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): StatementIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: StatementIO[A])(f: A => StatementIO[B]): StatementIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => StatementIO[Either[A, B]]): StatementIO[B] = monad.tailRecM(a)(f)

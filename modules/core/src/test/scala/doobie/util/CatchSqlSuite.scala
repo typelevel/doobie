@@ -153,7 +153,7 @@ class CatchSqlSuite extends munit.FunSuite {
 
   test("onSqlException should do nothing on success") {
     var a = 1
-    IO.delay(3).onSqlException(IO.delay(a += 1)).attempt.unsafeRunSync()
+    val _ = IO.delay(3).onSqlException(IO.delay(a += 1)).attempt.unsafeRunSync()
     assertEquals(a, 1)
   }
 

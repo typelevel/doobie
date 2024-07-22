@@ -42,7 +42,7 @@ object copymanager { module =>
     // Given a PGCopyManager we can embed a CopyManagerIO program in any algebra that understands embedding.
     implicit val CopyManagerOpEmbeddable: Embeddable[CopyManagerOp, PGCopyManager] =
       new Embeddable[CopyManagerOp, PGCopyManager] {
-        def embed[A](j: PGCopyManager, fa: FF[CopyManagerOp, A]) = Embedded.CopyManager(j, fa)
+        def embed[A](j: PGCopyManager, fa: FF[CopyManagerOp, A]): Embedded.CopyManager[A] = Embedded.CopyManager(j, fa)
       }
 
     // Interface for a natural transformation CopyManagerOp ~> F encoded via the visitor pattern.
@@ -202,8 +202,8 @@ object copymanager { module =>
   implicit val WeakAsyncCopyManagerIO: WeakAsync[CopyManagerIO] =
     new WeakAsync[CopyManagerIO] {
       val monad = FF.catsFreeMonadForFree[CopyManagerOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CopyManagerIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyManagerIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = monad.tailRecM(a)(f)

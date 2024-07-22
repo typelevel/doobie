@@ -9,7 +9,7 @@ import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import doobie._
 import doobie.implicits._
 import doobie.mysql.implicits._
-import doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
+import doobie.util.analysis.ColumnTypeError
 
 class CheckSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
@@ -19,7 +19,7 @@ class CheckSuite extends munit.FunSuite {
   // and casting returns a nullable column
 
   test("OffsetDateTime Read typechecks") {
-    val t = OffsetDateTime.parse("2019-02-13T22:03:21.000+08:00")
+    val _ = OffsetDateTime.parse("2019-02-13T22:03:21.000+08:00")
     successRead[OffsetDateTime](sql"SELECT c_timestamp FROM test LIMIT 1")
 
     failedRead[OffsetDateTime](sql"SELECT '2019-02-13 22:03:21.051'")
@@ -78,10 +78,10 @@ class CheckSuite extends munit.FunSuite {
     assertEquals(errorClasses, List(classOf[ColumnTypeError]))
   }
 
-  private def failedWrite[A: Put](value: A, dbType: String): Unit = {
-    val frag = sql"SELECT $value :: " ++ Fragment.const(dbType)
-    val analysisResult = frag.update.analysis.transact(xa).unsafeRunSync()
-    val errorClasses = analysisResult.parameterAlignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ParameterTypeError]))
-  }
+//  private def failedWrite[A: Put](value: A, dbType: String): Unit = {
+//    val frag = sql"SELECT $value :: " ++ Fragment.const(dbType)
+//    val analysisResult = frag.update.analysis.transact(xa).unsafeRunSync()
+//    val errorClasses = analysisResult.parameterAlignmentErrors.map(_.getClass)
+//    assertEquals(errorClasses, List(classOf[ParameterTypeError]))
+//  }
 }

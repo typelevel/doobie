@@ -25,11 +25,9 @@ import org.postgresql.util._
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
-
-import scala.annotation.nowarn
+import scala.collection.compat.immutable.LazyList
 
 // Establish that we can write and read various types.
-@nowarn("msg=.*Stream in package scala is deprecated.*")
 class TypesSuite extends munit.ScalaCheckSuite {
   import cats.effect.unsafe.implicits.global
   import PostgresTestTransactor.xa
@@ -252,21 +250,21 @@ class TypesSuite extends munit.ScalaCheckSuite {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble()).iterator
-  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next(), rnd.next())).iterator
+  lazy val rnd: Iterator[Double] = LazyList.continually(scala.util.Random.nextDouble()).iterator
+  lazy val pts: Iterator[Point] = LazyList.continually(new Point(rnd.next(), rnd.next())).iterator
   lazy val lss: Iterator[LineString] =
-    Stream.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
-  lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
+    LazyList.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
+  lazy val lrs: Iterator[LinearRing] = LazyList.continually(new LinearRing({
     lazy val p = pts.next();
     Array(p, pts.next(), pts.next(), pts.next(), p)
   })).iterator
-  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next())).iterator
+  lazy val pls: Iterator[Polygon] = LazyList.continually(new Polygon(lras.next())).iterator
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next(), pts.next(), pts.next())).iterator
-  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next(), pls.next(), pls.next())).iterator
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next(), lss.next(), lss.next())).iterator
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
+  lazy val ptas: Iterator[Array[Point]] = LazyList.continually(Array(pts.next(), pts.next(), pts.next())).iterator
+  lazy val plas: Iterator[Array[Polygon]] = LazyList.continually(Array(pls.next(), pls.next(), pls.next())).iterator
+  lazy val lsas: Iterator[Array[LineString]] = LazyList.continually(Array(lss.next(), lss.next(), lss.next())).iterator
+  lazy val lras: Iterator[Array[LinearRing]] = LazyList.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
 
   // All these types map to `geometry`
   def testInOutGeom[A <: Geometry: Meta](a: A) =

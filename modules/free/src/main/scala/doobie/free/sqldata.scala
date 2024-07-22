@@ -36,7 +36,7 @@ object sqldata { module =>
     // Given a SQLData we can embed a SQLDataIO program in any algebra that understands embedding.
     implicit val SQLDataOpEmbeddable: Embeddable[SQLDataOp, SQLData] =
       new Embeddable[SQLDataOp, SQLData] {
-        def embed[A](j: SQLData, fa: FF[SQLDataOp, A]) = Embedded.SQLData(j, fa)
+        def embed[A](j: SQLData, fa: FF[SQLDataOp, A]): Embedded.SQLData[A] = Embedded.SQLData(j, fa)
       }
 
     // Interface for a natural transformation SQLDataOp ~> F encoded via the visitor pattern.
@@ -161,8 +161,8 @@ object sqldata { module =>
   implicit val WeakAsyncSQLDataIO: WeakAsync[SQLDataIO] =
     new WeakAsync[SQLDataIO] {
       val monad = FF.catsFreeMonadForFree[SQLDataOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[SQLDataIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): SQLDataIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = monad.tailRecM(a)(f)

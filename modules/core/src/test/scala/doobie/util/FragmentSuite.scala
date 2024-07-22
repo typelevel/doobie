@@ -4,9 +4,11 @@
 
 package doobie.util
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie.*
+import doobie.implicits.*
+import doobie.testutils.VoidExtensions
 
 class FragmentSuite extends munit.FunSuite {
 
@@ -42,9 +44,9 @@ class FragmentSuite extends munit.FunSuite {
 
   // https://github.com/tpolecat/doobie/issues/1186
   test("Fragment must interpolate an expression `Option(1).getOrElse(2)` properly") {
-    sql"${Option(1).getOrElse(2)} ${false} ${"xx"}"
-    fr"${Option(1).getOrElse(2)}"
-    fr0"${Option(1).getOrElse(2)}"
+    sql"${Option(1).getOrElse(2)} ${false} ${"xx"}".void
+    fr"${Option(1).getOrElse(2)}".void
+    fr0"${Option(1).getOrElse(2)}".void
   }
 
   test("Fragment must maintain parameter indexing (in-order)") {

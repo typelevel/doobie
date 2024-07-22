@@ -5,6 +5,7 @@
 package doobie.util
 
 import Predef.augmentString
+import doobie.testutils.*
 
 trait ReadSuitePlatform { self: munit.FunSuite =>
 
@@ -16,17 +17,17 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   test("Read should exist for some fancy types") {
     import doobie.generic.auto._
 
-    Read[Woozle]
-    Read[(Woozle, String)]
-    Read[(Int, Woozle *: Woozle *: String *: EmptyTuple)]
+    Read[Woozle].void
+    Read[(Woozle, String)].void
+    Read[(Int, Woozle *: Woozle *: String *: EmptyTuple)].void
   }
 
   test("Read should exist for option of some fancy types") {
     import doobie.generic.auto._
 
-    Read[Option[Woozle]]
-    Read[Option[(Woozle, String)]]
-    Read[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]]
+    Read[Option[Woozle]].void
+    Read[Option[(Woozle, String)]].void
+    Read[Option[(Int, Woozle *: Woozle *: String *: EmptyTuple)]].void
   }
 
   test("Read should not exist for case class with field without Get instance") {
@@ -44,5 +45,6 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
 
   test("derives") {
     case class Foo(a: String, b: Int) derives Read
+    val _ = Foo("", 1)
   }
 }

@@ -28,12 +28,12 @@ class Issue1512 extends CatsEffectSuite {
   val xa: Transactor[IO] =
     Transactor.fromDataSource[IO](datasource, scala.concurrent.ExecutionContext.global)
 
-  val setup: IO[Int] =
+  val setup: IO[Unit] =
     sql"""
         DROP TABLE IF EXISTS demo;
         CREATE TABLE demo(id BIGSERIAL PRIMARY KEY NOT NULL, data BIGINT NOT NULL);
          """.update.run
-      .transact(xa)
+      .transact(xa).void
 
   test("A stream with a Pure effect inserts items properly") {
 
@@ -43,7 +43,7 @@ class Issue1512 extends CatsEffectSuite {
     val count = 10000
     val stream = fs2.Stream.emits(1 to count)
 
-    sql"COPY demo(data) FROM STDIN".copyIn(stream, minChunkSize).transact(xa).unsafeRunSync()
+    sql"COPY demo(data) FROM STDIN".copyIn(stream, minChunkSize).transact(xa).void.unsafeRunSync()
 
     val queryCount =
       sql"SELECT count(*) from demo".query[Int].unique.transact(xa).unsafeRunSync()

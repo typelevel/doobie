@@ -4,15 +4,17 @@
 
 package doobie.util
 
-import cats._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.*
+import cats.syntax.all.*
+import doobie.free.connection.ConnectionIO
+import doobie.free.preparedstatement.PreparedStatementIO
+import doobie.implicits.*
 import doobie.util.analysis.Analysis
 import doobie.util.pos.Pos
-import doobie.free.{connection => IFC, preparedstatement => IFPS}
-import doobie.hi.{connection => IHC, preparedstatement => IHPS, resultset => IHRS}
-import doobie.util.log.{Parameters, LoggingInfo}
+import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
+import doobie.util.fragment.Fragment
+import doobie.util.log.{LoggingInfo, Parameters}
 import fs2.Stream
 
 import scala.Predef.genericArrayOps
